@@ -6,9 +6,9 @@ summary:
   origin: human
   pinned: false
   updatedAt: 2026-10-13T23:52:59Z
-# personas: []   # optional persona layers, e.g. [engineer] — see spec/personas/
+personas: [engineer]
 createdAt: 2026-10-13T23:52:59Z
-updatedAt: 2026-10-13T23:52:59Z
+updatedAt: 2026-10-13T23:56:28Z
 ```
 # CDM Collateral
 
