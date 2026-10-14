@@ -107,7 +107,20 @@ version: 1
 # component is not the same as opting a person into it. Uncomment and edit.
 # ---------------------------------------------------------------------------
 
-subscriptions: []
+subscriptions:
+  # Curated inflection points, blessed — lowest-volume feed.
+  - types: [waypoint]
+    events: [accepted]
+    to: [denisurusov]
+  # A prior fact/decision corrected or replaced.
+  - types: [noteworthy, concept]
+    events: [superseded]
+    to: [denisurusov]
+  # Work finishing or being dropped (not every status move).
+  - types: [node]
+    events: [status_changed]
+    status_to: [resolved, abandoned]
+    to: [denisurusov]
 
 #  - types: [noteworthy]
 #    events: [accepted]
