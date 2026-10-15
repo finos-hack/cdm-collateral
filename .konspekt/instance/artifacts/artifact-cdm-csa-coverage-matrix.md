@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T12:32:58Z
   confidence: 0.7
 createdAt: 2026-10-15T12:32:58Z
-updatedAt: 2026-10-15T22:33:21Z
+updatedAt: 2026-10-15T22:41:02Z
 ```
 # CDM coverage of collateral management — ISDA credit support documents
 

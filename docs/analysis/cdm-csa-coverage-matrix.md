@@ -77,6 +77,25 @@ F2 laid out as workflow steps:
 Only the agreement terms and the Delivery/Return Amount calculation have executable logic, and the calculation
 output is not passed into a call.
 
+## Cross-check (method step 5)
+
+Checked 2026-10-15 against CDM's own documentation (at 7.6.0), the Collateral Working Group issues and CDM
+issue searches on GitHub. This section has not yet been reviewed. **No score changed.**
+
+| Row(s) | External evidence | Effect |
+|---|---|---|
+| 2 Amendment of terms | Issue [#4486](https://github.com/finos/common-domain-model/issues/4486) "Event model change to support Legal Agreement Documentation Amendment Process": Agreement Event and `AgreementPrimitiveInstruction`, Major Release 7.0, closed via PR #4644 on 2026-06-24 | Confirms score 4 |
+| 3 Eligibility | Issue [#5072](https://github.com/finos/common-domain-model/issues/5072) (open, milestone 8.0): "CDM already provides a strong foundation for deterministic collateral eligibility." Further criteria work is open: [#4211](https://github.com/finos/common-domain-model/issues/4211) (linked notes), [#4209](https://github.com/finos/common-domain-model/issues/4209), [#4210](https://github.com/finos/common-domain-model/issues/4210), [#4212](https://github.com/finos/common-domain-model/issues/4212) | Confirms score 5; criteria coverage still being extended |
+| 1, 3 Samples | Issue [#5261](https://github.com/finos/common-domain-model/issues/5261) (open, 2026-10-08): "Update collateral examples to use latest serialisation standard" | Samples may not load unchanged in 7.6.0 tooling *(inference — to verify)* |
+| 7, 8 Calculation | `docs/process-model.md` lists "Margin calculation" as in scope and states that a function's logic "may be *fully defined* or only *partially defined*", with unspecified parts being "functionality that firms are expected to implement" | Confirms scores 3; partial logic is by design |
+| 11 Margin call (F2) | Working Group meeting [#3030](https://github.com/finos/common-domain-model/issues/3030) (2024-07-30) listed "margin call steps, issuance and response" as a workflow area where CDM may help. No issue found that proposes margin call functions or events | F2 is a known gap with no scheduled work; it is not declared out of scope |
+| 14 Substitution | Same meeting: Acadia raised "the need for a message definition to communicate substitutions between parties"; the group agreed to continue the discussion | Confirms score 2 for CSA; demand recorded, nothing delivered |
+| 20 Reporting | `docs/process-model.md` lists regulatory reporting as in scope but "covered in a different documentation section" | Consistent with n/a for this repository |
+| 18, 19 Allocation, reconciliation | No Working Group or issue evidence found. "Allocation" in `docs/process-model.md` refers to trade allocation, not collateral allocation | Scores 0 stand |
+
+Limits of this check: GitHub issue search was read through rendered pages (first page of results only), and the
+GitHub release notes for 7.x were not reachable from this session. ISDA's CDM-for-collateral guide was not read.
+
 ## Summary
 
 CDM is strongest on the **documentation side** of the CSA (terms, amendments, eligibility, sample agreements) and has
