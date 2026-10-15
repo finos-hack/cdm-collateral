@@ -1,0 +1,10 @@
+# konspekt content-addressed provenance stores.
+#
+# In the git binding, a stored file's git blob SHA IS its content hash
+# (sources/README.md; spec/architecture/SERIALIZATION.md). The conformance
+# checker re-hashes the working-tree bytes and compares. If git normalized line
+# endings on checkout (core.autocrlf=true on Windows), a fresh checkout would
+# re-hash to a different SHA and every provenance ref would fail to verify.
+# Pin these stores to no EOL conversion so the blob SHA is stable on all platforms.
+.konspekt/instance/sources/** -text
+.konspekt/instance/commands/** -text

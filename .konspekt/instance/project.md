@@ -1,21 +1,20 @@
 ```yaml
 id: project-cdm-collateral
 goal: >-
-  A prototype of collateral management flows between financial institutions using the FINOS Common Domain Model (CDM / Rune DSL) as the data standard
+  <one-line goal>
 summary:
   origin: human
   pinned: false
-  updatedAt: 2026-10-13T23:52:59Z
+  updatedAt: 2026-10-14T23:04:53Z
 personas: [engineer]
-createdAt: 2026-10-13T23:52:59Z
-updatedAt: 2026-10-13T23:56:28Z
+createdAt: 2026-10-14T23:04:53Z
+updatedAt: 2026-10-14T23:04:53Z
 ```
 # CDM Collateral
 
-Early-stage prototype exploring FINOS CDM (Rune DSL) as the data standard for
-collateral management flows between financial institutions. konspekt project
-state was adopted on 2026-10-13; the instance is otherwise empty, to be filled
-as design decisions and artifacts accumulate.
+Seed summary — replace this with a short description of the project's current
+state. The maintainer composes the project summary from node summaries; pin it
+(`pin project-cdm-collateral`) once you want it human-owned.
 
 Index: `nodes/`, `concepts/`, `noteworthy/`, `artifacts/`, `waypoints/`,
 `edges/`.

@@ -15,3 +15,5 @@ into state history — an instance without it is v1-conformant and records none.
 
 | ref | field | from | to | timestamp | source | by |
 |-----|-------|------|----|-----------|--------|----|
+| node:node-app-setup | review |  | accepted | 2026-10-15T00:18:11Z | df5298515334f4f37dc86dfd54b8e0805558203b |  |
+| node:node-app-setup | status |  | active | 2026-10-15T00:18:11Z |  |  |
