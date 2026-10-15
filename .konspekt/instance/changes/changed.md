@@ -38,3 +38,6 @@ excluded.
 | task-cdm-current-state-analysis | 0b8609b21f09592e5981c63468f190173d6b7555 | docs/analysis/collateral-conceptual-model.md | 2026-10-15T22:52:39Z |
 | task-cdm-current-state-analysis | 0b8609b21f09592e5981c63468f190173d6b7555 | docs/analysis/collateral-conceptual-model.svg | 2026-10-15T22:52:39Z |
 | task-cdm-current-state-analysis | 0b8609b21f09592e5981c63468f190173d6b7555 | docs/analysis/diagrams/collateral_model_svg.py | 2026-10-15T22:52:39Z |
+| task-cdm-current-state-analysis | b456d4825123a9b06e0fc78ce416a34c8c3d46bb | docs/analysis/collateral-conceptual-model.md | 2026-10-15T22:55:58Z |
+| task-cdm-current-state-analysis | b456d4825123a9b06e0fc78ce416a34c8c3d46bb | docs/analysis/collateral-conceptual-model.svg | 2026-10-15T22:55:58Z |
+| task-cdm-current-state-analysis | b456d4825123a9b06e0fc78ce416a34c8c3d46bb | docs/analysis/diagrams/collateral_model_svg.py | 2026-10-15T22:55:58Z |
