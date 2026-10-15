@@ -1,6 +1,7 @@
 # CDM coverage of collateral management — ISDA credit support documents
 
 Output of `task-cdm-current-state-analysis` (goal `goal-data-cdm-taxonomies-specs`).
+Conceptual model of the same space, coloured by these scores: [`collateral-conceptual-model.md`](collateral-conceptual-model.md).
 
 - **CDM version:** release `7.6.0`, commit `f685b4b45d8faa419425c018a52af66f40e43c0b` (2026-10-09), from
   [finos/common-domain-model](https://github.com/finos/common-domain-model) `rosetta-source/src/main/rosetta`.
@@ -80,7 +81,7 @@ output is not passed into a call.
 ## Cross-check (method step 5)
 
 Checked 2026-10-15 against CDM's own documentation (at 7.6.0), the Collateral Working Group issues and CDM
-issue searches on GitHub. This section has not yet been reviewed. **No score changed.**
+issue searches on GitHub. Accepted by the human on 2026-10-15. **No score changed.**
 
 | Row(s) | External evidence | Effect |
 |---|---|---|
