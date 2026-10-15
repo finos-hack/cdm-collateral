@@ -4,7 +4,7 @@ name: CDM coverage of collateral management — repo, securities lending, tripar
 kind: document
 location: docs/analysis/cdm-other-agreements-coverage-matrix.md
 version: cdm-7.6.0
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
   sourceRef: 0b576199aa677a19c4afe85ad893f9bdd3466fb1
@@ -12,12 +12,12 @@ provenance:
   timestamp: 2026-10-15T23:10:47Z
   confidence: 0.7
 createdAt: 2026-10-15T23:10:47Z
-updatedAt: 2026-10-15T23:10:47Z
+updatedAt: 2026-10-15T23:25:52Z
 ```
 # CDM coverage of collateral management — repo, securities lending, triparty, CCP margin
 
 First-pass coverage matrices for four agreement families (GMRA repo, GMSLA
 securities lending, triparty, CCP margin) on CDM 7.6.0, using the CSA matrix
-method, with findings O1–O12 and a cross-family comparison including the CSA
+method, with findings O1–O3 and O8–O12 (O4–O7 removed at the owner's request) and a cross-family comparison including the CSA
 scores. Method step 5 (cross-check against release notes and working-group
 scope) not yet done. Several rows rest on name search only, as marked.

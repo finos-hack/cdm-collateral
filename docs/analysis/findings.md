@@ -7,7 +7,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 |---|---|---|
 | [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md) | `task-cdm-current-state-analysis` | F2, M1–M4 |
 | [`collateral-standards-inventory.md`](collateral-standards-inventory.md) | `task-collateral-standards-inventory` | S1–S4 |
-| [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) | `task-cdm-collateral-other-agreements` | O1–O12 (not yet reviewed) |
+| [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) | `task-cdm-collateral-other-agreements` | O1–O3, O8–O12 |
 
 ## Summary
 
@@ -22,18 +22,14 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | S2 | ISO identifiers are cited inconsistently; DTI, FISN, ELF and IBAN are absent | Identifiers | open |
 | S3 | EMIR and CFTC eligible-collateral classes are encoded; Financial Collateral Directive and SFTR have no reference | Regulation | open |
 | S4 | ISDA Collateral Asset Definitions are at the 2003 edition | Taxonomy | open |
-| O1 | GMRA terms cannot be represented: `GlobalMasterRepoAgreement` has no attributes and the clause identifiers are ISLA-only | Repo agreement | proposed |
-| O2 | GMSLA elections and clause library are modelled but used by no function, amendment instruction or sample | Sec lending agreement | proposed |
-| O3 | Repo and lending trade lifecycle events are executable, but the collateral calculation behind them (GMRA Net Exposure, GMSLA marking) is absent | Repo, sec lending | proposed |
-| O4 | Margin ratio direction is inconsistent between its definition, `SecurityFinanceCashSettlementAmount` and the repo sample | Repo calculation | proposed |
-| O5 | Several repo and lending event samples are not qualified as the event they demonstrate (issue #5109; substitution qualifies as Renegotiation) | Event qualification | proposed |
-| O6 | Repo and lending samples leave mandatory eligibility fields empty and set `collateralType: Cash` for a bond repo | Sample data | proposed |
-| O7 | Repo product qualification accepts only one interest payout (issue #4692) | Product qualification | proposed |
-| O8 | No agreement family has a margin call or margin maintenance workflow (F2 applies to all) | Lifecycle | proposed |
-| O9 | Triparty appears only as a party role and one GMSLA clause | Triparty | proposed |
-| O10 | CCP support covers trade clearing, not cleared margin | CCP | proposed |
-| O11 | Securities-lending settlement workflows are hand-written Java, not Rune | Implementation | proposed |
-| O12 | Buy/sell-back is qualification only; no sample sets `tradeType` | Repo | proposed |
+| O1 | GMRA terms cannot be represented: `GlobalMasterRepoAgreement` has no attributes and the clause identifiers are ISLA-only | Repo agreement | open |
+| O2 | GMSLA elections and clause library are modelled but used by no function, amendment instruction or sample | Sec lending agreement | open |
+| O3 | Repo and lending trade lifecycle events are executable, but the collateral calculation behind them (GMRA Net Exposure, GMSLA marking) is absent | Repo, sec lending | open |
+| O8 | No agreement family has a margin call or margin maintenance workflow (F2 applies to all) | Lifecycle | open |
+| O9 | Triparty appears only as a party role and one GMSLA clause | Triparty | open |
+| O10 | CCP support covers trade clearing, not cleared margin | CCP | open |
+| O11 | Securities-lending settlement workflows are hand-written Java, not Rune | Implementation | open |
+| O12 | Buy/sell-back is qualification only; no sample sets `tradeType` | Repo | open |
 
 ## Details
 
@@ -115,13 +111,15 @@ have no reference. Regulatory reporting rules are maintained outside the CDM rep
 **Observation.** `CollateralAssetDefinitionsEnum` carries `docReference ISDA CollateralAssetDefinitions_2003`.
 Whether a later edition exists was not checked.
 
-### O1–O12 — Other agreement families
+### O1–O3, O8–O12 — Other agreement families
 
 Evidence for each O-finding, with file and line references, is in
-[`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) § Findings. The O-series has
-not yet been reviewed; its status is `proposed` until it is.
+[`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) § Findings.
 
 ## Removed
 
 F1 (a defect in `PostedCreditSupportItemAmount`) was removed from this analysis at the project owner's request on
 2026-10-15.
+
+O4–O7 from the other-agreements analysis (defects in CDM sample data, event qualification and the margin-ratio
+calculation) were removed at the same request.

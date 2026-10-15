@@ -61,3 +61,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-standards-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | c029f9e7a3a26d6fcce64f03b1372c3960ab6691 | denisurusov |
 | artifact:artifact-cdm-other-agreements-matrix | review |  | proposed | 2026-10-15T23:10:47Z |  |  |
 | edge:e-prod-otheragreements-matrix | review |  | proposed | 2026-10-15T23:10:47Z |  |  |
+| artifact:artifact-cdm-other-agreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | d34896439c2f6fe7c2d7428990964e715e081ddc | denisurusov |
+| edge:e-prod-otheragreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | d34896439c2f6fe7c2d7428990964e715e081ddc | denisurusov |

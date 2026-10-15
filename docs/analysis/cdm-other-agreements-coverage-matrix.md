@@ -21,7 +21,6 @@ Output of `task-cdm-collateral-other-agreements` (goal `goal-data-cdm-taxonomies
     lines 1–165).
   - Scanned with scripts: the function test data in `resources/functions/repo-and-bond` (60 files) and
     `resources/functions/sec-lending` (event qualifiers, product qualifiers, haircut fields, transfer history).
-  - Fetched on 2026-10-15: CDM issues #5109 and #4692.
   - Not done: the CDM test suite was not run. Rows marked *(name search)* rest on `grep` over the `.rosetta`
     files only.
   - Inference is labelled *(inference)*. Everything else is observation of the files at the pinned commit.
@@ -59,19 +58,19 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 |---|---|---|---|---|---|---|---|
 | R1 | Agreement terms and elections (GMRA) | **1** | empty type | – | – | none | `legaldocumentation-master-icma-type.rosetta` line 6: `GlobalMasterRepoAgreement extends MasterAgreementBase` has no attributes, and `MasterAgreementBase` is also empty (`legaldocumentation-master-type.rosetta` line 44). `MasterAgreementTypeEnum.GMRA` (`legaldocumentation-master-enum.rosetta` line 22). `MasterAgreementClauseIdentifierEnum` (line 185) holds only `ISLA_GMSLA_*` values, so GMRA clauses have no identifiers. GMRA paragraph references exist only as `docReference ICMA GMRA` annotations on product and event types (`Trade`, `CollateralValuationTreatment`, `Create_Transfer`, `SecurityFinanceCashSettlementAmount`) |
 | R2 | Amendment of agreement terms | **0** | – | – | – | – | `AgreementTermsChangeInstruction` (`event-common-type.rosetta` line 93) has only `vmCSATermsChange`, `imCSATermsChange` and `legacyCSATermsChange`. There are no GMRA elections to amend (R1). `Create_AgreementPartyChange` (`event-common-func.rosetta` line 2505) is agreement-agnostic but covers party changes, not terms |
-| R3 | Eligible collateral / baskets | **3** | yes (generic) | yes (generic) | – | repo samples carry no criteria | `CollateralProvisions.eligibleCollateral EligibleCollateralCriteria (0..*)` (`product-collateral-type.rosetta` line 34). `CheckEligibilityForProduct` and `CheckEligibilityByDetails` (`product-collateral-func.rosetta` lines 43, 60) say "For ICMA usecase - this is the basket(s)". These functions take `EligibleCollateralSpecification`, not the trade-level `EligibleCollateralCriteria`. The repo samples use `eligibleCollateral` only to carry `marginPercentage` (finding O6) |
-| R4 | Haircut / margin ratio | **5** | yes | yes | – | `repo-execution-func-input.json` line 140 (`marginPercentage: 0.99`) | `CollateralValuationTreatment.haircutPercentage` (GMRA 2(xx)(B)) and `.marginPercentage` (GMRA 2(bb) Margin Ratio) (`product-collateral-type.rosetta` lines 62–79). Applied in `SecurityFinanceCashSettlementAmount` (`event-common-func.rosetta` lines 837–842). The direction of the ratio is inconsistent (finding O4) |
+| R3 | Eligible collateral / baskets | **3** | yes (generic) | yes (generic) | – | repo samples carry no criteria | `CollateralProvisions.eligibleCollateral EligibleCollateralCriteria (0..*)` (`product-collateral-type.rosetta` line 34). `CheckEligibilityForProduct` and `CheckEligibilityByDetails` (`product-collateral-func.rosetta` lines 43, 60) say "For ICMA usecase - this is the basket(s)". These functions take `EligibleCollateralSpecification`, not the trade-level `EligibleCollateralCriteria`. |
+| R4 | Haircut / margin ratio | **5** | yes | yes | – | `repo-execution-func-input.json` line 140 (`marginPercentage: 0.99`) | `CollateralValuationTreatment.haircutPercentage` (GMRA 2(xx)(B)) and `.marginPercentage` (GMRA 2(bb) Margin Ratio) (`product-collateral-type.rosetta` lines 62–79). Applied in `SecurityFinanceCashSettlementAmount` (`event-common-func.rosetta` lines 837–842) |
 | R5 | Concentration limits | **2** | yes (generic) | – | – | – | `CollateralTreatment.concentrationLimit` (`product-collateral-type.rosetta` line 146). No function references `ConcentrationLimit` (same as CSA row 5) |
 | R6 | Purchase price / repurchase price / exposure calculation | **3** | yes | yes | – | repo samples do not exercise it | `SecurityFinanceCashSettlementAmount` (`event-common-func.rosetta` line 799, docReference GMRA 2(rr) Repurchase Price): price × quantity × margin ratio. `InterestCashSettlementAmount` (line 148) computes repo interest. Called through `ResolveTransfer` (line 762). In `repo-execution-func-input.json` the cash amount 9,974,250 is an input, not a computed value, and no repo output file has `transferHistory`. GMRA Transaction Exposure and Net Exposure: absent *(name search)* |
 | R7 | Margin maintenance (GMRA paragraph 4 margin transfers) | **2** | generic only | – | – | – | No Net Exposure, Margin Transfer or Margin Maintenance type or function *(name search)*. Only the generic `MarginCallIssuance` / `MarginCallResponse` (`event-common-type.rosetta` lines 689–790) could carry a repo margin call (`callAgreementType AgreementName` can name GMRA). Same gap as CSA finding F2 |
-| R8 | Repricing and adjustment | **5** | yes | yes | yes | `repo-reprice-*`, `repo-adjustment-*` | `Create_RepricePrimitiveInstruction` (`event-common-func.rosetta` line 1769) changes the cash amount. `Create_AdjustmentPrimitiveInstruction` (line 1843) changes the collateral quantity. `Qualify_Reprice` (`event-qualification-func.rosetta` line 592) and `Qualify_Adjustment` (line 11). The new price, cash or quantity are inputs. Both `.md` files state "This event does not automatically generate cash/collateral transfers". Neither expected output carries an `eventQualifier` (finding O5) |
+| R8 | Repricing and adjustment | **5** | yes | yes | yes | `repo-reprice-*`, `repo-adjustment-*` | `Create_RepricePrimitiveInstruction` (`event-common-func.rosetta` line 1769) changes the cash amount. `Create_AdjustmentPrimitiveInstruction` (line 1843) changes the collateral quantity. `Qualify_Reprice` (`event-qualification-func.rosetta` line 592) and `Qualify_Adjustment` (line 11). The new price, cash or quantity are inputs. Both `.md` files state "This event does not automatically generate cash/collateral transfers" |
 | R9 | Dispute | **2** | generic only | – | – | – | `MarginCallResponseTypeEnum.Dispute` (`event-common-enum.rosetta` line 97) through the generic margin call types. No repo-specific dispute construct *(name search)* |
 | R10 | Collateral transfer / settlement | **4** | yes | yes | yes | partial delivery only (quantity change, no transfer) | `Create_AssetTransfer`, `Create_CashTransfer`, `ResolveTransfer` (`event-common-func.rosetta` lines 674–798). `ResolveRepurchaseTransferInstruction` (line 1430) sets intent `Repurchase`. `Create_PartialDeliveryPrimitiveInstruction` (line 1746) and `Qualify_PartialDelivery` (`event-qualification-func.rosetta` line 454). `AssetLeg.deliveryMethod` and `AssetPayout` condition `SettlementCentreRequired` (`product-template-type.rosetta` lines 865–900). No repo sample output contains a `transferHistory` |
-| R11 | Substitution | **5** | yes | yes | yes | `repo-substitution-*` (5 files) | `Create_SubstitutionPrimitiveInstruction` (`event-common-func.rosetta` line 1919, `condition SecurityFinance`: collateral exists) and `Create_SubstitutionInstruction` (line 1947) replace `collateralPortfolio`. `SubstitutionProvisions` (`product-collateral-type.rosetta` line 41). `Qualify_Substitution` (`event-qualification-func.rosetta` line 821). The expected output is qualified as `Renegotiation`, not `Substitution` (finding O5) |
-| R12 | Repo interest / rate change / interim payment | **5** | yes | yes | yes | `on-demand-rate-change-*`, `on-demand-interest-payment-*` | `Create_OnDemandRateChangePrimitiveInstruction` (`event-common-func.rosetta` line 1533) with `Qualify_OnDemandRateChange` (the output is qualified `OnDemandRateChange`). `Create_OnDemandInterestPaymentPrimitiveInstruction` (line 2001) adds a payout leg (its output has no `eventQualifier`). Interest calculation: `InterestCashSettlementAmount` |
-| R13 | Term events: roll, repurchase, termination, pair-off, shaping | **5** | yes | yes | yes | `roll-*`, `cancellation-*`, `pair-off-*`, `shaping-*` | `Create_RollPrimitiveInstruction` (line 1466), `Create_PairOffInstruction` (line 1656), `ResolveRepurchaseTransferInstruction` (line 1430). `Qualify_Roll`, `Qualify_PairOff`, `Qualify_Shaping`, `Qualify_Repurchase` (`event-qualification-func.rosetta` lines 673, 417, 717, 637). No repurchase (maturity) sample found. Qualifiers found in outputs: `Cancellation` and `PairOff` only |
+| R11 | Substitution | **5** | yes | yes | yes | `repo-substitution-*` (5 files) | `Create_SubstitutionPrimitiveInstruction` (`event-common-func.rosetta` line 1919, `condition SecurityFinance`: collateral exists) and `Create_SubstitutionInstruction` (line 1947) replace `collateralPortfolio`. `SubstitutionProvisions` (`product-collateral-type.rosetta` line 41). `Qualify_Substitution` (`event-qualification-func.rosetta` line 821) |
+| R12 | Repo interest / rate change / interim payment | **5** | yes | yes | yes | `on-demand-rate-change-*`, `on-demand-interest-payment-*` | `Create_OnDemandRateChangePrimitiveInstruction` (`event-common-func.rosetta` line 1533) with `Qualify_OnDemandRateChange` (the output is qualified `OnDemandRateChange`). `Create_OnDemandInterestPaymentPrimitiveInstruction` (line 2001) adds a payout leg. Interest calculation: `InterestCashSettlementAmount` |
+| R13 | Term events: roll, repurchase, termination, pair-off, shaping | **5** | yes | yes | yes | `roll-*`, `cancellation-*`, `pair-off-*`, `shaping-*` | `Create_RollPrimitiveInstruction` (line 1466), `Create_PairOffInstruction` (line 1656), `ResolveRepurchaseTransferInstruction` (line 1430). `Qualify_Roll`, `Qualify_PairOff`, `Qualify_Shaping`, `Qualify_Repurchase` (`event-qualification-func.rosetta` lines 673, 417, 717, 637). No repurchase (maturity) sample found |
 | R14 | Buy/sell-back | **4** | yes | – | qualification | none | `AssetPayoutTradeTypeEnum.BuySellBack` (`product-template-enum.rosetta` line 33), `Qualify_BuySellBack` (`product-qualification-func.rosetta` line 1799). No sample sets `tradeType`, and no file under `resources/functions` contains `BuySellBack` |
-| R15 | Product qualification (repo) | **5** | – | – | qualification | all 12 repo outputs carry `RepurchaseAgreement` | `Qualify_RepurchaseAgreement` (`product-qualification-func.rosetta` line 1786) requires `payout only-element as InterestRatePayout` (line 1793). Open issue #4692 (finding O7) |
+| R15 | Product qualification (repo) | **5** | – | – | qualification | all 12 repo outputs carry `RepurchaseAgreement` | `Qualify_RepurchaseAgreement` (`product-qualification-func.rosetta` line 1786) requires `payout only-element as InterestRatePayout` (line 1793) |
 | R16 | Collateral inventory / positions | **2** | yes (generic) | – | – | – | Collateral is held per trade in `economicTerms -> collateral -> collateralPortfolio` (`CollateralPortfolio`, `CollateralPosition`, `CollateralBalance`, `event-common-type.rosetta` lines 732–755). No firm-level collateral inventory construct for repo |
 | R17 | Custody | **2** | settlement location only | – | – | – | `settlementTerms.securitySettlementCentre` (required by `AssetPayout` condition `SettlementCentreRequired`). `PartyRoleEnum.ThirdPartyCustodian` (`base-staticdata-party-enum.rosetta` line 118). The CSA custody types are not linked to repo |
 | R18 | Collateral allocation / optimisation | **0** | – | – | – | – | Nothing found *(name search)*. `Qualify_Allocation` and `Qualify_Shaping` concern trade allocation and splitting, not collateral allocation |
@@ -94,7 +93,7 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | S10 | Substitution | **4** | yes | yes | yes | no securities-lending substitution sample | `Create_SubstitutionPrimitiveInstruction` requires only `economicTerms -> collateral exists`, so a lending trade passes the condition *(inference: not tested for lending)*. Clause `ISLA_GMSLA_030` (4 variants) |
 | S11 | Lending fee and billing | **5** | yes | yes | – | `create-security-lending-invoice-func-*` | `Create_SecurityLendingInvoice`, `Create_BillingRecord`, `ResolveSecurityFinanceBillingAmount` (`event-common-func.rosetta` lines 1227–1390). `Create_BillingSummary` is `[codeImplementation]` |
 | S12 | Rebate on cash collateral | **2** | yes | – | – | none | `PriceSubTypeEnum.Rebate` (`observable-asset-enum.rosetta` line 293). The billing function is written over any `InterestRatePayout` and could compute a rebate *(inference)*. No sample sets `priceSubType` |
-| S13 | Return (full / partial) | **5** | yes | yes | yes | `full-return-*`, `part-return-*` | `Create_Return` (`event-common-func.rosetta` line 1392), `ReturnInstruction`, `Qualify_FullReturn` (`event-qualification-func.rosetta` line 215). Neither return output carries an `eventQualifier`. Issue #5109 (finding O5) |
+| S13 | Return (full / partial) | **5** | yes | yes | yes | `full-return-*`, `part-return-*` | `Create_Return` (`event-common-func.rosetta` line 1392), `ReturnInstruction`, `Qualify_FullReturn` (`event-qualification-func.rosetta` line 215) |
 | S14 | Recall | **2** | yes | – | – | – | `RecallProvision` (`product-template-type.rosetta` line 678), `UnscheduledTransferEnum.Recall`. No recall function, instruction or qualification *(name search)* |
 | S15 | Allocation / reallocation of loans | **5** | yes | yes | yes | `allocation-sec-lending-*`, `reallocation-pre-settled-*` | `Qualify_Allocation`, `Qualify_Reallocation`. This is trade allocation by an agent lender, not collateral allocation |
 | S16 | Collateral allocation / optimisation | **0** | – | – | – | – | Nothing found *(name search)* |
@@ -127,7 +126,7 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | # | Capability | Score | Types | Functions | Events | Samples / tests | Evidence |
 |---|---|---|---|---|---|---|---|
 | C1 | CCP rulebook / clearing agreement terms | **1** | enum only | – | – | – | `MasterAgreementTypeEnum` values `CMA`, `CCPClearingConditions`, `ISDAFIA_CDEA`, `JSCC` (`legaldocumentation-master-enum.rosetta` lines 6–43). No elections |
-| C2 | Trade clearing (context, not margin) | **5** | yes | yes | yes | `clearing-via-novation-*`, `clearing-via-open-offer-*` (repo), `business-event/clearing` | `ClearingInstruction` (`event-common-type.rosetta` line 616: `clearingParty`, `clearerParty1/2`). `Qualify_ClearedTrade`, `Qualify_OpenOfferClearedTrade` (`event-qualification-func.rosetta` lines 116, 396). The novation output has no `eventQualifier`, and the open-offer output has `OpenOfferClearedTrade` |
+| C2 | Trade clearing (context, not margin) | **5** | yes | yes | yes | `clearing-via-novation-*`, `clearing-via-open-offer-*` (repo), `business-event/clearing` | `ClearingInstruction` (`event-common-type.rosetta` line 616: `clearingParty`, `clearerParty1/2`). `Qualify_ClearedTrade`, `Qualify_OpenOfferClearedTrade` (`event-qualification-func.rosetta` lines 116, 396) |
 | C3 | Clearing member / client roles | **2** | yes | – | – | – | `PartyRoleEnum.ClearingOrganization`, `ClearingFirm`, `ClearingClient` (`base-staticdata-party-enum.rosetta` lines 75–78). `MarginCallBase.clearingBroker` (`event-common-type.rosetta` line 693) |
 | C4 | House / client account segregation | **2** | yes | – | – | – | `Account.accountType` with `AccountTypeEnum` House, Client, AggregateClient (`base-staticdata-party-type.rosetta` line 74, `base-staticdata-party-enum.rosetta` lines 26–29). Not linked to margin or collateral types. No omnibus / individual segregation or porting *(name search)* |
 | C5 | IM calculation (CCP methodology) | **0** | – | – | – | – | No SPAN, VaR or CCP model *(name search)*. `margin-schedule-func.rosetta` implements the ISDA standardised schedule (bilateral) |
@@ -166,67 +165,8 @@ S13). This is a higher level than the CSA operational rows, which stop at level 
 - both `.md` files for these events state that no transfers are generated;
 - no repo expected output contains a `transferHistory`.
 
-**O4 — The direction of the margin ratio is inconsistent between definition, function and sample.**
-
-- *Definition.* `marginPercentage` is defined with GMRA 2(bb) Margin Ratio = Market Value / Purchase Price, with
-  the example "a 104% requirement would be represented as 1.04" (`product-collateral-type.rosetta` lines 69–73).
-- *Function.* `SecurityFinanceCashSettlementAmount` sets cash = price × quantity × marginRatio (`event-common-func.rosetta`
-  line 854). When a haircut is given, it sets marginRatio = 1 / (1 − haircut) (lines 837–842).
-- *Sample.* `repo-execution-func-input.json` line 140 sets `marginPercentage: 0.99`, and the `.md` describes it as
-  "haircut of 1%". The resulting cash value is 10,075,000 × 0.99 = 9,974,250.
-
-*(Inference)* Under the GMRA definition, Purchase Price = Market Value / Margin Ratio. The multiply-by-ratio
-formula matches the sample only if 0.99 is read as (1 − haircut). The haircut branch then produces a cash amount
-larger than the collateral market value. Either the definition or one of the branches is inverted. This needs
-confirmation from the ICMA working group.
-
-Also observed: `docs/repurchase-agreement-representation.md` line 221 shows `"haircutPercentage" : 2`, which
-violates the condition `haircutPercentage < 1` (`product-collateral-type.rosetta` lines 77–79).
-
-**O5 — Several repo and lending event samples are not qualified as the event they demonstrate.** The
-`eventQualifier` values in the expected outputs were extracted with a script:
-
-| Expected output | `eventQualifier` |
-|---|---|
-| Reprice, adjustment, roll, partial delivery, shaping, on-demand interest payment, clearing via novation | none |
-| Full return and part return (securities lending) | none |
-| Repo substitution | `Renegotiation`, not `Substitution` |
-| Repo execution | `Execution` |
-| On-demand rate change | `OnDemandRateChange` |
-| Pair-off | `PairOff` |
-| Cancellation | `Cancellation` |
-
-Causes:
-
-- *Full return (observation).* `Qualify_FullReturn` (`event-qualification-func.rosetta` lines 215–240) and
-  `Qualify_Termination` (lines 841–860) both accept an event with no intent, a single quantity-change primitive,
-  quantity reduced to zero and state `Terminated`. Issue
-  [#5109](https://github.com/finos/common-domain-model/issues/5109) records this collision. It is open: it was
-  fixed in PR #5241 on 2026-10-01 and reopened for backport to 6.x and 7.x. The maintainers add that
-  `Qualify_FullReturn` looks for the `AssetPayout` on the collateral path, which is wrong for securities lending.
-- *Substitution (observation).* `Qualify_Substitution` (lines 821–839) requires a changed `payout` and the new
-  trade's effective date to equal the old termination date. `Create_SubstitutionInstruction` changes only
-  `collateralPortfolio` and the effective date (`event-common-func.rosetta` lines 1947–1963). The event
-  `Create_SubstitutionPrimitiveInstruction` builds (termsChange + quantityChange, no split) matches
-  `Qualify_Renegotiation` (lines 573–591).
-- *Reprice, adjustment, roll and the other unqualified outputs (not verified).* The test harness compares the
-  output with the expected file, so these outputs are the expected behaviour at 7.6.0 *(inference)*.
-
-**O6 — The repo and lending samples do not populate eligibility criteria.** In `repo-execution-func-input.json`
-(lines 136–140), `eligibleCollateral` contains only `treatment.valuationTreatment.marginPercentage`. The
-mandatory `collateralCriteria` (1..1) and `treatment.isIncluded` (1..1) of `EligibleCollateralCriteria` /
-`CollateralTreatment` (`product-collateral-type.rosetta` lines 112–150) are missing. The same file sets
-`collateralType: Cash` for a bond-collateralised repo, while `CollateralTypeEnum` describes its values as
-"Security Lending Trades against …" (`product-collateral-enum.rosetta` lines 6–9). Whether model validation flags
-the missing attributes in the test run was not checked.
-
-**O7 — Repo product qualification rejects repos with more than one interest payout.**
-`Qualify_RepurchaseAgreement` uses `payout only-element as InterestRatePayout`
-(`product-qualification-func.rosetta` line 1793). Issue
-[#4692](https://github.com/finos/common-domain-model/issues/4692) (open, opened 2026-05-07 by ICMA) proposes
-removing `only-element`. Repos with coupon, dividend or ad-hoc interest legs need it.
-`Create_OnDemandInterestPaymentPrimitiveInstruction` adds a payout leg (`event-common-func.rosetta` line 2001).
-*(Inference)* The after-trade of that event may therefore fail product qualification.
+Findings O4–O7 (defects in CDM sample data, event qualification and the margin-ratio calculation) were
+removed at the project owner's request on 2026-10-15. The remaining findings keep their numbers.
 
 **O8 — No family has a margin call or margin maintenance workflow.** CSA finding F2 applies to all four families:
 
@@ -294,8 +234,6 @@ trade, and repricing, adjustment, substitution, roll, rate change, return, settl
 primitive instructions with function test data. On those rows the two families score above the ISDA CSA. On the
 **agreement side** the picture is reversed: the GMRA type is empty, and the GMSLA elections and clause library
 exist but are not used by any function or sample. Margin maintenance (GMRA paragraph 4, GMSLA paragraph 5) is
-absent, as the margin call workflow is for the CSA. Several repo and lending event samples are not qualified as
-the event they demonstrate (issue #5109 and finding O5). The margin-ratio direction is inconsistent between
-definition, function and sample. **Triparty** arrangements appear only as a party role and a GMSLA clause, with
+absent, as the margin call workflow is for the CSA. **Triparty** arrangements appear only as a party role and a GMSLA clause, with
 generic eligibility baskets. **CCP** support covers clearing a trade and not cleared margin. Collateral
 allocation, optimisation and reconciliation are absent in all families.
