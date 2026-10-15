@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1010" role="img" aria-label="Repo under the ICMA GMRA: the seller delivers securities against the purchase price and later pays the repurchase price for equivalent securities. Margin is maintained on the net exposure across all transactions, by margin transfers or by repricing or adjusting single transactions. Boxes are coloured by how far CDM 7.6.0 models each element." font-family="Helvetica, Arial, sans-serif">
+<rect width="1240" height="1010" fill="#ffffff"/>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b424b"/></marker></defs>
+<rect x="20" y="20" width="210" height="895" rx="10" fill="#f3f5f8" stroke="#c9ced6"/>
+<text x="125.0" y="46" text-anchor="middle" font-size="15" font-weight="700" fill="#1d2228">Seller</text>
+<text x="125.0" y="64" text-anchor="middle" font-size="11" fill="#5b6470">delivers securities, borrows cash</text>
+<rect x="990" y="20" width="210" height="895" rx="10" fill="#f3f5f8" stroke="#c9ced6"/>
+<text x="1095.0" y="46" text-anchor="middle" font-size="15" font-weight="700" fill="#1d2228">Buyer</text>
+<text x="1095.0" y="64" text-anchor="middle" font-size="11" fill="#5b6470">pays cash, holds securities</text>
+<rect x="260" y="52" width="705" height="100" rx="8" fill="none" stroke="#9aa2ad" stroke-dasharray="2 3"/>
+<text x="955" y="68" text-anchor="end" font-size="10.5" letter-spacing="0.6" fill="#5b6470">AGREEMENT · signed by both parties</text>
+<rect x="260" y="190" width="705" height="112" rx="8" fill="none" stroke="#9aa2ad" stroke-dasharray="2 3"/>
+<text x="955" y="206" text-anchor="end" font-size="10.5" letter-spacing="0.6" fill="#5b6470">TRANSACTION · per repo trade</text>
+<text x="460" y="330" font-size="10.5" letter-spacing="0.6" fill="#5b6470">DAILY · MARGIN MAINTENANCE</text>
+<text x="275" y="530" font-size="10.5" letter-spacing="0.6" fill="#5b6470">DURING THE TERM</text>
+<text x="275" y="730" font-size="10.5" letter-spacing="0.6" fill="#5b6470">START AND END LEGS · DvP</text>
+<polyline points="350,138 350,216" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="357" y="182" text-anchor="start" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">governs</text>
+<polyline points="560,138 405,216" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="488" y="170" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">eligible securities</text>
+<polyline points="865,138 600,216" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="760" y="170" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">margin ratio</text>
+<polyline points="425,244 480,244" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<polyline points="650,244 705,244" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<polyline points="825,272 825,368 705,368" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="832" y="330" text-anchor="start" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">daily</text>
+<polyline points="455,368 415,368" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="435" y="361" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">or</text>
+<polyline points="345,340 345,272" fill="none" marker-end="url(#ah)" stroke-dasharray="6 4" stroke="#3b424b" stroke-width="1.4"/>
+<text x="352" y="315" text-anchor="start" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">new price or quantity</text>
+<polyline points="580,396 580,430" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="587" y="418" text-anchor="start" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">if above minimum</text>
+<polyline points="455,458 215,458" fill="none" marker-start="url(#ah)" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="335" y="451" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">either direction</text>
+<polyline points="705,458 1005,458" fill="none" marker-start="url(#ah)" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="855" y="451" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">either direction</text>
+<polyline points="215,573 455,573" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="335" y="566" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">new securities</text>
+<polyline points="705,573 1005,573" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="855" y="566" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">new securities</text>
+<polyline points="1005,658 705,658" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="855" y="651" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">coupon</text>
+<polyline points="455,658 215,658" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="335" y="651" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">equal amount</text>
+<polyline points="215,761 1005,761" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="610" y="754" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">purchased securities</text>
+<polyline points="1005,787 215,787" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="610" y="780" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">cash = purchase price</text>
+<polyline points="215,851 1005,851" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="610" y="844" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">cash = repurchase price</text>
+<polyline points="1005,877 215,877" fill="none" marker-end="url(#ah)" stroke="#3b424b" stroke-width="1.4"/>
+<text x="610" y="870" text-anchor="middle" font-size="11" fill="#2a2f36" stroke="#ffffff" stroke-width="4" paint-order="stroke">equivalent securities</text>
+<rect x="275" y="78" width="170" height="60" rx="6" fill="#ffffff" stroke="#7d8590" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="360.0" y="100.0" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">GMRA</text>
+<text x="360.0" y="113.5" text-anchor="middle" font-size="10.5" fill="#3d444d">Annex I elections</text>
+<text x="360.0" y="126.0" text-anchor="middle" font-size="10.5" fill="#3d444d">default and close-out</text>
+<rect x="505" y="78" width="210" height="60" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="610.0" y="106.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Eligible collateral</text>
+<text x="610.0" y="119.75" text-anchor="middle" font-size="10.5" fill="#3d444d">basket · criteria</text>
+<rect x="785" y="78" width="160" height="60" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="865.0" y="105.0" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Margin ratio /</text>
+<text x="865.0" y="120.0" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">haircut</text>
+<rect x="275" y="216" width="150" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="350.0" y="236.0" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Repo transaction</text>
+<text x="350.0" y="249.5" text-anchor="middle" font-size="10.5" fill="#3d444d">purchase and repurchase date</text>
+<text x="350.0" y="262.0" text-anchor="middle" font-size="10.5" fill="#3d444d">repo rate</text>
+<rect x="480" y="216" width="170" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="565.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Purchase price</text>
+<text x="565.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">market value ÷ margin ratio</text>
+<rect x="705" y="216" width="240" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="825.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Repurchase price</text>
+<text x="825.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">purchase price + interest at repo rate</text>
+<rect x="275" y="340" width="140" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="345.0" y="358.75" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Reprice /</text>
+<text x="345.0" y="373.75" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">adjustment</text>
+<text x="345.0" y="387.25" text-anchor="middle" font-size="10.5" fill="#3d444d">per transaction</text>
+<rect x="455" y="340" width="250" height="56" rx="6" fill="#ffffff" stroke="#7d8590" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="580.0" y="360.0" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Net exposure</text>
+<text x="580.0" y="373.5" text-anchor="middle" font-size="10.5" fill="#3d444d">all transactions: repurchase price</text>
+<text x="580.0" y="386.0" text-anchor="middle" font-size="10.5" fill="#3d444d">vs market value of securities</text>
+<rect x="35" y="430" width="180" height="56" rx="6" fill="#f7e7bf" stroke="#a0720f" stroke-width="1.5"/>
+<text x="125.0" y="456.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Margin transfer</text>
+<text x="125.0" y="469.75" text-anchor="middle" font-size="10.5" fill="#3d444d">cash or securities</text>
+<rect x="455" y="430" width="250" height="56" rx="6" fill="#f7e7bf" stroke="#a0720f" stroke-width="1.5"/>
+<text x="580.0" y="456.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Margin transfer</text>
+<text x="580.0" y="469.75" text-anchor="middle" font-size="10.5" fill="#3d444d">to the party with net exposure</text>
+<rect x="1005" y="430" width="180" height="56" rx="6" fill="#f7e7bf" stroke="#a0720f" stroke-width="1.5"/>
+<text x="1095.0" y="456.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Margin transfer</text>
+<text x="1095.0" y="469.75" text-anchor="middle" font-size="10.5" fill="#3d444d">cash or securities</text>
+<rect x="35" y="545" width="180" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="125.0" y="577.5" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Request substitution</text>
+<rect x="455" y="545" width="250" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="580.0" y="571.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Substitution</text>
+<text x="580.0" y="584.75" text-anchor="middle" font-size="10.5" fill="#3d444d">new collateral, same transaction</text>
+<rect x="1005" y="545" width="180" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="1095.0" y="571.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Accept</text>
+<text x="1095.0" y="584.75" text-anchor="middle" font-size="10.5" fill="#3d444d">return old securities</text>
+<rect x="35" y="630" width="180" height="56" rx="6" fill="#ffffff" stroke="#5b6470" stroke-width="1.5"/>
+<text x="125.0" y="662.5" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Receive income</text>
+<rect x="455" y="630" width="250" height="56" rx="6" fill="#ffffff" stroke="#5b6470" stroke-width="1.5"/>
+<text x="580.0" y="656.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Manufactured payment</text>
+<text x="580.0" y="669.75" text-anchor="middle" font-size="10.5" fill="#3d444d">coupon passed back to the seller</text>
+<rect x="1005" y="630" width="180" height="56" rx="6" fill="#ffffff" stroke="#5b6470" stroke-width="1.5"/>
+<text x="1095.0" y="656.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Receive coupon</text>
+<text x="1095.0" y="669.75" text-anchor="middle" font-size="10.5" fill="#3d444d">on purchased securities</text>
+<rect x="35" y="745" width="180" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="125.0" y="771.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Start leg</text>
+<text x="125.0" y="784.75" text-anchor="middle" font-size="10.5" fill="#3d444d">deliver securities</text>
+<rect x="1005" y="745" width="180" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="1095.0" y="771.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Start leg</text>
+<text x="1095.0" y="784.75" text-anchor="middle" font-size="10.5" fill="#3d444d">pay purchase price</text>
+<rect x="35" y="835" width="180" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="125.0" y="861.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Repurchase</text>
+<text x="125.0" y="874.75" text-anchor="middle" font-size="10.5" fill="#3d444d">pay repurchase price</text>
+<rect x="1005" y="835" width="180" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="1095.0" y="861.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Repurchase</text>
+<text x="1095.0" y="874.75" text-anchor="middle" font-size="10.5" fill="#3d444d">return equivalent securities</text>
+<text x="260" y="950" font-size="10.5" letter-spacing="0.6" fill="#5b6470">CDM 7.6.0 COVERAGE</text>
+<rect x="410" y="939" width="22" height="14" rx="3" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
+<text x="440" y="950" font-size="11" fill="#3d444d">executable: functions, events or samples</text>
+<rect x="680" y="939" width="22" height="14" rx="3" fill="#f7e7bf" stroke="#a0720f" stroke-width="1.5"/>
+<text x="710" y="950" font-size="11" fill="#3d444d">data types only</text>
+<rect x="820" y="939" width="22" height="14" rx="3" fill="#ffffff" stroke="#7d8590" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="850" y="950" font-size="11" fill="#3d444d">absent or enum only</text>
+<rect x="975" y="939" width="22" height="14" rx="3" fill="#ffffff" stroke="#5b6470" stroke-width="1.5"/>
+<text x="1005" y="950" font-size="11" fill="#3d444d">not scored</text>
+<text x="260" y="982" font-size="11" fill="#3d444d">Not shown: buy/sell-back, triparty (see the triparty diagram), close-out on default, rate changes and interim interest payments.</text>
+</svg>
