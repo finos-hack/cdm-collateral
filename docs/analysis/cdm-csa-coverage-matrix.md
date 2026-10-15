@@ -37,7 +37,7 @@ Output of `task-cdm-current-state-analysis` (goal `goal-data-cdm-taxonomies-spec
 | 1 | Agreement terms and elections (VM, IM, legacy, CTA/SA) | **5** | yes | – | – | 31 documents (JSON + PDF) | `legaldocumentation-csa-type.rosetta` (1,560 lines): `CreditSupportAgreementVariationMarginElections`, `CreditSupportAgreementInitialMarginElections`, `CreditSupportAgreementLegacyElections`, `CollateralTransferAgreementElections`, `SecurityAgreementElections`. Samples: `examples/samples/legal-agreements/Isda-Credit-Support-Annex-Docs/` — 10 VM, 10 legacy, 9 IM CSA/CSD, 1 CTA, 1 Security Agreement |
 | 2 | Amendment of agreement terms | **4** | yes | yes | yes | none found | `event-common-type.rosetta`: `AgreementPrimitiveInstruction`, `AgreementTermsChangeInstruction` (vm / im / legacy). `event-common-func.rosetta`: `Create_AgreementTermsChange`, `Create_VMCSATermsChange`, `Create_IMCSATermsChange`, `Create_LegacyCSATermsChange` |
 | 3 | Eligible collateral and eligibility criteria | **5** | yes | yes | – | 4 eligible collateral schedules + 1 expected-output example; no unit tests found | `product-collateral-type.rosetta`: `EligibleCollateralSpecification`, `EligibleCollateralCriteria`, `AllCriteria` / `AnyCriteria` / `NegativeCriteria`, issuer/asset/rating/maturity criteria. `product-collateral-func.rosetta`: `CheckEligibilityForProduct`, `CheckEligibilityByDetails`, `CheckCriteria`, `Check*`, `CloneEligibleCollateralWithChangedTreatment`. Docs: `docs/eligible-collateral-representation.md` (1,024 lines) |
-| 4 | Haircuts and valuation of posted collateral | **3** (defect) | yes | yes | – | none found | `CollateralValuationTreatment` (haircut, margin, FX, additional haircut). `PostedCreditSupportItemAmount` in `legaldocumentation-csa-func.rosetta` applies them — see Finding F1 |
+| 4 | Haircuts and valuation of posted collateral | **3** | yes | yes | – | none found | `CollateralValuationTreatment` (haircut, margin, FX, additional haircut). `PostedCreditSupportItemAmount` in `legaldocumentation-csa-func.rosetta` applies them |
 | 5 | Concentration limits | **2** | yes | – | – | none found | `ConcentrationLimit`, `ConcentrationLimitCriteria`, `AverageTradingVolume`. No function references `ConcentrationLimit` |
 | 6 | Threshold, MTA, Independent Amount, rounding | **3** | yes | yes (as inputs) | – | none found | Elections in CSA types; `IndependentAmount`, `CollateralRounding`; consumed by `DeliveryAmount` / `ReturnAmount` |
 | 7 | Credit Support Amount, Delivery Amount, Return Amount | **3** (IM only) | yes | yes | – | none found | `legaldocumentation-csa-func.rosetta`: `CreditSupportAmount`, `DeliveryAmount`, `ReturnAmount`, `UndisputedAdjustedPostedCreditSupportAmount`. All `docReference` cite ISDA 2018 IM CSA; no separate VM 2016 or legacy calculation found |
@@ -56,12 +56,6 @@ Output of `task-cdm-current-state-analysis` (goal `goal-data-cdm-taxonomies-spec
 | 20 | Regulatory reporting of margin | n/a | – | – | – | – | No reporting namespace in this repository; regulatory reporting rules are maintained in a separate project *(inference — to verify)* |
 
 ## Findings
-
-**F1 — Additional haircut reads the FX haircut field.** In `legaldocumentation-csa-func.rosetta` line 24,
-`PostedCreditSupportItemAmount` declares `alias additionalHaircutPercentage: postedItem -> fxHaircutPercentage`.
-`PostedCreditSupportItem` has a separate `additionalHaircutPercentage` field (`legaldocumentation-csa-type.rosetta`
-line 150). The FX haircut is therefore subtracted twice and the additional haircut is ignored. Present at 7.6.0 and
-at `master` `40ce355` (2026-10-15).
 
 **F2 — Margin call workflow is message types without lifecycle.** CDM can represent a margin call and its response
 (including the dispute response), but no function, primitive instruction or business event creates or processes
