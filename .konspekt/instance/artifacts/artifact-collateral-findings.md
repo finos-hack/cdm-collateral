@@ -12,10 +12,12 @@ provenance:
   timestamp: 2026-10-15T23:04:45Z
   confidence: 0.8
 createdAt: 2026-10-15T23:04:45Z
-updatedAt: 2026-10-15T23:07:41Z
+updatedAt: 2026-10-15T23:38:18Z
 ```
 # Findings — CDM for collateral management
 
 Consolidated findings from the CSA coverage matrix (F2, M1–M4) and the standards
 inventory (S1–S4), each with its evidence and status. Findings from the
 other-agreements analysis (O-series) are to be added when it is complete.
+
+Netting rows (and finding M5 in the findings document) were added on 2026-10-15 and are marked proposed in the document until reviewed.

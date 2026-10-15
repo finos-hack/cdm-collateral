@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T12:32:58Z
   confidence: 0.7
 createdAt: 2026-10-15T12:32:58Z
-updatedAt: 2026-10-15T22:41:02Z
+updatedAt: 2026-10-15T23:38:18Z
 ```
 # CDM coverage of collateral management — ISDA credit support documents
 
@@ -21,3 +21,5 @@ ISDA credit support documents: 20 capability rows scored 0–5 with file-level
 evidence, plus finding F2: margin call types are not used by any function or
 business event. Several rows rest on name search only, as marked in the
 document.
+
+Netting rows (and finding M5 in the findings document) were added on 2026-10-15 and are marked proposed in the document until reviewed.

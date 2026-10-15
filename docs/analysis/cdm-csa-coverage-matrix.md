@@ -55,6 +55,9 @@ Conceptual model of the same space, coloured by these scores: [`collateral-conce
 | 18 | Allocation and optimisation | **0** | – | – | – | – | Nothing found *(name search)* |
 | 19 | Portfolio / collateral reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
 | 20 | Regulatory reporting of margin | n/a | – | – | – | – | No reporting namespace in this repository; regulatory reporting rules are maintained in a separate project *(inference — to verify)* |
+| 21 | Exposure netting (trades in a netting set produce one exposure) *(added 2026-10-15, proposed)* | **0** | – | – | – | – | No netting-set type. `MarginCallExposure.overallExposure` holds an exposure that is already netted; no function aggregates trades into it *(name search for `Netting`)* |
+| 22 | Settlement netting of collateral movements *(added 2026-10-15, proposed)* | **1** | – | – | – | – | Nothing for collateral movements. For trades only, `StandardSettlementStyleEnum.Net` / `StandardAndNet` / `PairAndNet` (`product-common-settlement-enum.rosetta` lines 51–55) |
+| 23 | Close-out netting on default *(added 2026-10-15, proposed)* | **2** | elections | – | – | – | ISDA `MasterAgreement` elections `automaticEarlyTermination` and `terminationCurrency` (`legaldocumentation-master-isda-type.rosetta` lines 15–26); CSA `automaticSetOff` (`legaldocumentation-csa-type.rosetta` line 856). No close-out valuation or netting function. Trade compression (`Qualify_Compression`, `event-qualification-func.rosetta` line 139, with test data) reduces trades, not collateral, and is not scored here |
 
 ## Findings
 

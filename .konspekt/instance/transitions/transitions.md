@@ -65,3 +65,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-otheragreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | d34896439c2f6fe7c2d7428990964e715e081ddc | denisurusov |
 | artifact:artifact-collateral-flow-diagrams | review |  | proposed | 2026-10-15T23:35:01Z |  |  |
 | edge:e-prod-otheragreements-flows | review |  | proposed | 2026-10-15T23:35:01Z |  |  |
+| artifact:artifact-collateral-flow-diagrams | review | proposed | accepted | 2026-10-15T23:38:18Z | 452754ac69e311254b84437f01745b7ca9b4e0da | denisurusov |
+| edge:e-prod-otheragreements-flows | review | proposed | accepted | 2026-10-15T23:38:18Z | 452754ac69e311254b84437f01745b7ca9b4e0da | denisurusov |

@@ -4,7 +4,7 @@ name: Collateral flows by agreement family
 kind: diagram
 location: docs/analysis/collateral-flows.md
 version: cdm-7.6.0
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
   sourceRef: d34896439c2f6fe7c2d7428990964e715e081ddc
@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:35:01Z
   confidence: 0.75
 createdAt: 2026-10-15T23:35:01Z
-updatedAt: 2026-10-15T23:35:01Z
+updatedAt: 2026-10-15T23:38:18Z
 ```
 # Collateral flows by agreement family
 

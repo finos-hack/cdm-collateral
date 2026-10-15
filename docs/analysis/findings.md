@@ -18,6 +18,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | M2 | Concentration limits are modelled as types but no function evaluates them against a portfolio | Eligibility | open |
 | M3 | Delivery, Return and Credit Support Amount functions cite only the ISDA 2018 IM CSA; no separate VM 2016 or legacy calculation | Calculation | open |
 | M4 | ISDA SIMM is represented by elections and a result field only; no calculation | Calculation | open (likely out of scope) |
+| M5 | Exposure netting is not modelled in any agreement family: no netting-set type and no function nets trades into an exposure | Netting | proposed |
 | S1 | CDM has no mapping to ISO 20022 `colr` or FpML collateral process messages, which define the steps missing in F2 | Messaging standards | open |
 | S2 | ISO identifiers are cited inconsistently; DTI, FISN, ELF and IBAN are absent | Identifiers | open |
 | S3 | EMIR and CFTC eligible-collateral classes are encoded; Financial Collateral Directive and SFTR have no reference | Regulation | open |
@@ -79,6 +80,13 @@ No function cites the 2016 VM CSA or the legacy CSAs. Whether the IM functions c
 **Observation.** `GeneralSimmElections`, `SimmVersion`, `SimmCalculationCurrency`, `SimmException` and
 `MarginCallExposure.simmIMExposure` exist; no SIMM calculation exists. **Inference:** SIMM is licensed by ISDA, so
 this is likely outside CDM's scope. The SIMM input format (ISDA CRIF) is also not in CDM.
+
+### M5 — Exposure netting is not modelled *(proposed)*
+
+**Observation.** No `.rosetta` type or function represents a netting set or aggregates trades into one exposure
+(name search for `Netting`). `MarginCallExposure.overallExposure` holds an exposure that is already netted. Settlement
+netting and close-out netting exist only as GMSLA elections and ISDA Master Agreement / CSA elections, with no
+function. Rows 21–23 of the CSA matrix and R21–23, S23–25, T13–15, C14–16 of the other-agreements matrix.
 
 ### S1 — No mapping to collateral message standards
 

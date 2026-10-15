@@ -12,8 +12,7 @@ Output of `task-cdm-collateral-other-agreements` (goal `goal-data-cdm-taxonomies
   2. Securities lending: ISLA GMSLA (title transfer and pledge), including collateral schedules.
   3. Triparty collateral arrangements: triparty agents, collateral profiles and baskets, allocation by the agent.
   4. CCP and cleared margin: house and client IM and VM, clearing members, CCP margin calls.
-- **Status:** first pass. Not cross-checked against release notes or working group scope; the CSA matrix's method
-  step 5 is still to do.
+- **Status:** first pass, cross-checked against CDM issues on 2026-10-15 (see Cross-check).
 - **Evidence basis:**
   - Read in full: the Rune definitions named in the matrices (`legaldocumentation-master-*.rosetta`, the repo
     and securities-lending functions in `event-common-func.rosetta`, the qualification functions in
@@ -76,6 +75,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | R18 | Collateral allocation / optimisation | **0** | – | – | – | – | Nothing found *(name search)*. `Qualify_Allocation` and `Qualify_Shaping` concern trade allocation and splitting, not collateral allocation |
 | R19 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
 | R20 | Close-out / event of default | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default elections. No default-valuation function *(name search)* |
+| R21 | Exposure netting: net exposure across all transactions *(added 2026-10-15, proposed)* | **0** | – | – | – | – | As R6/R7: no Net Exposure type or function *(name search)* |
+| R22 | Settlement netting *(added 2026-10-15, proposed)* | **1** | – | – | – | pair-off samples (context) | No GMRA settlement-netting election (R1). Trade-level `StandardSettlementStyleEnum.Net` only. Pair-off (R13) closes offsetting transactions and is executable, but it is a trade event, not netting of collateral movements |
+| R23 | Close-out netting on default *(added 2026-10-15, proposed)* | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default or set-off elections (R1, R20) |
 
 ## Matrix 2 — Securities lending (ISLA GMSLA)
 
@@ -103,6 +105,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | S20 | Manufactured payments / corporate actions | **2** | yes | – | – | – | `AssetPayout.dividendTerms` (`DividendTerms`), clauses `ISLA_GMSLA_031`, `_032` |
 | S21 | Product qualification | **5** | – | – | qualification | all 9 lending outputs carry `SecurityLending` | `Qualify_SecurityLending` (`product-qualification-func.rosetta` line 1812) |
 | S22 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
+| S23 | Exposure netting: aggregation of loans and collateral *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | `CollateralSpecification` `Aggregation` / `AggregationSpecificationEnum` (GMSLA paragraph 5.4, `legaldocumentation-master-isla-*.rosetta`). Not used by any function (S6) |
+| S24 | Settlement netting of collateral deliveries *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | Election `nettingObligationsApply` (GMSLA paragraph 5.6, `legaldocumentation-master-isla-type.rosetta` line 18); clause `ISLA_GMSLA_008` "Settlement Netting" with 4 variants (`legaldocumentation-master-enum.rosetta` lines 193, 263–266). No function |
+| S25 | Close-out netting and set-off on default *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | `EventsOfDefault` (S19); clause `ISLA_GMSLA_042` "Set-Off" (`_01` No Contractual Set-Off, `_02` Simple Contractual Set-Off). No function |
 
 ## Matrix 3 — Triparty collateral arrangements
 
@@ -120,6 +125,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | T10 | Inventory / positions at agent | **2** | yes (generic) | – | – | – | `CollateralPortfolio` / `CollateralBalance` (with `CollateralStatusEnum`, `HaircutIndicatorEnum`) |
 | T11 | Custody | **1** | enum only | – | – | – | `PartyRoleEnum.ThirdPartyCustodian` |
 | T12 | Reporting / reconciliation by agent | **0** | – | – | – | – | Nothing found *(name search)* |
+| T13 | Exposure netting at the agent *(added 2026-10-15, proposed)* | **0** | – | – | – | – | Nothing found *(name search)* |
+| T14 | Settlement netting on agent books *(added 2026-10-15, proposed)* | **0** | – | – | – | – | Nothing found; triparty settlement itself is absent (T9) |
+| T15 | Close-out netting *(added 2026-10-15, proposed)* | – | – | – | – | – | Follows the underlying repo or lending agreement (R23, S25) |
 
 ## Matrix 4 — CCP / cleared margin
 
@@ -138,6 +146,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | C11 | Interest on cash collateral | **2** | generic | – | – | – | CSA collateral-interest types (`CollateralInterestParameters` and related). Not linked to CCP |
 | C12 | Default management / porting | **0** | – | – | – | – | Nothing found *(name search)* |
 | C13 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
+| C14 | Position netting by account *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | Positions and accounts (`Account.accountType` House / Client, C4) can represent netted positions per account; no function nets trades into margin positions *(name search)* |
+| C15 | Settlement netting of margin and cash flows *(added 2026-10-15, proposed)* | **0** | – | – | – | – | Nothing found *(name search)* |
+| C16 | Close-out netting on member default *(added 2026-10-15, proposed)* | **0** | – | – | – | – | As C12 |
 
 ## Findings
 
@@ -224,8 +235,29 @@ Return Amount).
 | Custody | 2 | 2 | 1 | 1 | – |
 | Allocation / optimisation (collateral) | 0 | 0 | 0 | 0 | – |
 | Reconciliation | 0 | 0 | 0 | 0 | 0 |
+| Exposure netting *(proposed)* | 0 | 0 | 2 | 0 | 2 |
+| Settlement netting *(proposed)* | 1 | 1 | 2 | 0 | 0 |
+| Close-out netting *(proposed)* | 2 | 0 | 2 | – | 0 |
 
 "–" means the row was not scored for that family.
+
+## Cross-check (method step 5)
+
+Checked 2026-10-15 against CDM issue searches on GitHub (`repo ICMA`, `ISLA`, `triparty`, `"initial margin" OR "CCP"
+margin`; first page of results each, read as rendered pages) and three issues read in full. The 7.x release notes were
+not reachable from this session. **No score changed.**
+
+| Row(s) | External evidence | Effect |
+|---|---|---|
+| S14 Recall | Issue [#4213](https://github.com/finos/common-domain-model/issues/4213) "Add support for the recall of lent securities": `RecallProvision` and a Recall transfer type, Major Release 7.0, closed 2026-02-09 (PRs #4335, #4348, #4384, #4397). The issue says recall processing is built on the existing `transfer` functionality | Confirms the types (`RecallProvision`, `UnscheduledTransferEnum.Recall`). Whether the generic transfer functions process a recall end to end was not tested *(to verify)*; score stays 2 |
+| S7 Marking to market | Issue [#3582](https://github.com/finos/common-domain-model/issues/3582): `ValuationScopeEnum` (Collateral, Trade) and a mandatory `Valuation.scope`, Major Release 7.0. The author states no function changes were expected | Collateral valuations from a mark to market can be recorded (`event-common-type.rosetta` line 287). No marking or call function; score stays 2 |
+| S1 GMSLA terms | Issue [#4991](https://github.com/finos/common-domain-model/issues/4991): renames `masterAgreementSchedule` to `clauseLibrarySchedule` and removes "the enumerations that were added specifically for the ISLA clause library and the GMSLA"; closed 2026-10-08 via PR #5227, milestone **Major Release 8.0** | 7.6.0 is unaffected. The `ISLA_GMSLA_*` identifiers cited in S1, S3, S18, S24 and S25 will not exist in CDM 8 |
+| S1, S9, S13 Lending lifecycle | Closed 7.0 issues: [#3967](https://github.com/finos/common-domain-model/issues/3967) GMSLA skeleton, [#4305](https://github.com/finos/common-domain-model/issues/4305) return of securities and collateral, [#3640](https://github.com/finos/common-domain-model/issues/3640) rate changes, [#3896](https://github.com/finos/common-domain-model/issues/3896) eligible collateral for securities lending, [#3871](https://github.com/finos/common-domain-model/issues/3871) lending fee and rebate rate types | Consistent with the scores; ISLA is the active contributor for this family |
+| R1–R23 Repo | The `repo ICMA` search returned no issue about GMRA terms, margin maintenance or net exposure. Open repo-related issues concern qualification and event model details | The GMRA agreement gap has no scheduled work |
+| T1–T15 Triparty | The `triparty` search returned 3 issues; none proposes triparty agreement or agent processing | Triparty has no scheduled work |
+| C1–C16 CCP | The margin search returned 9 issues, all closed; all margin work is the bilateral standardised IM schedule (#3060, #3161, #3740, #4186). None concerns CCP margin, clearing member accounts or default management | CCP margin has no scheduled work |
+
+Limits: only the first page of each search was read; issue bodies were read for #4213, #3582 and #4991 only.
 
 ## Summary
 
