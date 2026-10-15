@@ -32,3 +32,4 @@ excluded.
 | goal-data-cdm-taxonomies-specs | 9c2b9aa13312a3ba058e8c135fe7b254c04e6206 | .gitignore | 2026-10-15T12:22:58Z |
 | task-cdm-current-state-analysis | fd3851eb0240bbe8c060a51211f78cb1b831ff2c | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T12:33:08Z |
 | task-cdm-current-state-analysis | 40a0f83e827a49331a05c384224f7d0eb5c921ce | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T22:31:52Z |
+| task-cdm-current-state-analysis | 9c0a2e66faa60068677c123dbbf53b00aa79f96f | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T22:33:28Z |
