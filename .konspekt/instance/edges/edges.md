@@ -15,3 +15,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | id | kind | from | to | weight |
 |----|------|------|----|--------|
 | e-dec-adoption-setupiter | decomposes | node:goal-test-konspekt-adoption | node:task-repo-setup-iteration |  |
+| e-dec-cdmdata-cdmanalysis | decomposes | node:goal-data-cdm-taxonomies-specs | node:task-cdm-current-state-analysis |  |
