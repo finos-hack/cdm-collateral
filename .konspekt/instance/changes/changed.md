@@ -41,3 +41,4 @@ excluded.
 | task-cdm-current-state-analysis | b456d4825123a9b06e0fc78ce416a34c8c3d46bb | docs/analysis/collateral-conceptual-model.md | 2026-10-15T22:55:58Z |
 | task-cdm-current-state-analysis | b456d4825123a9b06e0fc78ce416a34c8c3d46bb | docs/analysis/collateral-conceptual-model.svg | 2026-10-15T22:55:58Z |
 | task-cdm-current-state-analysis | b456d4825123a9b06e0fc78ce416a34c8c3d46bb | docs/analysis/diagrams/collateral_model_svg.py | 2026-10-15T22:55:58Z |
+| task-collateral-standards-inventory | 126443d57bbe27cfda54892ad05c5fef1b0cf43f | docs/analysis/collateral-standards-inventory.md | 2026-10-15T23:01:30Z |
