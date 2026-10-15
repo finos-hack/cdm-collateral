@@ -51,3 +51,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdata-standards | review |  | accepted | 2026-10-15T22:58:45Z | 0b576199aa677a19c4afe85ad893f9bdd3466fb1 | denisurusov |
 | artifact:artifact-collateral-standards-inventory | review |  | proposed | 2026-10-15T23:01:30Z |  |  |
 | edge:e-prod-standards-inventory | review |  | proposed | 2026-10-15T23:01:30Z |  |  |
+| artifact:artifact-collateral-standards-inventory | review | proposed | accepted | 2026-10-15T23:04:45Z | 0b9a35394e1743e57cf2f659f3cf28d82b5d7a6d | denisurusov |
+| edge:e-prod-standards-inventory | review | proposed | accepted | 2026-10-15T23:04:45Z | 0b9a35394e1743e57cf2f659f3cf28d82b5d7a6d | denisurusov |
+| artifact:artifact-collateral-findings | review |  | proposed | 2026-10-15T23:04:45Z |  |  |
+| edge:e-prod-cdmanalysis-findings | review |  | proposed | 2026-10-15T23:04:45Z |  |  |
+| edge:e-prod-standards-findings | review |  | proposed | 2026-10-15T23:04:45Z |  |  |

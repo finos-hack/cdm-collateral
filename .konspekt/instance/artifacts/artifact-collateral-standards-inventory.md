@@ -4,7 +4,7 @@ name: Standards and specifications for collateral management
 kind: document
 location: docs/analysis/collateral-standards-inventory.md
 version: cdm-7.6.0
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
   sourceRef: 0b576199aa677a19c4afe85ad893f9bdd3466fb1
@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:01:30Z
   confidence: 0.7
 createdAt: 2026-10-15T23:01:30Z
-updatedAt: 2026-10-15T23:01:30Z
+updatedAt: 2026-10-15T23:04:45Z
 ```
 # Standards and specifications for collateral management
 
