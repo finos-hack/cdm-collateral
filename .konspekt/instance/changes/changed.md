@@ -57,3 +57,6 @@ excluded.
 | task-cdm-collateral-other-agreements | 7d25e532b3a7cd454fb5285d98eb063cd3fc13bf | docs/analysis/diagrams/collateral-flow-triparty.svg | 2026-10-15T23:35:01Z |
 | task-cdm-collateral-other-agreements | 7d25e532b3a7cd454fb5285d98eb063cd3fc13bf | docs/analysis/diagrams/collateral_diagrams.py | 2026-10-15T23:35:01Z |
 | task-cdm-collateral-other-agreements | 7d25e532b3a7cd454fb5285d98eb063cd3fc13bf | docs/analysis/diagrams/collateral_model_svg.py | 2026-10-15T23:35:01Z |
+| task-cdm-current-state-analysis | 02e52a683a7d0eb2dbb0eefe08a68cfcce3c10b3 | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T23:38:19Z |
+| task-cdm-collateral-other-agreements | 02e52a683a7d0eb2dbb0eefe08a68cfcce3c10b3 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-15T23:38:19Z |
+| task-cdm-collateral-other-agreements | 02e52a683a7d0eb2dbb0eefe08a68cfcce3c10b3 | docs/analysis/findings.md | 2026-10-15T23:38:19Z |
