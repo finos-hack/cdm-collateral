@@ -71,3 +71,5 @@ excluded.
 | task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral-flow-triparty.svg | 2026-10-15T23:43:17Z |
 | task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral_diagrams.py | 2026-10-15T23:43:17Z |
 | task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/findings.md | 2026-10-15T23:43:17Z |
+| task-collateral-taxonomy-inventory | 618be95ac2eba89ec2868690c2776aa3cdea2756 | docs/analysis/collateral-taxonomy-inventory.md | 2026-10-15T23:48:20Z |
+| task-collateral-taxonomy-inventory | 618be95ac2eba89ec2868690c2776aa3cdea2756 | docs/analysis/findings.md | 2026-10-15T23:48:20Z |
