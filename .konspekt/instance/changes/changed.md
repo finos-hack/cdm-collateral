@@ -44,3 +44,5 @@ excluded.
 | task-collateral-standards-inventory | 126443d57bbe27cfda54892ad05c5fef1b0cf43f | docs/analysis/collateral-standards-inventory.md | 2026-10-15T23:01:30Z |
 | task-cdm-current-state-analysis | 8af66c6a9a6a96c7b601af50c251feb29b0042ea | docs/analysis/findings.md | 2026-10-15T23:04:45Z |
 | task-collateral-standards-inventory | 8af66c6a9a6a96c7b601af50c251feb29b0042ea | docs/analysis/findings.md | 2026-10-15T23:04:45Z |
+| task-cdm-collateral-other-agreements | abf24679340a1d2a41b83157194d7581164f34c4 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-15T23:10:48Z |
+| task-cdm-collateral-other-agreements | abf24679340a1d2a41b83157194d7581164f34c4 | docs/analysis/findings.md | 2026-10-15T23:10:48Z |
