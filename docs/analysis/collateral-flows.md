@@ -7,6 +7,10 @@ objects in the middle. Box colours are the CDM 7.6.0 coverage scores from
 [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md): green = executable (score
 3–5), amber = data types only (2), dashed = absent or enum only (0–1), white = not scored.
 
+Each diagram has one netting box coloured by its netting score (finding M5): the netting set (CSA), net exposure
+(repo), the netting and aggregation elections (securities lending), the net exposure the agent covers (triparty), and
+positions netted per account (CCP).
+
 | Family | Parties | Margin mechanism | Negotiated? |
 |---|---|---|---|
 | [ISDA CSA](#isda-csa) | pledgor, secured party (roles swap under a two-way VM CSA) | call for the Delivery / Return Amount on the netted exposure | yes: agree, partly agree, dispute |

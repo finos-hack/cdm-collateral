@@ -50,7 +50,7 @@
 <text x="125.0" y="289.75" text-anchor="middle" font-size="10.5" fill="#3d444d">amount · term · profile</text>
 <rect x="500" y="250" width="220" height="56" rx="6" fill="#ffffff" stroke="#7d8590" stroke-width="1.5" stroke-dasharray="5 4"/>
 <text x="610.0" y="276.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Match instructions</text>
-<text x="610.0" y="289.75" text-anchor="middle" font-size="10.5" fill="#3d444d">exposure amount to cover</text>
+<text x="610.0" y="289.75" text-anchor="middle" font-size="10.5" fill="#3d444d">net exposure to cover</text>
 <rect x="1005" y="250" width="180" height="56" rx="6" fill="#ffffff" stroke="#5b6470" stroke-width="1.5"/>
 <text x="1095.0" y="276.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Instruct</text>
 <text x="1095.0" y="289.75" text-anchor="middle" font-size="10.5" fill="#3d444d">amount · term · profile</text>

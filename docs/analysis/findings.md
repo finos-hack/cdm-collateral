@@ -5,7 +5,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 
 | Source document | Task | Finding IDs |
 |---|---|---|
-| [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md) | `task-cdm-current-state-analysis` | F2, M1–M4 |
+| [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md) | `task-cdm-current-state-analysis` | F2, M1–M5 |
 | [`collateral-standards-inventory.md`](collateral-standards-inventory.md) | `task-collateral-standards-inventory` | S1–S4 |
 | [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) | `task-cdm-collateral-other-agreements` | O1–O3, O8–O12 |
 
@@ -18,7 +18,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | M2 | Concentration limits are modelled as types but no function evaluates them against a portfolio | Eligibility | open |
 | M3 | Delivery, Return and Credit Support Amount functions cite only the ISDA 2018 IM CSA; no separate VM 2016 or legacy calculation | Calculation | open |
 | M4 | ISDA SIMM is represented by elections and a result field only; no calculation | Calculation | open (likely out of scope) |
-| M5 | Exposure netting is not modelled in any agreement family: no netting-set type and no function nets trades into an exposure | Netting | proposed |
+| M5 | Exposure netting is not modelled in any agreement family: no netting-set type and no function nets trades into an exposure | Netting | open |
 | S1 | CDM has no mapping to ISO 20022 `colr` or FpML collateral process messages, which define the steps missing in F2 | Messaging standards | open |
 | S2 | ISO identifiers are cited inconsistently; DTI, FISN, ELF and IBAN are absent | Identifiers | open |
 | S3 | EMIR and CFTC eligible-collateral classes are encoded; Financial Collateral Directive and SFTR have no reference | Regulation | open |
@@ -81,7 +81,7 @@ No function cites the 2016 VM CSA or the legacy CSAs. Whether the IM functions c
 `MarginCallExposure.simmIMExposure` exist; no SIMM calculation exists. **Inference:** SIMM is licensed by ISDA, so
 this is likely outside CDM's scope. The SIMM input format (ISDA CRIF) is also not in CDM.
 
-### M5 — Exposure netting is not modelled *(proposed)*
+### M5 — Exposure netting is not modelled
 
 **Observation.** No `.rosetta` type or function represents a netting set or aggregates trades into one exposure
 (name search for `Netting`). `MarginCallExposure.overallExposure` holds an exposure that is already netted. Settlement

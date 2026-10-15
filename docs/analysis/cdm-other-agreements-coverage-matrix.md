@@ -75,9 +75,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | R18 | Collateral allocation / optimisation | **0** | – | – | – | – | Nothing found *(name search)*. `Qualify_Allocation` and `Qualify_Shaping` concern trade allocation and splitting, not collateral allocation |
 | R19 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
 | R20 | Close-out / event of default | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default elections. No default-valuation function *(name search)* |
-| R21 | Exposure netting: net exposure across all transactions *(added 2026-10-15, proposed)* | **0** | – | – | – | – | As R6/R7: no Net Exposure type or function *(name search)* |
-| R22 | Settlement netting *(added 2026-10-15, proposed)* | **1** | – | – | – | pair-off samples (context) | No GMRA settlement-netting election (R1). Trade-level `StandardSettlementStyleEnum.Net` only. Pair-off (R13) closes offsetting transactions and is executable, but it is a trade event, not netting of collateral movements |
-| R23 | Close-out netting on default *(added 2026-10-15, proposed)* | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default or set-off elections (R1, R20) |
+| R21 | Exposure netting: net exposure across all transactions *(added 2026-10-15)* | **0** | – | – | – | – | As R6/R7: no Net Exposure type or function *(name search)* |
+| R22 | Settlement netting *(added 2026-10-15)* | **1** | – | – | – | pair-off samples (context) | No GMRA settlement-netting election (R1). Trade-level `StandardSettlementStyleEnum.Net` only. Pair-off (R13) closes offsetting transactions and is executable, but it is a trade event, not netting of collateral movements |
+| R23 | Close-out netting on default *(added 2026-10-15)* | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default or set-off elections (R1, R20) |
 
 ## Matrix 2 — Securities lending (ISLA GMSLA)
 
@@ -105,9 +105,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | S20 | Manufactured payments / corporate actions | **2** | yes | – | – | – | `AssetPayout.dividendTerms` (`DividendTerms`), clauses `ISLA_GMSLA_031`, `_032` |
 | S21 | Product qualification | **5** | – | – | qualification | all 9 lending outputs carry `SecurityLending` | `Qualify_SecurityLending` (`product-qualification-func.rosetta` line 1812) |
 | S22 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
-| S23 | Exposure netting: aggregation of loans and collateral *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | `CollateralSpecification` `Aggregation` / `AggregationSpecificationEnum` (GMSLA paragraph 5.4, `legaldocumentation-master-isla-*.rosetta`). Not used by any function (S6) |
-| S24 | Settlement netting of collateral deliveries *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | Election `nettingObligationsApply` (GMSLA paragraph 5.6, `legaldocumentation-master-isla-type.rosetta` line 18); clause `ISLA_GMSLA_008` "Settlement Netting" with 4 variants (`legaldocumentation-master-enum.rosetta` lines 193, 263–266). No function |
-| S25 | Close-out netting and set-off on default *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | `EventsOfDefault` (S19); clause `ISLA_GMSLA_042` "Set-Off" (`_01` No Contractual Set-Off, `_02` Simple Contractual Set-Off). No function |
+| S23 | Exposure netting: aggregation of loans and collateral *(added 2026-10-15)* | **2** | yes | – | – | – | `CollateralSpecification` `Aggregation` / `AggregationSpecificationEnum` (GMSLA paragraph 5.4, `legaldocumentation-master-isla-*.rosetta`). Not used by any function (S6) |
+| S24 | Settlement netting of collateral deliveries *(added 2026-10-15)* | **2** | yes | – | – | – | Election `nettingObligationsApply` (GMSLA paragraph 5.6, `legaldocumentation-master-isla-type.rosetta` line 18); clause `ISLA_GMSLA_008` "Settlement Netting" with 4 variants (`legaldocumentation-master-enum.rosetta` lines 193, 263–266). No function |
+| S25 | Close-out netting and set-off on default *(added 2026-10-15)* | **2** | yes | – | – | – | `EventsOfDefault` (S19); clause `ISLA_GMSLA_042` "Set-Off" (`_01` No Contractual Set-Off, `_02` Simple Contractual Set-Off). No function |
 
 ## Matrix 3 — Triparty collateral arrangements
 
@@ -125,9 +125,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | T10 | Inventory / positions at agent | **2** | yes (generic) | – | – | – | `CollateralPortfolio` / `CollateralBalance` (with `CollateralStatusEnum`, `HaircutIndicatorEnum`) |
 | T11 | Custody | **1** | enum only | – | – | – | `PartyRoleEnum.ThirdPartyCustodian` |
 | T12 | Reporting / reconciliation by agent | **0** | – | – | – | – | Nothing found *(name search)* |
-| T13 | Exposure netting at the agent *(added 2026-10-15, proposed)* | **0** | – | – | – | – | Nothing found *(name search)* |
-| T14 | Settlement netting on agent books *(added 2026-10-15, proposed)* | **0** | – | – | – | – | Nothing found; triparty settlement itself is absent (T9) |
-| T15 | Close-out netting *(added 2026-10-15, proposed)* | – | – | – | – | – | Follows the underlying repo or lending agreement (R23, S25) |
+| T13 | Exposure netting at the agent *(added 2026-10-15)* | **0** | – | – | – | – | Nothing found *(name search)* |
+| T14 | Settlement netting on agent books *(added 2026-10-15)* | **0** | – | – | – | – | Nothing found; triparty settlement itself is absent (T9) |
+| T15 | Close-out netting *(added 2026-10-15)* | – | – | – | – | – | Follows the underlying repo or lending agreement (R23, S25) |
 
 ## Matrix 4 — CCP / cleared margin
 
@@ -146,9 +146,9 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | C11 | Interest on cash collateral | **2** | generic | – | – | – | CSA collateral-interest types (`CollateralInterestParameters` and related). Not linked to CCP |
 | C12 | Default management / porting | **0** | – | – | – | – | Nothing found *(name search)* |
 | C13 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
-| C14 | Position netting by account *(added 2026-10-15, proposed)* | **2** | yes | – | – | – | Positions and accounts (`Account.accountType` House / Client, C4) can represent netted positions per account; no function nets trades into margin positions *(name search)* |
-| C15 | Settlement netting of margin and cash flows *(added 2026-10-15, proposed)* | **0** | – | – | – | – | Nothing found *(name search)* |
-| C16 | Close-out netting on member default *(added 2026-10-15, proposed)* | **0** | – | – | – | – | As C12 |
+| C14 | Position netting by account *(added 2026-10-15)* | **2** | yes | – | – | – | Positions and accounts (`Account.accountType` House / Client, C4) can represent netted positions per account; no function nets trades into margin positions *(name search)* |
+| C15 | Settlement netting of margin and cash flows *(added 2026-10-15)* | **0** | – | – | – | – | Nothing found *(name search)* |
+| C16 | Close-out netting on member default *(added 2026-10-15)* | **0** | – | – | – | – | As C12 |
 
 ## Findings
 
@@ -235,9 +235,9 @@ Return Amount).
 | Custody | 2 | 2 | 1 | 1 | – |
 | Allocation / optimisation (collateral) | 0 | 0 | 0 | 0 | – |
 | Reconciliation | 0 | 0 | 0 | 0 | 0 |
-| Exposure netting *(proposed)* | 0 | 0 | 2 | 0 | 2 |
-| Settlement netting *(proposed)* | 1 | 1 | 2 | 0 | 0 |
-| Close-out netting *(proposed)* | 2 | 0 | 2 | – | 0 |
+| Exposure netting | 0 | 0 | 2 | 0 | 2 |
+| Settlement netting | 1 | 1 | 2 | 0 | 0 |
+| Close-out netting | 2 | 0 | 2 | – | 0 |
 
 "–" means the row was not scored for that family.
 

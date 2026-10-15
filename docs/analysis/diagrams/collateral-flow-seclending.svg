@@ -60,8 +60,9 @@
 <text x="610.0" y="106.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Collateral schedule</text>
 <text x="610.0" y="119.75" text-anchor="middle" font-size="10.5" fill="#3d444d">eligible collateral · margin</text>
 <rect x="785" y="78" width="160" height="60" rx="6" fill="#f7e7bf" stroke="#a0720f" stroke-width="1.5"/>
-<text x="865.0" y="106.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Netting election</text>
-<text x="865.0" y="119.75" text-anchor="middle" font-size="10.5" fill="#3d444d">paragraph 5.6</text>
+<text x="865.0" y="98.75" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Netting and</text>
+<text x="865.0" y="113.75" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">aggregation</text>
+<text x="865.0" y="127.25" text-anchor="middle" font-size="10.5" fill="#3d444d">para 5.4 · 5.6 elections</text>
 <rect x="275" y="216" width="150" height="56" rx="6" fill="#d8eedd" stroke="#2e7a47" stroke-width="1.5"/>
 <text x="350.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Loan</text>
 <text x="350.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">securities · term or open</text>

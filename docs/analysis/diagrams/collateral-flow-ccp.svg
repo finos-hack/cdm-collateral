@@ -50,8 +50,8 @@
 <text x="340.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Cleared trades</text>
 <text x="340.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">novation or open offer</text>
 <rect x="440" y="216" width="160" height="56" rx="6" fill="#f7e7bf" stroke="#a0720f" stroke-width="1.5"/>
-<text x="520.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Positions</text>
-<text x="520.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">house · client accounts</text>
+<text x="520.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Positions (netted)</text>
+<text x="520.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">per house · client account</text>
 <rect x="635" y="216" width="130" height="56" rx="6" fill="#ffffff" stroke="#7d8590" stroke-width="1.5" stroke-dasharray="5 4"/>
 <text x="700.0" y="242.25" text-anchor="middle" font-size="13" font-weight="600" fill="#1d2228">Initial margin</text>
 <text x="700.0" y="255.75" text-anchor="middle" font-size="10.5" fill="#3d444d">CCP model (SPAN, VaR)</text>

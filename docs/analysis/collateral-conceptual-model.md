@@ -14,7 +14,9 @@ segregated custodian accounts.
 ## The four flows
 
 - **Netting.** The master agreement puts all trades into one netting set. The calculation agent nets their
-  mark-to-market into one exposure (VM), or computes IM with SIMM or the standardised schedule.
+  mark-to-market into one exposure (VM), or computes IM with SIMM or the standardised schedule. CDM has no netting-set
+  type (finding M5), so the netting set is shown as not modelled; the master agreement's close-out netting
+  elections exist as data types.
 - **Calling and negotiating.** Exposure plus the Independent Amount, minus the threshold and the current collateral
   balance, gives a Delivery or Return Amount. If it reaches the MTA, the secured party issues a call. The pledgor
   agrees in full, agrees in part, or disputes. A disputed part goes through reconciliation and recalculation, then a
