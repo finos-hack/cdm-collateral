@@ -31,6 +31,8 @@ matrix). Asset selection and portfolio reconciliation are not modelled (dashed).
 
 ## Not shown
 
+Also stated as a footnote on the diagram.
+
 - Triparty agents, CCP margin, repo (GMRA) and securities lending (GMSLA): `task-cdm-collateral-other-agreements`.
 - Reuse or rehypothecation of posted collateral, close-out on default, and regulatory reporting.
 

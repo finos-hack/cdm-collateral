@@ -4,7 +4,7 @@
 import sys
 from xml.sax.saxutils import escape as e
 
-W, H = 1240, 900
+W, H = 1240, 920
 B = {}  # id -> (x, y, w, h, [title lines], [sub lines], cls)
 def box(i, x, y, w, h, title, sub, cls): B[i] = (x, y, w, h, title, sub, cls)
 
@@ -119,6 +119,7 @@ def render(themed):
         o.append(f'<rect x="{x}" y="857" width="22" height="14" rx="3" ' + st(f'b {cls}', f'fill="{f}" stroke="{s}" stroke-width="1.5"{da}') + '/>')
         o.append(f'<text x="{x+30}" y="868" ' + st('bs', 'font-size="11" fill="#3d444d"') + f'>{e(t)}</text>')
         x = {0: 680, 1: 820, 2: 945}.get(items.index((cls, t)), x)
+    o.append(f'<text x="260" y="900" ' + st('bs', 'font-size="11" fill="#3d444d"') + '>Not shown: triparty agents, CCP margin, repo (GMRA), securities lending (GMSLA), rehypothecation of posted collateral, close-out on default, regulatory reporting.</text>')
     o.append('</svg>')
     return '\n'.join(o)
 

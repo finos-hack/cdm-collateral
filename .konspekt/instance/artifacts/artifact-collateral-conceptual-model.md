@@ -4,7 +4,7 @@ name: Collateral management conceptual model — ISDA credit support documents
 kind: diagram
 location: docs/analysis/collateral-conceptual-model.md
 version: cdm-7.6.0
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
   sourceRef: c9438884b4310b3f704e8adcf4975d5340fe6f46
@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T22:52:16Z
   confidence: 0.75
 createdAt: 2026-10-15T22:52:16Z
-updatedAt: 2026-10-15T22:52:16Z
+updatedAt: 2026-10-15T22:55:58Z
 ```
 # Collateral management conceptual model — ISDA credit support documents
 

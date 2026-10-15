@@ -42,3 +42,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-cdmanalysis-csamatrix | review | proposed | accepted | 2026-10-15T22:33:21Z | d0ddd12ef8783447c7d207f5e33017925a95e138 | denisurusov |
 | artifact:artifact-collateral-conceptual-model | review |  | proposed | 2026-10-15T22:52:16Z |  |  |
 | edge:e-prod-cdmanalysis-conceptmodel | review |  | proposed | 2026-10-15T22:52:16Z |  |  |
+| artifact:artifact-collateral-conceptual-model | review | proposed | accepted | 2026-10-15T22:55:58Z | 94293e8ad90754de7d8477febce19fe2f106917c | denisurusov |
+| edge:e-prod-cdmanalysis-conceptmodel | review | proposed | accepted | 2026-10-15T22:55:58Z | 94293e8ad90754de7d8477febce19fe2f106917c | denisurusov |
+| node:task-cdm-current-state-analysis | status | open | resolved | 2026-10-15T22:55:58Z | 94293e8ad90754de7d8477febce19fe2f106917c | denisurusov |
