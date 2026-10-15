@@ -2,7 +2,7 @@
 id: task-cdm-collateral-other-agreements
 type: task
 title: "CDM collateral analysis: other agreement families"
-status: open
+status: active
 review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
@@ -10,7 +10,7 @@ provenance:
   contentHash: e4b447e13cef62282de0670bc02b310467ef5d04
   timestamp: 2026-10-15T12:32:58Z
 createdAt: 2026-10-15T12:32:58Z
-updatedAt: 2026-10-15T12:32:58Z
+updatedAt: 2026-10-15T22:58:45Z
 ```
 # Task: CDM collateral analysis — other agreement families
 
