@@ -67,6 +67,22 @@ at `master` `40ce355` (2026-10-15).
 (including the dispute response), but no function, primitive instruction or business event creates or processes
 them. The agreement side (rows 1–3) and the IM calculation side (rows 7–8) are not connected to the call workflow.
 
+F2 laid out as workflow steps:
+
+| Workflow step | CDM can represent it | CDM function that produces it | Business event that carries it |
+|---|---|---|---|
+| Agreement terms (threshold, MTA, rounding) | yes (CSA elections) | n/a | yes (`Create_*CSATermsChange`) |
+| Exposure calculation | yes (`MarginCallExposure`) | **no** | **no** |
+| Call amount (Delivery/Return Amount) | yes | yes (`DeliveryAmount`, `ReturnAmount`, IM 2018 only) | **no** |
+| Margin call issued | yes (`MarginCallIssuance`) | **no** | **no** |
+| Response: agree, partially agree, dispute | yes (`MarginCallResponse`) | **no** | **no** |
+| Dispute resolution | elections only | **no** | **no** |
+| Collateral transfer | yes (`CollateralPosition` + direction) | **no** link from the response | **no** |
+| Updated collateral balance | yes (`CollateralBalance`) | **no** | **no** |
+
+Only the agreement terms and the Delivery/Return Amount calculation have executable logic, and the calculation
+output is not passed into a call.
+
 ## Summary
 
 CDM is strongest on the **documentation side** of the CSA (terms, amendments, eligibility, sample agreements) and has
