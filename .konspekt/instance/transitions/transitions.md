@@ -69,3 +69,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-otheragreements-flows | review | proposed | accepted | 2026-10-15T23:38:18Z | 452754ac69e311254b84437f01745b7ca9b4e0da | denisurusov |
 | node:task-cdm-collateral-other-agreements | status | active | resolved | 2026-10-15T23:43:16Z | 49ae9555adc7a648e1096930260e3933c2ea902a | denisurusov |
 | node:task-collateral-standards-inventory | status | active | resolved | 2026-10-15T23:43:16Z | 49ae9555adc7a648e1096930260e3933c2ea902a | denisurusov |
+| node:task-collateral-taxonomy-inventory | review |  | accepted | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
+| node:task-collateral-taxonomy-inventory | status |  | active | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
+| edge:e-dec-cdmdata-taxonomy | review |  | accepted | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
