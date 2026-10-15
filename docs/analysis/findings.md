@@ -7,6 +7,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 |---|---|---|
 | [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md) | `task-cdm-current-state-analysis` | F2, M1–M5 |
 | [`collateral-standards-inventory.md`](collateral-standards-inventory.md) | `task-collateral-standards-inventory` | S1–S4 |
+| [`collateral-taxonomy-inventory.md`](collateral-taxonomy-inventory.md) | `task-collateral-taxonomy-inventory` | TX1–TX5 (proposed) |
 | [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) | `task-cdm-collateral-other-agreements` | O1–O3, O8–O12 |
 
 ## Summary
@@ -23,6 +24,11 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | S2 | ISO identifiers are cited inconsistently; DTI, FISN, ELF and IBAN are absent | Identifiers | open |
 | S3 | EMIR and CFTC eligible-collateral classes are encoded; Financial Collateral Directive and SFTR have no reference | Regulation | open |
 | S4 | ISDA Collateral Asset Definitions are at the 2003 edition | Taxonomy | open |
+| TX1 | Taxonomies mix closed enums, open strings and one FpML coding scheme; closed enums need a release to change, open strings cannot be validated | Taxonomy | proposed |
+| TX2 | Six FpML collateral reason code lists (and four other collateral code lists) are bundled but referenced by no model element | Taxonomy | proposed |
+| TX3 | Credit ratings have no scale or order; `CheckAgencyRating` compares notations by string equality, so minimum-rating criteria cannot be evaluated | Taxonomy | proposed |
+| TX4 | Eligible assets can be classified by four taxonomies (CDM asset types, ISDA Collateral Asset Definitions, EMIR/CFTC classes, CFI) with no mapping between them | Taxonomy | proposed |
+| TX5 | Event taxonomies have no margin call, collateral transfer or (non-securities-finance) substitution entry | Taxonomy | proposed |
 | O1 | GMRA terms cannot be represented: `GlobalMasterRepoAgreement` has no attributes and the clause identifiers are ISLA-only | Repo agreement | open |
 | O2 | GMSLA elections and clause library are modelled but used by no function, amendment instruction or sample | Sec lending agreement | open |
 | O3 | Repo and lending trade lifecycle events are executable, but the collateral calculation behind them (GMRA Net Exposure, GMSLA marking) is absent | Repo, sec lending | open |
@@ -118,6 +124,10 @@ have no reference. Regulatory reporting rules are maintained outside the CDM rep
 
 **Observation.** `CollateralAssetDefinitionsEnum` carries `docReference ISDA CollateralAssetDefinitions_2003`.
 Whether a later edition exists was not checked.
+
+### TX1–TX5 — Taxonomies *(proposed)*
+
+Evidence for each is in [`collateral-taxonomy-inventory.md`](collateral-taxonomy-inventory.md) § Findings.
 
 ### O1–O3, O8–O12 — Other agreement families
 

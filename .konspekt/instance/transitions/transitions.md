@@ -72,3 +72,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-collateral-taxonomy-inventory | review |  | accepted | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
 | node:task-collateral-taxonomy-inventory | status |  | active | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
 | edge:e-dec-cdmdata-taxonomy | review |  | accepted | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
+| artifact:artifact-collateral-taxonomy-inventory | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
+| edge:e-prod-taxonomy-inventory | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
+| edge:e-prod-taxonomy-findings | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
