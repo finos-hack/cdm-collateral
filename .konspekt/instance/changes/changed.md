@@ -30,3 +30,4 @@ excluded.
 | task-repo-setup-iteration | 2bd570ec6bd32ebcff5a6168fd01260b87fed17f | .konspekt/lib/conformance.mjs | 2026-10-15T02:15:43Z |
 | task-repo-setup-iteration | 2bd570ec6bd32ebcff5a6168fd01260b87fed17f | .konspekt/spec/personas/engineer/AGENTS.md | 2026-10-15T02:15:43Z |
 | goal-data-cdm-taxonomies-specs | 9c2b9aa13312a3ba058e8c135fe7b254c04e6206 | .gitignore | 2026-10-15T12:22:58Z |
+| task-cdm-current-state-analysis | fd3851eb0240bbe8c060a51211f78cb1b831ff2c | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T12:33:08Z |
