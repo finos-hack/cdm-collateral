@@ -33,3 +33,8 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-cdm-current-state-analysis | review |  | accepted | 2026-10-15T12:24:36Z | c06f71f1e33136d841554b3edcac893f013a932a | denisurusov |
 | node:task-cdm-current-state-analysis | status |  | open | 2026-10-15T12:24:36Z | c06f71f1e33136d841554b3edcac893f013a932a | denisurusov |
 | edge:e-dec-cdmdata-cdmanalysis | review |  | accepted | 2026-10-15T12:24:36Z | c06f71f1e33136d841554b3edcac893f013a932a | denisurusov |
+| node:task-cdm-collateral-other-agreements | review |  | accepted | 2026-10-15T12:32:58Z | e4b447e13cef62282de0670bc02b310467ef5d04 | denisurusov |
+| node:task-cdm-collateral-other-agreements | status |  | open | 2026-10-15T12:32:58Z | e4b447e13cef62282de0670bc02b310467ef5d04 | denisurusov |
+| edge:e-dec-cdmdata-otheragreements | review |  | accepted | 2026-10-15T12:32:58Z | e4b447e13cef62282de0670bc02b310467ef5d04 | denisurusov |
+| artifact:artifact-cdm-csa-coverage-matrix | review |  | proposed | 2026-10-15T12:32:58Z |  |  |
+| edge:e-prod-cdmanalysis-csamatrix | review |  | proposed | 2026-10-15T12:32:58Z |  |  |
