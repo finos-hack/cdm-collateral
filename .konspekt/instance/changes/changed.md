@@ -73,3 +73,6 @@ excluded.
 | task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/findings.md | 2026-10-15T23:43:17Z |
 | task-collateral-taxonomy-inventory | 618be95ac2eba89ec2868690c2776aa3cdea2756 | docs/analysis/collateral-taxonomy-inventory.md | 2026-10-15T23:48:20Z |
 | task-collateral-taxonomy-inventory | 618be95ac2eba89ec2868690c2776aa3cdea2756 | docs/analysis/findings.md | 2026-10-15T23:48:20Z |
+| task-collateral-taxonomy-inventory | 9c14ce38c4382c60388ede870e509474455da0d7 | docs/analysis/defects.md | 2026-10-15T23:55:51Z |
+| task-collateral-taxonomy-inventory | 9c14ce38c4382c60388ede870e509474455da0d7 | docs/analysis/collateral-asset-taxonomy-mapping.md | 2026-10-15T23:55:51Z |
+| task-collateral-taxonomy-inventory | 9c14ce38c4382c60388ede870e509474455da0d7 | docs/analysis/findings.md | 2026-10-15T23:55:51Z |
