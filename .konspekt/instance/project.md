@@ -7,6 +7,8 @@ summary:
   pinned: false
   updatedAt: 2026-10-14T23:04:53Z
 personas: [engineer]
+binding: required
+basis: proposed
 createdAt: 2026-10-14T23:04:53Z
 updatedAt: 2026-10-14T23:04:53Z
 ```

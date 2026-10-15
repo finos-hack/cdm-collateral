@@ -1,0 +1,5 @@
+{
+  "baseline": "e4a26242a9444746da606105c0d6542edcb59779",
+  "note": "Start the binding audit after e4a2624, the last commit before the audit was installed (task-repo-setup-iteration). Commits 407c79e and e4a2624 changed files outside the kit paths (root lib/ and spec/, .idea/, docs/, AGENTS.md) before any changed-code log existed, so nothing could bind them.",
+  "allow": []
+}
