@@ -60,3 +60,14 @@ excluded.
 | task-cdm-current-state-analysis | 02e52a683a7d0eb2dbb0eefe08a68cfcce3c10b3 | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T23:38:19Z |
 | task-cdm-collateral-other-agreements | 02e52a683a7d0eb2dbb0eefe08a68cfcce3c10b3 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-15T23:38:19Z |
 | task-cdm-collateral-other-agreements | 02e52a683a7d0eb2dbb0eefe08a68cfcce3c10b3 | docs/analysis/findings.md | 2026-10-15T23:38:19Z |
+| task-cdm-current-state-analysis | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-15T23:43:17Z |
+| task-cdm-current-state-analysis | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/collateral-conceptual-model.md | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/collateral-flows.md | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral-flow-ccp.svg | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral-flow-csa.svg | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral-flow-repo.svg | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral-flow-seclending.svg | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral-flow-triparty.svg | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/diagrams/collateral_diagrams.py | 2026-10-15T23:43:17Z |
+| task-cdm-collateral-other-agreements | 738c6296a86535f717a2522702ce814ceabfeb00 | docs/analysis/findings.md | 2026-10-15T23:43:17Z |
