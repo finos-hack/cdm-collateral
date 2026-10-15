@@ -4,7 +4,7 @@ name: Taxonomies in collateral data
 kind: document
 location: docs/analysis/collateral-taxonomy-inventory.md
 version: cdm-7.6.0
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
   sourceRef: 342fbd7743d6ba622c0f9c0adac070fd2d538d07
@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:48:20Z
   confidence: 0.75
 createdAt: 2026-10-15T23:48:20Z
-updatedAt: 2026-10-15T23:48:20Z
+updatedAt: 2026-10-15T23:55:50Z
 ```
 # Taxonomies in collateral data
 

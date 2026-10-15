@@ -75,3 +75,10 @@ into state history — an instance without it is v1-conformant and records none.
 | artifact:artifact-collateral-taxonomy-inventory | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
 | edge:e-prod-taxonomy-inventory | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
 | edge:e-prod-taxonomy-findings | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
+| artifact:artifact-collateral-taxonomy-inventory | review | proposed | accepted | 2026-10-15T23:55:50Z | 2e9d537257293259626a3455694bb5c35146e859 | denisurusov |
+| edge:e-prod-taxonomy-inventory | review | proposed | accepted | 2026-10-15T23:55:50Z | 2e9d537257293259626a3455694bb5c35146e859 | denisurusov |
+| edge:e-prod-taxonomy-findings | review | proposed | accepted | 2026-10-15T23:55:50Z | 2e9d537257293259626a3455694bb5c35146e859 | denisurusov |
+| artifact:artifact-cdm-defects | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
+| edge:e-prod-taxonomy-defects | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
+| artifact:artifact-collateral-asset-taxonomy-mapping | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
+| edge:e-prod-taxonomy-mapping | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
