@@ -174,3 +174,9 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-windows-install | status |  | open | 2026-10-16T22:20:33Z | 41af88afd7f6994b53858c3b109793a399df3d06 | denisurusov |
 | artifact:artifact-setup-codespaces | review |  | proposed | 2026-10-16T22:20:33Z |  |  |
 | edge:e-prod-localenv-codespaces | review |  | proposed | 2026-10-16T22:20:33Z |  |  |
+| artifact:artifact-setup-codespaces | review | proposed | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
+| edge:e-prod-localenv-codespaces | review | proposed | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
+| node:task-local-environment-setup | status | active | resolved | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
+| node:task-clickable-ui | review |  | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
+| node:task-clickable-ui | status |  | open | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
+| edge:e-dec-e2e-clickableui | review |  | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |

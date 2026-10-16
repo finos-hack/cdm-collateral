@@ -3,7 +3,7 @@ id: artifact-setup-codespaces
 name: GitHub Codespaces environment
 kind: document
 location: docs/setup-codespaces.md
-review: proposed
+review: accepted
 provenance:
   conversationId: architecture-design
   sourceRef: 41af88afd7f6994b53858c3b109793a399df3d06
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T22:20:33Z
   confidence: 0.75
 createdAt: 2026-10-16T22:20:33Z
-updatedAt: 2026-10-16T22:31:29Z
+updatedAt: 2026-10-16T22:43:35Z
 ```
 # GitHub Codespaces environment
 
