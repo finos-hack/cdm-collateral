@@ -58,6 +58,30 @@ Conceptual model of the same space, coloured by these scores: [`collateral-conce
 | 21 | Exposure netting (trades in a netting set produce one exposure) *(added 2026-10-15)* | **0** | – | – | – | – | No netting-set type. `MarginCallExposure.overallExposure` holds an exposure that is already netted; no function aggregates trades into it *(name search for `Netting`)* |
 | 22 | Settlement netting of collateral movements *(added 2026-10-15)* | **1** | – | – | – | – | Nothing for collateral movements. For trades only, `StandardSettlementStyleEnum.Net` / `StandardAndNet` / `PairAndNet` (`product-common-settlement-enum.rosetta` lines 51–55) |
 | 23 | Close-out netting on default *(added 2026-10-15)* | **2** | elections | – | – | – | ISDA `MasterAgreement` elections `automaticEarlyTermination` and `terminationCurrency` (`legaldocumentation-master-isda-type.rosetta` lines 15–26); CSA `automaticSetOff` (`legaldocumentation-csa-type.rosetta` line 856). No close-out valuation or netting function. Trade compression (`Qualify_Compression`, `event-qualification-func.rosetta` line 139, with test data) reduces trades, not collateral, and is not scored here |
+| 24 | Collateral proposal and acceptance *(added 2026-10-16)* | **2** | proposal only | – | – | – | `MarginCallResponseAction.collateralPositionComponent` (`event-common-type.rosetta` lines 769–772) carries the collateral the responding party will move, so a proposal can be expressed inside `MarginCallResponse`. No type records the receiving party's acceptance or rejection of the proposed assets. The generic `WorkflowStep` has proposed / accepted / rejected states (`event-workflow-type.rosetta` lines 37–44; `Create_AcceptedWorkflowStep`, `event-workflow-func.rosetta` line 68), but it needs an `EventInstruction`, and `PrimitiveInstruction` (`event-common-type.rosetta` line 45) has no margin call instruction (finding F2), so it cannot carry a collateral proposal. ISO 20022 colr.007 / colr.008 and FpML `requestCollateralAcceptance` / `collateralProposalStatus` define the step (finding S1) |
+
+
+## Flows and capabilities *(added 2026-10-16)*
+
+The clickable UI (`ui-prototype/clickable.html`, decision `wp-adr-ux-scenario-grid`) is organised by flow. Each flow
+uses several capability rows; its CDM coverage is the **weakest** score among them. Row 7 is executable for IM only,
+so it counts as 2 for VM. Rows for repo, securities lending, triparty and CCP are mapped in
+[`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md#flows-and-capabilities-added-2026-10-16).
+
+| Flow (UI grid column) | ISDA IM: rows used | Weakest | ISDA VM: rows used | Weakest |
+|---|---|---|---|---|
+| Call → proposal → settle | 1, 3, 4, 5, 6, 7, 9, 11, 13, 16, 17, 24 | **2** (5, 9, 11, 13, 16, 17, 24) | 1, 3, 4, 6, 7, 10, 11, 13, 16, 21, 24 | **0** (21 exposure netting) |
+| Revaluation / top-up | 4, 6, 7, 9, 11, 16 | **2** | 4, 6, 7, 10, 11 | **2** |
+| Return | 7, 11, 13, 17 | **2** | 7, 11, 13 | **2** |
+| Substitution | 14 | **2** | 14 | **2** |
+| Dispute | 12 | **2** | 12 | **2** |
+| Default / enforcement | 17, 23 | **2** | 23 | **2** |
+| Interest and income | 15 | **2** | 15 | **2** |
+| Terms amendment | 2 | **4** | 2 | **4** |
+
+Rows used by no flow: 8 (standardised IM schedule; an alternative to 9), 18 allocation and optimisation (inside the
+proposal step when built), 19 reconciliation (the prototype replaces it with a shared on-chain record), 20 reporting
+(out of scope), 22 settlement netting (inside the transfer step when several movements fall on one day).
 
 ## Findings
 

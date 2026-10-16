@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T22:52:27Z
   confidence: 0.7
 createdAt: 2026-10-16T22:52:27Z
-updatedAt: 2026-10-16T22:52:27Z
+updatedAt: 2026-10-16T23:02:19Z
 ```
 # Clickable UI prototype (HTML)
 
@@ -22,3 +22,6 @@ title transfer and return. Each scenario shows the participants' consoles side b
 numbers and standard references, and a ledger timeline split into off-chain messages and on-chain transactions.
 Published at https://claude.ai/artifact/D3AfKPtqnA6owUUjiQRepc. Checked with Playwright: every scenario clicks
 through to completion with no console errors and no horizontal scroll at 400 px.
+
+Revised 2026-10-16T23:02:19Z (source `01ed3cb87a05376b16fc5b6d38e98b90a97f732d`): CDM coverage badge per grid cell and capability chips per step; columns Interest and
+income, Terms amendment, Loan return / recall; repo and GMSLA dispute cells planned (rows R9, S8).

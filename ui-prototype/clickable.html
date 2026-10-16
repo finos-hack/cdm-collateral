@@ -57,11 +57,12 @@ a { color: var(--act); }
 /* home grid */
 .intro { max-width: 70ch; display: flex; flex-direction: column; gap: 6px; }
 .gridbox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-table.grid { border-collapse: collapse; width: 100%; min-width: 860px; }
+table.grid { border-collapse: collapse; width: 100%; min-width: 1240px; }
+.grid td { min-width: 120px; }
 .grid th, .grid td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
 .grid thead th { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
   color: var(--muted); font-weight: 500; background: var(--sunk); }
-.grid tbody th { width: 230px; font-weight: 500; }
+.grid tbody th { width: 210px; font-weight: 500; }
 .grid tbody th .sub { display: block; font-size: .8rem; color: var(--muted); font-weight: 400; }
 .grid tr:last-child th, .grid tr:last-child td { border-bottom: 0; }
 .cell-go { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; border: 1px solid var(--act);
@@ -71,6 +72,9 @@ table.grid { border-collapse: collapse; width: 100%; min-width: 860px; }
 .cell-go span { font-size: .76rem; opacity: .85; }
 .cell-plan { font-size: .8rem; color: var(--plan); border: 1px dashed var(--line); border-radius: 6px; padding: 7px 9px; display: block; }
 .cell-na { color: var(--plan); font-family: var(--f-mono); font-size: .8rem; }
+.cov { display: inline-block; margin-top: 5px; font-family: var(--f-mono); font-size: .66rem; line-height: 1.35; padding: 1px 6px; border-radius: 4px; border: 1px solid currentColor; }
+.legend .cov { margin-top: 0; margin-right: -8px; }
+.capchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .82rem; color: var(--muted); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
 
@@ -223,34 +227,34 @@ S["im-call"] = {
   init() { const s = base("IM"); s.req = 0; return s; },
   outcome: "BANK-B called USD 12,400,000 of initial margin, BANK-A agreed and proposed tokenized Treasuries, BANK-B accepted them, and BANK-A pledged them into the collateral control contract. The tokens are segregated: BANK-B cannot reuse them, and they leave the contract only by return or enforcement.",
   steps: [
-    { actor: "B", say: "Issue the initial margin call", calm: "1–5",
+    { actor: "B", say: "Issue the initial margin call", calm: "1–5", caps: [6, 7, 9, 11],
       why: "BANK-B's SIMM calculation shows USD 62.4m of initial margin. Above the USD 50m IM threshold, with nothing held yet, BANK-A must deliver USD 12.4m. The call is recorded on-chain (state, amount, deadline, content hash) and the full CDM content goes to BANK-A's service.",
       refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003", "ADR wp-adr-margin-call-state-onchain"],
       ui: { label: "Issue call", fields: [["Valuation date", "2026-10-16"], ["SIMM initial margin", "USD 62,400,000"], ["IM threshold", "USD 50,000,000"], ["Collateral held", "USD 0"], ["Delivery amount (rounded up)", "USD 12,400,000"], ["Settlement deadline", "2026-10-19"]] },
       apply(s) { s.req = 12400000; const c = newCall(s, { kind: "IM", from: "B", to: "A", amount: 12400000, deadline: "2026-10-19" });
         chain(s, "B", "issueCall(" + c.id + ", 12,400,000, 2026-10-19, hash)", "Margin call contract: call issued, signed by BANK-B");
         msg(s, "B", "A", "MarginCallIssuance", "CDM content of " + c.id + "; BANK-A's service checks it against the on-chain hash ✓"); } },
-    { actor: "A", say: "Agree in full and propose collateral", calm: "6–12",
+    { actor: "A", say: "Agree in full and propose collateral", calm: "6–12", caps: [11, 24, 3, 4],
       why: "BANK-A's own SIMM run agrees with the amount. BANK-A proposes tokenized Treasuries. At 98.40 and a 2% haircut, 128,589 units are worth USD 12,400,094 after haircut, just above the call.",
       refs: ["CDM MarginCallResponse", "ISO 20022 colr.004", "ISO 20022 colr.007 (proposal)"],
       ui: { label: "Agree and propose", fields: [["Response", "Agree in full"], ["Agreed amount", "USD 12,400,000"], ["Propose", "tUST 128,589 units"], ["Value after 2% haircut", "USD 12,400,094"]] },
       apply(s) { const c = call(s, "C-0001"); c.state = "agreed"; c.agreed = 12400000; c.proposals.push({ id: "P-1", assets: [["tUST", 128589]], state: "proposed" });
         chain(s, "A", "respond(C-0001, agree, 12,400,000) · propose(P-1)", "Response and proposal recorded, signed by BANK-A");
         msg(s, "A", "B", "MarginCallResponse + proposal", "Agree USD 12,400,000; propose tUST 128,589 units"); } },
-    { actor: "B", say: "Check the proposal and accept it", calm: "13–19",
+    { actor: "B", say: "Check the proposal and accept it", calm: "13–19", caps: [3, 4, 5, 24],
       why: "BANK-B checks the proposed tokens against its own copy of the eligibility schedule: eligible asset, haircut, concentration limits, value after haircut. All pass, so BANK-B accepts on-chain with its own key.",
       refs: ["ISO 20022 colr.008", "CDM EligibleCollateralSpecification"],
       ui: { label: "Accept proposal", checks: [["ok", "tUST is eligible collateral"], ["ok", "Haircut 2% applied"], ["ok", "No concentration limit for tUST"], ["ok", "Value after haircut USD 12,400,094 ≥ USD 12,400,000"]] },
       apply(s) { call(s, "C-0001").proposals[0].state = "accepted";
         chain(s, "B", "decideProposal(P-1, accept)", "Proposal accepted, signed by BANK-B");
         msg(s, "B", "A", "Proposal acceptance", "P-1 accepted"); } },
-    { actor: "A", say: "Pledge the accepted collateral", calm: "20–23",
+    { actor: "A", say: "Pledge the accepted collateral", calm: "20–23", caps: [13, 17, 16],
       why: "BANK-A's gateway submits pledge(). The control contract checks it against the agreed call and the accepted proposal, pulls the tokens from BANK-A's wallet and marks the call settled, all in one finalized block.",
       refs: ["ADR wp-adr-im-segregation", "ASR concept-asr-settlement-finality"],
       ui: { label: "Pledge", fields: [["Pledge", "tUST 128,589 units"], ["To", "Collateral control contract (segregated)"], ["Against", "C-0001 / P-1"]] },
       apply(s) { pledge(s, "C-0001", [["tUST", 128589]]); call(s, "C-0001").state = "settled";
         chain(s, "A", "pledge(C-0001, P-1)", "Control contract checked call and proposal, took 128,589 tUST; call settled"); } },
-    { actor: "B", say: "Confirm the books match the ledger", calm: "24–26",
+    { actor: "B", say: "Confirm the books match the ledger", calm: "24–26", caps: [16, 19],
       why: "Each party's gateway reports the finalized events to its own workflow service. Both books now show the same call state and collateral, without a reconciliation message between them.",
       refs: ["ADR wp-adr-per-participant-services"],
       ui: { label: "Confirm", checks: [["ok", "C-0001 settled on-chain and in BANK-B's books"], ["ok", "128,589 tUST held for BANK-B in the control contract"], ["ok", "Coverage USD 12,400,094 ≥ USD 12,400,000"]] },
@@ -263,14 +267,14 @@ S["im-dispute"] = {
   init() { const s = base("IM"); s.req = 0; return s; },
   outcome: "BANK-A agreed USD 11.9m and disputed USD 0.5m. Its first proposal (all money market fund shares) broke BANK-B's 50% concentration limit and was rejected; the second mix was accepted and pledged. The agreed part settled on-chain. The disputed USD 500,000 stays open on the call while the parties compare SIMM inputs off-chain.",
   steps: [
-    { actor: "B", say: "Issue the initial margin call", calm: "1–5",
+    { actor: "B", say: "Issue the initial margin call", calm: "1–5", caps: [6, 7, 9, 11],
       why: "Same call as the basic scenario: USD 12.4m above the IM threshold.",
       refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
       ui: { label: "Issue call", fields: [["SIMM initial margin", "USD 62,400,000"], ["Delivery amount", "USD 12,400,000"], ["Settlement deadline", "2026-10-19"]] },
       apply(s) { s.req = 12400000; const c = newCall(s, { kind: "IM", from: "B", to: "A", amount: 12400000, deadline: "2026-10-19" });
         chain(s, "B", "issueCall(" + c.id + ", 12,400,000, 2026-10-19, hash)", "Call issued, signed by BANK-B");
         msg(s, "B", "A", "MarginCallIssuance", "CDM content of C-0001; hash checked ✓"); } },
-    { actor: "A", say: "Agree part, dispute the rest, propose fund shares", calm: "6–12",
+    { actor: "A", say: "Agree part, dispute the rest, propose fund shares", calm: "6–12", caps: [11, 12, 24],
       why: "BANK-A's SIMM run gives a lower figure: its interest-rate delta sensitivities differ from BANK-B's. It agrees USD 11.9m and disputes USD 0.5m. The dispute is recorded on the call; resolving it happens off-chain. It proposes tokenized money market fund shares only.",
       refs: ["CDM MarginCallResponse", "ISO 20022 colr.004", "ISO 20022 colr.009 (dispute)", "ASR concept-asr-onchain-call-state"],
       ui: { label: "Partially agree and propose", fields: [["Response", "Partially agree"], ["Agreed", "USD 11,900,000"], ["Disputed", "USD 500,000 (SIMM IR delta sensitivities differ)"], ["Propose", "tMMF 12,395,834 shares"], ["Value after 4% haircut", "USD 11,900,001"]] },
@@ -278,34 +282,34 @@ S["im-dispute"] = {
         c.proposals.push({ id: "P-1", assets: [["tMMF", 12395834]], state: "proposed" });
         chain(s, "A", "respond(C-0001, partial, 11,900,000, disputed 500,000) · propose(P-1)", "Response, dispute amount and proposal recorded, signed by BANK-A");
         msg(s, "A", "B", "MarginCallResponse + dispute + proposal", "Agree USD 11.9m, dispute USD 0.5m; propose tMMF 12,395,834 shares"); } },
-    { actor: "B", say: "Reject the proposal: concentration limit", calm: "13–19",
+    { actor: "B", say: "Reject the proposal: concentration limit", calm: "13–19", caps: [3, 5, 24],
       why: "Fund shares are eligible, but the schedule allows at most 50% of the IM posted in them. This proposal is 100% fund shares, so BANK-B rejects it with the reason.",
       refs: ["ISO 20022 colr.008", "CDM ConcentrationLimit"],
       ui: { label: "Reject proposal", checks: [["ok", "tMMF is eligible collateral"], ["ok", "Haircut 4% applied"], ["bad", "Concentration: 100% in tMMF > 50% limit"]] },
       apply(s) { call(s, "C-0001").proposals[0].state = "rejected";
         chain(s, "B", "decideProposal(P-1, reject)", "Proposal rejected, signed by BANK-B");
         msg(s, "B", "A", "Proposal rejection", "P-1 rejected: tMMF over the 50% concentration limit"); } },
-    { actor: "A", say: "Propose a new mix", calm: "6–12 (repeat)",
+    { actor: "A", say: "Propose a new mix", calm: "6–12 (repeat)", caps: [24],
       why: "BANK-A splits the collateral: Treasuries plus fund shares under the limit. Together they cover the agreed USD 11.9m after haircuts, with fund shares at 48.5% of market value.",
       refs: ["ISO 20022 colr.007"],
       ui: { label: "Propose", fields: [["tUST", "64,200 units → USD 6,190,934 after haircut"], ["tMMF", "5,950,000 shares → USD 5,712,000 after haircut"], ["Total after haircuts", "USD 11,902,934"], ["tMMF share of market value", "48.5%"]] },
       apply(s) { call(s, "C-0001").proposals.push({ id: "P-2", assets: [["tUST", 64200], ["tMMF", 5950000]], state: "proposed" });
         chain(s, "A", "propose(C-0001, P-2)", "New proposal recorded, signed by BANK-A");
         msg(s, "A", "B", "Collateral proposal", "P-2: tUST 64,200 + tMMF 5,950,000"); } },
-    { actor: "B", say: "Accept the new proposal", calm: "13–19",
+    { actor: "B", say: "Accept the new proposal", calm: "13–19", caps: [3, 4, 5, 24],
       why: "Both assets are eligible, haircuts applied, fund shares under 50%, and the value covers the agreed amount.",
       refs: ["ISO 20022 colr.008"],
       ui: { label: "Accept proposal", checks: [["ok", "Both assets eligible"], ["ok", "tMMF 48.5% ≤ 50% limit"], ["ok", "USD 11,902,934 ≥ agreed USD 11,900,000"]] },
       apply(s) { call(s, "C-0001").proposals[1].state = "accepted";
         chain(s, "B", "decideProposal(P-2, accept)", "Proposal accepted, signed by BANK-B");
         msg(s, "B", "A", "Proposal acceptance", "P-2 accepted"); } },
-    { actor: "A", say: "Pledge the agreed part", calm: "20–26",
+    { actor: "A", say: "Pledge the agreed part", calm: "20–26", caps: [13, 17],
       why: "The control contract takes only the accepted assets, up to the agreed amount. The call is settled for the agreed USD 11.9m; the disputed USD 0.5m stays open on the call.",
       refs: ["ADR wp-adr-im-segregation"],
       ui: { label: "Pledge", fields: [["Pledge", "tUST 64,200 + tMMF 5,950,000"], ["Against", "C-0001 / P-2"]] },
       apply(s) { pledge(s, "C-0001", [["tUST", 64200], ["tMMF", 5950000]]); call(s, "C-0001").state = "settled (agreed part)";
         chain(s, "A", "pledge(C-0001, P-2)", "Accepted assets pledged; agreed part settled; USD 500,000 still disputed"); } },
-    { actor: "B", say: "Start dispute resolution off-chain", calm: "–",
+    { actor: "B", say: "Start dispute resolution off-chain", calm: "–", caps: [12],
       why: "The parties exchange their SIMM inputs (CRIF sensitivity files) and recalculate. When they settle the difference, a new call or response for the resolved amount goes through the same steps.",
       refs: ["ISO 20022 colr.009", "ISDA SIMM CRIF"],
       ui: { label: "Request CRIF files", fields: [["Disputed", "USD 500,000"], ["Cause", "IR delta sensitivities"], ["Next", "exchange CRIF files, recalculate"]] },
@@ -318,40 +322,40 @@ S["im-reval"] = {
   init() { const s = base("IM"); initialPledge(s); return s; },
   outcome: "A Treasury sell-off moved tUST from 98.40 to 94.00. The pledged collateral fell to USD 11,845,619 after haircut, USD 554,381 short of the requirement and above the USD 500,000 minimum transfer amount. BANK-B called USD 560,000 (rounded up), and BANK-A topped up with 6,080 more tUST units.",
   steps: [
-    { actor: "M", say: "Move the tUST price", calm: "1–3",
+    { actor: "M", say: "Move the tUST price", calm: "1–3", caps: [],
       why: "The market data operator stands in for price vendors. A rates sell-off moves the tokenized Treasury from 98.40 to 94.00 in the mock source.",
       refs: ["Mock market data"],
       ui: { label: "Set price", fields: [["Asset", "tUST"], ["Price", "98.40 → 94.00"]] },
       apply(s) { s.mock.tUST = 94.00; msg(s, "M", "M", "Market data", "Operator set tUST to 94.00 in the mock source"); } },
-    { actor: "M", say: "Publish the price to the oracle feed", calm: "4",
+    { actor: "M", say: "Publish the price to the oracle feed", calm: "4", caps: [],
       why: "The oracle service signs the update with the oracle publisher key and writes it to the on-chain feed through the operator's gateway.",
       refs: ["Oracle feed contract"],
       ui: { label: "Publish", fields: [["tUST", "94.00"], ["Signed by", "oracle publisher key"]] },
       apply(s) { s.feed.tUST = 94.00; chain(s, "M", "publishPrice(tUST, 94.00)", "Oracle feed updated, signed by the oracle publisher"); } },
-    { actor: "B", say: "Revalue the collateral", calm: "5–6",
+    { actor: "B", say: "Revalue the collateral", calm: "5–6", caps: [4, 9],
       why: "BANK-B's service values the pledged tokens at the new price after haircut and compares them with the requirement.",
       refs: ["CDM Haircut", "CSA minimum transfer amount"],
       ui: { label: "Revalue", fields: [["Pledged", "tUST 128,589 × 94.00 × 98%"], ["Value after haircut", "USD 11,845,619"], ["Required", "USD 12,400,000"], ["Shortfall", "USD 554,381 > MTA USD 500,000"], ["Call (rounded up)", "USD 560,000"]] },
       apply(s) { s.info.reval = true; } },
-    { actor: "B", say: "Issue the top-up call", calm: "→ call flow 1–5",
+    { actor: "B", say: "Issue the top-up call", calm: "→ call flow 1–5", caps: [6, 7, 11],
       why: "From here the top-up follows the same call, proposal and pledge steps as the initial call.",
       refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
       ui: { label: "Issue call", fields: [["Delivery amount", "USD 560,000"], ["Settlement deadline", "2026-10-19"]] },
       apply(s) { newCall(s, { kind: "IM", from: "B", to: "A", amount: 560000, deadline: "2026-10-19" });
         chain(s, "B", "issueCall(C-0002, 560,000, 2026-10-19, hash)", "Top-up call issued, signed by BANK-B");
         msg(s, "B", "A", "MarginCallIssuance", "C-0002 top-up; hash checked ✓"); } },
-    { actor: "A", say: "Agree and propose", calm: "6–12",
+    { actor: "A", say: "Agree and propose", calm: "6–12", caps: [11, 24],
       why: "BANK-A sees the same feed price, agrees and proposes 6,080 tUST units (USD 560,090 after haircut).",
       refs: ["CDM MarginCallResponse", "ISO 20022 colr.007"],
       ui: { label: "Agree and propose", fields: [["Agreed", "USD 560,000"], ["Propose", "tUST 6,080 units → USD 560,090"]] },
       apply(s) { const c = call(s, "C-0002"); c.state = "agreed"; c.agreed = 560000; c.proposals.push({ id: "P-1", assets: [["tUST", 6080]], state: "proposed" });
         chain(s, "A", "respond(C-0002, agree) · propose(P-1)", "Signed by BANK-A"); msg(s, "A", "B", "MarginCallResponse + proposal", "Agree; tUST 6,080"); } },
-    { actor: "B", say: "Accept the proposal", calm: "13–19",
+    { actor: "B", say: "Accept the proposal", calm: "13–19", caps: [3, 24],
       why: "Eligible asset, haircut applied, value covers the call.",
       refs: ["ISO 20022 colr.008"],
       ui: { label: "Accept proposal", checks: [["ok", "tUST eligible"], ["ok", "USD 560,090 ≥ USD 560,000"]] },
       apply(s) { call(s, "C-0002").proposals[0].state = "accepted"; chain(s, "B", "decideProposal(P-1, accept)", "Signed by BANK-B"); msg(s, "B", "A", "Proposal acceptance", "C-0002 / P-1 accepted"); } },
-    { actor: "A", say: "Pledge the top-up", calm: "20–26",
+    { actor: "A", say: "Pledge the top-up", calm: "20–26", caps: [13, 17],
       why: "The top-up is pledged into the same contract. Coverage is back above the requirement.",
       refs: ["ADR wp-adr-im-segregation"],
       ui: { label: "Pledge", fields: [["Pledge", "tUST 6,080 units"], ["Against", "C-0002 / P-1"]] },
@@ -364,14 +368,14 @@ S["im-return"] = {
   init() { const s = base("IM"); initialPledge(s); return s; },
   outcome: "Trades matured and BANK-A's SIMM fell to USD 58.1m, so only USD 8.1m is required above the threshold. BANK-A called for USD 4,300,000 back (rounded down). BANK-B agreed and released 44,591 tUST units by signing returnPledge() with its own key.",
   steps: [
-    { actor: "A", say: "Call for the return of excess margin", calm: "1–5",
+    { actor: "A", say: "Call for the return of excess margin", calm: "1–5", caps: [6, 7, 11],
       why: "Industry practice treats a return as a margin call in the other direction. Required falls to USD 8.1m; BANK-A holds USD 12,400,094 after haircut with BANK-B, so the excess is USD 4,300,059, rounded down to USD 4,300,000.",
       refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
       ui: { label: "Issue return call", fields: [["SIMM initial margin", "USD 58,100,000"], ["Required above threshold", "USD 8,100,000"], ["Held after haircut", "USD 12,400,094"], ["Return amount (rounded down)", "USD 4,300,000"]] },
       apply(s) { s.req = 8100000; newCall(s, { kind: "Return", from: "A", to: "B", amount: 4300000, deadline: "2026-10-19" });
         chain(s, "A", "issueCall(C-0002, return 4,300,000, hash)", "Return call recorded, signed by BANK-A");
         msg(s, "A", "B", "MarginCallIssuance (return)", "C-0002: return USD 4,300,000; hash checked ✓"); } },
-    { actor: "B", say: "Agree and release the collateral", calm: "6–11",
+    { actor: "B", say: "Agree and release the collateral", calm: "6–11", caps: [11, 13, 17],
       why: "BANK-B's own SIMM run gives USD 58.14m, close enough to agree. Its gateway records the agreement and submits returnPledge() with BANK-B's key. The contract checks the agreed return call and sends 44,591 tUST units (USD 4,299,999 after haircut) back to BANK-A.",
       refs: ["CDM MarginCallResponse", "ISO 20022 colr.004", "ADR wp-adr-im-segregation"],
       ui: { label: "Agree and release", fields: [["Response", "Agree in full"], ["Release", "tUST 44,591 units"], ["Signed by", "BANK-B key"]] },
@@ -380,7 +384,7 @@ S["im-return"] = {
         s.pledges.push({ token: "tUST", qty: 44591, call: "C-0002", state: "returned" });
         chain(s, "B", "respond(C-0002, agree) · returnPledge(C-0002, tUST 44,591)", "Return agreed and executed, signed by BANK-B; call settled");
         msg(s, "B", "A", "MarginCallResponse", "C-0002 agreed"); } },
-    { actor: "A", say: "Check the returned collateral", calm: "12",
+    { actor: "A", say: "Check the returned collateral", calm: "12", caps: [16],
       why: "BANK-A's wallet shows the returned units; the contract still holds the rest for BANK-B.",
       refs: ["ASR concept-asr-settlement-finality"],
       ui: { label: "Confirm", checks: [["ok", "44,591 tUST back in BANK-A's wallet"], ["ok", "83,998 tUST still pledged"], ["ok", "Coverage USD 8,100,095 ≥ USD 8,100,000"]] },
@@ -393,24 +397,24 @@ S["im-default"] = {
   init() { const s = base("IM"); initialPledge(s); return s; },
   outcome: "BANK-A failed to pay. BANK-B served the legal notices off-chain, the operator published the default status, and BANK-B enforced: the control contract confirmed the default on the oracle feed and moved the 128,589 pledged tUST units to BANK-B.",
   steps: [
-    { actor: "B", say: "Declare an Event of Default", calm: "1–3",
+    { actor: "B", say: "Declare an Event of Default", calm: "1–3", caps: [23],
       why: "BANK-A missed a payment (ISDA Master Agreement Section 5(a)(i)). The notice designating an Early Termination Date is a legal notice delivered as Section 12 requires; the chain only gets the default status.",
       refs: ["ISDA 2002 MA §5(a)(i), §6, §12"],
       ui: { label: "Declare default", fields: [["Defaulting party", "BANK-A"], ["Event", "Failure to pay (§5(a)(i))"], ["Notice", "delivered off-chain (§12)"]] },
       apply(s) { msg(s, "B", "A", "Legal notice", "Notice of Event of Default and Early Termination Date (off-chain, §12)");
         msg(s, "B", "M", "Default notice", "BANK-B's service forwards the default to the oracle service"); } },
-    { actor: "M", say: "Publish the default status", calm: "4–5",
+    { actor: "M", say: "Publish the default status", calm: "4–5", caps: [],
       why: "The oracle service writes BANK-A's default status to the on-chain feed, signed by the oracle publisher.",
       refs: ["Oracle feed contract"],
       ui: { label: "Publish default", fields: [["Party", "BANK-A"], ["Status", "in default"]] },
       apply(s) { s.defaulted = true; chain(s, "M", "publishDefault(BANK-A)", "Oracle feed: BANK-A in default"); } },
-    { actor: "B", say: "Enforce against the pledged collateral", calm: "6–9",
+    { actor: "B", say: "Enforce against the pledged collateral", calm: "6–9", caps: [17],
       why: "BANK-B's gateway submits enforce() with BANK-B's key. The control contract reads the default status from the feed and only then moves the pledged tokens to BANK-B.",
       refs: ["ADR wp-adr-im-segregation", "Assumption nw-assumption-contract-control"],
       ui: { label: "Enforce", checks: [["ok", "Default status on the oracle feed"], ["ok", "Pledge C-0001 in state pledged"]] },
       apply(s) { const p = s.pledges.find(x => x.state === "pledged"); p.state = "enforced"; s.wallet.B.tUST += p.qty;
         chain(s, "B", "enforce(C-0001)", "Contract confirmed default; 128,589 tUST moved to BANK-B"); } },
-    { actor: "B", say: "Apply the collateral to the close-out amount", calm: "–",
+    { actor: "B", say: "Apply the collateral to the close-out amount", calm: "–", caps: [23],
       why: "BANK-B values the collateral against its close-out amount. Any surplus is owed back to BANK-A under the CSA; that settlement is off-chain in this prototype.",
       refs: ["ISDA 2002 MA §6(e)"],
       ui: { label: "Record", fields: [["Collateral received", "tUST 128,589 → USD 12,653,158 at 98.40"], ["Close-out amount (example)", "USD 11,700,000"], ["Surplus owed to BANK-A", "USD 953,158"]] },
@@ -423,30 +427,30 @@ S["vm-call"] = {
   init() { const s = base("VM"); s.held = 5000000; s.req = 0; return s; },
   outcome: "BANK-B's exposure rose to USD 8.24m with USD 5m held, so it called USD 3.24m. BANK-A paid in deposit tokens straight to BANK-B's wallet. Title passed: no control contract, and BANK-B was free to reuse the cash, which it did. Compare the IM scenario, where the same call ends in a segregated pledge.",
   steps: [
-    { actor: "B", say: "Issue the variation margin call", calm: "–",
+    { actor: "B", say: "Issue the variation margin call", calm: "–", caps: [6, 7, 10, 21, 11],
       why: "Mark-to-market exposure of BANK-B to BANK-A is USD 8.24m. The credit support balance is USD 5m, threshold zero, so the Delivery Amount is USD 3.24m.",
       refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
       ui: { label: "Issue call", fields: [["Exposure (MTM)", "USD 8,240,000"], ["Credit support balance", "USD 5,000,000"], ["Delivery amount", "USD 3,240,000"], ["Settlement deadline", "2026-10-19"]] },
       apply(s) { s.req = 8240000; newCall(s, { kind: "VM", from: "B", to: "A", amount: 3240000, deadline: "2026-10-19" });
         chain(s, "B", "issueCall(C-0001, 3,240,000, hash)", "VM call issued, signed by BANK-B"); msg(s, "B", "A", "MarginCallIssuance", "C-0001; hash checked ✓"); } },
-    { actor: "A", say: "Agree and propose cash", calm: "–",
+    { actor: "A", say: "Agree and propose cash", calm: "–", caps: [11, 24],
       why: "BANK-A agrees and offers USD deposit tokens, the only eligible credit support under this CSA.",
       refs: ["CDM MarginCallResponse", "ISO 20022 colr.004"],
       ui: { label: "Agree and propose", fields: [["Agreed", "USD 3,240,000"], ["Propose", "tUSD 3,240,000"]] },
       apply(s) { const c = call(s, "C-0001"); c.state = "agreed"; c.agreed = 3240000; c.proposals.push({ id: "P-1", assets: [["tUSD", 3240000]], state: "proposed" });
         chain(s, "A", "respond(C-0001, agree) · propose(P-1)", "Signed by BANK-A"); msg(s, "A", "B", "MarginCallResponse + proposal", "Agree; tUSD 3,240,000"); } },
-    { actor: "B", say: "Accept the proposal", calm: "–",
+    { actor: "B", say: "Accept the proposal", calm: "–", caps: [3, 24],
       why: "Cash in USD, zero haircut, covers the call.",
       refs: ["ISO 20022 colr.008"],
       ui: { label: "Accept proposal", checks: [["ok", "tUSD eligible, 0% haircut"], ["ok", "USD 3,240,000 = call"]] },
       apply(s) { call(s, "C-0001").proposals[0].state = "accepted"; chain(s, "B", "decideProposal(P-1, accept)", "Signed by BANK-B"); msg(s, "B", "A", "Proposal acceptance", "P-1 accepted"); } },
-    { actor: "A", say: "Transfer the cash outright", calm: "–",
+    { actor: "A", say: "Transfer the cash outright", calm: "–", caps: [13],
       why: "Under a title transfer CSA the collateral goes straight to the Transferee's wallet. No control contract; the call is settled by the transfer.",
       refs: ["English law VM CSA, title transfer"],
       ui: { label: "Transfer", fields: [["Transfer", "tUSD 3,240,000"], ["To", "BANK-B wallet (title passes)"]] },
       apply(s) { s.wallet.A.tUSD -= 3240000; s.wallet.B.tUSD += 3240000; s.held = 8240000; call(s, "C-0001").state = "settled";
         chain(s, "A", "settleByTransfer(C-0001, tUSD 3,240,000)", "Deposit tokens moved BANK-A → BANK-B; call settled"); } },
-    { actor: "B", say: "Reuse the cash received", calm: "–",
+    { actor: "B", say: "Reuse the cash received", calm: "–", caps: [16],
       why: "Title passed, so BANK-B can use the cash, here to fund its own payments. Under the IM pledge this is impossible: the tokens stay in the control contract.",
       refs: ["Contrast: ADR wp-adr-im-segregation"],
       ui: { label: "Move to treasury", fields: [["Transfer", "tUSD 3,240,000"], ["To", "BANK-B treasury account"]] },
@@ -459,19 +463,19 @@ S["vm-return"] = {
   init() { const s = base("VM"); s.held = 8240000; s.wallet.B.tUSD = 10240000; s.req = 8240000; return s; },
   outcome: "Exposure fell to USD 6m, so BANK-A called for USD 2.24m back. BANK-B agreed and paid equivalent cash back. Under title transfer it returns equivalent credit support, not the same tokens.",
   steps: [
-    { actor: "A", say: "Call for the return amount", calm: "–",
+    { actor: "A", say: "Call for the return amount", calm: "–", caps: [6, 7, 11],
       why: "Exposure is now USD 6m and BANK-B holds USD 8.24m, so USD 2.24m is due back to BANK-A.",
       refs: ["CDM MarginCallIssuance"],
       ui: { label: "Issue return call", fields: [["Exposure (MTM)", "USD 6,000,000"], ["Credit support balance", "USD 8,240,000"], ["Return amount", "USD 2,240,000"]] },
       apply(s) { s.req = 6000000; newCall(s, { kind: "Return", from: "A", to: "B", amount: 2240000, deadline: "2026-10-19" });
         chain(s, "A", "issueCall(C-0001, return 2,240,000, hash)", "Return call recorded, signed by BANK-A"); msg(s, "A", "B", "MarginCallIssuance (return)", "C-0001; hash checked ✓"); } },
-    { actor: "B", say: "Agree and pay back equivalent cash", calm: "–",
+    { actor: "B", say: "Agree and pay back equivalent cash", calm: "–", caps: [11, 13],
       why: "BANK-B agrees and transfers deposit tokens back. They need not be the same tokens it received.",
       refs: ["CDM MarginCallResponse", "ISO 20022 colr.004"],
       ui: { label: "Agree and transfer", fields: [["Response", "Agree in full"], ["Transfer", "tUSD 2,240,000 to BANK-A"]] },
       apply(s) { s.wallet.B.tUSD -= 2240000; s.wallet.A.tUSD += 2240000; s.held = 6000000; const c = call(s, "C-0001"); c.state = "settled"; c.agreed = 2240000;
         chain(s, "B", "respond(C-0001, agree) · settleByTransfer(C-0001, tUSD 2,240,000)", "Cash returned BANK-B → BANK-A; call settled"); msg(s, "B", "A", "MarginCallResponse", "Agreed"); } },
-    { actor: "A", say: "Check the balance", calm: "–",
+    { actor: "A", say: "Check the balance", calm: "–", caps: [16],
       why: "Credit support balance now USD 6m, matching the exposure.",
       refs: [],
       ui: { label: "Confirm", checks: [["ok", "Credit support balance USD 6,000,000"], ["ok", "USD 2,240,000 received"]] },
@@ -480,14 +484,48 @@ S["vm-return"] = {
 };
 
 /* ---------- grid ---------- */
-const COLS = ["Call → proposal → settle", "Revaluation / top-up", "Return", "Substitution", "Dispute", "Default / enforcement"];
+/* CDM 7.6.0 coverage scores from docs/analysis/cdm-csa-coverage-matrix.md and cdm-other-agreements-coverage-matrix.md
+   (0 absent, 1 enum only, 2 data types, 3 functions, 4 events, 5 samples or tests). */
+const CAP = {
+  CSA: { 1: ["Agreement terms", 5], 2: ["Amendment of terms", 4], 3: ["Eligibility", 5], 4: ["Haircuts and valuation", 3], 5: ["Concentration limits", 2],
+    6: ["Threshold, MTA, rounding", 3], 7: ["Delivery / Return Amount", 3], 9: ["IM amount (SIMM)", 2], 10: ["Exposure for VM", 2], 11: ["Margin call issue / response", 2],
+    12: ["Dispute", 2], 13: ["Transfer and settlement", 2], 14: ["Substitution", 2], 15: ["Interest on cash collateral", 2], 16: ["Positions and balances", 2],
+    17: ["Custody and segregation", 2], 19: ["Reconciliation", 0], 21: ["Exposure netting", 0], 23: ["Close-out netting", 2], 24: ["Collateral proposal / acceptance", 2] },
+  R: { R2: ["Amendment of terms", 0], R3: ["Eligibility", 3], R4: ["Haircut / margin ratio", 5], R5: ["Concentration limits", 2], R6: ["Exposure calculation", 3], R7: ["Margin maintenance", 2],
+    R9: ["Dispute", 2], R10: ["Transfer and settlement", 4], R11: ["Substitution", 5], R12: ["Repo interest", 5], R16: ["Positions", 2], R20: ["Event of default", 0], R21: ["Exposure netting", 0],
+    R23: ["Close-out netting", 0], R24: ["Collateral proposal / acceptance", 2] },
+  S: { S2: ["Amendment of terms", 2], S3: ["Collateral schedule", 3], S4: ["Haircut / margin", 5], S5: ["Concentration limits", 2], S6: ["Collateral requirement", 3], S7: ["Marking to market", 2],
+    S8: ["Dispute", 2], S9: ["Transfer and settlement", 5], S10: ["Substitution", 4], S11: ["Lending fee and billing", 5], S12: ["Rebate", 2], S13: ["Loan return", 5], S14: ["Recall", 2],
+    S17: ["Positions", 2], S19: ["Events of default", 2], S20: ["Manufactured payments", 2], S23: ["Exposure netting / aggregation", 2], S25: ["Close-out netting", 2], S26: ["Collateral proposal / acceptance", 2] },
+  T: { T1: ["Triparty agreement terms", 1], T4: ["Haircuts", 3], T6: ["Required value from agent", 0], T7: ["Allocation by agent", 0], T8: ["Substitution by agent", 2], T9: ["Settlement through agent", 0] },
+  C: { C5: ["IM calculation (CCP)", 0], C6: ["VM / settlement price", 2], C7: ["CCP margin call", 2], C9: ["Eligibility / haircuts", 3], C10: ["Transfer and settlement", 2], C11: ["Interest on cash collateral", 2],
+    C12: ["Default management / porting", 0], C14: ["Position netting", 2], C16: ["Close-out netting", 0] },
+};
+function capInfo(fam, id) {
+  const table = fam === "IM" || fam === "VM" ? CAP.CSA : CAP[fam];
+  const [name, score] = table[id];
+  return { id: String(id), name, score: fam === "VM" && String(id) === "7" ? 2 : score };
+}
+const scoreClass = n => n >= 3 ? "s-ok" : n === 2 ? "s-warn" : "s-bad";
+function badge(fam, caps) {
+  if (!caps || !caps.length) return "";
+  const infos = caps.map(c => capInfo(fam, c)); const min = Math.min(...infos.map(i => i.score));
+  const ids = infos.filter(i => i.score === min).map(i => i.id);
+  const weak = (ids.length > 3 ? ids.slice(0, 3).join(", ") + " +" + (ids.length - 3) : ids.join(", "));
+  const label = ids.length === 1 ? infos.find(i => i.score === min).name : "rows " + weak;
+  const tip = "CDM 7.6.0 coverage, weakest of: " + infos.map(i => i.id + " " + i.name + " = " + i.score).join("; ");
+  return `<span class="cov ${scoreClass(min)}" title="${esc(tip)}">CDM ${min} · ${esc(ids.length === 1 ? ids[0] + " " + label : label)}</span>`;
+}
+const COLS = ["Call → proposal → settle", "Revaluation / top-up", "Return", "Substitution", "Dispute", "Default / enforcement", "Interest and income", "Terms amendment", "Loan return / recall"];
+const IMC = { call: [1, 3, 4, 5, 6, 7, 9, 11, 13, 16, 17, 24], reval: [4, 6, 7, 9, 11, 16], ret: [7, 11, 13, 17] };
+const VMC = { call: [1, 3, 4, 6, 7, 10, 11, 13, 16, 21, 24], reval: [4, 6, 7, 10, 11], ret: [7, 11, 13] };
 const ROWS = [
-  { name: "ISDA IM (CSA / CTA)", sub: "pledge into segregation", cells: [["go", "im-call"], ["go", "im-reval"], ["go", "im-return"], ["plan"], ["go", "im-dispute"], ["go", "im-default"]] },
-  { name: "ISDA VM CSA", sub: "title transfer, two-way", cells: [["go", "vm-call"], ["plan"], ["go", "vm-return"], ["plan"], ["plan"], ["plan", "close-out netting"]] },
-  { name: "Repo (GMRA)", sub: "seller / buyer", cells: [["plan", "margin transfer"], ["plan"], ["plan"], ["plan"], ["na"], ["plan"]] },
-  { name: "Securities lending (GMSLA)", sub: "lender / borrower", cells: [["plan", "mark to market"], ["plan"], ["plan", "recall"], ["plan"], ["na"], ["plan"]] },
-  { name: "Triparty", sub: "agent allocates", cells: [["na", "agent allocates"], ["plan"], ["plan"], ["plan"], ["na"], ["plan"]] },
-  { name: "CCP margin", sub: "call not negotiated", cells: [["plan", "not negotiated"], ["plan"], ["plan"], ["na"], ["na"], ["plan", "porting"]] },
+  { name: "ISDA IM (CSA / CTA)", sub: "pledge into segregation", fam: "IM", cells: [["go", "im-call", IMC.call], ["go", "im-reval", IMC.reval], ["go", "im-return", IMC.ret], ["plan", "", [14]], ["go", "im-dispute", [12]], ["go", "im-default", [17, 23]], ["plan", "", [15]], ["plan", "", [2]], ["na"]] },
+  { name: "ISDA VM CSA", sub: "title transfer, two-way", fam: "VM", cells: [["go", "vm-call", VMC.call], ["plan", "", VMC.reval], ["go", "vm-return", VMC.ret], ["plan", "", [14]], ["plan", "", [12]], ["plan", "close-out netting", [23]], ["plan", "", [15]], ["plan", "", [2]], ["na"]] },
+  { name: "Repo (GMRA)", sub: "seller / buyer · also reprice (R8), roll and repurchase (R13)", fam: "R", cells: [["plan", "margin transfer", ["R3", "R4", "R5", "R6", "R7", "R10", "R16", "R21", "R24"]], ["plan", "", ["R4", "R6", "R7"]], ["plan", "", ["R7", "R10"]], ["plan", "", ["R11"]], ["plan", "", ["R9"]], ["plan", "", ["R20", "R23"]], ["plan", "repo interest", ["R12"]], ["plan", "", ["R2"]], ["na"]] },
+  { name: "Securities lending (GMSLA)", sub: "lender / borrower", fam: "S", cells: [["plan", "mark to market", ["S3", "S4", "S5", "S6", "S7", "S9", "S17", "S23", "S26"]], ["plan", "", ["S4", "S6", "S7"]], ["plan", "excess collateral", ["S7", "S9"]], ["plan", "", ["S10"]], ["plan", "", ["S8"]], ["plan", "", ["S19", "S25"]], ["plan", "fee, rebate, manufactured payments", ["S11", "S12", "S20"]], ["plan", "", ["S2"]], ["plan", "", ["S13", "S14"]]] },
+  { name: "Triparty", sub: "agent allocates", fam: "T", cells: [["na", "agent allocates"], ["plan", "", ["T4", "T6"]], ["plan", "", ["T7", "T9"]], ["plan", "", ["T8"]], ["na"], ["na", "follows the underlying agreement"], ["na", "follows the underlying agreement"], ["plan", "", ["T1"]], ["na"]] },
+  { name: "CCP margin", sub: "call not negotiated", fam: "C", cells: [["plan", "not negotiated", ["C5", "C6", "C7", "C9", "C10", "C14"]], ["plan", "", ["C6", "C9"]], ["plan", "", ["C7", "C10"]], ["na"], ["na"], ["plan", "porting", ["C12", "C16"]], ["plan", "", ["C11"]], ["na", "CCP rulebook"], ["na"]] },
 ];
 
 /* ---------- view state ---------- */
@@ -501,16 +539,17 @@ function topBar() {
 
 function renderHome() {
   const head = `<tr><th>Agreement</th>${COLS.map(c => `<th>${esc(c)}</th>`).join("")}</tr>`;
-  const body = ROWS.map(r => `<tr><th>${esc(r.name)}<span class="sub">${esc(r.sub)}</span></th>${r.cells.map(([t, x]) => {
-    if (t === "go") { const sc = S[x]; return `<td><button class="cell-go" data-sc="${x}"><b>${esc(sc.title)}</b><span>${sc.steps.length} steps · ${sc.parties.map(p => PARTIES[p].name).join(", ")}</span></button></td>`; }
-    if (t === "plan") return `<td><span class="cell-plan">planned${x ? " · " + esc(x) : ""}</span></td>`;
+  const body = ROWS.map(r => `<tr><th>${esc(r.name)}<span class="sub">${esc(r.sub)}</span></th>${r.cells.map(([t, x, caps]) => {
+    if (t === "go") { const sc = S[x]; return `<td><button class="cell-go" data-sc="${x}"><b>${esc(sc.title)}</b><span>${sc.steps.length} steps · ${sc.parties.map(p => PARTIES[p].name).join(", ")}</span></button>${badge(r.fam, caps)}</td>`; }
+    if (t === "plan") return `<td><span class="cell-plan">planned${x ? " · " + esc(x) : ""}</span>${badge(r.fam, caps)}</td>`;
     return `<td><span class="cell-na">n/a${x ? " · " + esc(x) : ""}</span></td>`;
   }).join("")}</tr>`).join("");
   app.innerHTML = topBar() + `
     <div class="intro"><h2>Scenarios</h2>
-      <p>Pick an agreement and a flow. Each scenario sets up the agreement, the parties, their positions and market data, then walks you through the steps in each party's console. Read down a column to see how the same step works under different agreements.</p></div>
+      <p>Pick an agreement and a flow. Each scenario sets up the agreement, the parties, their positions and market data, then walks you through the steps in each party's console. Read down a column to see how the same step works under different agreements. The badge under each cell shows how far CDM 7.6.0 supports that flow, from the coverage matrices in the CDM analysis.</p></div>
     <div class="gridbox"><table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>
     <div class="legend"><span><i style="background:var(--act-soft);border:1px solid var(--act)"></i>available</span><span><i style="border:1px dashed var(--plan)"></i>planned</span><span><i style="background:transparent"></i>n/a: the flow does not exist for this agreement</span></div>
+    <div class="legend"><span class="cov s-ok">CDM 3–5</span>executable (functions, events, samples)<span class="cov s-warn">CDM 2</span>data types only<span class="cov s-bad">CDM 0–1</span>absent or enum only<span>· the weakest capability the flow needs; hover for the list</span></div>
     <p class="foot">All parties, tokens, prices and amounts are invented test data. Nothing here calls a backend: each step changes the mocked state of both consoles and adds the off-chain messages and on-chain transactions the design calls for.</p>`;
   app.querySelectorAll("[data-sc]").forEach(b => b.addEventListener("click", () => open(b.dataset.sc, 0)));
 }
@@ -609,7 +648,8 @@ function renderScenario() {
         <div class="who"><span class="eyebrow">Step ${k + 1} of ${N}</span><span class="party p-${step.actor}">${PARTIES[step.actor].name} · ${esc(AGREEMENTS[sc.kind].roles[step.actor])}</span><span class="ref">CALM ${esc(step.calm)}</span></div>
         <p class="say">${esc(step.say)} <span class="muted">· use the highlighted button in ${PARTIES[step.actor].name}'s console</span></p>
         <p class="why">${esc(step.why)}</p>
-        <div class="refs">${step.refs.map(r => `<span class="ref">${esc(r)}</span>`).join("")}</div></div>${track}</div>`
+        <div class="refs">${step.refs.map(r => `<span class="ref">${esc(r)}</span>`).join("")}</div>
+        ${step.caps && step.caps.length ? `<div class="capchips"><span class="eyebrow">CDM 7.6.0 coverage</span>${step.caps.map(c => { const i = capInfo(sc.kind, c); return `<span class="cov ${scoreClass(i.score)}" style="margin-top:0" title="Score ${i.score}">${esc(i.id + " " + i.name)} · ${i.score}</span>`; }).join("")}</div>` : ""}</div>${track}</div>`
     : `<div class="guide"><div class="done-box"><h3>Scenario complete</h3><p>${esc(sc.outcome)}</p>
         <div class="scbar"><button class="btn" id="home2">Back to scenarios</button><button class="btn" id="replay">Run again</button></div></div>${track}</div>`;
   app.innerHTML = topBar() + `

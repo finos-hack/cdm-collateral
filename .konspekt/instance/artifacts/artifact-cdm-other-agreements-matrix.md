@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:10:47Z
   confidence: 0.7
 createdAt: 2026-10-15T23:10:47Z
-updatedAt: 2026-10-15T23:43:16Z
+updatedAt: 2026-10-16T23:02:27Z
 ```
 # CDM coverage of collateral management — repo, securities lending, triparty, CCP margin
 
@@ -23,3 +23,6 @@ scores. Method step 5 (cross-check against release notes and working-group
 scope) not yet done. Several rows rest on name search only, as marked.
 
 Netting rows (and finding M5 in the findings document) were added and accepted on 2026-10-15.
+
+Revised 2026-10-16T23:02:27Z (source `01ed3cb87a05376b16fc5b6d38e98b90a97f732d`): rows R24, S26 (collateral proposal and acceptance, score 2), T16, C17 (not applicable),
+a cross-family comparison row and a "Flows and capabilities" section mapping UI grid columns to capability rows.
