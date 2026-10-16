@@ -12,9 +12,10 @@ QBFT Besu network from [`../besu/`](../besu/), started automatically by
 **Tested** (2026-10-16): `start-network.sh` with the `docker` command replaced by a native Besu 26.9.0 binary (Java 25,
 Linux): it generated the genesis and four keys, gave each node its key and wrote `besu/.env`; a second run reused
 them; four nodes started from those files reached the same blocks, each with 3 peers and 4 validators
-(`check-network.sh`). The dev container CLI 0.80.0 read the configuration and resolved its three features. **Not
-tested:** building and starting an actual codespace and running Docker Compose inside it, since neither GitHub
-Codespaces nor a Docker daemon was available here.
+(`check-network.sh`). The dev container CLI 0.80.0 read the configuration and resolved its three features. **Run in
+a real codespace** by the project owner on 2026-10-16 (4-core machine, branch `main`): the codespace built, the
+network started on its own, and `check-network.sh` showed the same block (`0xd`) on all four nodes, 3 peers and four
+validators.
 
 ## 1. Create the codespace
 
