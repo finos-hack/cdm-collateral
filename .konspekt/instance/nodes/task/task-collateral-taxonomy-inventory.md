@@ -2,7 +2,7 @@
 id: task-collateral-taxonomy-inventory
 type: task
 title: Collateral data taxonomy inventory
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
@@ -10,7 +10,7 @@ provenance:
   contentHash: 342fbd7743d6ba622c0f9c0adac070fd2d538d07
   timestamp: 2026-10-15T23:45:47Z
 createdAt: 2026-10-15T23:45:47Z
-updatedAt: 2026-10-15T23:45:47Z
+updatedAt: 2026-10-16T00:27:52Z
 ```
 # Task: Collateral data taxonomy inventory
 

@@ -82,3 +82,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-taxonomy-defects | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
 | artifact:artifact-collateral-asset-taxonomy-mapping | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
 | edge:e-prod-taxonomy-mapping | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
+| artifact:artifact-cdm-defects | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
+| edge:e-prod-taxonomy-defects | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
+| artifact:artifact-collateral-asset-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
+| edge:e-prod-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
+| node:task-collateral-taxonomy-inventory | status | active | resolved | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |

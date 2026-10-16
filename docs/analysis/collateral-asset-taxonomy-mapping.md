@@ -11,16 +11,18 @@ Part of `task-collateral-taxonomy-inventory` (finding TX4). An eligible asset ca
 3. **Regulatory classes** — EU EMIR and UK EMIR (`…TypeA`–`…TypeR`, same letters with the same meaning, UK versions
    refer to UK issuers) and US CFTC / prudential (`US_CFTC_PRType1`–`10`).
 4. **ISO 10962 CFI** — category and group (first two letters). CDM holds CFI only as a string under
-   `TaxonomySourceEnum.CFI`. *The CFI groups below come from ISO 10962 as known to the author, not from the
-   standard's text; verify before use.*
+   `TaxonomySourceEnum.CFI`. The CFI groups were checked on 2026-10-16 against two independent open-source
+   implementations of ISO 10962 — `pycfi` 0.1.0 (PyPI, `src/pycfi/map.py`) and `parse-cfi` (npm, `index.js`) —
+   which agree on every group used below (ES, DB, DC, DG, DA, DN, DY, CI, CE, IT). The ISO text itself is paywalled
+   and was not read.
 
 ## Mapping
 
 | # | Asset category | CDM criteria | ISDA Collateral Asset Definitions (examples) | EU / UK EMIR | US CFTC / PR | CFI |
 |---|---|---|---|---|---|---|
 | 1 | Cash | `AssetType` Cash + `CurrencyCodeEnum` | `US-CASH`, `EU-CASH`, `GB-CASH`, `JP-CASH` (14 currencies) | A | 1 | none (cash is not a CFI instrument) |
-| 2 | Gold | `AssetType` Commodity (+ `otherAssetType`) | none | B | 10 (`US_CTFC_PRType10`) | none at group level |
-| 3 | Central government / central bank debt — home jurisdiction | Security · Debt + issuer `SovereignCentralBank` + `IssuerCountryOfOrigin` | `US-TBILL`, `US-TNOTE`, `US-TBOND`, `US-TIPS`, `US-STRIP`, `GB-GILT`, `GB-TBILL`, `DE-BOND`, `DE-BILL`, `FR-OAT`, `FR-BTF`, `IT-BTP`, `JP-JGB`, `GA-…-GOV` (23 "generally accepted government obligations" codes) | C (EU Member State / UK) | 2 (US Treasury) | DB (bonds), DY (money market: bills) |
+| 2 | Gold | `AssetType` Commodity (+ `otherAssetType`) | none | B | 10 (`US_CTFC_PRType10`) | IT (Spot · Commodities) for a spot gold contract; allocated bullion itself has no CFI |
+| 3 | Central government / central bank debt — home jurisdiction | Security · Debt + issuer `SovereignCentralBank` + `IssuerCountryOfOrigin` | `US-TBILL`, `US-TNOTE`, `US-TBOND`, `US-TIPS`, `US-STRIP`, `GB-GILT`, `GB-TBILL`, `DE-BOND`, `DE-BILL`, `FR-OAT`, `FR-BTF`, `IT-BTP`, `JP-JGB`, `GA-…-GOV` (23 "generally accepted government obligations" codes) | C (EU Member State / UK) | 2 (US Treasury) | DB (bonds), DY (money market instruments: bills); DB guarantee attribute `T` (government/state guarantee) where guaranteed |
 | 4 | Central government / central bank debt — other countries | as 3, other country | as 3 for the other country | J | 4 (ECB, or sovereign with risk weight ≤ 20%) | DB, DY |
 | 5 | Regional government / local authority treated as sovereign | issuer `RegionalGovernment`, `sovereignRecourse = true` | `DE-MUNI`, `CH-CANTON`, `BE-REGIONGT`, `AU-FIB`, `AU-STATENOTE` | D (home), K (third country) | no own class; 7 if investment-grade debt *(inference)* | DN (municipal) |
 | 6 | Regional government / local authority, other | issuer `RegionalGovernment`, `sovereignRecourse = false` | as 5 | F (home), L (third country) | 7 if investment grade *(inference)* | DN |
@@ -41,8 +43,9 @@ Part of `task-collateral-taxonomy-inventory` (finding TX4). An eligible asset ca
 - **The four taxonomies split the space along different axes.** EMIR and CFTC classes are defined mainly by
   **issuer** (central government, regional government, public sector entity, supranational, corporate) and by the
   issuer's treatment under bank capital rules. ISDA codes are defined by **country and instrument name**. CFI is
-  defined by **instrument form** and, at the group level, does not distinguish a government bond from a corporate
-  bond (both DB). CDM's criteria can express both axes, but only by combining `AssetType` with `CollateralIssuerType`.
+  defined by **instrument form**: at the group level a government bond and a corporate bond are both DB; the bond
+  guarantee attribute separates only government/state-guaranteed (`T`), secured, unsecured and similar cases, and the
+  two implementations disagree on the letters for the other values. CDM's criteria can express both axes, but only by combining `AssetType` with `CollateralIssuerType`.
 - **Some regulatory distinctions have no CDM attribute.** EMIR D vs F and E vs G turn on whether the exposure is
   treated as an exposure to the central government under Regulation (EU) No 575/2013 Articles 115–116; CDM represents
   this only as the booleans `sovereignRecourse` / `sovereignEntity`. CFTC 4 depends on a 20% risk weight, which CDM
@@ -55,4 +58,5 @@ Part of `task-collateral-taxonomy-inventory` (finding TX4). An eligible asset ca
   against an asset described by CDM criteria or by EMIR class without an external mapping such as this table.
 
 Sources: enum descriptions in `rosetta/base-staticdata-asset-common-enum.rosetta` (EMIR, CFTC, debt, equity and fund
-enums) and `rosetta/legaldocumentation-csa-enum.rosetta` (ISDA codes), CDM 7.6.0; CFI from ISO 10962 (see note above).
+enums) and `rosetta/legaldocumentation-csa-enum.rosetta` (ISDA codes), CDM 7.6.0; CFI groups from the `pycfi` and
+`parse-cfi` implementations of ISO 10962 (see note above).

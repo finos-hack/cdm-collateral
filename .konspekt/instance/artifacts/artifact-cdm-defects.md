@@ -4,7 +4,7 @@ name: Defects found in CDM — collateral scope
 kind: document
 location: docs/analysis/defects.md
 version: cdm-7.6.0
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
   sourceRef: 2e9d537257293259626a3455694bb5c35146e859
@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:55:50Z
   confidence: 0.85
 createdAt: 2026-10-15T23:55:50Z
-updatedAt: 2026-10-15T23:55:50Z
+updatedAt: 2026-10-16T00:27:52Z
 ```
 # Defects found in CDM — collateral scope
 
