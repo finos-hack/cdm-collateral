@@ -109,3 +109,8 @@ excluded.
 | task-local-environment-setup | 58be34dd93aa88cd463dd9e14624bdde13098e68 | architecture/render_architecture_page.py | 2026-10-16T21:36:47Z |
 | task-local-environment-setup | 58be34dd93aa88cd463dd9e14624bdde13098e68 | architecture/testing.md | 2026-10-16T21:36:47Z |
 | task-local-environment-setup | 58be34dd93aa88cd463dd9e14624bdde13098e68 | docs/architecture/blockchain-applicability.md | 2026-10-16T21:36:47Z |
+| task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/README.md | 2026-10-16T22:15:10Z |
+| task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/generate_architecture.py | 2026-10-16T22:15:10Z |
+| task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/prototype.architecture.json | 2026-10-16T22:15:10Z |
+| task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/render_architecture_page.py | 2026-10-16T22:15:10Z |
+| task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/testing.md | 2026-10-16T22:15:10Z |
