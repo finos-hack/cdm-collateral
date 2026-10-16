@@ -56,3 +56,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-privacy-besuvisibility | notes | node:task-onchain-privacy | noteworthy:nw-assumption-besu-visibility |  |
 | e-note-arch-mimicrealflows | notes | node:goal-architecture-design | noteworthy:nw-mimic-real-flows |  |
 | e-dec-arch-twowayim | decomposes | node:goal-architecture-design | node:task-two-way-initial-margin |  |
+| e-mrk-cloudenv-localenv | marks | waypoint:wp-adr-cloud-dev-environment | node:task-local-environment-setup |  |
+| e-dec-localenv-windows | decomposes | node:task-local-environment-setup | node:task-windows-install |  |
+| e-prod-localenv-codespaces | produces | node:task-local-environment-setup | artifact:artifact-setup-codespaces |  | proposed |

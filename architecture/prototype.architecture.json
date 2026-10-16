@@ -76,13 +76,14 @@
       "description": "User acting for the party that receives initial margin: issues margin calls, approves returns, declares a default and requests enforcement."
     },
     {
-      "unique-id": "windows-dev-host",
+      "unique-id": "dev-host",
       "node-type": "network",
-      "name": "Windows developer machine",
-      "description": "The developer's Windows machine. Python and Node.js services run natively or in WSL2; Besu runs in Docker Desktop (WSL2 backend).",
+      "name": "Development host",
+      "description": "Linux host that runs the whole prototype with Docker: primarily a GitHub Codespace built from .devcontainer/devcontainer.json (ADR wp-adr-cloud-dev-environment), alternatively the developer's Windows machine with WSL2 and Docker Desktop. Python and Node.js services run on the host; the Besu nodes run in Docker Compose.",
       "metadata": {
-        "os": "Windows 11",
-        "container-runtime": "Docker Desktop with WSL2 backend (assumption)"
+        "primary": "GitHub Codespaces, 4 cores / 16 GB, Docker-in-Docker",
+        "alternative": "Windows 11 with WSL2 and Docker Desktop",
+        "devcontainer": ".devcontainer/devcontainer.json"
       }
     },
     {
@@ -297,10 +298,10 @@
   "relationships": [
     {
       "unique-id": "host-deploys-prototype",
-      "description": "All prototype components run on the developer's Windows machine.",
+      "description": "All prototype components run on one development host (a codespace or the Windows machine).",
       "relationship-type": {
         "deployed-in": {
-          "container": "windows-dev-host",
+          "container": "dev-host",
           "nodes": [
             "party-console",
             "collateral-service",

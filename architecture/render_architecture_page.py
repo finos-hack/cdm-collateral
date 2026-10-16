@@ -49,10 +49,10 @@ missing = [r for r in R if R[r]['relationship-type'].get('connects') or R[r]['re
 missing = [r for r in missing if r not in EDGE]
 assert not missing, missing
 
-svg = ['<svg viewBox="0 0 1200 770" role="img" aria-label="Prototype architecture: each participant runs its own party console, collateral workflow service, workflow store, ledger gateway and key; workflow services, built on CDM 7.6.0, exchange messages with the counterparty instance and use an oracle service and a TypeScript ledger gateway to operate a collateral control contract, tokenized collateral, a margin call contract and an oracle feed on a local four-node Besu network with one validator node per participant, all on a Windows developer machine."><defs>',
+svg = ['<svg viewBox="0 0 1200 770" role="img" aria-label="Prototype architecture: each participant runs its own party console, collateral workflow service, workflow store, ledger gateway and key; workflow services, built on CDM 7.6.0, exchange messages with the counterparty instance and use an oracle service and a TypeScript ledger gateway to operate a collateral control contract, tokenized collateral, a margin call contract and an oracle feed on a local four-node Besu network with one validator node per participant, all on one development host (a GitHub Codespace or a Windows machine)."><defs>',
        '<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>',
        '<marker id="ahon" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahon"/></marker></defs>']
-svg.append('<rect x="200" y="20" width="985" height="740" rx="12" class="host"/><text x="214" y="42" class="grp">WINDOWS DEVELOPER MACHINE</text>')
+svg.append('<rect x="200" y="20" width="985" height="740" rx="12" class="host"/><text x="214" y="42" class="grp">DEVELOPMENT HOST · CODESPACE OR WINDOWS</text>')
 svg.append('<rect x="960" y="60" width="215" height="680" rx="10" class="besu"/><text x="1067" y="84" text-anchor="middle" class="grp">BESU · DOCKER · QBFT ×4</text><text x="1067" y="100" text-anchor="middle" class="sub">one validator node per participant</text>')
 svg.append('<rect x="215" y="110" width="730" height="365" rx="10" class="stack"/><text x="229" y="448" class="grp">PER PARTICIPANT · × N STACKS</text><text x="229" y="464" class="sub">own process · own store · own key</text>')
 for rid, pts in EDGE.items():

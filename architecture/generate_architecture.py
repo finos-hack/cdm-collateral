@@ -25,8 +25,8 @@ nodes = [
  node("e2e-test-harness", "service", "End-to-end test harness", "Test-only. Starts the stack, drives N party-console instances in parallel browser contexts with Playwright and asserts each CALM flow end to end, including on-chain state.",
       metadata={"language": "TypeScript", "framework": "Playwright (assumption)", "scope": "test only, not part of the runtime"}),
  node("secured-party-ops", "actor", "Secured party operations", "User acting for the party that receives initial margin: issues margin calls, approves returns, declares a default and requests enforcement."),
- node("windows-dev-host", "network", "Windows developer machine", "The developer's Windows machine. Python and Node.js services run natively or in WSL2; Besu runs in Docker Desktop (WSL2 backend).",
-      metadata={"os": "Windows 11", "container-runtime": "Docker Desktop with WSL2 backend (assumption)"}),
+ node("dev-host", "network", "Development host", "Linux host that runs the whole prototype with Docker: primarily a GitHub Codespace built from .devcontainer/devcontainer.json (ADR wp-adr-cloud-dev-environment), alternatively the developer's Windows machine with WSL2 and Docker Desktop. Python and Node.js services run on the host; the Besu nodes run in Docker Compose.",
+      metadata={"primary": "GitHub Codespaces, 4 cores / 16 GB, Docker-in-Docker", "alternative": "Windows 11 with WSL2 and Docker Desktop", "devcontainer": ".devcontainer/devcontainer.json"}),
  node("participant-stack", "system", "Participant stack", "Per-participant deployment (ADR wp-adr-per-participant-services): each simulated participant runs its own party console, collateral workflow service, workflow store, ledger gateway and keystore, holding only its own books and its own signing key, and connected to its own Besu validator node. N stacks run side by side; the oracle service, mock market data and contracts are shared.",
       metadata={"instances": "N, one per participant (pledgor, secured party, market operator)", "isolation": "own process, own SQLite file, own key; no shared database"}),
  node("cdm-collateral-prototype", "system", "CDM collateral prototype", "Prototype that illustrates CDM-based initial-margin management with tokenized collateral segregated by a smart contract on a local Besu network. Nothing is deployed outside the developer machine."),
@@ -59,7 +59,7 @@ nodes = [
 ]
 
 R = []
-R += [rel("host-deploys-prototype", "All prototype components run on the developer's Windows machine.", "deployed-in", "windows-dev-host",
+R += [rel("host-deploys-prototype", "All prototype components run on one development host (a codespace or the Windows machine).", "deployed-in", "dev-host",
           ["party-console", "collateral-service", "workflow-store", "oracle-service", "mock-market-data", "ledger-gateway", "dev-keystore", "besu-dev-network", "e2e-test-harness"]),
       rel("prototype-composition", "Components of the prototype system.", "composed-of", "cdm-collateral-prototype",
           ["participant-stack", "party-console", "collateral-service", "cdm-object-model", "workflow-store", "oracle-service", "ledger-gateway", "dev-keystore", "besu-dev-network", "tokenized-collateral", "collateral-control-contract", "margin-call-contract", "oracle-feed-contract"]),

@@ -1,6 +1,7 @@
 # Setting up the development machine (Windows)
 
-For the prototype in [`../architecture/README.md`](../architecture/README.md). These steps install the tools and start
+For the prototype in [`../architecture/README.md`](../architecture/README.md). The primary environment is GitHub
+Codespaces ([`setup-codespaces.md`](setup-codespaces.md)); this guide is for working on a local Windows machine. These steps install the tools and start
 a local four-node Besu network (one node per default participant). The prototype code itself is not built yet; later steps will add it.
 
 Version pins as of 2026-10-16. **Tested:** the QBFT configuration, `generate-blockchain-config` and the node flags in

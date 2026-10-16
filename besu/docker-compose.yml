@@ -1,7 +1,9 @@
 # Four-validator QBFT network, one Besu node per default participant.
-# Setup: docs/setup-windows.md step 6. BOOTNODE_ENODE comes from besu/.env (written in that step).
+# Setup: besu/start-network.sh (Linux, macOS, Codespaces) or docs/setup-windows.md step 6.
+# BOOTNODE_ENODE and BESU_USER come from besu/.env, written by either.
 x-besu: &besu
   image: hyperledger/besu:26.9.0
+  user: "${BESU_USER:-1000:1000}"
   restart: unless-stopped
 
 services:
