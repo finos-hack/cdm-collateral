@@ -180,3 +180,8 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-clickable-ui | review |  | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
 | node:task-clickable-ui | status |  | open | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
 | edge:e-dec-e2e-clickableui | review |  | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
+| waypoint:wp-adr-ux-scenario-grid | review |  | accepted | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
+| edge:e-mrk-uxgrid-clickableui | review |  | accepted | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
+| node:task-clickable-ui | status | open | active | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
+| artifact:artifact-clickable-ui-html | review |  | proposed | 2026-10-16T22:52:27Z |  |  |
+| edge:e-prod-clickableui-html | review |  | proposed | 2026-10-16T22:52:27Z |  |  |

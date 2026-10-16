@@ -1,0 +1,638 @@
+<title>Collateral Console Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an operations console. Home = scenario grid (agreement x flow). Scenario = guide strip,
+   participant consoles side by side, then a two-lane ledger timeline (off-chain messages | on-chain). */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --sunk: #f6f8fa; --ink: #18202c; --muted: #5a6575; --line: #d6dce4;
+  --act: #1d5fbf; --act-ink: #ffffff; --act-soft: #e3ecfa;
+  --pa: #9a5310; --pa-soft: #f7ebde; --pb: #3b47a6; --pb-soft: #e7e9f7; --pm: #2c6d70; --pm-soft: #e0f0ef;
+  --chain: #44612a; --chain-soft: #e8f0df;
+  --ok: #1d7a4c; --ok-soft: #e1f3e9; --warn: #9a6200; --warn-soft: #fbf0d9; --bad: #b0261c; --bad-soft: #fbe5e2;
+  --plan: #8a94a3;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161d; --surface: #1a212b; --sunk: #151b23; --ink: #e6ebf2; --muted: #9aa5b4; --line: #2c3644;
+  --act: #6ea3f0; --act-ink: #0d1420; --act-soft: #1d2b42;
+  --pa: #e1a265; --pa-soft: #3a2a1b; --pb: #9ea8ef; --pb-soft: #252a4a; --pm: #7cc5c6; --pm-soft: #1b3334;
+  --chain: #a7c785; --chain-soft: #23301b;
+  --ok: #6fcf9a; --ok-soft: #173326; --warn: #e5b35a; --warn-soft: #3a2e14; --bad: #f08a80; --bad-soft: #3d1c19;
+  --plan: #6c7685; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161d; --surface: #1a212b; --sunk: #151b23; --ink: #e6ebf2; --muted: #9aa5b4; --line: #2c3644;
+  --act: #6ea3f0; --act-ink: #0d1420; --act-soft: #1d2b42;
+  --pa: #e1a265; --pa-soft: #3a2a1b; --pb: #9ea8ef; --pb-soft: #252a4a; --pm: #7cc5c6; --pm-soft: #1b3334;
+  --chain: #a7c785; --chain-soft: #23301b;
+  --ok: #6fcf9a; --ok-soft: #173326; --warn: #e5b35a; --warn-soft: #3a2e14; --bad: #f08a80; --bad-soft: #3d1c19;
+  --plan: #6c7685; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: 1.6rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1rem; }
+p { margin: 0; }
+.mono, code { font-family: var(--f-mono); font-size: .86em; }
+.num { font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: .9em; }
+.muted { color: var(--muted); }
+.eyebrow { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--act); outline-offset: 2px; }
+a { color: var(--act); }
+
+/* top bar */
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px;
+  border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.top .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-family: var(--f-mono); font-size: .72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--muted); white-space: nowrap; }
+
+/* home grid */
+.intro { max-width: 70ch; display: flex; flex-direction: column; gap: 6px; }
+.gridbox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table.grid { border-collapse: collapse; width: 100%; min-width: 860px; }
+.grid th, .grid td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+.grid thead th { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500; background: var(--sunk); }
+.grid tbody th { width: 230px; font-weight: 500; }
+.grid tbody th .sub { display: block; font-size: .8rem; color: var(--muted); font-weight: 400; }
+.grid tr:last-child th, .grid tr:last-child td { border-bottom: 0; }
+.cell-go { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; border: 1px solid var(--act);
+  background: var(--act-soft); color: var(--ink); border-radius: 6px; padding: 7px 9px; }
+.cell-go:hover { background: var(--act); color: var(--act-ink); }
+.cell-go b { font-weight: 600; font-size: .86rem; }
+.cell-go span { font-size: .76rem; opacity: .85; }
+.cell-plan { font-size: .8rem; color: var(--plan); border: 1px dashed var(--line); border-radius: 6px; padding: 7px 9px; display: block; }
+.cell-na { color: var(--plan); font-family: var(--f-mono); font-size: .8rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+
+/* scenario header + guide */
+.scbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 6px 12px; }
+.btn:hover { border-color: var(--act); }
+.btn:disabled { opacity: .45; cursor: default; }
+.guide { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 14px 24px; }
+.guide .who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.guide .say { font-size: 1.02rem; font-weight: 500; }
+.guide .why { color: var(--muted); max-width: 75ch; }
+.refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ref { font-family: var(--f-mono); font-size: .72rem; padding: 2px 7px; border-radius: 4px; background: var(--sunk); border: 1px solid var(--line); }
+.track { display: flex; flex-direction: column; gap: 4px; }
+.track ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.track li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; font-size: .8rem; color: var(--muted); }
+.track li .n { font-family: var(--f-mono); text-align: right; white-space: nowrap; }
+.track li.done { color: var(--ink); }
+.track li.done .n { color: var(--ok); }
+.track li.done .n::before { content: "✓ "; }
+.track li.cur { color: var(--ink); font-weight: 600; }
+.track li.cur .n { color: var(--act); }
+.party { font-family: var(--f-mono); font-size: .74rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.p-A { color: var(--pa); background: var(--pa-soft); } .p-B { color: var(--pb); background: var(--pb-soft); }
+.p-M { color: var(--pm); background: var(--pm-soft); } .p-chain { color: var(--chain); background: var(--chain-soft); }
+
+/* consoles */
+.consoles { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: start; }
+.console { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; }
+.console > header { padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+.console > header .row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.console.A > header { border-top: 4px solid var(--pa); border-radius: 8px 8px 0 0; }
+.console.B > header { border-top: 4px solid var(--pb); border-radius: 8px 8px 0 0; }
+.console.M > header { border-top: 4px solid var(--pm); border-radius: 8px 8px 0 0; }
+.console .body { padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+.sect { display: flex; flex-direction: column; gap: 6px; }
+.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; font-size: .84rem; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; text-align: right; }
+table.t { border-collapse: collapse; width: 100%; font-size: .82rem; }
+.t th { text-align: left; font-weight: 500; color: var(--muted); font-size: .72rem; border-bottom: 1px solid var(--line); padding: 3px 4px; }
+.t td { border-bottom: 1px solid var(--line); padding: 4px; vertical-align: top; }
+.t td.r, .t th.r { text-align: right; }
+.tscroll { overflow-x: auto; }
+.callcard { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--sunk); }
+.callcard .row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip { font-family: var(--f-mono); font-size: .7rem; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.s-ok { color: var(--ok); background: var(--ok-soft); } .s-warn { color: var(--warn); background: var(--warn-soft); }
+.s-bad { color: var(--bad); background: var(--bad-soft); } .s-info { color: var(--act); background: var(--act-soft); }
+.s-neutral { color: var(--muted); background: var(--surface); }
+.next { border: 2px solid var(--act); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--act-soft); }
+.next .t td:first-child { color: var(--muted); }
+.check-ok::before { content: "✓ "; color: var(--ok); font-weight: 600; }
+.check-bad::before { content: "✗ "; color: var(--bad); font-weight: 600; }
+.go { align-self: flex-start; border: 0; background: var(--act); color: var(--act-ink); border-radius: 6px; padding: 8px 14px; font-weight: 600; }
+.go:hover { filter: brightness(1.08); }
+@media (prefers-reduced-motion: no-preference) { .go { animation: pulse 1.8s ease-in-out infinite; } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--act) 45%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--act) 0%, transparent); } }
+.waiting { font-size: .8rem; color: var(--muted); border: 1px dashed var(--line); border-radius: 6px; padding: 6px 10px; }
+.note { font-size: .8rem; color: var(--muted); }
+
+/* timeline */
+.timeline { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.lane { display: flex; flex-direction: column; min-width: 0; }
+.lane + .lane { border-left: 1px solid var(--line); }
+.lane > header { padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.lane ol { list-style: none; margin: 0; padding: 8px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+.ev { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; font-size: .82rem; }
+.ev .when { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); padding-top: 2px; }
+.ev .what { display: flex; flex-direction: column; gap: 2px; }
+.ev .fn { font-family: var(--f-mono); font-size: .8rem; }
+.ev.fresh .what { border-left: 3px solid var(--act); padding-left: 8px; }
+.empty { font-size: .82rem; color: var(--muted); padding: 4px 0; }
+.done-box { border: 1px solid var(--ok); background: var(--ok-soft); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.foot { font-size: .8rem; color: var(--muted); max-width: 90ch; }
+@media (max-width: 720px) { .guide { grid-template-columns: minmax(0, 1fr); } .lane + .lane { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+"use strict";
+/* ---------- formatting ---------- */
+const usd = n => "USD " + Math.round(n).toLocaleString("en-US");
+const qty = n => Math.round(n).toLocaleString("en-US");
+const px = n => n.toFixed(2);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ---------- reference data (test data, invented) ---------- */
+const TOKENS = {
+  tUST: { name: "Tokenized US Treasury 4.25% 2034", unit: "unit (USD 100 face)" },
+  tMMF: { name: "Tokenized USD government MMF", unit: "share" },
+  tUSD: { name: "USD deposit token", unit: "USD" },
+};
+const PARTIES = {
+  A: { name: "BANK-A", node: "bank-a · 8547" },
+  B: { name: "BANK-B", node: "bank-b · 8549" },
+  M: { name: "MKT", node: "mkt · 8545" },
+};
+const AGREEMENTS = {
+  IM: {
+    label: "ISDA IM · pledge", doc: "2018 ISDA IM Credit Support Annex (Security Interest, New York law)",
+    roles: { A: "Pledgor", B: "Secured Party", M: "Market data operator" },
+    terms: [["IM model", "ISDA SIMM"], ["IM threshold", "USD 50,000,000"], ["Minimum transfer amount", "USD 500,000"],
+            ["Rounding", "delivery up, return down, USD 10,000"], ["Custody", "collateral control contract (segregated)"]],
+    elig: [["tUST", "2%", "none"], ["tMMF", "4%", "max 50% of IM posted"]],
+    haircut: { tUST: 0.02, tMMF: 0.04 },
+  },
+  VM: {
+    label: "ISDA VM CSA · title transfer", doc: "2016 ISDA Credit Support Annex for Variation Margin (English law, title transfer)",
+    roles: { A: "Transferor", B: "Transferee", M: "Market data operator" },
+    terms: [["Threshold", "USD 0"], ["Minimum transfer amount", "USD 250,000"], ["Rounding", "delivery up, return down, USD 10,000"],
+            ["Title", "passes to the Transferee; reuse allowed"], ["Return", "equivalent credit support"]],
+    elig: [["tUSD", "0%", "none"]],
+    haircut: { tUSD: 0 },
+  },
+};
+
+/* ---------- state helpers ---------- */
+function base(kind) {
+  return {
+    kind, block: 1204,
+    feed: { tUST: 98.40, tMMF: 1.00, tUSD: 1.00 }, mock: { tUST: 98.40, tMMF: 1.00, tUSD: 1.00 }, defaulted: false,
+    wallet: kind === "IM" ? { A: { tUST: 400000, tMMF: 20000000, tUSD: 0 }, B: { tUST: 0, tMMF: 0, tUSD: 0 } }
+                          : { A: { tUST: 0, tMMF: 0, tUSD: 15000000 }, B: { tUST: 0, tMMF: 0, tUSD: 7000000 } },
+    pledges: [], calls: [], ev: [], req: null, held: null, info: {}, nextCall: 1,
+  };
+}
+const hc = (s, t) => AGREEMENTS[s.kind].haircut[t] ?? 0;
+const valueAfterHaircut = (s, t, q) => q * s.feed[t] * (1 - hc(s, t));
+const pledgedValue = s => s.pledges.filter(p => p.state === "pledged").reduce((a, p) => a + valueAfterHaircut(s, p.token, p.qty), 0);
+function chain(s, signer, fn, text) { s.block += 1; s.ev.push({ lane: "on", step: s._step, block: s.block, signer, fn, text }); }
+function msg(s, from, to, what, text) { s.ev.push({ lane: "off", step: s._step, from, to, what, text }); }
+function newCall(s, f) { const id = "C-" + String(s.nextCall++).padStart(4, "0"); const c = Object.assign({ id, state: "issued", agreed: 0, disputed: 0, proposals: [] }, f); s.calls.push(c); return c; }
+const call = (s, id) => s.calls.find(c => c.id === id);
+function pledge(s, callId, assets) {
+  assets.forEach(([t, q]) => { s.wallet.A[t] -= q; s.pledges.push({ token: t, qty: q, call: callId, state: "pledged" }); });
+}
+function initialPledge(s) { s.pledges.push({ token: "tUST", qty: 128589, call: "C-0001", state: "pledged" }); s.wallet.A.tUST -= 128589;
+  s.calls.push({ id: "C-0001", kind: "IM", from: "B", to: "A", amount: 12400000, state: "settled", agreed: 12400000, disputed: 0, proposals: [{ id: "P-1", assets: [["tUST", 128589]], state: "accepted" }] });
+  s.nextCall = 2; s.req = 12400000; }
+
+/* ---------- scenarios ---------- */
+const S = {};
+
+S["im-call"] = {
+  kind: "IM", title: "Initial margin call, collateral proposal and pledge", flow: "flow-im-margin-call-pledge", parties: ["A", "B"],
+  init() { const s = base("IM"); s.req = 0; return s; },
+  outcome: "BANK-B called USD 12,400,000 of initial margin, BANK-A agreed and proposed tokenized Treasuries, BANK-B accepted them, and BANK-A pledged them into the collateral control contract. The tokens are segregated: BANK-B cannot reuse them, and they leave the contract only by return or enforcement.",
+  steps: [
+    { actor: "B", say: "Issue the initial margin call", calm: "1–5",
+      why: "BANK-B's SIMM calculation shows USD 62.4m of initial margin. Above the USD 50m IM threshold, with nothing held yet, BANK-A must deliver USD 12.4m. The call is recorded on-chain (state, amount, deadline, content hash) and the full CDM content goes to BANK-A's service.",
+      refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003", "ADR wp-adr-margin-call-state-onchain"],
+      ui: { label: "Issue call", fields: [["Valuation date", "2026-10-16"], ["SIMM initial margin", "USD 62,400,000"], ["IM threshold", "USD 50,000,000"], ["Collateral held", "USD 0"], ["Delivery amount (rounded up)", "USD 12,400,000"], ["Settlement deadline", "2026-10-19"]] },
+      apply(s) { s.req = 12400000; const c = newCall(s, { kind: "IM", from: "B", to: "A", amount: 12400000, deadline: "2026-10-19" });
+        chain(s, "B", "issueCall(" + c.id + ", 12,400,000, 2026-10-19, hash)", "Margin call contract: call issued, signed by BANK-B");
+        msg(s, "B", "A", "MarginCallIssuance", "CDM content of " + c.id + "; BANK-A's service checks it against the on-chain hash ✓"); } },
+    { actor: "A", say: "Agree in full and propose collateral", calm: "6–12",
+      why: "BANK-A's own SIMM run agrees with the amount. BANK-A proposes tokenized Treasuries. At 98.40 and a 2% haircut, 128,589 units are worth USD 12,400,094 after haircut, just above the call.",
+      refs: ["CDM MarginCallResponse", "ISO 20022 colr.004", "ISO 20022 colr.007 (proposal)"],
+      ui: { label: "Agree and propose", fields: [["Response", "Agree in full"], ["Agreed amount", "USD 12,400,000"], ["Propose", "tUST 128,589 units"], ["Value after 2% haircut", "USD 12,400,094"]] },
+      apply(s) { const c = call(s, "C-0001"); c.state = "agreed"; c.agreed = 12400000; c.proposals.push({ id: "P-1", assets: [["tUST", 128589]], state: "proposed" });
+        chain(s, "A", "respond(C-0001, agree, 12,400,000) · propose(P-1)", "Response and proposal recorded, signed by BANK-A");
+        msg(s, "A", "B", "MarginCallResponse + proposal", "Agree USD 12,400,000; propose tUST 128,589 units"); } },
+    { actor: "B", say: "Check the proposal and accept it", calm: "13–19",
+      why: "BANK-B checks the proposed tokens against its own copy of the eligibility schedule: eligible asset, haircut, concentration limits, value after haircut. All pass, so BANK-B accepts on-chain with its own key.",
+      refs: ["ISO 20022 colr.008", "CDM EligibleCollateralSpecification"],
+      ui: { label: "Accept proposal", checks: [["ok", "tUST is eligible collateral"], ["ok", "Haircut 2% applied"], ["ok", "No concentration limit for tUST"], ["ok", "Value after haircut USD 12,400,094 ≥ USD 12,400,000"]] },
+      apply(s) { call(s, "C-0001").proposals[0].state = "accepted";
+        chain(s, "B", "decideProposal(P-1, accept)", "Proposal accepted, signed by BANK-B");
+        msg(s, "B", "A", "Proposal acceptance", "P-1 accepted"); } },
+    { actor: "A", say: "Pledge the accepted collateral", calm: "20–23",
+      why: "BANK-A's gateway submits pledge(). The control contract checks it against the agreed call and the accepted proposal, pulls the tokens from BANK-A's wallet and marks the call settled, all in one finalized block.",
+      refs: ["ADR wp-adr-im-segregation", "ASR concept-asr-settlement-finality"],
+      ui: { label: "Pledge", fields: [["Pledge", "tUST 128,589 units"], ["To", "Collateral control contract (segregated)"], ["Against", "C-0001 / P-1"]] },
+      apply(s) { pledge(s, "C-0001", [["tUST", 128589]]); call(s, "C-0001").state = "settled";
+        chain(s, "A", "pledge(C-0001, P-1)", "Control contract checked call and proposal, took 128,589 tUST; call settled"); } },
+    { actor: "B", say: "Confirm the books match the ledger", calm: "24–26",
+      why: "Each party's gateway reports the finalized events to its own workflow service. Both books now show the same call state and collateral, without a reconciliation message between them.",
+      refs: ["ADR wp-adr-per-participant-services"],
+      ui: { label: "Confirm", checks: [["ok", "C-0001 settled on-chain and in BANK-B's books"], ["ok", "128,589 tUST held for BANK-B in the control contract"], ["ok", "Coverage USD 12,400,094 ≥ USD 12,400,000"]] },
+      apply(s) { msg(s, "B", "B", "Ledger events", "Gateways reported Pledged and CallSettled to both workflow services"); } },
+  ],
+};
+
+S["im-dispute"] = {
+  kind: "IM", title: "Partial agreement, dispute and rejected proposal", flow: "flow-im-margin-call-pledge", parties: ["A", "B"],
+  init() { const s = base("IM"); s.req = 0; return s; },
+  outcome: "BANK-A agreed USD 11.9m and disputed USD 0.5m. Its first proposal (all money market fund shares) broke BANK-B's 50% concentration limit and was rejected; the second mix was accepted and pledged. The agreed part settled on-chain. The disputed USD 500,000 stays open on the call while the parties compare SIMM inputs off-chain.",
+  steps: [
+    { actor: "B", say: "Issue the initial margin call", calm: "1–5",
+      why: "Same call as the basic scenario: USD 12.4m above the IM threshold.",
+      refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
+      ui: { label: "Issue call", fields: [["SIMM initial margin", "USD 62,400,000"], ["Delivery amount", "USD 12,400,000"], ["Settlement deadline", "2026-10-19"]] },
+      apply(s) { s.req = 12400000; const c = newCall(s, { kind: "IM", from: "B", to: "A", amount: 12400000, deadline: "2026-10-19" });
+        chain(s, "B", "issueCall(" + c.id + ", 12,400,000, 2026-10-19, hash)", "Call issued, signed by BANK-B");
+        msg(s, "B", "A", "MarginCallIssuance", "CDM content of C-0001; hash checked ✓"); } },
+    { actor: "A", say: "Agree part, dispute the rest, propose fund shares", calm: "6–12",
+      why: "BANK-A's SIMM run gives a lower figure: its interest-rate delta sensitivities differ from BANK-B's. It agrees USD 11.9m and disputes USD 0.5m. The dispute is recorded on the call; resolving it happens off-chain. It proposes tokenized money market fund shares only.",
+      refs: ["CDM MarginCallResponse", "ISO 20022 colr.004", "ISO 20022 colr.009 (dispute)", "ASR concept-asr-onchain-call-state"],
+      ui: { label: "Partially agree and propose", fields: [["Response", "Partially agree"], ["Agreed", "USD 11,900,000"], ["Disputed", "USD 500,000 (SIMM IR delta sensitivities differ)"], ["Propose", "tMMF 12,395,834 shares"], ["Value after 4% haircut", "USD 11,900,001"]] },
+      apply(s) { const c = call(s, "C-0001"); c.state = "partially agreed"; c.agreed = 11900000; c.disputed = 500000;
+        c.proposals.push({ id: "P-1", assets: [["tMMF", 12395834]], state: "proposed" });
+        chain(s, "A", "respond(C-0001, partial, 11,900,000, disputed 500,000) · propose(P-1)", "Response, dispute amount and proposal recorded, signed by BANK-A");
+        msg(s, "A", "B", "MarginCallResponse + dispute + proposal", "Agree USD 11.9m, dispute USD 0.5m; propose tMMF 12,395,834 shares"); } },
+    { actor: "B", say: "Reject the proposal: concentration limit", calm: "13–19",
+      why: "Fund shares are eligible, but the schedule allows at most 50% of the IM posted in them. This proposal is 100% fund shares, so BANK-B rejects it with the reason.",
+      refs: ["ISO 20022 colr.008", "CDM ConcentrationLimit"],
+      ui: { label: "Reject proposal", checks: [["ok", "tMMF is eligible collateral"], ["ok", "Haircut 4% applied"], ["bad", "Concentration: 100% in tMMF > 50% limit"]] },
+      apply(s) { call(s, "C-0001").proposals[0].state = "rejected";
+        chain(s, "B", "decideProposal(P-1, reject)", "Proposal rejected, signed by BANK-B");
+        msg(s, "B", "A", "Proposal rejection", "P-1 rejected: tMMF over the 50% concentration limit"); } },
+    { actor: "A", say: "Propose a new mix", calm: "6–12 (repeat)",
+      why: "BANK-A splits the collateral: Treasuries plus fund shares under the limit. Together they cover the agreed USD 11.9m after haircuts, with fund shares at 48.5% of market value.",
+      refs: ["ISO 20022 colr.007"],
+      ui: { label: "Propose", fields: [["tUST", "64,200 units → USD 6,190,934 after haircut"], ["tMMF", "5,950,000 shares → USD 5,712,000 after haircut"], ["Total after haircuts", "USD 11,902,934"], ["tMMF share of market value", "48.5%"]] },
+      apply(s) { call(s, "C-0001").proposals.push({ id: "P-2", assets: [["tUST", 64200], ["tMMF", 5950000]], state: "proposed" });
+        chain(s, "A", "propose(C-0001, P-2)", "New proposal recorded, signed by BANK-A");
+        msg(s, "A", "B", "Collateral proposal", "P-2: tUST 64,200 + tMMF 5,950,000"); } },
+    { actor: "B", say: "Accept the new proposal", calm: "13–19",
+      why: "Both assets are eligible, haircuts applied, fund shares under 50%, and the value covers the agreed amount.",
+      refs: ["ISO 20022 colr.008"],
+      ui: { label: "Accept proposal", checks: [["ok", "Both assets eligible"], ["ok", "tMMF 48.5% ≤ 50% limit"], ["ok", "USD 11,902,934 ≥ agreed USD 11,900,000"]] },
+      apply(s) { call(s, "C-0001").proposals[1].state = "accepted";
+        chain(s, "B", "decideProposal(P-2, accept)", "Proposal accepted, signed by BANK-B");
+        msg(s, "B", "A", "Proposal acceptance", "P-2 accepted"); } },
+    { actor: "A", say: "Pledge the agreed part", calm: "20–26",
+      why: "The control contract takes only the accepted assets, up to the agreed amount. The call is settled for the agreed USD 11.9m; the disputed USD 0.5m stays open on the call.",
+      refs: ["ADR wp-adr-im-segregation"],
+      ui: { label: "Pledge", fields: [["Pledge", "tUST 64,200 + tMMF 5,950,000"], ["Against", "C-0001 / P-2"]] },
+      apply(s) { pledge(s, "C-0001", [["tUST", 64200], ["tMMF", 5950000]]); call(s, "C-0001").state = "settled (agreed part)";
+        chain(s, "A", "pledge(C-0001, P-2)", "Accepted assets pledged; agreed part settled; USD 500,000 still disputed"); } },
+    { actor: "B", say: "Start dispute resolution off-chain", calm: "–",
+      why: "The parties exchange their SIMM inputs (CRIF sensitivity files) and recalculate. When they settle the difference, a new call or response for the resolved amount goes through the same steps.",
+      refs: ["ISO 20022 colr.009", "ISDA SIMM CRIF"],
+      ui: { label: "Request CRIF files", fields: [["Disputed", "USD 500,000"], ["Cause", "IR delta sensitivities"], ["Next", "exchange CRIF files, recalculate"]] },
+      apply(s) { msg(s, "B", "A", "Dispute resolution", "Request: CRIF sensitivity file for 2026-10-16 portfolio"); } },
+  ],
+};
+
+S["im-reval"] = {
+  kind: "IM", title: "Revaluation and top-up call", flow: "flow-revaluation-top-up", parties: ["M", "B", "A"],
+  init() { const s = base("IM"); initialPledge(s); return s; },
+  outcome: "A Treasury sell-off moved tUST from 98.40 to 94.00. The pledged collateral fell to USD 11,845,619 after haircut, USD 554,381 short of the requirement and above the USD 500,000 minimum transfer amount. BANK-B called USD 560,000 (rounded up), and BANK-A topped up with 6,080 more tUST units.",
+  steps: [
+    { actor: "M", say: "Move the tUST price", calm: "1–3",
+      why: "The market data operator stands in for price vendors. A rates sell-off moves the tokenized Treasury from 98.40 to 94.00 in the mock source.",
+      refs: ["Mock market data"],
+      ui: { label: "Set price", fields: [["Asset", "tUST"], ["Price", "98.40 → 94.00"]] },
+      apply(s) { s.mock.tUST = 94.00; msg(s, "M", "M", "Market data", "Operator set tUST to 94.00 in the mock source"); } },
+    { actor: "M", say: "Publish the price to the oracle feed", calm: "4",
+      why: "The oracle service signs the update with the oracle publisher key and writes it to the on-chain feed through the operator's gateway.",
+      refs: ["Oracle feed contract"],
+      ui: { label: "Publish", fields: [["tUST", "94.00"], ["Signed by", "oracle publisher key"]] },
+      apply(s) { s.feed.tUST = 94.00; chain(s, "M", "publishPrice(tUST, 94.00)", "Oracle feed updated, signed by the oracle publisher"); } },
+    { actor: "B", say: "Revalue the collateral", calm: "5–6",
+      why: "BANK-B's service values the pledged tokens at the new price after haircut and compares them with the requirement.",
+      refs: ["CDM Haircut", "CSA minimum transfer amount"],
+      ui: { label: "Revalue", fields: [["Pledged", "tUST 128,589 × 94.00 × 98%"], ["Value after haircut", "USD 11,845,619"], ["Required", "USD 12,400,000"], ["Shortfall", "USD 554,381 > MTA USD 500,000"], ["Call (rounded up)", "USD 560,000"]] },
+      apply(s) { s.info.reval = true; } },
+    { actor: "B", say: "Issue the top-up call", calm: "→ call flow 1–5",
+      why: "From here the top-up follows the same call, proposal and pledge steps as the initial call.",
+      refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
+      ui: { label: "Issue call", fields: [["Delivery amount", "USD 560,000"], ["Settlement deadline", "2026-10-19"]] },
+      apply(s) { newCall(s, { kind: "IM", from: "B", to: "A", amount: 560000, deadline: "2026-10-19" });
+        chain(s, "B", "issueCall(C-0002, 560,000, 2026-10-19, hash)", "Top-up call issued, signed by BANK-B");
+        msg(s, "B", "A", "MarginCallIssuance", "C-0002 top-up; hash checked ✓"); } },
+    { actor: "A", say: "Agree and propose", calm: "6–12",
+      why: "BANK-A sees the same feed price, agrees and proposes 6,080 tUST units (USD 560,090 after haircut).",
+      refs: ["CDM MarginCallResponse", "ISO 20022 colr.007"],
+      ui: { label: "Agree and propose", fields: [["Agreed", "USD 560,000"], ["Propose", "tUST 6,080 units → USD 560,090"]] },
+      apply(s) { const c = call(s, "C-0002"); c.state = "agreed"; c.agreed = 560000; c.proposals.push({ id: "P-1", assets: [["tUST", 6080]], state: "proposed" });
+        chain(s, "A", "respond(C-0002, agree) · propose(P-1)", "Signed by BANK-A"); msg(s, "A", "B", "MarginCallResponse + proposal", "Agree; tUST 6,080"); } },
+    { actor: "B", say: "Accept the proposal", calm: "13–19",
+      why: "Eligible asset, haircut applied, value covers the call.",
+      refs: ["ISO 20022 colr.008"],
+      ui: { label: "Accept proposal", checks: [["ok", "tUST eligible"], ["ok", "USD 560,090 ≥ USD 560,000"]] },
+      apply(s) { call(s, "C-0002").proposals[0].state = "accepted"; chain(s, "B", "decideProposal(P-1, accept)", "Signed by BANK-B"); msg(s, "B", "A", "Proposal acceptance", "C-0002 / P-1 accepted"); } },
+    { actor: "A", say: "Pledge the top-up", calm: "20–26",
+      why: "The top-up is pledged into the same contract. Coverage is back above the requirement.",
+      refs: ["ADR wp-adr-im-segregation"],
+      ui: { label: "Pledge", fields: [["Pledge", "tUST 6,080 units"], ["Against", "C-0002 / P-1"]] },
+      apply(s) { pledge(s, "C-0002", [["tUST", 6080]]); call(s, "C-0002").state = "settled"; chain(s, "A", "pledge(C-0002, P-1)", "6,080 tUST pledged; call settled"); } },
+  ],
+};
+
+S["im-return"] = {
+  kind: "IM", title: "Return of excess initial margin", flow: "flow-return", parties: ["A", "B"],
+  init() { const s = base("IM"); initialPledge(s); return s; },
+  outcome: "Trades matured and BANK-A's SIMM fell to USD 58.1m, so only USD 8.1m is required above the threshold. BANK-A called for USD 4,300,000 back (rounded down). BANK-B agreed and released 44,591 tUST units by signing returnPledge() with its own key.",
+  steps: [
+    { actor: "A", say: "Call for the return of excess margin", calm: "1–5",
+      why: "Industry practice treats a return as a margin call in the other direction. Required falls to USD 8.1m; BANK-A holds USD 12,400,094 after haircut with BANK-B, so the excess is USD 4,300,059, rounded down to USD 4,300,000.",
+      refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
+      ui: { label: "Issue return call", fields: [["SIMM initial margin", "USD 58,100,000"], ["Required above threshold", "USD 8,100,000"], ["Held after haircut", "USD 12,400,094"], ["Return amount (rounded down)", "USD 4,300,000"]] },
+      apply(s) { s.req = 8100000; newCall(s, { kind: "Return", from: "A", to: "B", amount: 4300000, deadline: "2026-10-19" });
+        chain(s, "A", "issueCall(C-0002, return 4,300,000, hash)", "Return call recorded, signed by BANK-A");
+        msg(s, "A", "B", "MarginCallIssuance (return)", "C-0002: return USD 4,300,000; hash checked ✓"); } },
+    { actor: "B", say: "Agree and release the collateral", calm: "6–11",
+      why: "BANK-B's own SIMM run gives USD 58.14m, close enough to agree. Its gateway records the agreement and submits returnPledge() with BANK-B's key. The contract checks the agreed return call and sends 44,591 tUST units (USD 4,299,999 after haircut) back to BANK-A.",
+      refs: ["CDM MarginCallResponse", "ISO 20022 colr.004", "ADR wp-adr-im-segregation"],
+      ui: { label: "Agree and release", fields: [["Response", "Agree in full"], ["Release", "tUST 44,591 units"], ["Signed by", "BANK-B key"]] },
+      apply(s) { const c = call(s, "C-0002"); c.state = "settled"; c.agreed = 4300000;
+        const p = s.pledges.find(x => x.state === "pledged" && x.token === "tUST"); p.qty -= 44591; s.wallet.A.tUST += 44591;
+        s.pledges.push({ token: "tUST", qty: 44591, call: "C-0002", state: "returned" });
+        chain(s, "B", "respond(C-0002, agree) · returnPledge(C-0002, tUST 44,591)", "Return agreed and executed, signed by BANK-B; call settled");
+        msg(s, "B", "A", "MarginCallResponse", "C-0002 agreed"); } },
+    { actor: "A", say: "Check the returned collateral", calm: "12",
+      why: "BANK-A's wallet shows the returned units; the contract still holds the rest for BANK-B.",
+      refs: ["ASR concept-asr-settlement-finality"],
+      ui: { label: "Confirm", checks: [["ok", "44,591 tUST back in BANK-A's wallet"], ["ok", "83,998 tUST still pledged"], ["ok", "Coverage USD 8,100,095 ≥ USD 8,100,000"]] },
+      apply(s) { msg(s, "A", "A", "Ledger events", "Returned event recorded in BANK-A's books"); } },
+  ],
+};
+
+S["im-default"] = {
+  kind: "IM", title: "Default and enforcement", flow: "flow-default-enforcement", parties: ["B", "M", "A"],
+  init() { const s = base("IM"); initialPledge(s); return s; },
+  outcome: "BANK-A failed to pay. BANK-B served the legal notices off-chain, the operator published the default status, and BANK-B enforced: the control contract confirmed the default on the oracle feed and moved the 128,589 pledged tUST units to BANK-B.",
+  steps: [
+    { actor: "B", say: "Declare an Event of Default", calm: "1–3",
+      why: "BANK-A missed a payment (ISDA Master Agreement Section 5(a)(i)). The notice designating an Early Termination Date is a legal notice delivered as Section 12 requires; the chain only gets the default status.",
+      refs: ["ISDA 2002 MA §5(a)(i), §6, §12"],
+      ui: { label: "Declare default", fields: [["Defaulting party", "BANK-A"], ["Event", "Failure to pay (§5(a)(i))"], ["Notice", "delivered off-chain (§12)"]] },
+      apply(s) { msg(s, "B", "A", "Legal notice", "Notice of Event of Default and Early Termination Date (off-chain, §12)");
+        msg(s, "B", "M", "Default notice", "BANK-B's service forwards the default to the oracle service"); } },
+    { actor: "M", say: "Publish the default status", calm: "4–5",
+      why: "The oracle service writes BANK-A's default status to the on-chain feed, signed by the oracle publisher.",
+      refs: ["Oracle feed contract"],
+      ui: { label: "Publish default", fields: [["Party", "BANK-A"], ["Status", "in default"]] },
+      apply(s) { s.defaulted = true; chain(s, "M", "publishDefault(BANK-A)", "Oracle feed: BANK-A in default"); } },
+    { actor: "B", say: "Enforce against the pledged collateral", calm: "6–9",
+      why: "BANK-B's gateway submits enforce() with BANK-B's key. The control contract reads the default status from the feed and only then moves the pledged tokens to BANK-B.",
+      refs: ["ADR wp-adr-im-segregation", "Assumption nw-assumption-contract-control"],
+      ui: { label: "Enforce", checks: [["ok", "Default status on the oracle feed"], ["ok", "Pledge C-0001 in state pledged"]] },
+      apply(s) { const p = s.pledges.find(x => x.state === "pledged"); p.state = "enforced"; s.wallet.B.tUST += p.qty;
+        chain(s, "B", "enforce(C-0001)", "Contract confirmed default; 128,589 tUST moved to BANK-B"); } },
+    { actor: "B", say: "Apply the collateral to the close-out amount", calm: "–",
+      why: "BANK-B values the collateral against its close-out amount. Any surplus is owed back to BANK-A under the CSA; that settlement is off-chain in this prototype.",
+      refs: ["ISDA 2002 MA §6(e)"],
+      ui: { label: "Record", fields: [["Collateral received", "tUST 128,589 → USD 12,653,158 at 98.40"], ["Close-out amount (example)", "USD 11,700,000"], ["Surplus owed to BANK-A", "USD 953,158"]] },
+      apply(s) { msg(s, "B", "A", "Close-out statement", "Close-out USD 11,700,000; collateral USD 12,653,158; surplus USD 953,158 owed to BANK-A"); } },
+  ],
+};
+
+S["vm-call"] = {
+  kind: "VM", title: "Variation margin call by title transfer", flow: "flow-im-margin-call-pledge (VM variant, not in CALM yet)", parties: ["A", "B"],
+  init() { const s = base("VM"); s.held = 5000000; s.req = 0; return s; },
+  outcome: "BANK-B's exposure rose to USD 8.24m with USD 5m held, so it called USD 3.24m. BANK-A paid in deposit tokens straight to BANK-B's wallet. Title passed: no control contract, and BANK-B was free to reuse the cash, which it did. Compare the IM scenario, where the same call ends in a segregated pledge.",
+  steps: [
+    { actor: "B", say: "Issue the variation margin call", calm: "–",
+      why: "Mark-to-market exposure of BANK-B to BANK-A is USD 8.24m. The credit support balance is USD 5m, threshold zero, so the Delivery Amount is USD 3.24m.",
+      refs: ["CDM MarginCallIssuance", "ISO 20022 colr.003"],
+      ui: { label: "Issue call", fields: [["Exposure (MTM)", "USD 8,240,000"], ["Credit support balance", "USD 5,000,000"], ["Delivery amount", "USD 3,240,000"], ["Settlement deadline", "2026-10-19"]] },
+      apply(s) { s.req = 8240000; newCall(s, { kind: "VM", from: "B", to: "A", amount: 3240000, deadline: "2026-10-19" });
+        chain(s, "B", "issueCall(C-0001, 3,240,000, hash)", "VM call issued, signed by BANK-B"); msg(s, "B", "A", "MarginCallIssuance", "C-0001; hash checked ✓"); } },
+    { actor: "A", say: "Agree and propose cash", calm: "–",
+      why: "BANK-A agrees and offers USD deposit tokens, the only eligible credit support under this CSA.",
+      refs: ["CDM MarginCallResponse", "ISO 20022 colr.004"],
+      ui: { label: "Agree and propose", fields: [["Agreed", "USD 3,240,000"], ["Propose", "tUSD 3,240,000"]] },
+      apply(s) { const c = call(s, "C-0001"); c.state = "agreed"; c.agreed = 3240000; c.proposals.push({ id: "P-1", assets: [["tUSD", 3240000]], state: "proposed" });
+        chain(s, "A", "respond(C-0001, agree) · propose(P-1)", "Signed by BANK-A"); msg(s, "A", "B", "MarginCallResponse + proposal", "Agree; tUSD 3,240,000"); } },
+    { actor: "B", say: "Accept the proposal", calm: "–",
+      why: "Cash in USD, zero haircut, covers the call.",
+      refs: ["ISO 20022 colr.008"],
+      ui: { label: "Accept proposal", checks: [["ok", "tUSD eligible, 0% haircut"], ["ok", "USD 3,240,000 = call"]] },
+      apply(s) { call(s, "C-0001").proposals[0].state = "accepted"; chain(s, "B", "decideProposal(P-1, accept)", "Signed by BANK-B"); msg(s, "B", "A", "Proposal acceptance", "P-1 accepted"); } },
+    { actor: "A", say: "Transfer the cash outright", calm: "–",
+      why: "Under a title transfer CSA the collateral goes straight to the Transferee's wallet. No control contract; the call is settled by the transfer.",
+      refs: ["English law VM CSA, title transfer"],
+      ui: { label: "Transfer", fields: [["Transfer", "tUSD 3,240,000"], ["To", "BANK-B wallet (title passes)"]] },
+      apply(s) { s.wallet.A.tUSD -= 3240000; s.wallet.B.tUSD += 3240000; s.held = 8240000; call(s, "C-0001").state = "settled";
+        chain(s, "A", "settleByTransfer(C-0001, tUSD 3,240,000)", "Deposit tokens moved BANK-A → BANK-B; call settled"); } },
+    { actor: "B", say: "Reuse the cash received", calm: "–",
+      why: "Title passed, so BANK-B can use the cash, here to fund its own payments. Under the IM pledge this is impossible: the tokens stay in the control contract.",
+      refs: ["Contrast: ADR wp-adr-im-segregation"],
+      ui: { label: "Move to treasury", fields: [["Transfer", "tUSD 3,240,000"], ["To", "BANK-B treasury account"]] },
+      apply(s) { s.wallet.B.tUSD -= 3240000; s.info.reused = 3240000; chain(s, "B", "transfer(BANK-B treasury, tUSD 3,240,000)", "BANK-B reused the cash; allowed under title transfer"); } },
+  ],
+};
+
+S["vm-return"] = {
+  kind: "VM", title: "Variation margin return", flow: "flow-return (VM variant, not in CALM yet)", parties: ["A", "B"],
+  init() { const s = base("VM"); s.held = 8240000; s.wallet.B.tUSD = 10240000; s.req = 8240000; return s; },
+  outcome: "Exposure fell to USD 6m, so BANK-A called for USD 2.24m back. BANK-B agreed and paid equivalent cash back. Under title transfer it returns equivalent credit support, not the same tokens.",
+  steps: [
+    { actor: "A", say: "Call for the return amount", calm: "–",
+      why: "Exposure is now USD 6m and BANK-B holds USD 8.24m, so USD 2.24m is due back to BANK-A.",
+      refs: ["CDM MarginCallIssuance"],
+      ui: { label: "Issue return call", fields: [["Exposure (MTM)", "USD 6,000,000"], ["Credit support balance", "USD 8,240,000"], ["Return amount", "USD 2,240,000"]] },
+      apply(s) { s.req = 6000000; newCall(s, { kind: "Return", from: "A", to: "B", amount: 2240000, deadline: "2026-10-19" });
+        chain(s, "A", "issueCall(C-0001, return 2,240,000, hash)", "Return call recorded, signed by BANK-A"); msg(s, "A", "B", "MarginCallIssuance (return)", "C-0001; hash checked ✓"); } },
+    { actor: "B", say: "Agree and pay back equivalent cash", calm: "–",
+      why: "BANK-B agrees and transfers deposit tokens back. They need not be the same tokens it received.",
+      refs: ["CDM MarginCallResponse", "ISO 20022 colr.004"],
+      ui: { label: "Agree and transfer", fields: [["Response", "Agree in full"], ["Transfer", "tUSD 2,240,000 to BANK-A"]] },
+      apply(s) { s.wallet.B.tUSD -= 2240000; s.wallet.A.tUSD += 2240000; s.held = 6000000; const c = call(s, "C-0001"); c.state = "settled"; c.agreed = 2240000;
+        chain(s, "B", "respond(C-0001, agree) · settleByTransfer(C-0001, tUSD 2,240,000)", "Cash returned BANK-B → BANK-A; call settled"); msg(s, "B", "A", "MarginCallResponse", "Agreed"); } },
+    { actor: "A", say: "Check the balance", calm: "–",
+      why: "Credit support balance now USD 6m, matching the exposure.",
+      refs: [],
+      ui: { label: "Confirm", checks: [["ok", "Credit support balance USD 6,000,000"], ["ok", "USD 2,240,000 received"]] },
+      apply(s) { msg(s, "A", "A", "Ledger events", "Return recorded in BANK-A's books"); } },
+  ],
+};
+
+/* ---------- grid ---------- */
+const COLS = ["Call → proposal → settle", "Revaluation / top-up", "Return", "Substitution", "Dispute", "Default / enforcement"];
+const ROWS = [
+  { name: "ISDA IM (CSA / CTA)", sub: "pledge into segregation", cells: [["go", "im-call"], ["go", "im-reval"], ["go", "im-return"], ["plan"], ["go", "im-dispute"], ["go", "im-default"]] },
+  { name: "ISDA VM CSA", sub: "title transfer, two-way", cells: [["go", "vm-call"], ["plan"], ["go", "vm-return"], ["plan"], ["plan"], ["plan", "close-out netting"]] },
+  { name: "Repo (GMRA)", sub: "seller / buyer", cells: [["plan", "margin transfer"], ["plan"], ["plan"], ["plan"], ["na"], ["plan"]] },
+  { name: "Securities lending (GMSLA)", sub: "lender / borrower", cells: [["plan", "mark to market"], ["plan"], ["plan", "recall"], ["plan"], ["na"], ["plan"]] },
+  { name: "Triparty", sub: "agent allocates", cells: [["na", "agent allocates"], ["plan"], ["plan"], ["plan"], ["na"], ["plan"]] },
+  { name: "CCP margin", sub: "call not negotiated", cells: [["plan", "not negotiated"], ["plan"], ["plan"], ["na"], ["na"], ["plan", "porting"]] },
+];
+
+/* ---------- view state ---------- */
+let view = { sc: null, k: 0 };
+const app = document.getElementById("app");
+
+function topBar() {
+  return `<div class="top"><div><div class="eyebrow">CDM collateral prototype</div><h1>Collateral Console</h1></div>
+    <div class="tags"><span class="tag">clickable prototype</span><span class="tag">guided mode</span><span class="tag">test data, no backend</span></div></div>`;
+}
+
+function renderHome() {
+  const head = `<tr><th>Agreement</th>${COLS.map(c => `<th>${esc(c)}</th>`).join("")}</tr>`;
+  const body = ROWS.map(r => `<tr><th>${esc(r.name)}<span class="sub">${esc(r.sub)}</span></th>${r.cells.map(([t, x]) => {
+    if (t === "go") { const sc = S[x]; return `<td><button class="cell-go" data-sc="${x}"><b>${esc(sc.title)}</b><span>${sc.steps.length} steps · ${sc.parties.map(p => PARTIES[p].name).join(", ")}</span></button></td>`; }
+    if (t === "plan") return `<td><span class="cell-plan">planned${x ? " · " + esc(x) : ""}</span></td>`;
+    return `<td><span class="cell-na">n/a${x ? " · " + esc(x) : ""}</span></td>`;
+  }).join("")}</tr>`).join("");
+  app.innerHTML = topBar() + `
+    <div class="intro"><h2>Scenarios</h2>
+      <p>Pick an agreement and a flow. Each scenario sets up the agreement, the parties, their positions and market data, then walks you through the steps in each party's console. Read down a column to see how the same step works under different agreements.</p></div>
+    <div class="gridbox"><table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    <div class="legend"><span><i style="background:var(--act-soft);border:1px solid var(--act)"></i>available</span><span><i style="border:1px dashed var(--plan)"></i>planned</span><span><i style="background:transparent"></i>n/a: the flow does not exist for this agreement</span></div>
+    <p class="foot">All parties, tokens, prices and amounts are invented test data. Nothing here calls a backend: each step changes the mocked state of both consoles and adds the off-chain messages and on-chain transactions the design calls for.</p>`;
+  app.querySelectorAll("[data-sc]").forEach(b => b.addEventListener("click", () => open(b.dataset.sc, 0)));
+}
+
+function stateAt(sc, k) { const s = sc.init(); for (let i = 0; i < k; i++) { s._step = i + 1; sc.steps[i].apply(s); } s._step = k; return s; }
+
+function chipFor(state) {
+  if (/settled/.test(state) || state === "accepted") return "s-ok";
+  if (/rejected/.test(state)) return "s-bad";
+  if (/partial|disputed/.test(state)) return "s-warn";
+  if (state === "proposed" || state === "issued" || state === "agreed") return "s-info";
+  return "s-neutral";
+}
+
+function agreementBox(sc, p) {
+  const a = AGREEMENTS[sc.kind];
+  return `<details class="sect"><summary class="eyebrow">Agreement · ${esc(a.roles[p])}</summary>
+    <p class="note">${esc(a.doc)}</p>
+    <dl class="kv">${a.terms.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <div class="tscroll"><table class="t"><thead><tr><th>Eligible</th><th class="r">Haircut</th><th>Limit</th></tr></thead>
+    <tbody>${a.elig.map(([t, h, l]) => `<tr><td>${t}</td><td class="r">${h}</td><td>${esc(l)}</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+
+function callsBox(s, p) {
+  const mine = s.calls.filter(c => c.from === p || c.to === p);
+  if (!mine.length) return `<div class="sect"><div class="eyebrow">Margin calls</div><p class="empty">No calls yet.</p></div>`;
+  return `<div class="sect"><div class="eyebrow">Margin calls</div>${mine.slice().reverse().map(c => {
+    const dir = c.from === p ? "sent to " + PARTIES[c.to].name : "from " + PARTIES[c.from].name;
+    const props = c.proposals.map(pr => `<div class="row"><span class="mono">${pr.id}: ${pr.assets.map(([t, q]) => qty(q) + " " + t).join(" + ")}</span><span class="chip ${chipFor(pr.state)}">${pr.state}</span></div>`).join("");
+    return `<div class="callcard"><div class="row"><b class="mono">${c.id}</b><span class="chip ${chipFor(c.state)}">${esc(c.state)}</span></div>
+      <dl class="kv"><dt>${c.kind === "Return" ? "Return call" : c.kind + " call"}, ${dir}</dt><dd class="num">${usd(c.amount)}</dd>
+      ${c.agreed ? `<dt>Agreed</dt><dd class="num">${usd(c.agreed)}</dd>` : ""}
+      ${c.disputed ? `<dt>Disputed (off-chain)</dt><dd class="num">${usd(c.disputed)}</dd>` : ""}
+      ${c.deadline ? `<dt>Deadline</dt><dd class="num">${c.deadline}</dd>` : ""}</dl>${props}</div>`;
+  }).join("")}</div>`;
+}
+
+function positionsBox(s, sc, p) {
+  const w = s.wallet[p]; const rows = Object.keys(w).filter(t => w[t] > 0 || (sc.kind === "VM" ? t === "tUSD" : t !== "tUSD"));
+  let html = `<div class="sect"><div class="eyebrow">Wallet</div><div class="tscroll"><table class="t"><thead><tr><th>Token</th><th class="r">Quantity</th><th class="r">Price</th><th class="r">Market value</th></tr></thead><tbody>
+    ${rows.map(t => `<tr><td title="${esc(TOKENS[t].name)}">${t}</td><td class="r num">${qty(w[t])}</td><td class="r num">${px(s.feed[t])}</td><td class="r num">${usd(w[t] * s.feed[t])}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+  if (sc.kind === "IM") {
+    const live = s.pledges.filter(x => x.state !== "returned");
+    const label = p === "A" ? "Pledged to BANK-B (control contract)" : "Pledged to us by BANK-A (control contract)";
+    html += `<div class="sect"><div class="eyebrow">${label}</div>${live.length ? `<div class="tscroll"><table class="t"><thead><tr><th>Token</th><th class="r">Quantity</th><th class="r">After haircut</th><th>State</th></tr></thead><tbody>
+      ${live.map(x => `<tr><td>${x.token}</td><td class="r num">${qty(x.qty)}</td><td class="r num">${usd(valueAfterHaircut(s, x.token, x.qty))}</td><td><span class="chip ${x.state === "pledged" ? "s-ok" : "s-bad"}">${x.state}</span></td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="empty">Nothing pledged.</p>`}
+      ${s.req ? (() => { const v = pledgedValue(s); const ok = v >= s.req; return `<dl class="kv"><dt>Required above threshold</dt><dd class="num">${usd(s.req)}</dd><dt>Collateral after haircuts</dt><dd class="num">${usd(v)}</dd><dt>Coverage</dt><dd><span class="chip ${ok ? "s-ok" : "s-warn"}">${ok ? "covered" : "short " + usd(s.req - v)}</span></dd></dl>`; })() : ""}
+      ${p === "B" ? `<p class="note">Segregated: BANK-B cannot reuse these tokens.</p>` : ""}</div>`;
+  } else {
+    html += `<div class="sect"><div class="eyebrow">Credit support balance</div><dl class="kv"><dt>${p === "A" ? "Transferred to BANK-B" : "Received from BANK-A (title passed)"}</dt><dd class="num">${usd(s.held || 0)}</dd>${s.req ? `<dt>Exposure (MTM)</dt><dd class="num">${usd(s.req)}</dd>` : ""}</dl>
+      ${s.info.reused && p === "B" ? `<p class="note">USD ${qty(s.info.reused)} moved to BANK-B treasury (reuse allowed).</p>` : ""}</div>`;
+  }
+  return html;
+}
+
+function marketBox(s) {
+  return `<div class="sect"><div class="eyebrow">Market data</div><div class="tscroll"><table class="t"><thead><tr><th>Asset</th><th class="r">Mock source</th><th class="r">On-chain feed</th></tr></thead><tbody>
+    ${["tUST", "tMMF"].map(t => `<tr><td title="${esc(TOKENS[t].name)}">${t}</td><td class="r num">${px(s.mock[t])}</td><td class="r num">${px(s.feed[t])}</td></tr>`).join("")}
+    </tbody></table></div></div>
+    <div class="sect"><div class="eyebrow">Default status on feed</div><dl class="kv"><dt>BANK-A</dt><dd><span class="chip ${s.defaulted ? "s-bad" : "s-ok"}">${s.defaulted ? "in default" : "performing"}</span></dd><dt>BANK-B</dt><dd><span class="chip s-ok">performing</span></dd></dl></div>`;
+}
+
+function nextBox(step) {
+  const u = step.ui;
+  const rows = u.fields ? `<div class="tscroll"><table class="t"><tbody>${u.fields.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r num">${esc(v)}</td></tr>`).join("")}</tbody></table></div>` : "";
+  const checks = u.checks ? `<ul style="margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:2px;font-size:.84rem">${u.checks.map(([k, v]) => `<li class="check-${k}">${esc(v)}</li>`).join("")}</ul>` : "";
+  return `<div class="next"><div class="eyebrow">Your next action</div><b>${esc(step.say)}</b>${rows}${checks}<button class="go" id="go">${esc(u.label)}</button></div>`;
+}
+
+function consoleFor(sc, s, p, step) {
+  const role = AGREEMENTS[sc.kind].roles[p];
+  const act = step && step.actor === p ? nextBox(step) : (step ? `<div class="waiting">Waiting for ${PARTIES[step.actor].name}</div>` : "");
+  const body = p === "M" ? marketBox(s) : agreementBox(sc, p) + callsBox(s, p) + positionsBox(s, sc, p);
+  return `<section class="console ${p}" aria-label="${PARTIES[p].name} console"><header><div class="row"><h3>${PARTIES[p].name}</h3><span class="party p-${p}">${esc(role)}</span></div>
+    <span class="note mono">stack ${p === "M" ? 0 : p === "A" ? 1 : 2} · Besu node ${esc(PARTIES[p].node)}</span></header><div class="body">${act}${body}</div></section>`;
+}
+
+function timeline(s) {
+  const lane = (kind, title, sub) => {
+    const items = s.ev.filter(e => e.lane === kind).slice().reverse();
+    return `<div class="lane"><header><h3>${title}</h3><span class="note">${sub}</span></header><ol>${items.length ? items.map(e => kind === "on"
+      ? `<li class="ev ${e.step === s._step ? "fresh" : ""}"><span class="when">#${qty(e.block)}</span><span class="what"><span class="fn">${esc(e.fn)}</span><span><span class="party p-${e.signer}">${PARTIES[e.signer].name}</span> ${esc(e.text)}</span></span></li>`
+      : `<li class="ev ${e.step === s._step ? "fresh" : ""}"><span class="when">step ${e.step}</span><span class="what"><span><span class="party p-${e.from}">${PARTIES[e.from].name}</span>${e.from !== e.to ? ` → <span class="party p-${e.to}">${PARTIES[e.to].name}</span>` : ""} <b>${esc(e.what)}</b></span><span class="muted">${esc(e.text)}</span></span></li>`).join("")
+      : `<li class="empty">Nothing yet.</li>`}</ol></div>`;
+  };
+  return `<div class="timeline">${lane("off", "Off-chain messages", "CDM content between the parties' services")}${lane("on", "On-chain (Besu, QBFT)", "each transaction final in its block")}</div>`;
+}
+
+function renderScenario() {
+  const sc = S[view.sc], k = view.k, s = stateAt(sc, k), step = sc.steps[k], N = sc.steps.length;
+  const track = `<div class="track"><div class="eyebrow">Steps</div><ol>${sc.steps.map((st, i) => `<li class="${i < k ? "done" : i === k ? "cur" : ""}"><span class="n">${i + 1}</span><span>${esc(st.say)} <span class="party p-${st.actor}">${PARTIES[st.actor].name}</span></span></li>`).join("")}</ol></div>`;
+  const guide = step
+    ? `<div class="guide" role="region" aria-label="Guide"><div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+        <div class="who"><span class="eyebrow">Step ${k + 1} of ${N}</span><span class="party p-${step.actor}">${PARTIES[step.actor].name} · ${esc(AGREEMENTS[sc.kind].roles[step.actor])}</span><span class="ref">CALM ${esc(step.calm)}</span></div>
+        <p class="say">${esc(step.say)} <span class="muted">· use the highlighted button in ${PARTIES[step.actor].name}'s console</span></p>
+        <p class="why">${esc(step.why)}</p>
+        <div class="refs">${step.refs.map(r => `<span class="ref">${esc(r)}</span>`).join("")}</div></div>${track}</div>`
+    : `<div class="guide"><div class="done-box"><h3>Scenario complete</h3><p>${esc(sc.outcome)}</p>
+        <div class="scbar"><button class="btn" id="home2">Back to scenarios</button><button class="btn" id="replay">Run again</button></div></div>${track}</div>`;
+  app.innerHTML = topBar() + `
+    <div class="scbar"><button class="btn" id="home">← Scenarios</button>
+      <h2 style="flex:1 1 280px">${esc(sc.title)}</h2>
+      <span class="tag">${esc(AGREEMENTS[sc.kind].label)}</span><span class="tag">${esc(sc.flow)}</span>
+      <button class="btn" id="back" ${k === 0 ? "disabled" : ""}>Undo step</button><button class="btn" id="restart" ${k === 0 ? "disabled" : ""}>Restart</button></div>
+    ${guide}
+    <div class="consoles">${sc.parties.map(p => consoleFor(sc, s, p, step)).join("")}</div>
+    ${timeline(s)}`;
+  const on = (id, f) => { const el = document.getElementById(id); if (el) el.addEventListener("click", f); };
+  on("home", () => goHome()); on("home2", () => goHome()); on("replay", () => open(view.sc, 0));
+  on("back", () => open(view.sc, k - 1)); on("restart", () => open(view.sc, 0));
+  on("go", () => open(view.sc, k + 1, true));
+}
+
+function open(id, k, keepFocus) {
+  view = { sc: id, k }; renderScenario();
+  const go = document.getElementById("go");
+  if (keepFocus && go) go.focus({ preventScroll: false });
+  if (!keepFocus) window.scrollTo({ top: 0 });
+}
+function goHome() { view = { sc: null, k: 0 }; renderHome(); window.scrollTo({ top: 0 }); }
+
+renderHome();
+</script>

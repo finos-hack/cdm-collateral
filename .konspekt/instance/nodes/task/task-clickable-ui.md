@@ -2,7 +2,7 @@
 id: task-clickable-ui
 type: task
 title: Clickable UI prototype
-status: open
+status: active
 review: accepted
 provenance:
   conversationId: architecture-design
@@ -10,7 +10,7 @@ provenance:
   contentHash: 48da8f8dca28f7daae9b60536dd9576532c351cd
   timestamp: 2026-10-16T22:43:35Z
 createdAt: 2026-10-16T22:43:35Z
-updatedAt: 2026-10-16T22:43:35Z
+updatedAt: 2026-10-16T22:48:10Z
 ```
 # Task: Clickable UI prototype
 
