@@ -84,3 +84,9 @@ excluded.
 | task-blockchain-smart-contracts-applicability | e517e160050c13972649bcba194281aca5099861 | docs/architecture/blockchain-applicability.md | 2026-10-16T19:49:05Z |
 | task-local-environment-setup | a398eb8a8e394c1a3973ee461b1f26c93665cb6a | architecture/prototype.architecture.json | 2026-10-16T20:08:49Z |
 | task-local-environment-setup | a398eb8a8e394c1a3973ee461b1f26c93665cb6a | architecture/README.md | 2026-10-16T20:08:49Z |
+| task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/README.md | 2026-10-16T20:21:13Z |
+| task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/generate_architecture.py | 2026-10-16T20:21:13Z |
+| task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/prototype.architecture.json | 2026-10-16T20:21:13Z |
+| task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/render_architecture_page.py | 2026-10-16T20:21:13Z |
+| task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/testing.md | 2026-10-16T20:21:13Z |
+| task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | docs/setup-windows.md | 2026-10-16T20:21:13Z |
