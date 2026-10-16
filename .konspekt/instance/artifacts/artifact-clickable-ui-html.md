@@ -3,7 +3,7 @@ id: artifact-clickable-ui-html
 name: Clickable UI prototype (HTML)
 kind: prototype
 location: ui-prototype/clickable.html
-review: proposed
+review: accepted
 provenance:
   conversationId: architecture-design
   sourceRef: 71b1348bad1addc3f8adaa253f5a147a502cb15d
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T22:52:27Z
   confidence: 0.7
 createdAt: 2026-10-16T22:52:27Z
-updatedAt: 2026-10-16T23:02:19Z
+updatedAt: 2026-10-16T23:07:09Z
 ```
 # Clickable UI prototype (HTML)
 

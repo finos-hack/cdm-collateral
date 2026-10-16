@@ -78,7 +78,8 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | R21 | Exposure netting: net exposure across all transactions *(added 2026-10-15)* | **0** | – | – | – | – | As R6/R7: no Net Exposure type or function *(name search)* |
 | R22 | Settlement netting *(added 2026-10-15)* | **1** | – | – | – | pair-off samples (context) | No GMRA settlement-netting election (R1). Trade-level `StandardSettlementStyleEnum.Net` only. Pair-off (R13) closes offsetting transactions and is executable, but it is a trade event, not netting of collateral movements |
 | R23 | Close-out netting on default *(added 2026-10-15)* | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default or set-off elections (R1, R20) |
-| R24 | Collateral proposal and acceptance *(added 2026-10-16)* | **2** | generic only | – | – | – | As CSA row 24: the proposed collateral fits `MarginCallResponseAction`; no acceptance or rejection type |
+| R24 | Collateral proposal *(added 2026-10-16)* | **2** | generic only | – | – | – | As CSA row 24 |
+| R25 | Collateral proposal acceptance or rejection *(added 2026-10-16)* | **0** | – | – | – | – | As CSA row 25 |
 
 ## Matrix 2 — Securities lending (ISLA GMSLA)
 
@@ -109,7 +110,8 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | S23 | Exposure netting: aggregation of loans and collateral *(added 2026-10-15)* | **2** | yes | – | – | – | `CollateralSpecification` `Aggregation` / `AggregationSpecificationEnum` (GMSLA paragraph 5.4, `legaldocumentation-master-isla-*.rosetta`). Not used by any function (S6) |
 | S24 | Settlement netting of collateral deliveries *(added 2026-10-15)* | **2** | yes | – | – | – | Election `nettingObligationsApply` (GMSLA paragraph 5.6, `legaldocumentation-master-isla-type.rosetta` line 18); clause `ISLA_GMSLA_008` "Settlement Netting" with 4 variants (`legaldocumentation-master-enum.rosetta` lines 193, 263–266). No function |
 | S25 | Close-out netting and set-off on default *(added 2026-10-15)* | **2** | yes | – | – | – | `EventsOfDefault` (S19); clause `ISLA_GMSLA_042` "Set-Off" (`_01` No Contractual Set-Off, `_02` Simple Contractual Set-Off). No function |
-| S26 | Collateral proposal and acceptance *(added 2026-10-16)* | **2** | generic only | – | – | – | As CSA row 24 |
+| S26 | Collateral proposal *(added 2026-10-16)* | **2** | generic only | – | – | – | As CSA row 24 |
+| S27 | Collateral proposal acceptance or rejection *(added 2026-10-16)* | **0** | – | – | – | – | As CSA row 25 |
 
 ## Matrix 3 — Triparty collateral arrangements
 
@@ -130,7 +132,7 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | T13 | Exposure netting at the agent *(added 2026-10-15)* | **0** | – | – | – | – | Nothing found *(name search)* |
 | T14 | Settlement netting on agent books *(added 2026-10-15)* | **0** | – | – | – | – | Nothing found; triparty settlement itself is absent (T9) |
 | T15 | Close-out netting *(added 2026-10-15)* | – | – | – | – | – | Follows the underlying repo or lending agreement (R23, S25) |
-| T16 | Collateral proposal and acceptance *(added 2026-10-16)* | – | – | – | – | – | Not applicable: the agent selects collateral from the giver's inventory against the collateral profile (T7) |
+| T16 | Collateral proposal, acceptance or rejection *(added 2026-10-16)* | – | – | – | – | – | Not applicable: the agent selects collateral from the giver's inventory against the collateral profile (T7) |
 
 ## Matrix 4 — CCP / cleared margin
 
@@ -152,7 +154,8 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | C14 | Position netting by account *(added 2026-10-15)* | **2** | yes | – | – | – | Positions and accounts (`Account.accountType` House / Client, C4) can represent netted positions per account; no function nets trades into margin positions *(name search)* |
 | C15 | Settlement netting of margin and cash flows *(added 2026-10-15)* | **0** | – | – | – | – | Nothing found *(name search)* |
 | C16 | Close-out netting on member default *(added 2026-10-15)* | **0** | – | – | – | – | As C12 |
-| C17 | Collateral proposal and acceptance *(added 2026-10-16)* | – | – | – | – | – | Not applicable: the member delivers collateral the CCP lists as eligible (C9); there is no bilateral proposal |
+| C17 | Collateral proposal, acceptance or rejection *(added 2026-10-16)* | – | – | – | – | – | Not applicable: the member delivers collateral the CCP lists as eligible (C9); there is no bilateral proposal |
+| C18 | Collateral substitution at the CCP *(added 2026-10-16)* | **2** | generic only | – | – | – | `SubstitutionProvisions` (`product-collateral-type.rosetta` line 41) and `CollateralPortfolio` can describe it. `Create_SubstitutionPrimitiveInstruction` (`event-common-func.rosetta` line 1919) has `condition SecurityFinance` (line 1928), so it cannot be used for cleared margin |
 
 ## Findings
 
@@ -233,7 +236,7 @@ Return Amount).
 | Margin call / maintenance | 2 | 2 | 2 | – | 2 |
 | Dispute | 2 | 2 | 2 | – | – |
 | Collateral transfer / settlement | 2 | 4 | 5 | 0 | 2 |
-| Substitution | 2 | 5 | 4 | 2 | – |
+| Substitution | 2 | 5 | 4 | 2 | 2 *(C18, added 2026-10-16)* |
 | Interest / fee / rebate | 2 | 5 | 5 (fee), 2 (rebate) | – | 2 |
 | Inventory / positions | 2 | 2 | 2 | 2 | – |
 | Custody | 2 | 2 | 1 | 1 | – |
@@ -242,7 +245,8 @@ Return Amount).
 | Exposure netting | 0 | 0 | 2 | 0 | 2 |
 | Settlement netting | 1 | 1 | 2 | 0 | 0 |
 | Close-out netting | 2 | 0 | 2 | – | 0 |
-| Collateral proposal / acceptance *(added 2026-10-16)* | 2 | 2 | 2 | – | – |
+| Collateral proposal *(added 2026-10-16)* | 2 | 2 | 2 | – | – |
+| Collateral proposal acceptance / rejection *(added 2026-10-16)* | 0 | 0 | 0 | – | – |
 
 "–" means the row was not scored for that family.
 
@@ -255,10 +259,10 @@ among them. "n/a" means the flow does not exist for that family.
 
 | Flow (UI grid column) | Repo (GMRA) | Sec lending (GMSLA) | Triparty | CCP |
 |---|---|---|---|---|
-| Call → proposal → settle | R3, R4, R5, R6, R7, R10, R16, R21, R24 → **0** (R21) | S3, S4, S5, S6, S7, S9, S17, S23, S26 → **2** | n/a (agent allocates, T7) | C5, C6, C7, C9, C10, C14 → **0** (C5) |
+| Call → proposal → settle | R3, R4, R5, R6, R7, R10, R16, R21, R24, R25 → **0** (R21, R25) | S3, S4, S5, S6, S7, S9, S17, S23, S26, S27 → **0** (S27) | n/a (agent allocates, T7) | C5, C6, C7, C9, C10, C14 → **0** (C5) |
 | Revaluation / top-up | R4, R6, R7 → **2** | S4, S6, S7 → **2** | T4, T6 → **0** (T6) | C6, C9 → **2** |
 | Return (of excess collateral) | R7, R10 → **2** | S7, S9 → **2** | T7, T9 → **0** | C7, C10 → **2** |
-| Substitution | R11 → **5** | S10 → **4** | T8 → **2** | n/a |
+| Substitution | R11 → **5** | S10 → **4** | T8 → **2** | C18 → **2** |
 | Dispute | R9 → **2** | S8 → **2** | n/a | n/a (calls not negotiated) |
 | Default / enforcement | R20, R23 → **0** | S19, S25 → **2** | follows the underlying agreement (T15) | C12, C16 → **0** |
 | Interest and income | R12 → **5** | S11, S12, S20 → **2** (S12 rebate, S20 manufactured payments) | follows the underlying agreement | C11 → **2** |

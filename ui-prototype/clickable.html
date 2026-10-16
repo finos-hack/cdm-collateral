@@ -241,7 +241,7 @@ S["im-call"] = {
       apply(s) { const c = call(s, "C-0001"); c.state = "agreed"; c.agreed = 12400000; c.proposals.push({ id: "P-1", assets: [["tUST", 128589]], state: "proposed" });
         chain(s, "A", "respond(C-0001, agree, 12,400,000) · propose(P-1)", "Response and proposal recorded, signed by BANK-A");
         msg(s, "A", "B", "MarginCallResponse + proposal", "Agree USD 12,400,000; propose tUST 128,589 units"); } },
-    { actor: "B", say: "Check the proposal and accept it", calm: "13–19", caps: [3, 4, 5, 24],
+    { actor: "B", say: "Check the proposal and accept it", calm: "13–19", caps: [3, 4, 5, 25],
       why: "BANK-B checks the proposed tokens against its own copy of the eligibility schedule: eligible asset, haircut, concentration limits, value after haircut. All pass, so BANK-B accepts on-chain with its own key.",
       refs: ["ISO 20022 colr.008", "CDM EligibleCollateralSpecification"],
       ui: { label: "Accept proposal", checks: [["ok", "tUST is eligible collateral"], ["ok", "Haircut 2% applied"], ["ok", "No concentration limit for tUST"], ["ok", "Value after haircut USD 12,400,094 ≥ USD 12,400,000"]] },
@@ -282,7 +282,7 @@ S["im-dispute"] = {
         c.proposals.push({ id: "P-1", assets: [["tMMF", 12395834]], state: "proposed" });
         chain(s, "A", "respond(C-0001, partial, 11,900,000, disputed 500,000) · propose(P-1)", "Response, dispute amount and proposal recorded, signed by BANK-A");
         msg(s, "A", "B", "MarginCallResponse + dispute + proposal", "Agree USD 11.9m, dispute USD 0.5m; propose tMMF 12,395,834 shares"); } },
-    { actor: "B", say: "Reject the proposal: concentration limit", calm: "13–19", caps: [3, 5, 24],
+    { actor: "B", say: "Reject the proposal: concentration limit", calm: "13–19", caps: [3, 5, 25],
       why: "Fund shares are eligible, but the schedule allows at most 50% of the IM posted in them. This proposal is 100% fund shares, so BANK-B rejects it with the reason.",
       refs: ["ISO 20022 colr.008", "CDM ConcentrationLimit"],
       ui: { label: "Reject proposal", checks: [["ok", "tMMF is eligible collateral"], ["ok", "Haircut 4% applied"], ["bad", "Concentration: 100% in tMMF > 50% limit"]] },
@@ -296,7 +296,7 @@ S["im-dispute"] = {
       apply(s) { call(s, "C-0001").proposals.push({ id: "P-2", assets: [["tUST", 64200], ["tMMF", 5950000]], state: "proposed" });
         chain(s, "A", "propose(C-0001, P-2)", "New proposal recorded, signed by BANK-A");
         msg(s, "A", "B", "Collateral proposal", "P-2: tUST 64,200 + tMMF 5,950,000"); } },
-    { actor: "B", say: "Accept the new proposal", calm: "13–19", caps: [3, 4, 5, 24],
+    { actor: "B", say: "Accept the new proposal", calm: "13–19", caps: [3, 4, 5, 25],
       why: "Both assets are eligible, haircuts applied, fund shares under 50%, and the value covers the agreed amount.",
       refs: ["ISO 20022 colr.008"],
       ui: { label: "Accept proposal", checks: [["ok", "Both assets eligible"], ["ok", "tMMF 48.5% ≤ 50% limit"], ["ok", "USD 11,902,934 ≥ agreed USD 11,900,000"]] },
@@ -350,7 +350,7 @@ S["im-reval"] = {
       ui: { label: "Agree and propose", fields: [["Agreed", "USD 560,000"], ["Propose", "tUST 6,080 units → USD 560,090"]] },
       apply(s) { const c = call(s, "C-0002"); c.state = "agreed"; c.agreed = 560000; c.proposals.push({ id: "P-1", assets: [["tUST", 6080]], state: "proposed" });
         chain(s, "A", "respond(C-0002, agree) · propose(P-1)", "Signed by BANK-A"); msg(s, "A", "B", "MarginCallResponse + proposal", "Agree; tUST 6,080"); } },
-    { actor: "B", say: "Accept the proposal", calm: "13–19", caps: [3, 24],
+    { actor: "B", say: "Accept the proposal", calm: "13–19", caps: [3, 25],
       why: "Eligible asset, haircut applied, value covers the call.",
       refs: ["ISO 20022 colr.008"],
       ui: { label: "Accept proposal", checks: [["ok", "tUST eligible"], ["ok", "USD 560,090 ≥ USD 560,000"]] },
@@ -439,7 +439,7 @@ S["vm-call"] = {
       ui: { label: "Agree and propose", fields: [["Agreed", "USD 3,240,000"], ["Propose", "tUSD 3,240,000"]] },
       apply(s) { const c = call(s, "C-0001"); c.state = "agreed"; c.agreed = 3240000; c.proposals.push({ id: "P-1", assets: [["tUSD", 3240000]], state: "proposed" });
         chain(s, "A", "respond(C-0001, agree) · propose(P-1)", "Signed by BANK-A"); msg(s, "A", "B", "MarginCallResponse + proposal", "Agree; tUSD 3,240,000"); } },
-    { actor: "B", say: "Accept the proposal", calm: "–", caps: [3, 24],
+    { actor: "B", say: "Accept the proposal", calm: "–", caps: [3, 25],
       why: "Cash in USD, zero haircut, covers the call.",
       refs: ["ISO 20022 colr.008"],
       ui: { label: "Accept proposal", checks: [["ok", "tUSD eligible, 0% haircut"], ["ok", "USD 3,240,000 = call"]] },
@@ -490,16 +490,16 @@ const CAP = {
   CSA: { 1: ["Agreement terms", 5], 2: ["Amendment of terms", 4], 3: ["Eligibility", 5], 4: ["Haircuts and valuation", 3], 5: ["Concentration limits", 2],
     6: ["Threshold, MTA, rounding", 3], 7: ["Delivery / Return Amount", 3], 9: ["IM amount (SIMM)", 2], 10: ["Exposure for VM", 2], 11: ["Margin call issue / response", 2],
     12: ["Dispute", 2], 13: ["Transfer and settlement", 2], 14: ["Substitution", 2], 15: ["Interest on cash collateral", 2], 16: ["Positions and balances", 2],
-    17: ["Custody and segregation", 2], 19: ["Reconciliation", 0], 21: ["Exposure netting", 0], 23: ["Close-out netting", 2], 24: ["Collateral proposal / acceptance", 2] },
+    17: ["Custody and segregation", 2], 19: ["Reconciliation", 0], 21: ["Exposure netting", 0], 23: ["Close-out netting", 2], 24: ["Collateral proposal", 2], 25: ["Proposal acceptance / rejection", 0] },
   R: { R2: ["Amendment of terms", 0], R3: ["Eligibility", 3], R4: ["Haircut / margin ratio", 5], R5: ["Concentration limits", 2], R6: ["Exposure calculation", 3], R7: ["Margin maintenance", 2],
     R9: ["Dispute", 2], R10: ["Transfer and settlement", 4], R11: ["Substitution", 5], R12: ["Repo interest", 5], R16: ["Positions", 2], R20: ["Event of default", 0], R21: ["Exposure netting", 0],
-    R23: ["Close-out netting", 0], R24: ["Collateral proposal / acceptance", 2] },
+    R23: ["Close-out netting", 0], R24: ["Collateral proposal", 2], R25: ["Proposal acceptance / rejection", 0] },
   S: { S2: ["Amendment of terms", 2], S3: ["Collateral schedule", 3], S4: ["Haircut / margin", 5], S5: ["Concentration limits", 2], S6: ["Collateral requirement", 3], S7: ["Marking to market", 2],
     S8: ["Dispute", 2], S9: ["Transfer and settlement", 5], S10: ["Substitution", 4], S11: ["Lending fee and billing", 5], S12: ["Rebate", 2], S13: ["Loan return", 5], S14: ["Recall", 2],
-    S17: ["Positions", 2], S19: ["Events of default", 2], S20: ["Manufactured payments", 2], S23: ["Exposure netting / aggregation", 2], S25: ["Close-out netting", 2], S26: ["Collateral proposal / acceptance", 2] },
+    S17: ["Positions", 2], S19: ["Events of default", 2], S20: ["Manufactured payments", 2], S23: ["Exposure netting / aggregation", 2], S25: ["Close-out netting", 2], S26: ["Collateral proposal", 2], S27: ["Proposal acceptance / rejection", 0] },
   T: { T1: ["Triparty agreement terms", 1], T4: ["Haircuts", 3], T6: ["Required value from agent", 0], T7: ["Allocation by agent", 0], T8: ["Substitution by agent", 2], T9: ["Settlement through agent", 0] },
   C: { C5: ["IM calculation (CCP)", 0], C6: ["VM / settlement price", 2], C7: ["CCP margin call", 2], C9: ["Eligibility / haircuts", 3], C10: ["Transfer and settlement", 2], C11: ["Interest on cash collateral", 2],
-    C12: ["Default management / porting", 0], C14: ["Position netting", 2], C16: ["Close-out netting", 0] },
+    C12: ["Default management / porting", 0], C14: ["Position netting", 2], C16: ["Close-out netting", 0], C18: ["Substitution at the CCP", 2] },
 };
 function capInfo(fam, id) {
   const table = fam === "IM" || fam === "VM" ? CAP.CSA : CAP[fam];
@@ -517,15 +517,15 @@ function badge(fam, caps) {
   return `<span class="cov ${scoreClass(min)}" title="${esc(tip)}">CDM ${min} · ${esc(ids.length === 1 ? ids[0] + " " + label : label)}</span>`;
 }
 const COLS = ["Call → proposal → settle", "Revaluation / top-up", "Return", "Substitution", "Dispute", "Default / enforcement", "Interest and income", "Terms amendment", "Loan return / recall"];
-const IMC = { call: [1, 3, 4, 5, 6, 7, 9, 11, 13, 16, 17, 24], reval: [4, 6, 7, 9, 11, 16], ret: [7, 11, 13, 17] };
-const VMC = { call: [1, 3, 4, 6, 7, 10, 11, 13, 16, 21, 24], reval: [4, 6, 7, 10, 11], ret: [7, 11, 13] };
+const IMC = { call: [1, 3, 4, 5, 6, 7, 9, 11, 13, 16, 17, 24, 25], reval: [4, 6, 7, 9, 11, 16], ret: [7, 11, 13, 17] };
+const VMC = { call: [1, 3, 4, 6, 7, 10, 11, 13, 16, 21, 24, 25], reval: [4, 6, 7, 10, 11], ret: [7, 11, 13] };
 const ROWS = [
   { name: "ISDA IM (CSA / CTA)", sub: "pledge into segregation", fam: "IM", cells: [["go", "im-call", IMC.call], ["go", "im-reval", IMC.reval], ["go", "im-return", IMC.ret], ["plan", "", [14]], ["go", "im-dispute", [12]], ["go", "im-default", [17, 23]], ["plan", "", [15]], ["plan", "", [2]], ["na"]] },
   { name: "ISDA VM CSA", sub: "title transfer, two-way", fam: "VM", cells: [["go", "vm-call", VMC.call], ["plan", "", VMC.reval], ["go", "vm-return", VMC.ret], ["plan", "", [14]], ["plan", "", [12]], ["plan", "close-out netting", [23]], ["plan", "", [15]], ["plan", "", [2]], ["na"]] },
-  { name: "Repo (GMRA)", sub: "seller / buyer · also reprice (R8), roll and repurchase (R13)", fam: "R", cells: [["plan", "margin transfer", ["R3", "R4", "R5", "R6", "R7", "R10", "R16", "R21", "R24"]], ["plan", "", ["R4", "R6", "R7"]], ["plan", "", ["R7", "R10"]], ["plan", "", ["R11"]], ["plan", "", ["R9"]], ["plan", "", ["R20", "R23"]], ["plan", "repo interest", ["R12"]], ["plan", "", ["R2"]], ["na"]] },
-  { name: "Securities lending (GMSLA)", sub: "lender / borrower", fam: "S", cells: [["plan", "mark to market", ["S3", "S4", "S5", "S6", "S7", "S9", "S17", "S23", "S26"]], ["plan", "", ["S4", "S6", "S7"]], ["plan", "excess collateral", ["S7", "S9"]], ["plan", "", ["S10"]], ["plan", "", ["S8"]], ["plan", "", ["S19", "S25"]], ["plan", "fee, rebate, manufactured payments", ["S11", "S12", "S20"]], ["plan", "", ["S2"]], ["plan", "", ["S13", "S14"]]] },
+  { name: "Repo (GMRA)", sub: "seller / buyer · also reprice (R8), roll and repurchase (R13)", fam: "R", cells: [["plan", "margin transfer", ["R3", "R4", "R5", "R6", "R7", "R10", "R16", "R21", "R24", "R25"]], ["plan", "", ["R4", "R6", "R7"]], ["plan", "", ["R7", "R10"]], ["plan", "", ["R11"]], ["plan", "", ["R9"]], ["plan", "", ["R20", "R23"]], ["plan", "repo interest", ["R12"]], ["plan", "", ["R2"]], ["na"]] },
+  { name: "Securities lending (GMSLA)", sub: "lender / borrower", fam: "S", cells: [["plan", "mark to market", ["S3", "S4", "S5", "S6", "S7", "S9", "S17", "S23", "S26", "S27"]], ["plan", "", ["S4", "S6", "S7"]], ["plan", "excess collateral", ["S7", "S9"]], ["plan", "", ["S10"]], ["plan", "", ["S8"]], ["plan", "", ["S19", "S25"]], ["plan", "fee, rebate, manufactured payments", ["S11", "S12", "S20"]], ["plan", "", ["S2"]], ["plan", "", ["S13", "S14"]]] },
   { name: "Triparty", sub: "agent allocates", fam: "T", cells: [["na", "agent allocates"], ["plan", "", ["T4", "T6"]], ["plan", "", ["T7", "T9"]], ["plan", "", ["T8"]], ["na"], ["na", "follows the underlying agreement"], ["na", "follows the underlying agreement"], ["plan", "", ["T1"]], ["na"]] },
-  { name: "CCP margin", sub: "call not negotiated", fam: "C", cells: [["plan", "not negotiated", ["C5", "C6", "C7", "C9", "C10", "C14"]], ["plan", "", ["C6", "C9"]], ["plan", "", ["C7", "C10"]], ["na"], ["na"], ["plan", "porting", ["C12", "C16"]], ["plan", "", ["C11"]], ["na", "CCP rulebook"], ["na"]] },
+  { name: "CCP margin", sub: "call not negotiated", fam: "C", cells: [["plan", "not negotiated", ["C5", "C6", "C7", "C9", "C10", "C14"]], ["plan", "", ["C6", "C9"]], ["plan", "", ["C7", "C10"]], ["plan", "", ["C18"]], ["na"], ["plan", "porting", ["C12", "C16"]], ["plan", "", ["C11"]], ["na", "CCP rulebook"], ["na"]] },
 ];
 
 /* ---------- view state ---------- */

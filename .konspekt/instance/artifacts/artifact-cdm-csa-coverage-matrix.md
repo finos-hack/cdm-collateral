@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T12:32:58Z
   confidence: 0.7
 createdAt: 2026-10-15T12:32:58Z
-updatedAt: 2026-10-16T23:02:19Z
+updatedAt: 2026-10-16T23:07:09Z
 ```
 # CDM coverage of collateral management — ISDA credit support documents
 
@@ -26,3 +26,5 @@ Netting rows (and finding M5 in the findings document) were added and accepted o
 
 Revised 2026-10-16T23:02:19Z (source `01ed3cb87a05376b16fc5b6d38e98b90a97f732d`): new row for collateral proposal and acceptance (score 2 from a check of the CDM 7.6.0
 source; maintainer's reading) and a "Flows and capabilities" section mapping UI grid columns to capability rows.
+
+Revised 2026-10-16T23:07:09Z (source `91117ab560e058b945bc3eb3e35fa977f99a88b3`): collateral proposal split into proposal (2) and acceptance or rejection (0).

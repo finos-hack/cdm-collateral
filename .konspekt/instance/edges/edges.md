@@ -61,4 +61,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-localenv-codespaces | produces | node:task-local-environment-setup | artifact:artifact-setup-codespaces |  | accepted |
 | e-dec-e2e-clickableui | decomposes | node:goal-end-to-end-flow | node:task-clickable-ui |  |
 | e-mrk-uxgrid-clickableui | marks | waypoint:wp-adr-ux-scenario-grid | node:task-clickable-ui |  |
-| e-prod-clickableui-html | produces | node:task-clickable-ui | artifact:artifact-clickable-ui-html |  | proposed |
+| e-prod-clickableui-html | produces | node:task-clickable-ui | artifact:artifact-clickable-ui-html |  | accepted |
+| e-dec-e2e-reactconsole | decomposes | node:goal-end-to-end-flow | node:task-react-console |  |

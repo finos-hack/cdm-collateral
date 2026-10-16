@@ -185,3 +185,9 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-clickable-ui | status | open | active | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
 | artifact:artifact-clickable-ui-html | review |  | proposed | 2026-10-16T22:52:27Z |  |  |
 | edge:e-prod-clickableui-html | review |  | proposed | 2026-10-16T22:52:27Z |  |  |
+| artifact:artifact-clickable-ui-html | review | proposed | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| edge:e-prod-clickableui-html | review | proposed | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| node:task-clickable-ui | status | active | resolved | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| node:task-react-console | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| node:task-react-console | status |  | active | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| edge:e-dec-e2e-reactconsole | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
