@@ -8,3 +8,5 @@ at execution time.
 
 | entity | command |
 |--------|---------|
+| task-local-environment-setup | ee93d57abe02878740a8920ec1d1468c3d2fb0be |
+| task-local-environment-setup | 794a6ed3939e5f3cf235c761c77fa36607ea8a68 |

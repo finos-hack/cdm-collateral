@@ -1,0 +1,649 @@
+{
+  "$schema": "https://calm.finos.org/release/1.2/meta/calm.json",
+  "unique-id": "cdm-collateral-prototype-architecture",
+  "name": "CDM collateral prototype",
+  "description": "Local prototype architecture for CDM-based initial-margin management with tokenized collateral on Hyperledger Besu.",
+  "metadata": {
+    "status": "draft (sketch, not built)",
+    "goal": "goal-architecture-design",
+    "task": "task-local-environment-setup",
+    "asrs": [
+      "concept-asr-ledger-neutrality",
+      "concept-asr-cdm-data-layer",
+      "concept-asr-onchain-asset-identity",
+      "concept-asr-settlement-finality",
+      "concept-asr-offchain-dispute"
+    ],
+    "constraint": "nw-prototype-scope"
+  },
+  "adrs": [
+    ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
+    ".konspekt/instance/waypoints/wp-adr-im-segregation.md"
+  ],
+  "nodes": [
+    {
+      "unique-id": "pledgor-ops",
+      "node-type": "actor",
+      "name": "Pledgor operations",
+      "description": "User acting for the party that posts initial margin: responds to margin calls (agree, partially agree, dispute) and approves returns."
+    },
+    {
+      "unique-id": "secured-party-ops",
+      "node-type": "actor",
+      "name": "Secured party operations",
+      "description": "User acting for the party that receives initial margin: issues margin calls, approves returns, declares a default and requests enforcement."
+    },
+    {
+      "unique-id": "windows-dev-host",
+      "node-type": "network",
+      "name": "Windows developer machine",
+      "description": "The developer's Windows machine. Python and Node.js services run natively or in WSL2; Besu runs in Docker Desktop (WSL2 backend).",
+      "metadata": {
+        "os": "Windows 11",
+        "container-runtime": "Docker Desktop with WSL2 backend (assumption)"
+      }
+    },
+    {
+      "unique-id": "cdm-collateral-prototype",
+      "node-type": "system",
+      "name": "CDM collateral prototype",
+      "description": "Prototype that illustrates CDM-based initial-margin management with tokenized collateral segregated by a smart contract on a local Besu network. Nothing is deployed outside the developer machine."
+    },
+    {
+      "unique-id": "collateral-service",
+      "node-type": "service",
+      "name": "Collateral workflow service",
+      "description": "Off-chain margin workflow (ASR concept-asr-offchain-dispute): holds CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute) that CDM 7.6.0 does not provide (finding F2), and sends movement instructions for agreed amounts to the ledger gateway.",
+      "interfaces": [
+        {
+          "unique-id": "collateral-rest-api",
+          "type": "rest-api",
+          "port": 8000,
+          "path": "/api/v1"
+        },
+        {
+          "unique-id": "ledger-events-webhook",
+          "type": "rest-api",
+          "port": 8000,
+          "path": "/hooks/ledger-events"
+        }
+      ],
+      "metadata": {
+        "language": "Python",
+        "framework": "FastAPI (assumption)",
+        "cdm-binding": "CDM 7.6.0 Python distribution (assumption: availability to be confirmed)"
+      }
+    },
+    {
+      "unique-id": "cdm-object-model",
+      "node-type": "data-asset",
+      "name": "CDM 7.6.0 object model",
+      "description": "FINOS Common Domain Model release 7.6.0 (commit f685b4b) as the canonical data layer (ASR concept-asr-cdm-data-layer): LegalAgreement with CSA IM / CTA elections, EligibleCollateralSpecification, MarginCallIssuance / MarginCallResponse, CollateralPortfolio. Extended locally with on-chain asset identity (ASR concept-asr-onchain-asset-identity, finding B1)."
+    },
+    {
+      "unique-id": "workflow-store",
+      "node-type": "database",
+      "name": "Workflow store",
+      "description": "SQLite file holding agreements, margin calls and responses, disputes, movement instructions, collateral balances and the asset registry that maps ISIN/CUSIP and DTI to network and token contract.",
+      "interfaces": [
+        {
+          "unique-id": "workflow-store-file",
+          "type": "file",
+          "path": "./data/collateral.db"
+        }
+      ],
+      "metadata": {
+        "engine": "SQLite"
+      }
+    },
+    {
+      "unique-id": "oracle-service",
+      "node-type": "service",
+      "name": "Oracle service",
+      "description": "Off-chain oracle endpoints. Reads price / NAV and rating data from the mock market data source, serves it to the collateral service for valuation and eligibility, and publishes signed updates on-chain through the ledger gateway. Also relays a default notice from the secured party to the on-chain default feed.",
+      "interfaces": [
+        {
+          "unique-id": "oracle-rest-api",
+          "type": "rest-api",
+          "port": 8100,
+          "path": "/oracle/v1"
+        }
+      ],
+      "metadata": {
+        "language": "Python",
+        "framework": "FastAPI (assumption)",
+        "endpoints": [
+          "GET /oracle/v1/prices/{assetId}",
+          "GET /oracle/v1/ratings/{assetId}",
+          "POST /oracle/v1/publish",
+          "POST /oracle/v1/default-notices"
+        ]
+      }
+    },
+    {
+      "unique-id": "mock-market-data",
+      "node-type": "system",
+      "name": "Mock market data source",
+      "description": "Local JSON files standing in for NAV, price and rating providers (in the GDF/ISDA sandbox: Kaiko, Redstone, Moody's).",
+      "interfaces": [
+        {
+          "unique-id": "mock-market-data-files",
+          "type": "file",
+          "path": "./mock-data/*.json"
+        }
+      ]
+    },
+    {
+      "unique-id": "ledger-gateway",
+      "node-type": "service",
+      "name": "Ledger gateway",
+      "description": "Ledger-neutral interface (ASR concept-asr-ledger-neutrality, ADR wp-adr-prototype-ledgers): accepts movement instructions and oracle updates, signs and submits transactions to the ledger, waits for finality and reports ledger events back to the collateral service. Besu adapter first; a Canton adapter is the second target.",
+      "interfaces": [
+        {
+          "unique-id": "ledger-gateway-api",
+          "type": "rest-api",
+          "port": 8200,
+          "path": "/ledger/v1"
+        }
+      ],
+      "metadata": {
+        "language": "TypeScript (Node.js)",
+        "libraries": [
+          "ethers.js (assumption)"
+        ],
+        "adapters": {
+          "besu": "first",
+          "canton": "planned"
+        }
+      }
+    },
+    {
+      "unique-id": "dev-keystore",
+      "node-type": "data-asset",
+      "name": "Development keystore",
+      "description": "Private keys of the test accounts (pledgor, secured party, oracle publisher, contract admin) used by the ledger gateway to sign transactions. Development keys only."
+    },
+    {
+      "unique-id": "besu-dev-network",
+      "node-type": "network",
+      "name": "Besu local network",
+      "description": "Single-node Hyperledger Besu network in Docker with QBFT consensus, giving deterministic finality per block (ASR concept-asr-settlement-finality). Stands in for a permissioned network such as DTCC's private Besu network.",
+      "interfaces": [
+        {
+          "unique-id": "besu-json-rpc-http",
+          "type": "json-rpc",
+          "port": 8545
+        },
+        {
+          "unique-id": "besu-json-rpc-ws",
+          "type": "json-rpc",
+          "port": 8546
+        }
+      ],
+      "metadata": {
+        "client": "Hyperledger Besu",
+        "consensus": "QBFT, single validator",
+        "runtime": "Docker container"
+      }
+    },
+    {
+      "unique-id": "tokenized-collateral",
+      "node-type": "service",
+      "name": "Tokenized collateral contracts",
+      "description": "ERC-20 test tokens with transfer restrictions standing in for a tokenized money market fund and a tokenized US Treasury. Each token records its ISIN/CUSIP and DTI as metadata (ASR concept-asr-onchain-asset-identity).",
+      "metadata": {
+        "language": "Solidity",
+        "standard": "ERC-20 with allow-list transfer restriction"
+      }
+    },
+    {
+      "unique-id": "collateral-control-contract",
+      "node-type": "service",
+      "name": "Collateral control contract",
+      "description": "Smart contract that holds pledged initial margin (ADR wp-adr-im-segregation). States per pledge: pledged, returned, enforced. Pledge: pledgor transfers tokens in. Return: needs approval by both parties or by the secured party. Enforce: secured party only, after the default feed reports a default. No other movement is possible.",
+      "metadata": {
+        "language": "Solidity",
+        "assumption": "nw-assumption-contract-control"
+      }
+    },
+    {
+      "unique-id": "oracle-feed-contract",
+      "node-type": "service",
+      "name": "Oracle feed contract",
+      "description": "On-chain store of the latest price / NAV, rating and default status per asset and counterparty, written only by the oracle publisher account and read by the collateral control contract.",
+      "metadata": {
+        "language": "Solidity"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "unique-id": "host-deploys-prototype",
+      "description": "All prototype components run on the developer's Windows machine.",
+      "relationship-type": {
+        "deployed-in": {
+          "container": "windows-dev-host",
+          "nodes": [
+            "collateral-service",
+            "workflow-store",
+            "oracle-service",
+            "mock-market-data",
+            "ledger-gateway",
+            "dev-keystore",
+            "besu-dev-network"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "prototype-composition",
+      "description": "Components of the prototype system.",
+      "relationship-type": {
+        "composed-of": {
+          "container": "cdm-collateral-prototype",
+          "nodes": [
+            "collateral-service",
+            "cdm-object-model",
+            "workflow-store",
+            "oracle-service",
+            "ledger-gateway",
+            "dev-keystore",
+            "besu-dev-network",
+            "tokenized-collateral",
+            "collateral-control-contract",
+            "oracle-feed-contract"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "collateral-service-uses-cdm",
+      "description": "The collateral service is built on the CDM object model.",
+      "relationship-type": {
+        "composed-of": {
+          "container": "collateral-service",
+          "nodes": [
+            "cdm-object-model"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "contracts-deployed-on-besu",
+      "description": "Smart contracts deployed on the local Besu network.",
+      "relationship-type": {
+        "deployed-in": {
+          "container": "besu-dev-network",
+          "nodes": [
+            "tokenized-collateral",
+            "collateral-control-contract",
+            "oracle-feed-contract"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "pledgor-uses-service",
+      "description": "Pledgor operations responds to margin calls and approves returns through the REST API (Swagger UI).",
+      "relationship-type": {
+        "interacts": {
+          "actor": "pledgor-ops",
+          "nodes": [
+            "collateral-service"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "secured-party-uses-service",
+      "description": "Secured party operations issues margin calls, approves returns and declares defaults through the REST API (Swagger UI).",
+      "relationship-type": {
+        "interacts": {
+          "actor": "secured-party-ops",
+          "nodes": [
+            "collateral-service"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "service-to-store",
+      "description": "Reads and writes agreements, calls, instructions, balances and the asset registry.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-service"
+          },
+          "destination": {
+            "node": "workflow-store",
+            "interfaces": [
+              "workflow-store-file"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "service-to-oracle",
+      "description": "Requests prices / NAV and ratings for valuation, haircuts and eligibility; forwards default notices.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-service"
+          },
+          "destination": {
+            "node": "oracle-service",
+            "interfaces": [
+              "oracle-rest-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "oracle-to-market-data",
+      "description": "Reads mock NAV, price and rating data.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "oracle-service"
+          },
+          "destination": {
+            "node": "mock-market-data",
+            "interfaces": [
+              "mock-market-data-files"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "service-to-gateway",
+      "description": "Submits movement instructions (pledge, return, enforce) for agreed amounts.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-service"
+          },
+          "destination": {
+            "node": "ledger-gateway",
+            "interfaces": [
+              "ledger-gateway-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "oracle-to-gateway",
+      "description": "Publishes price, rating and default updates for the on-chain feed.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "oracle-service"
+          },
+          "destination": {
+            "node": "ledger-gateway",
+            "interfaces": [
+              "ledger-gateway-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "gateway-to-keystore",
+      "description": "Loads signing keys of the test accounts.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ledger-gateway"
+          },
+          "destination": {
+            "node": "dev-keystore"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "gateway-to-besu-rpc",
+      "description": "Submits signed transactions and reads state over JSON-RPC.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ledger-gateway"
+          },
+          "destination": {
+            "node": "besu-dev-network",
+            "interfaces": [
+              "besu-json-rpc-http"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "gateway-to-besu-events",
+      "description": "Subscribes to contract events and new blocks.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ledger-gateway"
+          },
+          "destination": {
+            "node": "besu-dev-network",
+            "interfaces": [
+              "besu-json-rpc-ws"
+            ]
+          }
+        }
+      },
+      "protocol": "WebSocket"
+    },
+    {
+      "unique-id": "gateway-to-service-events",
+      "description": "Reports finalized ledger events (pledged, returned, enforced, transfers) back to the workflow.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ledger-gateway"
+          },
+          "destination": {
+            "node": "collateral-service",
+            "interfaces": [
+              "ledger-events-webhook"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "control-to-tokens",
+      "description": "Moves pledged tokens with ERC-20 transferFrom / transfer (EVM call).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-control-contract"
+          },
+          "destination": {
+            "node": "tokenized-collateral"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "control-to-oracle-feed",
+      "description": "Reads default status (and, for valuation checks, price) before enforcement (EVM call).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-control-contract"
+          },
+          "destination": {
+            "node": "oracle-feed-contract"
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "unique-id": "flow-im-margin-call-pledge",
+      "name": "Initial margin call and on-chain pledge",
+      "description": "The secured party calls initial margin; the pledgor agrees in full or in part off-chain; the agreed amount is pledged into the collateral control contract on Besu.",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-service",
+          "sequence-number": 1,
+          "description": "Secured party issues an IM call (CDM MarginCallIssuance) under the agreement."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-service",
+          "sequence-number": 2,
+          "description": "Pledgor responds: agree, partially agree or dispute (CDM MarginCallResponse); a disputed part stays off-chain."
+        },
+        {
+          "relationship-unique-id": "service-to-oracle",
+          "sequence-number": 3,
+          "description": "Service fetches NAV / prices and ratings for the proposed tokens."
+        },
+        {
+          "relationship-unique-id": "service-to-store",
+          "sequence-number": 4,
+          "description": "Service checks eligibility and haircuts against the CDM eligibility schedule and records the movement instruction."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 5,
+          "description": "Service sends a pledge instruction for the agreed amount."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 6,
+          "description": "Gateway signs and submits pledge() to the collateral control contract."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 7,
+          "description": "Contract pulls the tokens from the pledgor's account."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-events",
+          "sequence-number": 8,
+          "description": "Gateway receives the Pledged event in a finalized block."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 9,
+          "description": "Service updates the collateral balance and closes the call."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-oracle-update",
+      "name": "Oracle price and rating update",
+      "description": "The oracle service publishes current NAV / price and rating data to the on-chain feed.",
+      "transitions": [
+        {
+          "relationship-unique-id": "oracle-to-market-data",
+          "sequence-number": 1,
+          "description": "Oracle reads mock NAV, price and rating data."
+        },
+        {
+          "relationship-unique-id": "oracle-to-gateway",
+          "sequence-number": 2,
+          "description": "Oracle sends a signed update."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 3,
+          "description": "Gateway writes the update to the oracle feed contract."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-return",
+      "name": "Return of initial margin",
+      "description": "Excess or released initial margin goes back to the pledgor after the required approval.",
+      "transitions": [
+        {
+          "relationship-unique-id": "pledgor-uses-service",
+          "sequence-number": 1,
+          "description": "Pledgor requests a return."
+        },
+        {
+          "relationship-unique-id": "secured-party-uses-service",
+          "sequence-number": 2,
+          "description": "Secured party approves the return."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 3,
+          "description": "Service sends a return instruction carrying both approvals."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 4,
+          "description": "Gateway submits returnPledge()."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 5,
+          "description": "Contract transfers the tokens back to the pledgor."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 6,
+          "description": "Service records the return and updates the balance."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-default-enforcement",
+      "name": "Default and enforcement",
+      "description": "After a pledgor default, the secured party enforces against the pledged initial margin.",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-service",
+          "sequence-number": 1,
+          "description": "Secured party declares a pledgor default."
+        },
+        {
+          "relationship-unique-id": "service-to-oracle",
+          "sequence-number": 2,
+          "description": "Service forwards the default notice to the oracle service."
+        },
+        {
+          "relationship-unique-id": "oracle-to-gateway",
+          "sequence-number": 3,
+          "description": "Oracle publishes the default status."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 4,
+          "description": "Gateway writes the default to the feed and submits enforce()."
+        },
+        {
+          "relationship-unique-id": "control-to-oracle-feed",
+          "sequence-number": 5,
+          "description": "Contract confirms the default status."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 6,
+          "description": "Contract transfers the pledged tokens to the secured party."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 7,
+          "description": "Service records the enforcement."
+        }
+      ]
+    }
+  ]
+}

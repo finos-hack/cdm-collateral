@@ -2,7 +2,7 @@
 id: task-local-environment-setup
 type: task
 title: Local environment stand up
-status: open
+status: active
 review: accepted
 provenance:
   conversationId: architecture-design
@@ -10,8 +10,9 @@ provenance:
   contentHash: fe2705558d2755b85248ab33c41cae227a827998
   timestamp: 2026-10-16T00:38:00Z
 createdAt: 2026-10-16T00:38:00Z
-updatedAt: 2026-10-16T00:38:00Z
+updatedAt: 2026-10-16T20:08:49Z
 ```
 # Task: Local environment stand up
 
-Stand up a local development environment for this project.
+Stand up a local development environment for this project on the project owner's Windows machine: a local Besu
+network and Python or JS endpoints for oracles. First step: sketch the prototype architecture (CALM) without building.

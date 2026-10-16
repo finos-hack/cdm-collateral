@@ -134,3 +134,6 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-assumption-contract-control | status |  | unvalidated | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
 | edge:e-note-arch-contractcontrol | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
 | node:task-blockchain-smart-contracts-applicability | status | active | resolved | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
+| node:task-local-environment-setup | status | open | active | 2026-10-16T20:08:49Z | 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62 | denisurusov |
+| artifact:artifact-prototype-architecture | review |  | proposed | 2026-10-16T20:08:49Z |  |  |
+| edge:e-prod-localenv-architecture | review |  | proposed | 2026-10-16T20:08:49Z |  |  |

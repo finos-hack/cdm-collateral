@@ -44,3 +44,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-arch-prototypescope | notes | node:goal-architecture-design | noteworthy:nw-prototype-scope |  |
 | e-mrk-imseg-blockchain | marks | waypoint:wp-adr-im-segregation | node:task-blockchain-smart-contracts-applicability |  |
 | e-note-arch-contractcontrol | notes | node:goal-architecture-design | noteworthy:nw-assumption-contract-control |  |
+| e-prod-localenv-architecture | produces | node:task-local-environment-setup | artifact:artifact-prototype-architecture |  | proposed |
