@@ -1,12 +1,14 @@
 # Setting up the development machine (Windows)
 
 For the prototype in [`../architecture/README.md`](../architecture/README.md). These steps install the tools and start
-a local single-node Besu network. The prototype code itself is not built yet; later steps will add it.
+a local four-node Besu network (one node per default participant). The prototype code itself is not built yet; later steps will add it.
 
 Version pins as of 2026-10-16. **Tested:** the QBFT configuration, `generate-blockchain-config` and the node flags in
-step 6 were run with Besu 26.9.0 (native binary, Java 25, Linux) on 2026-10-16: the node produced a block every 2
-seconds with one validator. **Not tested:** the Windows and Docker parts (steps 2–5 and the `docker run` wrapping),
-since no Windows machine or Docker daemon was available. The Besu Docker image bundles its own Java, so you do not need
+step 6 were run with Besu 26.9.0 (native binary, Java 25, Linux) on 2026-10-16: four nodes on one machine with the
+first as bootnode; each node had 3 peers, `qbft_getValidatorsByBlockNumber` listed 4 validators, blocks came every 2
+seconds, and blocks continued with one node stopped. **Not tested:** the Windows and Docker parts (steps 2–5, the
+PowerShell commands and `besu/docker-compose.yml`), since no Windows machine or Docker daemon was available; the
+Compose file was only checked to parse as YAML. The Besu Docker image bundles its own Java, so you do not need
 to install Java; running Besu natively instead would need Java 25 or later. Reference: Besu QBFT tutorial,
 https://besu.hyperledger.org/private-networks/tutorials/qbft.
 
@@ -71,7 +73,21 @@ git clone https://github.com/denisurusov/cdm-collateral.git
 cd cdm-collateral
 ```
 
-## 6. Local Besu network (single-node QBFT)
+## 6. Local Besu network (four-node QBFT, one node per participant)
+
+Each default participant runs its own Besu validator node (`wp-adr-per-participant-services`). QBFT needs at least four
+validators to keep producing blocks when one node is down, so the default network has four:
+
+| Node (container) | Participant | JSON-RPC HTTP | WebSocket | Docker IP |
+|---|---|---|---|---|
+| `mkt` (`besu-mkt`) | Market data operator; bootnode | 8545 | 8546 | 172.28.0.11 |
+| `bank-a` (`besu-bank-a`) | BANK-A, pledgor | 8547 | 8548 | 172.28.0.12 |
+| `bank-b` (`besu-bank-b`) | BANK-B, secured party | 8549 | 8550 | 172.28.0.13 |
+| `bank-c` (`besu-bank-c`) | BANK-C, second pledgor (multi-party tests) | 8551 | 8552 | 172.28.0.14 |
+
+Each participant's ledger gateway talks to its own node. The repository already holds the two configuration files:
+[`besu/qbftConfigFile.json`](../besu/qbftConfigFile.json) (chain id 1337, 2-second blocks, no gas fees, 4 validator
+keys) and [`besu/docker-compose.yml`](../besu/docker-compose.yml) (the four nodes on a Docker network with fixed IPs).
 
 Pull the image (26.9.0 is the newest release at least two weeks old on 2026-10-16):
 
@@ -79,31 +95,8 @@ Pull the image (26.9.0 is the newest release at least two weeks old on 2026-10-1
 docker pull hyperledger/besu:26.9.0
 ```
 
-Create `besu\qbftConfigFile.json` with this content (chain id 1337, 2-second blocks, no gas fees):
-
-```json
-{
-  "genesis": {
-    "config": {
-      "chainId": 1337,
-      "berlinBlock": 0,
-      "londonBlock": 0,
-      "zeroBaseFee": true,
-      "qbft": { "blockperiodseconds": 2, "epochlength": 30000, "requesttimeoutseconds": 4 }
-    },
-    "nonce": "0x0",
-    "timestamp": "0x58ee40ba",
-    "gasLimit": "0x1fffffffffffff",
-    "difficulty": "0x1",
-    "mixHash": "0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365",
-    "coinbase": "0x0000000000000000000000000000000000000000",
-    "alloc": {}
-  },
-  "blockchain": { "nodes": { "generate": true, "count": 1 } }
-}
-```
-
-Generate the genesis file and the validator key:
+Generate the genesis file and the four validator keys (the command fails if `besu\networkFiles` already exists; delete
+it first to start over):
 
 ```powershell
 docker run --rm -v "${PWD}\besu:/data" hyperledger/besu:26.9.0 `
@@ -113,41 +106,55 @@ docker run --rm -v "${PWD}\besu:/data" hyperledger/besu:26.9.0 `
   --private-key-file-name=key
 ```
 
-`besu\networkFiles\keys\` now contains one folder named after the validator address, holding `key` and `key.pub`.
-Copy that `key` file to `besu\node\data\key`:
+`besu\networkFiles\keys\` now holds four folders, one per validator address, each with `key` and `key.pub`. Give each
+node one key, and write the bootnode address (the `mkt` node's public key) to `besu\.env` for Docker Compose:
 
 ```powershell
-New-Item -ItemType Directory -Force besu\node\data | Out-Null
-$keyDir = (Get-ChildItem besu\networkFiles\keys -Directory | Select-Object -First 1).FullName
-Copy-Item (Join-Path $keyDir 'key') besu\node\data\key
+$keys  = Get-ChildItem besu\networkFiles\keys -Directory | Sort-Object Name
+$nodes = 'mkt', 'bank-a', 'bank-b', 'bank-c'
+for ($i = 0; $i -lt 4; $i++) {
+  New-Item -ItemType Directory -Force "besu\$($nodes[$i])\data" | Out-Null
+  Copy-Item (Join-Path $keys[$i].FullName 'key') "besu\$($nodes[$i])\data\key"
+}
+$pub = (Get-Content (Join-Path $keys[0].FullName 'key.pub') -Raw).Trim() -replace '^0x', ''
+"BOOTNODE_ENODE=enode://$pub@172.28.0.11:30303" | Set-Content -Encoding ascii besu\.env
 ```
 
-Start the node:
+Start the network:
 
 ```powershell
-docker run -d --name besu-dev -p 8545:8545 -p 8546:8546 -v "${PWD}\besu:/data" hyperledger/besu:26.9.0 `
-  --data-path=/data/node/data `
-  --genesis-file=/data/networkFiles/genesis.json `
-  --min-gas-price=0 `
-  --rpc-http-enabled --rpc-http-api=ETH,NET,QBFT,WEB3,TXPOOL `
-  --rpc-ws-enabled --rpc-ws-api=ETH,NET,QBFT,WEB3 `
-  --host-allowlist="*" --rpc-http-cors-origins="all"
+cd besu
+docker compose up -d
+docker compose ps        # four containers, State "running"
+cd ..
 ```
 
-Check that blocks are produced (run twice, a few seconds apart; the number should increase):
+Check it (wait about 20 seconds after start):
 
 ```powershell
-Invoke-RestMethod -Uri http://localhost:8545 -Method Post -ContentType 'application/json' `
-  -Body '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+function Rpc($port, $method, $params = '[]') {
+  Invoke-RestMethod -Uri "http://localhost:$port" -Method Post -ContentType 'application/json' `
+    -Body "{""jsonrpc"":""2.0"",""method"":""$method"",""params"":$params,""id"":1}"
+}
+Rpc 8545 eth_blockNumber                                   # increases every 2 seconds
+Rpc 8545 net_peerCount                                     # 0x3
+Rpc 8551 eth_blockNumber                                   # same block number on bank-c
+(Rpc 8545 qbft_getValidatorsByBlockNumber '["latest"]').result   # four addresses
 ```
 
-Stop and start later with `docker stop besu-dev` and `docker start besu-dev`. The chain state is kept in
-`besu\node\data`.
+Optional fault test: `docker stop besu-bank-c`, check that `eth_blockNumber` on 8545 still increases, then
+`docker start besu-bank-c`.
+
+Stop and start later with `docker compose stop` and `docker compose start` in `besu\`. Chain state is kept in
+`besu\<node>\data`. `besu\networkFiles`, the node folders and `besu\.env` are ignored by git.
+
+More participants than four: a further participant's gateway can use any existing node, or a new node can join as a
+non-validator (same genesis, `--bootnodes`) and be voted in as a validator with `qbft_proposeValidatorVote`.
 
 ## 7. Later (when the prototype is built)
 
-- Funded test accounts (pledgor, secured party, oracle publisher, contract admin) will be added to the genesis `alloc`
-  section, so the network will be regenerated once.
+- Funded test accounts (one per participant, plus the oracle publisher and contract admin) will be added to the genesis
+  `alloc` section, so the network will be regenerated once.
 - Python virtual environments for the workflow and oracle services; `npm install` for the ledger gateway, the
   contracts and the party console; Playwright browsers for the end-to-end tests.
 
@@ -157,6 +164,8 @@ Stop and start later with `docker stop besu-dev` and `docker start besu-dev`. Th
 |---|---|
 | `wsl --install` fails or Docker reports WSL errors | Virtualization enabled in BIOS; Windows updated; `wsl --update` |
 | `docker` not found | Open a new terminal after installing; Docker Desktop is running |
-| Port 8545 or 8546 in use | `netstat -ano | findstr 8545`; stop the other process or change the `-p` mapping |
-| `eth_blockNumber` stays at `0x0` | `docker logs besu-dev`; the `key` file must be the one generated in step 6 |
+| A port between 8545 and 8552 in use | `netstat -ano | findstr 8545`; stop the other process or change the `ports` mapping in `besu/docker-compose.yml` |
+| `eth_blockNumber` stays at `0x0` | `docker logs besu-mkt`; at least three of the four nodes must be running; each node folder must hold a different `key` from step 6; `net_peerCount` must be `0x3` |
+| `net_peerCount` is `0x0` on `bank-*` nodes | `besu\.env` exists and `BOOTNODE_ENODE` holds the `mkt` node's public key without `0x`; run `docker compose up -d` from inside `besu\` |
+| `docker compose up` reports `Pool overlaps with other one on this address space` | Another Docker network uses 172.28.0.0/24; change the subnet and the four IPs in `besu/docker-compose.yml` and in `besu\.env` |
 | Log shows `WARN … Forcing price bump … zero basefee network` | Expected on a gas-free network; not an error |

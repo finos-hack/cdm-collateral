@@ -1,0 +1,117 @@
+# Four-validator QBFT network, one Besu node per default participant.
+# Setup: docs/setup-windows.md step 6. BOOTNODE_ENODE comes from besu/.env (written in that step).
+x-besu: &besu
+  image: hyperledger/besu:26.9.0
+  restart: unless-stopped
+
+services:
+  mkt:  # market operator
+    <<: *besu
+    container_name: besu-mkt
+    volumes:
+      - ./networkFiles:/networkFiles:ro
+      - ./mkt/data:/data
+    command:
+      - --data-path=/data
+      - --genesis-file=/networkFiles/genesis.json
+      - --p2p-host=172.28.0.11
+      - --min-gas-price=0
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,QBFT,WEB3,TXPOOL
+      - --rpc-ws-enabled
+      - --rpc-ws-api=ETH,NET,QBFT,WEB3
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=all
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+    networks:
+      besu:
+        ipv4_address: 172.28.0.11
+
+  bank-a:  # BANK-A, pledgor
+    <<: *besu
+    container_name: besu-bank-a
+    volumes:
+      - ./networkFiles:/networkFiles:ro
+      - ./bank-a/data:/data
+    command:
+      - --data-path=/data
+      - --genesis-file=/networkFiles/genesis.json
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.28.0.12
+      - --min-gas-price=0
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,QBFT,WEB3,TXPOOL
+      - --rpc-ws-enabled
+      - --rpc-ws-api=ETH,NET,QBFT,WEB3
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=all
+    ports:
+      - "8547:8545"
+      - "8548:8546"
+    networks:
+      besu:
+        ipv4_address: 172.28.0.12
+    depends_on:
+      - mkt
+
+  bank-b:  # BANK-B, secured party
+    <<: *besu
+    container_name: besu-bank-b
+    volumes:
+      - ./networkFiles:/networkFiles:ro
+      - ./bank-b/data:/data
+    command:
+      - --data-path=/data
+      - --genesis-file=/networkFiles/genesis.json
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.28.0.13
+      - --min-gas-price=0
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,QBFT,WEB3,TXPOOL
+      - --rpc-ws-enabled
+      - --rpc-ws-api=ETH,NET,QBFT,WEB3
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=all
+    ports:
+      - "8549:8545"
+      - "8550:8546"
+    networks:
+      besu:
+        ipv4_address: 172.28.0.13
+    depends_on:
+      - mkt
+
+  bank-c:  # BANK-C, second pledgor
+    <<: *besu
+    container_name: besu-bank-c
+    volumes:
+      - ./networkFiles:/networkFiles:ro
+      - ./bank-c/data:/data
+    command:
+      - --data-path=/data
+      - --genesis-file=/networkFiles/genesis.json
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.28.0.14
+      - --min-gas-price=0
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,QBFT,WEB3,TXPOOL
+      - --rpc-ws-enabled
+      - --rpc-ws-api=ETH,NET,QBFT,WEB3
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=all
+    ports:
+      - "8551:8545"
+      - "8552:8546"
+    networks:
+      besu:
+        ipv4_address: 172.28.0.14
+    depends_on:
+      - mkt
+
+networks:
+  besu:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

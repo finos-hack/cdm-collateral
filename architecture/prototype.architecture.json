@@ -84,7 +84,7 @@
       "unique-id": "participant-stack",
       "node-type": "system",
       "name": "Participant stack",
-      "description": "Per-participant deployment (ADR wp-adr-per-participant-services): each simulated participant runs its own party console, collateral workflow service, workflow store, ledger gateway and keystore, holding only its own books and its own signing key. N stacks run side by side; the oracle service, mock market data, Besu network and contracts are shared market infrastructure.",
+      "description": "Per-participant deployment (ADR wp-adr-per-participant-services): each simulated participant runs its own party console, collateral workflow service, workflow store, ledger gateway and keystore, holding only its own books and its own signing key, and connected to its own Besu validator node. N stacks run side by side; the oracle service, mock market data and contracts are shared.",
       "metadata": {
         "instances": "N, one per participant (pledgor, secured party, market operator)",
         "isolation": "own process, own SQLite file, own key; no shared database"
@@ -224,23 +224,29 @@
       "unique-id": "besu-dev-network",
       "node-type": "network",
       "name": "Besu local network",
-      "description": "Single-node Hyperledger Besu network in Docker with QBFT consensus, shared by all participant gateways, giving deterministic finality per block (ASR concept-asr-settlement-finality). Stands in for a permissioned network such as DTCC's private Besu network.",
+      "description": "Hyperledger Besu network in Docker Compose with QBFT consensus: four validator nodes, one per default participant (market operator, BANK-A, BANK-B, BANK-C), each participant's gateway connected to its own node (ADR wp-adr-per-participant-services). Deterministic finality per block (ASR concept-asr-settlement-finality); blocks continue with one node down. Stands in for a permissioned network such as DTCC's private Besu network.",
       "interfaces": [
         {
           "unique-id": "besu-json-rpc-http",
           "type": "json-rpc",
-          "port": 8545
+          "port": "8545+2n"
         },
         {
           "unique-id": "besu-json-rpc-ws",
           "type": "json-rpc",
-          "port": 8546
+          "port": "8546+2n"
         }
       ],
       "metadata": {
         "client": "Hyperledger Besu",
-        "consensus": "QBFT, single validator",
-        "runtime": "Docker container"
+        "consensus": "QBFT, four validators, one node per participant",
+        "runtime": "Docker Compose (besu/docker-compose.yml)",
+        "nodes": {
+          "mkt": 8545,
+          "bank-a": 8547,
+          "bank-b": 8549,
+          "bank-c": 8551
+        }
       }
     },
     {
@@ -607,7 +613,7 @@
     },
     {
       "unique-id": "gateway-to-besu-rpc",
-      "description": "Submits signed transactions and reads state over JSON-RPC.",
+      "description": "Submits signed transactions and reads state over JSON-RPC on its own participant's Besu node.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -625,7 +631,7 @@
     },
     {
       "unique-id": "gateway-to-besu-events",
-      "description": "Subscribes to contract events and new blocks.",
+      "description": "Subscribes to contract events and new blocks on its own participant's Besu node.",
       "relationship-type": {
         "connects": {
           "source": {

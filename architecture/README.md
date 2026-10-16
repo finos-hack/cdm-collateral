@@ -40,18 +40,18 @@ flowchart LR
     OS --> MD[["Mock market data<br/>JSON files"]]
     OS -- "via operator's gateway" --> LG
     T[["E2E test harness<br/>Playwright · test only"]] --> UI
-    subgraph besu["Besu local network · Docker · QBFT single node · shared"]
+    subgraph besu["Besu local network · Docker Compose · QBFT, 4 validator nodes (one per participant)"]
       CCC["Collateral control contract"] --> TOK["Tokenized collateral<br/>ERC-20 test tokens"]
       CCC --> OF["Oracle feed contract"]
     end
-    LG -- "JSON-RPC 8545 / WS 8546" --> besu
+    LG -- "JSON-RPC / WS to own node" --> besu
   end
   people --> UI
 ```
 
 | Component | Type | Technology | Role |
 |---|---|---|---|
-| Participant stack (× N) | system | — | One per participant (pledgor, secured party, market operator): party console, workflow service, workflow store, ledger gateway and keystore. Each holds only its own party's books and key (`wp-adr-per-participant-services`) |
+| Participant stack (× N) | system | — | One per participant (pledgor, secured party, market operator): party console, workflow service, workflow store, ledger gateway, keystore and a Besu validator node. Each holds only its own party's books and key (`wp-adr-per-participant-services`) |
 | Party console | web client | TypeScript, React + Vite *(assumption)* | Drives the flows for its participant; set by `PARTY_ID`, `ROLE` and `WALLET`; talks only to its own stack |
 | Collateral workflow service | service, per participant | Python, FastAPI *(assumption)*, CDM 7.6.0 | Its party's agreements (IM CSA / CTA-SA), eligibility and haircuts with CDM functions, margin call lifecycle (issue, respond, dispute — the part CDM lacks, finding F2), its own movement instructions; exchanges calls, responses, return requests and default notices with the counterparty's instance |
 | CDM 7.6.0 object model | data asset | CDM Python distribution *(assumption)* | Canonical data layer, extended locally with on-chain asset identity (finding B1) |
@@ -60,7 +60,7 @@ flowchart LR
 | Mock market data | external system | JSON files | Stands in for NAV, price and rating providers |
 | Ledger gateway | service, per participant | TypeScript (Node.js), ethers.js *(assumption)* | Ledger-neutral interface: signs with its own participant's key and submits transactions, waits for finality, reports events. Besu adapter first, Canton adapter later |
 | Dev keystore | data asset, per participant | key files | That participant's key only (the market operator holds the oracle publisher and contract admin keys) |
-| Besu local network | network, shared | Hyperledger Besu in Docker, single-node QBFT | Local stand-in for a permissioned network such as DTCC's private Besu network; deterministic finality |
+| Besu local network | network, one node per participant | Hyperledger Besu in Docker Compose, four QBFT validators | Local stand-in for a permissioned network such as DTCC's private Besu network; each participant's gateway uses its own node; deterministic finality; tolerates one node down |
 | Tokenized collateral | contract | Solidity, ERC-20 with allow-list | Test tokens for a tokenized MMF and a tokenized US Treasury, carrying ISIN/CUSIP and DTI |
 | End-to-end test harness | test only | Playwright *(assumption)* | Drives N console instances in parallel and asserts every CALM flow, including on-chain state |
 | Collateral control contract | contract | Solidity | Holds pledged IM: pledge, return (both parties or secured party), enforce (secured party, after default) |
@@ -112,15 +112,15 @@ npm run stack -- --party MKT    --role market-operator --n 0 # console 5173, ser
 ```
 
 A participant directory (`participants.json`) maps each party ID to its service URL, so a workflow service can reach
-its counterparty's instance. The oracle service, the mock market data, the Besu node and the contracts run once and are
-shared. The end-to-end harness starts N stacks and drives their consoles in parallel browser contexts.
+its counterparty's instance. Each stack's gateway connects to that participant's Besu node (`mkt` 8545, `bank-a` 8547, `bank-b` 8549, `bank-c` 8551).
+The oracle service, the mock market data and the contracts run once and are shared. The end-to-end harness starts N stacks and drives their consoles in parallel browser contexts.
 
 ## Local environment on Windows
 
 Step-by-step instructions: [`../docs/setup-windows.md`](../docs/setup-windows.md).
 
 
-- Docker Desktop with the WSL2 backend, running a Besu container with a single-node QBFT genesis.
+- Docker Desktop with the WSL2 backend, running four Besu validator nodes with Docker Compose ([`../besu/`](../besu/)).
 - Python 3 for the collateral and oracle services; Node.js for the ledger gateway and the Solidity toolchain
   (Hardhat, *assumption*) that compiles and deploys the contracts to Besu.
 - **Besu simulator choice:** a real Besu node in Docker. EVM simulators such as Hardhat Network or Anvil are lighter but
@@ -130,7 +130,7 @@ Step-by-step instructions: [`../docs/setup-windows.md`](../docs/setup-windows.md
 
 - A CDM 7.6.0 Python distribution is available and usable on Windows.
 - FastAPI, ethers.js and Hardhat are suitable; any equivalent can replace them.
-- Single-node QBFT is enough to illustrate deterministic finality. All participant gateways share the one Besu node;
-  one node per participant is a later option.
+- Four QBFT validators on one machine are enough to illustrate deterministic finality and per-participant nodes.
+  Participants beyond the four default ones use an existing node or join as non-validators.
 - Workflow services talk directly to each other over HTTP; in production a messaging network would carry these messages.
 - Smart-contract control satisfies IM segregation (`nw-assumption-contract-control`).

@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-16T20:08:49Z
   confidence: 0.75
 createdAt: 2026-10-16T20:08:49Z
-updatedAt: 2026-10-16T20:43:52Z
+updatedAt: 2026-10-16T21:09:56Z
 ```
 # Prototype architecture (CALM)
 
@@ -29,3 +29,5 @@ harness, fifth flow (revaluation and top-up); 18 nodes, 23 relationships, 5 flow
 Revised 2026-10-16T20:43:52Z (`wp-adr-per-participant-services`): one stack per participant (console, workflow service, store, ledger
 gateway, keystore) with peer messages between workflow services; oracle, market data, Besu and contracts shared;
 19 nodes, 25 relationships, 5 flows.
+
+Revised 2026-10-16T21:09:56Z (source `2996ac2d303ef1b99234173cb0b618ba1a45aca9`): Besu network of four QBFT validators, one node per participant.
