@@ -48,3 +48,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-localenv-testplan | produces | node:task-local-environment-setup | artifact:artifact-test-framework-plan |  | accepted |
 | e-prod-localenv-setup | produces | node:task-local-environment-setup | artifact:artifact-setup-windows |  | accepted |
 | e-mrk-perparticipant-localenv | marks | waypoint:wp-adr-per-participant-services | node:task-local-environment-setup |  |
+| e-sup-callstate-offchaindispute | supersedes | concept:concept-asr-onchain-call-state | concept:concept-asr-offchain-dispute |  |
+| e-drv-callstate-callcontract | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-margin-call-state-onchain |  |
+| e-mrk-callcontract-localenv | marks | waypoint:wp-adr-margin-call-state-onchain | node:task-local-environment-setup |  |
+| e-note-arch-besuvisibility | notes | node:goal-architecture-design | noteworthy:nw-assumption-besu-visibility |  |
+| e-dec-arch-privacy | decomposes | node:goal-architecture-design | node:task-onchain-privacy |  |
+| e-note-privacy-besuvisibility | notes | node:task-onchain-privacy | noteworthy:nw-assumption-besu-visibility |  |

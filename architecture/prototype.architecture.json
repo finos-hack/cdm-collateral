@@ -12,14 +12,19 @@
       "concept-asr-cdm-data-layer",
       "concept-asr-onchain-asset-identity",
       "concept-asr-settlement-finality",
-      "concept-asr-offchain-dispute"
+      "concept-asr-onchain-call-state"
     ],
-    "constraint": "nw-prototype-scope"
+    "constraint": "nw-prototype-scope",
+    "assumptions": [
+      "nw-assumption-contract-control",
+      "nw-assumption-besu-visibility"
+    ]
   },
   "adrs": [
     ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
     ".konspekt/instance/waypoints/wp-adr-im-segregation.md",
-    ".konspekt/instance/waypoints/wp-adr-per-participant-services.md"
+    ".konspekt/instance/waypoints/wp-adr-per-participant-services.md",
+    ".konspekt/instance/waypoints/wp-adr-margin-call-state-onchain.md"
   ],
   "nodes": [
     {
@@ -100,7 +105,7 @@
       "unique-id": "collateral-service",
       "node-type": "service",
       "name": "Collateral workflow service",
-      "description": "Off-chain margin workflow (ASR concept-asr-offchain-dispute), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute) that CDM 7.6.0 does not provide (finding F2), exchanges margin calls, responses, return requests and default notices with the counterparty's instance, and sends its own party's movement instructions to its ledger gateway.",
+      "description": "Off-chain margin workflow (ASR concept-asr-onchain-call-state: negotiation and CDM content off-chain, call state on-chain), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute) that CDM 7.6.0 does not provide (finding F2), exchanges margin calls, responses, return requests and default notices with the counterparty's instance, and sends its own party's movement instructions to its ledger gateway.",
       "interfaces": [
         {
           "unique-id": "collateral-rest-api",
@@ -263,10 +268,20 @@
       "unique-id": "collateral-control-contract",
       "node-type": "service",
       "name": "Collateral control contract",
-      "description": "Smart contract that holds pledged initial margin (ADR wp-adr-im-segregation). States per pledge: pledged, returned, enforced. Pledge: pledgor transfers tokens in. Return: needs approval by both parties or by the secured party. Enforce: secured party only, after the default feed reports a default. No other movement is possible.",
+      "description": "Smart contract that holds pledged initial margin (ADR wp-adr-im-segregation). States per pledge: pledged, returned, enforced. Pledge: pledgor transfers tokens in, only against an agreed call in the margin call contract and up to the agreed amount; the call is then marked settled. Return: needs approval by both parties or by the secured party. Enforce: secured party only, after the default feed reports a default. No other movement is possible.",
       "metadata": {
         "language": "Solidity",
         "assumption": "nw-assumption-contract-control"
+      }
+    },
+    {
+      "unique-id": "margin-call-contract",
+      "node-type": "service",
+      "name": "Margin call contract",
+      "description": "Records each margin call on-chain (ASR concept-asr-onchain-call-state, ADR wp-adr-margin-call-state-onchain): ID, agreement, caller and called party, called, agreed and disputed amounts, settlement deadline, state (issued, agreed, partially agreed, disputed, settled) and the hash of the CDM MarginCallIssuance / MarginCallResponse. The caller's key issues; the called party's key responds. Read by the collateral control contract before a pledge. Every node can read it (assumption nw-assumption-besu-visibility).",
+      "metadata": {
+        "language": "Solidity",
+        "assumption": "nw-assumption-besu-visibility"
       }
     },
     {
@@ -318,6 +333,7 @@
             "besu-dev-network",
             "tokenized-collateral",
             "collateral-control-contract",
+            "margin-call-contract",
             "oracle-feed-contract"
           ]
         }
@@ -360,6 +376,7 @@
           "nodes": [
             "tokenized-collateral",
             "collateral-control-contract",
+            "margin-call-contract",
             "oracle-feed-contract"
           ]
         }
@@ -493,7 +510,7 @@
     },
     {
       "unique-id": "service-to-peer-service",
-      "description": "Exchanges margin calls, responses, return requests and approvals, and default notices with the counterparty's collateral workflow service instance (party to party).",
+      "description": "Sends the CDM content of margin calls, responses, return requests and default notices to the counterparty's collateral workflow service instance (HTTP; CDM payload in an envelope with message ID, sender, receiver, agreement ID and the ID of the message it answers). The receiver checks it against the hash recorded on-chain.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -563,7 +580,7 @@
     },
     {
       "unique-id": "service-to-gateway",
-      "description": "Submits its own participant's movement instructions (pledge, return approval, enforce) for agreed amounts.",
+      "description": "Submits its own participant's ledger instructions: issue or respond to a margin call (state and CDM hash), pledge, return approval, enforce.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -680,6 +697,20 @@
       }
     },
     {
+      "unique-id": "control-to-margin-call",
+      "description": "Checks that the pledge matches an agreed call and amount, then marks the call settled (EVM call).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-control-contract"
+          },
+          "destination": {
+            "node": "margin-call-contract"
+          }
+        }
+      }
+    },
+    {
       "unique-id": "control-to-oracle-feed",
       "description": "Reads default status (and, for valuation checks, price) before enforcement (EVM call).",
       "relationship-type": {
@@ -698,7 +729,7 @@
     {
       "unique-id": "flow-im-margin-call-pledge",
       "name": "Initial margin call and on-chain pledge",
-      "description": "The secured party calls initial margin; the pledgor agrees in full or in part off-chain; the pledgor pledges the agreed amount into the collateral control contract on Besu. Each party's stack keeps its own record.",
+      "description": "The secured party calls initial margin and records the call on-chain; the pledgor agrees in full or in part (a disputed part is recorded but resolved off-chain); the pledgor pledges the agreed amount, which the collateral control contract accepts only against the agreed call. CDM content travels off-chain between the parties' services.",
       "transitions": [
         {
           "relationship-unique-id": "secured-party-uses-console",
@@ -711,64 +742,79 @@
           "description": "Secured party console submits the call to the secured party's workflow service."
         },
         {
-          "relationship-unique-id": "service-to-peer-service",
+          "relationship-unique-id": "service-to-gateway",
           "sequence-number": 3,
-          "description": "Secured party's service sends the call to the pledgor's workflow service."
+          "description": "Secured party's service sends the call (amount, deadline, hash of the CDM content) to its gateway."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 4,
+          "description": "Secured party's gateway records the call in the margin call contract, signed with the secured party key (state: issued)."
+        },
+        {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 5,
+          "description": "Secured party's service sends the CDM MarginCallIssuance to the pledgor's service, which checks it against the on-chain hash."
         },
         {
           "relationship-unique-id": "pledgor-uses-console",
-          "sequence-number": 4,
-          "description": "Pledgor responds in its console: agree, partially agree or dispute (CDM MarginCallResponse); a disputed part stays off-chain."
+          "sequence-number": 6,
+          "description": "Pledgor responds in its console: agree, partially agree or dispute (CDM MarginCallResponse)."
         },
         {
           "relationship-unique-id": "console-to-service",
-          "sequence-number": 5,
+          "sequence-number": 7,
           "description": "Pledgor console submits the response and the proposed tokens to the pledgor's workflow service."
         },
         {
           "relationship-unique-id": "service-to-oracle",
-          "sequence-number": 6,
+          "sequence-number": 8,
           "description": "Pledgor's service fetches NAV / prices and ratings for the proposed tokens."
         },
         {
           "relationship-unique-id": "service-to-store",
-          "sequence-number": 7,
-          "description": "Pledgor's service checks eligibility and haircuts against the CDM eligibility schedule and records the movement instruction in its own store."
-        },
-        {
-          "relationship-unique-id": "service-to-peer-service",
-          "sequence-number": 8,
-          "description": "Pledgor's service sends the response to the secured party's service, which records it in its own store."
+          "sequence-number": 9,
+          "description": "Pledgor's service checks eligibility and haircuts against the CDM eligibility schedule and records the response in its own store."
         },
         {
           "relationship-unique-id": "service-to-gateway",
-          "sequence-number": 9,
-          "description": "Pledgor's service sends a pledge instruction for the agreed amount to the pledgor's gateway."
+          "sequence-number": 10,
+          "description": "Pledgor's service sends the response (agreed and disputed amounts, CDM hash) and a pledge instruction for the agreed amount to its gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 10,
-          "description": "Pledgor's gateway signs with the pledgor key and submits pledge() to the collateral control contract."
+          "sequence-number": 11,
+          "description": "Pledgor's gateway records the response in the margin call contract and submits pledge(), both signed with the pledgor key."
+        },
+        {
+          "relationship-unique-id": "control-to-margin-call",
+          "sequence-number": 12,
+          "description": "Control contract checks the pledge against the agreed call and amount, then marks the call settled; a disputed amount stays open on the call."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 11,
+          "sequence-number": 13,
           "description": "Contract pulls the tokens from the pledgor's account."
         },
         {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 14,
+          "description": "Pledgor's service sends the CDM MarginCallResponse to the secured party's service, which checks it against the on-chain hash."
+        },
+        {
           "relationship-unique-id": "gateway-to-besu-events",
-          "sequence-number": 12,
-          "description": "Both parties' gateways receive the Pledged event in a finalized block."
+          "sequence-number": 15,
+          "description": "Both parties' gateways receive the call and pledge events in finalized blocks."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 13,
-          "description": "Each gateway reports the event to its own workflow service, which updates its balance and closes the call."
+          "sequence-number": 16,
+          "description": "Each gateway reports the events to its own workflow service, which updates its balance and call state."
         },
         {
           "relationship-unique-id": "console-to-service",
-          "sequence-number": 14,
-          "description": "Both consoles show the settled pledge and the new balance."
+          "sequence-number": 17,
+          "description": "Both consoles show the settled pledge, the new balance and any disputed amount."
         }
       ]
     },
@@ -834,12 +880,12 @@
     {
       "unique-id": "flow-return",
       "name": "Return of initial margin",
-      "description": "Excess or released initial margin goes back to the pledgor after the secured party's approval, which the secured party signs on-chain.",
+      "description": "The pledgor calls for the return of excess initial margin; the call is recorded on-chain; the secured party's agreement, signed on-chain, releases the tokens.",
       "transitions": [
         {
           "relationship-unique-id": "pledgor-uses-console",
           "sequence-number": 1,
-          "description": "Pledgor requests a return in its console."
+          "description": "Pledgor requests a return of excess initial margin in its console."
         },
         {
           "relationship-unique-id": "console-to-service",
@@ -847,38 +893,53 @@
           "description": "Pledgor console submits the request to the pledgor's workflow service."
         },
         {
-          "relationship-unique-id": "service-to-peer-service",
+          "relationship-unique-id": "service-to-gateway",
           "sequence-number": 3,
-          "description": "Pledgor's service sends the return request to the secured party's service."
+          "description": "Pledgor's service sends the return call (amount, CDM hash) to its gateway."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 4,
+          "description": "Pledgor's gateway records the return call in the margin call contract, signed with the pledgor key."
+        },
+        {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 5,
+          "description": "Pledgor's service sends the CDM content of the return call to the secured party's service."
         },
         {
           "relationship-unique-id": "secured-party-uses-console",
-          "sequence-number": 4,
+          "sequence-number": 6,
           "description": "Secured party approves the return in its console."
         },
         {
           "relationship-unique-id": "console-to-service",
-          "sequence-number": 5,
+          "sequence-number": 7,
           "description": "Secured party console submits the approval to the secured party's workflow service."
         },
         {
           "relationship-unique-id": "service-to-gateway",
-          "sequence-number": 6,
-          "description": "Secured party's service sends the return approval to the secured party's gateway."
+          "sequence-number": 8,
+          "description": "Secured party's service sends the agreement to the return call to its gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 7,
-          "description": "Secured party's gateway signs with the secured party key and submits returnPledge()."
+          "sequence-number": 9,
+          "description": "Secured party's gateway records the agreement and submits returnPledge(), signed with the secured party key."
+        },
+        {
+          "relationship-unique-id": "control-to-margin-call",
+          "sequence-number": 10,
+          "description": "Control contract checks the agreed return call and amount and marks it settled."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 8,
+          "sequence-number": 11,
           "description": "Contract transfers the tokens back to the pledgor."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 9,
+          "sequence-number": 12,
           "description": "Each gateway reports the Returned event to its own workflow service, which records the return and updates its balance."
         }
       ]

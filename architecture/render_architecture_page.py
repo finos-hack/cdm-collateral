@@ -15,12 +15,12 @@ BOX = {
  'collateral-service': (470, 120, 200, 85, 'svc'), 'cdm-object-model': (470, 205, 200, 36, 'data'),
  'workflow-store': (470, 300, 200, 50, 'db'), 'oracle-service': (470, 530, 200, 70, 'svc'), 'mock-market-data': (470, 650, 200, 50, 'ext'),
  'ledger-gateway': (740, 250, 190, 100, 'svc'), 'dev-keystore': (740, 400, 190, 45, 'data'),
- 'collateral-control-contract': (975, 140, 180, 80, 'sc'), 'tokenized-collateral': (975, 300, 180, 70, 'sc'), 'oracle-feed-contract': (975, 440, 180, 70, 'sc'),
+ 'collateral-control-contract': (975, 140, 180, 80, 'sc'), 'tokenized-collateral': (975, 300, 180, 70, 'sc'), 'oracle-feed-contract': (975, 440, 180, 70, 'sc'), 'margin-call-contract': (975, 580, 180, 70, 'sc'),
 }
 SUB = {'party-console': 'React', 'e2e-test-harness': 'Playwright · test only', 'collateral-service': 'Python · FastAPI',
        'cdm-object-model': 'CDM 7.6.0', 'workflow-store': 'SQLite', 'oracle-service': 'Python · shared', 'mock-market-data': 'JSON files',
        'ledger-gateway': 'TypeScript · Besu adapter', 'dev-keystore': 'own key only', 'collateral-control-contract': 'pledge · return · enforce',
-       'tokenized-collateral': 'ERC-20 · ISIN/CUSIP · DTI', 'oracle-feed-contract': 'price · rating · default'}
+       'tokenized-collateral': 'ERC-20 · ISIN/CUSIP · DTI', 'oracle-feed-contract': 'price · rating · default', 'margin-call-contract': 'issued · agreed · settled'}
 TITLE = {'collateral-service': 'Collateral workflow service', 'collateral-control-contract': 'Collateral control contract'}
 EDGE = {
  'pledgor-uses-console': [(170,143),(230,170)], 'secured-party-uses-console': [(170,209),(230,185)], 'operator-uses-console': [(170,275),(230,205)],
@@ -40,6 +40,7 @@ EDGE = {
  'gateway-to-besu-rpc': [(930,280),(960,280)],
  'gateway-to-besu-events': [(930,320),(960,320)],
  'control-to-tokens': [(1065,220),(1065,300)],
+ 'control-to-margin-call': [(975,205),(967,205),(967,615),(975,615)],
  'control-to-oracle-feed': [(1155,180),(1163,180),(1163,475),(1155,475)],
 }
 LABEL = {'gateway-to-besu-rpc': ('RPC', 945, 272), 'gateway-to-besu-events': ('WS', 945, 336),
@@ -48,7 +49,7 @@ missing = [r for r in R if R[r]['relationship-type'].get('connects') or R[r]['re
 missing = [r for r in missing if r not in EDGE]
 assert not missing, missing
 
-svg = ['<svg viewBox="0 0 1200 770" role="img" aria-label="Prototype architecture: each participant runs its own party console, collateral workflow service, workflow store, ledger gateway and key; workflow services, built on CDM 7.6.0, exchange messages with the counterparty instance and use an oracle service and a TypeScript ledger gateway to operate a collateral control contract, tokenized collateral and an oracle feed on a local four-node Besu network with one validator node per participant, all on a Windows developer machine."><defs>',
+svg = ['<svg viewBox="0 0 1200 770" role="img" aria-label="Prototype architecture: each participant runs its own party console, collateral workflow service, workflow store, ledger gateway and key; workflow services, built on CDM 7.6.0, exchange messages with the counterparty instance and use an oracle service and a TypeScript ledger gateway to operate a collateral control contract, tokenized collateral, a margin call contract and an oracle feed on a local four-node Besu network with one validator node per participant, all on a Windows developer machine."><defs>',
        '<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>',
        '<marker id="ahon" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahon"/></marker></defs>']
 svg.append('<rect x="200" y="20" width="985" height="740" rx="12" class="host"/><text x="214" y="42" class="grp">WINDOWS DEVELOPER MACHINE</text>')

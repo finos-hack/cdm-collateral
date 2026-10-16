@@ -11,10 +11,13 @@ provenance:
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
 createdAt: 2026-10-16T20:21:13Z
-updatedAt: 2026-10-16T20:43:52Z
+updatedAt: 2026-10-16T21:36:47Z
 ```
 # Test framework plan
 
 Test layers (contract unit and property tests, Python unit and API tests, gateway unit and integration against a Besu
 container, service contract tests, UI component tests, Playwright end-to-end with N party consoles, CALM validation),
 end-to-end scenarios per CALM flow, and a traceability table from each accepted ASR and ADR to a test. Plan only.
+
+Revised 2026-10-16T21:36:47Z (source `70532bbf71d41c99c9efad27c0e9ed009891292a`): margin call contract tests and invariants; traceability rows for
+`concept-asr-onchain-call-state` and `wp-adr-margin-call-state-onchain`.

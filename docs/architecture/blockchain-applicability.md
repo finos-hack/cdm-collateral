@@ -136,7 +136,7 @@ Recorded in the project state as proposed ASRs (concepts, `subtype: asr`):
 | `concept-asr-cdm-data-layer` | CDM is the canonical representation of agreement terms, eligibility and margin calls exchanged between off-chain systems and on-chain execution. |
 | `concept-asr-onchain-asset-identity` | Every tokenized collateral asset carries its security identifier (ISIN or CUSIP), its DTI where one exists, its network and token contract, and the record that is legally authoritative (for DTCC tokens, DTC's books). |
 | `concept-asr-settlement-finality` | A collateral movement counts as settled only at a defined, deterministic finality point on the ledger used. |
-| `concept-asr-offchain-dispute` | Margin call negotiation and disputes run off-chain; only the agreed amount is executed on-chain. |
+| `concept-asr-offchain-dispute` | Margin call negotiation and disputes run off-chain; only the agreed amount is executed on-chain. *Superseded on 2026-10-16 by `concept-asr-onchain-call-state` (§7).* |
 
 ## 7. Decisions
 
@@ -148,3 +148,10 @@ second target behind the same ledger-neutral interface.
 **smart contract on Besu** that holds the pledged tokens (states: pledged, returned, enforced), following the GDF/ISDA
 sandbox's code-enforced segregation model. Stated assumption `nw-assumption-contract-control`: control by the
 contract satisfies the IM segregation requirement; this is not legally confirmed.
+
+`wp-adr-margin-call-state-onchain` (accepted by the project owner on 2026-10-16): a **margin call contract** records each
+call's state, amounts, deadline and the hash of its CDM content, each change signed by the acting party; the collateral
+control contract accepts a pledge only against an agreed call. Negotiation content and dispute resolution stay
+off-chain. This replaces `concept-asr-offchain-dispute` with `concept-asr-onchain-call-state`. Stated assumption
+`nw-assumption-besu-visibility`: every Besu node can read this data (Besu 26.9.0 has no private transactions);
+acceptable for the prototype, examined in `task-onchain-privacy`.

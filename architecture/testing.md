@@ -16,8 +16,8 @@ replaced by equivalents.
 
 | Layer | What is tested | Tool | Runs against |
 |---|---|---|---|
-| Smart contracts — unit | Collateral control contract (pledge, return, enforce; every forbidden transition reverts), test tokens (transfer restrictions, identifier metadata), oracle feed (only the publisher can write) | Hardhat + Mocha/Chai, `solidity-coverage` *(assumption)* | Hardhat in-memory EVM (fast) |
-| Smart contracts — property | Invariants: pledged tokens leave the contract only by return or enforce; the sum of balances is constant; enforce is impossible without a default | Hardhat with fast-check, or Foundry invariant tests *(assumption)* | In-memory EVM |
+| Smart contracts — unit | Margin call contract (issue, respond, settle; only the right party's key may change state), collateral control contract (pledge only against an agreed call, return, enforce; every forbidden transition reverts), test tokens (transfer restrictions, identifier metadata), oracle feed (only the publisher can write) | Hardhat + Mocha/Chai, `solidity-coverage` *(assumption)* | Hardhat in-memory EVM (fast) |
+| Smart contracts — property | Invariants: pledged tokens leave the contract only by return or enforce; the sum of balances is constant; enforce is impossible without a default; total pledged against a call never exceeds its agreed amount | Hardhat with fast-check, or Foundry invariant tests *(assumption)* | In-memory EVM |
 | Python services — unit | Eligibility, haircuts, concentration limits, margin call lifecycle state machine, partial agreement and dispute handling, CDM object construction | pytest, Hypothesis for property tests, coverage.py | In process |
 | Python services — API | Each REST endpoint against its OpenAPI schema; error cases | pytest + FastAPI TestClient; Schemathesis for schema-driven fuzzing *(assumption)* | In process, gateway and oracle stubbed |
 | Ledger gateway — unit | Instruction mapping, signing, finality wait, event decoding, adapter interface | Vitest *(assumption)* | Mocked JSON-RPC |
@@ -47,7 +47,8 @@ replaced by equivalents.
 | `concept-asr-cdm-data-layer` | API tests validate request/response payloads as CDM objects (serialise and parse with the CDM model) |
 | `concept-asr-onchain-asset-identity` | Token metadata (ISIN/CUSIP, DTI) matches the asset registry for every deployed token |
 | `concept-asr-settlement-finality` | Workflow updates a balance only after the gateway reports a finalized block; a test injects an unconfirmed event and expects no update |
-| `concept-asr-offchain-dispute` | Partial-agreement scenario: the disputed amount never appears in a ledger instruction |
+| `concept-asr-onchain-call-state` | Partial-agreement scenario: the disputed amount is recorded on the call but never pledged; the CDM content received by the counterparty matches the on-chain hash, and a tampered payload is rejected |
+| `wp-adr-margin-call-state-onchain` | Contract tests: pledge without an agreed call reverts; pledge above the agreed amount reverts; only the called party's key can respond; only the caller's key can issue |
 | `wp-adr-prototype-ledgers` | Integration suite runs against the Besu container |
 | `wp-adr-im-segregation` | Contract property tests: no path moves pledged tokens except return and enforce |
 | `wp-adr-per-participant-services` | Participant isolation scenario; pledge and return transactions are signed by the expected party's key |
