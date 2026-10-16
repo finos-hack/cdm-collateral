@@ -10,10 +10,11 @@ provenance:
   timestamp: 2026-10-16T02:55:34Z
   confidence: 0.8
 createdAt: 2026-10-16T02:55:34Z
-updatedAt: 2026-10-16T02:55:34Z
+updatedAt: 2026-10-16T19:30:54Z
 ```
 # On-chain asset identity
 
-Every tokenized collateral asset carries its on-chain identity (ledger, token contract, ISO 24165 DTI) alongside its
-ISIN, and states which record is legally authoritative (bearer, registered or claims structure). CDM 7.6.0 has no
+Every tokenized collateral asset carries its security identifier (ISIN or CUSIP), its ISO 24165 DTI where one exists,
+its network and token contract, and states which record is legally authoritative (bearer, registered or claims
+structure; for DTCC tokens, DTC's books and records). CDM 7.6.0 has no
 attribute for these (finding B1).

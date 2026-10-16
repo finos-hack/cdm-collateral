@@ -107,3 +107,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-men-blockchain-offchain-dispute | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
 | artifact:artifact-blockchain-applicability | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
 | edge:e-prod-blockchain-applicability | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| waypoint:wp-adr-prototype-ledgers | review |  | accepted | 2026-10-16T19:30:54Z | 156003750853115a8c254d36bc96078d723bd6af | denisurusov |
+| edge:e-drv-ledgerneutrality-ledgers | review |  | proposed | 2026-10-16T19:30:54Z |  |  |
+| edge:e-drv-finality-ledgers | review |  | proposed | 2026-10-16T19:30:54Z |  |  |
+| edge:e-mrk-ledgers-blockchain | review |  | accepted | 2026-10-16T19:30:54Z | 156003750853115a8c254d36bc96078d723bd6af | denisurusov |

@@ -20,3 +20,8 @@ Related documents found through search (not provided by the owner):
   https://www.gdf.io/wp-content/uploads/2026/07/22.7.26_Unlocking-Capital-with-U.S-Tokenized-Money-Market-Funds-for-Collateral-Mobility.pdf
 - ISDA, *Tokenized Collateral Guidance Note* (2024): https://www.isda.org/a/ox1gE/ISDA-Tokenized-Collateral-Guidance-Note-052124.pdf
 - ISDA, *Tokenized Collateral Model Provisions for VM CSAs*: https://www.isda.org/book/tokenized-collateral-model-provisions-for-vm-csa/
+
+Provided by the project owner on 2026-10-16 (second set):
+
+- DTCC, *Tokenization Service: Scope at Launch and What's Next* (one-page fact sheet, 2026-10-16):
+  https://communications.dtcc.com/rs/669-QIL-921/images/DTCC%20Tokenization%20Service%20At-a-Glance.pdf

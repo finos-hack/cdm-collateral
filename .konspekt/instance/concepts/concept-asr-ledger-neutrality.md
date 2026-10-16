@@ -10,11 +10,12 @@ provenance:
   timestamp: 2026-10-16T02:55:34Z
   confidence: 0.75
 createdAt: 2026-10-16T02:55:34Z
-updatedAt: 2026-10-16T02:55:34Z
+updatedAt: 2026-10-16T19:30:54Z
 ```
 # Ledger neutrality
 
-The collateral system must not depend on one ledger. On-chain actions go through a ledger-neutral interface, and at
-least one permissioned EVM ledger (for example Hyperledger Besu) and one public EVM ledger must be supportable.
+The collateral system must not depend on one ledger. On-chain actions go through a ledger-neutral interface that
+covers both EVM token models (ERC-20 on Hyperledger Besu) and non-EVM ones (CIP-56 on Canton). DTCC's tokenization
+service launches on both.
 Basis: the ISDA documents are ledger-neutral; the GDF/ISDA sandbox settled across Ethereum, Hedera and Besu through an
 orchestration layer.

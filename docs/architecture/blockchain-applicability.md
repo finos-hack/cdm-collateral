@@ -12,6 +12,7 @@ Output of `task-blockchain-smart-contracts-applicability` (goal `goal-architectu
 | [WN] | ISDA Future Leaders in Derivatives, *Digital Assets and Derivatives: Where Next?*, June 2026 (PDF) |
 | [TF] | ISDA press release, ISDA and Tokenovate taskforce on a smart contract framework within the CDM, 21 October 2025 |
 | [IEI] | Intelligence Economy Institute, *Digital assets have standards* (article on its report *Standards for Digital Assets*, September 2026) |
+| [DTCC] | DTCC, *Tokenization Service: Scope at Launch and What's Next*, one-page fact sheet, 2026-10-16 |
 
 The ISDA category page and the two announcement pages add no content beyond the documents above.
 
@@ -36,12 +37,22 @@ interoperability/orchestration layer, and whatever ledgers the assets are issued
 Ethereum (mainnet and Sepolia), Hedera and Besu; [GDF] also cites a tokenized fund "launched across Avalanche, BNB
 Chain, Ethereum, and Solana".
 
+**DTCC runs a private Besu network.** [DTCC] lists two networks live at launch for its tokenization service:
+Canton Network (token standard CIP-56) and "Besu — DTCC's private network" (ERC-20), with Stellar (SEP-41) and Arc
+(Circle, ERC-20) anticipated in 2027 and "additional L1s and L2s aligned with client and market demand". The service
+tokenizes Russell 1000 equities, ETFs and US Treasuries, "1:1 backed by securities held at DTC", with the "same CUSIP
+with the same rights and investor protections as book-entry securities", and "official books and records remain with
+DTC". "Settlement and collateral, including on-chain netting and digital cash" is on the 2027-and-beyond roadmap.
+Because DTC holds most US securities used as collateral, Besu is where tokenized DTC-eligible collateral will exist —
+the Besu link comes from DTCC, not from ISDA.
+
 **Where Besu fits** *(inference, from general knowledge of Besu, not from the sources)*: Besu is an Ethereum client
 that can run private permissioned networks with deterministic-finality consensus (QBFT/IBFT 2.0) while staying
 EVM-compatible. [WN] notes that deterministic finality is "largely achieved through permissioned blockchain networks",
 which matches what margin settlement needs. Besu is therefore a reasonable choice for *a* permissioned EVM ledger in
 this project — for example for a local or private test network — but the sources do not support making it *the*
-ledger.
+ledger. DTCC itself is multi-ledger (Canton and Besu at launch), and its two launch ledgers use different token models
+(CIP-56 on Canton, ERC-20 on Besu).
 
 ## 2. The architecture the sources describe
 
@@ -89,7 +100,8 @@ revisit MPOR floors.
   address, token standard or DTI (ISO 24165; see standards finding S2). [WN]: "the CDM must capture the on-chain reality.
   This includes blockchain protocol metadata, smart contract addresses, backing or peg mechanisms (for stablecoins) and
   custody arrangements." [CSA] relies on these identifiers for "same type" equivalence. The sandbox identified every
-  test token by DTI.
+  test token by DTI; DTCC keeps the CUSIP for the token. The data model therefore needs the security identifier
+  (ISIN/CUSIP), the DTI where one exists, and the network and token contract.
 - **B2 — The margin-call lifecycle is the interface between CDM and the ledger.** The sandbox used CDM for terms and
   calls, with Acadia generating the movement instruction. CDM's own margin-call types are not processed by any
   function (F2). A CDM-based collateral system has to supply this layer itself.
@@ -120,8 +132,14 @@ Recorded in the project state as proposed ASRs (concepts, `subtype: asr`):
 
 | ID | Requirement |
 |---|---|
-| `concept-asr-ledger-neutrality` | The collateral system must not depend on one ledger: on-chain actions go through a ledger-neutral interface, and at least one permissioned EVM ledger and one public EVM ledger must be supportable. |
+| `concept-asr-ledger-neutrality` | The collateral system must not depend on one ledger: on-chain actions go through a ledger-neutral interface that covers both EVM token models (ERC-20 on Besu) and non-EVM ones (CIP-56 on Canton). |
 | `concept-asr-cdm-data-layer` | CDM is the canonical representation of agreement terms, eligibility and margin calls exchanged between off-chain systems and on-chain execution. |
-| `concept-asr-onchain-asset-identity` | Every tokenized collateral asset carries its on-chain identity (ledger, token contract, DTI) alongside its ISIN, and the record that is legally authoritative. |
+| `concept-asr-onchain-asset-identity` | Every tokenized collateral asset carries its security identifier (ISIN or CUSIP), its DTI where one exists, its network and token contract, and the record that is legally authoritative (for DTCC tokens, DTC's books). |
 | `concept-asr-settlement-finality` | A collateral movement counts as settled only at a defined, deterministic finality point on the ledger used. |
 | `concept-asr-offchain-dispute` | Margin call negotiation and disputes run off-chain; only the agreed amount is executed on-chain. |
+
+## 7. Decision
+
+`wp-adr-prototype-ledgers` (accepted by the project owner on 2026-10-16): the prototype uses **Hyperledger Besu** as
+its first ledger — EVM, DTCC's private network, and runnable locally as a development node — with **Canton** as the
+second target behind the same ledger-neutral interface.
