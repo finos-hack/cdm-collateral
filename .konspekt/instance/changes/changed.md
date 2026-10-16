@@ -127,3 +127,6 @@ excluded.
 | task-local-environment-setup | ded9ffd3aefba768891ecc5ee46c22bf11ebf458 | docs/setup-codespaces.md | 2026-10-16T22:31:29Z |
 | task-local-environment-setup | 2242b848f97ae67ff60f9c4194744b5fb1eda48d | docs/setup-codespaces.md | 2026-10-16T22:32:08Z |
 | task-clickable-ui | 60073e15f7d86676b9e9144278e04d769b6a2149 | ui-prototype/clickable.html | 2026-10-16T22:52:27Z |
+| task-clickable-ui | 93df3bc9563722d54e54c7c201615f65d0d0be67 | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-16T23:02:27Z |
+| task-clickable-ui | 93df3bc9563722d54e54c7c201615f65d0d0be67 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-16T23:02:27Z |
+| task-clickable-ui | 93df3bc9563722d54e54c7c201615f65d0d0be67 | ui-prototype/clickable.html | 2026-10-16T23:02:27Z |
