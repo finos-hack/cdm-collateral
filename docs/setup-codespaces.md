@@ -18,11 +18,22 @@ Codespaces nor a Docker daemon was available here.
 
 ## 1. Create the codespace
 
-1. Open https://github.com/denisurusov/cdm-collateral.
-2. **Code** → **Codespaces** → **…** → **New with options**.
-3. Branch `main`; machine type **4-core** (16 GB memory) — the dev container asks for at least 4 cores and 16 GB, as
+Use a desktop browser, signed in to GitHub. Either:
+
+- **Direct link:** open https://codespaces.new/denisurusov/cdm-collateral — it shows the "Create codespace" options
+  page; or
+- **From the repository page:** open https://github.com/denisurusov/cdm-collateral. Above the file list, on the right,
+  is a green **`<> Code`** button. Click it; the panel that opens has two tabs, **Local** and **Codespaces**. Choose
+  **Codespaces**, then the **…** menu at the top right of that tab → **New with options…**.
+
+On the options page:
+
+1. Branch `main`; machine type **4-core** (16 GB memory) — the dev container asks for at least 4 cores and 16 GB, as
    four Besu nodes plus the services need about that much.
-4. **Create codespace.** The first build takes several minutes; later starts are faster.
+2. **Create codespace.** A VS Code editor opens in the browser. The first build takes several minutes; later starts
+   are faster.
+
+To reopen it later: https://github.com/codespaces lists your codespaces.
 
 Free allowance for personal accounts (check GitHub's billing page for current figures): reported as 120 core-hours a
 month, about 30 hours on a 4-core machine. A codespace stops after 30 minutes without activity (default); stopped
