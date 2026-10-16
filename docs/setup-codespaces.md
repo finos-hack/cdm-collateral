@@ -65,10 +65,22 @@ by default: only you, signed in to GitHub, can open them. For a demo with other 
 **Caution:** a public Besu RPC port lets anyone send transactions to the network. Make public only the ports the demo
 needs (later: the party consoles), keep test keys only, and set the ports back to private afterwards.
 
-## 4. Later (when the prototype is built)
+## 4. The party console
 
-The same dev container will install the Python and Node.js dependencies and start the services and N participant
-stacks; the party consoles will be forwarded ports.
+The dev container installs the console's dependencies when the codespace is created (`npm --prefix console ci`). To
+run it:
+
+```bash
+cd console
+npm run dev
+```
+
+Codespaces forwards port 5173 ("Collateral Console"); open it from the **Ports** panel. The console runs on mocked
+state in the browser for now; see [`../console/README.md`](../console/README.md) for tests and modes.
+
+## 5. Later
+
+The same dev container will install the Python dependencies and start the services and N participant stacks.
 
 ## Troubleshooting
 

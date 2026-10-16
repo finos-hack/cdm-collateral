@@ -191,3 +191,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-react-console | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
 | node:task-react-console | status |  | active | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
 | edge:e-dec-e2e-reactconsole | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| artifact:artifact-react-console | review |  | proposed | 2026-10-16T23:17:11Z |  |  |
+| edge:e-prod-reactconsole-app | review |  | proposed | 2026-10-16T23:17:11Z |  |  |

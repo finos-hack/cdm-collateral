@@ -9,9 +9,11 @@
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
   },
+  "postCreateCommand": "npm --prefix console ci",
   "postStartCommand": "bash besu/start-network.sh",
-  "forwardPorts": [8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
+  "forwardPorts": [5173, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
   "portsAttributes": {
+    "5173": { "label": "Collateral Console" },
     "8545": { "label": "Besu mkt RPC" },
     "8547": { "label": "Besu bank-a RPC" },
     "8549": { "label": "Besu bank-b RPC" },

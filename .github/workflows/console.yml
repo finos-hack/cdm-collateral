@@ -1,0 +1,35 @@
+name: console
+
+# Typecheck, unit and component tests, production build and Playwright end-to-end tests of the React party
+# console (console/). The scenario files drive the end-to-end tests (architecture/testing.md).
+
+on:
+  push:
+    branches: [main]
+    paths: ["console/**", ".github/workflows/console.yml"]
+  pull_request:
+    paths: ["console/**", ".github/workflows/console.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: console
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: console/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

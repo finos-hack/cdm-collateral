@@ -63,3 +63,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-uxgrid-clickableui | marks | waypoint:wp-adr-ux-scenario-grid | node:task-clickable-ui |  |
 | e-prod-clickableui-html | produces | node:task-clickable-ui | artifact:artifact-clickable-ui-html |  | accepted |
 | e-dec-e2e-reactconsole | decomposes | node:goal-end-to-end-flow | node:task-react-console |  |
+| e-prod-reactconsole-app | produces | node:task-react-console | artifact:artifact-react-console |  | proposed |
