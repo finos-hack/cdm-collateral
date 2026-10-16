@@ -88,3 +88,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
 | node:task-collateral-taxonomy-inventory | status | active | resolved | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
 | node:goal-data-cdm-taxonomies-specs | status | open | resolved | 2026-10-16T00:35:35Z | 10e7bafcf7a5969d99e8534b8228ff0a69a8d8bf | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | status |  | open | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
+| edge:e-dec-arch-blockchain | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
+| node:task-local-environment-setup | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
+| node:task-local-environment-setup | status |  | open | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
+| edge:e-dec-arch-localenv | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
