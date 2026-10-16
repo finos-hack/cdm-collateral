@@ -79,3 +79,5 @@ excluded.
 | task-collateral-taxonomy-inventory | bce788a5e4efe73d461ab22366cabe308ae20a3a | docs/analysis/collateral-asset-taxonomy-mapping.md | 2026-10-16T00:27:53Z |
 | task-blockchain-smart-contracts-applicability | 6921b898d52f4dc0919fa2931fbf778009e3e285 | docs/references.md | 2026-10-16T02:47:21Z |
 | task-blockchain-smart-contracts-applicability | d64bd5d5ea182f07bde0b5e12d83e121a4943100 | docs/architecture/blockchain-applicability.md | 2026-10-16T02:55:34Z |
+| task-blockchain-smart-contracts-applicability | d519ebb68267a0f91e1032a6e80d2d1855c8114a | docs/architecture/blockchain-applicability.md | 2026-10-16T19:30:55Z |
+| task-blockchain-smart-contracts-applicability | d519ebb68267a0f91e1032a6e80d2d1855c8114a | docs/references.md | 2026-10-16T19:30:55Z |
