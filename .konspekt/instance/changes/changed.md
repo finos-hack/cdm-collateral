@@ -95,3 +95,11 @@ excluded.
 | task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/prototype.architecture.json | 2026-10-16T20:44:06Z |
 | task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/render_architecture_page.py | 2026-10-16T20:44:06Z |
 | task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/testing.md | 2026-10-16T20:44:06Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | architecture/README.md | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | architecture/generate_architecture.py | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | architecture/prototype.architecture.json | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | architecture/render_architecture_page.py | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | besu/.gitignore | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | besu/docker-compose.yml | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | besu/qbftConfigFile.json | 2026-10-16T21:09:57Z |
+| task-local-environment-setup | 25355efc371ab6c52c09bb89da76e22021a9710d | docs/setup-windows.md | 2026-10-16T21:09:57Z |
