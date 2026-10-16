@@ -95,3 +95,15 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-local-environment-setup | status |  | open | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
 | edge:e-dec-arch-localenv | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
 | node:task-blockchain-smart-contracts-applicability | status | open | active | 2026-10-16T02:47:21Z | ed7176232e1ff62642302f9432d3bb079d443e09 | denisurusov |
+| concept:concept-asr-ledger-neutrality | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| edge:e-men-blockchain-ledger-neutrality | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| concept:concept-asr-cdm-data-layer | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| edge:e-men-blockchain-cdm-data-layer | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| concept:concept-asr-onchain-asset-identity | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| edge:e-men-blockchain-onchain-asset-identity | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| concept:concept-asr-settlement-finality | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| edge:e-men-blockchain-settlement-finality | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| concept:concept-asr-offchain-dispute | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| edge:e-men-blockchain-offchain-dispute | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| artifact:artifact-blockchain-applicability | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
+| edge:e-prod-blockchain-applicability | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
