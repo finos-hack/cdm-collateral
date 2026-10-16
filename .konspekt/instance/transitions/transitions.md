@@ -128,3 +128,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-arch-prototypescope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
 | artifact:artifact-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | cac26a66e1421d940c957c481268aa244388300e | denisurusov |
 | edge:e-prod-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | cac26a66e1421d940c957c481268aa244388300e | denisurusov |
+| waypoint:wp-adr-im-segregation | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
+| edge:e-mrk-imseg-blockchain | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
+| noteworthy:nw-assumption-contract-control | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
+| noteworthy:nw-assumption-contract-control | status |  | unvalidated | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
+| edge:e-note-arch-contractcontrol | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | status | active | resolved | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |

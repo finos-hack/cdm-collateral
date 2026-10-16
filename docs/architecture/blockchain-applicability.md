@@ -138,8 +138,13 @@ Recorded in the project state as proposed ASRs (concepts, `subtype: asr`):
 | `concept-asr-settlement-finality` | A collateral movement counts as settled only at a defined, deterministic finality point on the ledger used. |
 | `concept-asr-offchain-dispute` | Margin call negotiation and disputes run off-chain; only the agreed amount is executed on-chain. |
 
-## 7. Decision
+## 7. Decisions
 
 `wp-adr-prototype-ledgers` (accepted by the project owner on 2026-10-16): the prototype uses **Hyperledger Besu** as
 its first ledger — EVM, DTCC's private network, and runnable locally as a development node — with **Canton** as the
 second target behind the same ledger-neutral interface.
+
+`wp-adr-im-segregation` (accepted by the project owner on 2026-10-16): the prototype segregates initial margin with a
+**smart contract on Besu** that holds the pledged tokens (states: pledged, returned, enforced), following the GDF/ISDA
+sandbox's code-enforced segregation model. Stated assumption `nw-assumption-contract-control`: control by the
+contract satisfies the IM segregation requirement; this is not legally confirmed.

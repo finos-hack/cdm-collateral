@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T02:55:34Z
   confidence: 0.75
 createdAt: 2026-10-16T02:55:34Z
-updatedAt: 2026-10-16T19:47:11Z
+updatedAt: 2026-10-16T19:49:05Z
 ```
 # Blockchain and smart contracts — applicability to CDM-based collateral management
 
@@ -22,3 +22,5 @@ design (B1–B5), risks, and five proposed ASRs.
 
 Updated 2026-10-16 with the DTCC tokenization fact sheet (Besu as DTCC's private network, Canton) and the accepted
 ledger decision `wp-adr-prototype-ledgers`.
+
+Also records the accepted decision `wp-adr-im-segregation` (2026-10-16).

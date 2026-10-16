@@ -42,3 +42,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-ledgers | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-prototype-ledgers |  | accepted |
 | e-mrk-ledgers-blockchain | marks | waypoint:wp-adr-prototype-ledgers | node:task-blockchain-smart-contracts-applicability |  |
 | e-note-arch-prototypescope | notes | node:goal-architecture-design | noteworthy:nw-prototype-scope |  |
+| e-mrk-imseg-blockchain | marks | waypoint:wp-adr-im-segregation | node:task-blockchain-smart-contracts-applicability |  |
+| e-note-arch-contractcontrol | notes | node:goal-architecture-design | noteworthy:nw-assumption-contract-control |  |
