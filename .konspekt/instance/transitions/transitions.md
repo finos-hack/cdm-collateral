@@ -137,3 +137,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-local-environment-setup | status | open | active | 2026-10-16T20:08:49Z | 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62 | denisurusov |
 | artifact:artifact-prototype-architecture | review |  | proposed | 2026-10-16T20:08:49Z |  |  |
 | edge:e-prod-localenv-architecture | review |  | proposed | 2026-10-16T20:08:49Z |  |  |
+| artifact:artifact-test-framework-plan | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
+| edge:e-prod-localenv-testplan | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
+| artifact:artifact-setup-windows | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
+| edge:e-prod-localenv-setup | review |  | proposed | 2026-10-16T20:21:13Z |  |  |

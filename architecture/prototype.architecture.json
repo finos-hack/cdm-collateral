@@ -28,6 +28,42 @@
       "description": "User acting for the party that posts initial margin: responds to margin calls (agree, partially agree, dispute) and approves returns."
     },
     {
+      "unique-id": "market-operator",
+      "node-type": "actor",
+      "name": "Market data operator",
+      "description": "Simulation user who changes mock NAV, prices and ratings to trigger revaluation and top-up calls."
+    },
+    {
+      "unique-id": "party-console",
+      "node-type": "webclient",
+      "name": "Party console",
+      "description": "Browser UI that drives the flows. One instance runs per simulated participant (party identity, role and wallet set by configuration); N instances run side by side to simulate several counterparties and the market operator.",
+      "interfaces": [
+        {
+          "unique-id": "party-console-http",
+          "type": "url",
+          "port": "5173+n",
+          "path": "/"
+        }
+      ],
+      "metadata": {
+        "language": "TypeScript",
+        "framework": "React with Vite (assumption)",
+        "instances": "N, one per participant; configured by PARTY_ID, ROLE and WALLET"
+      }
+    },
+    {
+      "unique-id": "e2e-test-harness",
+      "node-type": "service",
+      "name": "End-to-end test harness",
+      "description": "Test-only. Starts the stack, drives N party-console instances in parallel browser contexts with Playwright and asserts each CALM flow end to end, including on-chain state.",
+      "metadata": {
+        "language": "TypeScript",
+        "framework": "Playwright (assumption)",
+        "scope": "test only, not part of the runtime"
+      }
+    },
+    {
       "unique-id": "secured-party-ops",
       "node-type": "actor",
       "name": "Secured party operations",
@@ -115,6 +151,7 @@
         "endpoints": [
           "GET /oracle/v1/prices/{assetId}",
           "GET /oracle/v1/ratings/{assetId}",
+          "PUT /oracle/v1/market-data/{assetId}",
           "POST /oracle/v1/publish",
           "POST /oracle/v1/default-notices"
         ]
@@ -224,13 +261,15 @@
         "deployed-in": {
           "container": "windows-dev-host",
           "nodes": [
+            "party-console",
             "collateral-service",
             "workflow-store",
             "oracle-service",
             "mock-market-data",
             "ledger-gateway",
             "dev-keystore",
-            "besu-dev-network"
+            "besu-dev-network",
+            "e2e-test-harness"
           ]
         }
       }
@@ -242,6 +281,7 @@
         "composed-of": {
           "container": "cdm-collateral-prototype",
           "nodes": [
+            "party-console",
             "collateral-service",
             "cdm-object-model",
             "workflow-store",
@@ -283,28 +323,130 @@
       }
     },
     {
-      "unique-id": "pledgor-uses-service",
-      "description": "Pledgor operations responds to margin calls and approves returns through the REST API (Swagger UI).",
+      "unique-id": "pledgor-uses-console",
+      "description": "Pledgor operations responds to margin calls and approves returns in its party console instance.",
       "relationship-type": {
         "interacts": {
           "actor": "pledgor-ops",
           "nodes": [
-            "collateral-service"
+            "party-console"
           ]
         }
       }
     },
     {
-      "unique-id": "secured-party-uses-service",
-      "description": "Secured party operations issues margin calls, approves returns and declares defaults through the REST API (Swagger UI).",
+      "unique-id": "secured-party-uses-console",
+      "description": "Secured party operations issues margin calls, approves returns and declares defaults in its party console instance.",
       "relationship-type": {
         "interacts": {
           "actor": "secured-party-ops",
           "nodes": [
-            "collateral-service"
+            "party-console"
           ]
         }
       }
+    },
+    {
+      "unique-id": "operator-uses-console",
+      "description": "Market data operator changes mock NAV, prices and ratings in its party console instance.",
+      "relationship-type": {
+        "interacts": {
+          "actor": "market-operator",
+          "nodes": [
+            "party-console"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "console-to-service",
+      "description": "Calls the workflow REST API for agreements, calls, responses, returns, defaults and balances; polls or subscribes for updates.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "party-console"
+          },
+          "destination": {
+            "node": "collateral-service",
+            "interfaces": [
+              "collateral-rest-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "console-to-oracle",
+      "description": "Market operator console edits mock market data through the oracle service.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "party-console"
+          },
+          "destination": {
+            "node": "oracle-service",
+            "interfaces": [
+              "oracle-rest-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "console-to-gateway",
+      "description": "Reads token balances and pledge state for display.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "party-console"
+          },
+          "destination": {
+            "node": "ledger-gateway",
+            "interfaces": [
+              "ledger-gateway-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "harness-to-console",
+      "description": "Drives N console instances in parallel browser contexts.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "e2e-test-harness"
+          },
+          "destination": {
+            "node": "party-console",
+            "interfaces": [
+              "party-console-http"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "harness-to-gateway",
+      "description": "Asserts on-chain state after each flow.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "e2e-test-harness"
+          },
+          "destination": {
+            "node": "ledger-gateway",
+            "interfaces": [
+              "ledger-gateway-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
     },
     {
       "unique-id": "service-to-store",
@@ -343,7 +485,7 @@
     },
     {
       "unique-id": "oracle-to-market-data",
-      "description": "Reads mock NAV, price and rating data.",
+      "description": "Reads and, on operator request, updates mock NAV, price and rating data.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -498,49 +640,59 @@
       "description": "The secured party calls initial margin; the pledgor agrees in full or in part off-chain; the agreed amount is pledged into the collateral control contract on Besu.",
       "transitions": [
         {
-          "relationship-unique-id": "secured-party-uses-service",
+          "relationship-unique-id": "secured-party-uses-console",
           "sequence-number": 1,
-          "description": "Secured party issues an IM call (CDM MarginCallIssuance) under the agreement."
+          "description": "Secured party issues an IM call (CDM MarginCallIssuance) under the agreement in its console."
         },
         {
-          "relationship-unique-id": "pledgor-uses-service",
+          "relationship-unique-id": "pledgor-uses-console",
           "sequence-number": 2,
-          "description": "Pledgor responds: agree, partially agree or dispute (CDM MarginCallResponse); a disputed part stays off-chain."
+          "description": "Pledgor responds in its console: agree, partially agree or dispute (CDM MarginCallResponse); a disputed part stays off-chain."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 3,
+          "description": "Consoles submit the call and the response to the workflow service."
         },
         {
           "relationship-unique-id": "service-to-oracle",
-          "sequence-number": 3,
+          "sequence-number": 4,
           "description": "Service fetches NAV / prices and ratings for the proposed tokens."
         },
         {
           "relationship-unique-id": "service-to-store",
-          "sequence-number": 4,
+          "sequence-number": 5,
           "description": "Service checks eligibility and haircuts against the CDM eligibility schedule and records the movement instruction."
         },
         {
           "relationship-unique-id": "service-to-gateway",
-          "sequence-number": 5,
+          "sequence-number": 6,
           "description": "Service sends a pledge instruction for the agreed amount."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 6,
+          "sequence-number": 7,
           "description": "Gateway signs and submits pledge() to the collateral control contract."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 7,
+          "sequence-number": 8,
           "description": "Contract pulls the tokens from the pledgor's account."
         },
         {
           "relationship-unique-id": "gateway-to-besu-events",
-          "sequence-number": 8,
+          "sequence-number": 9,
           "description": "Gateway receives the Pledged event in a finalized block."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 9,
+          "sequence-number": 10,
           "description": "Service updates the collateral balance and closes the call."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 11,
+          "description": "Both consoles show the settled pledge and the new balance."
         }
       ]
     },
@@ -567,38 +719,80 @@
       ]
     },
     {
+      "unique-id": "flow-revaluation-top-up",
+      "name": "Collateral revaluation and top-up call",
+      "description": "The market operator lowers the NAV or price of a pledged token; revaluation shows a shortfall and the secured party issues a top-up call, which then follows the IM call flow.",
+      "transitions": [
+        {
+          "relationship-unique-id": "operator-uses-console",
+          "sequence-number": 1,
+          "description": "Market operator changes the NAV or price of a token."
+        },
+        {
+          "relationship-unique-id": "console-to-oracle",
+          "sequence-number": 2,
+          "description": "Console sends the new mock value."
+        },
+        {
+          "relationship-unique-id": "oracle-to-market-data",
+          "sequence-number": 3,
+          "description": "Oracle updates the mock market data."
+        },
+        {
+          "relationship-unique-id": "oracle-to-gateway",
+          "sequence-number": 4,
+          "description": "Oracle publishes the new value on-chain."
+        },
+        {
+          "relationship-unique-id": "service-to-oracle",
+          "sequence-number": 5,
+          "description": "Workflow service revalues pledged collateral after haircuts."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 6,
+          "description": "Secured party console shows the shortfall and the proposed top-up call."
+        }
+      ]
+    },
+    {
       "unique-id": "flow-return",
       "name": "Return of initial margin",
       "description": "Excess or released initial margin goes back to the pledgor after the required approval.",
       "transitions": [
         {
-          "relationship-unique-id": "pledgor-uses-service",
+          "relationship-unique-id": "pledgor-uses-console",
           "sequence-number": 1,
-          "description": "Pledgor requests a return."
+          "description": "Pledgor requests a return in its console."
         },
         {
-          "relationship-unique-id": "secured-party-uses-service",
+          "relationship-unique-id": "secured-party-uses-console",
           "sequence-number": 2,
-          "description": "Secured party approves the return."
+          "description": "Secured party approves the return in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 3,
+          "description": "Consoles submit the request and the approval to the workflow service."
         },
         {
           "relationship-unique-id": "service-to-gateway",
-          "sequence-number": 3,
+          "sequence-number": 4,
           "description": "Service sends a return instruction carrying both approvals."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 4,
+          "sequence-number": 5,
           "description": "Gateway submits returnPledge()."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 5,
+          "sequence-number": 6,
           "description": "Contract transfers the tokens back to the pledgor."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 6,
+          "sequence-number": 7,
           "description": "Service records the return and updates the balance."
         }
       ]
@@ -609,38 +803,43 @@
       "description": "After a pledgor default, the secured party enforces against the pledged initial margin.",
       "transitions": [
         {
-          "relationship-unique-id": "secured-party-uses-service",
+          "relationship-unique-id": "secured-party-uses-console",
           "sequence-number": 1,
-          "description": "Secured party declares a pledgor default."
+          "description": "Secured party declares a pledgor default in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the default declaration to the workflow service."
         },
         {
           "relationship-unique-id": "service-to-oracle",
-          "sequence-number": 2,
+          "sequence-number": 3,
           "description": "Service forwards the default notice to the oracle service."
         },
         {
           "relationship-unique-id": "oracle-to-gateway",
-          "sequence-number": 3,
+          "sequence-number": 4,
           "description": "Oracle publishes the default status."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 4,
+          "sequence-number": 5,
           "description": "Gateway writes the default to the feed and submits enforce()."
         },
         {
           "relationship-unique-id": "control-to-oracle-feed",
-          "sequence-number": 5,
+          "sequence-number": 6,
           "description": "Contract confirms the default status."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 6,
+          "sequence-number": 7,
           "description": "Contract transfers the pledged tokens to the secured party."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 7,
+          "sequence-number": 8,
           "description": "Service records the enforcement."
         }
       ]
