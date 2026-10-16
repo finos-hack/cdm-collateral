@@ -82,3 +82,5 @@ excluded.
 | task-blockchain-smart-contracts-applicability | d519ebb68267a0f91e1032a6e80d2d1855c8114a | docs/architecture/blockchain-applicability.md | 2026-10-16T19:30:55Z |
 | task-blockchain-smart-contracts-applicability | d519ebb68267a0f91e1032a6e80d2d1855c8114a | docs/references.md | 2026-10-16T19:30:55Z |
 | task-blockchain-smart-contracts-applicability | e517e160050c13972649bcba194281aca5099861 | docs/architecture/blockchain-applicability.md | 2026-10-16T19:49:05Z |
+| task-local-environment-setup | a398eb8a8e394c1a3973ee461b1f26c93665cb6a | architecture/prototype.architecture.json | 2026-10-16T20:08:49Z |
+| task-local-environment-setup | a398eb8a8e394c1a3973ee461b1f26c93665cb6a | architecture/README.md | 2026-10-16T20:08:49Z |
