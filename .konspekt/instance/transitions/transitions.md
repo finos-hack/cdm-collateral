@@ -111,3 +111,18 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-ledgerneutrality-ledgers | review |  | proposed | 2026-10-16T19:30:54Z |  |  |
 | edge:e-drv-finality-ledgers | review |  | proposed | 2026-10-16T19:30:54Z |  |  |
 | edge:e-mrk-ledgers-blockchain | review |  | accepted | 2026-10-16T19:30:54Z | 156003750853115a8c254d36bc96078d723bd6af | denisurusov |
+| concept:concept-asr-ledger-neutrality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| concept:concept-asr-offchain-dispute | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| concept:concept-asr-cdm-data-layer | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| concept:concept-asr-onchain-asset-identity | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| concept:concept-asr-settlement-finality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-men-blockchain-ledger-neutrality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-men-blockchain-cdm-data-layer | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-men-blockchain-onchain-asset-identity | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-men-blockchain-settlement-finality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-men-blockchain-offchain-dispute | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-drv-ledgerneutrality-ledgers | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-drv-finality-ledgers | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| noteworthy:nw-prototype-scope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| noteworthy:nw-prototype-scope | status |  | active | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| edge:e-note-arch-prototypescope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
