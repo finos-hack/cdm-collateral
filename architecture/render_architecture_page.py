@@ -20,7 +20,7 @@ BOX = {
 SUB = {'party-console': 'React', 'e2e-test-harness': 'Playwright · test only', 'collateral-service': 'Python · FastAPI',
        'cdm-object-model': 'CDM 7.6.0', 'workflow-store': 'SQLite', 'oracle-service': 'Python · shared', 'mock-market-data': 'JSON files',
        'ledger-gateway': 'TypeScript · Besu adapter', 'dev-keystore': 'own key only', 'collateral-control-contract': 'pledge · return · enforce',
-       'tokenized-collateral': 'ERC-20 · ISIN/CUSIP · DTI', 'oracle-feed-contract': 'price · rating · default', 'margin-call-contract': 'issued · agreed · settled'}
+       'tokenized-collateral': 'ERC-20 · ISIN/CUSIP · DTI', 'oracle-feed-contract': 'price · rating · default', 'margin-call-contract': 'call · proposal · settled'}
 TITLE = {'collateral-service': 'Collateral workflow service', 'collateral-control-contract': 'Collateral control contract'}
 EDGE = {
  'pledgor-uses-console': [(170,143),(230,170)], 'secured-party-uses-console': [(170,209),(230,185)], 'operator-uses-console': [(170,275),(230,205)],

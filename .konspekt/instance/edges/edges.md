@@ -54,3 +54,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-arch-besuvisibility | notes | node:goal-architecture-design | noteworthy:nw-assumption-besu-visibility |  |
 | e-dec-arch-privacy | decomposes | node:goal-architecture-design | node:task-onchain-privacy |  |
 | e-note-privacy-besuvisibility | notes | node:task-onchain-privacy | noteworthy:nw-assumption-besu-visibility |  |
+| e-note-arch-mimicrealflows | notes | node:goal-architecture-design | noteworthy:nw-mimic-real-flows |  |
+| e-dec-arch-twowayim | decomposes | node:goal-architecture-design | node:task-two-way-initial-margin |  |

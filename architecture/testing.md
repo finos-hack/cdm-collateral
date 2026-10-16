@@ -31,7 +31,7 @@ replaced by equivalents.
 
 | CALM flow | Playwright scenario | Parties (console instances) |
 |---|---|---|
-| `flow-im-margin-call-pledge` | Full agreement; partial agreement with dispute (only the agreed part settles); multi-token pledge | 2 (pledgor, secured party) |
+| `flow-im-margin-call-pledge` | Full agreement; partial agreement with dispute (only the agreed part settles); multi-token pledge; proposal rejected for an ineligible or over-limit asset, then a new proposal accepted; pledge of an asset not in the accepted proposal reverts | 2 (pledgor, secured party) |
 | `flow-oracle-update` | Operator publishes; feed contract holds the new values | 1 (operator) |
 | `flow-revaluation-top-up` | NAV drop → shortfall → top-up call → pledge | 3 (operator, pledgor, secured party) |
 | `flow-return` | Return with both approvals; return without approval is rejected | 2 |
@@ -48,7 +48,7 @@ replaced by equivalents.
 | `concept-asr-onchain-asset-identity` | Token metadata (ISIN/CUSIP, DTI) matches the asset registry for every deployed token |
 | `concept-asr-settlement-finality` | Workflow updates a balance only after the gateway reports a finalized block; a test injects an unconfirmed event and expects no update |
 | `concept-asr-onchain-call-state` | Partial-agreement scenario: the disputed amount is recorded on the call but never pledged; the CDM content received by the counterparty matches the on-chain hash, and a tampered payload is rejected |
-| `wp-adr-margin-call-state-onchain` | Contract tests: pledge without an agreed call reverts; pledge above the agreed amount reverts; only the called party's key can respond; only the caller's key can issue |
+| `wp-adr-margin-call-state-onchain` | Contract tests: pledge without an agreed call or without an accepted proposal reverts; only the secured party's key can accept a proposal; pledge above the agreed amount reverts; only the called party's key can respond; only the caller's key can issue |
 | `wp-adr-prototype-ledgers` | Integration suite runs against the Besu container |
 | `wp-adr-im-segregation` | Contract property tests: no path moves pledged tokens except return and enforce |
 | `wp-adr-per-participant-services` | Participant isolation scenario; pledge and return transactions are signed by the expected party's key |

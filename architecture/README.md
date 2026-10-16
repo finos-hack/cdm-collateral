@@ -44,7 +44,7 @@ flowchart LR
     subgraph besu["Besu local network · Docker Compose · QBFT, 4 validator nodes (one per participant)"]
       CCC["Collateral control contract"] --> TOK["Tokenized collateral<br/>ERC-20 test tokens"]
       CCC --> OF["Oracle feed contract"]
-      CCC --> MCC["Margin call contract<br/>issued · agreed · settled"]
+      CCC --> MCC["Margin call contract<br/>call · proposal · settled"]
     end
     LG -- "JSON-RPC / WS to own node" --> besu
   end
@@ -65,8 +65,8 @@ flowchart LR
 | Besu local network | network, one node per participant | Hyperledger Besu in Docker Compose, four QBFT validators | Local stand-in for a permissioned network such as DTCC's private Besu network; each participant's gateway uses its own node; deterministic finality; tolerates one node down |
 | Tokenized collateral | contract | Solidity, ERC-20 with allow-list | Test tokens for a tokenized MMF and a tokenized US Treasury, carrying ISIN/CUSIP and DTI |
 | End-to-end test harness | test only | Playwright *(assumption)* | Drives N console instances in parallel and asserts every CALM flow, including on-chain state |
-| Collateral control contract | contract | Solidity | Holds pledged IM: pledge (only against an agreed call, up to the agreed amount), return (against an agreed return call), enforce (secured party, after default) |
-| Margin call contract | contract | Solidity | Each call's state (issued, agreed, partially agreed, disputed, settled), amounts, deadline and CDM content hash; each change signed by the acting party. Every node can read it (`nw-assumption-besu-visibility`) |
+| Collateral control contract | contract | Solidity | Holds pledged IM: pledge (only the accepted assets of an agreed call, up to the agreed amount), return (against an agreed return call), enforce (secured party, after default) |
+| Margin call contract | contract | Solidity | Each call's state (issued, agreed, partially agreed, disputed, settled), collateral proposal state (proposed, accepted, rejected) with assets and quantities, amounts, deadline and content hashes; each change signed by the acting party. Every node can read it (`nw-assumption-besu-visibility`) |
 | Oracle feed contract | contract | Solidity | Latest price / NAV, rating and default status; written only by the oracle publisher |
 
 ## Endpoints (sketch)
@@ -76,6 +76,7 @@ flowchart LR
 | Collateral workflow service `:8000+n` (per participant) | `POST /api/v1/agreements` | Load a CDM agreement (IM CSA / CTA-SA elections, eligibility schedule) |
 | | `POST /api/v1/margin-calls` | Issue an IM call (CDM `MarginCallIssuance`) |
 | | `POST /api/v1/margin-calls/{id}/responses` | Agree, partially agree or dispute (CDM `MarginCallResponse`) |
+| | `POST /api/v1/margin-calls/{id}/proposals` · `POST /api/v1/proposals/{id}/decision` | Propose collateral (ISO 20022 colr.007; no CDM type) and accept or reject it (colr.008) |
 | | `POST /api/v1/returns` · `POST /api/v1/returns/{id}/approvals` | Request and approve a return |
 | | `POST /api/v1/defaults` | Declare a pledgor default |
 | | `GET /api/v1/balances` | Collateral balances per agreement |
@@ -86,15 +87,18 @@ flowchart LR
 | | `POST /oracle/v1/publish` | Push current prices and ratings on-chain |
 | | `POST /oracle/v1/default-notices` | Relay a default notice to the on-chain feed |
 | Ledger gateway `:8200+n` (per participant) | `POST /ledger/v1/margin-calls` · `POST /ledger/v1/margin-calls/{id}/responses` | Record a call or a response on-chain (state, amounts, CDM hash), signed with its own key |
+| | `POST /ledger/v1/margin-calls/{id}/proposals` · `POST /ledger/v1/margin-calls/{id}/proposals/{pid}/decision` | Record a collateral proposal (assets, quantities, hash) or its acceptance / rejection |
 | | `POST /ledger/v1/instructions` | Pledge, return approval or enforce, signed with its own key |
 | | `POST /ledger/v1/oracle-updates` | Write to the oracle feed contract (operator's gateway only) |
 | | `GET /ledger/v1/positions/{account}` | Token balances and pledges |
 
 ## Flows (in the CALM file)
 
-1. **Initial margin call and on-chain pledge** — the secured party records the call on-chain and sends its CDM content
-   to the pledgor's service; the pledgor records its response on-chain (a disputed amount stays open, resolved
-   off-chain) and signs `pledge()`, which the control contract accepts only against the agreed call.
+1. **Initial margin call, collateral proposal and on-chain pledge** — the secured party records the call on-chain and
+   sends its CDM content to the pledgor's service; the pledgor records its response (a disputed amount stays open,
+   resolved off-chain) and a collateral proposal; the secured party checks the proposal against its own eligibility
+   schedule and accepts or rejects it on-chain; the pledgor signs `pledge()` for the accepted assets, which the control
+   contract checks against the call and the accepted proposal.
 2. **Oracle update** — mock data → oracle service → gateway → oracle feed contract.
 3. **Collateral revaluation and top-up** — operator lowers a NAV, the workflow finds a shortfall, the secured party
    issues a top-up call (then flow 1).
@@ -131,6 +135,11 @@ Step-by-step instructions: [`../docs/setup-windows.md`](../docs/setup-windows.md
   are not Besu; they could be used for fast contract unit tests.
 
 ## Assumptions
+
+- Flows mimic real collateral operations as closely as possible (`nw-mimic-real-flows`); simplifications are
+  stated here.
+- Two-way initial margin: the design allows it (roles are per pledge); the flows show one direction for now
+  (`task-two-way-initial-margin`).
 
 - A CDM 7.6.0 Python distribution is available and usable on Windows.
 - FastAPI, ethers.js and Hardhat are suitable; any equivalent can replace them.

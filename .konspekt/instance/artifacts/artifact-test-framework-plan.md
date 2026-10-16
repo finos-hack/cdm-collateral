@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
 createdAt: 2026-10-16T20:21:13Z
-updatedAt: 2026-10-16T21:36:47Z
+updatedAt: 2026-10-16T22:15:03Z
 ```
 # Test framework plan
 
@@ -21,3 +21,5 @@ end-to-end scenarios per CALM flow, and a traceability table from each accepted 
 
 Revised 2026-10-16T21:36:47Z (source `70532bbf71d41c99c9efad27c0e9ed009891292a`): margin call contract tests and invariants; traceability rows for
 `concept-asr-onchain-call-state` and `wp-adr-margin-call-state-onchain`.
+
+Revised 2026-10-16T22:15:03Z (source `030d173b1a7f835b860f9cca1cb4d482d59f360d`): proposal rejection and acceptance scenarios and contract tests.

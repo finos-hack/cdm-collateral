@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-16T20:08:49Z
   confidence: 0.75
 createdAt: 2026-10-16T20:08:49Z
-updatedAt: 2026-10-16T21:36:47Z
+updatedAt: 2026-10-16T22:15:03Z
 ```
 # Prototype architecture (CALM)
 
@@ -34,3 +34,6 @@ Revised 2026-10-16T21:09:56Z (source `2996ac2d303ef1b99234173cb0b618ba1a45aca9`)
 
 Revised 2026-10-16T21:36:47Z (source `70532bbf71d41c99c9efad27c0e9ed009891292a`, `wp-adr-margin-call-state-onchain`): margin call contract; pledge and return only against an agreed call;
 CDM content between services checked against the on-chain hash; 20 nodes, 26 relationships, 5 flows.
+
+Revised 2026-10-16T22:15:03Z (source `030d173b1a7f835b860f9cca1cb4d482d59f360d`, `nw-mimic-real-flows`): collateral proposal and acceptance in the margin call contract and
+the IM flow (26 steps).

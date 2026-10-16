@@ -161,3 +161,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-privacy-besuvisibility | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
 | noteworthy:nw-assumption-besu-visibility | status |  | unvalidated | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
 | node:task-onchain-privacy | status |  | open | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
+| noteworthy:nw-mimic-real-flows | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
+| node:task-two-way-initial-margin | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
+| edge:e-note-arch-mimicrealflows | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
+| edge:e-dec-arch-twowayim | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
+| noteworthy:nw-mimic-real-flows | status |  | active | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
+| node:task-two-way-initial-margin | status |  | open | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
