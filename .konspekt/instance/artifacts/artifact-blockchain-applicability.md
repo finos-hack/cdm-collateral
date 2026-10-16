@@ -3,7 +3,7 @@ id: artifact-blockchain-applicability
 name: Blockchain and smart contracts — applicability to CDM-based collateral management
 kind: document
 location: docs/architecture/blockchain-applicability.md
-review: proposed
+review: accepted
 provenance:
   conversationId: architecture-design
   sourceRef: dc9865cb385fc2de9212ad62a89b55c55d0338e8
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T02:55:34Z
   confidence: 0.75
 createdAt: 2026-10-16T02:55:34Z
-updatedAt: 2026-10-16T19:30:54Z
+updatedAt: 2026-10-16T19:47:11Z
 ```
 # Blockchain and smart contracts — applicability to CDM-based collateral management
 

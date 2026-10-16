@@ -126,3 +126,5 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-prototype-scope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
 | noteworthy:nw-prototype-scope | status |  | active | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
 | edge:e-note-arch-prototypescope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
+| artifact:artifact-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | cac26a66e1421d940c957c481268aa244388300e | denisurusov |
+| edge:e-prod-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | cac26a66e1421d940c957c481268aa244388300e | denisurusov |
