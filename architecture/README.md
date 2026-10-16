@@ -19,40 +19,48 @@ contract (`wp-adr-im-segregation`). Scope constraint `nw-prototype-scope`: assum
 
 ```mermaid
 flowchart LR
-  P([Pledgor ops]) --> UI
-  S([Secured party ops]) --> UI
-  M([Market data operator]) --> UI
+  subgraph people["Participants"]
+    direction TB
+    P([Pledgor ops])
+    S([Secured party ops])
+    M([Market data operator])
+  end
   subgraph host["Windows developer machine"]
-    UI["Party console × N<br/>React · one instance per participant"] --> CS
-    UI --> OS
-    UI --> LG
-    T[["E2E test harness<br/>Playwright · test only"]] --> UI
-    CS["Collateral workflow service<br/>Python · CDM 7.6.0"] --> DB[("Workflow store<br/>SQLite")]
-    CS --> OS["Oracle service<br/>Python"]
+    subgraph stack["Participant stack × N · one per participant"]
+      UI["Party console<br/>React"] --> CS["Collateral workflow service<br/>Python · CDM 7.6.0"]
+      CS --> DB[("Workflow store<br/>SQLite · own file")]
+      CS --> LG["Ledger gateway<br/>TypeScript · Besu adapter"]
+      UI --> LG
+      LG --> KS[["Keystore<br/>own key only"]]
+      LG -. "ledger events" .-> CS
+    end
+    CS <-- "peer messages<br/>(counterparty instance)" --> CS
+    UI --> OS["Oracle service<br/>Python · shared"]
+    CS --> OS
     OS --> MD[["Mock market data<br/>JSON files"]]
-    CS --> LG["Ledger gateway<br/>TypeScript · Besu adapter"]
-    OS --> LG
-    LG --> KS[["Dev keystore"]]
-    LG -. "ledger events (webhook)" .-> CS
-    subgraph besu["Besu local network · Docker · QBFT single node"]
+    OS -- "via operator's gateway" --> LG
+    T[["E2E test harness<br/>Playwright · test only"]] --> UI
+    subgraph besu["Besu local network · Docker · QBFT single node · shared"]
       CCC["Collateral control contract"] --> TOK["Tokenized collateral<br/>ERC-20 test tokens"]
       CCC --> OF["Oracle feed contract"]
     end
     LG -- "JSON-RPC 8545 / WS 8546" --> besu
   end
+  people --> UI
 ```
 
 | Component | Type | Technology | Role |
 |---|---|---|---|
-| Party console (× N) | web client | TypeScript, React + Vite *(assumption)* | Drives the flows. One instance per simulated participant — pledgor, secured party or market operator — set by `PARTY_ID`, `ROLE` and `WALLET`; N instances run side by side to simulate several counterparties |
-| Collateral workflow service | service | Python, FastAPI *(assumption)*, CDM 7.6.0 | Agreements (IM CSA / CTA-SA), eligibility and haircuts with CDM functions, margin call lifecycle (issue, respond, dispute — the part CDM lacks, finding F2), movement instructions for agreed amounts |
+| Participant stack (× N) | system | — | One per participant (pledgor, secured party, market operator): party console, workflow service, workflow store, ledger gateway and keystore. Each holds only its own party's books and key (`wp-adr-per-participant-services`) |
+| Party console | web client | TypeScript, React + Vite *(assumption)* | Drives the flows for its participant; set by `PARTY_ID`, `ROLE` and `WALLET`; talks only to its own stack |
+| Collateral workflow service | service, per participant | Python, FastAPI *(assumption)*, CDM 7.6.0 | Its party's agreements (IM CSA / CTA-SA), eligibility and haircuts with CDM functions, margin call lifecycle (issue, respond, dispute — the part CDM lacks, finding F2), its own movement instructions; exchanges calls, responses, return requests and default notices with the counterparty's instance |
 | CDM 7.6.0 object model | data asset | CDM Python distribution *(assumption)* | Canonical data layer, extended locally with on-chain asset identity (finding B1) |
-| Workflow store | database | SQLite | Agreements, calls, disputes, instructions, balances, asset registry (ISIN/CUSIP + DTI → network + token contract) |
-| Oracle service | service | Python | The oracle endpoints: prices / NAV and ratings for the workflow, signed updates and default notices to the on-chain feed |
+| Workflow store | database, per participant | SQLite, one file per party | Its party's agreements, calls, disputes, instructions, balances, asset registry (ISIN/CUSIP + DTI → network + token contract) |
+| Oracle service | service, shared | Python | Run by the market operator. The oracle endpoints: prices / NAV and ratings for the workflow, signed updates and default notices to the on-chain feed |
 | Mock market data | external system | JSON files | Stands in for NAV, price and rating providers |
-| Ledger gateway | service | TypeScript (Node.js), ethers.js *(assumption)* | Ledger-neutral interface: signs and submits transactions, waits for finality, reports events. Besu adapter first, Canton adapter later |
-| Dev keystore | data asset | key files | Test account keys: pledgor, secured party, oracle publisher, contract admin |
-| Besu local network | network | Hyperledger Besu in Docker, single-node QBFT | Local stand-in for a permissioned network such as DTCC's private Besu network; deterministic finality |
+| Ledger gateway | service, per participant | TypeScript (Node.js), ethers.js *(assumption)* | Ledger-neutral interface: signs with its own participant's key and submits transactions, waits for finality, reports events. Besu adapter first, Canton adapter later |
+| Dev keystore | data asset, per participant | key files | That participant's key only (the market operator holds the oracle publisher and contract admin keys) |
+| Besu local network | network, shared | Hyperledger Besu in Docker, single-node QBFT | Local stand-in for a permissioned network such as DTCC's private Besu network; deterministic finality |
 | Tokenized collateral | contract | Solidity, ERC-20 with allow-list | Test tokens for a tokenized MMF and a tokenized US Treasury, carrying ISIN/CUSIP and DTI |
 | End-to-end test harness | test only | Playwright *(assumption)* | Drives N console instances in parallel and asserts every CALM flow, including on-chain state |
 | Collateral control contract | contract | Solidity | Holds pledged IM: pledge, return (both parties or secured party), enforce (secured party, after default) |
@@ -62,38 +70,50 @@ flowchart LR
 
 | Service | Endpoint | Purpose |
 |---|---|---|
-| Collateral workflow service `:8000` | `POST /api/v1/agreements` | Load a CDM agreement (IM CSA / CTA-SA elections, eligibility schedule) |
+| Collateral workflow service `:8000+n` (per participant) | `POST /api/v1/agreements` | Load a CDM agreement (IM CSA / CTA-SA elections, eligibility schedule) |
 | | `POST /api/v1/margin-calls` | Issue an IM call (CDM `MarginCallIssuance`) |
 | | `POST /api/v1/margin-calls/{id}/responses` | Agree, partially agree or dispute (CDM `MarginCallResponse`) |
 | | `POST /api/v1/returns` · `POST /api/v1/returns/{id}/approvals` | Request and approve a return |
 | | `POST /api/v1/defaults` | Declare a pledgor default |
 | | `GET /api/v1/balances` | Collateral balances per agreement |
-| | `POST /hooks/ledger-events` | Finalized ledger events from the gateway |
-| Oracle service `:8100` | `GET /oracle/v1/prices/{assetId}` · `GET /oracle/v1/ratings/{assetId}` | Valuation and eligibility data |
+| | `POST /hooks/ledger-events` | Finalized ledger events from its own gateway |
+| | `POST /peer/v1/messages` | Calls, responses, return requests and approvals, default notices from the counterparty's service |
+| Oracle service `:8100` (shared) | `GET /oracle/v1/prices/{assetId}` · `GET /oracle/v1/ratings/{assetId}` | Valuation and eligibility data |
 | | `PUT /oracle/v1/market-data/{assetId}` | Market operator changes mock NAV, price or rating |
 | | `POST /oracle/v1/publish` | Push current prices and ratings on-chain |
 | | `POST /oracle/v1/default-notices` | Relay a default notice to the on-chain feed |
-| Ledger gateway `:8200` | `POST /ledger/v1/instructions` | Pledge, return or enforce |
-| | `POST /ledger/v1/oracle-updates` | Write to the oracle feed contract |
+| Ledger gateway `:8200+n` (per participant) | `POST /ledger/v1/instructions` | Pledge, return approval or enforce, signed with its own key |
+| | `POST /ledger/v1/oracle-updates` | Write to the oracle feed contract (operator's gateway only) |
 | | `GET /ledger/v1/positions/{account}` | Token balances and pledges |
 
 ## Flows (in the CALM file)
 
-1. **Initial margin call and on-chain pledge** — call, response (dispute stays off-chain), valuation and eligibility,
-   pledge instruction, `pledge()` on Besu, event back to the workflow.
+1. **Initial margin call and on-chain pledge** — the secured party's service sends the call to the pledgor's service;
+   the response (dispute stays off-chain) goes back; the pledgor's gateway signs `pledge()`; both stacks record the
+   finalized event.
 2. **Oracle update** — mock data → oracle service → gateway → oracle feed contract.
 3. **Collateral revaluation and top-up** — operator lowers a NAV, the workflow finds a shortfall, the secured party
    issues a top-up call (then flow 1).
-4. **Return** — request, approval, `returnPledge()`, balance update.
-5. **Default and enforcement** — default notice → oracle feed → `enforce()` → tokens to the secured party.
+4. **Return** — the pledgor's request goes to the secured party's service; the secured party's gateway signs
+   `returnPledge()`; both stacks update.
+5. **Default and enforcement** — default notice to the pledgor's service and the oracle feed; the secured party's
+   gateway signs `enforce()`; tokens go to the secured party.
 
 ## Running N participants
 
-The workflow service, oracle service, ledger gateway and Besu run once and are shared, like a margin-call utility. Each
-participant gets its own party-console instance with its own identity and wallet, for example
-`npm run console -- --party BANK-A --role pledgor --port 5173` and `--party BANK-B --role secured-party --port 5174`;
-the end-to-end harness starts N of them in parallel browser contexts. *Assumption:* a shared workflow service is
-acceptable for the prototype; per-party services would be closer to production.
+Each participant runs its own stack (`wp-adr-per-participant-services`): party console, collateral workflow service,
+workflow store, ledger gateway and keystore. Instance *n* uses ports `5173+n`, `8000+n` and `8200+n` and the store
+`./data/<party-id>.db`, for example:
+
+```
+npm run stack -- --party BANK-A --role pledgor       --n 1   # console 5174, service 8001, gateway 8201
+npm run stack -- --party BANK-B --role secured-party --n 2   # console 5175, service 8002, gateway 8202
+npm run stack -- --party MKT    --role market-operator --n 0 # console 5173, service 8000, gateway 8200
+```
+
+A participant directory (`participants.json`) maps each party ID to its service URL, so a workflow service can reach
+its counterparty's instance. The oracle service, the mock market data, the Besu node and the contracts run once and are
+shared. The end-to-end harness starts N stacks and drives their consoles in parallel browser contexts.
 
 ## Local environment on Windows
 
@@ -110,5 +130,7 @@ Step-by-step instructions: [`../docs/setup-windows.md`](../docs/setup-windows.md
 
 - A CDM 7.6.0 Python distribution is available and usable on Windows.
 - FastAPI, ethers.js and Hardhat are suitable; any equivalent can replace them.
-- Single-node QBFT is enough to illustrate deterministic finality.
+- Single-node QBFT is enough to illustrate deterministic finality. All participant gateways share the one Besu node;
+  one node per participant is a later option.
+- Workflow services talk directly to each other over HTTP; in production a messaging network would carry these messages.
 - Smart-contract control satisfies IM segregation (`nw-assumption-contract-control`).

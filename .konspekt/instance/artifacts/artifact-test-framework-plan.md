@@ -3,7 +3,7 @@ id: artifact-test-framework-plan
 name: Test framework plan
 kind: document
 location: architecture/testing.md
-review: proposed
+review: accepted
 provenance:
   conversationId: architecture-design
   sourceRef: 9ae499a1f078db987641f81be32f5a995ed8f218
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
 createdAt: 2026-10-16T20:21:13Z
-updatedAt: 2026-10-16T20:21:13Z
+updatedAt: 2026-10-16T20:43:52Z
 ```
 # Test framework plan
 

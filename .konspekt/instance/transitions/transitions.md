@@ -141,3 +141,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-localenv-testplan | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
 | artifact:artifact-setup-windows | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
 | edge:e-prod-localenv-setup | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
+| artifact:artifact-prototype-architecture | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| edge:e-prod-localenv-architecture | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| artifact:artifact-test-framework-plan | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| edge:e-prod-localenv-testplan | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| artifact:artifact-setup-windows | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| edge:e-prod-localenv-setup | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| waypoint:wp-adr-per-participant-services | review |  | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
+| edge:e-mrk-perparticipant-localenv | review |  | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |

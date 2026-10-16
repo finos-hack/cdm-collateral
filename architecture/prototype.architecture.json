@@ -18,7 +18,8 @@
   },
   "adrs": [
     ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
-    ".konspekt/instance/waypoints/wp-adr-im-segregation.md"
+    ".konspekt/instance/waypoints/wp-adr-im-segregation.md",
+    ".konspekt/instance/waypoints/wp-adr-per-participant-services.md"
   ],
   "nodes": [
     {
@@ -37,7 +38,7 @@
       "unique-id": "party-console",
       "node-type": "webclient",
       "name": "Party console",
-      "description": "Browser UI that drives the flows. One instance runs per simulated participant (party identity, role and wallet set by configuration); N instances run side by side to simulate several counterparties and the market operator.",
+      "description": "Browser UI that drives the flows. One instance per participant, part of its participant stack (party identity, role and wallet set by configuration); it talks only to its own participant's services.",
       "interfaces": [
         {
           "unique-id": "party-console-http",
@@ -80,6 +81,16 @@
       }
     },
     {
+      "unique-id": "participant-stack",
+      "node-type": "system",
+      "name": "Participant stack",
+      "description": "Per-participant deployment (ADR wp-adr-per-participant-services): each simulated participant runs its own party console, collateral workflow service, workflow store, ledger gateway and keystore, holding only its own books and its own signing key. N stacks run side by side; the oracle service, mock market data, Besu network and contracts are shared market infrastructure.",
+      "metadata": {
+        "instances": "N, one per participant (pledgor, secured party, market operator)",
+        "isolation": "own process, own SQLite file, own key; no shared database"
+      }
+    },
+    {
       "unique-id": "cdm-collateral-prototype",
       "node-type": "system",
       "name": "CDM collateral prototype",
@@ -89,25 +100,32 @@
       "unique-id": "collateral-service",
       "node-type": "service",
       "name": "Collateral workflow service",
-      "description": "Off-chain margin workflow (ASR concept-asr-offchain-dispute): holds CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute) that CDM 7.6.0 does not provide (finding F2), and sends movement instructions for agreed amounts to the ledger gateway.",
+      "description": "Off-chain margin workflow (ASR concept-asr-offchain-dispute), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute) that CDM 7.6.0 does not provide (finding F2), exchanges margin calls, responses, return requests and default notices with the counterparty's instance, and sends its own party's movement instructions to its ledger gateway.",
       "interfaces": [
         {
           "unique-id": "collateral-rest-api",
           "type": "rest-api",
-          "port": 8000,
+          "port": "8000+n",
           "path": "/api/v1"
         },
         {
           "unique-id": "ledger-events-webhook",
           "type": "rest-api",
-          "port": 8000,
+          "port": "8000+n",
           "path": "/hooks/ledger-events"
+        },
+        {
+          "unique-id": "peer-messages-api",
+          "type": "rest-api",
+          "port": "8000+n",
+          "path": "/peer/v1"
         }
       ],
       "metadata": {
         "language": "Python",
         "framework": "FastAPI (assumption)",
-        "cdm-binding": "CDM 7.6.0 Python distribution (assumption: availability to be confirmed)"
+        "cdm-binding": "CDM 7.6.0 Python distribution (assumption: availability to be confirmed)",
+        "instances": "one per participant"
       }
     },
     {
@@ -120,23 +138,24 @@
       "unique-id": "workflow-store",
       "node-type": "database",
       "name": "Workflow store",
-      "description": "SQLite file holding agreements, margin calls and responses, disputes, movement instructions, collateral balances and the asset registry that maps ISIN/CUSIP and DTI to network and token contract.",
+      "description": "One SQLite file per participant holding that party's agreements, margin calls and responses, disputes, movement instructions, collateral balances and the asset registry that maps ISIN/CUSIP and DTI to network and token contract.",
       "interfaces": [
         {
           "unique-id": "workflow-store-file",
           "type": "file",
-          "path": "./data/collateral.db"
+          "path": "./data/<party-id>.db"
         }
       ],
       "metadata": {
-        "engine": "SQLite"
+        "engine": "SQLite",
+        "instances": "one per participant"
       }
     },
     {
       "unique-id": "oracle-service",
       "node-type": "service",
       "name": "Oracle service",
-      "description": "Off-chain oracle endpoints. Reads price / NAV and rating data from the mock market data source, serves it to the collateral service for valuation and eligibility, and publishes signed updates on-chain through the ledger gateway. Also relays a default notice from the secured party to the on-chain default feed.",
+      "description": "Off-chain oracle endpoints, shared, run by the market data operator. Reads price / NAV and rating data from the mock market data source, serves it to every participant's collateral service for valuation and eligibility, and publishes signed updates on-chain through the operator's ledger gateway. Also relays a default notice from the secured party to the on-chain default feed.",
       "interfaces": [
         {
           "unique-id": "oracle-rest-api",
@@ -174,12 +193,12 @@
       "unique-id": "ledger-gateway",
       "node-type": "service",
       "name": "Ledger gateway",
-      "description": "Ledger-neutral interface (ASR concept-asr-ledger-neutrality, ADR wp-adr-prototype-ledgers): accepts movement instructions and oracle updates, signs and submits transactions to the ledger, waits for finality and reports ledger events back to the collateral service. Besu adapter first; a Canton adapter is the second target.",
+      "description": "Ledger-neutral interface (ASR concept-asr-ledger-neutrality, ADR wp-adr-prototype-ledgers): one instance per participant: accepts its participant's movement instructions (and, for the operator, oracle updates), signs with that participant's key only and submits transactions to the ledger, waits for finality and reports ledger events back to the collateral service. Besu adapter first; a Canton adapter is the second target.",
       "interfaces": [
         {
           "unique-id": "ledger-gateway-api",
           "type": "rest-api",
-          "port": 8200,
+          "port": "8200+n",
           "path": "/ledger/v1"
         }
       ],
@@ -191,20 +210,21 @@
         "adapters": {
           "besu": "first",
           "canton": "planned"
-        }
+        },
+        "instances": "one per participant"
       }
     },
     {
       "unique-id": "dev-keystore",
       "node-type": "data-asset",
       "name": "Development keystore",
-      "description": "Private keys of the test accounts (pledgor, secured party, oracle publisher, contract admin) used by the ledger gateway to sign transactions. Development keys only."
+      "description": "Per participant: the private key of that participant's test account only (pledgor, secured party, or for the market operator the oracle publisher and contract admin keys). Development keys only."
     },
     {
       "unique-id": "besu-dev-network",
       "node-type": "network",
       "name": "Besu local network",
-      "description": "Single-node Hyperledger Besu network in Docker with QBFT consensus, giving deterministic finality per block (ASR concept-asr-settlement-finality). Stands in for a permissioned network such as DTCC's private Besu network.",
+      "description": "Single-node Hyperledger Besu network in Docker with QBFT consensus, shared by all participant gateways, giving deterministic finality per block (ASR concept-asr-settlement-finality). Stands in for a permissioned network such as DTCC's private Besu network.",
       "interfaces": [
         {
           "unique-id": "besu-json-rpc-http",
@@ -281,6 +301,7 @@
         "composed-of": {
           "container": "cdm-collateral-prototype",
           "nodes": [
+            "participant-stack",
             "party-console",
             "collateral-service",
             "cdm-object-model",
@@ -292,6 +313,22 @@
             "tokenized-collateral",
             "collateral-control-contract",
             "oracle-feed-contract"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "participant-stack-composition",
+      "description": "Components that run once per participant.",
+      "relationship-type": {
+        "composed-of": {
+          "container": "participant-stack",
+          "nodes": [
+            "party-console",
+            "collateral-service",
+            "workflow-store",
+            "ledger-gateway",
+            "dev-keystore"
           ]
         }
       }
@@ -360,7 +397,7 @@
     },
     {
       "unique-id": "console-to-service",
-      "description": "Calls the workflow REST API for agreements, calls, responses, returns, defaults and balances; polls or subscribes for updates.",
+      "description": "Calls its own participant's workflow REST API for agreements, calls, responses, returns, defaults and balances; polls or subscribes for updates.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -449,6 +486,24 @@
       "protocol": "HTTP"
     },
     {
+      "unique-id": "service-to-peer-service",
+      "description": "Exchanges margin calls, responses, return requests and approvals, and default notices with the counterparty's collateral workflow service instance (party to party).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-service"
+          },
+          "destination": {
+            "node": "collateral-service",
+            "interfaces": [
+              "peer-messages-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
       "unique-id": "service-to-store",
       "description": "Reads and writes agreements, calls, instructions, balances and the asset registry.",
       "relationship-type": {
@@ -502,7 +557,7 @@
     },
     {
       "unique-id": "service-to-gateway",
-      "description": "Submits movement instructions (pledge, return, enforce) for agreed amounts.",
+      "description": "Submits its own participant's movement instructions (pledge, return approval, enforce) for agreed amounts.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -520,7 +575,7 @@
     },
     {
       "unique-id": "oracle-to-gateway",
-      "description": "Publishes price, rating and default updates for the on-chain feed.",
+      "description": "Publishes price, rating and default updates for the on-chain feed through the market operator's gateway instance.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -538,7 +593,7 @@
     },
     {
       "unique-id": "gateway-to-keystore",
-      "description": "Loads signing keys of the test accounts.",
+      "description": "Loads the signing key of its own participant.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -588,7 +643,7 @@
     },
     {
       "unique-id": "gateway-to-service-events",
-      "description": "Reports finalized ledger events (pledged, returned, enforced, transfers) back to the workflow.",
+      "description": "Reports finalized ledger events (pledged, returned, enforced, transfers) back to its own participant's workflow service.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -637,7 +692,7 @@
     {
       "unique-id": "flow-im-margin-call-pledge",
       "name": "Initial margin call and on-chain pledge",
-      "description": "The secured party calls initial margin; the pledgor agrees in full or in part off-chain; the agreed amount is pledged into the collateral control contract on Besu.",
+      "description": "The secured party calls initial margin; the pledgor agrees in full or in part off-chain; the pledgor pledges the agreed amount into the collateral control contract on Besu. Each party's stack keeps its own record.",
       "transitions": [
         {
           "relationship-unique-id": "secured-party-uses-console",
@@ -645,53 +700,68 @@
           "description": "Secured party issues an IM call (CDM MarginCallIssuance) under the agreement in its console."
         },
         {
-          "relationship-unique-id": "pledgor-uses-console",
+          "relationship-unique-id": "console-to-service",
           "sequence-number": 2,
+          "description": "Secured party console submits the call to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 3,
+          "description": "Secured party's service sends the call to the pledgor's workflow service."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 4,
           "description": "Pledgor responds in its console: agree, partially agree or dispute (CDM MarginCallResponse); a disputed part stays off-chain."
         },
         {
           "relationship-unique-id": "console-to-service",
-          "sequence-number": 3,
-          "description": "Consoles submit the call and the response to the workflow service."
+          "sequence-number": 5,
+          "description": "Pledgor console submits the response and the proposed tokens to the pledgor's workflow service."
         },
         {
           "relationship-unique-id": "service-to-oracle",
-          "sequence-number": 4,
-          "description": "Service fetches NAV / prices and ratings for the proposed tokens."
+          "sequence-number": 6,
+          "description": "Pledgor's service fetches NAV / prices and ratings for the proposed tokens."
         },
         {
           "relationship-unique-id": "service-to-store",
-          "sequence-number": 5,
-          "description": "Service checks eligibility and haircuts against the CDM eligibility schedule and records the movement instruction."
+          "sequence-number": 7,
+          "description": "Pledgor's service checks eligibility and haircuts against the CDM eligibility schedule and records the movement instruction in its own store."
+        },
+        {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 8,
+          "description": "Pledgor's service sends the response to the secured party's service, which records it in its own store."
         },
         {
           "relationship-unique-id": "service-to-gateway",
-          "sequence-number": 6,
-          "description": "Service sends a pledge instruction for the agreed amount."
+          "sequence-number": 9,
+          "description": "Pledgor's service sends a pledge instruction for the agreed amount to the pledgor's gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 7,
-          "description": "Gateway signs and submits pledge() to the collateral control contract."
+          "sequence-number": 10,
+          "description": "Pledgor's gateway signs with the pledgor key and submits pledge() to the collateral control contract."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 8,
+          "sequence-number": 11,
           "description": "Contract pulls the tokens from the pledgor's account."
         },
         {
           "relationship-unique-id": "gateway-to-besu-events",
-          "sequence-number": 9,
-          "description": "Gateway receives the Pledged event in a finalized block."
+          "sequence-number": 12,
+          "description": "Both parties' gateways receive the Pledged event in a finalized block."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 10,
-          "description": "Service updates the collateral balance and closes the call."
+          "sequence-number": 13,
+          "description": "Each gateway reports the event to its own workflow service, which updates its balance and closes the call."
         },
         {
           "relationship-unique-id": "console-to-service",
-          "sequence-number": 11,
+          "sequence-number": 14,
           "description": "Both consoles show the settled pledge and the new balance."
         }
       ]
@@ -699,7 +769,7 @@
     {
       "unique-id": "flow-oracle-update",
       "name": "Oracle price and rating update",
-      "description": "The oracle service publishes current NAV / price and rating data to the on-chain feed.",
+      "description": "The oracle service publishes current NAV / price and rating data to the on-chain feed through the market operator's gateway.",
       "transitions": [
         {
           "relationship-unique-id": "oracle-to-market-data",
@@ -709,19 +779,19 @@
         {
           "relationship-unique-id": "oracle-to-gateway",
           "sequence-number": 2,
-          "description": "Oracle sends a signed update."
+          "description": "Oracle sends a signed update to the market operator's gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
           "sequence-number": 3,
-          "description": "Gateway writes the update to the oracle feed contract."
+          "description": "Operator's gateway writes the update to the oracle feed contract with the oracle publisher key."
         }
       ]
     },
     {
       "unique-id": "flow-revaluation-top-up",
       "name": "Collateral revaluation and top-up call",
-      "description": "The market operator lowers the NAV or price of a pledged token; revaluation shows a shortfall and the secured party issues a top-up call, which then follows the IM call flow.",
+      "description": "The market operator lowers the NAV or price of a pledged token; the secured party's revaluation shows a shortfall and it issues a top-up call, which then follows the IM call flow.",
       "transitions": [
         {
           "relationship-unique-id": "operator-uses-console",
@@ -731,7 +801,7 @@
         {
           "relationship-unique-id": "console-to-oracle",
           "sequence-number": 2,
-          "description": "Console sends the new mock value."
+          "description": "Operator console sends the new mock value."
         },
         {
           "relationship-unique-id": "oracle-to-market-data",
@@ -746,7 +816,7 @@
         {
           "relationship-unique-id": "service-to-oracle",
           "sequence-number": 5,
-          "description": "Workflow service revalues pledged collateral after haircuts."
+          "description": "Secured party's workflow service revalues pledged collateral after haircuts."
         },
         {
           "relationship-unique-id": "console-to-service",
@@ -758,7 +828,7 @@
     {
       "unique-id": "flow-return",
       "name": "Return of initial margin",
-      "description": "Excess or released initial margin goes back to the pledgor after the required approval.",
+      "description": "Excess or released initial margin goes back to the pledgor after the secured party's approval, which the secured party signs on-chain.",
       "transitions": [
         {
           "relationship-unique-id": "pledgor-uses-console",
@@ -766,34 +836,44 @@
           "description": "Pledgor requests a return in its console."
         },
         {
-          "relationship-unique-id": "secured-party-uses-console",
+          "relationship-unique-id": "console-to-service",
           "sequence-number": 2,
+          "description": "Pledgor console submits the request to the pledgor's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 3,
+          "description": "Pledgor's service sends the return request to the secured party's service."
+        },
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 4,
           "description": "Secured party approves the return in its console."
         },
         {
           "relationship-unique-id": "console-to-service",
-          "sequence-number": 3,
-          "description": "Consoles submit the request and the approval to the workflow service."
+          "sequence-number": 5,
+          "description": "Secured party console submits the approval to the secured party's workflow service."
         },
         {
           "relationship-unique-id": "service-to-gateway",
-          "sequence-number": 4,
-          "description": "Service sends a return instruction carrying both approvals."
+          "sequence-number": 6,
+          "description": "Secured party's service sends the return approval to the secured party's gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 5,
-          "description": "Gateway submits returnPledge()."
+          "sequence-number": 7,
+          "description": "Secured party's gateway signs with the secured party key and submits returnPledge()."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 6,
+          "sequence-number": 8,
           "description": "Contract transfers the tokens back to the pledgor."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 7,
-          "description": "Service records the return and updates the balance."
+          "sequence-number": 9,
+          "description": "Each gateway reports the Returned event to its own workflow service, which records the return and updates its balance."
         }
       ]
     },
@@ -810,37 +890,42 @@
         {
           "relationship-unique-id": "console-to-service",
           "sequence-number": 2,
-          "description": "Console submits the default declaration to the workflow service."
+          "description": "Console submits the default declaration to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-peer-service",
+          "sequence-number": 3,
+          "description": "Secured party's service sends the default notice to the pledgor's service."
         },
         {
           "relationship-unique-id": "service-to-oracle",
-          "sequence-number": 3,
-          "description": "Service forwards the default notice to the oracle service."
+          "sequence-number": 4,
+          "description": "Secured party's service forwards the default notice to the oracle service."
         },
         {
           "relationship-unique-id": "oracle-to-gateway",
-          "sequence-number": 4,
-          "description": "Oracle publishes the default status."
+          "sequence-number": 5,
+          "description": "Oracle publishes the default status through the operator's gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
-          "sequence-number": 5,
-          "description": "Gateway writes the default to the feed and submits enforce()."
+          "sequence-number": 6,
+          "description": "Operator's gateway writes the default to the feed; the secured party's gateway then submits enforce() with the secured party key."
         },
         {
           "relationship-unique-id": "control-to-oracle-feed",
-          "sequence-number": 6,
+          "sequence-number": 7,
           "description": "Contract confirms the default status."
         },
         {
           "relationship-unique-id": "control-to-tokens",
-          "sequence-number": 7,
+          "sequence-number": 8,
           "description": "Contract transfers the pledged tokens to the secured party."
         },
         {
           "relationship-unique-id": "gateway-to-service-events",
-          "sequence-number": 8,
-          "description": "Service records the enforcement."
+          "sequence-number": 9,
+          "description": "Each gateway reports the Enforced event to its own workflow service, which records the enforcement."
         }
       ]
     }

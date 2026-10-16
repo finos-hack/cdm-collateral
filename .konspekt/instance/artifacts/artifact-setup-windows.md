@@ -3,7 +3,7 @@ id: artifact-setup-windows
 name: Windows development machine setup
 kind: document
 location: docs/setup-windows.md
-review: proposed
+review: accepted
 provenance:
   conversationId: architecture-design
   sourceRef: 9ae499a1f078db987641f81be32f5a995ed8f218
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
 createdAt: 2026-10-16T20:21:13Z
-updatedAt: 2026-10-16T20:21:13Z
+updatedAt: 2026-10-16T20:43:52Z
 ```
 # Windows development machine setup
 

@@ -22,9 +22,9 @@ replaced by equivalents.
 | Python services — API | Each REST endpoint against its OpenAPI schema; error cases | pytest + FastAPI TestClient; Schemathesis for schema-driven fuzzing *(assumption)* | In process, gateway and oracle stubbed |
 | Ledger gateway — unit | Instruction mapping, signing, finality wait, event decoding, adapter interface | Vitest *(assumption)* | Mocked JSON-RPC |
 | Ledger gateway — integration | Real transactions and events | Vitest + Testcontainers for Node *(assumption)* | Besu 26.9.0 container |
-| Contract tests between services | Workflow ↔ oracle and workflow ↔ gateway request/response shapes stay compatible | OpenAPI schemas checked in both directions (Schemathesis / generated clients) | In process |
+| Contract tests between services | Workflow ↔ oracle, workflow ↔ gateway and workflow ↔ peer workflow request/response shapes stay compatible | OpenAPI schemas checked in both directions (Schemathesis / generated clients) | In process |
 | Party console — component | Screens per role (pledgor, secured party, market operator) | Vitest + React Testing Library *(assumption)* | jsdom |
-| End to end | The five CALM flows with **N party-console instances** in parallel browser contexts, against the full stack | Playwright *(assumption)* | Full local stack (Besu container + services) |
+| End to end | The five CALM flows with **N participant stacks** (console, service, store, gateway each) and their consoles in parallel browser contexts | Playwright *(assumption)* | Full local stack (Besu container + services) |
 | Architecture | CALM document is valid; every flow transition has a test | `calm validate --strict`; a script that maps flow ids to Playwright test titles | Repository files |
 
 ## End-to-end scenarios
@@ -36,7 +36,8 @@ replaced by equivalents.
 | `flow-revaluation-top-up` | NAV drop → shortfall → top-up call → pledge | 3 (operator, pledgor, secured party) |
 | `flow-return` | Return with both approvals; return without approval is rejected | 2 |
 | `flow-default-enforcement` | Enforcement after default; enforcement before default is rejected | 2 |
-| Multi-party load | N pledgor/secured-party pairs run the IM call flow concurrently; balances reconcile across workflow store and chain | 2N (configurable) |
+| Multi-party load | N pledgor/secured-party pairs run the IM call flow concurrently; each party's store reconciles with the chain and with its counterparty's store | 2N (configurable) |
+| Participant isolation | A party's store holds no other party's agreements; a gateway refuses an instruction it cannot sign with its own key; a peer message from an unknown party is rejected | 3 |
 
 ## Traceability to ASRs and ADRs
 
@@ -49,6 +50,7 @@ replaced by equivalents.
 | `concept-asr-offchain-dispute` | Partial-agreement scenario: the disputed amount never appears in a ledger instruction |
 | `wp-adr-prototype-ledgers` | Integration suite runs against the Besu container |
 | `wp-adr-im-segregation` | Contract property tests: no path moves pledged tokens except return and enforce |
+| `wp-adr-per-participant-services` | Participant isolation scenario; pledge and return transactions are signed by the expected party's key |
 
 ## Commands (planned)
 
@@ -57,7 +59,7 @@ npm run test:contracts      # Hardhat unit + property tests
 pytest                      # Python services
 npm run test:gateway        # gateway unit + integration (needs Docker)
 npm run test:console        # UI components
-npm run test:e2e            # Playwright, starts the stack, N=2 by default (E2E_PARTIES=N)
+npm run test:e2e            # Playwright, starts N participant stacks, N=3 by default (E2E_PARTIES=N)
 npm run test:all            # everything above + calm validate --strict
 ```
 
