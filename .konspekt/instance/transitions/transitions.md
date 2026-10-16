@@ -94,3 +94,4 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-local-environment-setup | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
 | node:task-local-environment-setup | status |  | open | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
 | edge:e-dec-arch-localenv | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | status | open | active | 2026-10-16T02:47:21Z | ed7176232e1ff62642302f9432d3bb079d443e09 | denisurusov |
