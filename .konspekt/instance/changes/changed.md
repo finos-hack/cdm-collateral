@@ -90,3 +90,8 @@ excluded.
 | task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/render_architecture_page.py | 2026-10-16T20:21:13Z |
 | task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | architecture/testing.md | 2026-10-16T20:21:13Z |
 | task-local-environment-setup | 672697dbbdf260a5ed99ca6758f2d8cb0d7b28e2 | docs/setup-windows.md | 2026-10-16T20:21:13Z |
+| task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/README.md | 2026-10-16T20:44:06Z |
+| task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/generate_architecture.py | 2026-10-16T20:44:06Z |
+| task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/prototype.architecture.json | 2026-10-16T20:44:06Z |
+| task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/render_architecture_page.py | 2026-10-16T20:44:06Z |
+| task-local-environment-setup | 08ecc8d4aeb5955070e827069e8462347eb5c9e5 | architecture/testing.md | 2026-10-16T20:44:06Z |
