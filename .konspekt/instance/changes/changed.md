@@ -114,3 +114,13 @@ excluded.
 | task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/prototype.architecture.json | 2026-10-16T22:15:10Z |
 | task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/render_architecture_page.py | 2026-10-16T22:15:10Z |
 | task-local-environment-setup | 5c3dfe01b23e7d80087ee3be6396543779330907 | architecture/testing.md | 2026-10-16T22:15:10Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | .devcontainer/devcontainer.json | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | architecture/README.md | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | architecture/generate_architecture.py | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | architecture/prototype.architecture.json | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | architecture/render_architecture_page.py | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | besu/check-network.sh | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | besu/docker-compose.yml | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | besu/start-network.sh | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | docs/setup-codespaces.md | 2026-10-16T22:20:40Z |
+| task-local-environment-setup | d46610bd819fe03a90da24a5f082e742e28ac3c8 | docs/setup-windows.md | 2026-10-16T22:20:40Z |
