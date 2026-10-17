@@ -216,7 +216,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-consolerules-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
 | node:task-cdm-gap-closure | status | open | active | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
 | noteworthy:nw-cdm-base-release-7-7-0 | review |  | accepted | 2026-10-17T01:16:19Z | 9ab0cbf86284cce4606e93eabb8507c9d009d7b7 | denisurusov |
-| noteworthy:nw-cdm-base-release-7-7-0 | status |  | active | 2026-10-17T01:16:19Z | 9ab0cbf86284cce4606e93eabb8507c9d009d7b7 | denisurusov |
 | edge:e-note-cdmdev-baserelease | review |  | accepted | 2026-10-17T01:16:19Z | 9ab0cbf86284cce4606e93eabb8507c9d009d7b7 | denisurusov |
 | artifact:artifact-cdm-ext | review |  | proposed | 2026-10-17T01:16:19Z |  |  |
 | edge:e-prod-gapclosure-cdmext | review |  | proposed | 2026-10-17T01:16:19Z |  |  |

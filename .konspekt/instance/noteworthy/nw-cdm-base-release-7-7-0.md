@@ -1,7 +1,6 @@
 ```yaml
 id: nw-cdm-base-release-7-7-0
 kind: decision
-status: active
 review: accepted
 provenance:
   conversationId: cdm-development
