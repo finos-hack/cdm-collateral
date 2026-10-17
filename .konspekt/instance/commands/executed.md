@@ -43,3 +43,7 @@ at execution time.
 | task-react-console | 03b74c4cac99bdf0141e086673cb7673b28d528e |
 | task-react-console | 4a1b75607467908bb8d91b9dcac2a1822a8f5909 |
 | task-react-console | a8ffd28fab4b0c342b528a53e29cf6d3a359e335 |
+| task-cdm-gap-closure | d86e9065f28c836cb365a7b987e51ff38e07669b |
+| task-cdm-gap-closure | 3a9023f7241f7c0025a97ac575431124305031d3 |
+| task-cdm-gap-closure | 2fd91151d852ab37c94cd5679a26979a71933286 |
+| task-cdm-gap-closure | 35222ec50d050f4940e672ce0fdb2d2291b51dad |

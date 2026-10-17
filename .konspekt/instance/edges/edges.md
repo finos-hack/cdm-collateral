@@ -68,3 +68,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-gapclosure | decomposes | node:goal-cdm-development | node:task-cdm-gap-closure |  |
 | e-mrk-localext-gapclosure | marks | waypoint:wp-adr-cdm-local-extensions | node:task-cdm-gap-closure |  |
 | e-prod-gapanalysis-register | produces | node:task-cdm-gap-analysis | artifact:artifact-cdm-gap-register |  | accepted |
+| e-mrk-extrune-gapclosure | marks | waypoint:wp-adr-cdm-extension-rune | node:task-cdm-gap-closure |  |
+| e-mrk-consolerules-gapclosure | marks | waypoint:wp-adr-console-on-extension-rules | node:task-cdm-gap-closure |  |

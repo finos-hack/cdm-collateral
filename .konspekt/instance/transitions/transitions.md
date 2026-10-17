@@ -210,3 +210,8 @@ into state history — an instance without it is v1-conformant and records none.
 | artifact:artifact-cdm-gap-register | review | proposed | accepted | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
 | edge:e-prod-gapanalysis-register | review | proposed | accepted | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
 | node:task-cdm-gap-analysis | status | active | resolved | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
+| waypoint:wp-adr-cdm-extension-rune | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
+| waypoint:wp-adr-console-on-extension-rules | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
+| edge:e-mrk-extrune-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
+| edge:e-mrk-consolerules-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
+| node:task-cdm-gap-closure | status | open | active | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |

@@ -2,7 +2,7 @@
 id: task-cdm-gap-closure
 type: task
 title: CDM gap closure
-status: open
+status: active
 review: accepted
 provenance:
   conversationId: cdm-development
@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-10-17T00:22:35Z
+updatedAt: 2026-10-17T00:48:29Z
 ```
 # Task: CDM gap closure
 
