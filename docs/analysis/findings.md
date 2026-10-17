@@ -39,7 +39,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | O10 | CCP support covers trade clearing, not cleared margin | CCP | open |
 | O11 | Securities-lending settlement workflows are hand-written Java, not Rune | Implementation | open |
 | O12 | Buy/sell-back is qualification only; no sample sets `tradeType` | Repo | open |
-| X1 | CDM's lifecycle events are trade-based: `BusinessEvent` records `TradeState`s and `Create_Transfer` builds transfers from a `TradeState`; a margin call has no trade, so no CDM event type records its steps | Lifecycle | open (extension: own event type, `wp-adr-cdm-collateral-events`, proposed) |
+| X1 | CDM's lifecycle events are trade-based: `BusinessEvent` records `TradeState`s and `Create_Transfer` builds transfers from a `TradeState`; a margin call has no trade, so no CDM event type records its steps | Lifecycle | open (extension: own event type, `wp-adr-cdm-collateral-events`) |
 | X2 | `UnscheduledTransferEnum` has no value for a collateral delivery or a collateral return (its `Return` is the securities-lending return) | Taxonomy | open |
 | X3 | `PartyRoleEnum` has `Pledgor` (New York law), `Chargor` (English law) and `SecuredParty`, but no transferor or transferee role for title-transfer collateral (English-law VM CSA); `RegIMRoleEnum` repeats pledgor and secured party with other spellings (`Secured`) | Parties | open |
 

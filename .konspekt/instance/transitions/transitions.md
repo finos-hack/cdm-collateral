@@ -223,3 +223,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-gapclosure-cdmext | review | proposed | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
 | noteworthy:nw-cdm-python-workarounds | review |  | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
 | edge:e-note-cdmdev-pythonworkarounds | review |  | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
+| waypoint:wp-adr-cdm-collateral-events | review |  | proposed | 2026-10-17T16:03:44Z |  |  |
+| edge:e-mrk-collevents-gapclosure | review |  | proposed | 2026-10-17T16:03:44Z |  |  |
+| noteworthy:nw-cdm-stay-on-python | review |  | accepted | 2026-10-17T16:59:27Z | 14f3682a9d131660ccfcbec45a3c662a9ed1f7e8 | denisurusov |
+| edge:e-note-cdmdev-stayonpython | review |  | accepted | 2026-10-17T16:59:27Z | 14f3682a9d131660ccfcbec45a3c662a9ed1f7e8 | denisurusov |
+| waypoint:wp-adr-cdm-collateral-events | review | proposed | accepted | 2026-10-17T17:00:55Z | e61393e8f33765faa3913c1c4270ef0919a1a43a | denisurusov |
+| edge:e-mrk-collevents-gapclosure | review | proposed | accepted | 2026-10-17T17:00:55Z | e61393e8f33765faa3913c1c4270ef0919a1a43a | denisurusov |
