@@ -181,3 +181,15 @@ excluded.
 | task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-17T01:16:19Z |
 | task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/analysis/defects.md | 2026-10-17T01:16:19Z |
 | task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/cdm-development/gap-register.md | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | .github/workflows/cdm-ext.yml | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/README.md | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/rosetta/cdmx-collateral-margincall-func.rosetta | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/rosetta/cdmx-collateral-margincall-type.rosetta | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/tests/__pycache__/cdm_runtime.cpython-313.pyc | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/tests/__pycache__/data.cpython-313.pyc | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/tests/__pycache__/test_margincall.cpython-313-pytest-9.1.1.pyc | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/tests/cdm_runtime.py | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/tests/data.py | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | cdm-ext/tests/test_margincall.py | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | docs/analysis/defects.md | 2026-10-17T13:40:04Z |
+| task-cdm-gap-closure | e1957fa97ef1f5a7d1ae0fb7c14f335b5e14694b | docs/cdm-development/gap-register.md | 2026-10-17T13:40:04Z |
