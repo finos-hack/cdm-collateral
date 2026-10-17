@@ -15,10 +15,14 @@ Built on CDM **7.7.0** (`finos-cdm` on PyPI); Rune Python generator **10.15.1.0*
 | `rosetta/cdmx-collateral-proposal-func.rosetta` | G2: `ProposalCoversAgreedAmount`, `DecideCollateralProposal` |
 | `rosetta/cdmx-collateral-margincall-type.rosetta` | G1, G3, G4, G6: `MarginCallState` (call, response, agreed and disputed amounts, proposals, settlement, step records), one instruction type per step, status and step enums |
 | `rosetta/cdmx-collateral-margincall-func.rosetta` | `Create_MarginCallState` (applies the one step the call waits for), `NextMarginCallStep`, one `Apply…` function per step |
+| `rosetta/cdmx-collateral-event-type.rosetta` | G1, G4: `CollateralEvent` (one applied step: instruction, before and after state, qualifier, transfers) |
+| `rosetta/cdmx-collateral-event-func.rosetta` | `Create_CollateralEvent`, `QualifyCollateralEvent` and nine `Qualify_…` functions |
+| `rosetta/cdmx-collateral-transfer-func.rosetta` | G4: `Create_CollateralTransfer` (one collateral position as a settled CDM `TransferState`) |
 | `tests/test_proposal.py` | Tests of the generated Python: functions, pre-conditions, type conditions, Rune JSON round trip |
 | `tests/test_margincall.py` | The console scenarios (im-call, im-dispute, im-return) through the lifecycle; wrong order, amounts and currencies rejected; earlier states unchanged |
+| `tests/test_event.py` | The same scenarios as events: qualifiers, transfers on delivery and return, CDM's own conditions on the transfer |
 | `tests/data.py` | Rune JSON builders for test data |
-| `tests/cdm_runtime.py` | Workarounds for defects in the CDM 7.7.0 Python package (D14) |
+| `tests/cdm_runtime.py` | Workarounds for defects in the CDM 7.7.0 Python package and `rune.runtime` (D14) and for generated modules that use names they do not import (D15) |
 | `build.sh` | Fetch generator and sources, generate, install on top of `finos-cdm`, run the tests |
 
 ## Build and test
@@ -53,11 +57,12 @@ Found while doing it:
   and `@version` `0.0.0`; deserialising needs `namespace_prefix="finos"`. The extension's model version is not set
   yet.
 - **CDM 7.7.0 Python package defects** (not in our code; recorded as D14 in
-  [`../docs/analysis/defects.md`](../docs/analysis/defects.md)): import-order circular import of `Asset`; nested
-  objects with an absent metadata field cannot be constructed directly; `Asset` types keep unresolved forward
-  references (`Security.identifier` typed `None`, `Cash` raises `NameError` for `CurrencyCodeEnum`), so a
-  `CollateralPosition` cannot carry its asset when built in Python. Tests build objects from Rune JSON, skip CDM's
-  own conditions when loading test data, and check the extension's conditions explicitly.
+  [`../docs/analysis/defects.md`](../docs/analysis/defects.md)): types nested in other types (an asset inside a
+  position, an identifier inside a margin call) kept placeholder field types and could not be loaded; references,
+  deep copies and dates with metadata fail in `rune.runtime`. `tests/cdm_runtime.py` works around them on the
+  published package (rebuilds all classes at start-up, about 5 s), so positions carry their asset. Test data is
+  loaded from Rune JSON with CDM's own conditions skipped; tests check the extension's conditions explicitly, and
+  CDM's own conditions where CDM's generated code allows (D14: `PriceQuantityTriangulation`).
 
 ## Margin call lifecycle (G1, G3, G4, G6)
 
@@ -74,9 +79,35 @@ extension mirrors the pattern in `cdmx.collateral.margincall` instead of extendi
 | SettleCall | `SettleCallInstruction` | delivery: a proposal accepted; return: agreed | Settled; any disputed amount stays recorded |
 
 Each step takes its timestamp as an input (CDM's `Now()` is a native function the Python package cannot load), so
-the ledger's block time can be used and tests are deterministic. Not covered yet: CDM business events and
-qualification for these steps, the CDM transfer that settles a delivery, balance updates (G5) and dispute
-resolution beyond recording the disputed amount (G3).
+the ledger's block time can be used and tests are deterministic. The call names its pledgor and secured party in
+CDM's `MarginCallBase -> partyRole` (condition `PledgorAndSecuredParty`); they are the payer and receiver of the
+transfers. Not covered yet: balance updates (G5) and dispute resolution beyond recording the disputed amount (G3).
+
+## Events, qualification and transfers (G1, G4)
+
+CDM records a lifecycle step as a `BusinessEvent`: the instruction, the state after it, an `eventQualifier` set by
+qualification functions (`Qualify_…`), and transfers. `BusinessEvent` records trade states (`TradeState`), and CDM's
+`Create_Transfer` builds transfers from a trade; a margin call has no trade, and `EventIntentEnum` has no collateral
+value. `cdmx.collateral.event` therefore has its own event type of the same shape, and `cdmx.collateral.transfer`
+builds CDM's own `TransferState`.
+
+`Create_CollateralEvent(before, stepIdentifier, eventDate, timestamp, instruction)` applies the step with
+`Create_MarginCallState` and returns a `CollateralEvent` with `before`, `after`, `eventQualifier` and, for a
+settlement, one transfer per collateral position:
+
+| Step | `eventQualifier` | Transfers |
+|---|---|---|
+| IssueCall | `MarginCallIssued` | none |
+| RespondToCall | `MarginCallAgreed`, `MarginCallPartiallyAgreed` or `MarginCallDisputed` | none |
+| ProposeCollateral | `CollateralProposed` | none |
+| DecideProposal | `CollateralProposalAccepted` or `CollateralProposalRejected` | none |
+| SettleCall, delivery | `CollateralDelivered` | each position of the accepted proposal, pledgor → secured party |
+| SettleCall, return | `CollateralReturned` | each released position, secured party → pledgor |
+
+Each transfer is a CDM `TransferState` holding an `UnscheduledTransfer` (quantity, asset, settlement date = event
+date, payer and receiver) with status `Settled`. CDM's `UnscheduledTransferEnum` has no collateral delivery or return
+value (its `Return` is the securities-lending return), so `transferType` stays absent. The transfers pass all of
+CDM's own conditions (tested).
 
 ### Rune Python generator 10.15.1.0: behaviour the Rune is written around (defect D15)
 
@@ -86,11 +117,13 @@ resolution beyond recording the disputed amount (G3).
 | `set a -> b -> c` on an absent `b` does not create `b` | Constructor expression `B { c: …, ... }` |
 | A single item given to a list attribute in a constructor is not wrapped in a list | `[item]` |
 | `add` to an absent list fails; list literals do not flatten | `set` the list from a `filter` (always a list), then `add` |
-| A function from the same namespace called inside `filter` or `extract` is not imported | Paths written out instead of the helper |
-| `if … then … else` inside `extract` builds closures that miss `item` | Update written as "others, then the changed one" |
-| `set next: state` does not copy `state` inside the function | Values needed from the original are computed in aliases, before any `set` |
+| A function called inside `filter` or `extract` is not imported (from the same namespace or another) | Paths written out instead of the helper; where a helper is needed (`Create_CollateralTransfer`), `tests/cdm_runtime.py` adds the missing functions to the generated modules |
+| A standalone generated module constructs CDM types under their bundle-internal names (`finos_cdm_event_common_TransferState`) but imports the short names | `tests/cdm_runtime.py` adds the bundle's classes to the generated modules |
+| `if … then … else` inside `extract` builds closures that miss `item` | Update written as "others, then the changed one"; one `extract` per branch |
+| `set next: state` followed by `set next -> attribute` writes through to the caller's `state` (seen when the state is also stored in an event) | Each step builds a new object with a constructor |
+| `if … then …` without `else` returns `True` when the condition is false | `else empty` written out |
 | An `empty` function result is `[]`, not `None` | Callers treat both as "nothing" |
 | Constructing an object with an absent metadata field fails in the metadata check | Check switched off for the process (`tests/cdm_runtime.py`) |
 
-The caller's objects are not changed by a step (tested).
+The caller's objects are not changed by a step, and an event's `before` state equals the previous event's `after` state (tested).
 

@@ -27,13 +27,14 @@ func DecideCollateralProposal: <"Records the receiving party's decision on a pro
     condition StillProposed: <"Only a proposal waiting for a decision can be decided.">
         proposal -> status = CollateralProposalStatusEnum -> Proposed
 
-    set decided: proposal
-    set decided -> status:
-        if accept = True
-        then CollateralProposalStatusEnum -> Accepted
-        else CollateralProposalStatusEnum -> Rejected
-    set decided -> decision:
-        CollateralProposalDecision {
-            accepted: accept,
-            reason: reason
+    // Generated Python: `set decided: proposal` followed by `set decided -> attribute` writes through to the
+    // caller's proposal (D15), so a new proposal is built with a constructor.
+    set decided:
+        CollateralProposal {
+            proposalIdentifier: proposal -> proposalIdentifier,
+            callIdentifier: proposal -> callIdentifier,
+            proposedCollateral: proposal -> proposedCollateral,
+            valueAfterHaircuts: proposal -> valueAfterHaircuts,
+            status: if accept = True then CollateralProposalStatusEnum -> Accepted else CollateralProposalStatusEnum -> Rejected,
+            decision: CollateralProposalDecision { accepted: accept, reason: reason }
         }

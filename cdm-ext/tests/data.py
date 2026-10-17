@@ -10,9 +10,15 @@ def ident(v, issuer):
     return {"issuer": {"@data": issuer}, "assignedIdentifier": [{"identifier": {"@data": v}}]}
 
 
-def position(units):
-    # No asset: CDM 7.7.0's Python package cannot build asset types (D14, cdm_runtime.py).
-    return {"priceQuantity": [{"quantity": {"value": units, "unit": {"financialUnit": "Share"}}}]}
+def security(isin="XS0000TUST01"):
+    # Tokenised US Treasury held as collateral (console scenarios: tUST).
+    return {"Instrument": {"Security": {"identifier": [{"identifier": {"@data": isin}, "identifierType": "ISIN"}],
+                                        "securityType": "Debt", "assetType": "Security"}}}
+
+
+def position(units, isin="XS0000TUST01"):
+    return {"priceQuantity": [{"quantity": {"value": units, "unit": {"financialUnit": "Share"}}}],
+            "asset": security(isin)}
 
 
 def proposal_doc(pid="P-1", value=12_400_094, call="C-0001", status="Proposed", units=128_589):
@@ -20,9 +26,16 @@ def proposal_doc(pid="P-1", value=12_400_094, call="C-0001", status="Proposed", 
             "proposedCollateral": [position(units)], "valueAfterHaircuts": money(value), "status": status}
 
 
-def call_base(call="C-0001", caller="BANK-B"):
+def party(name):
+    return {"partyId": [{"identifier": {"@data": name}}]}
+
+
+def call_base(call="C-0001", caller="BANK-B", pledgor="BANK-A", secured="BANK-B"):
+    # In the console scenarios BANK-A posts initial margin to BANK-B, whichever party issues the call.
     return {"instructionType": {"callType": "MarginCall"}, "callIdentifier": ident(call, caller),
-            "callAgreementType": {"agreementType": "CreditSupportAgreement"}, "regMarginType": "RegIM"}
+            "callAgreementType": {"agreementType": "CreditSupportAgreement", "creditSupportAgreementType": {"@data": "CreditSupportAnnex"}}, "regMarginType": "RegIM",
+            "partyRole": [{"partyReference": party(pledgor), "role": "Pledgor"},
+                          {"partyReference": party(secured), "role": "SecuredParty"}]}
 
 
 def issuance_doc(amount, call="C-0001", caller="BANK-B"):

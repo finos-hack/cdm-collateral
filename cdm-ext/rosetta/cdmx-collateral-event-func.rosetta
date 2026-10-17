@@ -1,0 +1,145 @@
+namespace cdmx.collateral.event : <"Local CDM extension: functions creating and qualifying margin call lifecycle events (G1, G4).">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdmx.collateral.margincall.*
+import cdmx.collateral.proposal.*
+import cdmx.collateral.transfer.*
+
+func Create_CollateralEvent: <"Applies one margin call step (Create_MarginCallState) and records it as an event: before and after state, qualifier, and for a settlement the collateral transfers. A settlement takes effect on the event date, which is also the transfers' settlement date.">
+    inputs:
+        before MarginCallState (0..1) <"Absent for the first step (IssueCall).">
+        stepIdentifier string (1..1)
+        eventDate date (1..1)
+        timestamp zonedDateTime (1..1) <"When the step took effect.">
+        instruction MarginCallInstruction (1..1)
+    output:
+        event CollateralEvent (1..1)
+
+    alias after: Create_MarginCallState(before, stepIdentifier, timestamp, instruction)
+    alias pledgor: after -> issuance -> partyRole filter role = PartyRoleEnum -> Pledgor then only-element -> partyReference
+    alias securedParty: after -> issuance -> partyRole filter role = PartyRoleEnum -> SecuredParty then only-element -> partyReference
+    alias delivered:
+        after -> proposal
+            filter status = CollateralProposalStatusEnum -> Accepted
+                and item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = instruction -> settle -> proposalId
+            then only-element
+            -> proposedCollateral
+    alias delivery: after -> direction = MarginCallActionEnum -> Delivery
+
+    set event:
+        CollateralEvent {
+            eventIdentifier: stepIdentifier,
+            eventDate: eventDate,
+            timestamp: timestamp,
+            instruction: instruction,
+            before: before,
+            after: after,
+            ...
+        }
+    // Delivery: the pledgor delivers the accepted proposal to the secured party. Return: the secured party
+    // releases collateral to the pledgor. Generated Python: if/then/else inside extract builds closures that miss
+    // the item, so each direction has its own extract.
+    set event -> transfer:
+        if instruction -> settle exists and delivery
+        then delivered extract Create_CollateralTransfer(item, pledgor, securedParty, eventDate)
+        else if instruction -> settle exists
+        then instruction -> settle -> releasedCollateral extract Create_CollateralTransfer(item, securedParty, pledgor, eventDate)
+        else empty
+    set event -> eventQualifier: QualifyCollateralEvent(event)
+
+func QualifyCollateralEvent: <"The qualifier of a margin call event: the name of the one Qualify_ function that holds, as CDM records in BusinessEvent -> eventQualifier.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        qualifier string (0..1)
+    set qualifier:
+        if Qualify_MarginCallIssued(event) then "MarginCallIssued"
+        else if Qualify_MarginCallAgreed(event) then "MarginCallAgreed"
+        else if Qualify_MarginCallPartiallyAgreed(event) then "MarginCallPartiallyAgreed"
+        else if Qualify_MarginCallDisputed(event) then "MarginCallDisputed"
+        else if Qualify_CollateralProposed(event) then "CollateralProposed"
+        else if Qualify_CollateralProposalAccepted(event) then "CollateralProposalAccepted"
+        else if Qualify_CollateralProposalRejected(event) then "CollateralProposalRejected"
+        else if Qualify_CollateralDelivered(event) then "CollateralDelivered"
+        else if Qualify_CollateralReturned(event) then "CollateralReturned"
+
+func Qualify_MarginCallIssued: <"The calling party issued the call.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> issue exists
+
+func Qualify_MarginCallAgreed: <"The called party agreed the full amount.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> respond exists
+            and event -> after -> status = MarginCallStatusEnum -> Agreed
+
+func Qualify_MarginCallPartiallyAgreed: <"The called party agreed part of the amount and disputed the rest.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> respond exists
+            and event -> after -> status = MarginCallStatusEnum -> PartiallyAgreed
+
+func Qualify_MarginCallDisputed: <"The called party disputed the whole amount.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> respond exists
+            and event -> after -> status = MarginCallStatusEnum -> Disputed
+
+func Qualify_CollateralProposed: <"The delivering party proposed collateral.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> propose exists
+
+func Qualify_CollateralProposalAccepted: <"The receiving party accepted the proposal.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> decide exists
+            and event -> instruction -> decide -> accept = True
+
+func Qualify_CollateralProposalRejected: <"The receiving party rejected the proposal.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> decide exists
+            and event -> instruction -> decide -> accept = False
+
+func Qualify_CollateralDelivered: <"Collateral was delivered against the accepted proposal.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> settle exists
+            and event -> after -> direction = MarginCallActionEnum -> Delivery
+
+func Qualify_CollateralReturned: <"Collateral held was released on a return call.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> settle exists
+            and event -> after -> direction = MarginCallActionEnum -> Return

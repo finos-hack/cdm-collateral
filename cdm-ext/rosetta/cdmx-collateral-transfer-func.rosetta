@@ -1,0 +1,51 @@
+namespace cdmx.collateral.transfer : <"Local CDM extension: collateral movements as CDM transfers (gap G4 in docs/cdm-development/gap-register.md). Kept in its own namespace because generated Python does not import a same-namespace function called inside extract (D15). Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.base.datetime.*
+import cdm.base.math.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+
+func Create_CollateralTransfer: <"The settled movement of one collateral position from payer to receiver, as CDM's TransferState. CDM's Create_Transfer needs a TradeState; a margin call has none, so the transfer is built here. UnscheduledTransferEnum has no collateral delivery or return value; transferType stays absent.">
+    inputs:
+        position CollateralPosition (1..1)
+        payer Party (1..1)
+        receiver Party (1..1)
+        settlementDate date (1..1)
+    output:
+        transfer TransferState (1..1)
+
+    alias quantity: position -> priceQuantity only-element -> quantity
+
+    // Conditions spell out the paths: in generated Python, pre-conditions run before aliases are assigned.
+    condition AssetAndSingleQuantity: <"A transfer moves one quantity of one asset.">
+        position -> asset exists
+            and position -> priceQuantity count = 1
+            and position -> priceQuantity only-element -> quantity exists
+            and position -> priceQuantity only-element -> quantity -> value exists
+
+    set transfer:
+        TransferState {
+            transfer: Transfer {
+                UnscheduledTransfer: UnscheduledTransfer {
+                    quantity: NonNegativeQuantity {
+                        value: quantity -> value,
+                        unit: quantity -> unit,
+                        ...
+                    },
+                    asset: position -> asset,
+                    settlementDate: AdjustableOrAdjustedOrRelativeDate {
+                        adjustedDate: settlementDate,
+                        ...
+                    },
+                    payerReceiver: PartyReferencePayerReceiver {
+                        payerPartyReference: payer,
+                        receiverPartyReference: receiver,
+                        ...
+                    },
+                    ...
+                },
+                ...
+            },
+            transferStatus: TransferStatusEnum -> Settled
+        }

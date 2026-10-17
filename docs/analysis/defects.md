@@ -31,8 +31,8 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D11 | Attribute misspelt `identifer` | naming | `rosetta/legaldocumentation-master-type.rosetta` 13; `rosetta/event-position-type.rosetta` 77, 83 |
 | D12 | Descriptions contain a literal `\t` and lost accented characters | text | `rosetta/legaldocumentation-csa-enum.rosetta` 100, 125–128, 220 |
 | D13 | Several repo and lending event samples produce no event qualifier *(cause not confirmed)* | qualification | `functions/repo-and-bond/*-output.json` |
-| D14 | CDM 7.7.0 Python package: `Asset` types cannot be built or deserialised, nested objects with an absent metadata field cannot be constructed, and importing `Asset` first is a circular import *(added 2026-10-17)* | Python distribution | `finos-cdm` 7.7.0 on PyPI: `finos/_bundle.py`, `finos/cdm/base/staticdata/asset/common/` |
-| D15 | Rune Python generator 10.15.1.0 produces Python that differs from the Rune semantics in nine ways (pre-conditions before aliases, nested `set`, list wrapping and flattening, `add` on absent lists, missing imports, closures inside `extract`, no copy on `set`, `empty` as `[]`) *(added 2026-10-17)* | code generator | `finos/rune-python-generator` release 10.15.1.0; list in `cdm-ext/README.md` |
+| D14 | CDM 7.7.0 Python package and `rune.runtime` 2.2.2: types nested in other types keep placeholder (`None`) field types, optional and proxied references are rejected, deep copies follow parent links, dates with metadata cannot be copied, nested objects with an absent metadata field cannot be constructed, importing `Asset` first is a circular import, and CDM's `PriceQuantityTriangulation` condition fails; runtime workarounds for all but the last *(added 2026-10-17, extended the same day)* | Python distribution | `finos-cdm` 7.7.0 on PyPI: `finos/_bundle.py`; `rune.runtime` 2.2.2: `metadata.py`, `base_data_class.py` |
+| D15 | Rune Python generator 10.15.1.0 produces Python that differs from the Rune semantics in eleven ways (pre-conditions before aliases, nested `set`, list wrapping and flattening, `add` on absent lists, missing imports, closures inside `extract`, `set` writing through to the caller's object, `empty` as `[]`, `if` without `else` returning `True`, bundle class names in standalone modules) *(added 2026-10-17, extended the same day)* | code generator | `finos/rune-python-generator` release 10.15.1.0; list in `cdm-ext/README.md` |
 
 ## Details
 
@@ -183,29 +183,31 @@ expects at 7.6.0.
 
 Found while testing the local extension (`cdm-ext/`, `task-cdm-gap-closure`). Package `finos-cdm` 7.7.0 from PyPI
 with `rune.runtime` 2.2.2 and pydantic 2.14.1; each case reproduced in a clean environment without the extension.
+Workarounds are in the extension's runtime module `cdm-ext/tests/cdm_runtime.py` (decision
+`nw-cdm-python-workarounds`); they work on the published package unchanged.
 
-- `from finos.cdm.base.staticdata.asset.common.Asset import Asset` as the first CDM import fails: "cannot import name
-  'Asset' from partially initialized module ... (most likely due to a circular import)". Importing `finos._bundle`
-  first avoids it.
-- Deserialising an `Asset` holding a `Security` fails: `Instrument.Security.identifier` "Input should be None" (the
-  field's type is unresolved). Holding `Cash` fails with `NameError: name 'CurrencyCodeEnum' is not defined`.
-  Importing the asset modules and forcing a model rebuild fixes `Security` only, and breaks other models (for
-  example `Identifier.assignedIdentifier`).
-- Constructing a `NonNegativeQuantitySchedule` whose unit is not a currency (`UnitType(financialUnit=Share)`) fails
-  in the metadata validator (`'NoneType' object has no attribute '_init_meta'`); the same object deserialised from
-  Rune JSON works. The same failure occurs inside generated functions that construct CDM objects, and
-  `model_dump_json` fails the same way. `rune.runtime` re-enables the metadata check after every `validate_model`
-  call; the extension's runtime switches it off for the process (`cdm-ext/tests/cdm_runtime.py`).
+| Case | Cause (observed) | Workaround |
+|---|---|---|
+| `from finos.cdm.base.staticdata.asset.common.Asset import Asset` as the first CDM import: "cannot import name 'Asset' from partially initialized module" | Circular import inside the package | Import `finos._bundle` first |
+| Deserialising a type that contains another fails with "Input should be None": `Instrument.Security.identifier` inside `Asset`, `callIdentifier.assignedIdentifier` inside `MarginCallIssuance`, the asset inside `CollateralPosition` and `TransferState`. The inner type alone loads | `_bundle.py` defines classes with placeholder field types (`None`), sets the real types afterwards and rebuilds classes one by one. Pydantic reuses the cached schema of a nested class and the definitions it carries; CDM's types are recursive, so definitions built from the placeholders survive in the enclosing schemas. Rebuilding classes in any order does not remove them | Discard the cached schemas of all 690 classes, then rebuild them all (`rebuild_all`, about 5 s at start-up) |
+| `Cash` inside `Asset`: `NameError: name 'CurrencyCodeEnum' is not defined` | Same placeholder mechanism | Fixed by the same rebuild |
+| An absent optional reference (`PartyReferencePayerReceiver.payerAccountReference`) fails `validate_model`: "Expected either ... Account or dict but got NoneType" | `validate_model` revalidates every field (`revalidate_instances='always'`); the reference validator in `rune.runtime` (`ComplexTypeMetaDataMixin.deserialize`) does not accept `None` | Validator wrapped to pass `None` through |
+| A reference set inside a generated function (`payerPartyReference: payer`) fails: "got ... _COWObject" | The same validator does not unwrap the copy-on-write proxies that generated functions pass | Validator wrapped to unwrap proxies |
+| Applying a step to a state held inside an event took 114 s, then 236 s, then failed with `RecursionError` | `rune.runtime` keeps each object's parent in its `__dict__`; `copy.deepcopy` of a child (copy-on-write, `rune_unwrap`) copies the parent and the whole enclosing tree, and through an event's `before` state every earlier event | `BaseDataClass.__deepcopy__` replaced: copies the object and its children, keeps the parent link to the original parent. A step now takes 0.1 s or less |
+| `copy.deepcopy` of a date with metadata (`AdjustableOrAdjustedOrRelativeDate.adjustedDate`): "DateWithMeta can be instantiated only with ... date, str ... however the value is of type bytes" | `datetime.date` pickles its value as bytes | `__deepcopy__` for `DateWithMeta`, `DateTimeWithMeta`, `TimeWithMeta` that rebuilds from ISO text |
+| Constructing a `NonNegativeQuantitySchedule` whose unit is not a currency fails in the metadata validator (`'NoneType' object has no attribute '_init_meta'`), also inside generated functions; `model_dump_json` fails the same way | `rune.runtime`'s metadata check receives `None` for absent metadata fields; it re-enables itself after every `validate_model` | Check switched off for the process |
+| `rune_deserialize` of a dict removes its `@data` entries | The reference validator pops `@data` from its input | Test data passed as JSON text |
+| CDM's own condition `PriceQuantity.PriceQuantityTriangulation` fails with "'_COWObject' object is not iterable" for any price quantity with a quantity, so CDM's full validation of any `CollateralPosition` fails | The generated call passes the single `quantity` (0..1) to a function input that is a list, without wrapping it (the D15 list-wrapping case, in CDM's own generated code) | None yet. Tests run CDM's full validation where no `PriceQuantity` occurs (transfers, issued call) and the extension's own conditions elsewhere |
 
-Consequence: a `CollateralPosition` cannot carry its asset when built in Python, so CDM's own
-`PositionBase.ProductOrAsset` condition cannot pass. The extension's tests work around it (see
-`cdm-ext/tests/cdm_runtime.py`). Not reported to FINOS (project owner's instruction). The repository's Python test
-(`python/test/test_import_trade_state.py`) only checks that `TradeState` imports.
+With these workarounds a `CollateralPosition` carries its asset and a margin call settlement produces CDM
+`TransferState` objects that pass all of CDM's conditions. Not reported to FINOS (project owner's instruction). The
+repository's Python test (`python/test/test_import_trade_state.py`) only checks that `TradeState` imports.
 
 ### D15 — Rune Python generator 10.15.1.0: generated Python differs from Rune semantics *(added 2026-10-17)*
 
-Found while generating the local extension's margin call lifecycle (`cdm-ext/`). Each case and the way the Rune is
-written around it is listed in [`../../cdm-ext/README.md`](../../cdm-ext/README.md) § Rune Python generator. The
-cases that change results silently (pre-conditions evaluated before aliases are assigned; `set next: state` not
-copying) are covered by tests. Not reported (project owner's instruction).
+Found while generating the local extension's margin call lifecycle and events (`cdm-ext/`). Each case and the way
+the Rune is written around it is listed in [`../../cdm-ext/README.md`](../../cdm-ext/README.md) § Rune Python
+generator. The cases that change results silently (pre-conditions evaluated before aliases are assigned; `set x: y`
+followed by `set x -> attribute` writing through to the caller's `y`; `if` without `else` returning `True`) are
+covered by tests. Not reported (project owner's instruction).
 

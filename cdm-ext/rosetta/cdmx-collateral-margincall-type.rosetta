@@ -1,6 +1,7 @@
 namespace cdmx.collateral.margincall : <"Local CDM extension: margin call lifecycle as a sequence of steps over a state record, following the pattern of CDM 7.7.0's instruction composition (gaps G1, G3, G4, G6 in docs/cdm-development/gap-register.md). CDM's own CompositionState is a closed choice, so the pattern is mirrored here rather than extended. Not part of FINOS CDM.">
 version "${project.version}"
 
+import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.observable.asset.*
 import cdmx.collateral.proposal.*
@@ -25,6 +26,10 @@ type IssueCallInstruction: <"Step IssueCall.">
 
     condition CallIdentified: <"The call carries an identifier so later steps can refer to it.">
         issuance -> callIdentifier exists
+
+    condition PledgorAndSecuredParty: <"The call names one pledgor and one secured party (MarginCallBase -> partyRole), who pay and receive the collateral transfers on settlement.">
+        (issuance -> partyRole filter role = PartyRoleEnum -> Pledgor then count) = 1
+            and (issuance -> partyRole filter role = PartyRoleEnum -> SecuredParty then count) = 1
 
 type DecideProposalInstruction: <"Step DecideProposal.">
     proposalId string (1..1) <"The proposal decided (its assigned identifier).">

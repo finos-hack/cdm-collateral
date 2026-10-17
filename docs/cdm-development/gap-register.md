@@ -100,7 +100,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | G30 | Repo qualification rejects more than one interest payout; event samples without a qualifier | D7, D13 | – | repo row (planned) | P2 | replacement |
 | G31 | Samples and documentation contradict the model (margin and haircut percentages, empty eligibility fields, bond labelled as cash) | D3, D6 | – | none | P3 | samples (local copies) |
 | G32 | Misspelt enum values and attributes; literal `\t` and lost accents in descriptions | D9–D12 | – | none | P3 | none locally (renaming needs a CDM change); note only |
-| G33 | Securities-lending settlement workflows are hand-written Java; buy/sell-back is qualification only; the CDM 7.7.0 Python package cannot build asset types (D14) | O11, O12, D14 | – | none | P3 | none for now |
+| G33 | Securities-lending settlement workflows are hand-written Java; buy/sell-back is qualification only; the CDM 7.7.0 Python package cannot build asset types (D14; worked around in the extension's runtime, 2026-10-17) | O11, O12, D14 | – | none | P3 | none for now |
 | G34 | Collateral allocation and optimisation absent | row 18, R18, S16, T7 | 0 | proposal step (pledgor chooses assets by hand today) | P3 | functions |
 | G35 | Reconciliation absent | row 19, R19, S22, T12, C13 | 0 | none: the shared ledger replaces reconciliation in the prototype | Out | none |
 | G36 | Regulatory reporting of margin not in this repository | row 20 | n/a | none | Out | none |
@@ -125,9 +125,9 @@ Local extension in [`../../cdm-ext/`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | Gap | Status | What exists |
 |---|---|---|
 | G2 | closed | `cdmx.collateral.proposal`: proposal, decision, status; coverage check; decide function |
-| G1 | partial | `cdmx.collateral.margincall`: lifecycle state, steps, next-step function. Not yet: CDM business events and qualification |
+| G1 | closed (proposed, for review) | `cdmx.collateral.margincall`: lifecycle state, steps, next-step function. `cdmx.collateral.event`: each step as a `CollateralEvent` (before and after state, instruction) with an `eventQualifier` from nine `Qualify_…` functions. An own event type, as CDM's `BusinessEvent` records trade states |
 | G3 | partial | Agreed and disputed amounts recorded from the response; resolution not modelled |
-| G4 | partial | Settlement only against an accepted proposal covering the agreed amount. Not yet: the CDM transfer instruction |
+| G4 | closed (proposed, for review) | Settlement only against an accepted proposal covering the agreed amount (return: within the agreed amount); the settlement event carries one CDM `TransferState` per position (pledgor → secured party on delivery, the reverse on return), passing CDM's own conditions. `transferType` stays absent: `UnscheduledTransferEnum` has no collateral value |
 | G6 | closed | Return calls released without a proposal, within the agreed amount |
 | others | open | |
 

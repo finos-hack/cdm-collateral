@@ -59,6 +59,9 @@ func Create_MarginCallState: <"Applies one step to a margin call and returns the
         else if instruction -> decide exists then ApplyDecision(previous, instruction -> decide, record)
         else ApplySettlement(previous, instruction -> settle, record)
 
+// Generated Python: `set next: state` followed by `set next -> attribute` writes through to the caller's state
+// (D15), so each step below builds a new MarginCallState with a constructor.
+
 func ApplyIssue:
     inputs:
         issue IssueCallInstruction (1..1)
@@ -99,19 +102,24 @@ func ApplyResponse: <"Records the response (G1) and the agreed and disputed amou
         else response -> agreedAmountBaseCurrency -> value > 0
             and response -> agreedAmountBaseCurrency -> value < state -> issuance -> callAmountInBaseCurrency -> value
 
-    set next: state
-    set next -> response: response
-    set next -> agreedAmount: agreed
-    set next -> disputedAmount:
-        Money {
-            value: called -> value - agreed -> value,
-            unit: called -> unit,
-            ...
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: if response -> marginResponseType = MarginCallResponseTypeEnum -> AgreeinFull then MarginCallStatusEnum -> Agreed
+                else if response -> marginResponseType = MarginCallResponseTypeEnum -> PartiallyAgree then MarginCallStatusEnum -> PartiallyAgreed
+                else MarginCallStatusEnum -> Disputed,
+            response: response,
+            agreedAmount: agreed,
+            disputedAmount: Money {
+                    value: called -> value - agreed -> value,
+                    unit: called -> unit,
+                    ...
+                },
+            proposal: state -> proposal,
+            settlement: state -> settlement,
+            stepRecord: state -> stepRecord
         }
-    set next -> status:
-        if response -> marginResponseType = MarginCallResponseTypeEnum -> AgreeinFull then MarginCallStatusEnum -> Agreed
-        else if response -> marginResponseType = MarginCallResponseTypeEnum -> PartiallyAgree then MarginCallStatusEnum -> PartiallyAgreed
-        else MarginCallStatusEnum -> Disputed
     add next -> stepRecord: record
 
 func ApplyProposal: <"Adds a collateral proposal (G2) to a delivery call.">
@@ -131,10 +139,20 @@ func ApplyProposal: <"Adds a collateral proposal (G2) to a delivery call.">
     condition UniqueProposalId:
         state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = proposal -> proposalIdentifier -> assignedIdentifier only-element -> identifier then is absent
 
-    set next: state
     // Generated Python: `add` fails on an absent list and list literals do not flatten, so the list is first set
     // from a filter (which always yields a list) and then appended to.
-    set next -> proposal: state -> proposal filter item exists
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: state -> status,
+            response: state -> response,
+            agreedAmount: state -> agreedAmount,
+            disputedAmount: state -> disputedAmount,
+            proposal: state -> proposal filter item exists,
+            settlement: state -> settlement,
+            stepRecord: state -> stepRecord
+        }
     add next -> proposal: proposal
     add next -> stepRecord: record
 
@@ -156,11 +174,21 @@ func ApplyDecision: <"Accepts or rejects the pending proposal (G2).">
     condition DecidesThePendingProposal:
         state -> proposal filter status = CollateralProposalStatusEnum -> Proposed and item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = decision -> proposalId then exists
 
-    set next: state
     // Only the newest proposal can be pending, so "the others, then the decided one" keeps the order.
-    // Generated Python: if/then/else inside extract builds closures that miss the item, list literals do not
-    // flatten, and `set next: state` does not copy, so the decision is computed in an alias before any set.
-    set next -> proposal: state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier <> decision -> proposalId
+    // Generated Python: if/then/else inside extract builds closures that miss the item and list literals do not
+    // flatten, so the decision is computed in an alias.
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: state -> status,
+            response: state -> response,
+            agreedAmount: state -> agreedAmount,
+            disputedAmount: state -> disputedAmount,
+            proposal: state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier <> decision -> proposalId,
+            settlement: state -> settlement,
+            stepRecord: state -> stepRecord
+        }
     add next -> proposal: decided
     add next -> stepRecord: record
 
@@ -187,7 +215,16 @@ func ApplySettlement: <"Settles the agreed amount: delivery against the accepted
             and settle -> releasedValue -> unit -> currency = state -> agreedAmount -> unit -> currency
             and settle -> releasedValue -> value <= state -> agreedAmount -> value
 
-    set next: state
-    set next -> settlement: settle
-    set next -> status: MarginCallStatusEnum -> Settled
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: MarginCallStatusEnum -> Settled,
+            response: state -> response,
+            agreedAmount: state -> agreedAmount,
+            disputedAmount: state -> disputedAmount,
+            proposal: state -> proposal,
+            settlement: settle,
+            stepRecord: state -> stepRecord
+        }
     add next -> stepRecord: record

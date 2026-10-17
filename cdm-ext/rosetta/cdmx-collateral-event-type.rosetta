@@ -1,0 +1,20 @@
+namespace cdmx.collateral.event : <"Local CDM extension: margin call lifecycle events with qualification and transfers (gaps G1, G4 in docs/cdm-development/gap-register.md). Shaped like CDM 7.7.0's BusinessEvent (instruction, before and after state, eventQualifier, transfers); CDM's BusinessEvent records trade states (TradeState) and a margin call has none, and EventIntentEnum has no collateral value. Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdmx.collateral.margincall.*
+
+type CollateralEvent: <"One applied margin call step as an event.">
+    [rootType]
+    eventIdentifier string (1..1) <"The step identifier.">
+    eventDate date (1..1) <"The business date of the step.">
+    timestamp zonedDateTime (1..1) <"When the step took effect, for example the ledger block time.">
+    instruction MarginCallInstruction (1..1)
+    before MarginCallState (0..1) <"Absent for the first step (IssueCall).">
+    after MarginCallState (1..1)
+    eventQualifier string (0..1) <"Result of the qualification functions (Qualify_*), as in CDM's BusinessEvent.">
+    transfer TransferState (0..*) <"The collateral movements a settlement step records, one per position.">
+
+    condition TransfersOnlyOnSettlement: <"Only a settlement step moves collateral.">
+        if transfer exists
+        then instruction -> settle exists
