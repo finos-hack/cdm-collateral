@@ -231,3 +231,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-collevents-gapclosure | review | proposed | accepted | 2026-10-17T17:00:55Z | e61393e8f33765faa3913c1c4270ef0919a1a43a | denisurusov |
 | noteworthy:nw-repo-shared-with-cdm-maintainers | review |  | accepted | 2026-10-17T17:07:57Z | 303fc10a2ccd0ad628d55390871ed811a9c34a5c | denisurusov |
 | edge:e-note-cdmdev-sharedmaintainers | review |  | accepted | 2026-10-17T17:07:57Z | 303fc10a2ccd0ad628d55390871ed811a9c34a5c | denisurusov |
+| node:task-windows-install | status | open | resolved | 2026-10-17T18:32:09Z | f653908353dce5cf20875fa230afab001c9f8ea1 | denisurusov |
