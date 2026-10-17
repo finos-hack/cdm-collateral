@@ -214,3 +214,4 @@ excluded.
 | task-cdm-gap-closure | 0da774e65d47b7dbfe35c5faac21d984f42b9eb2 | docs/analysis/findings.md | 2026-10-17T16:53:35Z |
 | task-cdm-gap-closure | 0da774e65d47b7dbfe35c5faac21d984f42b9eb2 | docs/cdm-development/gap-register.md | 2026-10-17T16:53:35Z |
 | task-cdm-gap-closure | 3f2be38d3c8049c8659822651da9202a071c6588 | docs/cdm-development/gap-register.md | 2026-10-17T16:59:27Z |
+| task-cdm-gap-closure | 5508454ce8b1dbb33693c0e84666c2ed8ddf69bb | docs/analysis/findings.md | 2026-10-17T17:01:44Z |
