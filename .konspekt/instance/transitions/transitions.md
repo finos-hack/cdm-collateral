@@ -219,3 +219,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-cdmdev-baserelease | review |  | accepted | 2026-10-17T01:16:19Z | 9ab0cbf86284cce4606e93eabb8507c9d009d7b7 | denisurusov |
 | artifact:artifact-cdm-ext | review |  | proposed | 2026-10-17T01:16:19Z |  |  |
 | edge:e-prod-gapclosure-cdmext | review |  | proposed | 2026-10-17T01:16:19Z |  |  |
+| artifact:artifact-cdm-ext | review | proposed | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
+| edge:e-prod-gapclosure-cdmext | review | proposed | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
+| noteworthy:nw-cdm-python-workarounds | review |  | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
+| edge:e-note-cdmdev-pythonworkarounds | review |  | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |

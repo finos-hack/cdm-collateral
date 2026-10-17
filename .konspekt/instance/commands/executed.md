@@ -52,3 +52,5 @@ at execution time.
 | task-cdm-gap-closure | bc7130aec32114c76e969479c58d031bf8713686 |
 | task-cdm-gap-closure | 95e648e96bb441ea4fe1fea79f118543515c1e08 |
 | task-cdm-gap-closure | aeeccf44adefcef68986a441046b9209ca0ee767 |
+| task-cdm-gap-closure | aeeccf44adefcef68986a441046b9209ca0ee767 |
+| task-cdm-gap-closure | bbcec8e3e3df650ed0efde533914bec1663eea0c |

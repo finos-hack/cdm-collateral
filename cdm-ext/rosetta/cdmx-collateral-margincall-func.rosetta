@@ -1,0 +1,193 @@
+namespace cdmx.collateral.margincall : <"Local CDM extension: functions of the margin call lifecycle (G1, G3, G4, G6).">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdmx.collateral.proposal.*
+
+func StepOf: <"Which lifecycle step an instruction performs.">
+    inputs:
+        instruction MarginCallInstruction (1..1)
+    output:
+        step MarginCallStepEnum (1..1)
+    set step:
+        if instruction -> issue exists then MarginCallStepEnum -> IssueCall
+        else if instruction -> respond exists then MarginCallStepEnum -> RespondToCall
+        else if instruction -> propose exists then MarginCallStepEnum -> ProposeCollateral
+        else if instruction -> decide exists then MarginCallStepEnum -> DecideProposal
+        else MarginCallStepEnum -> SettleCall
+
+func NextMarginCallStep: <"The step a margin call waits for; absent when the call is settled or wholly disputed.">
+    inputs:
+        state MarginCallState (0..1)
+    output:
+        next MarginCallStepEnum (0..1)
+    alias open: state -> status = MarginCallStatusEnum -> Agreed or state -> status = MarginCallStatusEnum -> PartiallyAgreed
+    set next:
+        if state is absent then MarginCallStepEnum -> IssueCall
+        else if state -> status = MarginCallStatusEnum -> Issued then MarginCallStepEnum -> RespondToCall
+        else if open and state -> direction = MarginCallActionEnum -> Return then MarginCallStepEnum -> SettleCall
+        else if open and (state -> proposal filter status = CollateralProposalStatusEnum -> Proposed then exists)
+        then MarginCallStepEnum -> DecideProposal
+        else if open and (state -> proposal filter status = CollateralProposalStatusEnum -> Accepted then exists)
+        then MarginCallStepEnum -> SettleCall
+        else if open then MarginCallStepEnum -> ProposeCollateral
+        else empty
+
+func Create_MarginCallState: <"Applies one step to a margin call and returns the new state. The step must be the one the call waits for (NextMarginCallStep).">
+    inputs:
+        previous MarginCallState (0..1) <"Absent for the first step (IssueCall).">
+        stepIdentifier string (1..1)
+        timestamp zonedDateTime (1..1) <"When the step took effect.">
+        instruction MarginCallInstruction (1..1)
+    output:
+        next MarginCallState (1..1)
+
+    alias record: MarginCallStepRecord {
+            identifier: stepIdentifier,
+            timestamp: timestamp,
+            step: StepOf(instruction)
+        }
+
+    condition ExpectedStep: <"Only the step the call waits for can be applied.">
+        StepOf(instruction) = NextMarginCallStep(previous)
+
+    set next:
+        if instruction -> issue exists then ApplyIssue(instruction -> issue, record)
+        else if instruction -> respond exists then ApplyResponse(previous, instruction -> respond, record)
+        else if instruction -> propose exists then ApplyProposal(previous, instruction -> propose, record)
+        else if instruction -> decide exists then ApplyDecision(previous, instruction -> decide, record)
+        else ApplySettlement(previous, instruction -> settle, record)
+
+func ApplyIssue:
+    inputs:
+        issue IssueCallInstruction (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+    set next:
+        MarginCallState {
+            issuance: issue -> issuance,
+            direction: issue -> direction,
+            status: MarginCallStatusEnum -> Issued,
+            stepRecord: [record],
+            ...
+        }
+
+func ApplyResponse: <"Records the response (G1) and the agreed and disputed amounts (G3).">
+    inputs:
+        state MarginCallState (1..1)
+        response MarginCallResponse (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+    alias called: state -> issuance -> callAmountInBaseCurrency
+    alias agreed: response -> agreedAmountBaseCurrency
+
+    // Conditions spell out the paths: in generated Python, pre-conditions run before aliases are assigned.
+    condition SameCurrency:
+        response -> agreedAmountBaseCurrency -> unit -> currency
+            = state -> issuance -> callAmountInBaseCurrency -> unit -> currency
+    condition AgreedWithinCall:
+        response -> agreedAmountBaseCurrency -> value >= 0
+            and response -> agreedAmountBaseCurrency -> value <= state -> issuance -> callAmountInBaseCurrency -> value
+    condition ResponseTypeMatchesAmount: <"Full agreement agrees the whole call; a dispute agrees nothing; a partial agreement is in between.">
+        if response -> marginResponseType = MarginCallResponseTypeEnum -> AgreeinFull
+        then response -> agreedAmountBaseCurrency -> value = state -> issuance -> callAmountInBaseCurrency -> value
+        else if response -> marginResponseType = MarginCallResponseTypeEnum -> Dispute
+        then response -> agreedAmountBaseCurrency -> value = 0
+        else response -> agreedAmountBaseCurrency -> value > 0
+            and response -> agreedAmountBaseCurrency -> value < state -> issuance -> callAmountInBaseCurrency -> value
+
+    set next: state
+    set next -> response: response
+    set next -> agreedAmount: agreed
+    set next -> disputedAmount:
+        Money {
+            value: called -> value - agreed -> value,
+            unit: called -> unit,
+            ...
+        }
+    set next -> status:
+        if response -> marginResponseType = MarginCallResponseTypeEnum -> AgreeinFull then MarginCallStatusEnum -> Agreed
+        else if response -> marginResponseType = MarginCallResponseTypeEnum -> PartiallyAgree then MarginCallStatusEnum -> PartiallyAgreed
+        else MarginCallStatusEnum -> Disputed
+    add next -> stepRecord: record
+
+func ApplyProposal: <"Adds a collateral proposal (G2) to a delivery call.">
+    inputs:
+        state MarginCallState (1..1)
+        proposal CollateralProposal (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+
+    condition NewProposal:
+        proposal -> status = CollateralProposalStatusEnum -> Proposed
+    condition SameCall:
+        proposal -> callIdentifier -> assignedIdentifier only-element -> identifier
+            = state -> issuance -> callIdentifier -> assignedIdentifier only-element -> identifier
+    // Identifier paths are written out: generated Python omits the import when a function is called inside filter or extract.
+    condition UniqueProposalId:
+        state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = proposal -> proposalIdentifier -> assignedIdentifier only-element -> identifier then is absent
+
+    set next: state
+    // Generated Python: `add` fails on an absent list and list literals do not flatten, so the list is first set
+    // from a filter (which always yields a list) and then appended to.
+    set next -> proposal: state -> proposal filter item exists
+    add next -> proposal: proposal
+    add next -> stepRecord: record
+
+func ApplyDecision: <"Accepts or rejects the pending proposal (G2).">
+    inputs:
+        state MarginCallState (1..1)
+        decision DecideProposalInstruction (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+
+    alias decided:
+        DecideCollateralProposal(
+            state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = decision -> proposalId then only-element,
+            decision -> accept,
+            decision -> reason
+        )
+
+    condition DecidesThePendingProposal:
+        state -> proposal filter status = CollateralProposalStatusEnum -> Proposed and item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = decision -> proposalId then exists
+
+    set next: state
+    // Only the newest proposal can be pending, so "the others, then the decided one" keeps the order.
+    // Generated Python: if/then/else inside extract builds closures that miss the item, list literals do not
+    // flatten, and `set next: state` does not copy, so the decision is computed in an alias before any set.
+    set next -> proposal: state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier <> decision -> proposalId
+    add next -> proposal: decided
+    add next -> stepRecord: record
+
+func ApplySettlement: <"Settles the agreed amount: delivery against the accepted proposal, or release for a return call (G4, G6).">
+    inputs:
+        state MarginCallState (1..1)
+        settle SettleCallInstruction (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+
+    // Conditions spell out the paths: in generated Python, pre-conditions run before aliases are assigned.
+    condition DeliveryAgainstAcceptedProposal: <"A delivery settles an accepted proposal that covers the agreed amount.">
+        if state -> direction = MarginCallActionEnum -> Delivery
+        then settle -> proposalId exists
+            and (state -> proposal filter status = CollateralProposalStatusEnum -> Accepted and item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = settle -> proposalId then exists)
+            and ProposalCoversAgreedAmount(
+                    state -> proposal filter status = CollateralProposalStatusEnum -> Accepted and item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = settle -> proposalId then only-element,
+                    state -> agreedAmount
+                )
+    condition ReturnWithinAgreedAmount: <"A return releases no more than the agreed amount, in the call currency.">
+        if state -> direction = MarginCallActionEnum -> Return
+        then settle -> releasedValue exists
+            and settle -> releasedValue -> unit -> currency = state -> agreedAmount -> unit -> currency
+            and settle -> releasedValue -> value <= state -> agreedAmount -> value
+
+    set next: state
+    set next -> settlement: settle
+    set next -> status: MarginCallStatusEnum -> Settled
+    add next -> stepRecord: record

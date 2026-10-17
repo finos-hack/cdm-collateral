@@ -32,6 +32,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D12 | Descriptions contain a literal `\t` and lost accented characters | text | `rosetta/legaldocumentation-csa-enum.rosetta` 100, 125–128, 220 |
 | D13 | Several repo and lending event samples produce no event qualifier *(cause not confirmed)* | qualification | `functions/repo-and-bond/*-output.json` |
 | D14 | CDM 7.7.0 Python package: `Asset` types cannot be built or deserialised, nested objects with an absent metadata field cannot be constructed, and importing `Asset` first is a circular import *(added 2026-10-17)* | Python distribution | `finos-cdm` 7.7.0 on PyPI: `finos/_bundle.py`, `finos/cdm/base/staticdata/asset/common/` |
+| D15 | Rune Python generator 10.15.1.0 produces Python that differs from the Rune semantics in nine ways (pre-conditions before aliases, nested `set`, list wrapping and flattening, `add` on absent lists, missing imports, closures inside `extract`, no copy on `set`, `empty` as `[]`) *(added 2026-10-17)* | code generator | `finos/rune-python-generator` release 10.15.1.0; list in `cdm-ext/README.md` |
 
 ## Details
 
@@ -192,10 +193,19 @@ with `rune.runtime` 2.2.2 and pydantic 2.14.1; each case reproduced in a clean e
   example `Identifier.assignedIdentifier`).
 - Constructing a `NonNegativeQuantitySchedule` whose unit is not a currency (`UnitType(financialUnit=Share)`) fails
   in the metadata validator (`'NoneType' object has no attribute '_init_meta'`); the same object deserialised from
-  Rune JSON works.
+  Rune JSON works. The same failure occurs inside generated functions that construct CDM objects, and
+  `model_dump_json` fails the same way. `rune.runtime` re-enables the metadata check after every `validate_model`
+  call; the extension's runtime switches it off for the process (`cdm-ext/tests/cdm_runtime.py`).
 
 Consequence: a `CollateralPosition` cannot carry its asset when built in Python, so CDM's own
 `PositionBase.ProductOrAsset` condition cannot pass. The extension's tests work around it (see
 `cdm-ext/tests/cdm_runtime.py`). Not reported to FINOS (project owner's instruction). The repository's Python test
 (`python/test/test_import_trade_state.py`) only checks that `TradeState` imports.
+
+### D15 — Rune Python generator 10.15.1.0: generated Python differs from Rune semantics *(added 2026-10-17)*
+
+Found while generating the local extension's margin call lifecycle (`cdm-ext/`). Each case and the way the Rune is
+written around it is listed in [`../../cdm-ext/README.md`](../../cdm-ext/README.md) § Rune Python generator. The
+cases that change results silently (pre-conditions evaluated before aliases are assigned; `set next: state` not
+copying) are covered by tests. Not reported (project owner's instruction).
 

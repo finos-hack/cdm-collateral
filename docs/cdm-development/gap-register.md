@@ -118,6 +118,19 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 The P1 set matches the steps the console's rule engine performs today outside CDM
 (`console/src/domain/engine.ts`), so closing it lets the engine's rules be expressed in CDM.
 
+## Closure status
+
+Local extension in [`../../cdm-ext/`](../../cdm-ext/) (`task-cdm-gap-closure`).
+
+| Gap | Status | What exists |
+|---|---|---|
+| G2 | closed | `cdmx.collateral.proposal`: proposal, decision, status; coverage check; decide function |
+| G1 | partial | `cdmx.collateral.margincall`: lifecycle state, steps, next-step function. Not yet: CDM business events and qualification |
+| G3 | partial | Agreed and disputed amounts recorded from the response; resolution not modelled |
+| G4 | partial | Settlement only against an accepted proposal covering the agreed amount. Not yet: the CDM transfer instruction |
+| G6 | closed | Return calls released without a proposal, within the agreed amount |
+| others | open | |
+
 ## Source index
 
 Every source ID and where it went.

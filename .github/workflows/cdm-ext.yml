@@ -1,0 +1,37 @@
+name: cdm-ext
+
+# Generate the local CDM extension (cdm-ext/rosetta) with the Rune Python generator and run its tests on top of
+# the published finos-cdm package (cdm-ext/build.sh, decision wp-adr-cdm-extension-rune).
+
+on:
+  push:
+    branches: [main]
+    paths: ["cdm-ext/**", ".github/workflows/cdm-ext.yml"]
+  pull_request:
+    paths: ["cdm-ext/**", ".github/workflows/cdm-ext.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache generator and CDM sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            cdm-ext/build/python-*.jar
+            cdm-ext/build/cdm
+            cdm-ext/build/fpml
+          key: cdm-ext-${{ hashFiles('cdm-ext/build.sh') }}
+      - run: bash cdm-ext/build.sh

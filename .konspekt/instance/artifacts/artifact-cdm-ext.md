@@ -3,7 +3,7 @@ id: artifact-cdm-ext
 name: Local CDM extension (cdmx)
 kind: code
 location: cdm-ext/
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-17T01:16:19Z
   confidence: 0.8
 createdAt: 2026-10-17T01:16:19Z
-updatedAt: 2026-10-17T01:16:19Z
+updatedAt: 2026-10-17T13:40:02Z
 ```
 # Local CDM extension (cdmx)
 
@@ -21,3 +21,6 @@ the toolchain reproduces the published finos-cdm 7.7.0; the extension generated 
 `finos/cdmx` modules are added to the published package (6 of 6 tests pass; same in a combined build). Findings:
 nested `set` on an absent object does not create it in generated Python (use a constructor); extension
 serialises with `@version` 0.0.0; CDM Python package defects D14 worked around in the tests.
+
+Revised 2026-10-17T13:40:02Z (source `0f2f88c5496b77b3cef85e94a5ec0236fa765099`): margin call lifecycle `cdmx.collateral.margincall` (G1, G3, G4, G6; 12 more tests,
+18 in all); CI workflow `.github/workflows/cdm-ext.yml`; generator behaviour recorded as D15.

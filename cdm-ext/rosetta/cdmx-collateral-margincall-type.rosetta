@@ -1,0 +1,75 @@
+namespace cdmx.collateral.margincall : <"Local CDM extension: margin call lifecycle as a sequence of steps over a state record, following the pattern of CDM 7.7.0's instruction composition (gaps G1, G3, G4, G6 in docs/cdm-development/gap-register.md). CDM's own CompositionState is a closed choice, so the pattern is mirrored here rather than extended. Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdmx.collateral.proposal.*
+
+enum MarginCallStatusEnum: <"State of a margin call.">
+    Issued <"Issued by the calling party; waiting for the called party's response.">
+    Agreed <"The called party agreed the full amount.">
+    PartiallyAgreed <"The called party agreed part of the amount; the rest is disputed.">
+    Disputed <"The called party disputed the whole amount; nothing is due until the dispute is resolved.">
+    Settled <"The agreed amount has been delivered or released; any disputed amount stays recorded on the call.">
+
+enum MarginCallStepEnum: <"The steps of the margin call lifecycle (ISO 20022 colr.003, colr.004, colr.007, colr.008).">
+    IssueCall <"The calling party issues the call (MarginCallIssuance).">
+    RespondToCall <"The called party agrees, partially agrees or disputes (MarginCallResponse).">
+    ProposeCollateral <"The delivering party proposes collateral (CollateralProposal); delivery calls only.">
+    DecideProposal <"The receiving party accepts or rejects the proposal.">
+    SettleCall <"The agreed amount is delivered against an accepted proposal, or released for a return call.">
+
+type IssueCallInstruction: <"Step IssueCall.">
+    issuance MarginCallIssuance (1..1) <"The call as CDM represents it.">
+    direction MarginCallActionEnum (1..1) <"Delivery: the called party delivers collateral. Return: the called party releases collateral it holds.">
+
+    condition CallIdentified: <"The call carries an identifier so later steps can refer to it.">
+        issuance -> callIdentifier exists
+
+type DecideProposalInstruction: <"Step DecideProposal.">
+    proposalId string (1..1) <"The proposal decided (its assigned identifier).">
+    accept boolean (1..1)
+    reason string (0..1) <"Why a proposal was rejected.">
+
+type SettleCallInstruction: <"Step SettleCall.">
+    proposalId string (0..1) <"Delivery call: the accepted proposal delivered.">
+    releasedCollateral CollateralPosition (0..*) <"Return call: the collateral released.">
+    releasedValue Money (0..1) <"Return call: value after haircuts of the collateral released.">
+
+    condition DeliveryOrReturn: <"A settlement names either the proposal delivered or the value released.">
+        required choice proposalId, releasedValue
+
+type MarginCallInstruction: <"Exactly one step to apply to a margin call.">
+    issue IssueCallInstruction (0..1)
+    respond MarginCallResponse (0..1)
+    propose CollateralProposal (0..1)
+    decide DecideProposalInstruction (0..1)
+    settle SettleCallInstruction (0..1)
+
+    condition OneStep:
+        one-of
+
+type MarginCallStepRecord: <"One applied step, for the audit trail.">
+    identifier string (1..1)
+    timestamp zonedDateTime (1..1) <"When the step took effect, for example the ledger block time.">
+    step MarginCallStepEnum (1..1)
+
+type MarginCallState: <"Cumulative record of one margin call: the call, the response, proposals and settlement, with the steps applied so far.">
+    [rootType]
+    issuance MarginCallIssuance (1..1)
+    direction MarginCallActionEnum (1..1)
+    status MarginCallStatusEnum (1..1)
+    response MarginCallResponse (0..1)
+    agreedAmount Money (0..1)
+    disputedAmount Money (0..1)
+    proposal CollateralProposal (0..*)
+    settlement SettleCallInstruction (0..1)
+    stepRecord MarginCallStepRecord (1..*)
+
+    condition AmountsAfterResponse: <"Agreed and disputed amounts are known once the call has been answered.">
+        if status <> MarginCallStatusEnum -> Issued
+        then agreedAmount exists and disputedAmount exists
+
+    condition ReturnsNeedNoProposal: <"A return releases collateral already held; it is not proposed.">
+        if direction = MarginCallActionEnum -> Return
+        then proposal is absent

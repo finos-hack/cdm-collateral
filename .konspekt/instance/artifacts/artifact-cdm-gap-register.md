@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-17T00:25:47Z
   confidence: 0.75
 createdAt: 2026-10-17T00:25:47Z
-updatedAt: 2026-10-17T01:16:19Z
+updatedAt: 2026-10-17T13:40:02Z
 ```
 # CDM 7.6.0 gap register for collateral management
 
@@ -22,3 +22,5 @@ scope. Source index maps every source ID to a gap.
 
 Revised 2026-10-17T01:16:19Z (source `9ab0cbf86284cce4606e93eabb8507c9d009d7b7`): base release note for CDM 7.7.0 (no gap changes); D14 added to G33 and the
 source index.
+
+Revised 2026-10-17T13:40:02Z (source `0f2f88c5496b77b3cef85e94a5ec0236fa765099`): closure status section (G2, G6 closed; G1, G3, G4 partial).
