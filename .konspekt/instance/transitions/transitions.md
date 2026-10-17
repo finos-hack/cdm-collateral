@@ -193,3 +193,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2e-reactconsole | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
 | artifact:artifact-react-console | review |  | proposed | 2026-10-16T23:17:11Z |  |  |
 | edge:e-prod-reactconsole-app | review |  | proposed | 2026-10-16T23:17:11Z |  |  |
+| node:task-react-console | status | active | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| node:goal-cdm-development | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| node:goal-cdm-development | status |  | active | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| node:task-cdm-gap-analysis | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| node:task-cdm-gap-analysis | status |  | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| node:task-cdm-gap-closure | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| node:task-cdm-gap-closure | status |  | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| edge:e-dec-cdmdev-gapanalysis | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| edge:e-dec-cdmdev-gapclosure | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
