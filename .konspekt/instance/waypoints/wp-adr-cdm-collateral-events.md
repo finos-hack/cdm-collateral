@@ -3,15 +3,14 @@ id: wp-adr-cdm-collateral-events
 kind: decision
 subtype: adr
 timestamp: 2026-10-17T16:03:44Z
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: d154987f0084435a9ceb1f12383e3a316b95daba
   contentHash: d154987f0084435a9ceb1f12383e3a316b95daba
   timestamp: 2026-10-17T16:03:44Z
-  confidence: 0.75
 createdAt: 2026-10-17T16:03:44Z
-updatedAt: 2026-10-17T16:03:44Z
+updatedAt: 2026-10-17T17:00:55Z
 ```
 # ADR: Margin call events in an own event type; settlement as CDM transfers
 

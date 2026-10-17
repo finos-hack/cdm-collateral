@@ -29,3 +29,5 @@ register shows G1 and G4 as closed, proposed for review.
 Findings captured 2026-10-17T16:53:35Z (project owner's request): findings X1–X3 (`docs/analysis/findings.md`), defects D14 (`Now()`,
 repositories, `@data` cause corrected) and D15 (repositories), gaps G37 (collateral transfer type), G38 (title-transfer
 party roles), G39 (Python toolchain; Python versus Java open), all proposed for review.
+
+Accepted 2026-10-17T17:00:55Z: `wp-adr-cdm-collateral-events` (project owner).
