@@ -168,3 +168,16 @@ excluded.
 | task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | console/serve.sh | 2026-10-17T00:16:25Z |
 | task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | docs/setup-codespaces.md | 2026-10-17T00:16:25Z |
 | task-cdm-gap-analysis | 6dfc59fcf50b1457aab7ed2f335a36569e46f459 | docs/cdm-development/gap-register.md | 2026-10-17T00:25:47Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/.gitignore | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/README.md | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/build.sh | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/rosetta/cdmx-collateral-proposal-func.rosetta | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/rosetta/cdmx-collateral-proposal-type.rosetta | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/tests/__pycache__/cdm_runtime.cpython-313.pyc | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/tests/__pycache__/test_proposal.cpython-313-pytest-9.1.1.pyc | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/tests/cdm_runtime.py | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | cdm-ext/tests/test_proposal.py | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/analysis/cdm-csa-coverage-matrix.md | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/analysis/defects.md | 2026-10-17T01:16:19Z |
+| task-cdm-gap-closure | f784730126970ae3c8aaceecab9d384905e98aa3 | docs/cdm-development/gap-register.md | 2026-10-17T01:16:19Z |
