@@ -134,7 +134,7 @@ Local extension in [`../../cdm-ext/`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | G4 | closed (proposed, for review) | Settlement only against an accepted proposal covering the agreed amount (return: within the agreed amount); the settlement event carries one CDM `TransferState` per position (pledgor → secured party on delivery, the reverse on return), passing CDM's own conditions. `transferType` stays absent: `UnscheduledTransferEnum` has no collateral value |
 | G6 | closed | Return calls released without a proposal, within the agreed amount |
 | G37, G38 | open | Found while closing G4 (findings X2, X3); the extension leaves `transferType` absent and reads pledge roles only |
-| G39 | open, worked around | `cdm-ext/tests/cdm_runtime.py` and the Rune written around D15; Python versus Java under discussion |
+| G39 | open, worked around | `cdm-ext/tests/cdm_runtime.py` and the Rune written around D15; Python kept for now (`nw-cdm-stay-on-python`); project owner to contact the maintainers |
 | others | open | |
 
 ## Source index
