@@ -207,3 +207,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-cdm-gap-analysis | status | open | active | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
 | artifact:artifact-cdm-gap-register | review |  | proposed | 2026-10-17T00:25:47Z |  |  |
 | edge:e-prod-gapanalysis-register | review |  | proposed | 2026-10-17T00:25:47Z |  |  |
+| artifact:artifact-cdm-gap-register | review | proposed | accepted | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
+| edge:e-prod-gapanalysis-register | review | proposed | accepted | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
+| node:task-cdm-gap-analysis | status | active | resolved | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
