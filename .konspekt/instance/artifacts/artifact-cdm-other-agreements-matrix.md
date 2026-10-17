@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:10:47Z
   confidence: 0.7
 createdAt: 2026-10-15T23:10:47Z
-updatedAt: 2026-10-16T23:07:09Z
+updatedAt: 2026-10-17T01:16:19Z
 ```
 # CDM coverage of collateral management — repo, securities lending, triparty, CCP margin
 
@@ -29,3 +29,5 @@ a cross-family comparison row and a "Flows and capabilities" section mapping UI 
 
 Revised 2026-10-16T23:07:09Z (source `91117ab560e058b945bc3eb3e35fa977f99a88b3`): collateral proposal split into proposal (2) and acceptance or rejection (0);
 added C18 collateral substitution at the CCP (2).
+
+Revised 2026-10-17T01:16:19Z (source `9ab0cbf86284cce4606e93eabb8507c9d009d7b7`): release note, base release CDM 7.7.0; scores unchanged.

@@ -31,6 +31,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D11 | Attribute misspelt `identifer` | naming | `rosetta/legaldocumentation-master-type.rosetta` 13; `rosetta/event-position-type.rosetta` 77, 83 |
 | D12 | Descriptions contain a literal `\t` and lost accented characters | text | `rosetta/legaldocumentation-csa-enum.rosetta` 100, 125–128, 220 |
 | D13 | Several repo and lending event samples produce no event qualifier *(cause not confirmed)* | qualification | `functions/repo-and-bond/*-output.json` |
+| D14 | CDM 7.7.0 Python package: `Asset` types cannot be built or deserialised, nested objects with an absent metadata field cannot be constructed, and importing `Asset` first is a circular import *(added 2026-10-17)* | Python distribution | `finos-cdm` 7.7.0 on PyPI: `finos/_bundle.py`, `finos/cdm/base/staticdata/asset/common/` |
 
 ## Details
 
@@ -176,3 +177,25 @@ The expected outputs `repo-reprice-output.json`, `repo-adjustment-output.json`, 
 functions exist for these events (`Qualify_Reprice`, `Qualify_Adjustment`, `Qualify_Roll`, `Qualify_PartialDelivery`,
 `Qualify_Shaping`, `Qualify_ClearedTrade`). The cause was not investigated; the outputs are what the test harness
 expects at 7.6.0.
+
+### D14 — CDM 7.7.0 Python package: asset types and nested construction *(added 2026-10-17)*
+
+Found while testing the local extension (`cdm-ext/`, `task-cdm-gap-closure`). Package `finos-cdm` 7.7.0 from PyPI
+with `rune.runtime` 2.2.2 and pydantic 2.14.1; each case reproduced in a clean environment without the extension.
+
+- `from finos.cdm.base.staticdata.asset.common.Asset import Asset` as the first CDM import fails: "cannot import name
+  'Asset' from partially initialized module ... (most likely due to a circular import)". Importing `finos._bundle`
+  first avoids it.
+- Deserialising an `Asset` holding a `Security` fails: `Instrument.Security.identifier` "Input should be None" (the
+  field's type is unresolved). Holding `Cash` fails with `NameError: name 'CurrencyCodeEnum' is not defined`.
+  Importing the asset modules and forcing a model rebuild fixes `Security` only, and breaks other models (for
+  example `Identifier.assignedIdentifier`).
+- Constructing a `NonNegativeQuantitySchedule` whose unit is not a currency (`UnitType(financialUnit=Share)`) fails
+  in the metadata validator (`'NoneType' object has no attribute '_init_meta'`); the same object deserialised from
+  Rune JSON works.
+
+Consequence: a `CollateralPosition` cannot carry its asset when built in Python, so CDM's own
+`PositionBase.ProductOrAsset` condition cannot pass. The extension's tests work around it (see
+`cdm-ext/tests/cdm_runtime.py`). Not reported to FINOS (project owner's instruction). The repository's Python test
+(`python/test/test_import_trade_state.py`) only checks that `TradeState` imports.
+

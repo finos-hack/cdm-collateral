@@ -1,0 +1,39 @@
+namespace cdmx.collateral.proposal : <"Local CDM extension: functions for collateral proposals (gap G2).">
+version "${project.version}"
+
+import cdm.observable.asset.*
+
+func ProposalCoversAgreedAmount: <"True if the proposal's value after haircuts covers the agreed amount of the call, in the same currency.">
+    inputs:
+        proposal CollateralProposal (1..1)
+        agreedAmount Money (1..1)
+    output:
+        covers boolean (1..1)
+
+    condition SameCurrency:
+        proposal -> valueAfterHaircuts -> unit -> currency = agreedAmount -> unit -> currency
+
+    set covers:
+        proposal -> valueAfterHaircuts -> value >= agreedAmount -> value
+
+func DecideCollateralProposal: <"Records the receiving party's decision on a proposal that is still Proposed.">
+    inputs:
+        proposal CollateralProposal (1..1)
+        accept boolean (1..1)
+        reason string (0..1)
+    output:
+        decided CollateralProposal (1..1)
+
+    condition StillProposed: <"Only a proposal waiting for a decision can be decided.">
+        proposal -> status = CollateralProposalStatusEnum -> Proposed
+
+    set decided: proposal
+    set decided -> status:
+        if accept = True
+        then CollateralProposalStatusEnum -> Accepted
+        else CollateralProposalStatusEnum -> Rejected
+    set decided -> decision:
+        CollateralProposalDecision {
+            accepted: accept,
+            reason: reason
+        }

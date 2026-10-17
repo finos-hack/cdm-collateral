@@ -47,3 +47,8 @@ at execution time.
 | task-cdm-gap-closure | 3a9023f7241f7c0025a97ac575431124305031d3 |
 | task-cdm-gap-closure | 2fd91151d852ab37c94cd5679a26979a71933286 |
 | task-cdm-gap-closure | 35222ec50d050f4940e672ce0fdb2d2291b51dad |
+| task-cdm-gap-closure | 6e09d15597a3e21a1ec15c3b59ed315970447231 |
+| task-cdm-gap-closure | cb38cb65d79495be767e5c53de8f5c2ce524ba0f |
+| task-cdm-gap-closure | bc7130aec32114c76e969479c58d031bf8713686 |
+| task-cdm-gap-closure | 95e648e96bb441ea4fe1fea79f118543515c1e08 |
+| task-cdm-gap-closure | aeeccf44adefcef68986a441046b9209ca0ee767 |

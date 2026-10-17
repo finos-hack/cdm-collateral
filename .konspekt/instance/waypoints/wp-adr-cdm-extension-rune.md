@@ -10,7 +10,7 @@ provenance:
   contentHash: 718789ef3024496c06042f84fc8cf0129ecc58dc
   timestamp: 2026-10-17T00:48:29Z
 createdAt: 2026-10-17T00:48:29Z
-updatedAt: 2026-10-17T00:48:29Z
+updatedAt: 2026-10-17T01:16:19Z
 ```
 # ADR: Write CDM extensions in the Rune DSL and generate them like CDM
 
@@ -26,3 +26,6 @@ every consumer needs in the same form.
 CDM release. Unverified and checked first: whether the extension can be generated on top of the published
 `finos-cdm` Python package or must be generated together with CDM. The generated Python imports CDM's single bundle
 module, about 10–13 s once per process.
+
+Verified 2026-10-17T01:16:19Z (source `9ab0cbf86284cce4606e93eabb8507c9d009d7b7`): an extension generated together with CDM 7.7.0 works when only its `finos/cdmx`
+modules are added to the published `finos-cdm` 7.7.0 package; CDM need not be regenerated (`cdm-ext/README.md`).

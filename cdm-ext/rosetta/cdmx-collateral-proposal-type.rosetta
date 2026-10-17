@@ -1,0 +1,31 @@
+namespace cdmx.collateral.proposal : <"Local CDM extension: collateral proposal and its acceptance or rejection (gap G2 in docs/cdm-development/gap-register.md; ISO 20022 colr.007 / colr.008). Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.base.staticdata.identifier.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+enum CollateralProposalStatusEnum: <"State of a collateral proposal.">
+    Proposed <"Proposed by the party delivering collateral; waiting for the receiving party's decision.">
+    Accepted <"Accepted by the receiving party; the proposed collateral may be delivered against the call.">
+    Rejected <"Rejected by the receiving party; the delivering party may propose again.">
+
+type CollateralProposalDecision: <"The receiving party's decision on a collateral proposal.">
+    accepted boolean (1..1) <"True if the proposal is accepted.">
+    reason string (0..1) <"Why the proposal was rejected, for example a concentration limit breach.">
+
+    condition ReasonForRejection: <"A rejection states its reason.">
+        if accepted = False then reason exists
+
+type CollateralProposal: <"Collateral proposed by the delivering party against an agreed margin call amount.">
+    proposalIdentifier Identifier (1..1) <"Identifies the proposal.">
+    callIdentifier Identifier (1..1) <"The margin call the proposal answers (MarginCallBase -> callIdentifier).">
+    proposedCollateral CollateralPosition (1..*) <"Assets and quantities proposed.">
+    valueAfterHaircuts Money (1..1) <"Value of the proposed collateral after the agreement's haircuts, in the agreement's base currency.">
+    status CollateralProposalStatusEnum (1..1) <"Current state of the proposal.">
+    decision CollateralProposalDecision (0..1) <"The receiving party's decision, once made.">
+
+    condition DecisionMatchesStatus: <"Accepted and Rejected need a decision that says so; Proposed has none.">
+        if status = CollateralProposalStatusEnum -> Proposed then decision is absent
+        else if status = CollateralProposalStatusEnum -> Accepted then decision -> accepted = True
+        else decision -> accepted = False

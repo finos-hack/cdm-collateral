@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T12:32:58Z
   confidence: 0.7
 createdAt: 2026-10-15T12:32:58Z
-updatedAt: 2026-10-16T23:07:09Z
+updatedAt: 2026-10-17T01:16:19Z
 ```
 # CDM coverage of collateral management — ISDA credit support documents
 
@@ -28,3 +28,5 @@ Revised 2026-10-16T23:02:19Z (source `01ed3cb87a05376b16fc5b6d38e98b90a97f732d`)
 source; maintainer's reading) and a "Flows and capabilities" section mapping UI grid columns to capability rows.
 
 Revised 2026-10-16T23:07:09Z (source `91117ab560e058b945bc3eb3e35fa977f99a88b3`): collateral proposal split into proposal (2) and acceptance or rejection (0).
+
+Revised 2026-10-17T01:16:19Z (source `9ab0cbf86284cce4606e93eabb8507c9d009d7b7`): release note, base release CDM 7.7.0; scores unchanged.

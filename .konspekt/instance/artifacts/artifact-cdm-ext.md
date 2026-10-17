@@ -1,0 +1,23 @@
+```yaml
+id: artifact-cdm-ext
+name: Local CDM extension (cdmx)
+kind: code
+location: cdm-ext/
+review: proposed
+provenance:
+  conversationId: cdm-development
+  sourceRef: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
+  contentHash: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
+  timestamp: 2026-10-17T01:16:19Z
+  confidence: 0.8
+createdAt: 2026-10-17T01:16:19Z
+updatedAt: 2026-10-17T01:16:19Z
+```
+# Local CDM extension (cdmx)
+
+Rune sources for gap G2 (collateral proposal and its acceptance or rejection: types, conditions, two functions),
+tests of the generated Python, and `build.sh` (generator 10.15.1.0, CDM 7.7.0, rune-fpml 3.8.0). Generation check:
+the toolchain reproduces the published finos-cdm 7.7.0; the extension generated with CDM works when only its
+`finos/cdmx` modules are added to the published package (6 of 6 tests pass; same in a combined build). Findings:
+nested `set` on an absent object does not create it in generated Python (use a constructor); extension
+serialises with `@version` 0.0.0; CDM Python package defects D14 worked around in the tests.

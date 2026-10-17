@@ -24,6 +24,10 @@ Output of `task-cdm-collateral-other-agreements` (goal `goal-data-cdm-taxonomies
     files only.
   - Inference is labelled *(inference)*. Everything else is observation of the files at the pinned commit.
 
+
+> **Release note (2026-10-17):** the project's base release moved from CDM 7.6.0 to 7.7.0. The 7.7.0 changes (six files,
+> interest-rate reset instruction composition) touch no row of this matrix, so the scores hold for 7.7.0.
+
 ## Method
 
 Same as the CSA matrix. Each capability row gets the highest level it reaches:

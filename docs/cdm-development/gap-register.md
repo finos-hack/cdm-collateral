@@ -11,7 +11,8 @@ Sources:
 [CSA coverage matrix](../analysis/cdm-csa-coverage-matrix.md) (rows 1–25) ·
 [other agreements matrix](../analysis/cdm-other-agreements-coverage-matrix.md) (R1–R25, S1–S27, T1–T16, C1–C18) ·
 [blockchain applicability](../architecture/blockchain-applicability.md) §4 (B1–B5).
-CDM release: 7.6.0 (commit f685b4b).
+CDM release analysed: 7.6.0 (commit f685b4b). **Base release switched to 7.7.0 on 2026-10-17**: 7.7.0 changes six files, all
+interest-rate reset instruction composition, so every gap here holds for 7.7.0 unchanged.
 
 ## How to read it
 
@@ -99,7 +100,7 @@ CDM release: 7.6.0 (commit f685b4b).
 | G30 | Repo qualification rejects more than one interest payout; event samples without a qualifier | D7, D13 | – | repo row (planned) | P2 | replacement |
 | G31 | Samples and documentation contradict the model (margin and haircut percentages, empty eligibility fields, bond labelled as cash) | D3, D6 | – | none | P3 | samples (local copies) |
 | G32 | Misspelt enum values and attributes; literal `\t` and lost accents in descriptions | D9–D12 | – | none | P3 | none locally (renaming needs a CDM change); note only |
-| G33 | Securities-lending settlement workflows are hand-written Java; buy/sell-back is qualification only | O11, O12 | – | none | P3 | none for now |
+| G33 | Securities-lending settlement workflows are hand-written Java; buy/sell-back is qualification only; the CDM 7.7.0 Python package cannot build asset types (D14) | O11, O12, D14 | – | none | P3 | none for now |
 | G34 | Collateral allocation and optimisation absent | row 18, R18, S16, T7 | 0 | proposal step (pledgor chooses assets by hand today) | P3 | functions |
 | G35 | Reconciliation absent | row 19, R19, S22, T12, C13 | 0 | none: the shared ledger replaces reconciliation in the prototype | Out | none |
 | G36 | Regulatory reporting of margin not in this repository | row 20 | n/a | none | Out | none |
@@ -132,6 +133,7 @@ Every source ID and where it went.
 | S1 | G2, G26 | D7 | G30 | O2 | G21 |
 | S2 | G24, G28 | D8 | G11 | O3 | G12 |
 | S3 | G28 | D9–D12 | G32 | O8 | G1 |
+| D14 | G33 | | | | |
 | S4 | G28 | D13 | G30 | O9 | G22 |
 | TX1 | G27 | TX4 | G27 | O10 | G23 |
 | TX2 | G3, G26 | TX5 | G1, G16 | O11, O12 | G33 |
