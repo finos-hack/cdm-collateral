@@ -210,3 +210,6 @@ excluded.
 | task-cdm-gap-closure | 36a3f300d305a663ff0faa8c683dd699cf5cd666 | cdm-ext/tests/test_event.py | 2026-10-17T16:04:01Z |
 | task-cdm-gap-closure | 36a3f300d305a663ff0faa8c683dd699cf5cd666 | docs/analysis/defects.md | 2026-10-17T16:04:01Z |
 | task-cdm-gap-closure | 36a3f300d305a663ff0faa8c683dd699cf5cd666 | docs/cdm-development/gap-register.md | 2026-10-17T16:04:01Z |
+| task-cdm-gap-closure | 0da774e65d47b7dbfe35c5faac21d984f42b9eb2 | docs/analysis/defects.md | 2026-10-17T16:53:35Z |
+| task-cdm-gap-closure | 0da774e65d47b7dbfe35c5faac21d984f42b9eb2 | docs/analysis/findings.md | 2026-10-17T16:53:35Z |
+| task-cdm-gap-closure | 0da774e65d47b7dbfe35c5faac21d984f42b9eb2 | docs/cdm-development/gap-register.md | 2026-10-17T16:53:35Z |
