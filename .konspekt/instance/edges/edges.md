@@ -66,3 +66,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-reactconsole-app | produces | node:task-react-console | artifact:artifact-react-console |  | proposed |
 | e-dec-cdmdev-gapanalysis | decomposes | node:goal-cdm-development | node:task-cdm-gap-analysis |  |
 | e-dec-cdmdev-gapclosure | decomposes | node:goal-cdm-development | node:task-cdm-gap-closure |  |
+| e-mrk-localext-gapclosure | marks | waypoint:wp-adr-cdm-local-extensions | node:task-cdm-gap-closure |  |
+| e-prod-gapanalysis-register | produces | node:task-cdm-gap-analysis | artifact:artifact-cdm-gap-register |  | proposed |

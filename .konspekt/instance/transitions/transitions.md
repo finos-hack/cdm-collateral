@@ -202,3 +202,8 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-cdm-gap-closure | status |  | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
 | edge:e-dec-cdmdev-gapanalysis | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
 | edge:e-dec-cdmdev-gapclosure | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
+| waypoint:wp-adr-cdm-local-extensions | review |  | accepted | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
+| edge:e-mrk-localext-gapclosure | review |  | accepted | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
+| node:task-cdm-gap-analysis | status | open | active | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
+| artifact:artifact-cdm-gap-register | review |  | proposed | 2026-10-17T00:25:47Z |  |  |
+| edge:e-prod-gapanalysis-register | review |  | proposed | 2026-10-17T00:25:47Z |  |  |
