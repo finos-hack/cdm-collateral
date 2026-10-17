@@ -67,16 +67,20 @@ needs (later: the party consoles), keep test keys only, and set the ports back t
 
 ## 4. The party console
 
-The dev container installs the console's dependencies when the codespace is created (`npm --prefix console ci`). To
-run it:
+Every time the codespace starts, the dev container builds the console and serves the build on port 5173
+([`../console/serve.sh`](../console/serve.sh)). Open it from the **Ports** panel ("Collateral Console"), or make that
+port public to show it to someone else (it serves only the console; the Besu ports stay private).
+
+**After new commits** (or in a codespace created before the console existed), update and redeploy from the terminal:
 
 ```bash
-cd console
-npm run dev
+git pull
+bash console/serve.sh
 ```
 
-Codespaces forwards port 5173 ("Collateral Console"); open it from the **Ports** panel. The console runs on mocked
-state in the browser for now; see [`../console/README.md`](../console/README.md) for tests and modes.
+The script reinstalls dependencies only when the lockfile changed, rebuilds, and replaces the running server. For
+live editing instead, stop it (`kill -- -$(cat console/.preview.pid)`) and run `cd console && npm run dev`. Tests and
+modes: [`../console/README.md`](../console/README.md).
 
 ## 5. Later
 
