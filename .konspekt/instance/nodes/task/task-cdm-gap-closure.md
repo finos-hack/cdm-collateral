@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-10-17T16:03:44Z
+updatedAt: 2026-10-17T16:53:35Z
 ```
 # Task: CDM gap closure
 
@@ -25,3 +25,7 @@ parked (`task-react-console`).
 Progress 2026-10-17T16:03:44Z: G1 and G4 events, qualification and CDM transfers in `cdm-ext/` (`wp-adr-cdm-collateral-events`,
 proposed); CDM Python package defects worked around in the extension runtime (D14 extended, D15 extended). Gap
 register shows G1 and G4 as closed, proposed for review.
+
+Findings captured 2026-10-17T16:53:35Z (project owner's request): findings X1–X3 (`docs/analysis/findings.md`), defects D14 (`Now()`,
+repositories, `@data` cause corrected) and D15 (repositories), gaps G37 (collateral transfer type), G38 (title-transfer
+party roles), G39 (Python toolchain; Python versus Java open), all proposed for review.

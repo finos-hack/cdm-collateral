@@ -10,6 +10,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | [`collateral-standards-inventory.md`](collateral-standards-inventory.md) | `task-collateral-standards-inventory` | S1–S4 |
 | [`collateral-taxonomy-inventory.md`](collateral-taxonomy-inventory.md) | `task-collateral-taxonomy-inventory` | TX1–TX5 |
 | [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) | `task-cdm-collateral-other-agreements` | O1–O3, O8–O12 |
+| [`../../cdm-ext/README.md`](../../cdm-ext/README.md) (found while building the local extension, CDM 7.7.0) | `task-cdm-gap-closure` | X1–X3 |
 
 ## Summary
 
@@ -38,6 +39,9 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | O10 | CCP support covers trade clearing, not cleared margin | CCP | open |
 | O11 | Securities-lending settlement workflows are hand-written Java, not Rune | Implementation | open |
 | O12 | Buy/sell-back is qualification only; no sample sets `tradeType` | Repo | open |
+| X1 | CDM's lifecycle events are trade-based: `BusinessEvent` records `TradeState`s and `Create_Transfer` builds transfers from a `TradeState`; a margin call has no trade, so no CDM event type records its steps | Lifecycle | open (extension: own event type, `wp-adr-cdm-collateral-events`, proposed) |
+| X2 | `UnscheduledTransferEnum` has no value for a collateral delivery or a collateral return (its `Return` is the securities-lending return) | Taxonomy | open |
+| X3 | `PartyRoleEnum` has `Pledgor` (New York law), `Chargor` (English law) and `SecuredParty`, but no transferor or transferee role for title-transfer collateral (English-law VM CSA); `RegIMRoleEnum` repeats pledgor and secured party with other spellings (`Secured`) | Parties | open |
 
 ## Details
 
@@ -134,6 +138,22 @@ Evidence for each is in [`collateral-taxonomy-inventory.md`](collateral-taxonomy
 
 Evidence for each O-finding, with file and line references, is in
 [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) § Findings.
+
+### X1–X3 — Found while building the local extension (CDM 7.7.0)
+
+**X1.** `cdm/event/common` (`event-common-type.rosetta`): `BusinessEvent extends EventInstruction` has
+`after TradeState (0..*)`; `AgreementEvent` records `LegalAgreement` changes; `CounterpartyPositionBusinessEvent`
+records trade positions. `Create_Transfer` takes a `TradeState`. `TransferState` itself needs no trade, so the
+extension uses CDM's `TransferState` for settlement and its own `CollateralEvent` for the steps.
+
+**X2.** `product-common-settlement-enum.rosetta`, `UnscheduledTransferEnum`: Recall, Return, Assignment,
+BrokerageCommission, Increase, Novation, PartialTermination, Premium, Renegotiation, Termination, and others; none
+describes a margin delivery or the return of excess collateral. The extension leaves `transferType` absent.
+
+**X3.** `base-staticdata-party-enum.rosetta`, `PartyRoleEnum`: `Pledgor` "provides credit support under New York
+Law", `Chargor` "under English Law", `SecuredParty` "receives credit support under New York or English Law". No
+value names the parties of a title transfer. `event-common-enum.rosetta`, `RegIMRoleEnum`: `Pledgor`, `Secured`. The
+extension reads `Pledgor` and `SecuredParty` only.
 
 ## Moved to defects.md
 
