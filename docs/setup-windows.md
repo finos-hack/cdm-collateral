@@ -7,9 +7,13 @@ a local four-node Besu network (one node per default participant). The prototype
 Version pins as of 2026-10-16. **Tested:** the QBFT configuration, `generate-blockchain-config` and the node flags in
 step 6 were run with Besu 26.9.0 (native binary, Java 25, Linux) on 2026-10-16: four nodes on one machine with the
 first as bootnode; each node had 3 peers, `qbft_getValidatorsByBlockNumber` listed 4 validators, blocks came every 2
-seconds, and blocks continued with one node stopped. **Not tested:** the Windows and Docker parts (steps 2–5, the
-PowerShell commands and `besu/docker-compose.yml`), since no Windows machine or Docker daemon was available; the
-Compose file was only checked to parse as YAML. The Besu Docker image bundles its own Java, so you do not need
+seconds, and blocks continued with one node stopped. The Docker and four-node-network parts — step 3 (Docker Desktop
+engine) and all of step 6 (image pull, `generate-blockchain-config`, the PowerShell key-distribution block, and
+`besu/docker-compose.yml`) — were then run end-to-end on Windows 11 with Docker Desktop (WSL 2 engine, Besu 26.9.0) on
+2026-10-17: the four containers came up healthy, `net_peerCount` was `0x3`, `qbft_getValidatorsByBlockNumber` listed 4
+validators, and blocks were produced every 2 seconds. **Not tested:** steps 2, 4 and 5 (`wsl --install`, the Git /
+Python / Node installs, the clone), because those tools were already present on the test machine. The Besu Docker image
+bundles its own Java, so you do not need
 to install Java; running Besu natively instead would need Java 25 or later. Reference: Besu QBFT tutorial,
 https://besu.hyperledger.org/private-networks/tutorials/qbft.
 
@@ -40,13 +44,20 @@ wsl --status        # "Default Version: 2"
 winget install -e --id Docker.DockerDesktop
 ```
 
-Start Docker Desktop, then in Settings → General make sure **Use the WSL 2 based engine** is ticked. Check in a new
-PowerShell window:
+Start Docker Desktop, then in Settings → General make sure **Use the WSL 2 based engine** is ticked. Wait until the
+Docker Desktop window reports **Engine running** (the whale icon in the system tray stops animating) before running any
+`docker` command — the daemon is not reachable until then, even though the `docker` CLI is already on `PATH`. Check in a
+new PowerShell window:
 
 ```powershell
 docker version
 docker run --rm hello-world
 ```
+
+If `docker version` prints only the `Client` section and ends with `failed to connect to the docker API at
+npipe:////./pipe/dockerDesktopLinuxEngine … The system cannot find the file specified`, the engine is not running yet:
+start (or restart) Docker Desktop and wait for **Engine running**. `wsl -l -v` showing `docker-desktop` as `Stopped`
+confirms the engine is down.
 
 ## 4. Git, Python, Node.js (and an editor)
 
@@ -165,6 +176,7 @@ non-validator (same genesis, `--bootnodes`) and be voted in as a validator with 
 |---|---|
 | `wsl --install` fails or Docker reports WSL errors | Virtualization enabled in BIOS; Windows updated; `wsl --update` |
 | `docker` not found | Open a new terminal after installing; Docker Desktop is running |
+| `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine` | Docker Desktop is not running or the engine has not finished starting; launch it and wait for **Engine running**. `wsl -l -v` shows `docker-desktop` `Stopped` when the engine is down |
 | A port between 8545 and 8552 in use | `netstat -ano | findstr 8545`; stop the other process or change the `ports` mapping in `besu/docker-compose.yml` |
 | `eth_blockNumber` stays at `0x0` | `docker logs besu-mkt`; at least three of the four nodes must be running; each node folder must hold a different `key` from step 6; `net_peerCount` must be `0x3` |
 | `net_peerCount` is `0x0` on `bank-*` nodes | `besu\.env` exists and `BOOTNODE_ENODE` holds the `mkt` node's public key without `0x`; run `docker compose up -d` from inside `besu\` |
