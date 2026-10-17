@@ -163,3 +163,7 @@ excluded.
 | task-react-console | d796a70da9bb9bccd483e134ea0e21e38f5d71aa | console/tsconfig.tsbuildinfo | 2026-10-16T23:17:18Z |
 | task-react-console | d796a70da9bb9bccd483e134ea0e21e38f5d71aa | console/vite.config.ts | 2026-10-16T23:17:18Z |
 | task-react-console | d796a70da9bb9bccd483e134ea0e21e38f5d71aa | docs/setup-codespaces.md | 2026-10-16T23:17:18Z |
+| task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | .devcontainer/devcontainer.json | 2026-10-17T00:16:25Z |
+| task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | console/.gitignore | 2026-10-17T00:16:25Z |
+| task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | console/serve.sh | 2026-10-17T00:16:25Z |
+| task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | docs/setup-codespaces.md | 2026-10-17T00:16:25Z |
