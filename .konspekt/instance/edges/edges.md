@@ -75,3 +75,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-cdmdev-pythonworkarounds | notes | node:goal-cdm-development | noteworthy:nw-cdm-python-workarounds |  |
 | e-mrk-collevents-gapclosure | marks | waypoint:wp-adr-cdm-collateral-events | node:task-cdm-gap-closure |  |
 | e-note-cdmdev-stayonpython | notes | node:goal-cdm-development | noteworthy:nw-cdm-stay-on-python |  |
+| e-note-cdmdev-sharedmaintainers | notes | node:goal-cdm-development | noteworthy:nw-repo-shared-with-cdm-maintainers |  |
