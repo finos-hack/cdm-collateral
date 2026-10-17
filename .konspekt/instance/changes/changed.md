@@ -167,3 +167,4 @@ excluded.
 | task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | console/.gitignore | 2026-10-17T00:16:25Z |
 | task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | console/serve.sh | 2026-10-17T00:16:25Z |
 | task-react-console | 61315ad349b7f4beb0a304b0bf815551fbb84b12 | docs/setup-codespaces.md | 2026-10-17T00:16:25Z |
+| task-cdm-gap-analysis | 6dfc59fcf50b1457aab7ed2f335a36569e46f459 | docs/cdm-development/gap-register.md | 2026-10-17T00:25:47Z |
