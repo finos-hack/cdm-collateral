@@ -21,7 +21,7 @@ import static cdmx.Cdm.*;
 import static cdmx.Data.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Margin call lifecycle (G1, G3, G4, G6), following the console scenarios. Port of tests/test_margincall.py. */
+/** Margin call lifecycle (G1, G3, G4, G6), following the console scenarios. */
 class MarginCallTest {
     static final ZonedDateTime T0 = ZonedDateTime.of(2026, 10, 16, 9, 0, 0, 0, ZoneOffset.UTC);
 

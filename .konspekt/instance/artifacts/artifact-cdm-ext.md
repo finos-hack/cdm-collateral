@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-17T01:16:19Z
   confidence: 0.8
 createdAt: 2026-10-17T01:16:19Z
-updatedAt: 2026-10-17T13:40:02Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # Local CDM extension (cdmx)
 
@@ -24,3 +24,5 @@ serialises with `@version` 0.0.0; CDM Python package defects D14 worked around i
 
 Revised 2026-10-17T13:40:02Z (source `0f2f88c5496b77b3cef85e94a5ec0236fa765099`): margin call lifecycle `cdmx.collateral.margincall` (G1, G3, G4, G6; 12 more tests,
 18 in all); CI workflow `.github/workflows/cdm-ext.yml`; generator behaviour recorded as D15.
+
+Revised 2026-10-18T01:27:28Z (source `6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630`): the extension is built with Maven in `cdm-ext/` (CDM's `rune-maven-plugin` against `cdm-java` 7.7.0, JUnit tests, wrapper `mvnw`); the Python build, its tests and `build.sh` are retired (kept at commit e1a2e6f), decision `wp-adr-java-cdm-stack`.

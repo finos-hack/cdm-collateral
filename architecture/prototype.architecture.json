@@ -79,7 +79,7 @@
       "unique-id": "dev-host",
       "node-type": "network",
       "name": "Development host",
-      "description": "Linux host that runs the whole prototype with Docker: primarily a GitHub Codespace built from .devcontainer/devcontainer.json (ADR wp-adr-cloud-dev-environment), alternatively the developer's Windows machine with WSL2 and Docker Desktop. Python and Node.js services run on the host; the Besu nodes run in Docker Compose.",
+      "description": "Linux host that runs the whole prototype with Docker: primarily a GitHub Codespace built from .devcontainer/devcontainer.json (ADR wp-adr-cloud-dev-environment), alternatively the developer's Windows machine with WSL2 and Docker Desktop. Java and Node.js services run on the host; the Besu nodes run in Docker Compose.",
       "metadata": {
         "primary": "GitHub Codespaces, 4 cores / 16 GB, Docker-in-Docker",
         "alternative": "Windows 11 with WSL2 and Docker Desktop",
@@ -106,7 +106,7 @@
       "unique-id": "collateral-service",
       "node-type": "service",
       "name": "Collateral workflow service",
-      "description": "Off-chain margin workflow (ASR concept-asr-onchain-call-state: negotiation and CDM content off-chain, call state on-chain), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute) that CDM 7.6.0 does not provide (finding F2), exchanges margin calls, responses, return requests and default notices with the counterparty's instance, and sends its own party's movement instructions to its ledger gateway.",
+      "description": "Off-chain margin workflow (ASR concept-asr-onchain-call-state: negotiation and CDM content off-chain, call state on-chain), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute, propose, settle) that CDM 7.7.0 does not provide (finding F2) with the local CDM extension (cdm-ext), exchanges margin calls, responses, return requests and default notices with the counterparty's instance, and sends its own party's movement instructions to its ledger gateway.",
       "interfaces": [
         {
           "unique-id": "collateral-rest-api",
@@ -128,17 +128,17 @@
         }
       ],
       "metadata": {
-        "language": "Python",
-        "framework": "FastAPI (assumption)",
-        "cdm-binding": "CDM 7.6.0 Python distribution (assumption: availability to be confirmed)",
+        "language": "Java 21",
+        "framework": "Javalin",
+        "cdm-binding": "CDM 7.7.0 Java (org.finos.cdm:cdm-java) and the local extension cdmx generated to Java (cdm-ext), ADR wp-adr-java-cdm-stack",
         "instances": "one per participant"
       }
     },
     {
       "unique-id": "cdm-object-model",
       "node-type": "data-asset",
-      "name": "CDM 7.6.0 object model",
-      "description": "FINOS Common Domain Model release 7.6.0 (commit f685b4b) as the canonical data layer (ASR concept-asr-cdm-data-layer): LegalAgreement with CSA IM / CTA elections, EligibleCollateralSpecification, MarginCallIssuance / MarginCallResponse, CollateralPortfolio. Extended locally with on-chain asset identity (ASR concept-asr-onchain-asset-identity, finding B1)."
+      "name": "CDM 7.7.0 object model",
+      "description": "FINOS Common Domain Model release 7.7.0 (commit 1c97666, Java distribution) as the canonical data layer (ASR concept-asr-cdm-data-layer): LegalAgreement with CSA IM / CTA elections, EligibleCollateralSpecification, MarginCallIssuance / MarginCallResponse, CollateralPortfolio. Extended locally (cdm-ext, namespaces cdmx.*: margin call lifecycle, events, transfers) and with on-chain asset identity (ASR concept-asr-onchain-asset-identity, finding B1)."
     },
     {
       "unique-id": "workflow-store",
@@ -171,8 +171,8 @@
         }
       ],
       "metadata": {
-        "language": "Python",
-        "framework": "FastAPI (assumption)",
+        "language": "Java 21",
+        "framework": "Javalin",
         "endpoints": [
           "GET /oracle/v1/prices/{assetId}",
           "GET /oracle/v1/ratings/{assetId}",

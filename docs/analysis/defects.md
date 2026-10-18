@@ -182,6 +182,9 @@ expects at 7.6.0.
 
 ### D14 — CDM 7.7.0 Python package: asset types and nested construction *(added 2026-10-17)*
 
+*Since 2026-10-18 the project runs CDM on Java (`wp-adr-java-cdm-stack`); D14–D16 no longer affect it. The
+workaround module and the Python tests named below are at commit `e1a2e6f` (`cdm-ext/tests/`, `cdm-ext/build.sh`).*
+
 Found while testing the local extension (`cdm-ext/`, `task-cdm-gap-closure`). Package `finos-cdm` 7.7.0 from PyPI
 with `rune.runtime` 2.2.2 and pydantic 2.14.1; each case reproduced in a clean environment without the extension.
 Workarounds are in the extension's runtime module `cdm-ext/tests/cdm_runtime.py` (decision

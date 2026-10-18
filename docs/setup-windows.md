@@ -59,11 +59,12 @@ npipe:////./pipe/dockerDesktopLinuxEngine … The system cannot find the file sp
 start (or restart) Docker Desktop and wait for **Engine running**. `wsl -l -v` showing `docker-desktop` as `Stopped`
 confirms the engine is down.
 
-## 4. Git, Python, Node.js (and an editor)
+## 4. Git, Java, Python, Node.js (and an editor)
 
 ```powershell
 winget install -e --id Git.Git
-winget install -e --id Python.Python.3.12
+winget install -e --id EclipseAdoptium.Temurin.21.JDK   # added 2026-10-18, not yet tested on Windows
+winget install -e --id Python.Python.3.12                # documentation scripts only
 winget install -e --id OpenJS.NodeJS.LTS
 winget install -e --id Microsoft.VisualStudioCode   # optional
 ```
@@ -72,6 +73,7 @@ Open a new PowerShell window and check:
 
 ```powershell
 git --version
+java -version
 py -3.12 --version
 node -v
 npm -v
@@ -167,7 +169,8 @@ non-validator (same genesis, `--bootnodes`) and be voted in as a validator with 
 
 - Funded test accounts (one per participant, plus the oracle publisher and contract admin) will be added to the genesis
   `alloc` section, so the network will be regenerated once.
-- Python virtual environments for the workflow and oracle services; `npm install` for the ledger gateway, the
+- The Java services and the CDM extension build with the Maven wrapper (`cd cdm-ext; .\mvnw.cmd test`; no separate
+  Maven install); `npm install` for the ledger gateway, the
   contracts and the party console; Playwright browsers for the end-to-end tests.
 
 ## Troubleshooting

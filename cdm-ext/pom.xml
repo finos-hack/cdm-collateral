@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Java build of the local CDM extension (spike): generates Java for the cdmx namespaces from ../rosetta with
+<!-- Build of the local CDM extension: generates Java for the cdmx namespaces from rosetta/ with
      CDM's own toolchain (rune-maven-plugin, RosettaStandaloneSetup) against cdm-java 7.7.0, and runs the tests. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -68,7 +68,7 @@
                         <goals><goal>copy-resources</goal></goals>
                         <configuration>
                             <outputDirectory>${rosetta.dir}/cdmx</outputDirectory>
-                            <resources><resource><directory>${project.basedir}/../rosetta</directory><includes><include>*.rosetta</include></includes></resource></resources>
+                            <resources><resource><directory>${project.basedir}/rosetta</directory><includes><include>*.rosetta</include></includes></resource></resources>
                         </configuration>
                     </execution>
                 </executions>

@@ -5,7 +5,7 @@ GitHub's cloud, opened in the browser (or in VS Code), built from this repositor
 [`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json). It needs nothing installed on your own
 machine. The Windows install ([`setup-windows.md`](setup-windows.md)) remains for working locally.
 
-**What the codespace contains:** Ubuntu 24.04, Docker (Docker-in-Docker), Python 3.12, Node.js LTS, and the four-node
+**What the codespace contains:** Ubuntu 24.04, Docker (Docker-in-Docker), Java 21 (Maven through the wrapper `cdm-ext/mvnw`), Python 3.12 (documentation scripts), Node.js LTS, and the four-node
 QBFT Besu network from [`../besu/`](../besu/), started automatically by
 [`besu/start-network.sh`](../besu/start-network.sh) every time the codespace starts.
 
@@ -84,7 +84,7 @@ modes: [`../console/README.md`](../console/README.md).
 
 ## 5. Later
 
-The same dev container will install the Python dependencies and start the services and N participant stacks.
+The same dev container will build the Java services (Maven wrapper) and start them and N participant stacks.
 
 ## Troubleshooting
 

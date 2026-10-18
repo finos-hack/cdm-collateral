@@ -8,7 +8,7 @@ import java.util.Map;
 
 import static cdmx.Cdm.*;
 
-/** Rune JSON builders for test data (invented identifiers and amounts, matching the console scenarios); port of tests/data.py. */
+/** Rune JSON builders for test data (invented identifiers and amounts, matching the console scenarios). */
 final class Data {
     private Data() {}
 

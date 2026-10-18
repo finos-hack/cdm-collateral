@@ -13,7 +13,7 @@ import static cdmx.Cdm.*;
 import static cdmx.Data.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** G2: collateral proposal. Port of tests/test_proposal.py. */
+/** G2: collateral proposal. */
 class ProposalTest {
     private final ProposalCoversAgreedAmount covers = fn(ProposalCoversAgreedAmount.class);
     private final DecideCollateralProposal decide = fn(DecideCollateralProposal.class);

@@ -10,7 +10,7 @@ provenance:
   contentHash: 41af88afd7f6994b53858c3b109793a399df3d06
   timestamp: 2026-10-16T22:20:33Z
 createdAt: 2026-10-16T22:20:33Z
-updatedAt: 2026-10-16T22:20:33Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # ADR: Development environment in a public cloud (GitHub Codespaces)
 
@@ -27,3 +27,5 @@ VM (2 OCPU / 12 GB since 2026) and PaaS free tiers were considered and are less 
 
 **Consequences.** Everything the prototype needs must start from the dev container without manual steps. Public port
 forwarding exposes Besu RPC to anyone while public; demos expose only the consoles and use test keys only.
+
+Revised 2026-10-18T01:27:28Z (source `6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630`): the dev container also installs Java 21 (`wp-adr-java-cdm-stack`).

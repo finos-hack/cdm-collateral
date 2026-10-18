@@ -1,7 +1,7 @@
 name: cdm-ext
 
-# Generate the local CDM extension (cdm-ext/rosetta) with the Rune Python generator and run its tests on top of
-# the published finos-cdm package (cdm-ext/build.sh, decision wp-adr-cdm-extension-rune).
+# Generate the local CDM extension (cdm-ext/rosetta) to Java with CDM 7.7.0's toolchain against cdm-java 7.7.0 and
+# run its JUnit tests (cdm-ext/pom.xml, decision wp-adr-java-cdm-stack).
 
 on:
   push:
@@ -23,29 +23,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Cache generator and CDM sources
-        uses: actions/cache@v4
-        with:
-          path: |
-            cdm-ext/build/python-*.jar
-            cdm-ext/build/cdm
-            cdm-ext/build/fpml
-          key: cdm-ext-${{ hashFiles('cdm-ext/build.sh') }}
-      - run: bash cdm-ext/build.sh
-
-  # Java build of the same extension (spike, cdm-ext/java): generated with CDM's own toolchain (rune-maven-plugin)
-  # against cdm-java 7.7.0, tests in JUnit.
-  java:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
           cache: maven
-          cache-dependency-path: cdm-ext/java/pom.xml
-      - run: mvn -B -q -f cdm-ext/java/pom.xml test
+          cache-dependency-path: cdm-ext/pom.xml
+      - run: mvn -B -q -f cdm-ext/pom.xml test

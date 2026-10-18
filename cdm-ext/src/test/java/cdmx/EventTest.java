@@ -21,7 +21,7 @@ import static cdmx.Cdm.*;
 import static cdmx.Data.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Margin call events (G1) with qualification and CDM transfers on settlement (G4). Port of tests/test_event.py. */
+/** Margin call events (G1) with qualification and CDM transfers on settlement (G4). */
 class EventTest {
     static final ZonedDateTime T0 = ZonedDateTime.of(2026, 10, 16, 9, 0, 0, 0, ZoneOffset.UTC);
     static final Date D0 = Date.of(2026, 10, 16);
@@ -77,18 +77,6 @@ class EventTest {
         assertNull(e.events.get(0).getBefore());
         for (int i = 1; i < e.events.size(); i++) assertEquals(e.events.get(i - 1).getAfter(), e.events.get(i).getBefore());
         for (CollateralEvent ev : e.events) assertEquals("", failedText(ev));  // all conditions, CDM's included
-        writeInterop("settled-event.json", e.last());
-    }
-
-    /** Writes Rune JSON for the cross-language check (cdm-ext/README.md, Java build). */
-    static void writeInterop(String name, Object o) {
-        try {
-            java.nio.file.Path dir = java.nio.file.Path.of("target", "interop");
-            java.nio.file.Files.createDirectories(dir);
-            java.nio.file.Files.writeString(dir.resolve(name), toJson(o));
-        } catch (java.io.IOException ex) {
-            throw new java.io.UncheckedIOException(ex);
-        }
     }
 
     @Test

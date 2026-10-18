@@ -117,7 +117,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | Default | G14 | Enforcement against segregated IM |
 | Ledger | G24, G25 | Tokenized asset identity; ledger reference on events and calls |
 | Tests | G29 | Unit tests for every extension function |
-| Toolchain | G39 | A target language in which CDM and the extension run without defects, or workarounds kept current |
+| Toolchain | G39 | Closed: CDM and the extension on Java (`wp-adr-java-cdm-stack`) |
 
 The P1 set matches the steps the console's rule engine performs today outside CDM
 (`console/src/domain/engine.ts`), so closing it lets the engine's rules be expressed in CDM.
@@ -134,7 +134,7 @@ Local extension in [`../../cdm-ext/`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | G4 | closed (proposed, for review) | Settlement only against an accepted proposal covering the agreed amount (return: within the agreed amount); the settlement event carries one CDM `TransferState` per position (pledgor → secured party on delivery, the reverse on return), passing CDM's own conditions. `transferType` stays absent: `UnscheduledTransferEnum` has no collateral value |
 | G6 | closed | Return calls released without a proposal, within the agreed amount |
 | G37, G38 | open | Found while closing G4 (findings X2, X3); the extension leaves `transferType` absent and reads pledge roles only |
-| G39 | open, worked around | `cdm-ext/tests/cdm_runtime.py` and the Rune written around D15; Python kept for now (`nw-cdm-stay-on-python`); project owner to contact the maintainers. Java spike 2026-10-18 (`cdm-ext/java/`): the same Rune and tests pass in Java with no workarounds and with CDM's full validation; Python and Java Rune JSON differ for choice types (D16) |
+| G39 | closed | Moved to Java (`wp-adr-java-cdm-stack`, 2026-10-18): CDM's Java distribution and the extension generated to Java run the 23 tests with no workarounds and with CDM's full validation; the Python build is retired (kept at commit `e1a2e6f` as a reproduction of D14–D16) |
 | others | open | |
 
 ## Source index

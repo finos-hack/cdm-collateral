@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-10-18T00:07:05Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # Task: CDM gap closure
 
@@ -36,3 +36,5 @@ Java spike 2026-10-18T00:07:05Z (project owner's request): `cdm-ext/java/` gener
 `cdm-java` 7.7.0; the 23 tests pass in JUnit with no workarounds and with CDM's full validation. Cross-language Rune
 JSON fails for choice types (D16). CI job `java` added to `cdm-ext.yml`. Language decision unchanged
 (`nw-cdm-stay-on-python`) until the project owner decides.
+
+Decided 2026-10-18T01:27:28Z: Java for CDM and the services, Javalin, Java code, Python build retired (`wp-adr-java-cdm-stack`). G39 closed.

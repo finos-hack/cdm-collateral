@@ -29,7 +29,7 @@ flowchart LR
   end
   subgraph host["Development host · GitHub Codespace (primary) or Windows machine"]
     subgraph stack["Participant stack × N · one per participant"]
-      UI["Party console<br/>React"] --> CS["Collateral workflow service<br/>Python · CDM 7.6.0"]
+      UI["Party console<br/>React"] --> CS["Collateral workflow service<br/>Java · Javalin · CDM 7.7.0"]
       CS --> DB[("Workflow store<br/>SQLite · own file")]
       CS --> LG["Ledger gateway<br/>TypeScript · Besu adapter"]
       UI --> LG
@@ -37,7 +37,7 @@ flowchart LR
       LG -. "ledger events" .-> CS
     end
     CS <-- "peer messages<br/>(counterparty instance)" --> CS
-    UI --> OS["Oracle service<br/>Python · shared"]
+    UI --> OS["Oracle service<br/>Java · shared"]
     CS --> OS
     OS --> MD[["Mock market data<br/>JSON files"]]
     OS -- "via operator's gateway" --> LG
@@ -56,10 +56,10 @@ flowchart LR
 |---|---|---|---|
 | Participant stack (× N) | system | — | One per participant (pledgor, secured party, market operator): party console, workflow service, workflow store, ledger gateway, keystore and a Besu validator node. Each holds only its own party's books and key (`wp-adr-per-participant-services`) |
 | Party console | web client | TypeScript, React + Vite *(assumption)* | Drives the flows for its participant; set by `PARTY_ID`, `ROLE` and `WALLET`; talks only to its own stack |
-| Collateral workflow service | service, per participant | Python, FastAPI *(assumption)*, CDM 7.6.0 | Its party's agreements (IM CSA / CTA-SA), eligibility and haircuts with CDM functions, margin call lifecycle (issue, respond, dispute — the part CDM lacks, finding F2), its own movement instructions; exchanges calls, responses, return requests and default notices with the counterparty's instance |
-| CDM 7.6.0 object model | data asset | CDM Python distribution *(assumption)* | Canonical data layer, extended locally with on-chain asset identity (finding B1) |
+| Collateral workflow service | service, per participant | Java 21, Javalin, CDM 7.7.0 Java + local extension `cdm-ext` (`wp-adr-java-cdm-stack`) | Its party's agreements (IM CSA / CTA-SA), eligibility and haircuts with CDM functions, margin call lifecycle (issue, respond, dispute — the part CDM lacks, finding F2), its own movement instructions; exchanges calls, responses, return requests and default notices with the counterparty's instance |
+| CDM 7.7.0 object model | data asset | `org.finos.cdm:cdm-java` 7.7.0 and the generated `cdmx` extension | Canonical data layer, extended locally with on-chain asset identity (finding B1) |
 | Workflow store | database, per participant | SQLite, one file per party | Its party's agreements, calls, disputes, instructions, balances, asset registry (ISIN/CUSIP + DTI → network + token contract) |
-| Oracle service | service, shared | Python | Run by the market operator. The oracle endpoints: prices / NAV and ratings for the workflow, signed updates and default notices to the on-chain feed |
+| Oracle service | service, shared | Java 21, Javalin | Run by the market operator. The oracle endpoints: prices / NAV and ratings for the workflow, signed updates and default notices to the on-chain feed |
 | Mock market data | external system | JSON files | Stands in for NAV, price and rating providers |
 | Ledger gateway | service, per participant | TypeScript (Node.js), ethers.js *(assumption)* | Ledger-neutral interface: signs with its own participant's key and submits transactions, waits for finality, reports events. Besu adapter first, Canton adapter later |
 | Dev keystore | data asset, per participant | key files | That participant's key only (the market operator holds the oracle publisher and contract admin keys) |
@@ -133,7 +133,7 @@ Local Windows machine: [`../docs/setup-windows.md`](../docs/setup-windows.md).
 
 - Docker (Docker-in-Docker in the codespace; Docker Desktop with WSL2 on Windows), running four Besu validator nodes
   with Docker Compose ([`../besu/`](../besu/)).
-- Python 3 for the collateral and oracle services; Node.js for the ledger gateway and the Solidity toolchain
+- Java 21 and Maven for the collateral and oracle services (Javalin) and the CDM extension; Node.js for the ledger gateway and the Solidity toolchain
   (Hardhat, *assumption*) that compiles and deploys the contracts to Besu.
 - **Besu simulator choice:** a real Besu node in Docker. EVM simulators such as Hardhat Network or Anvil are lighter but
   are not Besu; they could be used for fast contract unit tests.
@@ -145,8 +145,8 @@ Local Windows machine: [`../docs/setup-windows.md`](../docs/setup-windows.md).
 - Two-way initial margin: the design allows it (roles are per pledge); the flows show one direction for now
   (`task-two-way-initial-margin`).
 
-- A CDM 7.6.0 Python distribution is available and usable on Windows.
-- FastAPI, ethers.js and Hardhat are suitable; any equivalent can replace them.
+- Javalin, ethers.js and Hardhat are suitable; any equivalent can replace them. CDM runs on its Java distribution
+  (`wp-adr-java-cdm-stack`; the Python distribution was tried and retired, defects D14–D16).
 - Four QBFT validators on one machine are enough to illustrate deterministic finality and per-participant nodes.
   Participants beyond the four default ones use an existing node or join as non-validators.
 - Workflow services send CDM content directly to each other over HTTP; in production a messaging network would carry it.
