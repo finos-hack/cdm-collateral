@@ -64,6 +64,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-clickableui-html | produces | node:task-clickable-ui | artifact:artifact-clickable-ui-html |  | accepted |
 | e-dec-e2e-reactconsole | decomposes | node:goal-end-to-end-flow | node:task-react-console |  |
 | e-prod-reactconsole-app | produces | node:task-react-console | artifact:artifact-react-console |  | proposed |
+| e-dec-e2e-wiring | decomposes | node:goal-end-to-end-flow | node:task-e2e-wiring |  | proposed |
 | e-dec-cdmdev-gapanalysis | decomposes | node:goal-cdm-development | node:task-cdm-gap-analysis |  |
 | e-dec-cdmdev-gapclosure | decomposes | node:goal-cdm-development | node:task-cdm-gap-closure |  |
 | e-mrk-localext-gapclosure | marks | waypoint:wp-adr-cdm-local-extensions | node:task-cdm-gap-closure |  |
