@@ -215,6 +215,7 @@ excluded.
 | task-cdm-gap-closure | 0da774e65d47b7dbfe35c5faac21d984f42b9eb2 | docs/cdm-development/gap-register.md | 2026-10-17T16:53:35Z |
 | task-cdm-gap-closure | 3f2be38d3c8049c8659822651da9202a071c6588 | docs/cdm-development/gap-register.md | 2026-10-17T16:59:27Z |
 | task-cdm-gap-closure | 5508454ce8b1dbb33693c0e84666c2ed8ddf69bb | docs/analysis/findings.md | 2026-10-17T17:01:44Z |
+| task-windows-install | 4503371f5a9098bba714ff97db5419fe1e52a884 | docs/setup-windows.md | 2026-10-17T18:32:09Z |
 | task-cdm-gap-closure | c61ab6b767ebb4be9fca70eb86cae793e127ed4a | .github/workflows/cdm-ext.yml | 2026-10-18T00:07:30Z |
 | task-cdm-gap-closure | c61ab6b767ebb4be9fca70eb86cae793e127ed4a | cdm-ext/README.md | 2026-10-18T00:07:30Z |
 | task-cdm-gap-closure | c61ab6b767ebb4be9fca70eb86cae793e127ed4a | cdm-ext/java/.gitignore | 2026-10-18T00:07:30Z |

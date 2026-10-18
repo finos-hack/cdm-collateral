@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
 createdAt: 2026-10-16T20:21:13Z
-updatedAt: 2026-10-16T21:09:56Z
+updatedAt: 2026-10-17T18:32:09Z
 ```
 # Windows development machine setup
 
@@ -22,3 +22,10 @@ Java 25, Linux); the Windows and Docker steps were not tested.
 Revised 2026-10-16T21:09:56Z (`wp-adr-per-participant-services`, source `2996ac2d303ef1b99234173cb0b618ba1a45aca9`): step 6 now starts four Besu validator nodes, one per
 default participant, with Docker Compose; configuration in `besu/qbftConfigFile.json` and `besu/docker-compose.yml`.
 Tested natively with four nodes; Windows and Docker steps not tested.
+
+Revised 2026-10-17T18:32:09Z (`task-windows-install`, source `f653908353dce5cf20875fa230afab001c9f8ea1`): executed on
+the project owner's Windows 11 machine with Docker Desktop (WSL 2 engine). Step 3 (Docker engine) and step 6 verified —
+the four-node QBFT network over Docker Compose reached `net_peerCount` `0x3`, four validators and 2-second block
+production with all four containers healthy. Step 3 gained a wait-for-engine instruction and a troubleshooting row for
+the `dockerDesktopLinuxEngine` connection error. Steps 2, 4 and 5 (`wsl --install`, the Git / Python / Node installs,
+the clone) were not exercised because those tools were already present on the test machine.
