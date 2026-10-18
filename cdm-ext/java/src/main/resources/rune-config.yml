@@ -1,0 +1,7 @@
+model:
+  name: CDM local extension (cdmx)
+  defaultSerialisationFormat: RUNE_JSON
+dependencies:
+generators:
+  namespaces:
+  - cdmx.*

@@ -24,6 +24,7 @@ Built on CDM **7.7.0** (`finos-cdm` on PyPI); Rune Python generator **10.15.1.0*
 | `tests/data.py` | Rune JSON builders for test data |
 | `tests/cdm_runtime.py` | Workarounds for defects in the CDM 7.7.0 Python package and `rune.runtime` (D14) and for generated modules that use names they do not import (D15) |
 | `build.sh` | Fetch generator and sources, generate, install on top of `finos-cdm`, run the tests |
+| `java/` | Java build of the same Rune (spike, 2026-10-18): `pom.xml` generates the `cdmx` namespaces with CDM's toolchain against `cdm-java` 7.7.0; `src/test/java/cdmx/` holds the same 23 tests in JUnit |
 
 ## Build and test
 
@@ -33,6 +34,40 @@ bash cdm-ext/build.sh        # needs Java 21+, Python 3.11+, git, curl; about 90
 
 `build/` (ignored by git) holds the generator, the CDM and rune-fpml sources, the generated code and a virtual
 environment with `finos-cdm` plus the generated `finos.cdmx` package.
+
+## Java build (spike, 2026-10-18)
+
+```bash
+mvn -f cdm-ext/java/pom.xml test     # needs Java 21 and Maven 3.9; about 30 s with dependencies cached
+```
+
+The same `.rosetta` files, generated to Java with CDM 7.7.0's own toolchain: `org.finos.rune:rune-maven-plugin`
+10.15.1 with `RosettaStandaloneSetup`, CDM's `.rosetta` files taken from the `cdm-java` 7.7.0 jar to resolve
+references, and `rune-config.yml` limiting generation to `cdmx.*`. The tests run on Guice with CDM's
+`CdmRuntimeModule`, load test data with `RuneJsonObjectMapper` and validate with `RosettaTypeValidator`.
+
+| Check | Python (`build.sh`) | Java (`java/`) |
+|---|---|---|
+| Generation of the four `cdmx` namespaces | passes | passes, first attempt, no warnings (84 Java files) |
+| The 23 tests (proposal, lifecycle, events, transfers) | pass with the runtime layer `tests/cdm_runtime.py` and the Rune written around D15 | pass with no runtime layer |
+| CDM's own conditions on positions with an asset | fail in CDM's generated code (`PriceQuantityTriangulation`, D14) | pass: every event, state and proposal validates with no failure |
+| Build and test time | about 80 s generation plus 18–25 s tests | about 30 s from clean (dependencies cached), 10 s again |
+
+Differences found, none needing a workaround:
+
+- A failed condition raises `ConditionValidator.ConditionException` with the condition's description only (no name);
+  conditions the tests check now all have a description.
+- An absent list attribute reads as `null` (Python: `[]`).
+- Rune JSON needs the top-level `@type`, and a choice value (`Asset`, `Transfer`) is written as the chosen option
+  with its own `@type` (`"asset": {"@type": "cdm.base.staticdata.asset.common.Security", ...}`), as in CDM's samples.
+  The Python test data uses the Python package's form (`"asset": {"Instrument": {"Security": {...}}}`); see D16.
+- The model version is written as `"@version": "${project.version}"`: the extension's version is not set yet.
+
+Cross-language check (a settled event written by Java, read by Python, and the reverse): **fails**, defect D16 in
+[`../docs/analysis/defects.md`](../docs/analysis/defects.md). Python reads Java's choice values as empty without an
+error, Java rejects Python's form, and Python's `rune_serialize` of a settled event fails (D14).
+
+Not yet checked: whether the Rune written around D15 can be simplified for Java; Java behaviour of `Now()`.
 
 ## Generation check (2026-10-17)
 

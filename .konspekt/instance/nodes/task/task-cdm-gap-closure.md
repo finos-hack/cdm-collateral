@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-10-17T16:53:35Z
+updatedAt: 2026-10-18T00:07:05Z
 ```
 # Task: CDM gap closure
 
@@ -31,3 +31,8 @@ repositories, `@data` cause corrected) and D15 (repositories), gaps G37 (collate
 party roles), G39 (Python toolchain; Python versus Java open), all proposed for review.
 
 Accepted 2026-10-17T17:00:55Z: `wp-adr-cdm-collateral-events` (project owner).
+
+Java spike 2026-10-18T00:07:05Z (project owner's request): `cdm-ext/java/` generates the same Rune with CDM's toolchain against
+`cdm-java` 7.7.0; the 23 tests pass in JUnit with no workarounds and with CDM's full validation. Cross-language Rune
+JSON fails for choice types (D16). CI job `java` added to `cdm-ext.yml`. Language decision unchanged
+(`nw-cdm-stay-on-python`) until the project owner decides.

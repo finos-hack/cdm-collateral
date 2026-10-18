@@ -10,7 +10,7 @@ func ProposalCoversAgreedAmount: <"True if the proposal's value after haircuts c
     output:
         covers boolean (1..1)
 
-    condition SameCurrency:
+    condition SameCurrency: <"The proposal is valued in the currency of the agreed amount.">
         proposal -> valueAfterHaircuts -> unit -> currency = agreedAmount -> unit -> currency
 
     set covers:
