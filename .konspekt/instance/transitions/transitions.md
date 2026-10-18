@@ -232,7 +232,11 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-repo-shared-with-cdm-maintainers | review |  | accepted | 2026-10-17T17:07:57Z | 303fc10a2ccd0ad628d55390871ed811a9c34a5c | denisurusov |
 | edge:e-note-cdmdev-sharedmaintainers | review |  | accepted | 2026-10-17T17:07:57Z | 303fc10a2ccd0ad628d55390871ed811a9c34a5c | denisurusov |
 | node:task-windows-install | status | open | resolved | 2026-10-17T18:32:09Z | f653908353dce5cf20875fa230afab001c9f8ea1 | denisurusov |
+| node:task-e2e-wiring | review |  | proposed | 2026-10-17T20:56:54Z |  |  |
+| node:task-e2e-wiring | status |  | open | 2026-10-17T20:56:54Z |  |  |
+| edge:e-dec-e2e-wiring | review |  | proposed | 2026-10-17T20:56:54Z |  |  |
 | waypoint:wp-adr-java-cdm-stack | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
 | edge:e-sup-javastack-stayonpython | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
 | edge:e-sup-javastack-pythonworkarounds | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
 | edge:e-mrk-javastack-gapclosure | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
+| edge:e-mrk-javastack-e2ewiring | review |  | proposed | 2026-10-18T15:05:37Z |  |  |
