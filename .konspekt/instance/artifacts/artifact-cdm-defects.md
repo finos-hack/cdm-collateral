@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-15T23:55:50Z
   confidence: 0.85
 createdAt: 2026-10-15T23:55:50Z
-updatedAt: 2026-10-17T13:40:02Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # Defects found in CDM — collateral scope
 
@@ -24,3 +24,5 @@ Revised 2026-10-17T01:16:19Z (source `9ab0cbf86284cce4606e93eabb8507c9d009d7b7`)
 
 Revised 2026-10-17T13:40:02Z (source `0f2f88c5496b77b3cef85e94a5ec0236fa765099`): D14 extended (failure inside generated functions; metadata check switched off);
 D15, Rune Python generator 10.15.1.0.
+
+Revised 2026-10-18T01:27:28Z (source `6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630`): D16 added (Python and Java Rune JSON differ for choice types); the project moved to Java (`wp-adr-java-cdm-stack`), so D14–D16 no longer affect it; they stay recorded for the CDM Python maintainers.

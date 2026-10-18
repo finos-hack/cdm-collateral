@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
 createdAt: 2026-10-16T20:21:13Z
-updatedAt: 2026-10-17T18:32:09Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # Windows development machine setup
 
@@ -29,3 +29,5 @@ the four-node QBFT network over Docker Compose reached `net_peerCount` `0x3`, fo
 production with all four containers healthy. Step 3 gained a wait-for-engine instruction and a troubleshooting row for
 the `dockerDesktopLinuxEngine` connection error. Steps 2, 4 and 5 (`wsl --install`, the Git / Python / Node installs,
 the clone) were not exercised because those tools were already present on the test machine.
+
+Revised 2026-10-18T01:27:28Z (source `6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630`): step 4 installs a JDK 21 (Temurin, not yet tested on Windows); Python only for documentation scripts; the Java build uses the Maven wrapper (`wp-adr-java-cdm-stack`).

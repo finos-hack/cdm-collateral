@@ -17,8 +17,8 @@ BOX = {
  'ledger-gateway': (740, 250, 190, 100, 'svc'), 'dev-keystore': (740, 400, 190, 45, 'data'),
  'collateral-control-contract': (975, 140, 180, 80, 'sc'), 'tokenized-collateral': (975, 300, 180, 70, 'sc'), 'oracle-feed-contract': (975, 440, 180, 70, 'sc'), 'margin-call-contract': (975, 580, 180, 70, 'sc'),
 }
-SUB = {'party-console': 'React', 'e2e-test-harness': 'Playwright · test only', 'collateral-service': 'Python · FastAPI',
-       'cdm-object-model': 'CDM 7.6.0', 'workflow-store': 'SQLite', 'oracle-service': 'Python · shared', 'mock-market-data': 'JSON files',
+SUB = {'party-console': 'React', 'e2e-test-harness': 'Playwright · test only', 'collateral-service': 'Java · Javalin',
+       'cdm-object-model': 'CDM 7.7.0 · Java', 'workflow-store': 'SQLite', 'oracle-service': 'Java · shared', 'mock-market-data': 'JSON files',
        'ledger-gateway': 'TypeScript · Besu adapter', 'dev-keystore': 'own key only', 'collateral-control-contract': 'pledge · return · enforce',
        'tokenized-collateral': 'ERC-20 · ISIN/CUSIP · DTI', 'oracle-feed-contract': 'price · rating · default', 'margin-call-contract': 'call · proposal · settled'}
 TITLE = {'collateral-service': 'Collateral workflow service', 'collateral-control-contract': 'Collateral control contract'}

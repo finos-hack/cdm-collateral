@@ -18,8 +18,8 @@ replaced by equivalents.
 |---|---|---|---|
 | Smart contracts — unit | Margin call contract (issue, respond, settle; only the right party's key may change state), collateral control contract (pledge only against an agreed call, return, enforce; every forbidden transition reverts), test tokens (transfer restrictions, identifier metadata), oracle feed (only the publisher can write) | Hardhat + Mocha/Chai, `solidity-coverage` *(assumption)* | Hardhat in-memory EVM (fast) |
 | Smart contracts — property | Invariants: pledged tokens leave the contract only by return or enforce; the sum of balances is constant; enforce is impossible without a default; total pledged against a call never exceeds its agreed amount | Hardhat with fast-check, or Foundry invariant tests *(assumption)* | In-memory EVM |
-| Python services — unit | Eligibility, haircuts, concentration limits, margin call lifecycle state machine, partial agreement and dispute handling, CDM object construction | pytest, Hypothesis for property tests, coverage.py | In process |
-| Python services — API | Each REST endpoint against its OpenAPI schema; error cases | pytest + FastAPI TestClient; Schemathesis for schema-driven fuzzing *(assumption)* | In process, gateway and oracle stubbed |
+| Java services — unit | Eligibility, haircuts, concentration limits, margin call lifecycle, partial agreement and dispute handling, CDM object construction and CDM validation (the extension's own tests: `cdm-ext/src/test`) | JUnit 5, jqwik for property tests *(assumption)*, JaCoCo | In process |
+| Java services — API | Each REST endpoint against its OpenAPI schema; error cases | JUnit 5 + `javalin-testtools`; Schemathesis for schema-driven fuzzing *(assumption)* | In process, gateway and oracle stubbed |
 | Ledger gateway — unit | Instruction mapping, signing, finality wait, event decoding, adapter interface | Vitest *(assumption)* | Mocked JSON-RPC |
 | Ledger gateway — integration | Real transactions and events | Vitest + Testcontainers for Node *(assumption)* | Besu 26.9.0 container |
 | Contract tests between services | Workflow ↔ oracle, workflow ↔ gateway and workflow ↔ peer workflow request/response shapes stay compatible | OpenAPI schemas checked in both directions (Schemathesis / generated clients) | In process |
@@ -57,7 +57,7 @@ replaced by equivalents.
 
 ```
 npm run test:contracts      # Hardhat unit + property tests
-pytest                      # Python services
+mvn test                    # Java services and the CDM extension (cdm-ext)
 npm run test:gateway        # gateway unit + integration (needs Docker)
 npm run test:console        # UI components
 npm run test:e2e            # Playwright, starts N participant stacks, N=3 by default (E2E_PARTIES=N)

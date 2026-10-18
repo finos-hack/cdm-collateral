@@ -88,7 +88,7 @@ func ApplyResponse: <"Records the response (G1) and the agreed and disputed amou
     alias agreed: response -> agreedAmountBaseCurrency
 
     // Conditions spell out the paths: in generated Python, pre-conditions run before aliases are assigned.
-    condition SameCurrency:
+    condition SameCurrency: <"The agreed amount is in the call currency.">
         response -> agreedAmountBaseCurrency -> unit -> currency
             = state -> issuance -> callAmountInBaseCurrency -> unit -> currency
     condition AgreedWithinCall:
@@ -132,7 +132,7 @@ func ApplyProposal: <"Adds a collateral proposal (G2) to a delivery call.">
 
     condition NewProposal:
         proposal -> status = CollateralProposalStatusEnum -> Proposed
-    condition SameCall:
+    condition SameCall: <"The proposal answers this call.">
         proposal -> callIdentifier -> assignedIdentifier only-element -> identifier
             = state -> issuance -> callIdentifier -> assignedIdentifier only-element -> identifier
     // Identifier paths are written out: generated Python omits the import when a function is called inside filter or extract.

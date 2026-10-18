@@ -12,7 +12,7 @@ provenance:
   timestamp: 2026-10-16T20:08:49Z
   confidence: 0.75
 createdAt: 2026-10-16T20:08:49Z
-updatedAt: 2026-10-16T22:15:03Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # Prototype architecture (CALM)
 
@@ -37,3 +37,5 @@ CDM content between services checked against the on-chain hash; 20 nodes, 26 rel
 
 Revised 2026-10-16T22:15:03Z (source `030d173b1a7f835b860f9cca1cb4d482d59f360d`, `nw-mimic-real-flows`): collateral proposal and acceptance in the margin call contract and
 the IM flow (26 steps).
+
+Revised 2026-10-18T01:27:28Z (source `6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630`): collateral workflow service and oracle service in Java 21 with Javalin, CDM 7.7.0 Java distribution with the local extension (`wp-adr-java-cdm-stack`); CALM regenerated, `calm validate --strict` 0 errors, 0 warnings.

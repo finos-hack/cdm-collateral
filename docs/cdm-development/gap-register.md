@@ -7,7 +7,7 @@ in this repository only** (`wp-adr-cdm-local-extensions`); nothing is proposed t
 
 Sources:
 [findings](../analysis/findings.md) (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3) ·
-[defects](../analysis/defects.md) (D1–D15) ·
+[defects](../analysis/defects.md) (D1–D16) ·
 [CSA coverage matrix](../analysis/cdm-csa-coverage-matrix.md) (rows 1–25) ·
 [other agreements matrix](../analysis/cdm-other-agreements-coverage-matrix.md) (R1–R25, S1–S27, T1–T16, C1–C18) ·
 [blockchain applicability](../architecture/blockchain-applicability.md) §4 (B1–B5).
@@ -103,7 +103,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | G31 | Samples and documentation contradict the model (margin and haircut percentages, empty eligibility fields, bond labelled as cash) | D3, D6 | – | none | P3 | samples (local copies) |
 | G32 | Misspelt enum values and attributes; literal `\t` and lost accents in descriptions | D9–D12 | – | none | P3 | none locally (renaming needs a CDM change); note only |
 | G33 | Securities-lending settlement workflows are hand-written Java; buy/sell-back is qualification only | O11, O12 | – | none | P3 | none for now |
-| G39 | The Python toolchain does not run CDM reliably: the package keeps placeholder types in nested types, `rune.runtime` fails on references, copies and dates, the generator emits Python that differs from Rune in eleven ways, and one CDM condition (`PriceQuantityTriangulation`) fails in CDM's own generated code. Worked around in the extension's runtime and Rune (2026-10-17); Java not yet evaluated | D14, D15, X1 (context) | – | every extension and every scenario run through it | P1 | runtime workarounds, or another target language (decision open) |
+| G39 | The Python toolchain does not run CDM reliably: the package keeps placeholder types in nested types, `rune.runtime` fails on references, copies and dates, the generator emits Python that differs from Rune in eleven ways, and one CDM condition (`PriceQuantityTriangulation`) fails in CDM's own generated code. Worked around in the extension's runtime and Rune (2026-10-17); Java not yet evaluated | D14, D15, D16, X1 (context) | – | every extension and every scenario run through it | P1 | runtime workarounds, or another target language (decision open) |
 | G34 | Collateral allocation and optimisation absent | row 18, R18, S16, T7 | 0 | proposal step (pledgor chooses assets by hand today) | P3 | functions |
 | G35 | Reconciliation absent | row 19, R19, S22, T12, C13 | 0 | none: the shared ledger replaces reconciliation in the prototype | Out | none |
 | G36 | Regulatory reporting of margin not in this repository | row 20 | n/a | none | Out | none |
@@ -117,7 +117,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | Default | G14 | Enforcement against segregated IM |
 | Ledger | G24, G25 | Tokenized asset identity; ledger reference on events and calls |
 | Tests | G29 | Unit tests for every extension function |
-| Toolchain | G39 | A target language in which CDM and the extension run without defects, or workarounds kept current |
+| Toolchain | G39 | Closed: CDM and the extension on Java (`wp-adr-java-cdm-stack`) |
 
 The P1 set matches the steps the console's rule engine performs today outside CDM
 (`console/src/domain/engine.ts`), so closing it lets the engine's rules be expressed in CDM.
@@ -134,7 +134,7 @@ Local extension in [`../../cdm-ext/`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | G4 | closed (proposed, for review) | Settlement only against an accepted proposal covering the agreed amount (return: within the agreed amount); the settlement event carries one CDM `TransferState` per position (pledgor → secured party on delivery, the reverse on return), passing CDM's own conditions. `transferType` stays absent: `UnscheduledTransferEnum` has no collateral value |
 | G6 | closed | Return calls released without a proposal, within the agreed amount |
 | G37, G38 | open | Found while closing G4 (findings X2, X3); the extension leaves `transferType` absent and reads pledge roles only |
-| G39 | open, worked around | `cdm-ext/tests/cdm_runtime.py` and the Rune written around D15; Python kept for now (`nw-cdm-stay-on-python`); project owner to contact the maintainers |
+| G39 | closed | Moved to Java (`wp-adr-java-cdm-stack`, 2026-10-18): CDM's Java distribution and the extension generated to Java run the 23 tests with no workarounds and with CDM's full validation; the Python build is retired (kept at commit `e1a2e6f` as a reproduction of D14–D16) |
 | others | open | |
 
 ## Source index
@@ -152,7 +152,7 @@ Every source ID and where it went.
 | S1 | G2, G26 | D7 | G30 | O2 | G21 |
 | S2 | G24, G28 | D8 | G11 | O3 | G12 |
 | S3 | G28 | D9–D12 | G32 | O8 | G1 |
-| D14, D15 | G39 | X1 | G1 (context) | X2 | G37 |
+| D14, D15, D16 | G39 | X1 | G1 (context) | X2 | G37 |
 | X3 | G38 | | | | |
 | S4 | G28 | D13 | G30 | O9 | G22 |
 | TX1 | G27 | TX4 | G27 | O10 | G23 |

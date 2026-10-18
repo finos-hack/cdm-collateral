@@ -10,7 +10,7 @@ provenance:
   contentHash: 718789ef3024496c06042f84fc8cf0129ecc58dc
   timestamp: 2026-10-17T00:48:29Z
 createdAt: 2026-10-17T00:48:29Z
-updatedAt: 2026-10-17T01:16:19Z
+updatedAt: 2026-10-18T01:27:28Z
 ```
 # ADR: Write CDM extensions in the Rune DSL and generate them like CDM
 
@@ -29,3 +29,5 @@ module, about 10–13 s once per process.
 
 Verified 2026-10-17T01:16:19Z (source `9ab0cbf86284cce4606e93eabb8507c9d009d7b7`): an extension generated together with CDM 7.7.0 works when only its `finos/cdmx`
 modules are added to the published `finos-cdm` 7.7.0 package; CDM need not be regenerated (`cdm-ext/README.md`).
+
+Revised 2026-10-18T01:27:28Z (source `6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630`): the generation target is Java, not Python (`wp-adr-java-cdm-stack`); the Python-specific consequences above are historical.
