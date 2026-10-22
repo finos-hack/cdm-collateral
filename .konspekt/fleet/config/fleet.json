@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "canonicalBranch": "fleet",
+  "topology": "worktree",
+  "agents": [
+    { "handle": "spec-writer", "role": "fleet-spec-writer", "entityTypes": ["artifact", "noteworthy"] }
+  ]
+}
