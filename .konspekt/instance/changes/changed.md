@@ -260,3 +260,17 @@ excluded.
 | task-cdm-gap-closure | bd9eb1a35fc84915c41ba6e07b918bd40ee2400f | docs/cdm-development/gap-register.md | 2026-10-18T01:28:34Z |
 | task-cdm-gap-closure | bd9eb1a35fc84915c41ba6e07b918bd40ee2400f | docs/setup-codespaces.md | 2026-10-18T01:28:34Z |
 | task-cdm-gap-closure | bd9eb1a35fc84915c41ba6e07b918bd40ee2400f | docs/setup-windows.md | 2026-10-18T01:28:34Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/.gitignore | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/README.md | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/contracts/CollateralControl.sol | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/contracts/CollateralTypes.sol | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/contracts/MarginCall.sol | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/contracts/OracleFeed.sol | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/contracts/TokenizedCollateral.sol | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/hardhat.config.ts | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/package-lock.json | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/package.json | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/scripts/deploy-besu.mjs | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/scripts/deploy.ts | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/test/contracts.test.ts | 2026-10-22T22:46:38Z |
+| task-e2e-wiring | 76cc4710be86d3496e835ecd716b2cdcfd7b19c2 | contracts/tsconfig.json | 2026-10-22T22:46:38Z |
