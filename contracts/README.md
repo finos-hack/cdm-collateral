@@ -1,0 +1,41 @@
+# Collateral contracts
+
+Solidity contracts for the CDM collateral prototype, built with **Hardhat 3** (viem). They are the on-chain layer of
+the prototype architecture (`../architecture/prototype.architecture.json`): the margin call contract, the collateral
+control contract, the tokenized collateral tokens and the oracle feed. Part of `task-e2e-wiring`.
+
+## Contracts
+
+| Contract | Role |
+|---|---|
+| `OracleFeed.sol` | Price (scaled 1e8) and default feed. Only the publisher (the market operator's key) may write; every service reads valuations and default status here. |
+| `TokenizedCollateral.sol` | ERC-20 collateral token, 0 decimals (whole units), carrying ISIN / CUSIP / DTI identifiers (`concept-asr-onchain-asset-identity`). Dev-only unrestricted `mint`. |
+| `MarginCall.sol` | Margin call lifecycle: issue, respond (agree / partial / dispute), propose collateral, decide (`wp-adr-margin-call-state-onchain`). Each state change is made by exactly one party's key; every call and proposal records a CDM content hash (`concept-asr-onchain-call-state`). Settlement is marked by the control contract. |
+| `CollateralControl.sol` | Settlement against the margin call state and oracle feed. Initial margin is escrowed here and leaves only by return or enforcement (`wp-adr-im-segregation`); variation margin passes title directly. Pledge checks value-after-haircut ≥ agreed, using the oracle price and the configured eligibility schedule. |
+| `CollateralTypes.sol` | Shared enums and structs, mirroring the CDM lifecycle in `../cdm-ext`. |
+
+## EVM target
+
+The Besu genesis activates **Berlin + London only** (no Shanghai), so the EVM has no `PUSH0`. `hardhat.config.ts` pins
+`evmVersion: "london"`; the solc default (`cancun`) would emit `PUSH0`/`MCOPY`, which revert as invalid opcodes on this
+chain.
+
+## Build, test, deploy
+
+```bash
+npm ci
+npm run build          # hardhat compile (solc 0.8.28, london target)
+npm test               # 16 unit + property tests on the in-memory EDR network
+npm run deploy:besu    # deploy to the running Besu network, write deployments/besu.json
+```
+
+`deploy:besu` runs `scripts/deploy-besu.mjs`, which reads the market operator's node key (`../besu/mkt/data/key`) and
+signs as the mkt account — the deployer and the oracle publisher. The chain is zero-base-fee (`gasPrice 0`), so no
+account needs funding. Opening balances, prices and haircuts mirror `../console/src/domain/reference.ts` and
+`scenarios.ts`, so the live stack starts where the mocked console did.
+
+### `deployments/besu.json`
+
+The address registry the gateway, services and console read: chain id, RPC URLs per node, party addresses, the oracle
+publisher, the three contract addresses, the price scale, and per-token address / decimals / haircut / identifiers.
+Written on every deploy; not committed (it is environment state).

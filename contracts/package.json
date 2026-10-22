@@ -1,0 +1,22 @@
+{
+  "name": "cdm-collateral-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Solidity contracts for the CDM collateral prototype: margin call, collateral control, tokenized collateral, oracle feed.",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:besu": "node scripts/deploy-besu.mjs"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "hardhat": "^3.20.0",
+    "typescript": "^5.7.0",
+    "viem": "^2.21.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0"
+  }
+}

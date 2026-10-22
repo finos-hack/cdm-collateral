@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.28;
+
+import {CallKind, CallState, ProposalState, ResponseType, Asset, Call, Proposal} from "./CollateralTypes.sol";
+
+/// @title Margin call contract
+/// @notice Records the margin call lifecycle on-chain: issuance, response (agree / partial / dispute), collateral
+/// proposal and the receiver's decision (wp-adr-margin-call-state-onchain, nw-mimic-real-flows). Each state change is
+/// made by exactly one party's key — the contract enforces *who* may change state; agreement policy (who is allowed
+/// to call initial margin, eligibility, concentration) stays in the workflow service. Settlement is performed by the
+/// collateral control contract, which calls `markSettled` here. Every call and proposal carries the hash of its CDM
+/// content so a counterparty can check the CDM it receives off-chain against the on-chain hash
+/// (concept-asr-onchain-call-state).
+contract MarginCall {
+    address public immutable deployer;
+    address public control; // the collateral control contract, set once after deployment
+
+    mapping(bytes32 => Call) private _calls;
+    mapping(bytes32 => mapping(uint256 => Proposal)) private _proposals;
+    mapping(bytes32 => mapping(uint256 => Asset[])) private _proposalAssets;
+
+    event CallIssued(bytes32 indexed callId, address indexed from, address indexed to, CallKind kind, uint256 amount, bytes32 cdmHash);
+    event CallAnswered(bytes32 indexed callId, ResponseType response, uint256 agreed, uint256 disputed, bytes32 cdmHash);
+    event CollateralProposed(bytes32 indexed callId, uint256 indexed proposalId, bytes32 cdmHash);
+    event ProposalDecided(bytes32 indexed callId, uint256 indexed proposalId, bool accepted);
+    event CallSettled(bytes32 indexed callId, bool disputedRemains);
+
+    error NotDeployer();
+    error NotControl();
+    error ControlAlreadySet();
+    error CallExists();
+    error NoSuchCall();
+    error WrongParty();
+    error BadState();
+    error BadResponse();
+    error ReturnHasNoProposal();
+    error ProposalPending();
+    error EmptyProposal();
+    error NoSuchProposal();
+
+    constructor() {
+        deployer = msg.sender;
+    }
+
+    function setControl(address control_) external {
+        if (msg.sender != deployer) revert NotDeployer();
+        if (control != address(0)) revert ControlAlreadySet();
+        control = control_;
+    }
+
+    modifier onlyControl() {
+        if (msg.sender != control) revert NotControl();
+        _;
+    }
+
+    // --- lifecycle, each guarded by the acting party's key ---
+
+    function issueCall(bytes32 callId, CallKind kind, address to, uint256 amount, uint64 deadline, bytes32 cdmHash) external {
+        if (_calls[callId].state != CallState.None) revert CallExists();
+        if (to == msg.sender || to == address(0)) revert WrongParty();
+        Call storage c = _calls[callId];
+        c.kind = kind;
+        c.from = msg.sender;
+        c.to = to;
+        c.amount = amount;
+        c.deadline = deadline;
+        c.state = CallState.Issued;
+        c.cdmHash = cdmHash;
+        emit CallIssued(callId, msg.sender, to, kind, amount, cdmHash);
+    }
+
+    function respond(bytes32 callId, ResponseType response, uint256 agreed, bytes32 cdmHash) external {
+        Call storage c = _load(callId);
+        if (msg.sender != c.to) revert WrongParty();
+        if (c.state != CallState.Issued) revert BadState();
+        if (c.kind == CallKind.Return) revert BadResponse(); // a return call is agreed and released in one control step
+        if (response == ResponseType.Full) {
+            c.agreed = c.amount;
+            c.disputed = 0;
+            c.state = CallState.Agreed;
+        } else if (response == ResponseType.Partial) {
+            if (!(agreed > 0 && agreed < c.amount)) revert BadResponse();
+            c.agreed = agreed;
+            c.disputed = c.amount - agreed;
+            c.state = CallState.PartiallyAgreed;
+        } else {
+            c.agreed = 0;
+            c.disputed = c.amount;
+            c.state = CallState.Disputed;
+        }
+        emit CallAnswered(callId, response, c.agreed, c.disputed, cdmHash);
+    }
+
+    function propose(bytes32 callId, Asset[] calldata assets, bytes32 cdmHash) external returns (uint256 proposalId) {
+        Call storage c = _load(callId);
+        if (msg.sender != c.to) revert WrongParty();
+        if (c.kind == CallKind.Return) revert ReturnHasNoProposal();
+        if (!(c.state == CallState.Agreed || c.state == CallState.PartiallyAgreed)) revert BadState();
+        if (c.activeProposal != 0) revert ProposalPending();
+        if (assets.length == 0) revert EmptyProposal();
+        proposalId = c.proposalCount++;
+        _proposals[callId][proposalId] = Proposal({state: ProposalState.Proposed, cdmHash: cdmHash});
+        for (uint256 i = 0; i < assets.length; i++) {
+            _proposalAssets[callId][proposalId].push(assets[i]);
+        }
+        c.activeProposal = proposalId + 1;
+        emit CollateralProposed(callId, proposalId, cdmHash);
+    }
+
+    function decideProposal(bytes32 callId, uint256 proposalId, bool accept) external {
+        Call storage c = _load(callId);
+        if (msg.sender != c.from) revert WrongParty();
+        Proposal storage p = _proposals[callId][proposalId];
+        if (p.state != ProposalState.Proposed) revert BadState();
+        if (accept) {
+            p.state = ProposalState.Accepted;
+        } else {
+            p.state = ProposalState.Rejected;
+            c.activeProposal = 0; // the receiver may propose again
+        }
+        emit ProposalDecided(callId, proposalId, accept);
+    }
+
+    /// @notice Mark a call settled. Only the control contract calls this, after it has moved collateral.
+    function markSettled(bytes32 callId, bool disputedRemains) external onlyControl {
+        Call storage c = _load(callId);
+        c.state = disputedRemains ? CallState.SettledAgreedPart : CallState.Settled;
+        emit CallSettled(callId, disputedRemains);
+    }
+
+    // --- views for the control contract and services ---
+
+    function getCall(bytes32 callId) external view returns (Call memory) {
+        return _load(callId);
+    }
+
+    function getProposal(bytes32 callId, uint256 proposalId) external view returns (Proposal memory) {
+        return _proposals[callId][proposalId];
+    }
+
+    function getProposalAssets(bytes32 callId, uint256 proposalId) external view returns (Asset[] memory) {
+        return _proposalAssets[callId][proposalId];
+    }
+
+    function _load(bytes32 callId) private view returns (Call storage c) {
+        c = _calls[callId];
+        if (c.state == CallState.None) revert NoSuchCall();
+    }
+}
