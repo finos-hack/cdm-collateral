@@ -303,3 +303,4 @@ excluded.
 | task-adopt-agent-fleet | 4c3266413f6b2791dec4a60aef5e65ac03dc8237 | .konspekt/fleet/app/test/worktrees.test.mjs | 2026-10-22T23:30:07Z |
 | task-adopt-agent-fleet | 4c3266413f6b2791dec4a60aef5e65ac03dc8237 | .konspekt/fleet/app/verify.mjs | 2026-10-22T23:30:07Z |
 | task-adopt-agent-fleet | 4c3266413f6b2791dec4a60aef5e65ac03dc8237 | .konspekt/fleet/app/worktrees.mjs | 2026-10-22T23:30:07Z |
+| task-adopt-agent-fleet | f816c822c2fdb6a23deb87b798fe4de4492365fb | .konspekt/fleet/config/fleet.json | 2026-10-22T23:31:04Z |
