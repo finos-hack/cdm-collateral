@@ -244,3 +244,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
 | edge:e-dec-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
 | edge:e-mrk-javastack-e2ewiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
+| node:task-adopt-agent-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
+| node:task-adopt-agent-fleet | status |  | open | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
+| edge:e-dec-adoption-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |

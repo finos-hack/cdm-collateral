@@ -81,3 +81,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-sup-javastack-pythonworkarounds | supersedes | waypoint:wp-adr-java-cdm-stack | noteworthy:nw-cdm-python-workarounds |  |
 | e-mrk-javastack-gapclosure | marks | waypoint:wp-adr-java-cdm-stack | node:task-cdm-gap-closure |  |
 | e-mrk-javastack-e2ewiring | marks | waypoint:wp-adr-java-cdm-stack | node:task-e2e-wiring |  | accepted |
+| e-dec-adoption-fleet | decomposes | node:goal-test-konspekt-adoption | node:task-adopt-agent-fleet |  | accepted |
