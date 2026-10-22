@@ -2,7 +2,7 @@
 id: task-repo-setup-iteration
 type: task
 title: Repo setup iteration
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-kit-patch

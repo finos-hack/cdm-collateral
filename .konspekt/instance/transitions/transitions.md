@@ -240,3 +240,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-sup-javastack-pythonworkarounds | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
 | edge:e-mrk-javastack-gapclosure | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
 | edge:e-mrk-javastack-e2ewiring | review |  | proposed | 2026-10-18T15:05:37Z |  |  |
+| node:task-repo-setup-iteration | status | active | resolved | 2026-10-19T03:55:28Z |  |
+| node:task-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
+| edge:e-dec-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
+| edge:e-mrk-javastack-e2ewiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
