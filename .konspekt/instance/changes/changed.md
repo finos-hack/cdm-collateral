@@ -304,3 +304,15 @@ excluded.
 | task-adopt-agent-fleet | 4c3266413f6b2791dec4a60aef5e65ac03dc8237 | .konspekt/fleet/app/verify.mjs | 2026-10-22T23:30:07Z |
 | task-adopt-agent-fleet | 4c3266413f6b2791dec4a60aef5e65ac03dc8237 | .konspekt/fleet/app/worktrees.mjs | 2026-10-22T23:30:07Z |
 | task-adopt-agent-fleet | f816c822c2fdb6a23deb87b798fe4de4492365fb | .konspekt/fleet/config/fleet.json | 2026-10-22T23:31:04Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .claude/skills/fleet-committer/SKILL.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .claude/skills/fleet-proposer-common/SKILL.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .claude/skills/fleet-spec-writer/SKILL.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .konspekt/agents/skills/fleet-committer/SKILL.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .konspekt/agents/skills/fleet-proposer-common/SKILL.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .konspekt/agents/skills/fleet-spec-writer/SKILL.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | .konspekt/fleet/tools/sync-agents.mjs | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | docs/design/fleet-confidence-scale.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | docs/design/fleet-outbox-lifecycle.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | docs/design/fleet-protocol.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | docs/design/fleet-recovery.md | 2026-10-22T23:57:09Z |
+| task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | docs/design/fleet-spec.md | 2026-10-22T23:57:09Z |
