@@ -2,7 +2,7 @@
 id: task-e2e-wiring
 type: task
 title: End-to-end wiring (contracts, gateway, services)
-status: open
+status: active
 review: accepted
 provenance:
   conversationId: console-dev
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-17T20:56:54Z
   confidence: 0.8
 createdAt: 2026-10-17T20:56:54Z
-updatedAt: 2026-10-18T15:05:37Z
+updatedAt: 2026-10-23T21:54:35Z
 ```
 # Task: End-to-end wiring (contracts, gateway, services)
 

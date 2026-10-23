@@ -256,3 +256,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-onchain-privacy-produces-design | review |  | proposed | 2026-10-23T16:22:32.687Z |  | spec-writer |
 | artifact:artifact-onchain-privacy-design | review | proposed | accepted | 2026-10-23T16:25:21Z |  | denisurusov |
 | edge:e-onchain-privacy-produces-design | review | proposed | accepted | 2026-10-23T16:25:21Z |  | denisurusov |
+| node:task-e2e-wiring | status | open | active | 2026-10-23T21:54:35Z | adc651e4f21db3c07ae7d96294f91d86737b76f1 | denisurusov |
