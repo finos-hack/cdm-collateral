@@ -15,7 +15,7 @@ into state history — an instance without it is v1-conformant and records none.
 
 | ref | field | from | to | timestamp | source | by |
 |-----|-------|------|----|-----------|--------|----|
-| node:node-app-setup | review |  | accepted | 2026-10-15T00:18:11Z | df5298515334f4f37dc86dfd54b8e0805558203b |  |
+| node:node-app-setup | review |  | accepted | 2026-10-15T00:18:11Z | df5298515334f4f37dc86dfd54b8e0805558203b | denisurusov |
 | node:node-app-setup | status |  | active | 2026-10-15T00:18:11Z |  |  |
 | node:goal-test-konspekt-adoption | review |  | accepted | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
 | node:goal-test-konspekt-adoption | status |  | active | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
@@ -241,11 +241,13 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-javastack-gapclosure | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
 | edge:e-mrk-javastack-e2ewiring | review |  | proposed | 2026-10-18T15:05:37Z |  |  |
 | node:task-repo-setup-iteration | status | active | resolved | 2026-10-19T03:55:28Z |  |
-| node:task-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
-| edge:e-dec-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
-| edge:e-mrk-javastack-e2ewiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  |
+| node:task-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  | denisurusov |
+| edge:e-dec-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  | denisurusov |
+| edge:e-mrk-javastack-e2ewiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  | denisurusov |
 | node:task-adopt-agent-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
 | node:task-adopt-agent-fleet | status |  | open | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
 | edge:e-dec-adoption-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
 | artifact:artifact-two-way-im-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
 | edge:e-prod-twowayim-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
+| artifact:artifact-two-way-im-design | review | proposed | accepted | 2026-10-23T15:52:41Z |  | denisurusov |
+| edge:e-prod-twowayim-design | review | proposed | accepted | 2026-10-23T15:52:41Z |  | denisurusov |

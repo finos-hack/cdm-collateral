@@ -5,7 +5,7 @@ kind: doc
 location: docs/architecture/two-way-initial-margin.md
 createdAt: 2026-10-23T00:00:00Z
 updatedAt: 2026-10-23T00:00:00Z
-review: proposed
+review: accepted
 provenance:
   sourceRef: a33642b39ae267df90f5838679e595f9b64eb2fb
   contentHash: a33642b39ae267df90f5838679e595f9b64eb2fb
