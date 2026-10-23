@@ -318,3 +318,4 @@ excluded.
 | task-adopt-agent-fleet | 6140563e91b6c10751019063b5c27e9a43bcb402 | docs/design/fleet-spec.md | 2026-10-22T23:57:09Z |
 | task-adopt-agent-fleet | e346a36f3e201f8a919e657fd4b01b3cd005fed2 | .claude/skills/fleet-committer/SKILL.md | 2026-10-23T00:57:39Z |
 | task-adopt-agent-fleet | e346a36f3e201f8a919e657fd4b01b3cd005fed2 | .konspekt/agents/skills/fleet-committer/SKILL.md | 2026-10-23T00:57:39Z |
+| task-adopt-agent-fleet | 85aee02609b972906d023cb4004ada1076162354 | .gitignore | 2026-10-23T15:48:16Z |
