@@ -5,7 +5,7 @@ kind: doc
 location: docs/architecture/onchain-privacy.md
 createdAt: 2026-10-23T00:00:00Z
 updatedAt: 2026-10-23T00:00:00Z
-review: proposed
+review: accepted
 provenance:
   sourceRef: fb7fc41f8d17de20191da289faee16fb85ddbf08
   contentHash: fb7fc41f8d17de20191da289faee16fb85ddbf08

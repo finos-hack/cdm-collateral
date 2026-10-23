@@ -254,3 +254,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-adopt-agent-fleet | status | open | resolved | 2026-10-23T16:11:35Z |  | denisurusov |
 | artifact:artifact-onchain-privacy-design | review |  | proposed | 2026-10-23T16:22:32.687Z |  | spec-writer |
 | edge:e-onchain-privacy-produces-design | review |  | proposed | 2026-10-23T16:22:32.687Z |  | spec-writer |
+| artifact:artifact-onchain-privacy-design | review | proposed | accepted | 2026-10-23T16:25:21Z |  | denisurusov |
+| edge:e-onchain-privacy-produces-design | review | proposed | accepted | 2026-10-23T16:25:21Z |  | denisurusov |
