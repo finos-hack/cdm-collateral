@@ -247,3 +247,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-adopt-agent-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
 | node:task-adopt-agent-fleet | status |  | open | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
 | edge:e-dec-adoption-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
+| artifact:artifact-two-way-im-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
+| edge:e-prod-twowayim-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
