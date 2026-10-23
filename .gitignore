@@ -1,2 +1,5 @@
 # Per-session conversation-binding markers written by .claude/hooks/require-binding.sh
 .claude/.binding/
+
+# konspekt fleet runtime index (derived projection, rebuildable from canonical)
+.konspekt-fleet/
