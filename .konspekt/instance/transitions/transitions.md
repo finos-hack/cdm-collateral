@@ -251,3 +251,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-twowayim-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
 | artifact:artifact-two-way-im-design | review | proposed | accepted | 2026-10-23T15:52:41Z |  | denisurusov |
 | edge:e-prod-twowayim-design | review | proposed | accepted | 2026-10-23T15:52:41Z |  | denisurusov |
+| node:task-adopt-agent-fleet | status | open | resolved | 2026-10-23T16:11:35Z |  | denisurusov |
+| artifact:artifact-onchain-privacy-design | review |  | proposed | 2026-10-23T16:22:32.687Z |  | spec-writer |
+| edge:e-onchain-privacy-produces-design | review |  | proposed | 2026-10-23T16:22:32.687Z |  | spec-writer |

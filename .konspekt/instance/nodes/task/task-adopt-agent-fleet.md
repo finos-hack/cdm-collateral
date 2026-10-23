@@ -2,7 +2,7 @@
 id: task-adopt-agent-fleet
 type: task
 title: Adopt the konspekt agent fleet
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: fleet-port
