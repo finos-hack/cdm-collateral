@@ -319,3 +319,6 @@ excluded.
 | task-adopt-agent-fleet | e346a36f3e201f8a919e657fd4b01b3cd005fed2 | .claude/skills/fleet-committer/SKILL.md | 2026-10-23T00:57:39Z |
 | task-adopt-agent-fleet | e346a36f3e201f8a919e657fd4b01b3cd005fed2 | .konspekt/agents/skills/fleet-committer/SKILL.md | 2026-10-23T00:57:39Z |
 | task-adopt-agent-fleet | 85aee02609b972906d023cb4004ada1076162354 | .gitignore | 2026-10-23T15:48:16Z |
+| task-adopt-agent-fleet | 647133a5144782597370485bf37502f9aeb2ef78 | .konspekt/fleet/app/cli.mjs | 2026-10-23T16:44:40Z |
+| task-adopt-agent-fleet | 647133a5144782597370485bf37502f9aeb2ef78 | .konspekt/fleet/app/preflight.mjs | 2026-10-23T16:44:40Z |
+| task-adopt-agent-fleet | 647133a5144782597370485bf37502f9aeb2ef78 | .konspekt/fleet/app/test/preflight.test.mjs | 2026-10-23T16:44:40Z |
