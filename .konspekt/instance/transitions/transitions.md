@@ -265,3 +265,27 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-bizcase-finoscollab | review |  | proposed | 2026-10-24T14:28:19.786Z |  | spec-writer |
 | noteworthy:nw-finos-collaboration | review | proposed | accepted | 2026-10-24T14:49:40.776Z |  | denisurusov |
 | edge:e-note-bizcase-finoscollab | review | proposed | accepted | 2026-10-24T14:49:40.776Z |  | denisurusov |
+| artifact:artifact-ledger-gateway | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| artifact:artifact-collateral-service | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| artifact:artifact-live-console-wiring | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| artifact:artifact-e2e-live-harness | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| waypoint:wp-first-e2e-cycle | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| noteworthy:nw-e2e-first-cycle-scope | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| edge:e-prod-e2ewiring-gateway | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| edge:e-prod-e2ewiring-service | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| edge:e-prod-e2ewiring-harness | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| edge:e-prod-reactconsole-livewiring | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| edge:e-mrk-firstcycle-e2ewiring | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| edge:e-note-e2ewiring-scope | review |  | proposed | 2026-10-24T20:12:31Z |  | denisurusov |
+| artifact:artifact-ledger-gateway | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| artifact:artifact-collateral-service | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| artifact:artifact-live-console-wiring | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| artifact:artifact-e2e-live-harness | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| waypoint:wp-first-e2e-cycle | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| noteworthy:nw-e2e-first-cycle-scope | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| edge:e-prod-e2ewiring-gateway | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| edge:e-prod-e2ewiring-service | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| edge:e-prod-e2ewiring-harness | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| edge:e-prod-reactconsole-livewiring | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| edge:e-mrk-firstcycle-e2ewiring | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| edge:e-note-e2ewiring-scope | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |

@@ -86,3 +86,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-onchain-privacy-produces-design | produces | node:task-onchain-privacy | artifact:artifact-onchain-privacy-design |  | accepted |
 | e-business-case-produces-doc | produces | node:goal-business-case | artifact:artifact-business-case |  | accepted |
 | e-note-bizcase-finoscollab | notes | node:goal-business-case | noteworthy:nw-finos-collaboration |  | accepted |
+| e-prod-e2ewiring-gateway | produces | node:task-e2e-wiring | artifact:artifact-ledger-gateway |  | accepted |
+| e-prod-e2ewiring-service | produces | node:task-e2e-wiring | artifact:artifact-collateral-service |  | accepted |
+| e-prod-e2ewiring-harness | produces | node:task-e2e-wiring | artifact:artifact-e2e-live-harness |  | accepted |
+| e-prod-reactconsole-livewiring | produces | node:task-react-console | artifact:artifact-live-console-wiring |  | accepted |
+| e-mrk-firstcycle-e2ewiring | marks | waypoint:wp-first-e2e-cycle | node:task-e2e-wiring |  | accepted |
+| e-note-e2ewiring-scope | notes | node:task-e2e-wiring | noteworthy:nw-e2e-first-cycle-scope |  | accepted |
