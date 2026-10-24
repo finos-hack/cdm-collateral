@@ -1,0 +1,13 @@
+{
+  "name": "cdm-collateral-store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Content-addressed store for CDM payloads (ADR wp-adr-cdm-payload-carrier): each margin-call step's CDM document, keyed by its on-chain keccak-256 hash. Shared off-chain carrier for service-to-peer CDM exchange in the first end-to-end cycle.",
+  "scripts": {
+    "serve": "node src/server.ts"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  }
+}
