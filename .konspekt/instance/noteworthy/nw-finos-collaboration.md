@@ -2,7 +2,7 @@
 id: nw-finos-collaboration
 kind: statement
 createdAt: 2026-10-24T00:00:00Z
-updatedAt: 2026-10-24T00:00:00Z
+updatedAt: 2026-10-24T14:54:16Z
 review: accepted
 provenance:
   sourceRef: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
@@ -18,6 +18,7 @@ Stated by the project owner on 2026-10-24: "this entire project is done in colla
 repository; the repository is intended to become a FINOS project) from a set of collaborators to the whole project.
 
 Consequence for `docs/analysis/business-case.md`: findings and defects reach FINOS CDM through the collaboration, and
-FINOS CDM is listed as a collaborator audience. It conflicts with the wording of the accepted ADR
-`wp-adr-cdm-local-extensions` ("Nothing is proposed or reported to FINOS"); whether that ADR is amended or superseded
-is not decided. The statement does not by itself change where `cdm-ext` is maintained.
+FINOS CDM is listed as a collaborator audience. The wording of the accepted ADR `wp-adr-cdm-local-extensions`
+("Nothing is proposed or reported to FINOS") was amended on 2026-10-24 to record this: findings and defects reach
+FINOS through the collaboration, while the project formally sits outside FINOS governance for now. The statement does
+not by itself change where `cdm-ext` is maintained.

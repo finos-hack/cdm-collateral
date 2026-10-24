@@ -329,3 +329,7 @@ excluded.
 | task-adopt-agent-fleet | 255117e129e7dcef3cf41e4ae4ba5720b9b2d02c | .claude/skills/fleet-committer/SKILL.md | 2026-10-23T21:29:41Z |
 | task-adopt-agent-fleet | 646e6e8d052d225e35e42937f06169ac055b4ab1 | .konspekt/fleet/config/fleet.json | 2026-10-23T21:41:35Z |
 | goal-business-case | c099decf22238270c4b1e0c8af94bc99f96a4470 | docs/analysis/business-case.md | 2026-10-24T14:48:11Z |
+| goal-business-case | d8840001d0f8292aed1980a7f06ff40e0d32956e | artifacts/artifact-business-case.md | 2026-10-24T14:54:16Z |
+| goal-business-case | d8840001d0f8292aed1980a7f06ff40e0d32956e | sources/ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4.md | 2026-10-24T14:54:16Z |
+| goal-business-case | 950fcd5970c9496221cddb1c4fef0833e1df0e63 | artifacts/artifact-business-case.md | 2026-10-24T14:54:16Z |
+| goal-business-case | 950fcd5970c9496221cddb1c4fef0833e1df0e63 | sources/ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4.md | 2026-10-24T14:54:16Z |
