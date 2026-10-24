@@ -74,6 +74,8 @@ public final class App {
         app.post("/api/v1/calls/{id}/proposal", this::propose);
         app.post("/api/v1/calls/{id}/decision", this::decide);
         app.post("/api/v1/calls/{id}/pledge", this::pledge);
+        app.post("/api/v1/calls/{id}/transfer", this::transfer);
+        app.post("/api/v1/calls/{id}/return", this::returnCollateral);
 
         app.start(cfg.port);
         System.out.printf("collateral service: party %s (%s) %s on http://localhost:%d/api/v1 -> gateway %s%n",
@@ -250,9 +252,10 @@ public final class App {
             default -> "Dispute";
         };
         String issuer = cfg.bankName(partyIdOf(c.get("from").asText()));
+        String action = c.get("kind").asInt() == 2 ? "Return" : "Delivery"; // a return call is agreed and then released
         // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
         long units = Math.max(1, agreedUsd);
-        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, "Delivery", units, cfg.isin(cfg.firstTokenSymbol()));
+        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()));
         record(callId, "RespondToCall", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
@@ -306,5 +309,47 @@ public final class App {
         JsonNode a0 = assets.get(0);
         gw.post("/calls/" + callId + "/pledge", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText(), "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "cdmHash", cdm.hash));
+    }
+
+    /** Variation-margin settlement: title passes directly to the receiver (settleByTransfer), no escrow. */
+    private void transfer(Context ctx) {
+        String callId = ctx.pathParam("id");
+        Map<String, Object> b = body(ctx);
+        long proposalId = ((Number) b.get("proposalId")).longValue();
+        JsonNode assets = gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets");
+        if (assets.isEmpty()) throw new RuntimeException("proposal " + proposalId + " has no assets");
+        Cdm cdm = Cdm.settle("P-" + proposalId); // same delivery settlement instruction; the control contract moves title
+        record(callId, "SettleCall", cdm);
+        JsonNode a0 = assets.get(0);
+        gw.post("/calls/" + callId + "/transfer", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText(), "cdmHash", cdm.hash));
+        ctx.json(Map.of("ok", true, "cdmHash", cdm.hash));
+    }
+
+    /**
+     * Settle a return call: release escrowed initial margin (via = "release") or transfer equivalent variation margin
+     * back (via = "transfer"). Both carry the same CDM SettleCallInstruction (releasedCollateral + releasedValue); the
+     * value abstraction is the agreed return amount in base currency, matching the proposal convention.
+     */
+    @SuppressWarnings("unchecked")
+    private void returnCollateral(Context ctx) {
+        String callId = ctx.pathParam("id");
+        Map<String, Object> b = body(ctx);
+        String via = (String) b.getOrDefault("via", "release");
+        List<Map<String, Object>> assetsIn = (List<Map<String, Object>>) b.get("assets");
+        JsonNode c = gw.get("/calls/" + callId);
+        long agreedUsd = new BigInteger(c.get("agreed").asText()).divide(cfg.priceScale).longValue();
+        List<Map<String, Object>> gwAssets = new ArrayList<>();
+        List<Map<String, Object>> cdmAssets = new ArrayList<>();
+        for (Map<String, Object> a : assetsIn) {
+            String sym = (String) a.get("token");
+            long qty = ((Number) a.get("qty")).longValue();
+            gwAssets.add(Map.of("token", cfg.tokenAddress(sym), "qty", String.valueOf(qty)));
+            cdmAssets.add(new LinkedHashMap<>(Map.of("isin", cfg.isin(sym), "units", qty)));
+        }
+        Cdm cdm = Cdm.settleReturn(cdmAssets, agreedUsd);
+        record(callId, "SettleCall", cdm);
+        String path = via.equals("transfer") ? "/return-transfer" : "/return";
+        gw.post("/calls/" + callId + path, Map.of("assets", gwAssets, "cdmHash", cdm.hash));
+        ctx.json(Map.of("ok", true, "cdmHash", cdm.hash, "via", via));
     }
 }

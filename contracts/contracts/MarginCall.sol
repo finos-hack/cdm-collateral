@@ -73,7 +73,8 @@ contract MarginCall {
         Call storage c = _load(callId);
         if (msg.sender != c.to) revert WrongParty();
         if (c.state != CallState.Issued) revert BadState();
-        if (c.kind == CallKind.Return) revert BadResponse(); // a return call is agreed and released in one control step
+        // A return call is agreed through the same response step as a delivery call (issue -> respond -> settle), so
+        // its CDM lifecycle folds the same way (wp-adr-cdm-payload-carrier); the control contract then releases.
         if (response == ResponseType.Full) {
             c.agreed = c.amount;
             c.disputed = 0;

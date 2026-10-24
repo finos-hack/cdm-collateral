@@ -54,6 +54,31 @@ route("POST", "/ledger/v1/calls/:id/pledge", async (p, b) => {
   return J({ approve, pledge });
 });
 
+route("POST", "/ledger/v1/calls/:id/transfer", async (p, b) => {
+  // VM settlement: the deliverer's gateway approves the control contract for the transferred quantity, then settles
+  // by moving title directly to the receiver (no escrow).
+  const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  const approve = await adapter.approve(getAddress(b.token), control, BigInt(b.qty));
+  const transfer = await adapter.settleByTransfer(p.id as Hex, BigInt(b.proposalId), b.cdmHash as Hex);
+  return J({ approve, transfer });
+});
+
+route("POST", "/ledger/v1/calls/:id/return", async (p, b) => {
+  // IM return: the secured party releases escrowed collateral the control contract already holds (no approval needed).
+  const release = (b.assets as { token: string; qty: string }[]).map((a) => ({ token: getAddress(a.token), qty: BigInt(a.qty) }));
+  return J(await adapter.returnCollateral(p.id as Hex, release, b.cdmHash as Hex));
+});
+
+route("POST", "/ledger/v1/calls/:id/return-transfer", async (p, b) => {
+  // VM return: the agreeing party approves the control contract and transfers equivalent credit support back.
+  const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  const assets = (b.assets as { token: string; qty: string }[]).map((a) => ({ token: getAddress(a.token), qty: BigInt(a.qty) }));
+  const approvals = [];
+  for (const a of assets) approvals.push(await adapter.approve(a.token, control, a.qty));
+  const transfer = await adapter.returnByTransfer(p.id as Hex, assets, b.cdmHash as Hex);
+  return J({ approvals, transfer });
+});
+
 route("GET", "/ledger/v1/party-calls", async (_p, _b, url) =>
   J(await adapter.listCalls(getAddress(url.searchParams.get("party")!))),
 );

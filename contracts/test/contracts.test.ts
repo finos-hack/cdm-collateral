@@ -135,24 +135,28 @@ describe("CDM collateral contracts", async () => {
 
     it("releases pledged collateral on an agreed return", async () => {
       await pledge11();
-      // BANK-A (pledgor) calls for a return; BANK-B (secured party) agrees and releases.
+      // BANK-A (pledgor) calls for a return; BANK-B (secured party) agrees (respond) and releases (settle).
       await marginCall.write.issueCall([R, RETURN, bAddr, 300n * SCALE, 0n, zeroHash], { account: bankA.account });
-      await control.write.returnCollateral([R, [{ token: tUST.address, qty: 3n }]], { account: bankB.account });
+      await marginCall.write.respond([R, FULL, 0n, zeroHash], { account: bankB.account });
+      await control.write.returnCollateral([R, [{ token: tUST.address, qty: 3n }], zeroHash], { account: bankB.account });
       assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 8n);
       assert.equal(await tUST.read.balanceOf([aAddr]), 992n); // 989 + 3 back
+      assert.equal((await marginCall.read.getCall([R])).state, 5); // Settled
     });
 
     it("rejects a return from the wrong party", async () => {
       await pledge11();
       await marginCall.write.issueCall([R, RETURN, bAddr, 300n * SCALE, 0n, zeroHash], { account: bankA.account });
-      await assert.rejects(control.write.returnCollateral([R, [{ token: tUST.address, qty: 3n }]], { account: bankA.account }));
+      await marginCall.write.respond([R, FULL, 0n, zeroHash], { account: bankB.account });
+      await assert.rejects(control.write.returnCollateral([R, [{ token: tUST.address, qty: 3n }], zeroHash], { account: bankA.account }));
     });
 
     it("rejects releasing more than the return amount", async () => {
       await pledge11();
       await marginCall.write.issueCall([R, RETURN, bAddr, 300n * SCALE, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.respond([R, FULL, 0n, zeroHash], { account: bankB.account });
       // 4 tUST after 2% = 392 > 300 return amount.
-      await assert.rejects(control.write.returnCollateral([R, [{ token: tUST.address, qty: 4n }]], { account: bankB.account }));
+      await assert.rejects(control.write.returnCollateral([R, [{ token: tUST.address, qty: 4n }], zeroHash], { account: bankB.account }));
     });
   });
 
@@ -212,9 +216,28 @@ describe("CDM collateral contracts", async () => {
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 5n }], zeroHash], { account: bankA.account });
       await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
       await tUST.write.approve([control.address, 5n], { account: bankA.account });
-      await control.write.settleByTransfer([C, 0n], { account: bankA.account });
+      await control.write.settleByTransfer([C, 0n, zeroHash], { account: bankA.account });
       assert.equal(await tUST.read.balanceOf([bAddr]), 5n);
       assert.equal(await tUST.read.balanceOf([control.address]), 0n); // title passed, nothing escrowed
+    });
+
+    it("returns variation margin by transferring equivalent credit support back", async () => {
+      const R = id(6);
+      // Deliver VM title A -> B first.
+      await marginCall.write.issueCall([C, VM, aAddr, agreed, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.propose([C, [{ token: tUST.address, qty: 5n }], zeroHash], { account: bankA.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
+      await tUST.write.approve([control.address, 5n], { account: bankA.account });
+      await control.write.settleByTransfer([C, 0n, zeroHash], { account: bankA.account });
+
+      // BANK-A calls for a VM return; BANK-B agrees (respond) and transfers equivalent support back (settle).
+      await marginCall.write.issueCall([R, RETURN, bAddr, agreed, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.respond([R, FULL, 0n, zeroHash], { account: bankB.account });
+      await tUST.write.approve([control.address, 5n], { account: bankB.account });
+      await control.write.returnByTransfer([R, [{ token: tUST.address, qty: 5n }], zeroHash], { account: bankB.account });
+      assert.equal(await tUST.read.balanceOf([bAddr]), 0n); // credit support returned to A
+      assert.equal((await marginCall.read.getCall([R])).state, 5); // Settled
     });
   });
 });

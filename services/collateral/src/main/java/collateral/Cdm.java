@@ -126,8 +126,22 @@ public final class Cdm {
         return new Cdm("decide", d);
     }
 
+    /** Delivery settlement: delivers the accepted proposal against the call. */
     public static Cdm settle(String proposalId) {
         return new Cdm("settle", o("proposalId", proposalId));
+    }
+
+    /**
+     * Return settlement: releases collateral already held (IM return) or transfers equivalent support back (VM return).
+     * A return has no proposal; the SettleCallInstruction carries the released collateral and its value after haircuts,
+     * which the CDM fold checks against the agreed return amount (SettleCallInstruction DeliveryOrReturn choice).
+     */
+    public static Cdm settleReturn(List<Map<String, Object>> assets, long releasedValueUsd) {
+        List<Object> positions = new ArrayList<>();
+        for (Map<String, Object> a : assets) {
+            positions.add(position(((Number) a.get("units")).longValue(), (String) a.get("isin")));
+        }
+        return new Cdm("settle", o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd)));
     }
 
     /**

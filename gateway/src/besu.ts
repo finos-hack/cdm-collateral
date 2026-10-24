@@ -54,7 +54,11 @@ const marginCallAbi = parseAbi([
 ]);
 
 const controlAbi = parseAbi([
+  "struct Asset { address token; uint256 qty; }",
   "function pledge(bytes32 callId, uint256 proposalId, bytes32 cdmHash)",
+  "function settleByTransfer(bytes32 callId, uint256 proposalId, bytes32 cdmHash)",
+  "function returnCollateral(bytes32 callId, Asset[] release, bytes32 cdmHash)",
+  "function returnByTransfer(bytes32 callId, Asset[] assets, bytes32 cdmHash)",
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
 ]);
@@ -74,6 +78,9 @@ export interface LedgerAdapter {
   decide(callId: Hex, proposalId: bigint, accept: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   approve(token: Address, spender: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
   pledge(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  settleByTransfer(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  returnCollateral(callId: Hex, release: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  returnByTransfer(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
@@ -145,6 +152,18 @@ export class BesuAdapter implements LedgerAdapter {
 
   pledge(callId: Hex, proposalId: bigint, cdmHash: Hex) {
     return this.send(this.reg.contracts.collateralControl, controlAbi, "pledge", [callId, proposalId, cdmHash]);
+  }
+
+  settleByTransfer(callId: Hex, proposalId: bigint, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "settleByTransfer", [callId, proposalId, cdmHash]);
+  }
+
+  returnCollateral(callId: Hex, release: AssetArg[], cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "returnCollateral", [callId, release, cdmHash]);
+  }
+
+  returnByTransfer(callId: Hex, assets: AssetArg[], cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "returnByTransfer", [callId, assets, cdmHash]);
   }
 
   async getCall(callId: Hex): Promise<OnChainCall> {
