@@ -290,3 +290,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-firstcycle-e2ewiring | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
 | edge:e-note-e2ewiring-scope | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
 | noteworthy:nw-e2e-first-cycle-scope | review | accepted | proposed | 2026-10-24T22:08:40Z |  | denisurusov |
+| waypoint:wp-adr-cdm-payload-carrier | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |
+| edge:e-drv-ledgerneutrality-carrier | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |
+| edge:e-drv-cdmdatalayer-carrier | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |
+| edge:e-mrk-carrier-e2ewiring | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |

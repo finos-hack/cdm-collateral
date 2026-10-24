@@ -92,3 +92,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-reactconsole-livewiring | produces | node:task-react-console | artifact:artifact-live-console-wiring |  | accepted |
 | e-mrk-firstcycle-e2ewiring | marks | waypoint:wp-first-e2e-cycle | node:task-e2e-wiring |  | accepted |
 | e-note-e2ewiring-scope | notes | node:task-e2e-wiring | noteworthy:nw-e2e-first-cycle-scope |  | accepted |
+| e-drv-ledgerneutrality-carrier | drives | concept:concept-asr-ledger-neutrality | waypoint:wp-adr-cdm-payload-carrier |  | proposed |
+| e-drv-cdmdatalayer-carrier | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-cdm-payload-carrier |  | proposed |
+| e-mrk-carrier-e2ewiring | marks | waypoint:wp-adr-cdm-payload-carrier | node:task-e2e-wiring |  | proposed |
