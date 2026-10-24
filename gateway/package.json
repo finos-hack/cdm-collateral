@@ -1,0 +1,15 @@
+{
+  "name": "cdm-collateral-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ledger-neutral gateway (concept-asr-ledger-neutrality) for the CDM collateral prototype: one instance per participant. Signs with that participant's Besu node key only, submits the margin-call lifecycle to the contracts, reads on-chain state, and reports finalized events. Besu adapter first (ADR wp-adr-prototype-ledgers).",
+  "scripts": {
+    "serve": "node src/server.ts",
+    "cycle": "node src/run-cycle.ts",
+    "test:gateway": "node src/run-cycle.ts"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  }
+}
