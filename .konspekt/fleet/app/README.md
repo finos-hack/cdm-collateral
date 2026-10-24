@@ -123,7 +123,7 @@ proposer agent only ever touches step 2, only on its own branch.
 
 The modules that touch the stored form (`payload`, `verify`, `fold`,
 `committer`, `proposed-ref`, `bless`) reuse the shared data model from
-`../../lib/conformance.mjs` (`gitBlobSha`, `splitEntityFile`,
+`../../../lib/conformance.mjs` (`gitBlobSha`, `splitEntityFile`,
 `loadInstance`, `parseYamlSubset`) rather than re-implementing it.
 
 ## State on disk

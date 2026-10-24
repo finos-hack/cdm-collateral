@@ -8,19 +8,24 @@
 //   teardown   remove the proposer worktrees (keeps canonical + branches)
 //   propose    assemble, sign, and commit a proposal onto a proposer's outbox
 //   run-pass   verify the outboxes and, live, fold the verified set onto canonical
+//              (--watch [--interval <sec>] keeps folding on a loop until Ctrl-C)
 //   bless      apply the human's per-proposal accept/reject decisions
 //   rebuild-index  rebuild the derived proposed index from canonical
 //
 // Attach model: config-driven commands take `--canonical <path>` and read the
 // committed `.konspekt/fleet/config/fleet.json` (no hand-written manifest;
 // task-fleet-config-driven-setup). The legacy flat path takes `--root <dir>`
-// and reads `<root>/fleet.json` written by `init`.
+// and reads `<root>/fleet.json` written by `init`. `--root` is tolerant: pointed
+// at a config-driven fleet root (holding `canonical/`) with no flat manifest, it
+// resolves canonical at `<root>/canonical` and attaches config-driven instead of
+// dead-ending (nw-fleet-skill-root-flag-stale); otherwise it errors naming
+// `--canonical`. See resolveFleet in worktrees.mjs.
 
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { setupFleet, loadFleet, setupFromConfig, loadFromConfig, teardownFleet, readFleetConfig } from "./worktrees.mjs";
+import { setupFleet, setupFromConfig, teardownFleet, readFleetConfig, resolveFleet } from "./worktrees.mjs";
 import { assembleProposal, proposeToOutbox } from "./outbox.mjs";
-import { verifyPass, foldPass, blessPass } from "./committer.mjs";
+import { verifyPass, foldPass, blessPass, watchLoop } from "./committer.mjs";
 import { assembleClaim, writeClaimToOutbox, readClaimRequests, applyClaims, acceptRelease } from "./claims.mjs";
 import { rebuildIndex } from "./proposed-ref.mjs";
 import { reviewDigest, renderReviewPrompt } from "./review-assistant.mjs";
@@ -28,18 +33,32 @@ import { authorityPreflight, canonicalBranchCheck, DEFAULT_INSTANCE_SUBDIR } fro
 
 function parseArgs(argv) {
   const out = { _: [] };
+  const set = (key, val) => {
+    // A repeated flag accumulates into an array (e.g. --file a --file b), so a
+    // scalar flag stays scalar and only genuine repeats become lists.
+    if (out[key] === undefined) out[key] = val;
+    else if (Array.isArray(out[key])) out[key].push(val);
+    else out[key] = [out[key], val];
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith("--")) {
       const key = a.slice(2);
       const next = argv[i + 1];
-      if (next === undefined || next.startsWith("--")) out[key] = true;
-      else { out[key] = next; i++; }
+      if (next === undefined || next.startsWith("--")) set(key, true);
+      else { set(key, next); i++; }
     } else {
       out._.push(a);
     }
   }
   return out;
+}
+
+// Normalize a possibly-repeated flag to an array of string values (dropping a
+// bare boolean presence). Used for repeatable flags like --file.
+function asList(v) {
+  if (v === undefined || v === true) return [];
+  return (Array.isArray(v) ? v : [v]).filter((x) => x !== true);
 }
 
 function need(args, key) {
@@ -55,14 +74,15 @@ function need(args, key) {
 // back to the flat `--root/fleet.json` manifest with grants from `--grants`.
 // Returns { fleet, grants }.
 function attach(args) {
-  if (args["canonical"] && args["canonical"] !== true) {
-    const canonicalPath = resolve(args["canonical"]);
-    const configRel = args["config"] && args["config"] !== true ? args["config"] : undefined;
-    const { fleet, grants } = loadFromConfig({ canonicalPath, configRel });
-    return { fleet, grants };
-  }
-  const fleet = loadFleet(need(args, "root"));
-  const grants = args["grants"] ? JSON.parse(readFileSync(args["grants"], "utf8")) : {};
+  const configRel = args["config"] && args["config"] !== true ? args["config"] : undefined;
+  const canonical = args["canonical"] && args["canonical"] !== true ? args["canonical"] : undefined;
+  const root = args["root"] && args["root"] !== true ? args["root"] : undefined;
+  const { fleet, grants: cfgGrants, mode } = resolveFleet({ canonical, root, configRel });
+  // In flat-manifest mode grants come from the optional --grants file; in
+  // config-driven mode they ride in the committed config.
+  const grants = mode === "flat"
+    ? (args["grants"] ? JSON.parse(readFileSync(args["grants"], "utf8")) : {})
+    : cfgGrants;
   return { fleet, grants };
 }
 
@@ -170,6 +190,25 @@ function cmdPropose(args) {
   let prose = spec.prose;
   if (prose === undefined && spec.prose_file) prose = readRel(spec.prose_file);
 
+  // Carried files (task-fleet-proposal-carries-files): repository files the
+  // proposal lands on canonical beside the atom. Two sources, merged:
+  //   spec.files: [{ path, file }]  — `file` is a local path relative to the spec
+  //   --file <target>=<localpath>   — repeatable on the CLI, local path from cwd
+  // `path`/`target` is the repo-relative target on canonical; bytes are read raw
+  // (binary-safe) and content-addressed by assembleProposal.
+  const files = [];
+  for (const f of spec.files ?? []) {
+    if (!f || !f.path || !f.file) throw new Error("spec.files entry needs { path, file }");
+    files.push({ path: f.path, bytes: readFileSync(resolve(dirname(specPath), f.file)) });
+  }
+  for (const entry of asList(args["file"])) {
+    const eq = String(entry).indexOf("=");
+    if (eq < 1) throw new Error(`--file must be <target>=<localpath>, got "${entry}"`);
+    const target = entry.slice(0, eq);
+    const local = entry.slice(eq + 1);
+    files.push({ path: target, bytes: readFileSync(resolve(local)) });
+  }
+
   const assembled = assembleProposal({
     entityType: spec.entity_type,
     fence,
@@ -182,11 +221,13 @@ function cmdPropose(args) {
     dependsOn: spec.depends_on ?? [],
     edges: spec.edges ?? [],
     source,
+    files,
   });
 
   const { proposalId, commit } = proposeToOutbox(proposer.path, assembled, { identity });
   console.log(`proposed ${proposalId} by ${agent}`);
   console.log(`  committed ${commit} on ${proposer.branch}`);
+  for (const f of assembled.files ?? []) console.log(`  carries file ${f.path}  (${f.hash.slice(0, 12)})`);
 }
 
 // Author a claim (advisory dispatch): propose `status: open -> active` on an
@@ -237,13 +278,10 @@ function cmdAcceptRelease(args) {
   console.log(`released ${r.node} -> ${r.to} by ${r.by} in ${r.commit}`);
 }
 
-function cmdRunPass(args) {
-  const dryRun = Boolean(args["dry-run"]);
-  const identity = { name: args["name"] || undefined, email: args["email"] || undefined };
-  const instanceSubdir = args["instance-subdir"] && args["instance-subdir"] !== true ? args["instance-subdir"] : "";
-
-  const { fleet, grants } = attach(args);
-
+// One run-pass over every outbox: the branch-safety check, then fold (or, for a
+// dry run, verify only), then claims. Printing is unchanged from the single-pass
+// command; the watch loop calls this once per tick (task-fleet-committer-startup-scan).
+function passTick(fleet, grants, { dryRun, identity, instanceSubdir, now }) {
   // Refuse if the canonical worktree has drifted off the branch the fleet
   // records as canonical: folds follow the worktree's current branch, so a
   // mismatch would land them on the wrong branch (nw-fleet-fold-follows-worktree-branch).
@@ -259,7 +297,7 @@ function cmdRunPass(args) {
   // canonical as review: proposed in one commit (bless is M7).
   const res = dryRun
     ? { verdicts: verifyPass(fleet, { grants }), folded: [], alreadyFolded: [], setAside: [], commit: null }
-    : foldPass(fleet, { grants, identity, instanceSubdir });
+    : foldPass(fleet, { grants, identity, instanceSubdir, now });
   const { verdicts, folded, alreadyFolded = [], setAside, commit } = res;
 
   console.log(`read ${verdicts.length} proposal(s) across ${fleet.proposers.length} outbox(es)\n`);
@@ -274,7 +312,13 @@ function cmdRunPass(args) {
   console.log(`\n${verified}/${verdicts.length} verified; ${verdicts.length - verified} set aside.`);
 
   if (!dryRun) {
-    for (const f of folded) console.log(`  folded ${f.entityType} ${f.entityId}  <- ${f.proposalId.slice(0, 12)}`);
+    for (const f of folded) {
+      console.log(`  folded ${f.entityType} ${f.entityId}  <- ${f.proposalId.slice(0, 12)}`);
+      // Carried files land in this fold commit; the committer binds each in the
+      // changed-code log as a host-policy follow-up (it points at this commit,
+      // and the log trails commits by one) — task-fleet-proposal-carries-files.
+      for (const cf of f.files ?? []) console.log(`    + file ${cf.path}  (bind in changed-code log)`);
+    }
     for (const a of alreadyFolded) console.log(`  ALREADY FOLDED ${a.entityType} ${a.entityId}  <- ${a.proposalId ? a.proposalId.slice(0, 12) : "(?)"}`);
     for (const s of setAside) console.log(`  not folded ${s.proposalId ? s.proposalId.slice(0, 12) : "(?)"}: ${s.reason}`);
     if (commit) console.log(`\nfolded ${folded.length} onto canonical in ${commit}`);
@@ -294,6 +338,48 @@ function cmdRunPass(args) {
     for (const s of cp.setAside) console.log(`  claim set aside ${s.claimId.slice(0, 12)}: ${s.reason}`);
     if (cp.commit) console.log(`\napplied ${cp.applied.length} claim(s) in ${cp.commit}`);
   }
+  return res;
+}
+
+async function cmdRunPass(args) {
+  const dryRun = Boolean(args["dry-run"]);
+  const identity = { name: args["name"] || undefined, email: args["email"] || undefined };
+  const instanceSubdir = args["instance-subdir"] && args["instance-subdir"] !== true ? args["instance-subdir"] : "";
+  const now = args["now"] && args["now"] !== true ? args["now"] : null;
+
+  const { fleet, grants } = attach(args);
+  const tickOpts = { dryRun, identity, instanceSubdir, now };
+
+  if (!args["watch"]) {
+    passTick(fleet, grants, tickOpts);
+    return;
+  }
+
+  // Watch mode (task-fleet-committer-startup-scan): fold live on a loop so a
+  // proposer that ran before the committer is not stranded. It folds; it never
+  // accepts (each pass writes review: proposed), so --dry-run is meaningless here.
+  if (dryRun) throw new Error("--watch folds live and cannot be combined with --dry-run");
+  const intervalSec = args["interval"] && args["interval"] !== true ? Number(args["interval"]) : 5;
+  if (!Number.isFinite(intervalSec) || intervalSec <= 0) {
+    throw new Error("--interval must be a positive number of seconds");
+  }
+
+  let stopped = false;
+  const onSignal = () => {
+    if (stopped) process.exit(0); // a second Ctrl-C exits now, without waiting for the pass
+    stopped = true;
+    console.log("\nstopping watch after the current pass…");
+  };
+  process.on("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
+
+  console.log(`watching ${fleet.proposers.length} outbox(es) every ${intervalSec}s; Ctrl-C to stop.\n`);
+  const passes = await watchLoop({
+    intervalMs: intervalSec * 1000,
+    stop: () => stopped,
+    tick: () => { passTick(fleet, grants, { ...tickOpts, dryRun: false }); console.log(""); },
+  });
+  console.log(`watch stopped after ${passes} pass(es).`);
 }
 
 function cmdBless(args) {
@@ -342,7 +428,7 @@ function cmdReview(args) {
   console.log(renderReviewPrompt(digest));
 }
 
-function main() {
+async function main() {
   const argv = process.argv.slice(2);
   const command = argv[0];
   const args = parseArgs(argv.slice(1));
@@ -355,7 +441,7 @@ function main() {
     else if (command === "claim") cmdClaim(args);
     else if (command === "release") cmdRelease(args);
     else if (command === "accept-release") cmdAcceptRelease(args);
-    else if (command === "run-pass") cmdRunPass(args);
+    else if (command === "run-pass") await cmdRunPass(args);
     else if (command === "review") cmdReview(args);
     else if (command === "bless") cmdBless(args);
     else if (command === "rebuild-index") cmdRebuildIndex(args);
@@ -363,6 +449,7 @@ function main() {
       console.error("usage: cli.mjs <init|setup|doctor|teardown|propose|claim|release|accept-release|run-pass|review|bless|rebuild-index> [--flags]");
       console.error("  config-driven commands take --canonical <path> (reads .konspekt/fleet/config/fleet.json);");
       console.error("  the flat manifest path takes --root <dir> (legacy).");
+      console.error("  run-pass --watch [--interval <sec>] folds live on a loop until Ctrl-C.");
       process.exit(2);
     }
   } catch (e) {
