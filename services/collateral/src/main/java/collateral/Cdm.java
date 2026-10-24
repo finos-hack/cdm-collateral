@@ -1,6 +1,7 @@
 package collateral;
 
 import cdmx.collateral.margincall.MarginCallInstruction;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -26,24 +27,26 @@ import static collateral.CdmRuntime.o;
  * these documents validate and drive {@code Create_MarginCallState}; here they are parameterised with the live callId,
  * parties, token ISINs and amounts of the running cycle.
  *
+ * The on-chain {@code cdmHash} is keccak-256 over the Rune JSON (Ethereum/EVM hashing, so a contract or counterparty
+ * can recompute it with {@code keccak256(bytes)} over the same canonical bytes).
+ *
  * First-cycle reductions (nw-e2e-first-cycle-scope): steps are validated individually rather than folded into a shared
  * {@code MarginCallState} (that stateful fold is what service-to-peer CDM exchange would carry, which this cycle omits);
  * the CDM {@code callIdentifier} is derived from the shared on-chain callId so both parties agree without peer
- * messaging; amounts are the agreement's base currency (USD) whole units, while the chain carries the 1e8-scaled value;
- * and the hash is SHA-256, not keccak-256 (algorithm alignment across verifiers is a separate task).
+ * messaging; amounts are the agreement's base currency (USD) whole units, while the chain carries the 1e8-scaled value.
  */
 public final class Cdm {
     public final MarginCallInstruction instruction;
     public final String step;      // issue | respond | propose | decide | settle
     public final String json;      // canonical Rune JSON of the instruction
-    public final String hash;      // 0x-prefixed SHA-256 of the Rune JSON
+    public final String hash;      // 0x-prefixed keccak-256 of the Rune JSON
 
     private Cdm(String step, Map<String, Object> value) {
         this.step = step;
         this.instruction = CdmRuntime.load(MarginCallInstruction.class, o(step, value));
         CdmRuntime.validate(this.instruction); // never let an invalid CDM document reach the ledger
         this.json = CdmRuntime.toJson(this.instruction);
-        this.hash = sha256Hex(this.json);
+        this.hash = keccak256Hex(this.json);
     }
 
     // ---- Rune JSON builders (shapes from cdm-ext test Data.java), parameterised with live cycle values ----
@@ -136,19 +139,23 @@ public final class Cdm {
         return "C-" + h.substring(0, Math.min(8, h.length())).toUpperCase();
     }
 
-    /** Deterministic on-chain bytes32 call id from a seed (party + counter + nanoTime). Not derived from CDM content. */
+    /** Deterministic on-chain bytes32 call id from a seed (party + counter + nanoTime). An opaque id, not a content hash. */
     public static String onChainId(String seed) {
-        return sha256Hex(seed);
-    }
-
-    private static String sha256Hex(String s) {
         try {
-            byte[] d = MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder("0x");
-            for (byte b : d) sb.append(String.format("%02x", b));
-            return sb.toString();
+            return hex(MessageDigest.getInstance("SHA-256").digest(seed.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** keccak-256 (Ethereum/EVM), used for the CDM content hash so an on-chain verifier can recompute it. */
+    private static String keccak256Hex(String s) {
+        return hex(new Keccak.Digest256().digest(s.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static String hex(byte[] d) {
+        StringBuilder sb = new StringBuilder("0x");
+        for (byte b : d) sb.append(String.format("%02x", b));
+        return sb.toString();
     }
 }

@@ -40,6 +40,13 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.46.1.3</version>
         </dependency>
+        <!-- Keccak-256 for the on-chain CDM hash (Ethereum/EVM hashing, not NIST SHA3-256). Used via the digest class
+             directly, not registered as a JCA provider, so stripping jar signatures in the shade does not affect it. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.78.1</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>

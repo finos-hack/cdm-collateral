@@ -15,8 +15,9 @@ Each lifecycle message is a real CDM object: one `MarginCallInstruction` step fr
 the `RuneJsonObjectMapper` and the `RosettaTypeValidator`, mirroring the extension's own test runtime. For every step
 (`issue`, `respond`, `propose`, `decide`, `settle`) the service builds the instruction, validates it (all CDM and
 extension conditions — an invalid document never reaches the ledger), serialises it to canonical Rune JSON, records
-that JSON in the store, and takes the on-chain `cdmHash` over it. The CDM `callIdentifier` is derived from the shared
-on-chain callId so both parties name the same call without peer messaging (`Cdm.cdmCallId`). See `Cdm.java`.
+that JSON in the store, and takes the on-chain `cdmHash` as keccak-256 over it (Ethereum/EVM hashing, so a contract or
+counterparty can recompute it). The CDM `callIdentifier` is derived from the shared on-chain callId so both parties
+name the same call without peer messaging (`Cdm.cdmCallId`). See `Cdm.java`.
 
 ## First-cycle scope
 
@@ -26,8 +27,6 @@ tracked as open items:
 - **Stateful CDM fold.** Steps are validated individually rather than folded into a shared `MarginCallState` via
   `Create_MarginCallState`; that cumulative state is what `service-to-peer-service` CDM exchange would carry, which
   this cycle omits. The response states indicative collateral (the actual assets are chosen at proposal time).
-- **Hash algorithm.** The on-chain CDM hash is SHA-256 over the Rune JSON, not keccak-256. No verifier recomputes
-  it in this flow; aligning the algorithm across the on-chain/off-chain verifiers is a separate task.
 - **Peer messaging.** The two parties' services share call state through the chain (each reads the margin call
   contract via its gateway) rather than the `service-to-peer-service` CDM exchange. The oracle service is not run;
   prices are already on the on-chain feed from deploy.
