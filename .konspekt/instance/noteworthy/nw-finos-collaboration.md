@@ -3,7 +3,7 @@ id: nw-finos-collaboration
 kind: statement
 createdAt: 2026-10-24T00:00:00Z
 updatedAt: 2026-10-24T00:00:00Z
-review: proposed
+review: accepted
 provenance:
   sourceRef: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
   contentHash: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
