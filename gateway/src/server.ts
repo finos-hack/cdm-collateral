@@ -78,6 +78,8 @@ route("GET", "/ledger/v1/pledged", async (_p, _b, url) =>
   ),
 );
 
+route("GET", "/ledger/v1/calls/:id/steps", async (p) => J(await adapter.callSteps(p.id as Hex)));
+
 route("GET", "/ledger/v1/balance", async (_p, _b, url) =>
   J(await adapter.tokenBalance(getAddress(url.searchParams.get("token")!) as Address, getAddress(url.searchParams.get("owner")!))),
 );

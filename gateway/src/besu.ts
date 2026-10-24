@@ -76,6 +76,7 @@ export interface LedgerAdapter {
   pledge(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
+  callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
   pledgedBalance(pledgor: Address, securedParty: Address, token: Address): Promise<bigint>;
   tokenBalance(token: Address, owner: Address): Promise<bigint>;
@@ -175,6 +176,35 @@ export class BesuAdapter implements LedgerAdapter {
     const out: { callId: Hex; call: OnChainCall }[] = [];
     for (const callId of ids) out.push({ callId, call: await this.getCall(callId) });
     return out;
+  }
+
+  // The lifecycle steps of one call, in chain order, each with its CDM hash — the authoritative ordered commitment
+  // list for the MarginCallState fold (wp-adr-cdm-payload-carrier). Read from the step events (callId is indexed).
+  async callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]> {
+    const specs = [
+      { name: "CallIssued", step: "IssueCall" },
+      { name: "CallAnswered", step: "RespondToCall" },
+      { name: "CollateralProposed", step: "ProposeCollateral" },
+      { name: "ProposalDecided", step: "DecideProposal" },
+      { name: "CallSettled", step: "SettleCall" },
+    ];
+    const latest = await this.pub.getBlockNumber();
+    const start = BigInt(this.reg.deployBlock ?? 0);
+    const WINDOW = 4000n;
+    const rows: { step: string; cdmHash: Hex; block: string; logIndex: number; bn: bigint }[] = [];
+    for (const s of specs) {
+      const event = marginCallAbi.find((x: any) => x.type === "event" && x.name === s.name) as never;
+      for (let from = start; from <= latest; from += WINDOW) {
+        const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
+        const logs = await this.pub.getLogs({ address: this.reg.contracts.marginCall, event, args: { callId } as never, fromBlock: from, toBlock: to });
+        for (const log of logs) {
+          const a = (log as any).args as { cdmHash?: Hex };
+          rows.push({ step: s.step, cdmHash: a.cdmHash as Hex, block: (log as any).blockNumber.toString(), logIndex: Number((log as any).logIndex), bn: (log as any).blockNumber });
+        }
+      }
+    }
+    rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
+    return rows.map(({ bn, ...r }) => r);
   }
 
   async getProposalState(callId: Hex, proposalId: bigint): Promise<number> {

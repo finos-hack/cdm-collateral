@@ -42,6 +42,12 @@ public final class Store implements AutoCloseable {
                       party TEXT PRIMARY KEY,
                       n INTEGER NOT NULL
                     )""");
+                st.execute("""
+                    CREATE TABLE IF NOT EXISTS margin_call_state (
+                      call_id TEXT PRIMARY KEY,
+                      state_json TEXT NOT NULL,
+                      updated_at TEXT NOT NULL
+                    )""");
             }
         } catch (Exception e) {
             throw new RuntimeException("store init failed: " + e.getMessage(), e);
@@ -75,6 +81,20 @@ public final class Store implements AutoCloseable {
             ins.setString(5, cdm.json);
             ins.setString(6, Instant.now().toString());
             ins.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Upsert the folded MarginCallState Rune JSON for a call (the off-chain CDM record, wp-adr-cdm-payload-carrier). */
+    public void saveState(String callId, String stateJson) {
+        try (PreparedStatement up = conn.prepareStatement(
+                "INSERT INTO margin_call_state(call_id, state_json, updated_at) VALUES(?,?,?) " +
+                        "ON CONFLICT(call_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at")) {
+            up.setString(1, callId);
+            up.setString(2, stateJson);
+            up.setString(3, Instant.now().toString());
+            up.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

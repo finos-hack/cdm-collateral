@@ -1,5 +1,6 @@
 package collateral;
 
+import cdmx.collateral.margincall.MarginCallState;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Collateral workflow service for one participant (architecture node collateral-service). Exposes the margin-call
@@ -25,13 +27,27 @@ public final class App {
     private final Config cfg;
     private final Store store;
     private final Gateway gw;
+    private final PayloadStore payloads;
+    private final List<String> callParties; // reader allowlist for stored docs: both counterparties (A, B)
     private final Map<String, String> symbolByAddress; // lowercase address -> symbol
+    private final Map<String, FoldCache> foldCache = new ConcurrentHashMap<>();
+
+    /** A folded MarginCallState cached against the on-chain step signature, so a steady call is not refolded each poll. */
+    private record FoldCache(String sig, Map<String, Object> result) {}
 
     private App(Config cfg) {
         this.cfg = cfg;
         this.store = new Store(cfg.dbPath);
         this.gw = new Gateway(cfg.gatewayUrl);
+        this.payloads = new PayloadStore(cfg.storeUrl);
+        this.callParties = List.of(cfg.partyAddress("A"), cfg.partyAddress("B"));
         this.symbolByAddress = cfg.tokenSymbols();
+    }
+
+    /** Record a produced CDM document in the local store and publish it to the shared payload carrier. */
+    private void record(String callId, String type, Cdm cdm) {
+        store.recordMessage(callId, type, "out", cdm);
+        payloads.put(cdm.hash, cdm.json, callParties);
     }
 
     public static void main(String[] args) {
@@ -52,6 +68,7 @@ public final class App {
         app.get("/api/v1/health", ctx -> ctx.json(Map.of("party", cfg.partyId, "role", cfg.role, "address", cfg.myAddress, "ok", true)));
         app.get("/api/v1/context", this::context);
         app.get("/api/v1/state", this::state);
+        app.get("/api/v1/calls/{id}/cdm-state", ctx -> ctx.json(cdmStateFor(ctx.pathParam("id"))));
         app.post("/api/v1/calls", this::issueCall);
         app.post("/api/v1/calls/{id}/response", this::respond);
         app.post("/api/v1/calls/{id}/proposal", this::propose);
@@ -140,6 +157,57 @@ public final class App {
         ctx.json(new LinkedHashMap<>(Map.of("party", cfg.partyId, "role", cfg.role, "calls", callList, "balances", balances)));
     }
 
+    /**
+     * The cumulative CDM MarginCallState for a call, folded from the step documents (wp-adr-cdm-payload-carrier): read
+     * the on-chain ordered step hashes from the gateway, fetch each document from the payload store by hash, verify
+     * keccak256(payload) == hash, and fold them through Create_MarginCallState. Both parties fold the same documents
+     * and so converge to the same validated state. Cached against the step signature once every step is folded.
+     */
+    private Map<String, Object> cdmStateFor(String callId) {
+        JsonNode steps = gw.get("/calls/" + callId + "/steps");
+        List<String> hashes = new ArrayList<>();
+        List<String> stepNames = new ArrayList<>();
+        StringBuilder sig = new StringBuilder();
+        for (JsonNode s : steps) {
+            hashes.add(s.get("cdmHash").asText());
+            stepNames.add(s.get("step").asText());
+            sig.append(s.get("cdmHash").asText()).append(';');
+        }
+        FoldCache cached = foldCache.get(callId);
+        if (cached != null && cached.sig().equals(sig.toString())) return cached.result();
+
+        // Fetch and verify the contiguous prefix of documents available to this party, then fold it.
+        List<String> docs = new ArrayList<>();
+        for (int i = 0; i < hashes.size(); i++) {
+            String doc = payloads.get(hashes.get(i), cfg.myAddress);
+            if (doc == null) break; // step committed on-chain but its payload is not yet readable here
+            if (!Cdm.keccakHex(doc).equalsIgnoreCase(hashes.get(i)))
+                throw new RuntimeException("payload hash mismatch for step " + stepNames.get(i) + " (" + hashes.get(i) + ")");
+            docs.add(doc);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalSteps", hashes.size());
+        result.put("foldedSteps", docs.size());
+        result.put("steps", stepNames);
+        boolean converged = !hashes.isEmpty() && docs.size() == hashes.size();
+        if (docs.isEmpty()) {
+            result.put("status", "none");
+        } else {
+            MarginCallState st = CdmFold.fold(docs);
+            String json = CdmRuntime.toJson(st);
+            store.saveState(callId, json);
+            result.put("status", String.valueOf(st.getStatus()));
+            List<String> recorded = new ArrayList<>();
+            if (st.getStepRecord() != null) for (var r : st.getStepRecord()) recorded.add(String.valueOf(r.getStep()));
+            result.put("stepRecord", recorded);
+            result.put("stateHash", Cdm.keccakHex(json)); // same state -> same hash on both parties
+        }
+        result.put("converged", converged);
+        if (converged) foldCache.put(callId, new FoldCache(sig.toString(), result)); // cache only once fully folded
+        return result;
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> body(Context ctx) {
         return ctx.bodyAsClass(Map.class);
@@ -157,7 +225,7 @@ public final class App {
         String callId = Cdm.onChainId(cfg.partyId + "-" + n + "-" + System.nanoTime());
         String direction = kind.equals("Return") ? "Return" : "Delivery";
         Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, direction);
-        store.recordMessage(callId, "IssueCall", "out", cdm);
+        record(callId, "IssueCall", cdm);
         gw.post("/calls", Map.of("callId", callId, "kind", CALL_KIND.get(kind), "to", cfg.partyAddress(toParty),
                 "amount", amountScaled, "deadline", deadline, "cdmHash", cdm.hash));
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash));
@@ -185,7 +253,7 @@ public final class App {
         // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
         long units = Math.max(1, agreedUsd);
         Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, "Delivery", units, cfg.isin(cfg.firstTokenSymbol()));
-        store.recordMessage(callId, "RespondToCall", "out", cdm);
+        record(callId, "RespondToCall", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
     }
@@ -209,7 +277,7 @@ public final class App {
         }
         // The proposal covers the agreed amount (valueAfterHaircuts in the agreement's base currency).
         Cdm cdm = Cdm.propose(Cdm.cdmCallId(callId), callIssuer, "P-" + nextPid, cfg.bankName(cfg.partyId), cdmAssets, agreedUsd);
-        store.recordMessage(callId, "ProposeCollateral", "out", cdm);
+        record(callId, "ProposeCollateral", cdm);
         JsonNode r = gw.post("/calls/" + callId + "/proposals", Map.of("assets", gwAssets, "cdmHash", cdm.hash));
         ctx.json(Map.of("proposalId", r.get("proposalId").asLong(), "cdmHash", cdm.hash));
     }
@@ -221,7 +289,7 @@ public final class App {
         boolean accept = Boolean.TRUE.equals(b.get("accept"));
         String reason = (String) b.get("reason");
         Cdm cdm = Cdm.decide("P-" + proposalId, accept, reason);
-        store.recordMessage(callId, "DecideProposal", "out", cdm);
+        record(callId, "DecideProposal", cdm);
         gw.post("/calls/" + callId + "/decision", Map.of("proposalId", proposalId, "accept", accept, "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "decision", accept ? "accepted" : "rejected", "cdmHash", cdm.hash));
     }
@@ -233,7 +301,7 @@ public final class App {
         JsonNode assets = gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets");
         if (assets.isEmpty()) throw new RuntimeException("proposal " + proposalId + " has no assets");
         Cdm cdm = Cdm.settle("P-" + proposalId);
-        store.recordMessage(callId, "SettleCall", "out", cdm);
+        record(callId, "SettleCall", cdm);
         // First-cycle scope: single-asset pledge. The gateway approves the control contract then pledges.
         JsonNode a0 = assets.get(0);
         gw.post("/calls/" + callId + "/pledge", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText(), "cdmHash", cdm.hash));

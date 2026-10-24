@@ -153,6 +153,11 @@ public final class Cdm {
         return hex(new Keccak.Digest256().digest(s.getBytes(StandardCharsets.UTF_8)));
     }
 
+    /** keccak-256 over a document's UTF-8 bytes; a consumer recomputes this to verify a fetched payload (carrier). */
+    public static String keccakHex(String s) {
+        return keccak256Hex(s);
+    }
+
     private static String hex(byte[] d) {
         StringBuilder sb = new StringBuilder("0x");
         for (byte b : d) sb.append(String.format("%02x", b));

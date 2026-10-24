@@ -19,17 +19,29 @@ that JSON in the store, and takes the on-chain `cdmHash` as keccak-256 over it (
 counterparty can recompute it). The CDM `callIdentifier` is derived from the shared on-chain callId so both parties
 name the same call without peer messaging (`Cdm.cdmCallId`). See `Cdm.java`.
 
+## Payload carrier and cumulative fold
+
+The chain carries only the 32-byte keccak `cdmHash` per step; the CDM document itself lives off-chain in a
+content-addressed payload store keyed by that hash (ADR `wp-adr-cdm-payload-carrier`). As each step is built, the
+service posts the Rune JSON to the store under its hash (`PayloadStore.put`, `App.record`). A party reconstructs the
+full lifecycle from the chain and the store, not from direct peer messaging: it reads the ordered step hashes from the
+gateway (`GET /ledger/v1/calls/{id}/steps`), fetches each document from the store, verifies `keccak256(document)`
+equals the on-chain hash, then folds the ordered `MarginCallInstruction` steps into a cumulative, validated
+`MarginCallState` with `Create_MarginCallState` (`CdmFold.fold`). The fold runs CDM's full cross-party validation
+(response matches the call, settlement covers the agreed amount, steps in order). Because both parties fold the same
+chain-ordered documents through the same function, they derive an identical `MarginCallState` — verified by comparing
+the keccak `stateHash` across both services. See `GET /api/v1/calls/{id}/cdm-state`.
+
 ## First-cycle scope
 
-This instance implements `flow-im-margin-call-pledge` (issue → respond → propose → decide → pledge). Deferred, and
-tracked as open items:
+This instance implements `flow-im-margin-call-pledge` (issue → respond → propose → decide → pledge). Each party folds
+the chain-ordered steps into a shared `MarginCallState` and the two folds converge (see "Payload carrier and
+cumulative fold"). The response states indicative collateral (the actual assets are chosen at proposal time).
+Deferred, and tracked as open items:
 
-- **Stateful CDM fold.** Steps are validated individually rather than folded into a shared `MarginCallState` via
-  `Create_MarginCallState`; that cumulative state is what `service-to-peer-service` CDM exchange would carry, which
-  this cycle omits. The response states indicative collateral (the actual assets are chosen at proposal time).
-- **Peer messaging.** The two parties' services share call state through the chain (each reads the margin call
-  contract via its gateway) rather than the `service-to-peer-service` CDM exchange. The oracle service is not run;
-  prices are already on the on-chain feed from deploy.
+- **CDM carrier.** The two parties exchange CDM content through the chain hash plus the content-addressed store, not a
+  direct `service-to-peer-service` channel; the store is a single shared instance with asserted (not authenticated)
+  party identity. The oracle service is not run; prices are already on the on-chain feed from deploy.
 - **Pledge.** Single-asset pledge per call.
 
 ## Prerequisites
@@ -53,5 +65,6 @@ file is `./data/<node>.db`.
 ## REST API (`/api/v1`)
 
 `GET /context`, `GET /state`, `POST /calls`, `POST /calls/{id}/response`, `POST /calls/{id}/proposal`,
-`POST /calls/{id}/decision`, `POST /calls/{id}/pledge`. The console's live mode (`console` route `#/live/A|B`) calls
-these; see `console/src/domain/liveApi.ts`.
+`POST /calls/{id}/decision`, `POST /calls/{id}/pledge`, `GET /calls/{id}/cdm-state` (the cumulative fold; kept off the
+hot `/state` poll because the fold scans the chain and the store). The console's live mode (`console` route
+`#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

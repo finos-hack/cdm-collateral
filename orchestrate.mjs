@@ -33,6 +33,9 @@ function run(name, cmd, args, cwd, env) {
   return child;
 }
 
+// Content-addressed CDM payload store (wp-adr-cdm-payload-carrier), shared by both participants.
+run("store", "node", ["src/server.ts"], path.join(root, "store"), { PORT: "8300", DATA_DIR: path.join(root, "store", "data") });
+
 const gw = path.join(root, "gateway");
 run("gw-a", "node", ["src/server.ts"], gw, { NODE: "bank-a", PORT: "8201" });
 run("gw-b", "node", ["src/server.ts"], gw, { NODE: "bank-b", PORT: "8202" });
@@ -47,6 +50,7 @@ run("console", process.platform === "win32" ? "npm.cmd" : "npm", ["run", "dev", 
 
 console.log(`
 stack starting:
+  store             http://localhost:8300/store/v1
   gateway  bank-a   http://localhost:8201/ledger/v1
   gateway  bank-b   http://localhost:8202/ledger/v1
   service  A (pledgor)        http://localhost:8001/api/v1
