@@ -334,3 +334,4 @@ excluded.
 | goal-business-case | 950fcd5970c9496221cddb1c4fef0833e1df0e63 | artifacts/artifact-business-case.md | 2026-10-24T14:54:16Z |
 | goal-business-case | 950fcd5970c9496221cddb1c4fef0833e1df0e63 | sources/ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4.md | 2026-10-24T14:54:16Z |
 | goal-business-case | f72d49792225325ee72e2e26a39e8c89748ec316 | docs/analysis/business-case.md | 2026-10-24T15:01:04Z |
+| goal-business-case | 862b3c282f19943ead86d1ed0d48f6eb19df9024 | docs/analysis/business-case.md | 2026-10-24T15:03:11Z |
