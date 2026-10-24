@@ -259,3 +259,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-e2e-wiring | status | open | active | 2026-10-23T21:54:35Z | adc651e4f21db3c07ae7d96294f91d86737b76f1 | denisurusov |
 | artifact:artifact-business-case | review |  | proposed | 2026-10-24T13:56:51.384Z |  | spec-writer |
 | edge:e-business-case-produces-doc | review |  | proposed | 2026-10-24T13:56:51.384Z |  | spec-writer |
+| artifact:artifact-business-case | review | proposed | accepted | 2026-10-24T14:11:28.731Z |  | denisurusov |
+| edge:e-business-case-produces-doc | review | proposed | accepted | 2026-10-24T14:11:28.731Z |  | denisurusov |

@@ -5,7 +5,7 @@ kind: doc
 location: docs/analysis/business-case.md
 createdAt: 2026-10-24T00:00:00Z
 updatedAt: 2026-10-24T00:00:00Z
-review: proposed
+review: accepted
 provenance:
   sourceRef: ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4
   contentHash: ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4
