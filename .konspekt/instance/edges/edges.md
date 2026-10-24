@@ -85,3 +85,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-twowayim-design | produces | node:task-two-way-initial-margin | artifact:artifact-two-way-im-design |  | accepted |
 | e-onchain-privacy-produces-design | produces | node:task-onchain-privacy | artifact:artifact-onchain-privacy-design |  | accepted |
 | e-business-case-produces-doc | produces | node:goal-business-case | artifact:artifact-business-case |  | accepted |
+| e-note-bizcase-finoscollab | notes | node:goal-business-case | noteworthy:nw-finos-collaboration |  | proposed |

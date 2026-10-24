@@ -261,3 +261,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-business-case-produces-doc | review |  | proposed | 2026-10-24T13:56:51.384Z |  | spec-writer |
 | artifact:artifact-business-case | review | proposed | accepted | 2026-10-24T14:11:28.731Z |  | denisurusov |
 | edge:e-business-case-produces-doc | review | proposed | accepted | 2026-10-24T14:11:28.731Z |  | denisurusov |
+| noteworthy:nw-finos-collaboration | review |  | proposed | 2026-10-24T14:28:19.786Z |  | spec-writer |
+| edge:e-note-bizcase-finoscollab | review |  | proposed | 2026-10-24T14:28:19.786Z |  | spec-writer |
