@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-10-24T20:12:31Z
   confidence: 0.8
 createdAt: 2026-10-24T20:12:31Z
-updatedAt: 2026-10-24T22:08:40Z
+updatedAt: 2026-10-24T22:19:05Z
 ```
 # First end-to-end cycle: scope reductions
 
@@ -22,10 +22,10 @@ reduction is a known gap, not a defect:
 - **CDM content shape.** The collateral service binds each lifecycle message to a real FINOS CDM 7.7.0 object — one
   `MarginCallInstruction` step from the local extension (`cdm-ext` / `local.cdmx:cdmx-java`) — validated with
   `RosettaTypeValidator` and serialised to canonical Rune JSON (ADR `wp-adr-java-cdm-stack`; done in commit `8d2bba1`).
-  Two reductions remain: steps are validated individually rather than folded into a shared `MarginCallState` via
-  `Create_MarginCallState` (that cumulative state is what `service-to-peer-service` CDM exchange would carry, which
-  this cycle omits), and the on-chain hash is SHA-256 over the Rune JSON, not keccak-256 — no verifier recomputes it in
-  this flow, so algorithm alignment across on-chain/off-chain verifiers is a separate task.
+  The on-chain `cdmHash` is keccak-256 over that Rune JSON (commit `aa342a9`), so an on-chain contract or counterparty
+  can recompute it. One reduction remains: steps are validated individually rather than folded into a shared
+  `MarginCallState` via `Create_MarginCallState` (that cumulative state is what `service-to-peer-service` CDM exchange
+  would carry, which this cycle omits).
 - **No peer messaging, no oracle service.** The two services share call state through the chain (each reads the
   margin call contract via its gateway) instead of the `service-to-peer-service` CDM exchange. The oracle service is
   not run; prices are on the on-chain feed from deploy, and the gateway reports no events webhook yet.

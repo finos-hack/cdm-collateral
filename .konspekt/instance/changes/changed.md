@@ -363,3 +363,7 @@ excluded.
 | artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/src/main/java/collateral/Config.java | 2026-10-24T22:08:40Z |
 | artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/pom.xml | 2026-10-24T22:08:40Z |
 | artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/README.md | 2026-10-24T22:08:40Z |
+| task-cdm-gap-closure | 70e8ceacdfb4c41b923ed3fb91b5404b62ae9532 | cdm-ext/pom.xml | 2026-10-24T22:19:05Z |
+| artifact-collateral-service | aa342a9c92b0c235da1cae1bca92413e39fd99c9 | services/collateral/src/main/java/collateral/Cdm.java | 2026-10-24T22:19:05Z |
+| artifact-collateral-service | aa342a9c92b0c235da1cae1bca92413e39fd99c9 | services/collateral/pom.xml | 2026-10-24T22:19:05Z |
+| artifact-collateral-service | aa342a9c92b0c235da1cae1bca92413e39fd99c9 | services/collateral/README.md | 2026-10-24T22:19:05Z |
