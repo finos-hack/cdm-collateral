@@ -46,13 +46,13 @@ async function main() {
   console.log(`3. propose       signed by bank-a   block ${prop.block}  proposalId ${prop.proposalId}`);
 
   // 4. Secured party accepts the proposal.
-  r = await securedParty.decide(callId, prop.proposalId, true);
+  r = await securedParty.decide(callId, prop.proposalId, true, hash({ msg: "DecideProposal", callId, proposalId: "0", accept: true }));
   console.log(`4. decide(accept) signed by bank-b  block ${r.block}`);
 
   // 5. Pledgor approves the control contract, then pledges.
   r = await pledgor.approve(tUST, reg.contracts.collateralControl, pledgeQty);
   console.log(`5a. approve      signed by bank-a   block ${r.block}`);
-  r = await pledgor.pledge(callId, prop.proposalId);
+  r = await pledgor.pledge(callId, prop.proposalId, hash({ msg: "SettleCall", callId, proposalId: "0" }));
   console.log(`5b. pledge       signed by bank-a   block ${r.block}`);
 
   // Read back and assert on-chain state.

@@ -61,8 +61,9 @@ contract CollateralControl is ReentrancyGuard {
         eligibility[token] = Eligibility({eligible: eligible, haircutBps: haircutBps});
     }
 
-    /// @notice Pledge the accepted proposal's collateral into escrow for an initial-margin call.
-    function pledge(bytes32 callId, uint256 proposalId) external nonReentrant {
+    /// @notice Pledge the accepted proposal's collateral into escrow for an initial-margin call. `cdmHash` is the CDM
+    /// SettleCallInstruction hash, anchored on-chain for the payload carrier (wp-adr-cdm-payload-carrier).
+    function pledge(bytes32 callId, uint256 proposalId, bytes32 cdmHash) external nonReentrant {
         Call memory c = marginCall.getCall(callId);
         if (c.kind != CallKind.IM) revert WrongKind();
         if (msg.sender != c.to) revert WrongParty();
@@ -77,7 +78,7 @@ contract CollateralControl is ReentrancyGuard {
             IERC20(assets[i].token).transferFrom(c.to, address(this), assets[i].qty);
             _addPledge(c.to, c.from, assets[i].token, assets[i].qty);
         }
-        marginCall.markSettled(callId, c.disputed > 0);
+        marginCall.markSettled(callId, c.disputed > 0, cdmHash);
         emit Pledged(callId, c.to, c.from, value);
     }
 
@@ -93,7 +94,7 @@ contract CollateralControl is ReentrancyGuard {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i].token).transferFrom(c.to, c.from, assets[i].qty);
         }
-        marginCall.markSettled(callId, c.disputed > 0);
+        marginCall.markSettled(callId, c.disputed > 0, bytes32(0)); // VM not CDM-bound yet (wp-adr-cdm-payload-carrier)
         emit Transferred(callId, c.to, c.from, _marketValue(assets));
     }
 
@@ -114,7 +115,7 @@ contract CollateralControl is ReentrancyGuard {
             if (release[i].qty > held) revert NotPledged(release[i].token, held, release[i].qty);
             _pledged[pledgor][securedParty][release[i].token] = held - release[i].qty;
         }
-        marginCall.markSettled(callId, false);
+        marginCall.markSettled(callId, false, bytes32(0)); // Return not CDM-bound yet (wp-adr-cdm-payload-carrier)
         for (uint256 i = 0; i < release.length; i++) {
             IERC20(release[i].token).transfer(pledgor, release[i].qty);
         }
@@ -131,7 +132,7 @@ contract CollateralControl is ReentrancyGuard {
         uint256 value = _marketValue(assets);
         if (value != c.amount) revert ReturnMustEqualCall(value, c.amount);
 
-        marginCall.markSettled(callId, false);
+        marginCall.markSettled(callId, false, bytes32(0)); // VM Return not CDM-bound yet (wp-adr-cdm-payload-carrier)
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i].token).transferFrom(c.to, c.from, assets[i].qty);
         }

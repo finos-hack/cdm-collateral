@@ -50,9 +50,11 @@ struct Call {
     bytes32 cdmHash; // hash of the CDM MarginCallIssuance content (concept-asr-onchain-call-state)
     uint256 proposalCount;
     uint256 activeProposal; // (proposalId + 1) of the Proposed/Accepted proposal; 0 when none is live
+    bytes32 settleCdmHash; // hash of the CDM SettleCallInstruction, 0 until settled (wp-adr-cdm-payload-carrier)
 }
 
 struct Proposal {
     ProposalState state;
     bytes32 cdmHash;
+    bytes32 decisionCdmHash; // hash of the CDM DecideProposalInstruction, 0 until decided (wp-adr-cdm-payload-carrier)
 }

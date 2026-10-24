@@ -43,14 +43,14 @@ route("POST", "/ledger/v1/calls/:id/proposals", async (p, b) => {
 });
 
 route("POST", "/ledger/v1/calls/:id/decision", async (p, b) =>
-  J(await adapter.decide(p.id as Hex, BigInt(b.proposalId), Boolean(b.accept))),
+  J(await adapter.decide(p.id as Hex, BigInt(b.proposalId), Boolean(b.accept), b.cdmHash as Hex)),
 );
 
 route("POST", "/ledger/v1/calls/:id/pledge", async (p, b) => {
   // The pledgor's gateway approves the control contract for the pledged quantity, then pledges.
   const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
   const approve = await adapter.approve(getAddress(b.token), control, BigInt(b.qty));
-  const pledge = await adapter.pledge(p.id as Hex, BigInt(b.proposalId));
+  const pledge = await adapter.pledge(p.id as Hex, BigInt(b.proposalId), b.cdmHash as Hex);
   return J({ approve, pledge });
 });
 

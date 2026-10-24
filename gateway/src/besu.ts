@@ -32,25 +32,29 @@ export interface OnChainCall {
   cdmHash: Hex;
   proposalCount: bigint;
   activeProposal: bigint;
+  settleCdmHash: Hex;
 }
 
 const marginCallAbi = parseAbi([
   "struct Asset { address token; uint256 qty; }",
-  "struct Call { uint8 kind; address from; address to; uint256 amount; uint256 agreed; uint256 disputed; uint64 deadline; uint8 state; bytes32 cdmHash; uint256 proposalCount; uint256 activeProposal; }",
-  "struct Proposal { uint8 state; bytes32 cdmHash; }",
+  "struct Call { uint8 kind; address from; address to; uint256 amount; uint256 agreed; uint256 disputed; uint64 deadline; uint8 state; bytes32 cdmHash; uint256 proposalCount; uint256 activeProposal; bytes32 settleCdmHash; }",
+  "struct Proposal { uint8 state; bytes32 cdmHash; bytes32 decisionCdmHash; }",
   "function issueCall(bytes32 callId, uint8 kind, address to, uint256 amount, uint64 deadline, bytes32 cdmHash)",
   "function respond(bytes32 callId, uint8 response, uint256 agreed, bytes32 cdmHash)",
   "function propose(bytes32 callId, Asset[] assets, bytes32 cdmHash) returns (uint256 proposalId)",
-  "function decideProposal(bytes32 callId, uint256 proposalId, bool accept)",
+  "function decideProposal(bytes32 callId, uint256 proposalId, bool accept, bytes32 cdmHash)",
   "function getCall(bytes32 callId) view returns (Call)",
   "function getProposal(bytes32 callId, uint256 proposalId) view returns (Proposal)",
   "function getProposalAssets(bytes32 callId, uint256 proposalId) view returns (Asset[])",
   "event CallIssued(bytes32 indexed callId, address indexed from, address indexed to, uint8 kind, uint256 amount, bytes32 cdmHash)",
+  "event CallAnswered(bytes32 indexed callId, uint8 response, uint256 agreed, uint256 disputed, bytes32 cdmHash)",
   "event CollateralProposed(bytes32 indexed callId, uint256 indexed proposalId, bytes32 cdmHash)",
+  "event ProposalDecided(bytes32 indexed callId, uint256 indexed proposalId, bool accepted, bytes32 cdmHash)",
+  "event CallSettled(bytes32 indexed callId, bool disputedRemains, bytes32 cdmHash)",
 ]);
 
 const controlAbi = parseAbi([
-  "function pledge(bytes32 callId, uint256 proposalId)",
+  "function pledge(bytes32 callId, uint256 proposalId, bytes32 cdmHash)",
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
 ]);
@@ -67,9 +71,9 @@ export interface LedgerAdapter {
   issueCall(callId: Hex, kind: number, to: Address, amount: bigint, deadline: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   respond(callId: Hex, response: number, agreed: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   propose(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint; proposalId: bigint }>;
-  decide(callId: Hex, proposalId: bigint, accept: boolean): Promise<{ txHash: Hex; block: bigint }>;
+  decide(callId: Hex, proposalId: bigint, accept: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   approve(token: Address, spender: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
-  pledge(callId: Hex, proposalId: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  pledge(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -130,16 +134,16 @@ export class BesuAdapter implements LedgerAdapter {
     return { ...sent, proposalId: call.proposalCount - 1n };
   }
 
-  decide(callId: Hex, proposalId: bigint, accept: boolean) {
-    return this.send(this.reg.contracts.marginCall, marginCallAbi, "decideProposal", [callId, proposalId, accept]);
+  decide(callId: Hex, proposalId: bigint, accept: boolean, cdmHash: Hex) {
+    return this.send(this.reg.contracts.marginCall, marginCallAbi, "decideProposal", [callId, proposalId, accept, cdmHash]);
   }
 
   approve(token: Address, spender: Address, amount: bigint) {
     return this.send(token, erc20Abi, "approve", [spender, amount]);
   }
 
-  pledge(callId: Hex, proposalId: bigint) {
-    return this.send(this.reg.contracts.collateralControl, controlAbi, "pledge", [callId, proposalId]);
+  pledge(callId: Hex, proposalId: bigint, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "pledge", [callId, proposalId, cdmHash]);
   }
 
   async getCall(callId: Hex): Promise<OnChainCall> {

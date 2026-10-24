@@ -81,9 +81,9 @@ describe("CDM collateral contracts", async () => {
       await issueAndAgree();
       // 11 tUST after 2% haircut = 11 * 100 * 0.98 = 1078 >= 1000.
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
-      await marginCall.write.decideProposal([C, 0n, true], { account: bankB.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
       await tUST.write.approve([control.address, 11n], { account: bankA.account });
-      await control.write.pledge([C, 0n], { account: bankA.account });
+      await control.write.pledge([C, 0n, zeroHash], { account: bankA.account });
 
       assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 11n);
       assert.equal(await tUST.read.balanceOf([control.address]), 11n);
@@ -101,22 +101,22 @@ describe("CDM collateral contracts", async () => {
       await issueAndAgree();
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
       await tUST.write.approve([control.address, 11n], { account: bankA.account });
-      await assert.rejects(control.write.pledge([C, 0n], { account: bankA.account })); // ProposalNotAccepted
+      await assert.rejects(control.write.pledge([C, 0n, zeroHash], { account: bankA.account })); // ProposalNotAccepted
     });
 
     it("rejects a pledge whose value after haircut is below the agreed amount", async () => {
       await issueAndAgree();
       // 10 tUST after 2% = 980 < 1000.
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 10n }], zeroHash], { account: bankA.account });
-      await marginCall.write.decideProposal([C, 0n, true], { account: bankB.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
       await tUST.write.approve([control.address, 10n], { account: bankA.account });
-      await assert.rejects(control.write.pledge([C, 0n], { account: bankA.account })); // ValueBelowAgreed
+      await assert.rejects(control.write.pledge([C, 0n, zeroHash], { account: bankA.account })); // ValueBelowAgreed
     });
 
     it("rejects a proposal decision from anyone but the caller", async () => {
       await issueAndAgree();
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
-      await assert.rejects(marginCall.write.decideProposal([C, 0n, true], { account: bankA.account }));
+      await assert.rejects(marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankA.account }));
     });
   });
 
@@ -128,9 +128,9 @@ describe("CDM collateral contracts", async () => {
       await marginCall.write.issueCall([C, IM, aAddr, agreed, 0n, zeroHash], { account: bankB.account });
       await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
-      await marginCall.write.decideProposal([C, 0n, true], { account: bankB.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
       await tUST.write.approve([control.address, 11n], { account: bankA.account });
-      await control.write.pledge([C, 0n], { account: bankA.account });
+      await control.write.pledge([C, 0n, zeroHash], { account: bankA.account });
     }
 
     it("releases pledged collateral on an agreed return", async () => {
@@ -164,9 +164,9 @@ describe("CDM collateral contracts", async () => {
       await marginCall.write.issueCall([C, IM, aAddr, agreed, 0n, zeroHash], { account: bankB.account });
       await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
-      await marginCall.write.decideProposal([C, 0n, true], { account: bankB.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
       await tUST.write.approve([control.address, 11n], { account: bankA.account });
-      await control.write.pledge([C, 0n], { account: bankA.account });
+      await control.write.pledge([C, 0n, zeroHash], { account: bankA.account });
     }
 
     it("rejects enforcement before a default is on the feed", async () => {
@@ -210,7 +210,7 @@ describe("CDM collateral contracts", async () => {
       await marginCall.write.issueCall([C, VM, aAddr, agreed, 0n, zeroHash], { account: bankB.account });
       await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
       await marginCall.write.propose([C, [{ token: tUST.address, qty: 5n }], zeroHash], { account: bankA.account });
-      await marginCall.write.decideProposal([C, 0n, true], { account: bankB.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
       await tUST.write.approve([control.address, 5n], { account: bankA.account });
       await control.write.settleByTransfer([C, 0n], { account: bankA.account });
       assert.equal(await tUST.read.balanceOf([bAddr]), 5n);

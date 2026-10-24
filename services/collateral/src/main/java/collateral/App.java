@@ -222,7 +222,7 @@ public final class App {
         String reason = (String) b.get("reason");
         Cdm cdm = Cdm.decide("P-" + proposalId, accept, reason);
         store.recordMessage(callId, "DecideProposal", "out", cdm);
-        gw.post("/calls/" + callId + "/decision", Map.of("proposalId", proposalId, "accept", accept));
+        gw.post("/calls/" + callId + "/decision", Map.of("proposalId", proposalId, "accept", accept, "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "decision", accept ? "accepted" : "rejected", "cdmHash", cdm.hash));
     }
 
@@ -236,7 +236,7 @@ public final class App {
         store.recordMessage(callId, "SettleCall", "out", cdm);
         // First-cycle scope: single-asset pledge. The gateway approves the control contract then pledges.
         JsonNode a0 = assets.get(0);
-        gw.post("/calls/" + callId + "/pledge", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText()));
+        gw.post("/calls/" + callId + "/pledge", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText(), "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "cdmHash", cdm.hash));
     }
 }
