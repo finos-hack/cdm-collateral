@@ -357,3 +357,9 @@ excluded.
 | artifact-e2e-live-harness | 880ef0dcf3b918301b78d305aa4c66f668d341c9 | orchestrate.mjs | 2026-10-24T21:15:37Z |
 | task-e2e-wiring | 880ef0dcf3b918301b78d305aa4c66f668d341c9 | contracts/scripts/deploy.ts | 2026-10-24T21:15:37Z |
 | task-e2e-wiring | 880ef0dcf3b918301b78d305aa4c66f668d341c9 | .gitignore | 2026-10-24T21:15:37Z |
+| artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/src/main/java/collateral/CdmRuntime.java | 2026-10-24T22:08:40Z |
+| artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/src/main/java/collateral/Cdm.java | 2026-10-24T22:08:40Z |
+| artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/src/main/java/collateral/App.java | 2026-10-24T22:08:40Z |
+| artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/src/main/java/collateral/Config.java | 2026-10-24T22:08:40Z |
+| artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/pom.xml | 2026-10-24T22:08:40Z |
+| artifact-collateral-service | 8d2bba18b3f885c4ea8338e496ec6cde1bdd99b9 | services/collateral/README.md | 2026-10-24T22:08:40Z |

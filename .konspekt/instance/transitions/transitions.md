@@ -289,3 +289,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-reactconsole-livewiring | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
 | edge:e-mrk-firstcycle-e2ewiring | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
 | edge:e-note-e2ewiring-scope | review | proposed | accepted | 2026-10-24T21:10:54Z |  | denisurusov |
+| noteworthy:nw-e2e-first-cycle-scope | review | accepted | proposed | 2026-10-24T22:08:40Z |  | denisurusov |
