@@ -14,6 +14,28 @@ evidence (files, line numbers, sources) is kept. Each value claim is labelled:
 Project scope applies throughout (`nw-prototype-scope`): the project builds a prototype to illustrate the concept,
 and stated assumptions are acceptable in place of production-grade evidence.
 
+## Key to the identifiers
+
+This document refers to findings, defects and gaps by short IDs defined in other analysis files, so a reader who
+meets "F2, O8" for the first time can follow the prefix to the file that defines it. Each ID below links to where
+its full statement, evidence and line references are kept.
+
+| Prefix | Examples | What it identifies | Defined in |
+|---|---|---|---|
+| F | F2 | A CDM finding for collateral management | [`findings.md`](findings.md) |
+| M | M2, M3, M4 | A margin or amount-calculation finding | [`findings.md`](findings.md) |
+| S | S1–S4 | A messaging or standards finding (ISO 20022 `colr`, FpML) | [`findings.md`](findings.md); detail in [`collateral-standards-inventory.md`](collateral-standards-inventory.md) |
+| TX | TX1–TX5 | A taxonomy finding (asset and credit-rating classification) | [`findings.md`](findings.md); detail in [`collateral-taxonomy-inventory.md`](collateral-taxonomy-inventory.md) |
+| O | O1–O3, O8–O12 | A finding for the other agreement families (repo, securities lending, triparty, CCP margin) | [`findings.md`](findings.md); detail in [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) |
+| X | X1–X3 | A finding found while building the local extension against CDM 7.7.0 | [`findings.md`](findings.md) |
+| B | B1–B5 | A tokenization or on-chain consequence | [`../architecture/blockchain-applicability.md`](../architecture/blockchain-applicability.md) (§4) |
+| G | G1–G39 | A gap in the gap register | [`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) |
+| D | D9–D15 | A CDM defect | [`defects.md`](defects.md) |
+
+Three prefixes are defined in this document and nowhere else: **V1–V7** are the value claims (§3), **C1–C2** are the
+completion goals (§4), and **S1–S8** in §7 are this document's success criteria — a separate numbering from the
+S-prefixed messaging findings in the table above, which this document cites only in §1.
+
 ## 1. Problem
 
 Collateral management between counterparties runs on bilateral agreements (ISDA CSA, GMRA, GMSLA, triparty, CCP
