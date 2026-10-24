@@ -84,3 +84,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-adoption-fleet | decomposes | node:goal-test-konspekt-adoption | node:task-adopt-agent-fleet |  | accepted |
 | e-prod-twowayim-design | produces | node:task-two-way-initial-margin | artifact:artifact-two-way-im-design |  | accepted |
 | e-onchain-privacy-produces-design | produces | node:task-onchain-privacy | artifact:artifact-onchain-privacy-design |  | accepted |
+| e-business-case-produces-doc | produces | node:goal-business-case | artifact:artifact-business-case |  | proposed |
