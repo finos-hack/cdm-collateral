@@ -72,6 +72,20 @@ public final class Config {
         return registry.get("tokens").get(symbol).get("haircutBps").asInt();
     }
 
+    public String isin(String symbol) {
+        return registry.get("tokens").get(symbol).get("isin").asText();
+    }
+
+    /** The single collateral token of this cycle, used where a response states indicative collateral before a proposal. */
+    public String firstTokenSymbol() {
+        return registry.get("tokens").fieldNames().next();
+    }
+
+    /** CDM party name for a console party id (the lifecycle documents name BANK-A / BANK-B). */
+    public String bankName(String partyId) {
+        return partyId.equals("B") ? "BANK-B" : "BANK-A";
+    }
+
     public String partyAddress(String partyId) {
         return registry.get("parties").get(partyId.equals("B") ? "bank-b" : "bank-a").asText();
     }

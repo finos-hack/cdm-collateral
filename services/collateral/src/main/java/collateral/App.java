@@ -154,9 +154,10 @@ public final class App {
         String amountScaled = BigInteger.valueOf(amountUsd).multiply(cfg.priceScale).toString();
         long deadline = System.currentTimeMillis() / 1000 + days * 86400;
         long n = store.nextCallNumber(cfg.partyId);
-        String callId = Cdm.callId(cfg.partyId + "-" + n + "-" + System.nanoTime());
-        Cdm cdm = Cdm.marginCallIssuance(callId, kind, cfg.partyId, toParty, amountScaled, deadline);
-        store.recordMessage(callId, "MarginCallIssuance", "out", cdm);
+        String callId = Cdm.onChainId(cfg.partyId + "-" + n + "-" + System.nanoTime());
+        String direction = kind.equals("Return") ? "Return" : "Delivery";
+        Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, direction);
+        store.recordMessage(callId, "IssueCall", "out", cdm);
         gw.post("/calls", Map.of("callId", callId, "kind", CALL_KIND.get(kind), "to", cfg.partyAddress(toParty),
                 "amount", amountScaled, "deadline", deadline, "cdmHash", cdm.hash));
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash));
@@ -174,10 +175,19 @@ public final class App {
             default -> BigInteger.ZERO;
         };
         BigInteger disputed = amount.subtract(agreed);
-        Cdm cdm = Cdm.marginCallResponse(callId, response, agreed.toString(), disputed.toString());
-        store.recordMessage(callId, "MarginCallResponse", "out", cdm);
+        long agreedUsd = agreed.divide(cfg.priceScale).longValue();
+        String kindCdm = switch (response) {
+            case "full" -> "AgreeinFull";
+            case "partial" -> "PartiallyAgree";
+            default -> "Dispute";
+        };
+        String issuer = cfg.bankName(partyIdOf(c.get("from").asText()));
+        // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
+        long units = Math.max(1, agreedUsd);
+        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, "Delivery", units, cfg.isin(cfg.firstTokenSymbol()));
+        store.recordMessage(callId, "RespondToCall", "out", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
-        ctx.json(Map.of("ok", true, "agreedUsd", agreed.divide(cfg.priceScale).toString()));
+        ctx.json(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
     }
 
     @SuppressWarnings("unchecked")
@@ -185,16 +195,21 @@ public final class App {
         String callId = ctx.pathParam("id");
         Map<String, Object> b = body(ctx);
         List<Map<String, Object>> assetsIn = (List<Map<String, Object>>) b.get("assets");
+        JsonNode c = gw.get("/calls/" + callId);
+        long nextPid = c.get("proposalCount").asLong(); // the id the contract assigns next (sequential per call)
+        long agreedUsd = new BigInteger(c.get("agreed").asText()).divide(cfg.priceScale).longValue();
+        String callIssuer = cfg.bankName(partyIdOf(c.get("from").asText()));
         List<Map<String, Object>> gwAssets = new ArrayList<>();
         List<Map<String, Object>> cdmAssets = new ArrayList<>();
         for (Map<String, Object> a : assetsIn) {
             String sym = (String) a.get("token");
-            String qty = String.valueOf(((Number) a.get("qty")).longValue());
-            gwAssets.add(Map.of("token", cfg.tokenAddress(sym), "qty", qty));
-            cdmAssets.add(new LinkedHashMap<>(Map.of("token", sym, "isin", cfg.registry.get("tokens").get(sym).get("isin").asText(), "quantity", qty)));
+            long qty = ((Number) a.get("qty")).longValue();
+            gwAssets.add(Map.of("token", cfg.tokenAddress(sym), "qty", String.valueOf(qty)));
+            cdmAssets.add(new LinkedHashMap<>(Map.of("isin", cfg.isin(sym), "units", qty)));
         }
-        Cdm cdm = Cdm.collateralProposal(callId, cdmAssets);
-        store.recordMessage(callId, "CollateralProposal", "out", cdm);
+        // The proposal covers the agreed amount (valueAfterHaircuts in the agreement's base currency).
+        Cdm cdm = Cdm.propose(Cdm.cdmCallId(callId), callIssuer, "P-" + nextPid, cfg.bankName(cfg.partyId), cdmAssets, agreedUsd);
+        store.recordMessage(callId, "ProposeCollateral", "out", cdm);
         JsonNode r = gw.post("/calls/" + callId + "/proposals", Map.of("assets", gwAssets, "cdmHash", cdm.hash));
         ctx.json(Map.of("proposalId", r.get("proposalId").asLong(), "cdmHash", cdm.hash));
     }
@@ -204,8 +219,11 @@ public final class App {
         Map<String, Object> b = body(ctx);
         long proposalId = ((Number) b.get("proposalId")).longValue();
         boolean accept = Boolean.TRUE.equals(b.get("accept"));
+        String reason = (String) b.get("reason");
+        Cdm cdm = Cdm.decide("P-" + proposalId, accept, reason);
+        store.recordMessage(callId, "DecideProposal", "out", cdm);
         gw.post("/calls/" + callId + "/decision", Map.of("proposalId", proposalId, "accept", accept));
-        ctx.json(Map.of("ok", true, "decision", accept ? "accepted" : "rejected"));
+        ctx.json(Map.of("ok", true, "decision", accept ? "accepted" : "rejected", "cdmHash", cdm.hash));
     }
 
     private void pledge(Context ctx) {
@@ -214,9 +232,11 @@ public final class App {
         long proposalId = ((Number) b.get("proposalId")).longValue();
         JsonNode assets = gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets");
         if (assets.isEmpty()) throw new RuntimeException("proposal " + proposalId + " has no assets");
+        Cdm cdm = Cdm.settle("P-" + proposalId);
+        store.recordMessage(callId, "SettleCall", "out", cdm);
         // First-cycle scope: single-asset pledge. The gateway approves the control contract then pledges.
         JsonNode a0 = assets.get(0);
         gw.post("/calls/" + callId + "/pledge", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText()));
-        ctx.json(Map.of("ok", true));
+        ctx.json(Map.of("ok", true, "cdmHash", cdm.hash));
     }
 }
