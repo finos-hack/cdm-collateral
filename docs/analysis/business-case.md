@@ -206,9 +206,11 @@ measure the completion goals; S8 follows G26.
 
 ## 8. Open decisions
 
-1. **ADR wording against the FINOS collaboration.** `wp-adr-cdm-local-extensions` states "Nothing is proposed or
-   reported to FINOS"; the project is carried out in collaboration with FINOS (§2). Whether the ADR is amended or
-   superseded to match.
+1. **ADR wording against the FINOS collaboration — resolved 2026-10-24.** `wp-adr-cdm-local-extensions` was amended
+   on 2026-10-24: its "Nothing is proposed or reported to FINOS" clause is superseded to record that findings and
+   defects reach FINOS through the collaboration (§2), while the project formally sits outside FINOS governance for
+   now and the `cdm-ext` extensions stay maintained in this repository. The amendment is also recorded in
+   `nw-finos-collaboration`.
 2. **Order of the families after the first milestone.** C2 covers all five families; the order in which repo,
    securities lending, triparty and CCP margin are built (O1–O3, O9, O10) is not decided.
 3. **G35 classification.** Whether reconciliation (G35) moves back into scope, given V6 (§4, Gaps outside C1).
