@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-10-24T20:12:31Z
   confidence: 0.8
 createdAt: 2026-10-24T20:12:31Z
-updatedAt: 2026-10-25T00:06:20Z
+updatedAt: 2026-10-25T00:38:51Z
 ```
 # First end-to-end cycle: scope reductions
 
@@ -19,9 +19,10 @@ reduction is a known gap, not a defect:
 - **Flows wired, two participants.** The full ISDA CSA lifecycle is wired for both initial and variation margin
   (commits `a1c8708`/`11cd42f`): agree-in-full / partial / dispute responses, proposal accept / reject with
   re-propose, IM pledge and VM title transfer, and three-step returns (release escrow or transfer back). All seven
-  paths fold to an identical cross-party `MarginCallState` against the live stack. Remaining reductions: single-asset
-  settlement per call; the two ISDA CSA agreements (IM, VM) are wired while the other agreement families in the
-  analysis (repo, securities lending, triparty, CCP) are not.
+  paths fold to an identical cross-party `MarginCallState` against the live stack, and a proposal may carry several
+  tokens — multi-asset proposal and settlement are wired (commit `9a5c8e1`). Remaining reduction: the two ISDA CSA
+  agreements (IM, VM) are wired while the other agreement families in the analysis (repo, securities lending,
+  triparty, CCP) are not.
 - **CDM content shape.** The collateral service binds each lifecycle message to a real FINOS CDM 7.7.0 object — one
   `MarginCallInstruction` step from the local extension (`cdm-ext` / `local.cdmx:cdmx-java`) — validated with
   `RosettaTypeValidator` and serialised to canonical Rune JSON (ADR `wp-adr-java-cdm-stack`; done in commit `8d2bba1`).

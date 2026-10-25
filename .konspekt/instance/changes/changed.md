@@ -406,3 +406,8 @@ excluded.
 | artifact-collateral-service | 77afa82fd8329c078491b7a50758b86c2fddb700 | services/collateral/README.md | 2026-10-25T00:07:14Z |
 | artifact-ledger-gateway | 77afa82fd8329c078491b7a50758b86c2fddb700 | gateway/README.md | 2026-10-25T00:07:14Z |
 | artifact-live-console-wiring | b65a7e58293d224eb8734b902883655bc5c66dc4 | console/src/App.tsx | 2026-10-25T00:15:02Z |
+| artifact-ledger-gateway | 9a5c8e1af3c745e3a13ecda85954266455c0fd86 | gateway/src/server.ts | 2026-10-25T00:38:21Z |
+| artifact-collateral-service | 9a5c8e1af3c745e3a13ecda85954266455c0fd86 | services/collateral/src/main/java/collateral/App.java | 2026-10-25T00:38:21Z |
+| artifact-live-console-wiring | 9a5c8e1af3c745e3a13ecda85954266455c0fd86 | console/src/components/LiveConsole.tsx | 2026-10-25T00:38:21Z |
+| artifact-collateral-service | eebd4f95ec9aabc9bc336ccb5e7dbb5feff582d2 | services/collateral/README.md | 2026-10-25T00:38:42Z |
+| artifact-ledger-gateway | eebd4f95ec9aabc9bc336ccb5e7dbb5feff582d2 | gateway/README.md | 2026-10-25T00:38:42Z |
