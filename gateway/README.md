@@ -33,11 +33,18 @@ NODE=bank-b PORT=8202 npm run serve
 | POST | `/calls/:id/response` | respond (full / partial / dispute) |
 | POST | `/calls/:id/proposals` | propose collateral; returns `proposalId` |
 | POST | `/calls/:id/decision` | accept or reject a proposal |
-| POST | `/calls/:id/pledge` | approve the control contract and pledge |
+| POST | `/calls/:id/pledge` | approve the control contract and pledge (IM settle) |
+| POST | `/calls/:id/transfer` | approve and settle a VM call by title transfer |
+| POST | `/calls/:id/return` | release escrowed IM for an agreed return call |
+| POST | `/calls/:id/return-transfer` | approve and transfer equivalent VM back for a return call |
 | GET | `/party-calls?party=0x…` | calls whose `from` or `to` is this party (from `CallIssued` logs) |
 | GET | `/calls/:id` | on-chain call state |
+| GET | `/calls/:id/steps` | the call's lifecycle steps in chain order, each with its CDM hash (fold input) |
 | GET | `/calls/:id/proposals/:pid/{state,assets}` | proposal state / proposed assets |
 | GET | `/pledged?pledgor&securedParty&token` | escrowed balance |
 | GET | `/balance?token&owner` | free token balance |
+| GET | `/events` | Server-Sent Events: one chain subscription (eth_subscribe over the Besu ws) fanned out |
 
-Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range).
+Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
+carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`); the workflow service relays it to
+the console so state changes push instead of being polled.

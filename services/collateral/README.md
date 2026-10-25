@@ -32,17 +32,29 @@ equals the on-chain hash, then folds the ordered `MarginCallInstruction` steps i
 chain-ordered documents through the same function, they derive an identical `MarginCallState` — verified by comparing
 the keccak `stateHash` across both services. See `GET /api/v1/calls/{id}/cdm-state`.
 
-## First-cycle scope
+## Flows
 
-This instance implements `flow-im-margin-call-pledge` (issue → respond → propose → decide → pledge). Each party folds
-the chain-ordered steps into a shared `MarginCallState` and the two folds converge (see "Payload carrier and
-cumulative fold"). The response states indicative collateral (the actual assets are chosen at proposal time).
-Deferred, and tracked as open items:
+The service drives the full ISDA CSA lifecycle for both initial and variation margin:
+
+- **Response paths.** Agree in full, agree in part, or dispute (`MarginCallResponseTypeEnum`). A full dispute is
+  terminal (nothing to settle); a partial agreement settles the agreed part and records the disputed remainder.
+- **Proposal paths.** The receiving party accepts or rejects a collateral proposal; a rejection lets the delivering
+  party propose again.
+- **Settlement.** Initial margin pledges into the control contract's escrow (`/pledge`); variation margin passes
+  title directly (`/transfer`). Both fold as a delivery lifecycle (issue → respond → propose → decide → settle).
+- **Returns.** A return call is issued, agreed through the response step, then settled by releasing escrowed IM
+  (`via=release`) or transferring equivalent VM back (`via=transfer`) — a three-step lifecycle
+  (issue → respond → settle) that folds like a delivery. See `Cdm.settleReturn`.
+
+Each party folds the chain-ordered steps into a shared `MarginCallState` and the two folds converge (see "Payload
+carrier and cumulative fold"). The response states indicative collateral (the actual assets are chosen at proposal
+time). Deferred, and tracked as open items:
 
 - **CDM carrier.** The two parties exchange CDM content through the chain hash plus the content-addressed store, not a
   direct `service-to-peer-service` channel; the store is a single shared instance with asserted (not authenticated)
   party identity. The oracle service is not run; prices are already on the on-chain feed from deploy.
-- **Pledge.** Single-asset pledge per call.
+- **Scope.** Single-asset settlement per call; the two ISDA CSA agreements (IM, VM) are wired, the other agreement
+  families in the analysis (repo, securities lending, triparty, CCP) are not.
 
 ## Prerequisites
 
@@ -65,6 +77,9 @@ file is `./data/<node>.db`.
 ## REST API (`/api/v1`)
 
 `GET /context`, `GET /state`, `POST /calls`, `POST /calls/{id}/response`, `POST /calls/{id}/proposal`,
-`POST /calls/{id}/decision`, `POST /calls/{id}/pledge`, `GET /calls/{id}/cdm-state` (the cumulative fold; kept off the
-hot `/state` poll because the fold scans the chain and the store). The console's live mode (`console` route
-`#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
+`POST /calls/{id}/decision`, `POST /calls/{id}/pledge` (IM settle), `POST /calls/{id}/transfer` (VM settle),
+`POST /calls/{id}/return` (return settle; body `via` = `release` | `transfer`), `GET /calls/{id}/cdm-state` (the
+cumulative fold; kept off the hot `/state` poll because the fold scans the chain and the store), and
+`GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
+its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
+The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
