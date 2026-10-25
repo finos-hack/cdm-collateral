@@ -427,3 +427,11 @@ excluded.
 | task-ci-live-e2e-stack | b3296bbfa9089521504cdfd081f749654ac877c9 | orchestrate.mjs | 2026-10-25T13:55:34Z |
 | task-ci-live-e2e-stack | b3296bbfa9089521504cdfd081f749654ac877c9 | console/e2e/live.spec.ts | 2026-10-25T13:55:34Z |
 | task-ci-live-e2e-stack | b3296bbfa9089521504cdfd081f749654ac877c9 | .github/workflows/e2e-live-stack.yml | 2026-10-25T13:55:34Z |
+| goal-architecture-design | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | architecture/README.md | 2026-10-25T15:14:51Z |
+| goal-architecture-design | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | architecture/generate_architecture.py | 2026-10-25T15:14:51Z |
+| goal-architecture-design | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | architecture/prototype.architecture.json | 2026-10-25T15:14:51Z |
+| goal-architecture-design | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | architecture/render_architecture_page.py | 2026-10-25T15:14:51Z |
+| task-e2e-wiring | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | store/README.md | 2026-10-25T15:14:51Z |
+| task-e2e-wiring | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | contracts/README.md | 2026-10-25T15:14:51Z |
+| task-e2e-wiring | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | services/collateral/src/main/java/collateral/Cdm.java | 2026-10-25T15:14:51Z |
+| task-cdm-gap-closure | da3007e9b82f49c217f24e0cdf08df8fafbb24c8 | docs/cdm-development/gap-register.md | 2026-10-25T15:14:51Z |
