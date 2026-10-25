@@ -3,7 +3,7 @@ id: task-ci-live-e2e-stack
 type: task
 title: Run the live e2e flows in CI against a full backend stack
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-wiring
   sourceRef: f7db748fb298ba32f7c8171c31c9c9009bf8ce0d

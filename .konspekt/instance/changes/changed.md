@@ -424,3 +424,6 @@ excluded.
 | task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/tsconfig.json | 2026-10-25T02:08:38Z |
 | task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/package.json | 2026-10-25T02:08:38Z |
 | task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/package-lock.json | 2026-10-25T02:08:38Z |
+| task-ci-live-e2e-stack | b3296bbfa9089521504cdfd081f749654ac877c9 | orchestrate.mjs | 2026-10-25T13:55:34Z |
+| task-ci-live-e2e-stack | b3296bbfa9089521504cdfd081f749654ac877c9 | console/e2e/live.spec.ts | 2026-10-25T13:55:34Z |
+| task-ci-live-e2e-stack | b3296bbfa9089521504cdfd081f749654ac877c9 | .github/workflows/e2e-live-stack.yml | 2026-10-25T13:55:34Z |

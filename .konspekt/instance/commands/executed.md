@@ -81,3 +81,6 @@ at execution time.
 | task-e2e-wiring | b67598e16533ff6d72a986de65243d01f82ca5f7 |
 | task-e2e-wiring | b67598e16533ff6d72a986de65243d01f82ca5f7 |
 | task-e2e-wiring | f3d4ce4f774e7311f5f31aad97896a0523641cf9 |
+| task-ci-live-e2e-stack | b2139f92002be2e02ac4ab191bc12afff9c260a3 |
+| task-ci-live-e2e-stack | 55a026d1c0b674ee9427638c584824d96123e7da |
+| task-ci-live-e2e-stack | 1cad39f0d529edda113f344a7d0de3d0f9b4f897 |

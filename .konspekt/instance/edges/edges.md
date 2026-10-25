@@ -95,4 +95,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-ledgerneutrality-carrier | drives | concept:concept-asr-ledger-neutrality | waypoint:wp-adr-cdm-payload-carrier |  | proposed |
 | e-drv-cdmdatalayer-carrier | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-cdm-payload-carrier |  | proposed |
 | e-mrk-carrier-e2ewiring | marks | waypoint:wp-adr-cdm-payload-carrier | node:task-e2e-wiring |  | proposed |
-| e-dec-e2ewiring-cilivestack | decomposes | node:task-e2e-wiring | node:task-ci-live-e2e-stack |  | proposed |
+| e-dec-e2ewiring-cilivestack | decomposes | node:task-e2e-wiring | node:task-ci-live-e2e-stack |  | accepted |
+| e-note-cilivestack-steps | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-steps |  | proposed |

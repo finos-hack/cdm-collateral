@@ -297,3 +297,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-ci-live-e2e-stack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
 | node:task-ci-live-e2e-stack | status |  | open | 2026-10-25T01:56:01Z |  |  |
 | edge:e-dec-e2ewiring-cilivestack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
+| node:task-ci-live-e2e-stack | review | proposed | accepted | 2026-10-25T13:05:29Z |  | denisurusov |
+| edge:e-dec-e2ewiring-cilivestack | review | proposed | accepted | 2026-10-25T13:05:29Z |  | denisurusov |
+| noteworthy:nw-ci-live-stack-steps | review |  | proposed | 2026-10-25T13:12:45Z |  | denisurusov |
+| edge:e-note-cilivestack-steps | review |  | proposed | 2026-10-25T13:12:45Z |  | denisurusov |
