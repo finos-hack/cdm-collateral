@@ -411,3 +411,9 @@ excluded.
 | artifact-live-console-wiring | 9a5c8e1af3c745e3a13ecda85954266455c0fd86 | console/src/components/LiveConsole.tsx | 2026-10-25T00:38:21Z |
 | artifact-collateral-service | eebd4f95ec9aabc9bc336ccb5e7dbb5feff582d2 | services/collateral/README.md | 2026-10-25T00:38:42Z |
 | artifact-ledger-gateway | eebd4f95ec9aabc9bc336ccb5e7dbb5feff582d2 | gateway/README.md | 2026-10-25T00:38:42Z |
+| task-e2e-wiring | ac6474a87a0d169fb07dabee079955de1a9ef529 | store/src/server.ts | 2026-10-25T01:16:38Z |
+| artifact-e2e-live-harness | ac6474a87a0d169fb07dabee079955de1a9ef529 | orchestrate.mjs | 2026-10-25T01:16:38Z |
+| artifact-collateral-service | ac6474a87a0d169fb07dabee079955de1a9ef529 | services/collateral/src/main/java/collateral/App.java | 2026-10-25T01:16:38Z |
+| artifact-collateral-service | ac6474a87a0d169fb07dabee079955de1a9ef529 | services/collateral/src/main/java/collateral/Config.java | 2026-10-25T01:16:38Z |
+| artifact-collateral-service | ac6474a87a0d169fb07dabee079955de1a9ef529 | services/collateral/src/main/java/collateral/PayloadStore.java | 2026-10-25T01:16:38Z |
+| artifact-collateral-service | e1749a16dbe36ea32e49fb2a2e8f6a0791ba95a0 | services/collateral/README.md | 2026-10-25T01:16:38Z |

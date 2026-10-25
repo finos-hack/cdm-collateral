@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-10-24T20:12:31Z
   confidence: 0.8
 createdAt: 2026-10-24T20:12:31Z
-updatedAt: 2026-10-25T00:38:51Z
+updatedAt: 2026-10-25T01:16:38Z
 ```
 # First end-to-end cycle: scope reductions
 
@@ -35,7 +35,10 @@ reduction is a known gap, not a defect:
   not a direct `service-to-peer-service` channel. Each party reads the ordered step hashes from the chain, fetches each
   document from the store, verifies `keccak256(document)` against the on-chain hash, and folds the result. The gateway
   now pushes on-chain events over Server-Sent Events (eth_subscribe over the Besu ws), relayed to the console through
-  the service, so state changes push instead of being polled (commit `688ba4b`). Remaining reduction on the carrier:
-  the store is a single shared instance with asserted (not authenticated) party identity. The oracle service is not
-  run; prices are on the on-chain feed from deploy.
+  the service, so state changes push instead of being polled (commit `688ba4b`). The store no longer trusts an asserted
+  party header: each party authenticates with a per-party bearer token (`STORE_TOKEN`), the store resolves it to that
+  party's address and enforces the per-document allowlist, and it fails closed with no tokens configured (commit
+  `ac6474a`). Remaining reduction on the carrier: the store is a single shared instance and the scheme is a
+  shared secret (the store is the trusted verifier) — production would use mutual TLS or signed requests, and per-party
+  or content-addressed (IPFS) stores. The oracle service is not run; prices are on the on-chain feed from deploy.
 - **Finality.** A mined QBFT receipt is treated as final; no explicit finalized-block confirmation beyond the receipt.
