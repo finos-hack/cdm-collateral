@@ -6,6 +6,7 @@
 //
 // Usage: node orchestrate.mjs   (Ctrl-C stops every child process). Cross-platform (Windows/Linux/macOS).
 import { spawn } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,8 +34,15 @@ function run(name, cmd, args, cwd, env) {
   return child;
 }
 
+// Per-party bearer tokens for the payload store. Each participant authenticates to the store with its own secret; the
+// store resolves the token to that party's address and enforces the document allowlist against it (store/src/server.ts).
+// Tokens are minted per run (never persisted), so a party can read only its own documents.
+const reg = JSON.parse(fs.readFileSync(registry, "utf8"));
+const token = { "bank-a": crypto.randomBytes(24).toString("hex"), "bank-b": crypto.randomBytes(24).toString("hex") };
+const partyTokens = JSON.stringify(Object.fromEntries(Object.entries(token).map(([node, t]) => [t, reg.parties[node]])));
+
 // Content-addressed CDM payload store (wp-adr-cdm-payload-carrier), shared by both participants.
-run("store", "node", ["src/server.ts"], path.join(root, "store"), { PORT: "8300", DATA_DIR: path.join(root, "store", "data") });
+run("store", "node", ["src/server.ts"], path.join(root, "store"), { PORT: "8300", DATA_DIR: path.join(root, "store", "data"), PARTY_TOKENS: partyTokens });
 
 const gw = path.join(root, "gateway");
 run("gw-a", "node", ["src/server.ts"], gw, { NODE: "bank-a", PORT: "8201" });
@@ -42,8 +50,8 @@ run("gw-b", "node", ["src/server.ts"], gw, { NODE: "bank-b", PORT: "8202" });
 
 // Give the gateways a moment before the services connect to them.
 setTimeout(() => {
-  run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", ROLE: "Pledgor", PORT: "8001", GATEWAY_URL: "http://localhost:8201" });
-  run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202" });
+  run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", ROLE: "Pledgor", PORT: "8001", GATEWAY_URL: "http://localhost:8201", STORE_TOKEN: token["bank-a"] });
+  run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", STORE_TOKEN: token["bank-b"] });
 }, 2000);
 
 run("console", process.platform === "win32" ? "npm.cmd" : "npm", ["run", "dev", "--", "--port", "5173"], path.join(root, "console"), {});

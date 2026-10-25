@@ -46,7 +46,7 @@ public final class App {
         this.cfg = cfg;
         this.store = new Store(cfg.dbPath);
         this.gw = new Gateway(cfg.gatewayUrl);
-        this.payloads = new PayloadStore(cfg.storeUrl);
+        this.payloads = new PayloadStore(cfg.storeUrl, cfg.storeToken);
         this.callParties = List.of(cfg.partyAddress("A"), cfg.partyAddress("B"));
         this.symbolByAddress = cfg.tokenSymbols();
     }
@@ -225,7 +225,7 @@ public final class App {
         // Fetch and verify the contiguous prefix of documents available to this party, then fold it.
         List<String> docs = new ArrayList<>();
         for (int i = 0; i < hashes.size(); i++) {
-            String doc = payloads.get(hashes.get(i), cfg.myAddress);
+            String doc = payloads.get(hashes.get(i));
             if (doc == null) break; // step committed on-chain but its payload is not yet readable here
             if (!Cdm.keccakHex(doc).equalsIgnoreCase(hashes.get(i)))
                 throw new RuntimeException("payload hash mismatch for step " + stepNames.get(i) + " (" + hashes.get(i) + ")");

@@ -3,9 +3,12 @@
 // the integrity check. One shared store serves the prototype's participants (content addressing gives a global
 // namespace by hash).
 //
-// First-cycle reductions: the reader allowlist is enforced on an asserted `X-Party` header, not an authenticated
-// identity — production would authenticate the caller (e.g. mutual TLS or signed requests). A single shared instance
-// stands in for a production shared content-addressed store / IPFS with access control (or per-party stores).
+// Callers authenticate with a per-party bearer token: `PARTY_TOKENS` maps each token to the party address it stands
+// for, and the store resolves the `Authorization: Bearer <token>` header to that identity rather than trusting an
+// asserted party header. A party can therefore read only documents on whose allowlist its own address appears. This is
+// a shared-secret scheme (the store is the trusted verifier); production would use mutual TLS or signed requests.
+// A single shared instance stands in for a production shared content-addressed store / IPFS with access control (or
+// per-party stores). The store fails closed: with no tokens configured, every docs request is unauthorized.
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -15,6 +18,18 @@ const PORT = Number(process.env.PORT ?? 8300);
 const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// token -> lowercased party address. Provisioned by the orchestrator (orchestrate.mjs) from the deployment registry.
+const TOKENS: Record<string, string> = (() => {
+  try {
+    const raw = process.env.PARTY_TOKENS;
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    return Object.fromEntries(Object.entries(parsed).map(([t, addr]) => [t, addr.toLowerCase()]));
+  } catch {
+    return {};
+  }
+})();
+
 interface Entry {
   document: string; // the canonical Rune JSON, byte-for-byte what was hashed
   parties: string[]; // lowercased addresses allowed to read (the call's counterparties)
@@ -23,6 +38,12 @@ interface Entry {
 
 const norm = (a: string) => a.toLowerCase();
 const file = (hash: string) => path.join(DATA_DIR, hash.toLowerCase() + ".json");
+
+/** Resolve the caller's authenticated party address from its bearer token, or null if absent/unknown. */
+function authedParty(req: http.IncomingMessage): string | null {
+  const m = String(req.headers["authorization"] ?? "").match(/^Bearer\s+(.+)$/i);
+  return m ? (TOKENS[m[1]] ?? null) : null;
+}
 
 function load(hash: string): Entry | null {
   try {
@@ -56,19 +77,23 @@ const server = http.createServer((req, res) => {
     return void send(200, { ok: true, count });
   }
 
-  // GET a document by hash; the caller asserts its identity in X-Party and must be on the document's allowlist.
+  // GET a document by hash; the caller's bearer token is resolved to a party that must be on the document's allowlist.
   const getMatch = url.pathname.match(/^\/store\/v1\/docs\/(0x[0-9a-fA-F]{64})$/);
   if (req.method === "GET" && getMatch) {
+    const party = authedParty(req);
+    if (!party) return void send(401, { error: "unauthorized" });
     const hash = getMatch[1];
     const entry = load(hash);
     if (!entry) return void send(404, { error: "not found" });
-    const party = norm(String(req.headers["x-party"] ?? ""));
-    if (!party || !entry.parties.includes(party)) return void send(403, { error: "forbidden" });
+    if (!entry.parties.includes(party)) return void send(403, { error: "forbidden" });
     return void send(200, { hash, document: entry.document });
   }
 
-  // POST { hash, document, parties } — store a step's CDM document; the store verifies content addressing.
+  // POST { hash, document, parties } — store a step's CDM document; the store verifies content addressing, and the
+  // authenticated caller must be one of the parties it names (a party writes documents it is itself a counterparty to).
   if (req.method === "POST" && url.pathname === "/store/v1/docs") {
+    const party = authedParty(req);
+    if (!party) return void send(401, { error: "unauthorized" });
     let raw = "";
     req.on("data", (c) => (raw += c));
     req.on("end", () => {
@@ -77,6 +102,7 @@ const server = http.createServer((req, res) => {
         if (!b.hash || typeof b.document !== "string" || !Array.isArray(b.parties)) {
           return void send(400, { error: "hash, document, parties required" });
         }
+        if (!b.parties.map(norm).includes(party)) return void send(403, { error: "forbidden" });
         put(b.hash, b.document, b.parties);
         send(200, { ok: true, hash: b.hash });
       } catch (e: any) {
@@ -89,4 +115,9 @@ const server = http.createServer((req, res) => {
   send(404, { error: "not found" });
 });
 
-server.listen(PORT, () => console.log(`cdm payload store on http://localhost:${PORT}/store/v1 (data: ${DATA_DIR})`));
+server.listen(PORT, () => {
+  console.log(`cdm payload store on http://localhost:${PORT}/store/v1 (data: ${DATA_DIR})`);
+  if (Object.keys(TOKENS).length === 0) {
+    console.warn("store: no PARTY_TOKENS configured — every docs request will be rejected (401). Set PARTY_TOKENS to a token→address map.");
+  }
+});

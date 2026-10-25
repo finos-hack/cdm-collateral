@@ -20,6 +20,7 @@ public final class Config {
     public final int port;
     public final String gatewayUrl;
     public final String storeUrl;      // content-addressed CDM payload store (wp-adr-cdm-payload-carrier)
+    public final String storeToken;    // this party's bearer token for the store; the store resolves it to this identity
     public final String dbPath;
     public final JsonNode registry;   // parsed besu.json
     public final BigInteger priceScale;
@@ -27,13 +28,14 @@ public final class Config {
 
     public static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private Config(String partyId, String node, String role, int port, String gatewayUrl, String storeUrl, String dbPath, JsonNode registry) {
+    private Config(String partyId, String node, String role, int port, String gatewayUrl, String storeUrl, String storeToken, String dbPath, JsonNode registry) {
         this.partyId = partyId;
         this.node = node;
         this.role = role;
         this.port = port;
         this.gatewayUrl = gatewayUrl;
         this.storeUrl = storeUrl;
+        this.storeToken = storeToken;
         this.dbPath = dbPath;
         this.registry = registry;
         this.priceScale = new BigInteger(registry.get("priceScale").asText());
@@ -47,12 +49,13 @@ public final class Config {
         int port = Integer.parseInt(env("PORT", partyId.equals("B") ? "8002" : "8001"));
         String gatewayUrl = env("GATEWAY_URL", partyId.equals("B") ? "http://localhost:8202" : "http://localhost:8201");
         String storeUrl = env("STORE_URL", "http://localhost:8300/store/v1");
+        String storeToken = env("STORE_TOKEN", "");
         String repoRoot = env("REPO_ROOT", Path.of(System.getProperty("user.dir")).toString());
         Path regPath = findRegistry(Path.of(repoRoot));
         String dbPath = env("DB_PATH", "./data/" + node + ".db");
         try {
             JsonNode registry = MAPPER.readTree(Files.readString(regPath));
-            return new Config(partyId, node, role, port, gatewayUrl, storeUrl, dbPath, registry);
+            return new Config(partyId, node, role, port, gatewayUrl, storeUrl, storeToken, dbPath, registry);
         } catch (Exception e) {
             throw new RuntimeException("failed to read deployment registry at " + regPath + ": " + e.getMessage(), e);
         }
