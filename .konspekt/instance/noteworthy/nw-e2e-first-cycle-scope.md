@@ -9,16 +9,19 @@ provenance:
   timestamp: 2026-10-24T20:12:31Z
   confidence: 0.8
 createdAt: 2026-10-24T20:12:31Z
-updatedAt: 2026-10-24T23:08:58Z
+updatedAt: 2026-10-25T00:06:20Z
 ```
 # First end-to-end cycle: scope reductions
 
 The first cycle (`wp-first-e2e-cycle`) deliberately reduces scope against the full `task-e2e-wiring` target. Each
 reduction is a known gap, not a defect:
 
-- **One flow, two participants.** Only `flow-im-margin-call-pledge` (full agreement, single token tUST), bank-a
-  pledgor and bank-b secured party. The other four CALM flows, partial-agreement / dispute / rejection paths, and
-  multi-token pledges are not yet wired.
+- **Flows wired, two participants.** The full ISDA CSA lifecycle is wired for both initial and variation margin
+  (commits `a1c8708`/`11cd42f`): agree-in-full / partial / dispute responses, proposal accept / reject with
+  re-propose, IM pledge and VM title transfer, and three-step returns (release escrow or transfer back). All seven
+  paths fold to an identical cross-party `MarginCallState` against the live stack. Remaining reductions: single-asset
+  settlement per call; the two ISDA CSA agreements (IM, VM) are wired while the other agreement families in the
+  analysis (repo, securities lending, triparty, CCP) are not.
 - **CDM content shape.** The collateral service binds each lifecycle message to a real FINOS CDM 7.7.0 object — one
   `MarginCallInstruction` step from the local extension (`cdm-ext` / `local.cdmx:cdmx-java`) — validated with
   `RosettaTypeValidator` and serialised to canonical Rune JSON (ADR `wp-adr-java-cdm-stack`; done in commit `8d2bba1`).
@@ -29,8 +32,9 @@ reduction is a known gap, not a defect:
 - **CDM carrier, no oracle service.** The two parties exchange CDM content through the on-chain step hash plus a
   content-addressed payload store (Pattern A, ADR `wp-adr-cdm-payload-carrier`, commits `6530b14`/`3a89b7c`/`2494e39`),
   not a direct `service-to-peer-service` channel. Each party reads the ordered step hashes from the chain, fetches each
-  document from the store, verifies `keccak256(document)` against the on-chain hash, and folds the result. Remaining
-  reductions on the carrier: the store is a single shared instance with asserted (not authenticated) party identity,
-  and the gateway reports no events webhook yet (parties poll). The oracle service is not run; prices are on the
-  on-chain feed from deploy.
+  document from the store, verifies `keccak256(document)` against the on-chain hash, and folds the result. The gateway
+  now pushes on-chain events over Server-Sent Events (eth_subscribe over the Besu ws), relayed to the console through
+  the service, so state changes push instead of being polled (commit `688ba4b`). Remaining reduction on the carrier:
+  the store is a single shared instance with asserted (not authenticated) party identity. The oracle service is not
+  run; prices are on the on-chain feed from deploy.
 - **Finality.** A mined QBFT receipt is treated as final; no explicit finalized-block confirmation beyond the receipt.
