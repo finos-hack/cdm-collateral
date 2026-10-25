@@ -54,7 +54,7 @@ export function App() {
       {route.page === "grid" ? (
         <Grid />
       ) : route.page === "live" ? (
-        <LiveConsole party={route.party} />
+        <LiveConsole key={route.party} party={route.party} />
       ) : (
         <ScenarioView key={route.id + route.mode} id={route.id} mode={route.mode} />
       )}
