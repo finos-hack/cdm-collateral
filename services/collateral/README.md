@@ -52,8 +52,12 @@ carrier and cumulative fold"). The response states indicative collateral (the ac
 time). Deferred, and tracked as open items:
 
 - **CDM carrier.** The two parties exchange CDM content through the chain hash plus the content-addressed store, not a
-  direct `service-to-peer-service` channel; the store is a single shared instance with asserted (not authenticated)
-  party identity. The oracle service is not run; prices are already on the on-chain feed from deploy.
+  direct `service-to-peer-service` channel. Each party authenticates to the store with a per-party bearer token
+  (`STORE_TOKEN`); the store resolves the token to that party's address and enforces the per-document allowlist against
+  it, so a party cannot read another's documents by asserting an identity header. Remaining reduction: the store is a
+  single shared instance and the scheme is a shared secret (the store is the trusted verifier) — production would use
+  mutual TLS or signed requests, and per-party or content-addressed (IPFS) stores. The oracle service is not run;
+  prices are already on the on-chain feed from deploy.
 - **Scope.** The two ISDA CSA agreements (IM, VM) are wired, with multi-asset proposals and settlement; the other
   agreement families in the analysis (repo, securities lending, triparty, CCP) are not.
 
@@ -66,14 +70,16 @@ time). Deferred, and tracked as open items:
 
 ```
 mvn -DskipTests package                      # builds target/collateral-service.jar (shaded)
-PARTY_ID=A NODE=bank-a ROLE=Pledgor PORT=8001 GATEWAY_URL=http://localhost:8201 \
+PARTY_ID=A NODE=bank-a ROLE=Pledgor PORT=8001 GATEWAY_URL=http://localhost:8201 STORE_TOKEN=<token-a> \
   java -jar target/collateral-service.jar
-PARTY_ID=B NODE=bank-b ROLE="Secured Party" PORT=8002 GATEWAY_URL=http://localhost:8202 \
+PARTY_ID=B NODE=bank-b ROLE="Secured Party" PORT=8002 GATEWAY_URL=http://localhost:8202 STORE_TOKEN=<token-b> \
   java -jar target/collateral-service.jar
 ```
 
 Run from the repository root (or set `REPO_ROOT`) so the service finds `contracts/deployments/besu.json`. The store
-file is `./data/<node>.db`.
+file is `./data/<node>.db`. `STORE_TOKEN` is this party's bearer token for the payload store; the store fails closed, so
+it must match an entry in the store's `PARTY_TOKENS` map. `orchestrate.mjs` mints both tokens per run and wires them to
+the store and the two services, so the full stack needs no manual token setup.
 
 ## REST API (`/api/v1`)
 
