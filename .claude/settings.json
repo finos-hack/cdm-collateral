@@ -9,6 +9,15 @@
             "statusMessage": "Loading mandatory skills..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.konspekt/fleet/app/committer-watch-hook.mjs\"",
+            "statusMessage": "Starting committer fold watcher..."
+          }
+        ]
       }
     ],
     "PreToolUse": [
