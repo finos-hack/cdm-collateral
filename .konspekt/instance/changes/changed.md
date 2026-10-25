@@ -418,3 +418,9 @@ excluded.
 | artifact-collateral-service | ac6474a87a0d169fb07dabee079955de1a9ef529 | services/collateral/src/main/java/collateral/PayloadStore.java | 2026-10-25T01:16:38Z |
 | artifact-collateral-service | e1749a16dbe36ea32e49fb2a2e8f6a0791ba95a0 | services/collateral/README.md | 2026-10-25T01:16:38Z |
 | artifact-e2e-live-harness | b317dfc6fbec38423a67ca976c4e948cc00df688 | console/e2e/live.spec.ts | 2026-10-25T01:55:00Z |
+| artifact-ledger-gateway | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | gateway/tsconfig.json | 2026-10-25T02:08:38Z |
+| artifact-ledger-gateway | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | gateway/package.json | 2026-10-25T02:08:38Z |
+| artifact-ledger-gateway | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | gateway/package-lock.json | 2026-10-25T02:08:38Z |
+| task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/tsconfig.json | 2026-10-25T02:08:38Z |
+| task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/package.json | 2026-10-25T02:08:38Z |
+| task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/package-lock.json | 2026-10-25T02:08:38Z |
