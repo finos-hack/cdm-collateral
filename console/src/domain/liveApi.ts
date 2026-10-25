@@ -75,4 +75,8 @@ export const api = {
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/decision`, { proposalId, accept }),
   pledge: (p: LiveParty, callId: string, proposalId: number) =>
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/pledge`, { proposalId }),
+  transfer: (p: LiveParty, callId: string, proposalId: number) =>
+    req<{ ok: boolean }>(p, "POST", `/calls/${callId}/transfer`, { proposalId }),
+  returnSettle: (p: LiveParty, callId: string, via: "release" | "transfer", assets: { token: string; qty: number }[]) =>
+    req<{ ok: boolean }>(p, "POST", `/calls/${callId}/return`, { via, assets }),
 };

@@ -17,7 +17,7 @@ test("flow-im-margin-call-pledge: issue -> agree -> propose -> accept -> pledge,
 
   // 1. Secured party (BANK-B) issues the IM call.
   await page.goto("/#/live/B");
-  const issueCard = page.locator(".card", { hasText: "Issue initial-margin call" });
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
   await issueCard.getByRole("spinbutton").fill(String(amountUsd));
   await issueCard.getByRole("button", { name: /Issue IM call/ }).click();
 
@@ -46,6 +46,52 @@ test("flow-im-margin-call-pledge: issue -> agree -> propose -> accept -> pledge,
   await rowA2.getByRole("button", { name: "Pledge accepted collateral" }).click();
 
   // The call is now settled on-chain, shown in both consoles.
+  await expect(rowA2.getByText("settled on-chain ✓")).toBeVisible({ timeout: 15_000 });
+  await page.goto("/#/live/B");
+  await expect(page.locator(".subcard", { hasText: label }).getByText("settled on-chain ✓")).toBeVisible({ timeout: 15_000 });
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-vm-margin-call-transfer: issue VM -> agree -> propose -> accept -> transfer title, settled on-chain", async ({ page }) => {
+  // tUSD is priced 1.00 with no haircut, so whole units map one-to-one to USD; VM settlement passes title directly.
+  const amountUsd = 1_000_000 + (Date.now() % 90) * 100_000;
+  const label = `USD ${amountUsd.toLocaleString("en-US")}`;
+  const qty = amountUsd; // tUSD at 1.00
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // 1. Secured party (BANK-B) issues a VM call (title transfer).
+  await page.goto("/#/live/B");
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await issueCard.getByRole("combobox").selectOption("VM");
+  await issueCard.getByRole("spinbutton").fill(String(amountUsd));
+  await issueCard.getByRole("button", { name: /Issue VM call/ }).click();
+
+  // 2. Pledgor (BANK-A) agrees and proposes tUSD.
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: label });
+  await expect(rowA).toBeVisible({ timeout: 15_000 });
+  await rowA.getByRole("button", { name: "Agree in full" }).click();
+  await expect(rowA.getByRole("button", { name: "Propose collateral" })).toBeVisible({ timeout: 15_000 });
+  await rowA.getByRole("combobox").selectOption("tUSD");
+  await rowA.getByRole("spinbutton").fill(String(qty));
+  await rowA.getByRole("button", { name: "Propose collateral" }).click();
+  await expect(rowA.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: 15_000 });
+
+  // 3. Secured party accepts.
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: label });
+  await expect(rowB.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: 15_000 });
+  await rowB.getByRole("button", { name: "Accept proposal" }).click();
+
+  // 4. Pledgor transfers title (VM settlement, no escrow).
+  await page.goto("/#/live/A");
+  const rowA2 = page.locator(".subcard", { hasText: label });
+  await expect(rowA2.getByRole("button", { name: "Transfer title" })).toBeVisible({ timeout: 15_000 });
+  await rowA2.getByRole("button", { name: "Transfer title" }).click();
+
   await expect(rowA2.getByText("settled on-chain ✓")).toBeVisible({ timeout: 15_000 });
   await page.goto("/#/live/B");
   await expect(page.locator(".subcard", { hasText: label }).getByText("settled on-chain ✓")).toBeVisible({ timeout: 15_000 });
