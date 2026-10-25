@@ -41,7 +41,8 @@ The service drives the full ISDA CSA lifecycle for both initial and variation ma
 - **Proposal paths.** The receiving party accepts or rejects a collateral proposal; a rejection lets the delivering
   party propose again.
 - **Settlement.** Initial margin pledges into the control contract's escrow (`/pledge`); variation margin passes
-  title directly (`/transfer`). Both fold as a delivery lifecycle (issue → respond → propose → decide → settle).
+  title directly (`/transfer`). A proposal may carry several tokens; the gateway approves and moves each. Both fold as
+  a delivery lifecycle (issue → respond → propose → decide → settle).
 - **Returns.** A return call is issued, agreed through the response step, then settled by releasing escrowed IM
   (`via=release`) or transferring equivalent VM back (`via=transfer`) — a three-step lifecycle
   (issue → respond → settle) that folds like a delivery. See `Cdm.settleReturn`.
@@ -53,8 +54,8 @@ time). Deferred, and tracked as open items:
 - **CDM carrier.** The two parties exchange CDM content through the chain hash plus the content-addressed store, not a
   direct `service-to-peer-service` channel; the store is a single shared instance with asserted (not authenticated)
   party identity. The oracle service is not run; prices are already on the on-chain feed from deploy.
-- **Scope.** Single-asset settlement per call; the two ISDA CSA agreements (IM, VM) are wired, the other agreement
-  families in the analysis (repo, securities lending, triparty, CCP) are not.
+- **Scope.** The two ISDA CSA agreements (IM, VM) are wired, with multi-asset proposals and settlement; the other
+  agreement families in the analysis (repo, securities lending, triparty, CCP) are not.
 
 ## Prerequisites
 

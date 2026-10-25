@@ -33,8 +33,8 @@ NODE=bank-b PORT=8202 npm run serve
 | POST | `/calls/:id/response` | respond (full / partial / dispute) |
 | POST | `/calls/:id/proposals` | propose collateral; returns `proposalId` |
 | POST | `/calls/:id/decision` | accept or reject a proposal |
-| POST | `/calls/:id/pledge` | approve the control contract and pledge (IM settle) |
-| POST | `/calls/:id/transfer` | approve and settle a VM call by title transfer |
+| POST | `/calls/:id/pledge` | approve each proposal asset and pledge (IM settle, multi-asset) |
+| POST | `/calls/:id/transfer` | approve each proposal asset and settle a VM call by title transfer |
 | POST | `/calls/:id/return` | release escrowed IM for an agreed return call |
 | POST | `/calls/:id/return-transfer` | approve and transfer equivalent VM back for a return call |
 | GET | `/party-calls?party=0x…` | calls whose `from` or `to` is this party (from `CallIssued` logs) |
