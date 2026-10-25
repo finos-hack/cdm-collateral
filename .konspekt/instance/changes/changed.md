@@ -405,3 +405,4 @@ excluded.
 | artifact-e2e-live-harness | 11cd42f3897a5da1a29e28068620447bc1d5d0f1 | console/e2e/live.spec.ts | 2026-10-25T00:04:48Z |
 | artifact-collateral-service | 77afa82fd8329c078491b7a50758b86c2fddb700 | services/collateral/README.md | 2026-10-25T00:07:14Z |
 | artifact-ledger-gateway | 77afa82fd8329c078491b7a50758b86c2fddb700 | gateway/README.md | 2026-10-25T00:07:14Z |
+| artifact-live-console-wiring | b65a7e58293d224eb8734b902883655bc5c66dc4 | console/src/App.tsx | 2026-10-25T00:15:02Z |
