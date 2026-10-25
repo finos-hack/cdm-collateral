@@ -1,0 +1,133 @@
+name: e2e-live-stack
+
+# Run the one live end-to-end flow (flow-im-margin-call-pledge) completely against a full backend stack, instead of
+# skipping it as the console workflow does (task-ci-live-e2e-stack). Dependency order: Besu QBFT network -> cdm-ext
+# into the local Maven repo -> collateral service jar -> deploy contracts -> start store + two gateways + two
+# services -> run console/e2e/live.spec.ts against them. Heavier than console.yml (Docker, Java build, contract
+# deploy), so it is a separate workflow with a broader path filter.
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - "besu/**"
+      - "contracts/**"
+      - "gateway/**"
+      - "store/**"
+      - "services/**"
+      - "cdm-ext/**"
+      - "console/**"
+      - "orchestrate.mjs"
+      - ".github/workflows/e2e-live-stack.yml"
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-live-stack-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # node src/server.ts in gateway/ and store/ runs TypeScript directly, so the Node version must strip types
+      # natively (Node >= 22.18). setup-node "22" installs the latest 22.x, matching console.yml and the devcontainer.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # 1. Besu QBFT network. First run generates the genesis and four validator keys and writes besu/.env, then
+      #    brings the four nodes up with docker compose.
+      - name: Start Besu
+        run: bash besu/start-network.sh
+
+      - name: Wait for Besu to produce blocks
+        run: |
+          for i in $(seq 1 60); do
+            n=$(curl -s -X POST -H 'Content-Type: application/json' \
+              --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://localhost:8545 \
+              | sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p')
+            if [ -n "$n" ] && [ "$n" != "0x0" ]; then echo "Besu producing blocks (height $n)"; exit 0; fi
+            sleep 2
+          done
+          echo "Besu did not produce a block within 120s" >&2
+          bash besu/check-network.sh || true
+          exit 1
+
+      # 2. Install the local CDM extension (local.cdmx:cdmx-java) into the Maven repo so the service jar resolves it.
+      #    cdm-ext.yml only runs tests; this job needs the installed artifact.
+      - name: Install cdm-ext
+        run: mvn -B -q -f cdm-ext/pom.xml -DskipTests install
+
+      # 3. Build the collateral service jar (JDK 21, shade plugin -> target/collateral-service.jar).
+      - name: Build collateral service jar
+        run: mvn -B -q -f services/collateral/pom.xml -DskipTests package
+
+      # 4. Deploy the contracts to the running Besu. deploy:besu reads besu/mkt/data/key and writes
+      #    contracts/deployments/besu.json (the address registry the gateways and services read).
+      - name: Deploy contracts
+        working-directory: contracts
+        run: |
+          npm ci
+          npm run deploy:besu
+
+      # 5. Install the Node backends and the console.
+      - name: Install Node dependencies
+        run: |
+          npm --prefix gateway ci
+          npm --prefix store ci
+          npm --prefix console ci
+
+      - name: Install Playwright Chromium
+        working-directory: console
+        run: npx playwright install --with-deps chromium
+
+      # 6. Bring up store + two gateways + two services in the background (orchestrate.mjs --ci omits the dev server;
+      #    Playwright serves the console preview itself). Then wait until both collateral services answer.
+      - name: Start the stack
+        run: |
+          node orchestrate.mjs --ci > "$RUNNER_TEMP/stack.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/stack.pid"
+
+      - name: Wait for collateral services
+        run: |
+          for i in $(seq 1 90); do
+            if curl -sf http://localhost:8001/api/v1/context >/dev/null \
+               && curl -sf http://localhost:8002/api/v1/context >/dev/null; then
+              echo "services A (8001) and B (8002) reachable"; exit 0
+            fi
+            sleep 2
+          done
+          echo "collateral services did not become reachable within 180s" >&2
+          cat "$RUNNER_TEMP/stack.log" || true
+          exit 1
+
+      # 7. Run the live flow. E2E_REQUIRE_STACK makes the spec fail rather than skip if the stack is down, so the job
+      #    cannot pass without actually running the flow.
+      - name: Run live e2e flow
+        working-directory: console
+        env:
+          E2E_REQUIRE_STACK: "1"
+        run: npm run test:e2e
+
+      - name: Stack log
+        if: always()
+        run: cat "$RUNNER_TEMP/stack.log" || true
+
+      - name: Tear down
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/stack.pid" ]; then kill "$(cat "$RUNNER_TEMP/stack.pid")" 2>/dev/null || true; fi
+          ( cd besu && docker compose down -v ) || true

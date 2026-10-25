@@ -17,6 +17,14 @@ test.beforeAll(async () => {
     .catch(() => false);
 });
 test.beforeEach(() => {
+  // In CI (e2e-live-stack.yml) the stack is brought up before this runs, so a down stack is a bring-up failure, not
+  // a reason to skip. E2E_REQUIRE_STACK turns the skip into a hard failure so the job cannot pass silently without
+  // running the live flow (task-ci-live-e2e-stack).
+  if (!stackUp && process.env.E2E_REQUIRE_STACK) {
+    throw new Error(
+      "E2E_REQUIRE_STACK is set but the collateral service is unreachable at http://localhost:8001 — the backend stack did not come up",
+    );
+  }
   test.skip(!stackUp, "backend stack not running — start it with orchestrate.mjs to run the live e2e flows");
 });
 
