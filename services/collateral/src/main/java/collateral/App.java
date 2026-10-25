@@ -4,12 +4,18 @@ import cdmx.collateral.margincall.MarginCallState;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.sse.SseClient;
 
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -31,6 +37,7 @@ public final class App {
     private final List<String> callParties; // reader allowlist for stored docs: both counterparties (A, B)
     private final Map<String, String> symbolByAddress; // lowercase address -> symbol
     private final Map<String, FoldCache> foldCache = new ConcurrentHashMap<>();
+    private final Set<SseClient> sseClients = ConcurrentHashMap.newKeySet(); // console clients subscribed to live events
 
     /** A folded MarginCallState cached against the on-chain step signature, so a steady call is not refolded each poll. */
     private record FoldCache(String sig, Map<String, Object> result) {}
@@ -76,10 +83,47 @@ public final class App {
         app.post("/api/v1/calls/{id}/pledge", this::pledge);
         app.post("/api/v1/calls/{id}/transfer", this::transfer);
         app.post("/api/v1/calls/{id}/return", this::returnCollateral);
+        app.sse("/api/v1/events", client -> { // the console subscribes here (EventSource sends Accept: text/event-stream)
+            client.keepAlive();
+            client.sendComment("connected");
+            sseClients.add(client);
+            client.onClose(() -> sseClients.remove(client));
+        });
 
         app.start(cfg.port);
+        startEventRelay();
         System.out.printf("collateral service: party %s (%s) %s on http://localhost:%d/api/v1 -> gateway %s%n",
                 cfg.partyId, cfg.role, cfg.myAddress, cfg.port, cfg.gatewayUrl);
+    }
+
+    /**
+     * Relay the gateway's chain-event stream to the console (event push, not polling). A daemon thread holds one SSE
+     * connection to this party's gateway (Besu ws -> gateway -> here) and fans each change signal out to the console
+     * clients; it reconnects if the gateway restarts or the stream drops.
+     */
+    private void startEventRelay() {
+        Thread t = new Thread(() -> {
+            HttpClient http = HttpClient.newHttpClient();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(cfg.gatewayUrl + "/ledger/v1/events")).GET().build();
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    HttpResponse<java.util.stream.Stream<String>> resp = http.send(req, HttpResponse.BodyHandlers.ofLines());
+                    resp.body().forEach(line -> {
+                        if (line.startsWith("data:")) {
+                            String data = line.substring(5).trim();
+                            for (SseClient c : sseClients) {
+                                try { c.sendEvent("step", data); } catch (Exception ignored) { }
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    // gateway not up yet or the stream dropped; pause and reconnect
+                }
+                try { Thread.sleep(2000); } catch (InterruptedException ie) { return; }
+            }
+        }, "gateway-event-relay");
+        t.setDaemon(true);
+        t.start();
     }
 
     private void context(Context ctx) {

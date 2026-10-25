@@ -12,6 +12,22 @@ const NODE = process.env.NODE ?? "bank-a";
 const PORT = Number(process.env.PORT ?? 8201);
 const adapter = new BesuAdapter(NODE);
 
+// Live event stream: one chain subscription (eth_subscribe over the Besu WebSocket) fanned out to every connected SSE
+// client — the party console and the workflow service's relay. The event is a lightweight change signal carrying the
+// callId and step; consumers fetch current state through the existing endpoints. Replaces console polling with push.
+const sseClients = new Set<http.ServerResponse>();
+function broadcast(e: unknown): void {
+  const line = `data: ${JSON.stringify(e)}\n\n`;
+  for (const res of sseClients) {
+    try {
+      res.write(line);
+    } catch {
+      sseClients.delete(res);
+    }
+  }
+}
+adapter.watchSteps((e) => broadcast(e));
+
 type Handler = (params: Record<string, string>, body: any, url: URL) => Promise<unknown>;
 interface Route {
   method: string;
@@ -115,6 +131,17 @@ const server = http.createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   if (req.method === "OPTIONS") return void res.writeHead(204).end();
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+
+  // Server-Sent Events stream (handled here because it must not be buffered or JSON-wrapped like the other routes).
+  if (req.method === "GET" && url.pathname === "/ledger/v1/events") {
+    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+    res.write(": connected\n\n");
+    sseClients.add(res);
+    const ping = setInterval(() => { try { res.write(": ping\n\n"); } catch { /* closed */ } }, 25000);
+    req.on("close", () => { clearInterval(ping); sseClients.delete(res); });
+    return;
+  }
+
   const match = routes.find((r) => r.method === req.method && r.pattern.test(url.pathname));
   if (!match) return void res.writeHead(404, { "Content-Type": "application/json" }).end(JSON.stringify({ error: "not found" }));
   const m = url.pathname.match(match.pattern)!;

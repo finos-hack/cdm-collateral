@@ -3,7 +3,7 @@
 // QBFT gives immediate per-block finality, so a mined receipt is final (concept-asr-settlement-finality): each write
 // waits for its receipt before returning. The chain charges no gas (genesis zeroBaseFee, --min-gas-price=0), so every
 // write is a legacy transaction with gasPrice 0.
-import { createPublicClient, createWalletClient, defineChain, http, getAddress, parseAbi } from "viem";
+import { createPublicClient, createWalletClient, defineChain, http, webSocket, getAddress, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { loadNodeKey, loadRegistry } from "./registry.ts";
@@ -14,6 +14,24 @@ export const CallKind = { IM: 0, VM: 1, Return: 2 } as const;
 export const ResponseType = { Full: 0, Partial: 1, Dispute: 2 } as const;
 export const CallStateName = ["none", "issued", "agreed", "partially agreed", "disputed", "settled", "settled (agreed part)"];
 export const ProposalStateName = ["none", "proposed", "accepted", "rejected"];
+
+// The MarginCall lifecycle events, in fold order, each with the CDM step it maps to. Shared by the historical scan
+// (callSteps) and the live subscription (watchSteps).
+const STEP_EVENTS: { name: string; step: string }[] = [
+  { name: "CallIssued", step: "IssueCall" },
+  { name: "CallAnswered", step: "RespondToCall" },
+  { name: "CollateralProposed", step: "ProposeCollateral" },
+  { name: "ProposalDecided", step: "DecideProposal" },
+  { name: "CallSettled", step: "SettleCall" },
+];
+
+export interface StepEvent {
+  callId: Hex;
+  step: string;
+  cdmHash: Hex;
+  block: string;
+  logIndex: number;
+}
 
 export interface AssetArg {
   token: Address;
@@ -84,6 +102,7 @@ export interface LedgerAdapter {
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
+  watchSteps(onStep: (e: StepEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
   pledgedBalance(pledgor: Address, securedParty: Address, token: Address): Promise<bigint>;
   tokenBalance(token: Address, owner: Address): Promise<bigint>;
@@ -92,6 +111,7 @@ export interface LedgerAdapter {
 export class BesuAdapter implements LedgerAdapter {
   readonly account: Address;
   private readonly pub: PublicClient;
+  private readonly ws: PublicClient;
   private readonly wallet: WalletClient;
   private readonly reg: Registry;
 
@@ -109,6 +129,11 @@ export class BesuAdapter implements LedgerAdapter {
     this.account = getAddress(acct.address);
     this.pub = createPublicClient({ chain, transport: http(rpc) });
     this.wallet = createWalletClient({ account: acct, chain, transport: http(rpc) });
+    // Besu exposes a WebSocket JSON-RPC on the http port + 1 (besu/docker-compose.yml --rpc-ws-enabled); the live
+    // event subscription (watchSteps -> eth_subscribe) runs over it, the historical scan stays on http.
+    const wsRpc = (reg as { wsRpc?: Record<string, string> }).wsRpc?.[node]
+      ?? rpc.replace(/^http/, "ws").replace(/:(\d+)(?=\/|$)/, (_m, p) => ":" + (Number(p) + 1));
+    this.ws = createPublicClient({ chain, transport: webSocket(wsRpc) });
   }
 
   // gasPrice 0 forces a legacy transaction, which the zero-base-fee Besu chain accepts.
@@ -200,13 +225,7 @@ export class BesuAdapter implements LedgerAdapter {
   // The lifecycle steps of one call, in chain order, each with its CDM hash — the authoritative ordered commitment
   // list for the MarginCallState fold (wp-adr-cdm-payload-carrier). Read from the step events (callId is indexed).
   async callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]> {
-    const specs = [
-      { name: "CallIssued", step: "IssueCall" },
-      { name: "CallAnswered", step: "RespondToCall" },
-      { name: "CollateralProposed", step: "ProposeCollateral" },
-      { name: "ProposalDecided", step: "DecideProposal" },
-      { name: "CallSettled", step: "SettleCall" },
-    ];
+    const specs = STEP_EVENTS;
     const latest = await this.pub.getBlockNumber();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
@@ -224,6 +243,32 @@ export class BesuAdapter implements LedgerAdapter {
     }
     rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
     return rows.map(({ bn, ...r }) => r);
+  }
+
+  // Live subscription to the margin call lifecycle events over the WebSocket RPC (eth_subscribe). Each matching log is
+  // delivered to onStep as it is mined, so the stack pushes state changes instead of the console polling. Returns an
+  // unwatch function. QBFT finalises at mining, so a delivered event is final (concept-asr-settlement-finality).
+  watchSteps(onStep: (e: StepEvent) => void): () => void {
+    const stepByName = new Map(STEP_EVENTS.map((s) => [s.name, s.step]));
+    return this.ws.watchContractEvent({
+      address: this.reg.contracts.marginCall,
+      abi: marginCallAbi,
+      onLogs: (logs) => {
+        for (const log of logs) {
+          const step = stepByName.get((log as any).eventName as string);
+          if (!step) continue;
+          const a = ((log as any).args ?? {}) as { callId?: Hex; cdmHash?: Hex };
+          onStep({
+            callId: a.callId as Hex,
+            step,
+            cdmHash: (a.cdmHash as Hex) ?? ("0x" as Hex),
+            block: (log as any).blockNumber?.toString() ?? "",
+            logIndex: Number((log as any).logIndex ?? 0),
+          });
+        }
+      },
+      onError: (e) => console.error(`watchSteps error: ${(e as Error).message}`),
+    });
   }
 
   async getProposalState(callId: Hex, proposalId: bigint): Promise<number> {
