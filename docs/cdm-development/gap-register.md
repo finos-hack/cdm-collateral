@@ -90,7 +90,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 
 | ID | Gap | Sources | CDM score | Needed by | Priority | Closure kind |
 |---|---|---|---|---|---|---|
-| G26 | No mapping to ISO 20022 colr or FpML collateral messages; FpML collateral code lists bundled but unused | S1, TX2, B3 | 0 | off-chain messages between services (`service-to-peer-service`) | P2 | mapping |
+| G26 | No mapping to ISO 20022 colr or FpML collateral messages; FpML collateral code lists bundled but unused | S1, TX2, B3 | 0 | off-chain CDM documents between services (`service-to-payload-store`, ADR `wp-adr-cdm-payload-carrier`) | P2 | mapping |
 | G27 | Four asset taxonomies without a mapping; three representation styles mixed | TX4, TX1 | – | eligibility schedules across taxonomies | P3 | mapping (start: `docs/analysis/collateral-asset-taxonomy-mapping.md`) |
 | G28 | Financial Collateral Directive and SFTR not referenced; Collateral Asset Definitions at the 2003 edition; FISN, ELF, IBAN absent | S3, S4, S2 | – | none | P3 | enums, references |
 

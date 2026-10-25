@@ -30,9 +30,9 @@ import static collateral.CdmRuntime.o;
  * The on-chain {@code cdmHash} is keccak-256 over the Rune JSON (Ethereum/EVM hashing, so a contract or counterparty
  * can recompute it with {@code keccak256(bytes)} over the same canonical bytes).
  *
- * First-cycle reductions (nw-e2e-first-cycle-scope): steps are validated individually rather than folded into a shared
- * {@code MarginCallState} (that stateful fold is what service-to-peer CDM exchange would carry, which this cycle omits);
- * the CDM {@code callIdentifier} is derived from the shared on-chain callId so both parties agree without peer
+ * Each step is validated individually here; {@link CdmFold} folds the chain-ordered steps of both parties, read back
+ * from the payload store by their {@code cdmHash}, into the shared {@code MarginCallState} (wp-adr-cdm-payload-carrier).
+ * First-cycle reductions (nw-e2e-first-cycle-scope): the CDM {@code callIdentifier} is derived from the shared on-chain callId so both parties agree without peer
  * messaging; amounts are the agreement's base currency (USD) whole units, while the chain carries the 1e8-scaled value.
  */
 public final class Cdm {

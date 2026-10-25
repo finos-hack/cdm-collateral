@@ -301,3 +301,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-cilivestack | review | proposed | accepted | 2026-10-25T13:05:29Z |  | denisurusov |
 | noteworthy:nw-ci-live-stack-steps | review |  | proposed | 2026-10-25T13:12:45Z |  | denisurusov |
 | edge:e-note-cilivestack-steps | review |  | proposed | 2026-10-25T13:12:45Z |  | denisurusov |
+| artifact:artifact-architecture-payload-carrier-revision | review |  | proposed | 2026-10-25T15:10:03.154Z |  | spec-writer |
+| edge:e-architecture-payload-carrier-revision-produces | review |  | proposed | 2026-10-25T15:10:03.154Z |  | spec-writer |
+| artifact:artifact-payload-carrier-component-docs | review |  | proposed | 2026-10-25T15:10:09.382Z |  | spec-writer |
+| edge:e-payload-carrier-component-docs-produces | review |  | proposed | 2026-10-25T15:10:09.382Z |  | spec-writer |
+| artifact:artifact-gap-register-g26-carrier | review |  | proposed | 2026-10-25T15:10:09.711Z |  | spec-writer |
+| edge:e-gap-register-g26-carrier-produces | review |  | proposed | 2026-10-25T15:10:09.711Z |  | spec-writer |
