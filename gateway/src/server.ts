@@ -63,20 +63,25 @@ route("POST", "/ledger/v1/calls/:id/decision", async (p, b) =>
 );
 
 route("POST", "/ledger/v1/calls/:id/pledge", async (p, b) => {
-  // The pledgor's gateway approves the control contract for the pledged quantity, then pledges.
+  // The pledgor's gateway approves the control contract for every asset in the accepted proposal, then pledges. The
+  // control contract transfers each asset into escrow, so each needs its own allowance (multi-asset collateral).
   const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
-  const approve = await adapter.approve(getAddress(b.token), control, BigInt(b.qty));
+  const assets = await adapter.getProposalAssets(p.id as Hex, BigInt(b.proposalId));
+  const approvals = [];
+  for (const a of assets) approvals.push(await adapter.approve(a.token, control, a.qty));
   const pledge = await adapter.pledge(p.id as Hex, BigInt(b.proposalId), b.cdmHash as Hex);
-  return J({ approve, pledge });
+  return J({ approvals, pledge });
 });
 
 route("POST", "/ledger/v1/calls/:id/transfer", async (p, b) => {
-  // VM settlement: the deliverer's gateway approves the control contract for the transferred quantity, then settles
-  // by moving title directly to the receiver (no escrow).
+  // VM settlement: the deliverer's gateway approves the control contract for every asset in the accepted proposal,
+  // then settles by moving title directly to the receiver (no escrow).
   const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
-  const approve = await adapter.approve(getAddress(b.token), control, BigInt(b.qty));
+  const assets = await adapter.getProposalAssets(p.id as Hex, BigInt(b.proposalId));
+  const approvals = [];
+  for (const a of assets) approvals.push(await adapter.approve(a.token, control, a.qty));
   const transfer = await adapter.settleByTransfer(p.id as Hex, BigInt(b.proposalId), b.cdmHash as Hex);
-  return J({ approve, transfer });
+  return J({ approvals, transfer });
 });
 
 route("POST", "/ledger/v1/calls/:id/return", async (p, b) => {

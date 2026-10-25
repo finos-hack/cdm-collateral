@@ -342,6 +342,19 @@ public final class App {
     }
 
     private void pledge(Context ctx) {
+        settleDelivery(ctx, "/pledge");
+    }
+
+    /** Variation-margin settlement: title passes directly to the receiver (settleByTransfer), no escrow. */
+    private void transfer(Context ctx) {
+        settleDelivery(ctx, "/transfer");
+    }
+
+    /**
+     * Delivery settlement against an accepted proposal (IM pledge or VM transfer). The proposal's assets — one or
+     * several — live on-chain; the gateway approves and moves them all, so the service only names the proposal.
+     */
+    private void settleDelivery(Context ctx, String gatewayPath) {
         String callId = ctx.pathParam("id");
         Map<String, Object> b = body(ctx);
         long proposalId = ((Number) b.get("proposalId")).longValue();
@@ -349,23 +362,7 @@ public final class App {
         if (assets.isEmpty()) throw new RuntimeException("proposal " + proposalId + " has no assets");
         Cdm cdm = Cdm.settle("P-" + proposalId);
         record(callId, "SettleCall", cdm);
-        // First-cycle scope: single-asset pledge. The gateway approves the control contract then pledges.
-        JsonNode a0 = assets.get(0);
-        gw.post("/calls/" + callId + "/pledge", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText(), "cdmHash", cdm.hash));
-        ctx.json(Map.of("ok", true, "cdmHash", cdm.hash));
-    }
-
-    /** Variation-margin settlement: title passes directly to the receiver (settleByTransfer), no escrow. */
-    private void transfer(Context ctx) {
-        String callId = ctx.pathParam("id");
-        Map<String, Object> b = body(ctx);
-        long proposalId = ((Number) b.get("proposalId")).longValue();
-        JsonNode assets = gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets");
-        if (assets.isEmpty()) throw new RuntimeException("proposal " + proposalId + " has no assets");
-        Cdm cdm = Cdm.settle("P-" + proposalId); // same delivery settlement instruction; the control contract moves title
-        record(callId, "SettleCall", cdm);
-        JsonNode a0 = assets.get(0);
-        gw.post("/calls/" + callId + "/transfer", Map.of("proposalId", proposalId, "token", a0.get("token").asText(), "qty", a0.get("qty").asText(), "cdmHash", cdm.hash));
+        gw.post("/calls/" + callId + gatewayPath, Map.of("proposalId", proposalId, "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "cdmHash", cdm.hash));
     }
 

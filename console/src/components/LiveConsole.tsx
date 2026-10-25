@@ -161,6 +161,7 @@ function CallRow(props: {
 }) {
   const { call: c, party, busy, token, qty, setToken, setQty, run } = props;
   const [partialUsd, setPartialUsd] = useState(0);
+  const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
   const accepted = c.proposals.find((p) => p.state === "accepted");
   const proposed = c.proposals.find((p) => p.state === "proposed");
   const agreedOpen = c.state === "agreed" || c.state === "partially agreed";
@@ -216,7 +217,14 @@ function CallRow(props: {
               <option value="tUSD">tUSD</option>
             </select>
             <input type="number" value={qty} step={1000} onChange={(e) => setQty(Number(e.target.value))} style={{ width: 110 }} />
-            <button disabled={busy} onClick={() => run(() => api.propose(party, c.callId, [{ token, qty }]))}>Propose collateral</button>
+            <button disabled={busy} onClick={() => setStaged([...staged, { token, qty }])}>Add asset</button>
+            {staged.length > 0 && <span className="small">basket: {staged.map((a) => `${a.token} ${a.qty.toLocaleString("en-US")}`).join(" + ")}</span>}
+            <button
+              disabled={busy}
+              onClick={() => run(() => api.propose(party, c.callId, staged.length ? staged : [{ token, qty }]).then(() => setStaged([])))}
+            >
+              Propose collateral{staged.length ? ` (${staged.length})` : ""}
+            </button>
           </>
         )}
         {canDecide && proposed && (
