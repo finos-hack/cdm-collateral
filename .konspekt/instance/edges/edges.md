@@ -98,5 +98,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-e2ewiring-cilivestack | decomposes | node:task-e2e-wiring | node:task-ci-live-e2e-stack |  | accepted |
 | e-note-cilivestack-steps | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-steps |  | proposed |
 | e-architecture-payload-carrier-revision-produces | produces | node:goal-architecture-design | artifact:artifact-architecture-payload-carrier-revision |  | accepted |
-| e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | proposed |
+| e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | accepted |
 | e-gap-register-g26-carrier-produces | produces | node:task-cdm-gap-closure | artifact:artifact-gap-register-g26-carrier |  | proposed |

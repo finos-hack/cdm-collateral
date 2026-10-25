@@ -309,3 +309,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-gap-register-g26-carrier-produces | review |  | proposed | 2026-10-25T15:10:09.711Z |  | spec-writer |
 | artifact:artifact-architecture-payload-carrier-revision | review | proposed | accepted | 2026-10-25T15:17:17.140Z |  | denisurusov |
 | edge:e-architecture-payload-carrier-revision-produces | review | proposed | accepted | 2026-10-25T15:17:17.140Z |  | denisurusov |
+| artifact:artifact-payload-carrier-component-docs | review | proposed | accepted | 2026-10-25T15:17:17.360Z |  | denisurusov |
+| edge:e-payload-carrier-component-docs-produces | review | proposed | accepted | 2026-10-25T15:17:17.360Z |  | denisurusov |
