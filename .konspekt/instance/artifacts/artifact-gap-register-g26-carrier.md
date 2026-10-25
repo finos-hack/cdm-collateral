@@ -5,7 +5,7 @@ kind: doc
 location: docs/cdm-development/gap-register.md
 createdAt: 2026-10-25T15:09:55Z
 updatedAt: 2026-10-25T15:09:55Z
-review: proposed
+review: accepted
 provenance:
   sourceRef: 42bf64bf7ca0a7f912644a77ac14af106abde3dc
   contentHash: 42bf64bf7ca0a7f912644a77ac14af106abde3dc
