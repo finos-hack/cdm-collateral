@@ -294,3 +294,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-ledgerneutrality-carrier | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |
 | edge:e-drv-cdmdatalayer-carrier | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |
 | edge:e-mrk-carrier-e2ewiring | review |  | proposed | 2026-10-24T22:39:50Z |  | denisurusov |
+| node:task-ci-live-e2e-stack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
+| node:task-ci-live-e2e-stack | status |  | open | 2026-10-25T01:56:01Z |  |  |
+| edge:e-dec-e2ewiring-cilivestack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
