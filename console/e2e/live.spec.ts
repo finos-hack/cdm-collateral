@@ -4,8 +4,21 @@ import { expect, test } from "@playwright/test";
 // #/live/B) against the running stack: collateral services (8001/8002) -> ledger gateways (8201/8202) -> Besu.
 // Unlike the mock scenario specs, this requires the backend stack to be up (orchestrate.mjs / README). A unique
 // call amount per run identifies this cycle's call among any left on the persistent chain by earlier runs.
+//
+// The stack is not started by Playwright's webServer, so these tests are skipped when the collateral service is
+// unreachable (e.g. CI, which runs only the mock scenario specs). Start the stack with orchestrate.mjs to run them.
 const PRICE_TUST = 98.4;
 const HAIRCUT = 0.98;
+
+let stackUp = false;
+test.beforeAll(async () => {
+  stackUp = await fetch("http://localhost:8001/api/v1/context")
+    .then((r) => r.ok)
+    .catch(() => false);
+});
+test.beforeEach(() => {
+  test.skip(!stackUp, "backend stack not running — start it with orchestrate.mjs to run the live e2e flows");
+});
 
 test("flow-im-margin-call-pledge: issue -> agree -> propose -> accept -> pledge, settled on-chain", async ({ page }) => {
   const amountUsd = 1_000_000 + (Date.now() % 90) * 100_000; // unique-ish, multiple of 100k, above the MTA
