@@ -47,6 +47,8 @@ async function main() {
   };
 
   const { viem } = await network.connect("besuMkt");
+  const publicClient = await viem.getPublicClient();
+  const deployBlock = Number(await publicClient.getBlockNumber()); // first block to scan for this deployment's events
   const [deployer] = await viem.getWalletClients();
   const deployerAddr = getAddress(deployer.account.address);
   if (deployerAddr !== parties.mkt) {
@@ -77,6 +79,7 @@ async function main() {
 
   const registry = {
     chainId: 1337,
+    deployBlock,
     deployedAt: new Date().toISOString(),
     deployer: deployerAddr,
     publisher: parties.mkt,

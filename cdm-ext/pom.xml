@@ -68,7 +68,10 @@
                         <goals><goal>copy-resources</goal></goals>
                         <configuration>
                             <outputDirectory>${rosetta.dir}/cdmx</outputDirectory>
-                            <resources><resource><directory>${project.basedir}/rosetta</directory><includes><include>*.rosetta</include></includes></resource></resources>
+                            <!-- Filter so `version "${project.version}"` in the .rosetta files resolves to the real
+                                 version before codegen; otherwise it is baked literally into the generated model and
+                                 surfaces as "@version":"${project.version}" in serialised Rune JSON. -->
+                            <resources><resource><directory>${project.basedir}/rosetta</directory><filtering>true</filtering><includes><include>*.rosetta</include></includes></resource></resources>
                         </configuration>
                     </execution>
                 </executions>

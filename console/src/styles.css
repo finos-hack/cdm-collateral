@@ -162,3 +162,16 @@ table.t { border-collapse: collapse; width: 100%; font-size: .82rem; }
 .free-intro { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
 details.sect > summary { cursor: pointer; }
 a.cell-go { text-decoration: none; }
+
+/* Live party console (route #/live/A|B): wired to the running workflow service. */
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+.subcard { border: 1px solid #eef0f3; border-radius: 6px; padding: 10px 12px; margin: 8px 0; background: #fafbfc; }
+.card h3 { margin: 0 0 8px; font-size: 14px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th, .tbl td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #eef0f3; }
+.small { font-size: 12px; color: #4b5563; }
+.bad { color: #b91c1c; }
+.ok { color: #047857; font-weight: 600; }
+.card input, .card select { padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font: inherit; }
+.card button { padding: 5px 12px; border: 1px solid #2563eb; background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer; }
+.card button:disabled { opacity: 0.5; cursor: default; }

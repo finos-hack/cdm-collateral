@@ -22,8 +22,8 @@ contract MarginCall {
     event CallIssued(bytes32 indexed callId, address indexed from, address indexed to, CallKind kind, uint256 amount, bytes32 cdmHash);
     event CallAnswered(bytes32 indexed callId, ResponseType response, uint256 agreed, uint256 disputed, bytes32 cdmHash);
     event CollateralProposed(bytes32 indexed callId, uint256 indexed proposalId, bytes32 cdmHash);
-    event ProposalDecided(bytes32 indexed callId, uint256 indexed proposalId, bool accepted);
-    event CallSettled(bytes32 indexed callId, bool disputedRemains);
+    event ProposalDecided(bytes32 indexed callId, uint256 indexed proposalId, bool accepted, bytes32 cdmHash);
+    event CallSettled(bytes32 indexed callId, bool disputedRemains, bytes32 cdmHash);
 
     error NotDeployer();
     error NotControl();
@@ -73,7 +73,8 @@ contract MarginCall {
         Call storage c = _load(callId);
         if (msg.sender != c.to) revert WrongParty();
         if (c.state != CallState.Issued) revert BadState();
-        if (c.kind == CallKind.Return) revert BadResponse(); // a return call is agreed and released in one control step
+        // A return call is agreed through the same response step as a delivery call (issue -> respond -> settle), so
+        // its CDM lifecycle folds the same way (wp-adr-cdm-payload-carrier); the control contract then releases.
         if (response == ResponseType.Full) {
             c.agreed = c.amount;
             c.disputed = 0;
@@ -99,7 +100,7 @@ contract MarginCall {
         if (c.activeProposal != 0) revert ProposalPending();
         if (assets.length == 0) revert EmptyProposal();
         proposalId = c.proposalCount++;
-        _proposals[callId][proposalId] = Proposal({state: ProposalState.Proposed, cdmHash: cdmHash});
+        _proposals[callId][proposalId] = Proposal({state: ProposalState.Proposed, cdmHash: cdmHash, decisionCdmHash: bytes32(0)});
         for (uint256 i = 0; i < assets.length; i++) {
             _proposalAssets[callId][proposalId].push(assets[i]);
         }
@@ -107,7 +108,7 @@ contract MarginCall {
         emit CollateralProposed(callId, proposalId, cdmHash);
     }
 
-    function decideProposal(bytes32 callId, uint256 proposalId, bool accept) external {
+    function decideProposal(bytes32 callId, uint256 proposalId, bool accept, bytes32 cdmHash) external {
         Call storage c = _load(callId);
         if (msg.sender != c.from) revert WrongParty();
         Proposal storage p = _proposals[callId][proposalId];
@@ -118,14 +119,18 @@ contract MarginCall {
             p.state = ProposalState.Rejected;
             c.activeProposal = 0; // the receiver may propose again
         }
-        emit ProposalDecided(callId, proposalId, accept);
+        p.decisionCdmHash = cdmHash;
+        emit ProposalDecided(callId, proposalId, accept, cdmHash);
     }
 
-    /// @notice Mark a call settled. Only the control contract calls this, after it has moved collateral.
-    function markSettled(bytes32 callId, bool disputedRemains) external onlyControl {
+    /// @notice Mark a call settled. Only the control contract calls this, after it has moved collateral. `cdmHash` is
+    /// the CDM SettleCallInstruction hash (wp-adr-cdm-payload-carrier); the control contract passes 0 for flows not
+    /// yet CDM-bound (VM / Return).
+    function markSettled(bytes32 callId, bool disputedRemains, bytes32 cdmHash) external onlyControl {
         Call storage c = _load(callId);
         c.state = disputedRemains ? CallState.SettledAgreedPart : CallState.Settled;
-        emit CallSettled(callId, disputedRemains);
+        c.settleCdmHash = cdmHash;
+        emit CallSettled(callId, disputedRemains, cdmHash);
     }
 
     // --- views for the control contract and services ---

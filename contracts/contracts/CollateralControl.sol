@@ -61,8 +61,9 @@ contract CollateralControl is ReentrancyGuard {
         eligibility[token] = Eligibility({eligible: eligible, haircutBps: haircutBps});
     }
 
-    /// @notice Pledge the accepted proposal's collateral into escrow for an initial-margin call.
-    function pledge(bytes32 callId, uint256 proposalId) external nonReentrant {
+    /// @notice Pledge the accepted proposal's collateral into escrow for an initial-margin call. `cdmHash` is the CDM
+    /// SettleCallInstruction hash, anchored on-chain for the payload carrier (wp-adr-cdm-payload-carrier).
+    function pledge(bytes32 callId, uint256 proposalId, bytes32 cdmHash) external nonReentrant {
         Call memory c = marginCall.getCall(callId);
         if (c.kind != CallKind.IM) revert WrongKind();
         if (msg.sender != c.to) revert WrongParty();
@@ -77,12 +78,13 @@ contract CollateralControl is ReentrancyGuard {
             IERC20(assets[i].token).transferFrom(c.to, address(this), assets[i].qty);
             _addPledge(c.to, c.from, assets[i].token, assets[i].qty);
         }
-        marginCall.markSettled(callId, c.disputed > 0);
+        marginCall.markSettled(callId, c.disputed > 0, cdmHash);
         emit Pledged(callId, c.to, c.from, value);
     }
 
-    /// @notice Settle a variation-margin call by moving title directly from the deliverer to the receiver.
-    function settleByTransfer(bytes32 callId, uint256 proposalId) external nonReentrant {
+    /// @notice Settle a variation-margin call by moving title directly from the deliverer to the receiver. `cdmHash`
+    /// is the CDM SettleCallInstruction hash, anchored on-chain for the payload carrier (wp-adr-cdm-payload-carrier).
+    function settleByTransfer(bytes32 callId, uint256 proposalId, bytes32 cdmHash) external nonReentrant {
         Call memory c = marginCall.getCall(callId);
         if (c.kind != CallKind.VM) revert WrongKind();
         if (msg.sender != c.to) revert WrongParty();
@@ -93,28 +95,30 @@ contract CollateralControl is ReentrancyGuard {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i].token).transferFrom(c.to, c.from, assets[i].qty);
         }
-        marginCall.markSettled(callId, c.disputed > 0);
+        marginCall.markSettled(callId, c.disputed > 0, cdmHash);
         emit Transferred(callId, c.to, c.from, _marketValue(assets));
     }
 
-    /// @notice Agree a return call and release escrowed initial margin back to the pledgor (secured party's key).
-    function returnCollateral(bytes32 callId, Asset[] calldata release) external nonReentrant {
+    /// @notice Agree a return call and release escrowed initial margin back to the pledgor (secured party's key). The
+    /// return is agreed through the margin call contract's response step first, so the call is in an agreed state here;
+    /// `cdmHash` is the CDM SettleCallInstruction hash anchored on-chain (wp-adr-cdm-payload-carrier).
+    function returnCollateral(bytes32 callId, Asset[] calldata release, bytes32 cdmHash) external nonReentrant {
         Call memory c = marginCall.getCall(callId);
         if (c.kind != CallKind.Return) revert WrongKind();
         if (msg.sender != c.to) revert WrongParty();
-        if (c.state != CallState.Issued) revert BadState();
+        if (!(c.state == CallState.Agreed || c.state == CallState.PartiallyAgreed)) revert BadState();
 
         address pledgor = c.from;
         address securedParty = c.to;
         uint256 value = _valueAfterHaircut(release);
-        if (value > c.amount) revert ReleaseExceedsCall(value, c.amount);
+        if (value > c.agreed) revert ReleaseExceedsCall(value, c.agreed);
 
         for (uint256 i = 0; i < release.length; i++) {
             uint256 held = _pledged[pledgor][securedParty][release[i].token];
             if (release[i].qty > held) revert NotPledged(release[i].token, held, release[i].qty);
             _pledged[pledgor][securedParty][release[i].token] = held - release[i].qty;
         }
-        marginCall.markSettled(callId, false);
+        marginCall.markSettled(callId, false, cdmHash);
         for (uint256 i = 0; i < release.length; i++) {
             IERC20(release[i].token).transfer(pledgor, release[i].qty);
         }
@@ -122,16 +126,17 @@ contract CollateralControl is ReentrancyGuard {
     }
 
     /// @notice Agree a variation-margin return by transferring equivalent credit support back (deliverer's key).
-    function returnByTransfer(bytes32 callId, Asset[] calldata assets) external nonReentrant {
+    /// `cdmHash` is the CDM SettleCallInstruction hash anchored on-chain (wp-adr-cdm-payload-carrier).
+    function returnByTransfer(bytes32 callId, Asset[] calldata assets, bytes32 cdmHash) external nonReentrant {
         Call memory c = marginCall.getCall(callId);
         if (c.kind != CallKind.Return) revert WrongKind();
         if (msg.sender != c.to) revert WrongParty();
-        if (c.state != CallState.Issued) revert BadState();
+        if (!(c.state == CallState.Agreed || c.state == CallState.PartiallyAgreed)) revert BadState();
 
         uint256 value = _marketValue(assets);
-        if (value != c.amount) revert ReturnMustEqualCall(value, c.amount);
+        if (value != c.agreed) revert ReturnMustEqualCall(value, c.agreed);
 
-        marginCall.markSettled(callId, false);
+        marginCall.markSettled(callId, false, cdmHash);
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i].token).transferFrom(c.to, c.from, assets[i].qty);
         }

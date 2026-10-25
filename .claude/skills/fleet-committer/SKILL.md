@@ -19,11 +19,11 @@ on the human's explicit per-proposal decision — bless or reject. You author no
 content; the proposers' atoms land unchanged except for the fields you own
 (`review`, the provenance link to the source excerpt, confidence).
 
-Everything is driven through the CLI at `.konspekt/fleet/app/cli.mjs`.
+Everything is driven through the CLI at `implementations/fleet/app/cli.mjs`.
 
 ## Inputs
 
-- `CANONICAL` — the instance you write. In-place this is the repo checkout on branch `fleet`; its instance is under `.konspekt/instance`. Attach with `--canonical CANONICAL` (reads the committed config + `git worktree list`).
+- `FLEET_ROOT` — the fleet root; `FLEET_ROOT/canonical` is the instance you write.
 - `APP` — the app dir with `cli.mjs`.
 - Your committer identity (`--name` / `--email`), recorded as the DCO signoff.
 - `instance-subdir` — pass `--instance-subdir .konspekt/instance` when canonical
@@ -33,7 +33,7 @@ Everything is driven through the CLI at `.konspekt/fleet/app/cli.mjs`.
 
 1. **Verify (dry run).** See what is in the outboxes without writing:
    ```
-   node "APP/cli.mjs" run-pass --canonical "CANONICAL" --instance-subdir .konspekt/instance --dry-run
+   node "APP/cli.mjs" run-pass --canonical "FLEET_ROOT/canonical" --instance-subdir .konspekt/instance --dry-run
    ```
    Each proposal reports OK or SET ASIDE with reasons (id/source recompute,
    origin == branch owner, scope within grant and atom_state == proposed,
@@ -42,12 +42,12 @@ Everything is driven through the CLI at `.konspekt/fleet/app/cli.mjs`.
 2. **Fold.** Fold every verified proposal onto canonical as `review: proposed`,
    wired whole, in one commit:
    ```
-   node "APP/cli.mjs" run-pass --canonical "CANONICAL" --instance-subdir .konspekt/instance --name "<committer>" --email "<committer@…>"
+   node "APP/cli.mjs" run-pass --canonical "FLEET_ROOT/canonical" --instance-subdir .konspekt/instance --name "<committer>" --email "<committer@…>"
    ```
 3. **Index.** Rebuild the derived queue from canonical (canonical is
    authoritative; the index is a rebuildable projection):
    ```
-   node "APP/cli.mjs" rebuild-index --canonical "CANONICAL" --instance-subdir .konspekt/instance
+   node "APP/cli.mjs" rebuild-index --canonical "FLEET_ROOT/canonical" --instance-subdir .konspekt/instance
    ```
    Report pending / accepted / rejected to the human.
 4. **Present, do not decide.** Put the pending proposals to the human acceptor:
@@ -57,10 +57,29 @@ Everything is driven through the CLI at `.konspekt/fleet/app/cli.mjs`.
    commit per atom (flip `review` on the entity and its edges; append the accept
    or reject record). Accepts need `--by <principal>`; rejects carry a reason:
    ```
-   node "APP/cli.mjs" bless --canonical "CANONICAL" --instance-subdir .konspekt/instance --by "<principal>" --mode inspection \
+   node "APP/cli.mjs" bless --canonical "FLEET_ROOT/canonical" --instance-subdir .konspekt/instance --by "<principal>" --mode inspection \
      --accept <id>,<id> --reject <id> --reason "<why>" \
      --name "<committer>" --email "<committer@…>"
    ```
+
+## Watch mode (fold continuously)
+
+A single `run-pass` folds what is in the outboxes at that moment. When a proposer
+may start work before you, or keep producing while you run, fold on a loop so a
+proposal committed before you came up is not stranded until someone remembers to
+pass (`task-fleet-committer-startup-scan`):
+
+```
+node "APP/cli.mjs" run-pass --canonical "FLEET_ROOT/canonical" --instance-subdir .konspekt/instance --watch --interval 5 \
+  --name "<committer>" --email "<committer@…>"
+```
+
+It folds every verified proposal as `review: proposed` each pass and skips what
+is already folded (idempotent; it never clobbers a blessed or rejected review),
+re-checks the canonical-branch safety each pass, and blocks until Ctrl-C. It
+**never accepts** — watch folds, bless stays a separate human-gated pass. Omit
+`--interval` for the 5-second default; `--watch` cannot be combined with
+`--dry-run`.
 
 ## Switching the canonical branch
 
@@ -107,9 +126,16 @@ canonical branch, so they do not change. Verify with `doctor --canonical "<canon
 
 ## After writing (host policy)
 
-If `CANONICAL` is this repository's own instance (dogfooding, not a
+If `FLEET_ROOT/canonical` is this repository's own instance (dogfooding, not a
 throwaway mirror), every commit you make that touches a surface outside
 `.konspekt/instance/` must be bound in `.konspekt/instance/changes/changed.md`,
-and you run `node .konspekt/lib/binding-audit.mjs` and `node .konspekt/lib/validate.mjs` before
+and you run `node tools/binding-audit.mjs` and `node lib/validate.mjs` before
 pushing (`.konspekt/OPERATING.md` § Binding commits to the graph). Against a
 throwaway mirror, none of that applies.
+
+When a fold lands a **carried file** (`task-fleet-proposal-carries-files`),
+`run-pass` prints `+ file <path>  (bind in changed-code log)` for each one. Those
+files are outside `.konspekt/instance/`, so — in the dogfood case — add a
+changed-code row binding each to the proposal's binding entity, pointing at the
+fold commit. The row trails the fold commit by one (the log's push-based rule),
+so it is a separate bookkeeping commit after the fold, not part of it.

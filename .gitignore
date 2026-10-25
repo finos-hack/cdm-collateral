@@ -3,3 +3,11 @@
 
 # konspekt fleet runtime index (derived projection, rebuildable from canonical)
 .konspekt-fleet/
+
+# end-to-end stack build + runtime artifacts (task-e2e-wiring)
+gateway/node_modules/
+services/collateral/target/
+services/collateral/data/
+data/
+contracts/deployments/
+services/collateral/dependency-reduced-pom.xml
