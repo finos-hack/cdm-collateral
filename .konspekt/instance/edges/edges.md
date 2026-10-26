@@ -100,3 +100,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-architecture-payload-carrier-revision-produces | produces | node:goal-architecture-design | artifact:artifact-architecture-payload-carrier-revision |  | accepted |
 | e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | accepted |
 | e-gap-register-g26-carrier-produces | produces | node:task-cdm-gap-closure | artifact:artifact-gap-register-g26-carrier |  | accepted |
+| e-prod-e2ewiring-runbook | produces | node:task-e2e-wiring | artifact:artifact-e2e-runbook |  | proposed |

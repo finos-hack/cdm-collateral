@@ -84,3 +84,10 @@ at execution time.
 | task-ci-live-e2e-stack | b2139f92002be2e02ac4ab191bc12afff9c260a3 |
 | task-ci-live-e2e-stack | 55a026d1c0b674ee9427638c584824d96123e7da |
 | task-ci-live-e2e-stack | 1cad39f0d529edda113f344a7d0de3d0f9b4f897 |
+| task-e2e-wiring | c81cf5980dd70fe9097e618a6396bc0ea6e1f9af |
+| task-e2e-wiring | aaeda2b83f6eb2fb4e1fb553e81ae420d9faf7e9 |
+| task-e2e-wiring | 3ea3f62383150109c02ad86fc61346e9c03a971f |
+| task-e2e-wiring | e0916a75c7d0c50b47309aa544bf82ba856f9902 |
+| task-e2e-wiring | 6eaa0506eefe6a321ab523a7e67a81a52039f6b4 |
+| task-e2e-wiring | 52408f7eb9fb38392672fa4f79f538db91f7304e |
+| task-e2e-wiring | 077e53077fa1517f45c514df2f99d452ad0222c3 |
