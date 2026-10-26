@@ -427,3 +427,4 @@ excluded.
 | artifact-e2e-runbook | 887fc35707cc163417dd90b81840a1a7d52b75b0 | docs/runbook-e2e.md | 2026-10-26T11:56:29Z |
 | artifact-e2e-runbook | 887fc35707cc163417dd90b81840a1a7d52b75b0 | README.md | 2026-10-26T11:56:29Z |
 | task-e2e-wiring | 980397c13e3f81964e129a5398e0178d8dd2d71a | store/README.md | 2026-10-26T12:33:16Z |
+| task-e2e-wiring | ba3a7967c8cfd0c5c1aa0f4c9b245e6b50f50c99 | .konspekt/spec/personas/engineer/AGENTS.md | 2026-10-26T12:59:31Z |
