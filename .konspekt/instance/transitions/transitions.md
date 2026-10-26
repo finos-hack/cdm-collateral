@@ -297,3 +297,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-ci-live-e2e-stack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
 | node:task-ci-live-e2e-stack | status |  | open | 2026-10-25T01:56:01Z |  |  |
 | edge:e-dec-e2ewiring-cilivestack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
+| artifact:artifact-e2e-runbook | review |  | proposed | 2026-10-26T11:56:19Z |  | denisurusov |
+| edge:e-prod-e2ewiring-runbook | review |  | proposed | 2026-10-26T11:56:19Z |  | denisurusov |
