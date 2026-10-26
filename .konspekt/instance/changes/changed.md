@@ -426,3 +426,4 @@ excluded.
 | task-e2e-wiring | 22bbcafad80e8b6c08bfb436c59ebcfb29e37cca | store/package-lock.json | 2026-10-25T02:08:38Z |
 | artifact-e2e-runbook | 887fc35707cc163417dd90b81840a1a7d52b75b0 | docs/runbook-e2e.md | 2026-10-26T11:56:29Z |
 | artifact-e2e-runbook | 887fc35707cc163417dd90b81840a1a7d52b75b0 | README.md | 2026-10-26T11:56:29Z |
+| task-e2e-wiring | 980397c13e3f81964e129a5398e0178d8dd2d71a | store/README.md | 2026-10-26T12:33:16Z |
