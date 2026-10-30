@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+# scripts/live-e2e.sh — bring the live end-to-end stack up locally and leave it running, so an engineer can drive
+# the collateral flow (issue -> agree -> propose -> accept -> pledge/transfer, i.e. post and pay) by hand through the
+# console UI. The flow is NOT automated here; that is the Playwright live specs (console/e2e/live.spec.ts). This
+# script only stands up and tears down the environment (task-ci-live-e2e-stack).
+#
+# Subcommands:
+#   up      (default) Stop any stack from a previous run (stop-and-replace), then start the Besu network, deploy the
+#           contracts if they are not deployed yet, start store + two gateways + two services + the console dev
+#           server, wait until all health checks pass, print the URLs and leave everything running.
+#   down    Stop the store/gateways/services/console and stop the Besu containers. The Besu chain on disk is kept.
+#   reset   down, then delete the chain, the deployment and the off-chain state (runbook section 8). The next up
+#           re-creates the Besu network and redeploys.
+#   status  Print the five health checks and the console port without changing anything.
+#
+# Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
+# JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition — see
+# docs/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
+# contracts/deployments/besu.json is absent; it never redeploys over an existing deployment (a redeploy would orphan
+# the stored documents that reference the current contract addresses).
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+
+compose=(docker compose -f besu/docker-compose.yml)
+registry="contracts/deployments/besu.json"
+jar="services/collateral/target/collateral-service.jar"
+stack_log="$root/stack.log"
+pidfile="$root/.live-e2e.pid"
+# Health endpoints in start order. The console (5173) is checked separately because its root path has no JSON body.
+health=(
+  "8300|/store/v1/health"
+  "8201|/ledger/v1/health"
+  "8202|/ledger/v1/health"
+  "8001|/api/v1/health"
+  "8002|/api/v1/health"
+)
+backend_ports=(8300 8201 8202 8001 8002)
+all_ports=(8300 8201 8202 8001 8002 5173 4173)
+
+say() { printf '%s\n' "$*"; }
+die() { printf 'live-e2e: %s\n' "$*" >&2; exit 1; }
+
+# Kill whatever process is listening on a TCP port. Portable across lsof (Linux/macOS), fuser (Linux) and
+# netstat+taskkill (Windows/Git Bash), because the stack children (node, java) are spawned through a shell and a plain
+# kill of the orchestrate parent does not always reap them on Windows.
+kill_port() {
+  local p="$1" pid
+  if command -v lsof >/dev/null 2>&1; then
+    for pid in $(lsof -ti "tcp:$p" -s "tcp:listen" 2>/dev/null || true); do kill "$pid" 2>/dev/null || true; done
+  elif command -v fuser >/dev/null 2>&1; then
+    fuser -k "$p/tcp" 2>/dev/null || true
+  elif command -v netstat >/dev/null 2>&1 && command -v taskkill >/dev/null 2>&1; then
+    for pid in $(netstat -ano 2>/dev/null | grep -E "LISTENING" | grep -E "[:.]$p[[:space:]]" | awk '{print $NF}' | sort -u); do
+      taskkill //PID "$pid" //F >/dev/null 2>&1 || true
+    done
+  fi
+}
+
+stop_stack() {
+  # Stop the orchestrate.mjs parent first (its SIGTERM handler kills its children), then clear any port still held by
+  # an orphaned child. This is the stop-and-replace step: up calls it before starting a fresh stack.
+  if [ -f "$pidfile" ]; then
+    kill "$(cat "$pidfile")" 2>/dev/null || true
+    rm -f "$pidfile"
+  fi
+  local p
+  for p in "${all_ports[@]}"; do kill_port "$p"; done
+}
+
+rpc() { curl -s -m 5 "http://localhost:$1" -H 'content-type: application/json' --data "$2"; }
+
+start_besu() {
+  if [ -f besu/.env ] && [ -f besu/networkFiles/genesis.json ]; then
+    "${compose[@]}" up -d
+  else
+    # First time on this clone (no generated genesis/keys): start-network.sh generates them, then brings the nodes up.
+    say "besu network files missing — generating via besu/start-network.sh"
+    bash besu/start-network.sh
+  fi
+  # Wait for a non-zero block height (QBFT produces a block every 2 s once at least three validators peer).
+  local i n
+  for i in $(seq 1 60); do
+    # A node that has just started refuses or drops the connection (curl exit 7 / 52); under set -e that must not end
+    # the script, so the poll tolerates a failed request and retries.
+    n="$( { rpc 8545 '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' || true; } | sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p')"
+    if [ -n "$n" ] && [ "$n" != "0x0" ]; then say "besu producing blocks (height $n)"; return 0; fi
+    sleep 2
+  done
+  die "besu did not produce a block within 120 s — check: bash besu/check-network.sh"
+}
+
+deploy_if_needed() {
+  if [ -f "$registry" ]; then
+    say "contracts already deployed ($registry) — keeping the existing deployment"
+  else
+    say "deploying contracts (npm run deploy:besu)"
+    ( cd contracts && npm run deploy:besu )
+  fi
+}
+
+wait_healthy() {
+  local i entry port path ok all
+  for i in $(seq 1 60); do
+    all=1
+    for entry in "${health[@]}"; do
+      port="${entry%%|*}"; path="${entry#*|}"
+      ok="$(curl -s -m 3 "localhost:$port$path" 2>/dev/null || true)"
+      case "$ok" in *'"ok":true'*) ;; *) all=0 ;; esac
+    done
+    if [ "$all" -eq 1 ]; then return 0; fi
+    sleep 3
+  done
+  return 1
+}
+
+print_status() {
+  local entry port path
+  for entry in "${health[@]}"; do
+    port="${entry%%|*}"; path="${entry#*|}"
+    printf '  %-5s %s\n' "$port" "$(curl -s -m 3 "localhost:$port$path" 2>/dev/null || echo 'no response')"
+  done
+  printf '  %-5s %s\n' "5173" "$(curl -s -m 3 -o /dev/null -w 'HTTP %{http_code}' localhost:5173/ 2>/dev/null || echo 'no response')"
+}
+
+cmd_up() {
+  [ -f "$jar" ] || die "missing $jar — build it once: see docs/runbook-e2e.md section 3"
+  say "stop-and-replace: stopping any stack from a previous run"
+  stop_stack
+  say "starting besu network"
+  start_besu
+  deploy_if_needed
+  say "starting store, gateways, services and console (orchestrate.mjs)"
+  # Detached so this script can health-check and return, leaving the stack running. orchestrate.mjs (no --ci) also
+  # starts the console dev server on 5173, which is what the engineer opens to drive the flow.
+  nohup node orchestrate.mjs > "$stack_log" 2>&1 &
+  echo $! > "$pidfile"
+  if wait_healthy; then
+    say ""
+    say "live stack is up and running:"
+    print_status
+    say ""
+    say "  drive the flow in the console:"
+    say "    secured party (BANK-B)  http://localhost:5173/#/live/B"
+    say "    pledgor      (BANK-A)  http://localhost:5173/#/live/A"
+    say ""
+    say "  logs:  $stack_log"
+    say "  stop:  scripts/live-e2e.sh down"
+  else
+    say "stack did not become healthy within 180 s — last state:"
+    print_status
+    say "see $stack_log"
+    exit 1
+  fi
+}
+
+cmd_down() {
+  say "stopping store, gateways, services and console"
+  stop_stack
+  say "stopping besu containers (chain kept on disk)"
+  "${compose[@]}" stop
+  say "stopped."
+}
+
+cmd_reset() {
+  cmd_down
+  say "removing chain, deployment and off-chain state (full reset)"
+  "${compose[@]}" down -v 2>/dev/null || true
+  rm -rf besu/networkFiles besu/.env besu/mkt besu/bank-a besu/bank-b besu/bank-c
+  rm -rf contracts/deployments store/data data
+  say "reset done — the next 'up' re-creates the besu network and redeploys the contracts."
+}
+
+case "${1:-up}" in
+  up) cmd_up ;;
+  down) cmd_down ;;
+  reset) cmd_reset ;;
+  status) print_status ;;
+  *) die "unknown subcommand '${1}' — use: up | down | reset | status" ;;
+esac
