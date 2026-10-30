@@ -3,7 +3,7 @@ id: wp-adr-live-stack-local-ui-driven
 kind: decision
 subtype: adr
 timestamp: 2026-10-30T02:12:11Z
-review: proposed
+review: accepted
 provenance:
   conversationId: ci-live-e2e-stack
   sourceRef: f5a054bbe2cdd235c112e58fb2c8a77ca4523ee2
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-30T02:12:11Z
   confidence: 0.85
 createdAt: 2026-10-30T02:12:11Z
-updatedAt: 2026-10-30T02:12:11Z
+updatedAt: 2026-10-30T02:19:00Z
 ```
 # ADR: The live e2e stack runs on the engineer's machine; the collateral flow is driven from the console UI
 

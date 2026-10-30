@@ -2,7 +2,7 @@
 id: task-ci-live-e2e-stack
 type: task
 title: Run the live e2e flows in CI against a full backend stack
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: e2e-wiring
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-25T01:56:01Z
   confidence: 0.8
 createdAt: 2026-10-25T01:56:01Z
-updatedAt: 2026-10-25T01:56:01Z
+updatedAt: 2026-10-30T02:19:00Z
 ```
 # Task: run the live e2e flows in CI against a full backend stack
 

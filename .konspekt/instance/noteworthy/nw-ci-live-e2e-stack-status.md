@@ -1,7 +1,7 @@
 ```yaml
 id: nw-ci-live-e2e-stack-status
 kind: fact
-review: proposed
+review: accepted
 provenance:
   conversationId: ci-live-e2e-stack
   sourceRef: 16306102ad473abb9b5140f1c2af6e9b8fc40aca
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-10-30T02:12:11Z
   confidence: 0.9
 createdAt: 2026-10-27T01:19:47Z
-updatedAt: 2026-10-30T02:12:11Z
+updatedAt: 2026-10-30T02:19:00Z
 ```
 # CI live e2e stack: local verification status and next steps
 
@@ -74,14 +74,26 @@ the failing condition for both. `tsc --noEmit` reported no type errors.
   into shell scripts, which bash rejects.
 - `.devcontainer/devcontainer.json` forwards 8001/8002 (commit `d4b0fcb`, [[task-devcontainer-live-stack]]).
 
-## Next steps (resume here)
+## Resolution (2026-10-30)
+
+The project owner resolved [[task-ci-live-e2e-stack]] on 2026-10-30 under [[wp-adr-live-stack-local-ui-driven]]
+instead of retitling it. Its node text ("run the live e2e flows in CI") records the original goal; the ADR records
+the scope it was resolved under (CI builds, deploys and health-checks; the flow is driven by hand). The re-scoped
+workflow had not run when the task was resolved.
+
+## Next session (resume here)
+
+Deferred by the project owner on 2026-10-30:
 
 1. Run `e2e-live-stack.yml` once (PR `e2e-wiring → main`, or after merge via `workflow_dispatch`) to confirm the
-   re-scoped job builds, deploys and passes the health checks on `ubuntu-latest`. It has not run yet.
+   re-scoped job builds, deploys and passes the health checks on `ubuntu-latest`. It has never run.
 2. Add `scripts/live-e2e.sh` to the runbook ([[artifact-e2e-runbook]]) and update its §10 verification status.
-3. The accepted node text of [[task-ci-live-e2e-stack]] ("run the live e2e flows in CI") no longer matches the decision
-   (CI builds, deploys and health-checks; the flow is manual). Propose a revised title and scope, or a status change,
-   for the human to accept.
+3. Open the devcontainer, run `scripts/live-e2e.sh up` and drive one flow in the browser to verify the 8001/8002
+   forwarding ([[task-devcontainer-live-stack]]; its other gaps — backend start-up wiring, Codespaces
+   `VITE_SERVICE_*_URL` — remain open there).
+4. Push `e2e-wiring` (not pushed; the session's commits start at `7d49e20`).
+5. Accept or revise `nw-ci-live-stack-steps` and its edge `e-note-cilivestack-steps`, proposed on 2026-10-25 and
+   still `review: proposed`.
 
 The stack is stopped (runbook section 7): no stack process running, four Besu containers stopped with the chain kept on
 disk. The Docker Desktop engine was left running.

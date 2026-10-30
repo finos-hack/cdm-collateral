@@ -324,3 +324,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-livestacklocal-devcontainerstack | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
 | noteworthy:nw-ci-live-e2e-stack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
 | edge:e-note-cilivestack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| waypoint:wp-adr-live-stack-local-ui-driven | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| node:task-devcontainer-live-stack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| noteworthy:nw-ci-live-e2e-stack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-dec-e2ewiring-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-lnk-cilivestack-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-mrk-livestacklocal-cilivestack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-mrk-livestacklocal-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-note-cilivestack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| node:task-ci-live-e2e-stack | status | open | resolved | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |

@@ -101,8 +101,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | accepted |
 | e-gap-register-g26-carrier-produces | produces | node:task-cdm-gap-closure | artifact:artifact-gap-register-g26-carrier |  | accepted |
 | e-prod-e2ewiring-runbook | produces | node:task-e2e-wiring | artifact:artifact-e2e-runbook |  | proposed |
-| e-dec-e2ewiring-devcontainerstack | decomposes | node:task-e2e-wiring | node:task-devcontainer-live-stack |  | proposed |
-| e-lnk-cilivestack-devcontainerstack | links | node:task-ci-live-e2e-stack | node:task-devcontainer-live-stack |  | proposed |
-| e-mrk-livestacklocal-cilivestack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-ci-live-e2e-stack |  | proposed |
-| e-mrk-livestacklocal-devcontainerstack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-devcontainer-live-stack |  | proposed |
-| e-note-cilivestack-status | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-e2e-stack-status |  | proposed |
+| e-dec-e2ewiring-devcontainerstack | decomposes | node:task-e2e-wiring | node:task-devcontainer-live-stack |  | accepted |
+| e-lnk-cilivestack-devcontainerstack | links | node:task-ci-live-e2e-stack | node:task-devcontainer-live-stack |  | accepted |
+| e-mrk-livestacklocal-cilivestack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-ci-live-e2e-stack |  | accepted |
+| e-mrk-livestacklocal-devcontainerstack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-devcontainer-live-stack |  | accepted |
+| e-note-cilivestack-status | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-e2e-stack-status |  | accepted |
