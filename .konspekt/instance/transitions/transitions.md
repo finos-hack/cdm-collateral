@@ -315,3 +315,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-gap-register-g26-carrier-produces | review | proposed | accepted | 2026-10-25T15:17:17.506Z |  | denisurusov |
 | artifact:artifact-e2e-runbook | review |  | proposed | 2026-10-26T11:56:19Z |  | denisurusov |
 | edge:e-prod-e2ewiring-runbook | review |  | proposed | 2026-10-26T11:56:19Z |  | denisurusov |
+| node:task-devcontainer-live-stack | review |  | proposed | 2026-10-30T01:30:09Z |  |  |
+| node:task-devcontainer-live-stack | status |  | open | 2026-10-30T01:30:09Z |  |  |
+| edge:e-dec-e2ewiring-devcontainerstack | review |  | proposed | 2026-10-30T01:30:09Z |  |  |
+| edge:e-lnk-cilivestack-devcontainerstack | review |  | proposed | 2026-10-30T01:30:09Z |  |  |
+| waypoint:wp-adr-live-stack-local-ui-driven | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| edge:e-mrk-livestacklocal-cilivestack | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| edge:e-mrk-livestacklocal-devcontainerstack | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| noteworthy:nw-ci-live-e2e-stack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| edge:e-note-cilivestack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |

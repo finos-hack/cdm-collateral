@@ -439,3 +439,9 @@ excluded.
 | artifact-e2e-runbook | 887fc35707cc163417dd90b81840a1a7d52b75b0 | README.md | 2026-10-26T11:56:29Z |
 | task-e2e-wiring | 980397c13e3f81964e129a5398e0178d8dd2d71a | store/README.md | 2026-10-26T12:33:16Z |
 | task-e2e-wiring | ba3a7967c8cfd0c5c1aa0f4c9b245e6b50f50c99 | .konspekt/spec/personas/engineer/AGENTS.md | 2026-10-26T12:59:31Z |
+| task-ci-live-e2e-stack | 7d49e20217581a79677bfcb480bcb11b60c751dc | console/e2e/live.spec.ts | 2026-10-30T02:12:11Z |
+| task-ci-live-e2e-stack | e7f4e272be1f3d7ccfb1eab23a5b5ddd59dce9d4 | scripts/live-e2e.sh | 2026-10-30T02:12:11Z |
+| task-ci-live-e2e-stack | e7f4e272be1f3d7ccfb1eab23a5b5ddd59dce9d4 | .github/workflows/e2e-live-stack.yml | 2026-10-30T02:12:11Z |
+| task-ci-live-e2e-stack | e7f4e272be1f3d7ccfb1eab23a5b5ddd59dce9d4 | .gitignore | 2026-10-30T02:12:11Z |
+| task-devcontainer-live-stack | d4b0fcb4a8f81abc9fe0f221967475013a0cf558 | .devcontainer/devcontainer.json | 2026-10-30T02:12:11Z |
+| task-ci-live-e2e-stack | 3caa6f534296f2990560fa5c0c0fe91364abfcf5 | .gitattributes | 2026-10-30T02:12:11Z |
