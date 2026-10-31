@@ -12,9 +12,13 @@
   },
   "postCreateCommand": "npm --prefix console ci",
   "postStartCommand": "bash besu/start-network.sh; bash console/serve.sh",
-  "forwardPorts": [5173, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
+  // 8001/8002: the console calls the collateral services directly from the browser (console/src/domain/liveApi.ts),
+  // so they must be forwarded for the live flow to work (task-devcontainer-live-stack).
+  "forwardPorts": [5173, 8001, 8002, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
   "portsAttributes": {
     "5173": { "label": "Collateral Console" },
+    "8001": { "label": "Collateral service A (pledgor)" },
+    "8002": { "label": "Collateral service B (secured party)" },
     "8545": { "label": "Besu mkt RPC" },
     "8547": { "label": "Besu bank-a RPC" },
     "8549": { "label": "Besu bank-b RPC" },

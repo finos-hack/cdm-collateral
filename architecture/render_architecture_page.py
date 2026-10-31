@@ -15,11 +15,12 @@ BOX = {
  'collateral-service': (470, 120, 200, 85, 'svc'), 'cdm-object-model': (470, 205, 200, 36, 'data'),
  'workflow-store': (470, 300, 200, 50, 'db'), 'oracle-service': (470, 530, 200, 70, 'svc'), 'mock-market-data': (470, 650, 200, 50, 'ext'),
  'ledger-gateway': (740, 250, 190, 100, 'svc'), 'dev-keystore': (740, 400, 190, 45, 'data'),
+ 'cdm-payload-store': (740, 500, 190, 56, 'db'),
  'collateral-control-contract': (975, 140, 180, 80, 'sc'), 'tokenized-collateral': (975, 300, 180, 70, 'sc'), 'oracle-feed-contract': (975, 440, 180, 70, 'sc'), 'margin-call-contract': (975, 580, 180, 70, 'sc'),
 }
 SUB = {'party-console': 'React', 'e2e-test-harness': 'Playwright · test only', 'collateral-service': 'Java · Javalin',
        'cdm-object-model': 'CDM 7.7.0 · Java', 'workflow-store': 'SQLite', 'oracle-service': 'Java · shared', 'mock-market-data': 'JSON files',
-       'ledger-gateway': 'TypeScript · Besu adapter', 'dev-keystore': 'own key only', 'collateral-control-contract': 'pledge · return · enforce',
+       'ledger-gateway': 'TypeScript · Besu adapter', 'dev-keystore': 'own key only', 'cdm-payload-store': 'shared · keyed by cdmHash', 'collateral-control-contract': 'pledge · return · enforce',
        'tokenized-collateral': 'ERC-20 · ISIN/CUSIP · DTI', 'oracle-feed-contract': 'price · rating · default', 'margin-call-contract': 'call · proposal · settled'}
 TITLE = {'collateral-service': 'Collateral workflow service', 'collateral-control-contract': 'Collateral control contract'}
 EDGE = {
@@ -27,7 +28,7 @@ EDGE = {
  'console-to-service': [(400,165),(470,165)],
  'console-to-oracle': [(400,205),(430,205),(430,580),(470,580)],
  'service-to-oracle': [(470,185),(450,185),(450,555),(470,555)],
- 'service-to-peer-service': [(540,120),(540,82),(620,82),(620,120)],
+ 'service-to-payload-store': [(670,198),(688,198),(688,528),(740,528)],
  'service-to-store': [(520,241),(520,300)],
  'oracle-to-market-data': [(570,600),(570,650)],
  'console-to-gateway': [(315,150),(315,95),(500,95),(500,60),(730,60),(730,265),(740,265)],
@@ -44,12 +45,12 @@ EDGE = {
  'control-to-oracle-feed': [(1155,180),(1163,180),(1163,475),(1155,475)],
 }
 LABEL = {'gateway-to-besu-rpc': ('RPC', 945, 272), 'gateway-to-besu-events': ('WS', 945, 336),
-         'console-to-gateway': ('balances', 615, 54), 'service-to-peer-service': ('counterparty instance', 580, 76)}
+         'console-to-gateway': ('balances', 615, 54), 'service-to-payload-store': ('CDM docs', 712, 522)}
 missing = [r for r in R if R[r]['relationship-type'].get('connects') or R[r]['relationship-type'].get('interacts')]
 missing = [r for r in missing if r not in EDGE]
 assert not missing, missing
 
-svg = ['<svg viewBox="0 0 1200 770" role="img" aria-label="Prototype architecture: each participant runs its own party console, collateral workflow service, workflow store, ledger gateway and key; workflow services, built on CDM 7.6.0, exchange messages with the counterparty instance and use an oracle service and a TypeScript ledger gateway to operate a collateral control contract, tokenized collateral, a margin call contract and an oracle feed on a local four-node Besu network with one validator node per participant, all on one development host (a GitHub Codespace or a Windows machine)."><defs>',
+svg = ['<svg viewBox="0 0 1200 770" role="img" aria-label="Prototype architecture: each participant runs its own party console, collateral workflow service, workflow store, ledger gateway and key; workflow services, built on CDM 7.7.0, exchange CDM documents through a shared content-addressed payload store keyed by the on-chain hash, and use an oracle service and a TypeScript ledger gateway to operate a collateral control contract, tokenized collateral, a margin call contract and an oracle feed on a local four-node Besu network with one validator node per participant, all on one development host (a GitHub Codespace or a Windows machine)."><defs>',
        '<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>',
        '<marker id="ahon" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahon"/></marker></defs>']
 svg.append('<rect x="200" y="20" width="985" height="740" rx="12" class="host"/><text x="214" y="42" class="grp">DEVELOPMENT HOST · CODESPACE OR WINDOWS</text>')

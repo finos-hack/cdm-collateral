@@ -1,4 +1,9 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.konspekt/fleet/app/committer-statusline.mjs\"",
+    "refreshInterval": 5
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -7,6 +12,15 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/load-mandatory-skills.sh\"",
             "statusMessage": "Loading mandatory skills..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.konspekt/fleet/app/committer-watch-hook.mjs\"",
+            "statusMessage": "Starting committer fold watcher..."
           }
         ]
       }

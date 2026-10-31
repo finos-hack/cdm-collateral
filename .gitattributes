@@ -8,3 +8,7 @@
 # Pin these stores to no EOL conversion so the blob SHA is stable on all platforms.
 .konspekt/instance/sources/** -text
 .konspekt/instance/commands/** -text
+
+# Shell scripts run under bash (Linux, Codespaces, WSL, Git Bash). With core.autocrlf=true a Windows checkout would
+# write CRLF, and bash then fails with "$'\r': command not found". Keep LF in every working copy.
+*.sh text eol=lf

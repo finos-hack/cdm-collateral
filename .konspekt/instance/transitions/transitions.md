@@ -297,3 +297,39 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-ci-live-e2e-stack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
 | node:task-ci-live-e2e-stack | status |  | open | 2026-10-25T01:56:01Z |  |  |
 | edge:e-dec-e2ewiring-cilivestack | review |  | proposed | 2026-10-25T01:56:01Z |  | denisurusov |
+| node:task-ci-live-e2e-stack | review | proposed | accepted | 2026-10-25T13:05:29Z |  | denisurusov |
+| edge:e-dec-e2ewiring-cilivestack | review | proposed | accepted | 2026-10-25T13:05:29Z |  | denisurusov |
+| noteworthy:nw-ci-live-stack-steps | review |  | proposed | 2026-10-25T13:12:45Z |  | denisurusov |
+| edge:e-note-cilivestack-steps | review |  | proposed | 2026-10-25T13:12:45Z |  | denisurusov |
+| artifact:artifact-architecture-payload-carrier-revision | review |  | proposed | 2026-10-25T15:10:03.154Z |  | spec-writer |
+| edge:e-architecture-payload-carrier-revision-produces | review |  | proposed | 2026-10-25T15:10:03.154Z |  | spec-writer |
+| artifact:artifact-payload-carrier-component-docs | review |  | proposed | 2026-10-25T15:10:09.382Z |  | spec-writer |
+| edge:e-payload-carrier-component-docs-produces | review |  | proposed | 2026-10-25T15:10:09.382Z |  | spec-writer |
+| artifact:artifact-gap-register-g26-carrier | review |  | proposed | 2026-10-25T15:10:09.711Z |  | spec-writer |
+| edge:e-gap-register-g26-carrier-produces | review |  | proposed | 2026-10-25T15:10:09.711Z |  | spec-writer |
+| artifact:artifact-architecture-payload-carrier-revision | review | proposed | accepted | 2026-10-25T15:17:17.140Z |  | denisurusov |
+| edge:e-architecture-payload-carrier-revision-produces | review | proposed | accepted | 2026-10-25T15:17:17.140Z |  | denisurusov |
+| artifact:artifact-payload-carrier-component-docs | review | proposed | accepted | 2026-10-25T15:17:17.360Z |  | denisurusov |
+| edge:e-payload-carrier-component-docs-produces | review | proposed | accepted | 2026-10-25T15:17:17.360Z |  | denisurusov |
+| artifact:artifact-gap-register-g26-carrier | review | proposed | accepted | 2026-10-25T15:17:17.506Z |  | denisurusov |
+| edge:e-gap-register-g26-carrier-produces | review | proposed | accepted | 2026-10-25T15:17:17.506Z |  | denisurusov |
+| artifact:artifact-e2e-runbook | review |  | proposed | 2026-10-26T11:56:19Z |  | denisurusov |
+| edge:e-prod-e2ewiring-runbook | review |  | proposed | 2026-10-26T11:56:19Z |  | denisurusov |
+| node:task-devcontainer-live-stack | review |  | proposed | 2026-10-30T01:30:09Z |  |  |
+| node:task-devcontainer-live-stack | status |  | open | 2026-10-30T01:30:09Z |  |  |
+| edge:e-dec-e2ewiring-devcontainerstack | review |  | proposed | 2026-10-30T01:30:09Z |  |  |
+| edge:e-lnk-cilivestack-devcontainerstack | review |  | proposed | 2026-10-30T01:30:09Z |  |  |
+| waypoint:wp-adr-live-stack-local-ui-driven | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| edge:e-mrk-livestacklocal-cilivestack | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| edge:e-mrk-livestacklocal-devcontainerstack | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| noteworthy:nw-ci-live-e2e-stack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| edge:e-note-cilivestack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
+| waypoint:wp-adr-live-stack-local-ui-driven | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| node:task-devcontainer-live-stack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| noteworthy:nw-ci-live-e2e-stack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-dec-e2ewiring-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-lnk-cilivestack-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-mrk-livestacklocal-cilivestack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-mrk-livestacklocal-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| edge:e-note-cilivestack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| node:task-ci-live-e2e-stack | status | open | resolved | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |

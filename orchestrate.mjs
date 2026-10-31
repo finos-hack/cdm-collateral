@@ -15,6 +15,11 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const jar = path.join(root, "services", "collateral", "target", "collateral-service.jar");
 const registry = path.join(root, "contracts", "deployments", "besu.json");
 
+// --ci: omit the console dev server (5173). In CI the Playwright config serves its own console preview on 4173
+// (console/playwright.config.ts webServer), so the dev server is redundant; the backend store, gateways and
+// services are what the live e2e flow needs (.github/workflows/e2e-live-stack.yml, task-ci-live-e2e-stack).
+const ci = process.argv.includes("--ci");
+
 if (!fs.existsSync(registry)) {
   console.error(`missing ${path.relative(root, registry)} — run "npm run deploy:besu" in contracts/ first (and start Besu).`);
   process.exit(1);
@@ -54,7 +59,9 @@ setTimeout(() => {
   run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", STORE_TOKEN: token["bank-b"] });
 }, 2000);
 
-run("console", process.platform === "win32" ? "npm.cmd" : "npm", ["run", "dev", "--", "--port", "5173"], path.join(root, "console"), {});
+if (!ci) {
+  run("console", process.platform === "win32" ? "npm.cmd" : "npm", ["run", "dev", "--", "--port", "5173"], path.join(root, "console"), {});
+}
 
 console.log(`
 stack starting:
@@ -62,8 +69,8 @@ stack starting:
   gateway  bank-a   http://localhost:8201/ledger/v1
   gateway  bank-b   http://localhost:8202/ledger/v1
   service  A (pledgor)        http://localhost:8001/api/v1
-  service  B (secured party)  http://localhost:8002/api/v1
-  console  http://localhost:5173/#/live/B  (secured party)  and  /#/live/A  (pledgor)
+  service  B (secured party)  http://localhost:8002/api/v1${ci ? "" : `
+  console  http://localhost:5173/#/live/B  (secured party)  and  /#/live/A  (pledgor)`}
 Ctrl-C to stop.
 `);
 

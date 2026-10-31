@@ -11,3 +11,7 @@ services/collateral/data/
 data/
 contracts/deployments/
 services/collateral/dependency-reduced-pom.xml
+
+# scripts/live-e2e.sh runtime files: orchestrate.mjs output and the detached stack's pid (task-ci-live-e2e-stack)
+stack.log
+.live-e2e.pid
