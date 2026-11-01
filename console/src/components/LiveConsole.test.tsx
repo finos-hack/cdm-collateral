@@ -1,0 +1,145 @@
+// Unit tests for the live console's flow-return and flow-default-enforcement actions. The workflow service is replaced
+// by a fetch stub that serves /context and /state and records every POST, so each test checks which actions a party
+// is offered for a given on-chain call state and what the console sends to its own service.
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { LiveConsole } from "./LiveConsole";
+import type { LiveCall, LiveParty, LiveState } from "../domain/liveApi";
+
+class StubEventSource {
+  addEventListener() {}
+  removeEventListener() {}
+  close() {}
+}
+
+const CONTEXT = {
+  A: { party: "A", role: "Pledgor", node: "bank-a", address: "0xA", counterparty: "B", counterpartyAddress: "0xB" },
+  B: { party: "B", role: "Secured Party", node: "bank-b", address: "0xB", counterparty: "A", counterpartyAddress: "0xA" },
+};
+
+function call(over: Partial<LiveCall>): LiveCall {
+  return {
+    callId: "0x1111111111111111111111111111111111111111111111111111111111111111",
+    kind: "IM",
+    from: "B",
+    to: "A",
+    amountUsd: "2000000",
+    agreedUsd: "2000000",
+    disputedUsd: "0",
+    state: "issued",
+    cdmHash: "0x00",
+    proposals: [],
+    messages: [],
+    ...over,
+  };
+}
+
+let posts: { path: string; body: unknown }[] = [];
+
+function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">) {
+  posts = [];
+  vi.stubGlobal("EventSource", StubEventSource);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace(/^https?:\/\/[^/]+\/api\/v1/, "");
+      if (init?.method === "POST") {
+        posts.push({ path, body: JSON.parse(String(init.body)) });
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      const body = path === "/context" ? { ...CONTEXT[party], priceScale: "100000000", tokens: [], agreement: "IM CSA" } : { party, role: CONTEXT[party].role, ...state };
+      return new Response(JSON.stringify(body), { status: 200 });
+    }),
+  );
+  render(<LiveConsole party={party} />);
+}
+
+const balances = (pledged: string) => [{ token: "tUST", free: "1000", pledged }];
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("flow-return", () => {
+  it("the pledgor calls for a return of initial margin from its console", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("50000") });
+    const card = (await screen.findByRole("heading", { name: "Call for a return" })).closest(".card") as HTMLElement;
+    await user.clear(within(card).getByRole("spinbutton"));
+    await user.type(within(card).getByRole("spinbutton"), "750000");
+    await user.click(within(card).getByRole("button", { name: "Call return → B" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/calls", body: { kind: "Return", toParty: "B", amountUsd: 750000, deadlineDays: 1 } }]));
+  });
+
+  it("the secured party is offered only full agreement on an issued return call", async () => {
+    serve("B", { calls: [call({ kind: "Return", from: "A", to: "B", state: "issued" })], balances: balances("50000") });
+    const row = (await screen.findByText(/Return · A → B/)).closest(".subcard") as HTMLElement;
+    expect(within(row).getByRole("button", { name: "Agree in full" })).toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: "Dispute" })).toBeNull();
+    expect(within(row).queryByRole("button", { name: "Agree part" })).toBeNull();
+  });
+
+  it("the secured party releases escrowed collateral on an agreed return call", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [call({ kind: "Return", from: "A", to: "B", state: "agreed" })], balances: balances("50000") });
+    const row = (await screen.findByText(/Return · A → B/)).closest(".subcard") as HTMLElement;
+    await user.clear(within(row).getByRole("spinbutton"));
+    await user.type(within(row).getByRole("spinbutton"), "7000");
+    await user.click(within(row).getByRole("button", { name: "Release escrow" }));
+    await waitFor(() =>
+      expect(posts).toEqual([
+        { path: `/calls/${call({}).callId}/return`, body: { via: "release", assets: [{ token: "tUST", qty: 7000 }] } },
+      ]),
+    );
+  });
+
+  it("the pledgor is not offered the release on its own return call", async () => {
+    serve("A", { calls: [call({ kind: "Return", from: "A", to: "B", state: "agreed" })], balances: balances("50000") });
+    const row = (await screen.findByText(/Return · A → B/)).closest(".subcard") as HTMLElement;
+    expect(within(row).queryByRole("button", { name: "Release escrow" })).toBeNull();
+  });
+});
+
+describe("flow-default-enforcement", () => {
+  it("the secured party declares the default and enforces on a settled IM call with collateral in escrow", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [call({ state: "settled" })], balances: balances("50000"), defaults: { A: false, B: false } });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    await user.click(within(row).getByRole("button", { name: "Declare default & enforce" }));
+    await waitFor(() => expect(posts).toEqual([{ path: `/calls/${call({}).callId}/enforce`, body: {} }]));
+  });
+
+  it("enforcement is not offered when nothing is pledged", async () => {
+    serve("B", { calls: [call({ state: "settled" })], balances: balances("0") });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(within(row).queryByRole("button", { name: "Declare default & enforce" })).toBeNull();
+  });
+
+  it("enforcement is not offered before the call is settled", async () => {
+    serve("B", { calls: [call({ state: "agreed" })], balances: balances("50000") });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(within(row).queryByRole("button", { name: "Declare default & enforce" })).toBeNull();
+  });
+
+  it("the pledgor is never offered enforcement", async () => {
+    serve("A", { calls: [call({ state: "settled" })], balances: balances("50000") });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(within(row).getByText("settled on-chain ✓")).toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: "Declare default & enforce" })).toBeNull();
+  });
+
+  it("an enforced call shows the enforcement and no further action", async () => {
+    serve("B", { calls: [call({ state: "settled", enforced: true, events: ["Enforced"] })], balances: balances("50000") });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(within(row).getByText("enforced ✓")).toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: "Declare default & enforce" })).toBeNull();
+  });
+
+  it("each console shows the default recorded on the oracle feed", async () => {
+    serve("A", { calls: [], balances: balances("0"), defaults: { A: true, B: false } });
+    expect(await screen.findByRole("status")).toHaveTextContent("This party (A) in default on the oracle feed");
+  });
+
+  it("the secured party sees the counterparty's default", async () => {
+    serve("B", { calls: [], balances: balances("0"), defaults: { A: true, B: false } });
+    expect(await screen.findByRole("status")).toHaveTextContent("Counterparty A in default on the oracle feed");
+  });
+});
