@@ -2,7 +2,7 @@
 id: task-devcontainer-live-stack
 type: task
 title: Stand up the full live e2e stack in the devcontainer/Codespaces as a browser-clickable environment
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: ci-live-e2e-stack
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-30T01:30:09Z
   confidence: 0.7
 createdAt: 2026-10-30T01:30:09Z
-updatedAt: 2026-10-30T02:19:00Z
+updatedAt: 2026-11-01T00:40:00Z
 ```
 # Task: run the full live e2e stack in the devcontainer/Codespaces as a browser-clickable environment
 
@@ -42,3 +42,11 @@ Scope: a push does not drive the flow; CI (`task-ci-live-e2e-stack`) runs the au
 throwaway stack, while this task provides a running, clickable environment for manual flows. Relates to
 [[task-ci-live-e2e-stack]] and [[task-e2e-wiring]]; builds on [[artifact-setup-codespaces]],
 [[artifact-live-console-wiring]] and [[artifact-e2e-runbook]].
+
+## Resolution (2026-11-01)
+
+The project owner resolved this task on 2026-11-01 after a run of `scripts/live-e2e.sh up` on the Windows host
+(Docker Desktop), where the engineer drove the collateral flow by hand in the console. Nothing had been run inside
+the devcontainer or a Codespace when it was resolved. At resolution these gaps were still open: `postStartCommand`
+does not start the backend (deploy + `orchestrate.mjs`), the 8001/8002 forwarding (commit `d4b0fcb`) has not been
+checked in a running devcontainer, and Codespaces still needs `VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL`.

@@ -333,3 +333,32 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-livestacklocal-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
 | edge:e-note-cilivestack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
 | node:task-ci-live-e2e-stack | status | open | resolved | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| noteworthy:nw-ci-live-stack-first-run | review |  | proposed | 2026-10-31T23:50:39Z |  |  |
+| edge:e-note-cilivestack-first-run | review |  | proposed | 2026-10-31T23:50:39Z |  |  |
+| noteworthy:nw-ci-live-stack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| edge:e-note-cilivestack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| noteworthy:nw-ci-live-stack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| edge:e-note-cilivestack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| edge:e-sup-livestacklocal-cilivestacksteps | review |  | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| node:task-devcontainer-live-stack | status | open | resolved | 2026-11-01T00:40:00Z | 7a0b40227dfaa8c090f24ff18dadc5de671dafb5 | denisurusov |
+| node:task-devcontainer-stack-startup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| node:task-devcontainer-stack-startup | status |  | open | 2026-11-01T01:00:00Z |  |  |
+| node:task-codespaces-live-stack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| node:task-codespaces-live-stack | status |  | open | 2026-11-01T01:00:00Z |  |  |
+| edge:e-dec-e2ewiring-devcontainerstartup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| edge:e-lnk-devcontainerstack-devcontainerstartup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| edge:e-dec-e2ewiring-codespacesstack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| edge:e-lnk-devcontainerstartup-codespacesstack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| node:task-e2e-remaining-flows | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| node:task-e2e-remaining-flows | status |  | open | 2026-11-01T15:57:23Z |  |  |
+| node:task-revaluation-top-up-modelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| node:task-revaluation-top-up-modelling | status |  | open | 2026-11-01T15:57:23Z |  |  |
+| edge:e-dec-e2ewiring-remainingflows | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| edge:e-dec-bizcase-topupmodelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| edge:e-lnk-remainingflows-topupmodelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| node:task-live-flow-checkout-script | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| node:task-live-flow-checkout-script | status |  | open | 2026-11-01T16:22:08Z |  |  |
+| edge:e-dec-e2ewiring-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| node:task-devcontainer-stack-startup | status | open | resolved | 2026-11-01T21:07:28Z | 71e098075ed6f5310fcd0558fcc16984f99b0612 | denisurusov |

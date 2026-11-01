@@ -6,8 +6,12 @@ GitHub's cloud, opened in the browser (or in VS Code), built from this repositor
 machine. The Windows install ([`setup-windows.md`](setup-windows.md)) remains for working locally.
 
 **What the codespace contains:** Ubuntu 24.04, Docker (Docker-in-Docker), Java 21 (Maven through the wrapper `cdm-ext/mvnw`), Python 3.12 (documentation scripts), Node.js LTS, and the four-node
-QBFT Besu network from [`../besu/`](../besu/), started automatically by
-[`besu/start-network.sh`](../besu/start-network.sh) every time the codespace starts.
+QBFT Besu network from [`../besu/`](../besu/). When the container is created it runs the one-time build
+(`bash scripts/live-e2e.sh build`: Node dependencies, the `cdm-ext` install and the collateral service jar). Every time
+it starts it runs `bash scripts/live-e2e.sh up`, which starts the Besu network, deploys the contracts if they are not
+deployed, and starts the store, gateways, services and the console dev server on 5173
+([`runbook-e2e.md`](runbook-e2e.md) section 4). In a codespace the console does not yet reach the services: see
+section 4 below.
 
 **Tested** (2026-10-16): `start-network.sh` with the `docker` command replaced by a native Besu 26.9.0 binary (Java 25,
 Linux): it generated the genesis and four keys, gave each node its key and wrote `besu/.env`; a second run reused
@@ -67,30 +71,35 @@ needs (later: the party consoles), keep test keys only, and set the ports back t
 
 ## 4. The party console
 
-Every time the codespace starts, the dev container builds the console and serves the build on port 5173
-([`../console/serve.sh`](../console/serve.sh)). Open it from the **Ports** panel ("Collateral Console"), or make that
-port public to show it to someone else (it serves only the console; the Besu ports stay private).
+Every time the container starts, `scripts/live-e2e.sh up` starts the console dev server on 5173 together with the
+services on 8001 and 8002. Open it from the **Ports** panel ("Collateral Console"). Check the stack from the terminal
+with `bash scripts/live-e2e.sh status`; its log is `stack.log` at the repository root.
 
-**After new commits** (or in a codespace created before the console existed), update and redeploy from the terminal:
+**In a local dev container** (VS Code Dev Containers) the forwarded ports map to `localhost`, so the console reaches
+the services at its default `http://localhost:8001` / `http://localhost:8002`.
+
+**In a codespace** the browser reaches forwarded ports at `https://<codespace-name>-<port>.app.github.dev`, so the
+console's default service URLs do not resolve and the live pages show no data. Making this work (setting
+`VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL`, port visibility, CORS) is `task-codespaces-live-stack`.
+
+**After new commits**, rebuild and restart from the terminal:
 
 ```bash
 git pull
-bash console/serve.sh
+bash scripts/live-e2e.sh build
+bash scripts/live-e2e.sh up
 ```
 
-The script reinstalls dependencies only when the lockfile changed, rebuilds, and replaces the running server. For
-live editing instead, stop it (`kill -- -$(cat console/.preview.pid)`) and run `cd console && npm run dev`. Tests and
-modes: [`../console/README.md`](../console/README.md).
-
-## 5. Later
-
-The same dev container will build the Java services (Maven wrapper) and start them and N participant stacks.
+`up` replaces the running stack. A production build of the console only, without the services, is still available with
+`bash console/serve.sh` (port 5173; stop the stack first with `bash scripts/live-e2e.sh down`, or set `CONSOLE_PORT`).
+Tests and modes: [`../console/README.md`](../console/README.md).
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
 | Codespace creation offers no 4-core machine | The account's allowed machine types or quota; a 2-core machine can run the network but may be slow |
-| `check-network.sh` shows `Connection refused` | `docker compose -f besu/docker-compose.yml ps`; run `bash besu/start-network.sh`; the creation log (**View Creation Log**) shows the post-start output |
+| `check-network.sh` shows `Connection refused` | `docker compose -f besu/docker-compose.yml ps`; run `bash scripts/live-e2e.sh up`; the creation log (**View Creation Log**) shows the post-create and post-start output |
+| `live-e2e.sh`: `missing services/collateral/target/collateral-service.jar` | The post-create build failed or did not run; run `bash scripts/live-e2e.sh build` and read its output |
 | `Docker is not running` from `start-network.sh` | The Docker-in-Docker daemon did not start; rebuild the container (**Codespaces: Rebuild Container**) |
 | Blocks stay at `0x0` | At least three nodes must run; `docker compose -f besu/docker-compose.yml logs` |

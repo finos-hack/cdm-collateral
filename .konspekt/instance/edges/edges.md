@@ -96,7 +96,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdatalayer-carrier | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-cdm-payload-carrier |  | proposed |
 | e-mrk-carrier-e2ewiring | marks | waypoint:wp-adr-cdm-payload-carrier | node:task-e2e-wiring |  | proposed |
 | e-dec-e2ewiring-cilivestack | decomposes | node:task-e2e-wiring | node:task-ci-live-e2e-stack |  | accepted |
-| e-note-cilivestack-steps | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-steps |  | proposed |
+| e-note-cilivestack-steps | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-steps |  | rejected |
 | e-architecture-payload-carrier-revision-produces | produces | node:goal-architecture-design | artifact:artifact-architecture-payload-carrier-revision |  | accepted |
 | e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | accepted |
 | e-gap-register-g26-carrier-produces | produces | node:task-cdm-gap-closure | artifact:artifact-gap-register-g26-carrier |  | accepted |
@@ -106,3 +106,15 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-livestacklocal-cilivestack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-ci-live-e2e-stack |  | accepted |
 | e-mrk-livestacklocal-devcontainerstack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-devcontainer-live-stack |  | accepted |
 | e-note-cilivestack-status | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-e2e-stack-status |  | accepted |
+| e-note-cilivestack-first-run | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-first-run |  | accepted |
+| e-sup-livestacklocal-cilivestacksteps | supersedes | waypoint:wp-adr-live-stack-local-ui-driven | noteworthy:nw-ci-live-stack-steps |  | accepted |
+| e-dec-e2ewiring-devcontainerstartup | decomposes | node:task-e2e-wiring | node:task-devcontainer-stack-startup |  | proposed |
+| e-lnk-devcontainerstack-devcontainerstartup | links | node:task-devcontainer-live-stack | node:task-devcontainer-stack-startup |  | proposed |
+| e-dec-e2ewiring-codespacesstack | decomposes | node:task-e2e-wiring | node:task-codespaces-live-stack |  | proposed |
+| e-lnk-devcontainerstartup-codespacesstack | links | node:task-devcontainer-stack-startup | node:task-codespaces-live-stack |  | proposed |
+| e-dec-e2ewiring-remainingflows | decomposes | node:task-e2e-wiring | node:task-e2e-remaining-flows |  | proposed |
+| e-dec-bizcase-topupmodelling | decomposes | node:goal-business-case | node:task-revaluation-top-up-modelling |  | proposed |
+| e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | proposed |
+| e-dec-e2ewiring-livecheckout | decomposes | node:task-e2e-wiring | node:task-live-flow-checkout-script |  | proposed |
+| e-lnk-remainingflows-livecheckout | links | node:task-e2e-remaining-flows | node:task-live-flow-checkout-script |  | proposed |
+| e-lnk-cilivestack-livecheckout | links | node:task-ci-live-e2e-stack | node:task-live-flow-checkout-script |  | proposed |

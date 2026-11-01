@@ -445,3 +445,15 @@ excluded.
 | task-ci-live-e2e-stack | e7f4e272be1f3d7ccfb1eab23a5b5ddd59dce9d4 | .gitignore | 2026-10-30T02:12:11Z |
 | task-devcontainer-live-stack | d4b0fcb4a8f81abc9fe0f221967475013a0cf558 | .devcontainer/devcontainer.json | 2026-10-30T02:12:11Z |
 | task-ci-live-e2e-stack | 3caa6f534296f2990560fa5c0c0fe91364abfcf5 | .gitattributes | 2026-10-30T02:12:11Z |
+| task-ci-live-e2e-stack | a40dfd46d27375fe41855c42dee53963b6ba261c | docs/runbook-e2e.md | 2026-10-31T23:59:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | .devcontainer/devcontainer.json | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | scripts/live-e2e.sh | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | .gitattributes | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | docs/setup-codespaces.md | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | docs/runbook-e2e.md | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 24ae23451a699619108bf0a62d6e634799317ab6 | docs/runbook-e2e.md | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | c9e0983644bfd4d1099a7a19dc814e0c893ec0bd | .devcontainer/devcontainer.json | 2026-11-01T16:30:17Z |
+| task-devcontainer-stack-startup | c9e0983644bfd4d1099a7a19dc814e0c893ec0bd | orchestrate.mjs | 2026-11-01T16:30:17Z |
+| task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | console/playwright.config.ts | 2026-11-01T19:34:22Z |
+| task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | docs/runbook-e2e.md | 2026-11-01T19:34:22Z |
+| task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | .konspekt/instance/nodes/task/task-devcontainer-stack-startup.md | 2026-11-01T19:34:22Z |

@@ -1,7 +1,7 @@
 ```yaml
 id: nw-ci-live-stack-steps
 kind: constraint
-review: proposed
+review: rejected
 provenance:
   conversationId: e2e-wiring
   sourceRef: e3bf4d0de78a40ac0ad2235e99f061beda13e158
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-10-25T13:12:45Z
   confidence: 0.8
 createdAt: 2026-10-25T13:12:45Z
-updatedAt: 2026-10-25T13:12:45Z
+updatedAt: 2026-11-01T00:10:00Z
 ```
 # CI full-stack e2e: steps to run the one live flow completely
 
