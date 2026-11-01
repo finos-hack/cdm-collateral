@@ -1,8 +1,9 @@
-// Bring up the per-participant runtime stack for the end-to-end cycle (task-e2e-wiring): two ledger gateways
-// (bank-a, bank-b) and two collateral workflow services (A pledgor, B secured party), plus the console dev server.
+// Bring up the per-participant runtime stack for the end-to-end cycle (task-e2e-wiring): three ledger gateways
+// (bank-a, bank-b and the market operator mkt, which holds the oracle publisher key), the oracle service, two
+// collateral workflow services (A pledgor, B secured party), plus the console dev server.
 // Preconditions, checked below: the Besu network is running (besu/start-network.sh or `docker compose up` in besu/)
 // and the contracts are deployed (contracts/deployments/besu.json exists; `npm run deploy:besu` in contracts/).
-// The service jar must be built once: `mvn -DskipTests package` in services/collateral/.
+// The service jars must be built once: `mvn -DskipTests package` in services/collateral/ and services/oracle/.
 //
 // Usage: node orchestrate.mjs   (Ctrl-C stops every child process). Cross-platform (Windows/Linux/macOS).
 import { spawn } from "node:child_process";
@@ -13,6 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const jar = path.join(root, "services", "collateral", "target", "collateral-service.jar");
+const oracleJar = path.join(root, "services", "oracle", "target", "oracle-service.jar");
 const registry = path.join(root, "contracts", "deployments", "besu.json");
 
 // --ci: omit the console dev server (5173). In CI the Playwright config serves its own console preview on 4173
@@ -26,6 +28,10 @@ if (!fs.existsSync(registry)) {
 }
 if (!fs.existsSync(jar)) {
   console.error(`missing ${path.relative(root, jar)} — run "mvn -DskipTests package" in services/collateral/ first.`);
+  process.exit(1);
+}
+if (!fs.existsSync(oracleJar)) {
+  console.error(`missing ${path.relative(root, oracleJar)} — run "mvn -DskipTests package" in services/oracle/ first.`);
   process.exit(1);
 }
 
@@ -52,11 +58,15 @@ run("store", "node", ["src/server.ts"], path.join(root, "store"), { PORT: "8300"
 const gw = path.join(root, "gateway");
 run("gw-a", "node", ["src/server.ts"], gw, { NODE: "bank-a", PORT: "8201" });
 run("gw-b", "node", ["src/server.ts"], gw, { NODE: "bank-b", PORT: "8202" });
+// The market operator's gateway signs with the mkt key, the oracle publisher (contracts/scripts/deploy.ts); only the
+// oracle service writes through it (architecture relationship oracle-to-gateway).
+run("gw-mkt", "node", ["src/server.ts"], gw, { NODE: "mkt", PORT: "8200" });
 
 // Give the gateways a moment before the services connect to them.
 setTimeout(() => {
-  run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", ROLE: "Pledgor", PORT: "8001", GATEWAY_URL: "http://localhost:8201", STORE_TOKEN: token["bank-a"] });
-  run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", STORE_TOKEN: token["bank-b"] });
+  run("oracle", "java", ["-jar", oracleJar], root, { PORT: "8100", GATEWAY_URL: "http://localhost:8200" });
+  run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", ROLE: "Pledgor", PORT: "8001", GATEWAY_URL: "http://localhost:8201", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-a"] });
+  run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-b"] });
 }, 2000);
 
 if (!ci) {
@@ -68,6 +78,8 @@ stack starting:
   store             http://localhost:8300/store/v1
   gateway  bank-a   http://localhost:8201/ledger/v1
   gateway  bank-b   http://localhost:8202/ledger/v1
+  gateway  mkt      http://localhost:8200/ledger/v1   (oracle publisher)
+  oracle            http://localhost:8100/oracle/v1
   service  A (pledgor)        http://localhost:8001/api/v1
   service  B (secured party)  http://localhost:8002/api/v1${ci ? "" : `
   console  http://localhost:5173/#/live/B  (secured party)  and  /#/live/A  (pledgor)`}
