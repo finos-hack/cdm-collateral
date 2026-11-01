@@ -297,6 +297,22 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 
 ## 10. Verification status of this runbook
 
+### 2026-11-01 — dev container with `appPort`, both live flows driven from the Windows host
+
+A fresh dev container from commit `c9e0983`, created with `@devcontainers/cli` 0.90.0. The CLI applied `appPort`: the
+`docker run` line carries `-p 127.0.0.1:5173:5173 -p 127.0.0.1:8001:8001 -p 127.0.0.1:8002:8002`. Build and start-up
+passed as in the entry below. From the Windows host, `localhost:5173` served the container's console dev server
+(`CONSOLE_HOST=0.0.0.0`), `localhost:8001` and `:8002` answered `/api/v1/health` with `ok: true`, and a CORS preflight
+returned `204` with `Access-Control-Allow-Origin: *`. Run from `console/` on the host:
+
+```bash
+E2E_BASE_URL=http://localhost:5173 E2E_REQUIRE_STACK=1 npx playwright test e2e/live.spec.ts
+```
+
+Result: 2 passed (`flow-im-margin-call-pledge` 38.3 s, `flow-vm-margin-call-transfer` 31.7 s). Both services'
+`/api/v1/state` then listed the IM and VM calls as `settled`. No IDE was involved; VS Code's `forwardPorts` handling
+was not exercised.
+
 ### 2026-11-01 — dev container, created with `@devcontainers/cli` 0.90.0 on Docker Desktop (Windows 11)
 
 A fresh checkout of commit `383a6f5`, so no Besu files, no deployment and no build output. `postCreateCommand`
