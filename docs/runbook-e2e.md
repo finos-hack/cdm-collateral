@@ -75,7 +75,14 @@ bash scripts/live-e2e.sh status   # print the five health checks and the console
 bash scripts/live-e2e.sh down     # stop store, gateways, services and console; stop the Besu containers (chain kept)
 bash scripts/live-e2e.sh reset    # down, then delete the chain, the deployment and the off-chain state (section 8)
 bash scripts/live-e2e.sh build    # the one-time build of section 3 (mvn if on PATH, else cdm-ext/mvnw)
+bash scripts/live-e2e.sh check    # run every live flow (console/e2e/live.spec.ts) against the running stack
 ```
+
+`check` fails at once if a health check or the console is down. It installs Playwright's Chromium if absent, then
+runs the live specs against the console on 5173 (`E2E_BASE_URL` overrides the URL). Extra arguments go to
+Playwright, for example `bash scripts/live-e2e.sh check --grep flow-vm`. The exit code is Playwright's. Each run of
+the flows moves tokens on the chain, so on a long-lived chain the pledgor eventually lacks the free balance a flow
+needs (see the 2026-11-01 `check` entry in section 10); `reset` gives a fresh chain.
 
 The dev container runs `build` once when it is created and `up` every time it starts
 ([`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json)).
@@ -297,6 +304,18 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 
 ## 10. Verification status of this runbook
 
+### 2026-11-01 — `scripts/live-e2e.sh check` on Windows 11 (Git Bash, Docker Desktop)
+
+- With the stack down, `check` printed the health checks and exited 1 with "stack not up".
+- After `up` (existing chain and deployment, store `count: 144`), `check` ran both live specs:
+  `flow-im-margin-call-pledge` passed, and `flow-vm-margin-call-transfer` failed with the call left `agreed`. In
+  `stack.log`, gateway A's `settleByTransfer` reverted. The pledgor had 4,185,000 tUSD free, and the VM test transfers
+  between 1,000,000 and 9,999,000 tUSD per run (`console/e2e/live.spec.ts`); every VM call left `agreed` on this
+  chain (6,933,000 to 9,569,000) is above that balance. This is test data running out on a long-lived chain, not a
+  fault in `check`.
+- `check --grep flow-vm` ran only the VM spec, so Playwright arguments pass through; it failed the same way.
+- `check` exited 1 in both failing runs, matching Playwright's result.
+
 ### 2026-11-01 — dev container with `appPort`, both live flows driven from the Windows host
 
 A fresh dev container from commit `c9e0983`, created with `@devcontainers/cli` 0.90.0. The CLI applied `appPort`: the
@@ -364,5 +383,4 @@ Observed:
 Not verified in that container (no Docker): the Besu steps, `deploy:besu`, `npm run cycle`, `orchestrate.mjs` end to
 end, and the Playwright live specs. The 2026-10-29 to 2026-10-31 entries above cover those steps.
 
-Not verified anywhere yet: `scripts/live-e2e.sh up` inside the dev container, and the full reset (section 8 or
-`live-e2e.sh reset`).
+Not verified anywhere yet: the full reset (section 8 or `live-e2e.sh reset`), and `check` inside the dev container.
