@@ -356,3 +356,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-remainingflows | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
 | edge:e-dec-bizcase-topupmodelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
 | edge:e-lnk-remainingflows-topupmodelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| node:task-live-flow-checkout-script | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| node:task-live-flow-checkout-script | status |  | open | 2026-11-01T16:22:08Z |  |  |
+| edge:e-dec-e2ewiring-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
