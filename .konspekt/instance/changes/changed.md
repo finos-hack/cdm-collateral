@@ -454,3 +454,6 @@ excluded.
 | task-devcontainer-stack-startup | 24ae23451a699619108bf0a62d6e634799317ab6 | docs/runbook-e2e.md | 2026-11-01T01:50:00Z |
 | task-devcontainer-stack-startup | c9e0983644bfd4d1099a7a19dc814e0c893ec0bd | .devcontainer/devcontainer.json | 2026-11-01T16:30:17Z |
 | task-devcontainer-stack-startup | c9e0983644bfd4d1099a7a19dc814e0c893ec0bd | orchestrate.mjs | 2026-11-01T16:30:17Z |
+| task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | console/playwright.config.ts | 2026-11-01T19:34:22Z |
+| task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | docs/runbook-e2e.md | 2026-11-01T19:34:22Z |
+| task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | .konspekt/instance/nodes/task/task-devcontainer-stack-startup.md | 2026-11-01T19:34:22Z |
