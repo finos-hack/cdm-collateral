@@ -457,3 +457,6 @@ excluded.
 | task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | console/playwright.config.ts | 2026-11-01T19:34:22Z |
 | task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | docs/runbook-e2e.md | 2026-11-01T19:34:22Z |
 | task-devcontainer-stack-startup | b6d0a52a2b12cde68ae8275d43efed4d076f33e9 | .konspekt/instance/nodes/task/task-devcontainer-stack-startup.md | 2026-11-01T19:34:22Z |
+| task-live-flow-checkout-script | 68bcc94bed8a1a906c48094062cbd9934bee2f39 | scripts/live-e2e.sh | 2026-11-01T21:51:13Z |
+| task-live-flow-checkout-script | 68bcc94bed8a1a906c48094062cbd9934bee2f39 | docs/runbook-e2e.md | 2026-11-01T21:51:13Z |
+| task-live-flow-checkout-script | 68bcc94bed8a1a906c48094062cbd9934bee2f39 | .konspekt/instance/nodes/task/task-live-flow-checkout-script.md | 2026-11-01T21:51:13Z |
