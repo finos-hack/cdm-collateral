@@ -33,6 +33,7 @@ public final class App {
     private final Config cfg;
     private final Store store;
     private final Gateway gw;
+    private final Gateway oracle; // the shared oracle service (service-to-oracle), same JSON conventions
     private final PayloadStore payloads;
     private final List<String> callParties; // reader allowlist for stored docs: both counterparties (A, B)
     private final Map<String, String> symbolByAddress; // lowercase address -> symbol
@@ -46,6 +47,7 @@ public final class App {
         this.cfg = cfg;
         this.store = new Store(cfg.dbPath);
         this.gw = new Gateway(cfg.gatewayUrl);
+        this.oracle = new Gateway(cfg.oracleUrl, "/oracle/v1");
         this.payloads = new PayloadStore(cfg.storeUrl, cfg.storeToken);
         this.callParties = List.of(cfg.partyAddress("A"), cfg.partyAddress("B"));
         this.symbolByAddress = cfg.tokenSymbols();
@@ -83,6 +85,7 @@ public final class App {
         app.post("/api/v1/calls/{id}/pledge", this::pledge);
         app.post("/api/v1/calls/{id}/transfer", this::transfer);
         app.post("/api/v1/calls/{id}/return", this::returnCollateral);
+        app.post("/api/v1/calls/{id}/enforce", this::enforce);
         app.sse("/api/v1/events", client -> { // the console subscribes here (EventSource sends Accept: text/event-stream)
             client.keepAlive();
             client.sendComment("connected");
@@ -111,6 +114,7 @@ public final class App {
                     resp.body().forEach(line -> {
                         if (line.startsWith("data:")) {
                             String data = line.substring(5).trim();
+                            onLedgerEvent(data);
                             for (SseClient c : sseClients) {
                                 try { c.sendEvent("step", data); } catch (Exception ignored) { }
                             }
@@ -124,6 +128,39 @@ public final class App {
         }, "gateway-event-relay");
         t.setDaemon(true);
         t.start();
+    }
+
+    /**
+     * Act on one pushed chain event before relaying it. Returned, Enforced and DefaultPublished are recorded in this
+     * party's store (flow-return transition 14, flow-default-enforcement transition 8: the pledgor's service records the
+     * default and each service records the enforcement). A SettleCall step is folded at once, so each service holds the
+     * settled MarginCallState without waiting for a console to ask. A failure here never stops the relay.
+     */
+    private void onLedgerEvent(String data) {
+        try {
+            JsonNode e = Config.MAPPER.readTree(data);
+            String block = e.path("block").asText("");
+            long logIndex = e.path("logIndex").asLong(0);
+            if (e.has("event")) {
+                String event = e.get("event").asText();
+                String callId = e.hasNonNull("callId") ? e.get("callId").asText() : null;
+                String party = e.hasNonNull("party") ? e.get("party").asText() : null;
+                if (event.equals("DefaultPublished") || involvesMe(callId)) {
+                    store.recordEvent(event, callId, party, block, logIndex, data);
+                }
+            } else if ("SettleCall".equals(e.path("step").asText()) && involvesMe(e.path("callId").asText(null))) {
+                cdmStateFor(e.get("callId").asText());
+            }
+        } catch (Exception ex) {
+            System.err.println("event relay: could not process " + data + ": " + ex.getMessage());
+        }
+    }
+
+    /** Whether a call is one this party is a counterparty to (the gateway pushes every call on the chain). */
+    private boolean involvesMe(String callId) {
+        if (callId == null) return false;
+        JsonNode c = gw.get("/calls/" + callId);
+        return c.get("from").asText().equalsIgnoreCase(cfg.myAddress) || c.get("to").asText().equalsIgnoreCase(cfg.myAddress);
     }
 
     private void context(Context ctx) {
@@ -185,6 +222,9 @@ public final class App {
             }
             call.put("proposals", proposals);
             call.put("messages", store.messagesFor(callId));
+            List<String> events = store.eventsFor(callId);
+            call.put("events", events);
+            call.put("enforced", events.contains("Enforced"));
             callList.add(call);
         }
 
@@ -200,7 +240,14 @@ public final class App {
             balances.add(new LinkedHashMap<>(Map.of("token", sym, "free", free, "pledged", pledged)));
         });
 
-        ctx.json(new LinkedHashMap<>(Map.of("party", cfg.partyId, "role", cfg.role, "calls", callList, "balances", balances)));
+        // Default status of both counterparties, read from the oracle feed through this party's own gateway.
+        Map<String, Object> defaults = new LinkedHashMap<>();
+        for (String p : List.of("A", "B")) {
+            defaults.put(p, gw.get("/defaults/" + cfg.partyAddress(p)).get("inDefault").asBoolean());
+        }
+
+        ctx.json(new LinkedHashMap<>(Map.of("party", cfg.partyId, "role", cfg.role, "calls", callList, "balances", balances,
+                "defaults", defaults)));
     }
 
     /**
@@ -392,5 +439,25 @@ public final class App {
         String path = via.equals("transfer") ? "/return-transfer" : "/return";
         gw.post("/calls/" + callId + path, Map.of("assets", gwAssets, "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "cdmHash", cdm.hash, "via", via));
+    }
+
+    /**
+     * Declare the pledgor's default and enforce against the pledged initial margin (flow-default-enforcement). The
+     * secured party's service forwards the default notice to the oracle service (transition 3), which publishes it to
+     * the oracle feed through the operator's gateway with the publisher key (transitions 4-5); once that write is mined
+     * this service sends enforce(callId) to its own gateway, signed with the secured party key (transition 5). The
+     * control contract checks the feed and moves every pledged token to the secured party (transitions 6-7).
+     */
+    private void enforce(Context ctx) {
+        String callId = ctx.pathParam("id");
+        JsonNode c = gw.get("/calls/" + callId);
+        if (c.get("kind").asInt() != CALL_KIND.get("IM")) throw new RuntimeException("enforcement is against an initial-margin call");
+        if (!c.get("from").asText().equalsIgnoreCase(cfg.myAddress))
+            throw new RuntimeException("only the secured party that issued the call (" + c.get("from").asText() + ") may enforce");
+        String pledgor = c.get("to").asText();
+        JsonNode notice = oracle.post("/defaults", Map.of("party", pledgor, "inDefault", true, "notifiedBy", cfg.bankName(cfg.partyId)));
+        JsonNode enforced = gw.post("/calls/" + callId + "/enforce", Map.of());
+        ctx.json(new LinkedHashMap<>(Map.of("ok", true, "pledgor", pledgor,
+                "defaultTx", notice.path("tx").path("txHash").asText(), "enforceTx", enforced.path("txHash").asText())));
     }
 }
