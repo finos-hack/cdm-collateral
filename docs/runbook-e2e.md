@@ -84,6 +84,9 @@ Playwright, for example `bash scripts/live-e2e.sh check --grep flow-vm`. The exi
 the flows moves tokens on the chain, so on a long-lived chain the pledgor eventually lacks the free balance a flow
 needs (see the 2026-11-01 `check` entry in section 10); `reset` gives a fresh chain.
 
+With the dev container, run `check` on the host, not inside the container: `appPort` publishes 5173, 8001 and 8002
+on the host's `127.0.0.1`, so the same command tests the container's stack from outside it.
+
 The dev container runs `build` once when it is created and `up` every time it starts
 ([`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json)).
 
@@ -383,4 +386,4 @@ Observed:
 Not verified in that container (no Docker): the Besu steps, `deploy:besu`, `npm run cycle`, `orchestrate.mjs` end to
 end, and the Playwright live specs. The 2026-10-29 to 2026-10-31 entries above cover those steps.
 
-Not verified anywhere yet: the full reset (section 8 or `live-e2e.sh reset`), and `check` inside the dev container.
+Not verified anywhere yet: the full reset (section 8 or `live-e2e.sh reset`).
