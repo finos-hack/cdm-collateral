@@ -361,3 +361,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| node:task-devcontainer-stack-startup | status | open | resolved | 2026-11-01T21:07:28Z | 71e098075ed6f5310fcd0558fcc16984f99b0612 | denisurusov |

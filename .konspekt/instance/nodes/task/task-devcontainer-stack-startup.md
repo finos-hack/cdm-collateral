@@ -2,7 +2,7 @@
 id: task-devcontainer-stack-startup
 type: task
 title: Build and start the full live stack automatically when the devcontainer is created and started
-status: open
+status: resolved
 review: proposed
 provenance:
   conversationId: devcontainer-live-stack
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
 createdAt: 2026-11-01T01:00:00Z
-updatedAt: 2026-11-01T19:34:00Z
+updatedAt: 2026-11-01T21:07:28Z
 ```
 # Task: build and start the full live stack automatically in the devcontainer
 
@@ -50,3 +50,10 @@ the stack, and from the Windows host both live specs passed against the containe
 (`flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`), with both parties showing the calls `settled`
 (`docs/runbook-e2e.md` section 10). Every condition in "Done when" is met; resolving the task is the project owner's
 decision.
+
+## Resolution (2026-11-01)
+
+Resolved by the project owner after the dev container run recorded above: the build ran when the container was
+created, the stack came up healthy when it started, and both live flows passed from a host browser through the ports
+published by `appPort`. Not exercised at resolution: VS Code's `forwardPorts` handling (no IDE was used). Codespaces
+remains [[task-codespaces-live-stack]].
