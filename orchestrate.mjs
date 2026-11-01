@@ -59,8 +59,12 @@ setTimeout(() => {
   run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", STORE_TOKEN: token["bank-b"] });
 }, 2000);
 
+// CONSOLE_HOST: the interface the console dev server listens on. Unset, Vite listens on localhost only. The dev
+// container sets it to 0.0.0.0 (.devcontainer/devcontainer.json containerEnv), because there the port is published by
+// Docker (appPort), which reaches the container's network interface, not its loopback (task-devcontainer-stack-startup).
 if (!ci) {
-  run("console", process.platform === "win32" ? "npm.cmd" : "npm", ["run", "dev", "--", "--port", "5173"], path.join(root, "console"), {});
+  const hostArgs = process.env.CONSOLE_HOST ? ["--host", process.env.CONSOLE_HOST] : [];
+  run("console", process.platform === "win32" ? "npm.cmd" : "npm", ["run", "dev", "--", "--port", "5173", ...hostArgs], path.join(root, "console"), {});
 }
 
 console.log(`
