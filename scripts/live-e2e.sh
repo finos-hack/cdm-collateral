@@ -12,10 +12,13 @@
 #   reset   down, then delete the chain, the deployment and the off-chain state (runbook section 8). The next up
 #           re-creates the Besu network and redeploys.
 #   status  Print the five health checks and the console port without changing anything.
+#   build   The one-time build of docs/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
+#           cdm-ext install into ~/.m2, then the collateral service jar. Uses mvn when on PATH, else cdm-ext/mvnw. The
+#           dev container runs it once on creation (postCreateCommand).
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
-# JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition — see
-# docs/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
+# JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
+# see docs/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
 # contracts/deployments/besu.json is absent; it never redeploys over an existing deployment (a redeploy would orphan
 # the stored documents that reference the current contract addresses).
 set -euo pipefail
@@ -133,8 +136,14 @@ cmd_up() {
   deploy_if_needed
   say "starting store, gateways, services and console (orchestrate.mjs)"
   # Detached so this script can health-check and return, leaving the stack running. orchestrate.mjs (no --ci) also
-  # starts the console dev server on 5173, which is what the engineer opens to drive the flow.
-  nohup node orchestrate.mjs > "$stack_log" 2>&1 &
+  # starts the console dev server on 5173, which is what the engineer opens to drive the flow. setsid (Linux) puts it
+  # in its own session so it survives the end of the calling shell, e.g. the dev container's postStartCommand; Git
+  # Bash on Windows has no setsid and uses nohup alone.
+  if command -v setsid >/dev/null 2>&1; then
+    setsid nohup node orchestrate.mjs > "$stack_log" 2>&1 < /dev/null &
+  else
+    nohup node orchestrate.mjs > "$stack_log" 2>&1 &
+  fi
   echo $! > "$pidfile"
   if wait_healthy; then
     say ""
@@ -172,10 +181,26 @@ cmd_reset() {
   say "reset done — the next 'up' re-creates the besu network and redeploys the contracts."
 }
 
+cmd_build() {
+  local pkg mvn
+  for pkg in contracts gateway store console; do
+    say "npm ci in $pkg/"
+    npm --prefix "$pkg" ci --no-audit --no-fund
+  done
+  if command -v mvn >/dev/null 2>&1; then mvn=(mvn); else mvn=(bash cdm-ext/mvnw); fi
+  say "installing cdm-ext into the local Maven repository (${mvn[*]})"
+  "${mvn[@]}" -B -q -f cdm-ext/pom.xml -DskipTests install
+  say "building the collateral service jar"
+  "${mvn[@]}" -B -q -f services/collateral/pom.xml -DskipTests package
+  [ -f "$jar" ] || die "build finished but $jar is missing"
+  say "build done — start the stack with: bash scripts/live-e2e.sh up"
+}
+
 case "${1:-up}" in
   up) cmd_up ;;
+  build) cmd_build ;;
   down) cmd_down ;;
   reset) cmd_reset ;;
   status) print_status ;;
-  *) die "unknown subcommand '${1}' — use: up | down | reset | status" ;;
+  *) die "unknown subcommand '${1}' — use: up | down | reset | status | build" ;;
 esac

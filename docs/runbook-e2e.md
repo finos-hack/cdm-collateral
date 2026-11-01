@@ -74,7 +74,11 @@ bash scripts/live-e2e.sh up       # start (or replace) the stack, wait for the h
 bash scripts/live-e2e.sh status   # print the five health checks and the console port; changes nothing
 bash scripts/live-e2e.sh down     # stop store, gateways, services and console; stop the Besu containers (chain kept)
 bash scripts/live-e2e.sh reset    # down, then delete the chain, the deployment and the off-chain state (section 8)
+bash scripts/live-e2e.sh build    # the one-time build of section 3 (mvn if on PATH, else cdm-ext/mvnw)
 ```
+
+The dev container runs `build` once when it is created and `up` every time it starts
+([`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json)).
 
 `up` does the following, in order:
 
@@ -235,7 +239,7 @@ curl -s localhost:8002/api/v1/calls/<callId>/cdm-state    # party B's fold; its 
 | Gateways | `[gw-a]`, `[gw-b]` | startup line only | `<METHOD> <path> failed: <message>` per failed request (contract reverts appear here); `watchSteps error: <message>` when the Besu WebSocket subscription fails |
 | Services | `[svc-a]`, `[svc-b]` | startup line only | uncaught startup exceptions (stack trace). Request errors are **not** printed: they return HTTP 400 `{"error": "<message>"}`, visible in the browser devtools Network tab or the console UI. A failed gateway event-stream connection is retried every 2 s without logging |
 | Console | `[console]` | Vite URL lines | Vite compile errors; browser-side errors appear in the browser devtools console |
-| Console (dev container) | `console/.preview.log` | the production preview started by `console/serve.sh` | — |
+| Console preview (`console/serve.sh`, run by hand) | `console/.preview.log` | the production preview | — |
 
 State that persists across stack restarts:
 
@@ -285,7 +289,7 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 | Service actions return 400 mentioning the store, or the store returns 401 / 403 | store token mismatch: a service or the store was restarted on its own, so its token no longer matches (tokens are minted per `orchestrate.mjs` run) | stop and restart `orchestrate.mjs` as a whole; do not restart one child |
 | `Cannot find package 'viem'` from `[store]` or `[gw-*]` | Node dependencies not installed | `npm --prefix store ci`, `npm --prefix gateway ci` |
 | `SyntaxError` on a type annotation in a `.ts` file | Node too old for type stripping | Node 24 (or 22.18 or later) |
-| `[console]` reports `Port 5173 is in use, trying another one…` | the dev container's `console/serve.sh` preview holds 5173 | use the URL printed by `[console]`, or stop the preview first: `kill -- -$(cat console/.preview.pid)` |
+| `[console]` reports `Port 5173 is in use, trying another one…` | a `console/serve.sh` preview started by hand holds 5173 (`scripts/live-e2e.sh up` stops it first) | use the URL printed by `[console]`, or stop the preview first: `kill -- -$(cat console/.preview.pid)` |
 | Console live page shows no calls or does not update | service on 8001/8002 down, or its gateway event stream down | section 4, step 5; check `[gw-*]` for `watchSteps error` |
 | `check-network.sh`: `Connection refused` | containers not running | `docker compose -f besu/docker-compose.yml ps`; `bash besu/start-network.sh` |
 | Block number stays at `0x0` | fewer than three validators running | `docker compose -f besu/docker-compose.yml logs` |

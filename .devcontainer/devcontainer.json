@@ -1,6 +1,8 @@
 {
   // Cloud or local development environment for the CDM collateral prototype.
-  // GitHub Codespaces: docs/setup-codespaces.md. On every start: the four-node Besu network, then the console build on 5173.
+  // GitHub Codespaces: docs/setup-codespaces.md. On creation: the one-time build (scripts/live-e2e.sh build). On every
+  // start: the full live stack (scripts/live-e2e.sh up) — Besu, contracts if not deployed, store, gateways, services
+  // and the console dev server on 5173 (task-devcontainer-stack-startup).
   "name": "cdm-collateral",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
   "hostRequirements": { "cpus": 4, "memory": "16gb", "storage": "32gb" },
@@ -10,8 +12,8 @@
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
   },
-  "postCreateCommand": "npm --prefix console ci",
-  "postStartCommand": "bash besu/start-network.sh; bash console/serve.sh",
+  "postCreateCommand": "bash scripts/live-e2e.sh build",
+  "postStartCommand": "bash scripts/live-e2e.sh up",
   // 8001/8002: the console calls the collateral services directly from the browser (console/src/domain/liveApi.ts),
   // so they must be forwarded for the live flow to work (task-devcontainer-live-stack).
   "forwardPorts": [5173, 8001, 8002, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],

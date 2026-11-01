@@ -12,3 +12,7 @@
 # Shell scripts run under bash (Linux, Codespaces, WSL, Git Bash). With core.autocrlf=true a Windows checkout would
 # write CRLF, and bash then fails with "$'\r': command not found". Keep LF in every working copy.
 *.sh text eol=lf
+
+# The Maven wrapper is a shell script without a .sh extension. A CRLF copy fails in a Linux dev container that mounts a
+# Windows checkout (scripts/live-e2e.sh build falls back to it when mvn is not on PATH).
+mvnw text eol=lf
