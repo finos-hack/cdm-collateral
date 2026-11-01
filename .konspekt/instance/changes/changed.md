@@ -445,3 +445,4 @@ excluded.
 | task-ci-live-e2e-stack | e7f4e272be1f3d7ccfb1eab23a5b5ddd59dce9d4 | .gitignore | 2026-10-30T02:12:11Z |
 | task-devcontainer-live-stack | d4b0fcb4a8f81abc9fe0f221967475013a0cf558 | .devcontainer/devcontainer.json | 2026-10-30T02:12:11Z |
 | task-ci-live-e2e-stack | 3caa6f534296f2990560fa5c0c0fe91364abfcf5 | .gitattributes | 2026-10-30T02:12:11Z |
+| task-ci-live-e2e-stack | a40dfd46d27375fe41855c42dee53963b6ba261c | docs/runbook-e2e.md | 2026-10-31T23:59:00Z |
