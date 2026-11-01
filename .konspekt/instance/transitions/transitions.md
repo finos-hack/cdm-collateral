@@ -341,3 +341,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-cilivestack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
 | edge:e-sup-livestacklocal-cilivestacksteps | review |  | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
 | node:task-devcontainer-live-stack | status | open | resolved | 2026-11-01T00:40:00Z | 7a0b40227dfaa8c090f24ff18dadc5de671dafb5 | denisurusov |
+| node:task-devcontainer-stack-startup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| node:task-devcontainer-stack-startup | status |  | open | 2026-11-01T01:00:00Z |  |  |
+| node:task-codespaces-live-stack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| node:task-codespaces-live-stack | status |  | open | 2026-11-01T01:00:00Z |  |  |
+| edge:e-dec-e2ewiring-devcontainerstartup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| edge:e-lnk-devcontainerstack-devcontainerstartup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| edge:e-dec-e2ewiring-codespacesstack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| edge:e-lnk-devcontainerstartup-codespacesstack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
