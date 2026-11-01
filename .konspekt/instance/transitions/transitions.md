@@ -362,3 +362,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | node:task-devcontainer-stack-startup | status | open | resolved | 2026-11-01T21:07:28Z | 71e098075ed6f5310fcd0558fcc16984f99b0612 | denisurusov |
+| node:task-live-flow-checkout-script | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
+| edge:e-dec-e2ewiring-livecheckout | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
+| edge:e-lnk-cilivestack-livecheckout | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
+| node:task-live-flow-checkout-script | status | open | resolved | 2026-11-01T21:58:22Z |  | denisurusov |
+| node:task-live-spec-balance-aware-amounts | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| node:task-live-spec-balance-aware-amounts | status |  | open | 2026-11-01T22:01:07Z |  |  |
+| edge:e-dec-e2ewiring-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| edge:e-lnk-livecheckout-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| edge:e-lnk-remainingflows-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |

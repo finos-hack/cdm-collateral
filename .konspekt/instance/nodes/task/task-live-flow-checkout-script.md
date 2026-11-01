@@ -2,8 +2,8 @@
 id: task-live-flow-checkout-script
 type: task
 title: Run the live flows automatically from a checkout script against a running stack
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: 63a74d22e99006def5aa9c99394ffb01ca95f605
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T16:22:08Z
   confidence: 0.75
 createdAt: 2026-11-01T16:22:08Z
-updatedAt: 2026-11-01T21:51:13Z
+updatedAt: 2026-11-01T22:01:07Z
 ```
 # Task: run the live flows automatically as a checkout script
 
@@ -41,3 +41,9 @@ because the pledgor's free tUSD (4,185,000) is below the VM test's per-run amoun
 data running out; this task does not fix it. Not run: `check` inside the dev container (Chromium there may need OS
 packages).
 
+
+## Resolution (2026-11-01)
+
+Accepted and resolved by the project owner after the Windows-host verification above. Two things were outside this
+task when it was resolved: the live specs running the pledgor's balances out on a long-lived chain
+([[task-live-spec-balance-aware-amounts]]), and running `check` inside the dev container.

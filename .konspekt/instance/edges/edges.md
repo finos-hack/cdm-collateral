@@ -115,6 +115,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-e2ewiring-remainingflows | decomposes | node:task-e2e-wiring | node:task-e2e-remaining-flows |  | proposed |
 | e-dec-bizcase-topupmodelling | decomposes | node:goal-business-case | node:task-revaluation-top-up-modelling |  | proposed |
 | e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | proposed |
-| e-dec-e2ewiring-livecheckout | decomposes | node:task-e2e-wiring | node:task-live-flow-checkout-script |  | proposed |
+| e-dec-e2ewiring-livecheckout | decomposes | node:task-e2e-wiring | node:task-live-flow-checkout-script |  | accepted |
 | e-lnk-remainingflows-livecheckout | links | node:task-e2e-remaining-flows | node:task-live-flow-checkout-script |  | proposed |
-| e-lnk-cilivestack-livecheckout | links | node:task-ci-live-e2e-stack | node:task-live-flow-checkout-script |  | proposed |
+| e-lnk-cilivestack-livecheckout | links | node:task-ci-live-e2e-stack | node:task-live-flow-checkout-script |  | accepted |
+| e-dec-e2ewiring-balanceaware | decomposes | node:task-e2e-wiring | node:task-live-spec-balance-aware-amounts |  | proposed |
+| e-lnk-livecheckout-balanceaware | links | node:task-live-flow-checkout-script | node:task-live-spec-balance-aware-amounts |  | proposed |
+| e-lnk-remainingflows-balanceaware | links | node:task-e2e-remaining-flows | node:task-live-spec-balance-aware-amounts |  | proposed |
