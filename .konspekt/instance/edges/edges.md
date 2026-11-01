@@ -117,4 +117,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | proposed |
 | e-dec-e2ewiring-livecheckout | decomposes | node:task-e2e-wiring | node:task-live-flow-checkout-script |  | proposed |
 | e-lnk-remainingflows-livecheckout | links | node:task-e2e-remaining-flows | node:task-live-flow-checkout-script |  | proposed |
+| e-note-remainingflows-returndefault | notes | node:task-e2e-remaining-flows | noteworthy:nw-return-default-flows-wired |  | proposed |
+| e-note-remainingflows-depletion | notes | node:task-e2e-remaining-flows | noteworthy:nw-live-spec-balance-depletion |  | proposed |
+| e-note-livecheckout-depletion | notes | node:task-live-flow-checkout-script | noteworthy:nw-live-spec-balance-depletion |  | proposed |
 | e-lnk-cilivestack-livecheckout | links | node:task-ci-live-e2e-stack | node:task-live-flow-checkout-script |  | proposed |

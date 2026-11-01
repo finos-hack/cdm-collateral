@@ -361,3 +361,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
+| noteworthy:nw-return-default-flows-wired | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| noteworthy:nw-live-spec-balance-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-remainingflows-returndefault | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-remainingflows-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-livecheckout-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
