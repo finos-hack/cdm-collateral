@@ -19,6 +19,8 @@ Start order is top to bottom. Each row depends on the rows above it.
 | 3 | CDM payload store | `node store/src/server.ts` | 8300 | `curl localhost:8300/store/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-a | `node gateway/src/server.ts` (`NODE=bank-a`) | 8201 | `curl localhost:8201/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-b | `node gateway/src/server.ts` (`NODE=bank-b`) | 8202 | `curl localhost:8202/ledger/v1/health` | `orchestrate.mjs` |
+| 4 | Ledger gateway, mkt (market operator, oracle publisher key) | `node gateway/src/server.ts` (`NODE=mkt`) | 8200 | `curl localhost:8200/ledger/v1/health` | `orchestrate.mjs` |
+| 5 | Oracle service (default notices only; prices are `flow-oracle-update`) | `java -jar services/oracle/target/oracle-service.jar` | 8100 | `curl localhost:8100/oracle/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service A (pledgor, bank-a) | `java -jar services/collateral/target/collateral-service.jar` | 8001 | `curl localhost:8001/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service B (secured party, bank-b) | same jar, `PARTY_ID=B` | 8002 | `curl localhost:8002/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 6 | Party console (Vite dev server) | `npm run dev` in `console/` | 5173 | open `http://localhost:5173/#/live/A` | `orchestrate.mjs` |
@@ -55,6 +57,9 @@ npm --prefix console ci
 
 # Collateral service jar -> services/collateral/target/collateral-service.jar (shaded, about 135 MB)
 (cd services/collateral && mvn -q -DskipTests package)
+
+# Oracle service jar -> services/oracle/target/oracle-service.jar (shaded; `mvn package` without -DskipTests runs its unit tests)
+(cd services/oracle && mvn -q -DskipTests package)
 ```
 
 `services/collateral/` has no Maven wrapper; without a system `mvn`, use
@@ -71,7 +76,7 @@ After the one-time build (section 3), one command runs steps 1, 2, 4 and 5 below
 
 ```bash
 bash scripts/live-e2e.sh up       # start (or replace) the stack, wait for the health checks, print the console URLs
-bash scripts/live-e2e.sh status   # print the five health checks and the console port; changes nothing
+bash scripts/live-e2e.sh status   # print the seven health checks and the console port; changes nothing
 bash scripts/live-e2e.sh down     # stop store, gateways, services and console; stop the Besu containers (chain kept)
 bash scripts/live-e2e.sh reset    # down, then delete the chain, the deployment and the off-chain state (section 8)
 bash scripts/live-e2e.sh build    # the one-time build of section 3 (mvn if on PATH, else cdm-ext/mvnw)
@@ -83,17 +88,18 @@ The dev container runs `build` once when it is created and `up` every time it st
 `up` does the following, in order:
 
 1. **Stop-and-replace:** stops the `orchestrate.mjs` process recorded in `.live-e2e.pid` from an earlier `up`, then
-   kills any process still listening on 8300, 8201, 8202, 8001, 8002, 5173 or 4173.
+   kills any process still listening on 8300, 8200, 8201, 8202, 8100, 8001, 8002, 5173 or 4173.
 2. Starts Besu: `docker compose up -d` when `besu/.env` and `besu/networkFiles/genesis.json` exist, otherwise
    `bash besu/start-network.sh`. Waits up to 120 s for a non-zero block height on 8545.
 3. Runs `npm run deploy:besu` only when `contracts/deployments/besu.json` is absent. It never redeploys over an
    existing deployment.
 4. Starts `node orchestrate.mjs` detached, with output in `stack.log` at the repository root.
-5. Polls the five health checks of step 5 every 3 s for up to 180 s. On success it prints them, the console status
+5. Polls the seven health checks of step 5 every 3 s for up to 180 s. On success it prints them, the console status
    (`5173  HTTP 200`) and the two console URLs, then exits 0 with the stack still running. On timeout it prints the
    last state and exits 1.
 
-It stops with `missing services/collateral/target/collateral-service.jar` when the jar is not built. The script runs
+It stops with `missing services/collateral/target/collateral-service.jar` (or `…/oracle-service.jar`) when a jar is
+not built. The script runs
 in bash on Linux, macOS, Codespaces, WSL and Git Bash on Windows. The CI workflow
 `.github/workflows/e2e-live-stack.yml` runs the same `up` command after the section 3 build.
 
@@ -158,18 +164,22 @@ jar is missing. Otherwise it:
 
 1. mints one bearer token per party for the payload store (new tokens on every run, never written to disk);
 2. starts the store on 8300 with `PARTY_TOKENS` and `DATA_DIR=store/data`;
-3. starts gateway bank-a on 8201 and gateway bank-b on 8202;
-4. after 2 s, starts service A on 8001 and service B on 8002, each with its own `STORE_TOKEN`, from the repository
-   root (so they find `besu.json` and write `data/<node>.db`);
+3. starts gateway bank-a on 8201, gateway bank-b on 8202 and the market operator's gateway mkt on 8200;
+4. after 2 s, starts the oracle service on 8100 (writing through gateway mkt), then service A on 8001 and service B on
+   8002, each with its own `STORE_TOKEN` and `ORACLE_URL=http://localhost:8100`, from the repository root (so they
+   find `besu.json` and write `data/<node>.db`);
 5. starts the console dev server on 5173.
 
-Every output line carries the child's prefix: `[store]`, `[gw-a]`, `[gw-b]`, `[svc-a]`, `[svc-b]`, `[console]`.
+Every output line carries the child's prefix: `[store]`, `[gw-a]`, `[gw-b]`, `[gw-mkt]`, `[oracle]`, `[svc-a]`,
+`[svc-b]`, `[console]`.
 Expected startup lines:
 
 ```
 [store] cdm payload store on http://localhost:8300/store/v1 (data: …/store/data)
 [gw-a] ledger gateway for bank-a (0x…) on http://localhost:8201/ledger/v1
 [gw-b] ledger gateway for bank-b (0x…) on http://localhost:8202/ledger/v1
+[gw-mkt] ledger gateway for mkt (0x…) on http://localhost:8200/ledger/v1
+[oracle] oracle service on http://localhost:8100/oracle/v1 -> operator gateway http://localhost:8200
 [svc-a] collateral service: party A (Pledgor) 0x… on http://localhost:8001/api/v1 -> gateway http://localhost:8201
 [svc-b] collateral service: party B (Secured Party) 0x… on http://localhost:8002/api/v1 -> gateway http://localhost:8202
 [console]   ➜  Local:   http://localhost:5173/
@@ -186,11 +196,13 @@ In a second terminal:
 curl -s localhost:8300/store/v1/health    # {"ok":true,"count":<documents>}
 curl -s localhost:8201/ledger/v1/health   # {"node":"bank-a","account":"0x…","ok":true}
 curl -s localhost:8202/ledger/v1/health   # {"node":"bank-b",…}
+curl -s localhost:8200/ledger/v1/health   # {"node":"mkt",…}
+curl -s localhost:8100/oracle/v1/health   # {"service":"oracle","ok":true}
 curl -s localhost:8001/api/v1/health      # {"party":"A","role":"Pledgor","address":"0x…","ok":true}
 curl -s localhost:8002/api/v1/health      # {"party":"B","role":"Secured Party",…}
 ```
 
-All five must answer before step 6.
+All seven must answer before step 6.
 
 ## 5. Drive the flows
 
@@ -203,6 +215,16 @@ IM flow: B issues an IM call → A agrees in full → A proposes collateral (tUS
 Both consoles show `settled on-chain ✓`. VM flow: same steps with call type VM, tUSD, and `Transfer title` as the
 settlement step.
 
+Return flow (`flow-return`): with collateral in escrow, A calls a return in "Call for a return" → B agrees in full →
+B chooses the token and quantity and clicks `Release escrow`. The released value after haircut may not exceed the
+agreed return amount.
+
+Default flow (`flow-default-enforcement`): on a settled IM call it issued, while collateral is in escrow, B clicks
+`Declare default & enforce`. B's service sends the default notice to the oracle service, which writes it to the oracle
+feed through gateway mkt; B's gateway then calls `enforce`, which moves everything A has in escrow with B to B. Both
+consoles show `in default on the oracle feed` and `enforced ✓`. A stays in default on the persistent chain; only
+`reset` clears it.
+
 ### Automated (Playwright live specs)
 
 ```bash
@@ -212,7 +234,9 @@ npm run test:e2e -- e2e/live.spec.ts
 CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 ```
 
-The specs run `flow-im-margin-call-pledge` and `flow-vm-margin-call-transfer`. Playwright builds the console and
+The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return` and
+`flow-default-enforcement`. The return and default specs set up their escrow through the service API, then drive
+the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and
 serves it on 4173 itself (`console/playwright.config.ts`); it does not use the 5173 dev server, but it needs the
 services on 8001/8002 and everything below them. Each run uses a distinct call amount, so the chain does not need a
 reset between runs.
@@ -236,7 +260,7 @@ curl -s localhost:8002/api/v1/calls/<callId>/cdm-state    # party B's fold; its 
 |---|---|---|---|
 | Besu | `docker compose -f besu/docker-compose.yml logs <node>` | block import / QBFT round lines | peer or genesis errors; blocks stuck at `0x0` |
 | Store | `[store]` in `stack.log` | startup line only; no per-request logging | startup warning `store: no PARTY_TOKENS configured …` when started without tokens (every docs request then returns 401) |
-| Gateways | `[gw-a]`, `[gw-b]` | startup line only | `<METHOD> <path> failed: <message>` per failed request (contract reverts appear here); `watchSteps error: <message>` when the Besu WebSocket subscription fails |
+| Gateways | `[gw-a]`, `[gw-b]`, `[gw-mkt]` | startup line only | `<METHOD> <path> failed: <message>` per failed request (contract reverts appear here); `watchSteps error: <message>` when the Besu WebSocket subscription fails |
 | Services | `[svc-a]`, `[svc-b]` | startup line only | uncaught startup exceptions (stack trace). Request errors are **not** printed: they return HTTP 400 `{"error": "<message>"}`, visible in the browser devtools Network tab or the console UI. A failed gateway event-stream connection is retried every 2 s without logging |
 | Console | `[console]` | Vite URL lines | Vite compile errors; browser-side errors appear in the browser devtools console |
 | Console preview (`console/serve.sh`, run by hand) | `console/.preview.log` | the production preview | — |
