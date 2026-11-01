@@ -112,3 +112,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-devcontainerstack-devcontainerstartup | links | node:task-devcontainer-live-stack | node:task-devcontainer-stack-startup |  | proposed |
 | e-dec-e2ewiring-codespacesstack | decomposes | node:task-e2e-wiring | node:task-codespaces-live-stack |  | proposed |
 | e-lnk-devcontainerstartup-codespacesstack | links | node:task-devcontainer-stack-startup | node:task-codespaces-live-stack |  | proposed |
+| e-dec-e2ewiring-remainingflows | decomposes | node:task-e2e-wiring | node:task-e2e-remaining-flows |  | proposed |
+| e-dec-bizcase-topupmodelling | decomposes | node:goal-business-case | node:task-revaluation-top-up-modelling |  | proposed |
+| e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | proposed |

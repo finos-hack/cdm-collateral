@@ -349,3 +349,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-devcontainerstack-devcontainerstartup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
 | edge:e-dec-e2ewiring-codespacesstack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
 | edge:e-lnk-devcontainerstartup-codespacesstack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
+| node:task-e2e-remaining-flows | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| node:task-e2e-remaining-flows | status |  | open | 2026-11-01T15:57:23Z |  |  |
+| node:task-revaluation-top-up-modelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| node:task-revaluation-top-up-modelling | status |  | open | 2026-11-01T15:57:23Z |  |  |
+| edge:e-dec-e2ewiring-remainingflows | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| edge:e-dec-bizcase-topupmodelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
+| edge:e-lnk-remainingflows-topupmodelling | review |  | proposed | 2026-11-01T15:57:23Z |  |  |
