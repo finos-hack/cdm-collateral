@@ -446,3 +446,9 @@ excluded.
 | task-devcontainer-live-stack | d4b0fcb4a8f81abc9fe0f221967475013a0cf558 | .devcontainer/devcontainer.json | 2026-10-30T02:12:11Z |
 | task-ci-live-e2e-stack | 3caa6f534296f2990560fa5c0c0fe91364abfcf5 | .gitattributes | 2026-10-30T02:12:11Z |
 | task-ci-live-e2e-stack | a40dfd46d27375fe41855c42dee53963b6ba261c | docs/runbook-e2e.md | 2026-10-31T23:59:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | .devcontainer/devcontainer.json | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | scripts/live-e2e.sh | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | .gitattributes | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | docs/setup-codespaces.md | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 383a6f5d2e636111fc22c40c6a93cf67ad12318d | docs/runbook-e2e.md | 2026-11-01T01:50:00Z |
+| task-devcontainer-stack-startup | 24ae23451a699619108bf0a62d6e634799317ab6 | docs/runbook-e2e.md | 2026-11-01T01:50:00Z |
