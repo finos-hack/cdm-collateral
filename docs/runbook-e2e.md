@@ -65,6 +65,36 @@ service builds against the previous extension in `~/.m2`.
 
 ## 4. Start the stack
 
+### One command: `scripts/live-e2e.sh`
+
+After the one-time build (section 3), one command runs steps 1, 2, 4 and 5 below and leaves the stack running:
+
+```bash
+bash scripts/live-e2e.sh up       # start (or replace) the stack, wait for the health checks, print the console URLs
+bash scripts/live-e2e.sh status   # print the five health checks and the console port; changes nothing
+bash scripts/live-e2e.sh down     # stop store, gateways, services and console; stop the Besu containers (chain kept)
+bash scripts/live-e2e.sh reset    # down, then delete the chain, the deployment and the off-chain state (section 8)
+```
+
+`up` does the following, in order:
+
+1. **Stop-and-replace:** stops the `orchestrate.mjs` process recorded in `.live-e2e.pid` from an earlier `up`, then
+   kills any process still listening on 8300, 8201, 8202, 8001, 8002, 5173 or 4173.
+2. Starts Besu: `docker compose up -d` when `besu/.env` and `besu/networkFiles/genesis.json` exist, otherwise
+   `bash besu/start-network.sh`. Waits up to 120 s for a non-zero block height on 8545.
+3. Runs `npm run deploy:besu` only when `contracts/deployments/besu.json` is absent. It never redeploys over an
+   existing deployment.
+4. Starts `node orchestrate.mjs` detached, with output in `stack.log` at the repository root.
+5. Polls the five health checks of step 5 every 3 s for up to 180 s. On success it prints them, the console status
+   (`5173  HTTP 200`) and the two console URLs, then exits 0 with the stack still running. On timeout it prints the
+   last state and exits 1.
+
+It stops with `missing services/collateral/target/collateral-service.jar` when the jar is not built. The script runs
+in bash on Linux, macOS, Codespaces, WSL and Git Bash on Windows. The CI workflow
+`.github/workflows/e2e-live-stack.yml` runs the same `up` command after the section 3 build.
+
+The steps below are the same sequence done by hand.
+
 ### Step 1 — Besu network
 
 ```bash
@@ -221,6 +251,7 @@ All of these paths are git-ignored.
 
 ## 7. Stop
 
+- Everything started by `scripts/live-e2e.sh up`, keeping the chain: `bash scripts/live-e2e.sh down`.
 - Store, gateways, services, console: Ctrl-C in the `orchestrate.mjs` terminal (stops every child).
 - Besu, keeping the chain: `docker compose -f besu/docker-compose.yml stop` (restart with `bash besu/start-network.sh`).
 - Besu, removing the containers but keeping the chain on disk: `docker compose -f besu/docker-compose.yml down`.
@@ -228,6 +259,7 @@ All of these paths are git-ignored.
 ## 8. Full reset
 
 Removes the chain, the keys, the deployment and all off-chain state; the next start begins from section 4, step 1.
+`bash scripts/live-e2e.sh reset` runs these commands after stopping the stack.
 
 ```bash
 docker compose -f besu/docker-compose.yml down
@@ -261,7 +293,34 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 
 ## 10. Verification status of this runbook
 
-Observed on 2026-10-26 in a Linux container without Docker:
+### 2026-10-31 — CI, `ubuntu-latest` (fresh runner)
+
+GitHub Actions run `41253964256` of `e2e-live-stack.yml` (PR #8, head `2307781`) passed every step: the section 3
+build, then `bash scripts/live-e2e.sh up` on a runner with no Besu network files and no deployment. The script
+generated the network, deployed the contracts, started the stack and reported all five health checks `"ok":true`
+(store `count: 0`) and console `HTTP 200`; `live-e2e.sh status` repeated the same results. The job does not drive a
+flow and does not tear the stack down.
+
+### 2026-10-30 — `scripts/live-e2e.sh` on Windows 11 (Git Bash, Docker Desktop)
+
+- `up` from stopped Besu containers passed all five health checks and console `HTTP 200`; the stack kept running
+  after the script exited.
+- A second `up` over a running stack replaced every listening process: new PIDs on all six ports, the old processes
+  gone, no port conflicts.
+- `down` freed all ports and stopped the four Besu containers.
+- Not run: `reset` (it deletes the chain).
+
+### 2026-10-29 — sections 1–5 on Windows 11 (Docker Desktop, JDK 25, Node 24)
+
+- Section 4 by hand against a persisted chain (contract redeploy skipped, `besu.json` still valid): four Besu
+  containers with peers `0x3` and 2 s blocks; `orchestrate.mjs` started store (127 documents), both gateways, both
+  services and the console; all five health checks answered.
+- Section 5, Playwright live specs: both `flow-im-margin-call-pledge` and `flow-vm-margin-call-transfer` passed
+  (33.5 s and 31.2 s) after the per-test timeout in `console/e2e/live.spec.ts` was raised to 180 s (commit `7d49e20`).
+
+### 2026-10-26 — Linux container without Docker
+
+Observed:
 
 - `./mvnw install -DskipTests` in `cdm-ext/` (run as `mvn -f cdm-ext/pom.xml install -DskipTests`) and
   `mvn -DskipTests package` in `services/collateral/` succeed in that order and produce
@@ -273,5 +332,7 @@ Observed on 2026-10-26 in a Linux container without Docker:
   section 9.
 
 Not verified in that container (no Docker): the Besu steps, `deploy:besu`, `npm run cycle`, `orchestrate.mjs` end to
-end, and the Playwright live specs. The live specs were recorded as passing against the running stack in
-`artifact-e2e-live-harness`.
+end, and the Playwright live specs. The 2026-10-29 to 2026-10-31 entries above cover those steps.
+
+Not verified anywhere yet: `scripts/live-e2e.sh up` inside the dev container, and the full reset (section 8 or
+`live-e2e.sh reset`).
