@@ -340,3 +340,4 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-ci-live-stack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
 | edge:e-note-cilivestack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
 | edge:e-sup-livestacklocal-cilivestacksteps | review |  | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| node:task-devcontainer-live-stack | status | open | resolved | 2026-11-01T00:40:00Z | 7a0b40227dfaa8c090f24ff18dadc5de671dafb5 | denisurusov |
