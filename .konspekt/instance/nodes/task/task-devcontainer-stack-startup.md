@@ -30,3 +30,12 @@ Gaps, as observed in `.devcontainer/devcontainer.json` on 2026-11-01:
 
 Done when: creating the container runs the one-time build, starting it runs `scripts/live-e2e.sh up` and leaves
 the stack healthy, and a host browser drives one flow through the forwarded 5173, 8001 and 8002.
+
+## Progress (2026-11-01)
+
+Commit `383a6f5`: `postCreateCommand` runs `scripts/live-e2e.sh build` (new subcommand, gap 3), `postStartCommand`
+runs `scripts/live-e2e.sh up` in place of Besu plus `console/serve.sh` (gaps 1 and 4), `up` starts `orchestrate.mjs`
+under `setsid`, and `mvnw` keeps LF endings. A fresh dev container created with `@devcontainers/cli` 0.90.0 ran the
+build and the start-up and passed all five health checks plus console `HTTP 200`; the stack was still running after
+the start command ended (`docs/runbook-e2e.md` section 10). Open: gap 2, port forwarding to a host browser through
+VS Code, with one flow driven in the console.

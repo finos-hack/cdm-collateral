@@ -297,6 +297,16 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 
 ## 10. Verification status of this runbook
 
+### 2026-11-01 — dev container, created with `@devcontainers/cli` 0.90.0 on Docker Desktop (Windows 11)
+
+A fresh checkout of commit `383a6f5`, so no Besu files, no deployment and no build output. `postCreateCommand`
+(`live-e2e.sh build`) ran `npm ci` in all four packages, installed `cdm-ext` through `cdm-ext/mvnw` (no `mvn` in the
+image) and built the jar in about 10 minutes. `postStartCommand` (`live-e2e.sh up`) generated the Besu network inside
+Docker-in-Docker, deployed the contracts and passed all five health checks plus console `HTTP 200`. After the start
+command ended, `orchestrate.mjs` and both services were still running in their own session (`setsid`) and
+`live-e2e.sh status` repeated the results. Not covered: VS Code port forwarding to a host browser (the CLI does not
+forward ports) and a flow driven in the console.
+
 ### 2026-10-31 — CI, `ubuntu-latest` (fresh runner)
 
 GitHub Actions run `41253964256` of `e2e-live-stack.yml` (PR #8, head `2307781`) passed every step: the section 3
