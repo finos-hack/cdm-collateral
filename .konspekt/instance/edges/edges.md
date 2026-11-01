@@ -96,7 +96,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdatalayer-carrier | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-cdm-payload-carrier |  | proposed |
 | e-mrk-carrier-e2ewiring | marks | waypoint:wp-adr-cdm-payload-carrier | node:task-e2e-wiring |  | proposed |
 | e-dec-e2ewiring-cilivestack | decomposes | node:task-e2e-wiring | node:task-ci-live-e2e-stack |  | accepted |
-| e-note-cilivestack-steps | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-steps |  | proposed |
+| e-note-cilivestack-steps | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-steps |  | rejected |
 | e-architecture-payload-carrier-revision-produces | produces | node:goal-architecture-design | artifact:artifact-architecture-payload-carrier-revision |  | accepted |
 | e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | accepted |
 | e-gap-register-g26-carrier-produces | produces | node:task-cdm-gap-closure | artifact:artifact-gap-register-g26-carrier |  | accepted |
@@ -106,4 +106,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-livestacklocal-cilivestack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-ci-live-e2e-stack |  | accepted |
 | e-mrk-livestacklocal-devcontainerstack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-devcontainer-live-stack |  | accepted |
 | e-note-cilivestack-status | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-e2e-stack-status |  | accepted |
-| e-note-cilivestack-first-run | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-first-run |  | proposed |
+| e-note-cilivestack-first-run | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-first-run |  | accepted |
+| e-sup-livestacklocal-cilivestacksteps | supersedes | waypoint:wp-adr-live-stack-local-ui-driven | noteworthy:nw-ci-live-stack-steps |  | accepted |

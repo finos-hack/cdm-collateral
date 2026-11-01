@@ -1,15 +1,15 @@
 ```yaml
 id: nw-ci-live-stack-first-run
 kind: fact
-review: proposed
+review: accepted
 provenance:
   conversationId: ci-live-e2e-stack
-  sourceRef: 23077812dc6f200a93b2f321cf2354327aa1118a
-  contentHash: 23077812dc6f200a93b2f321cf2354327aa1118a
+  sourceRef: a5702a6802c46733ed2fb65f2c0a95b8c5b28b0c
+  contentHash: a5702a6802c46733ed2fb65f2c0a95b8c5b28b0c
   timestamp: 2026-10-31T23:50:39Z
   confidence: 0.95
 createdAt: 2026-10-31T23:50:39Z
-updatedAt: 2026-10-31T23:50:39Z
+updatedAt: 2026-11-01T00:10:00Z
 ```
 # CI live stack: first run of the re-scoped workflow passed
 

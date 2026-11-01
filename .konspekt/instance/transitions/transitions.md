@@ -333,3 +333,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-livestacklocal-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
 | edge:e-note-cilivestack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
 | node:task-ci-live-e2e-stack | status | open | resolved | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| noteworthy:nw-ci-live-stack-first-run | review |  | proposed | 2026-10-31T23:50:39Z |  |  |
+| edge:e-note-cilivestack-first-run | review |  | proposed | 2026-10-31T23:50:39Z |  |  |
+| noteworthy:nw-ci-live-stack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| edge:e-note-cilivestack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| noteworthy:nw-ci-live-stack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| edge:e-note-cilivestack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
+| edge:e-sup-livestacklocal-cilivestacksteps | review |  | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
