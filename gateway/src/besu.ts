@@ -33,6 +33,17 @@ export interface StepEvent {
   logIndex: number;
 }
 
+/** A settlement or oracle-feed event pushed alongside the lifecycle steps: Returned and Enforced from the collateral
+ * control contract (flow-return, flow-default-enforcement), DefaultPublished from the oracle feed. */
+export interface LedgerEvent {
+  event: "Returned" | "Enforced" | "DefaultPublished";
+  callId?: Hex;
+  party?: Address;
+  inDefault?: boolean;
+  block: string;
+  logIndex: number;
+}
+
 export interface AssetArg {
   token: Address;
   qty: bigint;
@@ -77,8 +88,18 @@ const controlAbi = parseAbi([
   "function settleByTransfer(bytes32 callId, uint256 proposalId, bytes32 cdmHash)",
   "function returnCollateral(bytes32 callId, Asset[] release, bytes32 cdmHash)",
   "function returnByTransfer(bytes32 callId, Asset[] assets, bytes32 cdmHash)",
+  "function enforce(bytes32 callId)",
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
+  "event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
+  "event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
+]);
+
+const oracleAbi = parseAbi([
+  "function setDefault(address party, bool inDefault)",
+  "function isDefaulted(address party) view returns (bool)",
+  "function publisher() view returns (address)",
+  "event DefaultPublished(address indexed party, bool inDefault)",
 ]);
 
 const erc20Abi = parseAbi([
@@ -99,10 +120,14 @@ export interface LedgerAdapter {
   settleByTransfer(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   returnCollateral(callId: Hex, release: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   returnByTransfer(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  enforce(callId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  setDefault(party: Address, inDefault: boolean): Promise<{ txHash: Hex; block: bigint }>;
+  isDefaulted(party: Address): Promise<boolean>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
+  watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
   pledgedBalance(pledgor: Address, securedParty: Address, token: Address): Promise<bigint>;
   tokenBalance(token: Address, owner: Address): Promise<bigint>;
@@ -191,6 +216,29 @@ export class BesuAdapter implements LedgerAdapter {
     return this.send(this.reg.contracts.collateralControl, controlAbi, "returnByTransfer", [callId, assets, cdmHash]);
   }
 
+  /** Seize the pledged initial margin after the oracle feed records the pledgor's default (secured party's key). */
+  enforce(callId: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "enforce", [callId]);
+  }
+
+  /** Write a party's default status to the oracle feed. Only the publisher (the market operator's key) may write, so
+   * this succeeds only on the operator's gateway instance; the contract reverts NotPublisher for any other key. */
+  async setDefault(party: Address, inDefault: boolean) {
+    if (getAddress(this.reg.publisher) !== this.account) {
+      throw new Error(`this gateway signs as ${this.account}, not the oracle publisher ${this.reg.publisher}; default status is written through the operator's gateway`);
+    }
+    return this.send(this.reg.contracts.oracleFeed, oracleAbi, "setDefault", [party, inDefault]);
+  }
+
+  async isDefaulted(party: Address): Promise<boolean> {
+    return (await this.pub.readContract({
+      address: this.reg.contracts.oracleFeed,
+      abi: oracleAbi,
+      functionName: "isDefaulted",
+      args: [party],
+    })) as boolean;
+  }
+
   async getCall(callId: Hex): Promise<OnChainCall> {
     return (await this.pub.readContract({
       address: this.reg.contracts.marginCall,
@@ -269,6 +317,43 @@ export class BesuAdapter implements LedgerAdapter {
       },
       onError: (e) => console.error(`watchSteps error: ${(e as Error).message}`),
     });
+  }
+
+  // Live subscription to the settlement and feed events that are not margin call lifecycle steps: Returned and Enforced
+  // (collateral control contract) and DefaultPublished (oracle feed). Pushed to the services next to the step events
+  // (flow-return transition 14, flow-default-enforcement transition 8). Returns an unwatch function.
+  watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void {
+    const meta = (log: any) => ({ block: log.blockNumber?.toString() ?? "", logIndex: Number(log.logIndex ?? 0) });
+    const onError = (e: Error) => console.error(`watchLedgerEvents error: ${e.message}`);
+    const unwatchControl = this.ws.watchContractEvent({
+      address: this.reg.contracts.collateralControl,
+      abi: controlAbi,
+      onLogs: (logs) => {
+        for (const log of logs) {
+          const name = (log as any).eventName as string;
+          if (name !== "Returned" && name !== "Enforced") continue;
+          const a = ((log as any).args ?? {}) as { callId?: Hex; pledgor?: Address };
+          onEvent({ event: name, callId: a.callId, party: a.pledgor, ...meta(log) });
+        }
+      },
+      onError,
+    });
+    const unwatchOracle = this.ws.watchContractEvent({
+      address: this.reg.contracts.oracleFeed,
+      abi: oracleAbi,
+      eventName: "DefaultPublished",
+      onLogs: (logs) => {
+        for (const log of logs) {
+          const a = ((log as any).args ?? {}) as { party?: Address; inDefault?: boolean };
+          onEvent({ event: "DefaultPublished", party: a.party, inDefault: a.inDefault, ...meta(log) });
+        }
+      },
+      onError,
+    });
+    return () => {
+      unwatchControl();
+      unwatchOracle();
+    };
   }
 
   async getProposalState(callId: Hex, proposalId: bigint): Promise<number> {
