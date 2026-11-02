@@ -307,6 +307,25 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 
 ## 10. Verification status of this runbook
 
+### 2026-11-01 — GitHub Codespace, `check` run from the Windows host through a `gh` tunnel
+
+Codespace on `e2e-wiring` at `9909d9d` (4-core), stack started by `postStartCommand`. From Windows 11 (Git Bash),
+`gh codespace ports forward 5173:5173 8001:8001 8002:8002 8201:8201 8202:8202 8300:8300 -c <codespace>` tunnelled
+the six ports to `127.0.0.1`. `live-e2e.sh status` showed all six healthy (store `count: 0`), and
+`live-e2e.sh check` passed both live specs: `flow-im-margin-call-pledge` (30.0 s) and `flow-vm-margin-call-transfer`
+(28.1 s), exit 0.
+
+- `gh codespace ports forward` tunnels only ports listed in `forwardPorts`. Before `cbaf7ed` added 8201, 8202 and
+  8300, `check`'s health precondition could not pass over a tunnel.
+- With `gh` 2.83.2, forwarding a port that an earlier `gh` session had already forwarded failed with
+  `create tunnel port failed … 400: Bad Request`, and neither a Codespace restart nor `gh codespace rebuild --full`
+  cleared it. `gh` 2.103.3 forwarded the same ports without the error.
+- `gh` 2.103.3 exits the whole forward when one port refuses the connection, so open the tunnel only after the stack
+  is up.
+- `gh codespace ssh` fails: the image has no sshd.
+- An older Codespace, rebuilt after `git pull`, failed in `up` with "besu did not produce a block within 120 s". It
+  was deleted without finding the cause.
+
 ### 2026-11-01 — `scripts/live-e2e.sh check` on Windows 11 (Git Bash, Docker Desktop)
 
 - With the stack down, `check` printed the health checks and exited 1 with "stack not up".

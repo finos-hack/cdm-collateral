@@ -25,3 +25,17 @@ not resolve. Open questions: how the URLs are derived at start-up (`CODESPACE_NA
 `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN`), port visibility (private ports need the GitHub auth cookie, which a
 cross-origin fetch and the SSE stream at `/api/v1/events` may not send), and CORS on the services for the
 `*.app.github.dev` origin.
+
+## Progress — 2026-11-01: tunnel first
+
+The project owner chose to reach the Codespace from the Windows host through `gh codespace ports forward` before
+working on the forwarded-URL questions above. Result: `live-e2e.sh check`, run on Windows against a six-port tunnel,
+passed both live specs (runbook §10, 2026-11-01 Codespace entry). Findings:
+
+- Only ports in `forwardPorts` can be tunnelled; 8201, 8202 and 8300 were added (`cbaf7ed`) so `check`'s health
+  precondition passes over the tunnel.
+- `gh` 2.83.2 rejected re-forwarding a port with `400: Bad Request`, surviving restart and full rebuild; `gh` 2.103.3
+  does not. Minimum `gh` version for this path: 2.103.3 (lowest version verified, not the lowest that works).
+- The image has no sshd, so `gh codespace ssh` fails.
+
+Still open: the browser-in-Codespaces path (console calling `*.app.github.dev` URLs, port visibility, CORS).
