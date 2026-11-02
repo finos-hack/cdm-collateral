@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
 createdAt: 2026-11-01T01:00:00Z
-updatedAt: 2026-11-02T23:15:24Z
+updatedAt: 2026-11-02T23:50:07Z
 ```
 # Task: run the live stack in GitHub Codespaces
 
@@ -48,3 +48,9 @@ them to 8001 / 8002, so the browser needs only 5173 and the URL-derivation, priv
 not arise. Verified on Windows against stub services on 8001 / 8002: JSON requests proxied for both parties, SSE events
 arrived unbuffered at the stub's 400 ms interval; all 46 console unit tests pass. Not yet verified: the live flow in a
 browser on a running codespace (needs a rebuild so `containerEnv` applies).
+
+After the rebuild (2026-11-02) the codespace was at `e4f86ee` with `VITE_SERVICE_PROXY=1`, but only the four Besu
+containers were running; `live-e2e.sh status` showed 8300, 8201, 8202, 8001, 8002 and 5173 not responding, and
+`stack.log` held only the pre-rebuild run. Why `postStartCommand` did not bring the rest of the stack up is not yet
+known: `gh codespace logs` fails without an SSH server in the image. The `sshd` devcontainer feature was added so the
+creation log and in-codespace commands are reachable through `gh codespace logs` / `gh codespace ssh`.

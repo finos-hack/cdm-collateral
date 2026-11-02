@@ -10,7 +10,10 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/java:1": { "version": "21" },
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    // sshd: lets `gh codespace ssh` / `gh codespace logs` run commands and read the creation log from outside the
+    // codespace (task-codespaces-live-stack). Access goes through gh's GitHub authentication.
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "postCreateCommand": "bash scripts/live-e2e.sh build",
   "postStartCommand": "bash scripts/live-e2e.sh up",
