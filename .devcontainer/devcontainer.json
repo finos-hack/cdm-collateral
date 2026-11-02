@@ -14,8 +14,9 @@
   },
   "postCreateCommand": "bash scripts/live-e2e.sh build",
   "postStartCommand": "bash scripts/live-e2e.sh up",
-  // 8001/8002: the console calls the collateral services directly from the browser (console/src/domain/liveApi.ts),
-  // so they must be forwarded for the live flow to work (task-devcontainer-live-stack).
+  // 8001/8002: in the container the browser reaches the services through the console's proxy (VITE_SERVICE_PROXY
+  // below), so only 5173 is needed for the live flow. 8001/8002 stay published and forwarded for direct calls (an
+  // explicit VITE_SERVICE_<P>_URL, curl, `live-e2e.sh check` through a tunnel) (task-devcontainer-live-stack).
   // appPort: Docker publishes these on the host's loopback when the container is created, so a host browser reaches
   // the console and both services without an IDE doing the forwarding (forwardPorts is applied only by a client such
   // as VS Code or Codespaces). Bound to 127.0.0.1 because the services have no authentication. The console dev server
