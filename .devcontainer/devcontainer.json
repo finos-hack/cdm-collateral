@@ -23,11 +23,16 @@
   // already listen on all interfaces.
   "appPort": ["127.0.0.1:5173:5173", "127.0.0.1:8001:8001", "127.0.0.1:8002:8002"],
   "containerEnv": { "CONSOLE_HOST": "0.0.0.0" },
-  "forwardPorts": [5173, 8001, 8002, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
+  // 8300/8201/8202 (payload store, gateways A/B): the browser does not call them, but `live-e2e.sh check` and `status`
+  // health-check them, and `gh codespace ports forward` tunnels only ports listed here (task-codespaces-live-stack).
+  "forwardPorts": [5173, 8001, 8002, 8201, 8202, 8300, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
   "portsAttributes": {
     "5173": { "label": "Collateral Console" },
     "8001": { "label": "Collateral service A (pledgor)" },
     "8002": { "label": "Collateral service B (secured party)" },
+    "8201": { "label": "Gateway A" },
+    "8202": { "label": "Gateway B" },
+    "8300": { "label": "Payload store" },
     "8545": { "label": "Besu mkt RPC" },
     "8547": { "label": "Besu bank-a RPC" },
     "8549": { "label": "Besu bank-b RPC" },
