@@ -464,3 +464,8 @@ excluded.
 | task-codespaces-live-stack | cbaf7ed5e77f24af605ad36bcedded59d64643fc | .devcontainer/devcontainer.json | 2026-11-02T01:32:40Z |
 | task-codespaces-live-stack | 725cbac2e46792c689a06931697fd8b2936c4baf | docs/runbook-e2e.md | 2026-11-02T03:36:32Z |
 | task-codespaces-live-stack | 725cbac2e46792c689a06931697fd8b2936c4baf | .konspekt/instance/nodes/task/task-codespaces-live-stack.md | 2026-11-02T03:36:32Z |
+| task-codespaces-live-stack | da9f71a1131ba17463fcc9dbc26bb57a85c01150 | .devcontainer/devcontainer.json | 2026-11-02T23:16:07Z |
+| task-codespaces-live-stack | da9f71a1131ba17463fcc9dbc26bb57a85c01150 | console/src/domain/liveApi.test.ts | 2026-11-02T23:16:07Z |
+| task-codespaces-live-stack | da9f71a1131ba17463fcc9dbc26bb57a85c01150 | console/src/domain/liveApi.ts | 2026-11-02T23:16:07Z |
+| task-codespaces-live-stack | da9f71a1131ba17463fcc9dbc26bb57a85c01150 | console/vite.config.ts | 2026-11-02T23:16:07Z |
+| task-codespaces-live-stack | da9f71a1131ba17463fcc9dbc26bb57a85c01150 | docs/setup-codespaces.md | 2026-11-02T23:16:07Z |
