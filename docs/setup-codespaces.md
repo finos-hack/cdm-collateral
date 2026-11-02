@@ -75,12 +75,12 @@ Every time the container starts, `scripts/live-e2e.sh up` starts the console dev
 services on 8001 and 8002. Open it from the **Ports** panel ("Collateral Console"). Check the stack from the terminal
 with `bash scripts/live-e2e.sh status`; its log is `stack.log` at the repository root.
 
-**In a local dev container** (VS Code Dev Containers) the forwarded ports map to `localhost`, so the console reaches
-the services at its default `http://localhost:8001` / `http://localhost:8002`.
-
-**In a codespace** the browser reaches forwarded ports at `https://<codespace-name>-<port>.app.github.dev`, so the
-console's default service URLs do not resolve and the live pages show no data. Making this work (setting
-`VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL`, port visibility, CORS) is `task-codespaces-live-stack`.
+The dev container sets `VITE_SERVICE_PROXY=1`, so the console calls the services on its own origin (`/svc/A/...`,
+`/svc/B/...`) and the console dev server forwards those requests to 8001 / 8002 inside the container
+(`console/vite.config.ts`). The browser needs only port 5173. This applies in a local dev container and in a
+codespace: in a codespace the console at `https://<codespace-name>-5173.app.github.dev` reaches the services without
+per-port URLs, without a cross-origin request to a private port, and without CORS. An explicit
+`VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL` still takes precedence over the proxy.
 
 **After new commits**, rebuild and restart from the terminal:
 

@@ -371,3 +371,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
 | edge:e-lnk-livecheckout-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
 | edge:e-lnk-remainingflows-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| waypoint:wp-adr-console-same-origin-proxy | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
+| edge:e-mrk-sameoriginproxy-codespacesstack | review |  | proposed | 2026-11-02T23:15:24Z |  |  |

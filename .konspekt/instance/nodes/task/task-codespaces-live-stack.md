@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
 createdAt: 2026-11-01T01:00:00Z
-updatedAt: 2026-11-01T01:00:00Z
+updatedAt: 2026-11-02T23:15:24Z
 ```
 # Task: run the live stack in GitHub Codespaces
 
@@ -39,3 +39,12 @@ passed both live specs (runbook §10, 2026-11-01 Codespace entry). Findings:
 - The image has no sshd, so `gh codespace ssh` fails.
 
 Still open: the browser-in-Codespaces path (console calling `*.app.github.dev` URLs, port visibility, CORS).
+
+## Progress — 2026-11-02: same-origin proxy
+
+Proposed approach for the browser path: [[wp-adr-console-same-origin-proxy]]. With `VITE_SERVICE_PROXY=1`
+(devcontainer `containerEnv`) the console calls `/svc/A` and `/svc/B` on its own origin and the Vite server forwards
+them to 8001 / 8002, so the browser needs only 5173 and the URL-derivation, private-port cookie and CORS questions do
+not arise. Verified on Windows against stub services on 8001 / 8002: JSON requests proxied for both parties, SSE events
+arrived unbuffered at the stub's 400 ms interval; all 46 console unit tests pass. Not yet verified: the live flow in a
+browser on a running codespace (needs a rebuild so `containerEnv` applies).

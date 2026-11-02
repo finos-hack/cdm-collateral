@@ -125,3 +125,9 @@ at execution time.
 | wp-adr-live-stack-local-ui-driven | fdf11b145f384b1e430ae0aab076a69abc60adeb |
 | task-ci-live-e2e-stack | 0f4bf8db647fdf4cd7eb40a28f2aa4ce8c79f4de |
 | task-ci-live-e2e-stack | 8b7f5ea0bd92b7d1b4e4e09a2260e69ff13c3b16 |
+| task-codespaces-live-stack | 0fd973ca374e83c41be58ad3f9d621aaff32edee |
+| task-codespaces-live-stack | ef60a5c5d1577f442df9bdc45c2630f35e65ab19 |
+| task-codespaces-live-stack | 2428cfed07e6ad257a9c086407a24528eaf05531 |
+| wp-adr-console-same-origin-proxy | 6b39bc98ab54342eaaf96ea8aea8f71137a6aeb3 |
+| wp-adr-console-same-origin-proxy | bd7612c486db19067d486e504d67389db97e8b16 |
+| wp-adr-console-same-origin-proxy | 536977673cd3c4aacd26770356e2e4727e0d10e3 |
