@@ -85,3 +85,14 @@ jobs:
       - name: Stack log
         if: always()
         run: cat stack.log || true
+
+      # On failure, the Besu nodes' own logs show whether consensus stalled (QBFT round changes, peer count) when a
+      # deploy transaction is never confirmed; stack.log does not include them.
+      - name: Besu logs
+        if: failure()
+        run: |
+          for n in besu-mkt besu-bank-a besu-bank-b besu-bank-c; do
+            echo "::group::$n"
+            docker logs --tail 200 "$n" 2>&1 || true
+            echo "::endgroup::"
+          done
