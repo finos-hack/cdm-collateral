@@ -1,0 +1,1 @@
+cd services/collateral && mvn -B test

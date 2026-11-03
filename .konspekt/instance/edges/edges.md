@@ -129,3 +129,11 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-livecheckout-depletion | notes | node:task-live-flow-checkout-script | noteworthy:nw-live-spec-balance-depletion |  | accepted |
 | e-note-balanceaware-depletion | notes | node:task-live-spec-balance-aware-amounts | noteworthy:nw-live-spec-balance-depletion |  | accepted |
 | e-dec-e2eflow-collateralunittests | decomposes | node:goal-end-to-end-flow | node:task-collateral-service-unit-tests |  | proposed |
+| e-dec-e2eflow-workflowtaskmap | decomposes | node:goal-end-to-end-flow | node:investigation-cdm-workflow-task-map |  | proposed |
+| e-prod-workflowtaskmap-map | produces | node:investigation-cdm-workflow-task-map | artifact:artifact-cdm-workflow-task-map |  | proposed |
+| e-dec-e2eflow-csaextensions | decomposes | node:goal-end-to-end-flow | node:task-csa-workflow-extensions |  | proposed |
+| e-dec-e2eflow-repogmra | decomposes | node:goal-end-to-end-flow | node:task-repo-gmra-workflows |  | proposed |
+| e-dec-e2eflow-seclendinggmsla | decomposes | node:goal-end-to-end-flow | node:task-securities-lending-gmsla-workflows |  | proposed |
+| e-dec-e2eflow-triparty | decomposes | node:goal-end-to-end-flow | node:task-triparty-workflows |  | proposed |
+| e-dec-e2eflow-ccp | decomposes | node:goal-end-to-end-flow | node:task-ccp-workflows |  | proposed |
+| e-lnk-csaextensions-gapclosure | links | node:task-csa-workflow-extensions | node:task-cdm-gap-closure |  | proposed |

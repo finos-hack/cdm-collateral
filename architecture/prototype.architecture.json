@@ -4,7 +4,7 @@
   "name": "CDM collateral prototype",
   "description": "Local prototype architecture for CDM-based initial-margin management with tokenized collateral on Hyperledger Besu.",
   "metadata": {
-    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-return and the VM variants) run live on the contracts, ledger gateway, collateral service, CDM payload store and console (task-e2e-wiring); the oracle service, flow-oracle-update, flow-revaluation-top-up and flow-default-enforcement are design only",
+    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-vm-margin-call-transfer, flow-return) and flow-default-enforcement run live on the contracts, ledger gateway, collateral service, oracle service (default notices only), CDM payload store and console (task-e2e-wiring, task-e2e-remaining-flows); flow-oracle-update and flow-revaluation-top-up are design only",
     "goal": "goal-architecture-design",
     "task": "task-local-environment-setup",
     "asrs": [
@@ -929,6 +929,178 @@
       ]
     },
     {
+      "unique-id": "flow-vm-margin-call-transfer",
+      "name": "Variation margin call and title transfer",
+      "description": "The secured party calls variation margin and records the call on-chain; the pledgor agrees in full or in part and proposes cash or tokens; the secured party accepts or rejects the proposal on-chain; the pledgor transfers title to the accepted assets, which the collateral control contract accepts only against the agreed VM call and accepted proposal (settleByTransfer). Steps 1-25 are those of flow-im-margin-call-pledge with a VM call; settlement moves title instead of pledging into escrow. Each step is anchored by its cdmHash and its CDM document is in the CDM payload store (ADR wp-adr-cdm-payload-carrier).",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 1,
+          "description": "Secured party issues a VM call (title transfer) under the agreement in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Secured party console submits the call to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 3,
+          "description": "Secured party's service builds the issue step (CDM MarginCallInstruction for a VM call, canonical Rune JSON), hashes it with keccak-256 and writes it to the payload store under that hash, with both counterparties on the reader allowlist."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 4,
+          "description": "Secured party's service sends the call (amount, deadline, cdmHash) to its gateway."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 5,
+          "description": "Secured party's gateway records the call in the margin call contract, signed with the secured party key (call state: issued; the CallIssued event carries the cdmHash)."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-events",
+          "sequence-number": 6,
+          "description": "The pledgor's gateway receives the CallIssued event from its own Besu node over its eth_subscribe subscription."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 7,
+          "description": "The pledgor's gateway pushes the event to the pledgor's service over Server-Sent Events; the service relays it to its console."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 8,
+          "description": "Pledgor's service reads the call's lifecycle steps in chain order, each with its cdmHash."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 9,
+          "description": "Pledgor's service fetches the issue document by its cdmHash, verifies keccak256(document) equals the on-chain hash, and folds it into its MarginCallState (Create_MarginCallState)."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 10,
+          "description": "Pledgor responds in its console (agree, partially agree or dispute) and proposes cash or tokens to deliver, e.g. tUSD."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 11,
+          "description": "Pledgor console submits the response and the collateral proposal to the pledgor's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-oracle",
+          "sequence-number": 12,
+          "description": "Pledgor's service fetches NAV / prices and ratings for the proposed tokens."
+        },
+        {
+          "relationship-unique-id": "service-to-store",
+          "sequence-number": 13,
+          "description": "Pledgor's service pre-checks eligibility and haircuts against the CDM eligibility schedule and records the response and proposal in its own store."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 14,
+          "description": "Pledgor's service writes the response and proposal step documents to the payload store under their keccak-256 hashes."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 15,
+          "description": "Pledgor's service sends the response (agreed and disputed amounts) and the proposal (assets, quantities), each with its cdmHash, to its gateway."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 16,
+          "description": "Pledgor's gateway records the response and the proposal in the margin call contract, signed with the pledgor key (proposal state: proposed; the CallAnswered and CollateralProposed events carry the cdmHashes)."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 17,
+          "description": "Secured party's service, notified through its gateway's event stream, reads the new steps from its gateway, fetches the response and proposal documents by cdmHash, verifies them and folds them into its MarginCallState."
+        },
+        {
+          "relationship-unique-id": "service-to-oracle",
+          "sequence-number": 18,
+          "description": "Secured party's service values the proposed tokens."
+        },
+        {
+          "relationship-unique-id": "service-to-store",
+          "sequence-number": 19,
+          "description": "Secured party's service checks eligibility, haircuts and concentration limits against its own copy of the CDM eligibility schedule and records the result."
+        },
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 20,
+          "description": "Secured party accepts or rejects the proposal in its console; a rejection sends the pledgor back to step 10 with a new proposal."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 21,
+          "description": "Secured party console submits the decision to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 22,
+          "description": "Secured party's service writes the decision step document to the payload store under its keccak-256 hash."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 23,
+          "description": "Secured party's service sends the decision with its cdmHash to its gateway."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 24,
+          "description": "Secured party's gateway records the decision in the margin call contract, signed with the secured party key (proposal state: accepted; the ProposalDecided event carries the cdmHash)."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 25,
+          "description": "Pledgor's service, notified through its gateway's event stream, fetches the decision document by cdmHash, verifies it and folds it."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 26,
+          "description": "Pledgor's service writes the settle step document to the payload store under its keccak-256 hash."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 27,
+          "description": "Pledgor's service sends a transfer instruction for the accepted proposal, with the settle step's cdmHash, to its gateway."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-rpc",
+          "sequence-number": 28,
+          "description": "Pledgor's gateway approves each accepted token and submits settleByTransfer(callId, proposalId, cdmHash), signed with the pledgor key."
+        },
+        {
+          "relationship-unique-id": "control-to-margin-call",
+          "sequence-number": 29,
+          "description": "Control contract checks that the call is a VM call, agreed or partially agreed, and that the proposal is accepted, then marks the call settled with the settle cdmHash (CallSettled)."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 30,
+          "description": "Contract moves title to each accepted token directly from the deliverer's account to the receiver's account (no escrow) and emits Transferred."
+        },
+        {
+          "relationship-unique-id": "gateway-to-besu-events",
+          "sequence-number": 31,
+          "description": "Both parties' gateways receive the transfer and settlement events in finalized blocks."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 32,
+          "description": "Each gateway pushes the events to its own workflow service over Server-Sent Events; each service fetches, verifies and folds the settle document."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 33,
+          "description": "Both consoles, updated through the services' event streams, show the settled VM call, both parties' new balances and any disputed amount."
+        }
+      ]
+    },
+    {
       "unique-id": "flow-oracle-update",
       "name": "Oracle price and rating update",
       "description": "The oracle service publishes current NAV / price and rating data to the on-chain feed through the market operator's gateway.",
@@ -1067,7 +1239,7 @@
     {
       "unique-id": "flow-default-enforcement",
       "name": "Default and enforcement",
-      "description": "After a pledgor default, the secured party enforces against the pledged initial margin. Not wired in the prototype yet. There is no direct service-to-service channel; the pledgor learns of the default from the on-chain feed through its own gateway.",
+      "description": "After a pledgor default, the secured party enforces against the pledged initial margin. There is no direct service-to-service channel; the pledgor learns of the default from the on-chain feed through its own gateway.",
       "transitions": [
         {
           "relationship-unique-id": "secured-party-uses-console",
