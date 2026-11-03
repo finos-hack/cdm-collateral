@@ -501,3 +501,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-gapclosure-vmexposure | review | proposed | accepted | 2026-11-03T21:48:03Z |  | denisurusov |
 | noteworthy:nw-closeout-collateral-by-arrangement | review |  | proposed | 2026-11-03T21:52:19Z |  |  |
 | edge:e-note-gapclosure-closeout | review |  | proposed | 2026-11-03T21:52:19Z |  |  |
+| noteworthy:nw-closeout-collateral-by-arrangement | review | proposed | accepted | 2026-11-03T23:07:44Z |  | denisurusov |
+| edge:e-note-gapclosure-closeout | review | proposed | accepted | 2026-11-03T23:07:44Z |  | denisurusov |
