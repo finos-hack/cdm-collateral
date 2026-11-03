@@ -118,6 +118,25 @@ route("GET", "/ledger/v1/defaults/:party", async (p) => {
   return { party, inDefault: await adapter.isDefaulted(party) };
 });
 
+route("POST", "/ledger/v1/oracle/prices", async (_p, b) =>
+  // Oracle price write (flow-oracle-update transitions 2-3): {token: address, price: scaled by priceScale}. Served
+  // only by the operator's gateway, which holds the publisher key.
+  J(await adapter.publishPrice(getAddress(b.token), BigInt(b.price))),
+);
+
+// Prices on the oracle feed, read from this party's own node: every registry token, or one token by address.
+route("GET", "/ledger/v1/prices", async () => {
+  const reg = (await import("./registry.ts")).loadRegistry();
+  const prices = [];
+  for (const [symbol, t] of Object.entries(reg.tokens)) prices.push({ symbol, token: t.address, price: await adapter.priceOf(t.address) });
+  return J({ priceScale: reg.priceScale, prices });
+});
+
+route("GET", "/ledger/v1/prices/:token", async (p) => {
+  const token = getAddress(p.token);
+  return J({ token, price: await adapter.priceOf(token) });
+});
+
 route("GET", "/ledger/v1/party-calls", async (_p, _b, url) =>
   J(await adapter.listCalls(getAddress(url.searchParams.get("party")!))),
 );

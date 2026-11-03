@@ -4,7 +4,7 @@
   "name": "CDM collateral prototype",
   "description": "Local prototype architecture for CDM-based initial-margin management with tokenized collateral on Hyperledger Besu.",
   "metadata": {
-    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-vm-margin-call-transfer, flow-return) and flow-default-enforcement run live on the contracts, ledger gateway, collateral service, oracle service (default notices only), CDM payload store and console (task-e2e-wiring, task-e2e-remaining-flows); flow-oracle-update and flow-revaluation-top-up are design only",
+    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-vm-margin-call-transfer, flow-return), flow-default-enforcement and flow-oracle-update run live on the contracts, ledger gateway, collateral service, oracle service (default notices and prices), CDM payload store and console (task-e2e-wiring, task-e2e-remaining-flows); flow-revaluation-top-up is design only",
     "goal": "goal-architecture-design",
     "task": "task-local-environment-setup",
     "asrs": [
@@ -628,7 +628,7 @@
     },
     {
       "unique-id": "oracle-to-gateway",
-      "description": "Publishes price, rating and default updates for the on-chain feed through the market operator's gateway instance.",
+      "description": "Publishes price and default updates for the on-chain feed through the market operator's gateway instance.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -1103,22 +1103,22 @@
     {
       "unique-id": "flow-oracle-update",
       "name": "Oracle price and rating update",
-      "description": "The oracle service publishes current NAV / price and rating data to the on-chain feed through the market operator's gateway.",
+      "description": "The oracle service publishes current prices from its mock market data to the on-chain feed through the market operator's gateway, on request and whenever the operator edits a price; each party reads the feed from its own node. Ratings stay in the oracle's mock market data off-chain: the oracle feed contract stores prices and default status only.",
       "transitions": [
         {
           "relationship-unique-id": "oracle-to-market-data",
           "sequence-number": 1,
-          "description": "Oracle reads mock NAV, price and rating data."
+          "description": "Oracle reads the mock price and rating of each token (prices start from the values on the feed)."
         },
         {
           "relationship-unique-id": "oracle-to-gateway",
           "sequence-number": 2,
-          "description": "Oracle sends a signed update to the market operator's gateway."
+          "description": "Oracle sends the price update (token address, price scaled by 1e8) to the market operator's gateway."
         },
         {
           "relationship-unique-id": "gateway-to-besu-rpc",
           "sequence-number": 3,
-          "description": "Operator's gateway writes the update to the oracle feed contract with the oracle publisher key."
+          "description": "Operator's gateway writes the price to the oracle feed contract (publishPrice) with the oracle publisher key; other gateways refuse feed writes."
         }
       ]
     },
