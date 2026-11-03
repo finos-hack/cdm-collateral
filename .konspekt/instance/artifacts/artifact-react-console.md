@@ -3,7 +3,7 @@ id: artifact-react-console
 name: React party console
 kind: application
 location: console/
-review: proposed
+review: accepted
 provenance:
   conversationId: architecture-design
   sourceRef: 91117ab560e058b945bc3eb3e35fa977f99a88b3

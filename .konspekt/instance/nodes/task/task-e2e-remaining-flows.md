@@ -2,8 +2,8 @@
 id: task-e2e-remaining-flows
 type: task
 title: Wire the four remaining CALM flows into the live stack, each with a live e2e test
-status: open
-review: proposed
+status: active
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: a0a131229621583bdc928c4ec7e06c59defc6b9b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T15:57:23Z
   confidence: 0.85
 createdAt: 2026-11-01T15:57:23Z
-updatedAt: 2026-11-03T03:46:43Z
+updatedAt: 2026-11-03T12:50:48Z
 ```
 # Task: wire the four remaining CALM flows into the live stack
 

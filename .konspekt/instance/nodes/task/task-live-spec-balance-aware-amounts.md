@@ -3,7 +3,7 @@ id: task-live-spec-balance-aware-amounts
 type: task
 title: Size the live specs' call amounts to the pledgor's free on-chain balance
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: 1b285cf65903a9859ebebd69d0887fc0271041c0

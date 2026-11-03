@@ -1,7 +1,7 @@
 ```yaml
 id: nw-live-spec-balance-depletion
 kind: constraint
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-return-default
   sourceRef: 09a5861b69043c21bd8677f7d46c2ecc70bcdb07
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-01T16:45:36Z
   confidence: 0.8
 createdAt: 2026-11-01T16:45:36Z
-updatedAt: 2026-11-01T16:45:36Z
+updatedAt: 2026-11-03T12:50:48Z
 ```
 # Repeated live spec runs drain the pledgor's balances on the persistent chain
 

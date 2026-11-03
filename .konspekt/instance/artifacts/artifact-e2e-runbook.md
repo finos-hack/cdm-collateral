@@ -3,7 +3,7 @@ id: artifact-e2e-runbook
 name: End-to-end stack runbook
 kind: document
 location: docs/runbook-e2e.md
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-runbook
   sourceRef: 1bf15826f5f85f9c9eae3457462a1fc31140be9c
