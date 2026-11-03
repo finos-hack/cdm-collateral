@@ -19,10 +19,14 @@ Built on CDM **7.7.0** (`org.finos.cdm:cdm-java` on Maven Central) with CDM's ow
 | `rosetta/cdmx-collateral-event-type.rosetta` | G1, G4: `CollateralEvent` (one applied step: instruction, before and after state, qualifier, transfers) |
 | `rosetta/cdmx-collateral-event-func.rosetta` | `Create_CollateralEvent`, `QualifyCollateralEvent` and nine `Qualify_…` functions |
 | `rosetta/cdmx-collateral-transfer-func.rosetta` | G4: `Create_CollateralTransfer` (one collateral position as a settled CDM `TransferState`) |
+| `rosetta/cdmx-collateral-valuation-func.rosetta` | G7 (defect D1): `CorrectedPostedCreditSupportItemAmount` (additional haircut applied, absent haircuts count as zero) and `CorrectedUndisputedAdjustedPostedCreditSupportAmount`, `CorrectedDeliveryAmount`, `CorrectedReturnAmount` built on it |
+| `rosetta/cdmx-collateral-portfolio-func.rosetta` | G5: `ApplyCollateralEvent` (CDM `CollateralPortfolio` after one event: positions netted per asset, one settled post-haircut `CollateralBalance` from pledgor to secured party), `NetCollateralPosition`, `HeldQuantity` |
 | `pom.xml`, `mvnw`, `mvnw.cmd`, `.mvn/` | Maven build (wrapper pins Maven 3.9.11): unpacks CDM's `.rosetta` files from the `cdm-java` jar (to resolve references), generates Java for `cdmx.*` only (`src/main/resources/rune-config.yml`), compiles, runs the tests |
 | `src/test/java/cdmx/ProposalTest.java` | Proposal functions, pre-conditions, type conditions, Rune JSON round trip |
 | `src/test/java/cdmx/MarginCallTest.java` | The console scenarios (im-call, im-dispute, im-return) through the lifecycle; wrong order, amounts and currencies rejected; earlier states unchanged; CDM's full validation of the settled state |
 | `src/test/java/cdmx/EventTest.java` | The same scenarios as events: qualifiers, transfers on delivery and return, CDM's full validation of every event |
+| `src/test/java/cdmx/ValuationTest.java` | G7: D1 in CDM 7.7.0 against the corrected value; absent haircuts; disputed values; Delivery and Return Amounts (IM) with rounding, MTA and disputes; currency check |
+| `src/test/java/cdmx/PortfolioTest.java` | G5: delivery and return settle into the portfolio; netting per asset; full release; steps before settlement; over-release rejected; CDM validation and Rune JSON round trip |
 | `src/test/java/cdmx/Data.java` | Rune JSON builders for test data |
 | `src/test/java/cdmx/Cdm.java` | CDM Java runtime for the tests: Guice injector with `CdmRuntimeModule`, `RuneJsonObjectMapper`, `RosettaTypeValidator` |
 
