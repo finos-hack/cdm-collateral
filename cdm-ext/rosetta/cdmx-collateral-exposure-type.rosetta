@@ -1,0 +1,22 @@
+namespace cdmx.collateral.exposure : <"Local CDM extension: netting set and exposure netting for variation margin (gap G10). CDM 7.7.0 has trade valuations but no netting set and no function that nets trades into one exposure.">
+version "${project.version}"
+
+import cdm.base.staticdata.identifier.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+
+type TradeExposure: <"The mark-to-market value of one transaction in a netting set, from the netting set's valuation party.">
+    tradeIdentifier Identifier (1..1) <"Identifies the transaction.">
+    markToMarket Money (1..1) <"The amount the valuation party would be owed (positive) or would owe (negative) if the transaction were terminated, as a Base Currency Equivalent.">
+
+type NettingSet: <"The transactions between two parties whose values are netted into one exposure under one master agreement and its credit support annex.">
+    nettingSetIdentifier Identifier (1..1) <"Identifies the netting set, for example by the master agreement it is netted under.">
+    valuationParty Party (1..1) <"The party from whose side each markToMarket is stated.">
+    counterparty Party (1..1) <"The other party.">
+    tradeExposure TradeExposure (0..*) <"One value per transaction.">
+
+    condition TwoParties: <"The valuation party and the counterparty differ.">
+        valuationParty <> counterparty
+
+    condition OneValuePerTrade: <"Each transaction appears once.">
+        (tradeExposure extract tradeIdentifier then distinct then count) = tradeExposure count

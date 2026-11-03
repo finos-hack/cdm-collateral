@@ -1,0 +1,180 @@
+namespace cdmx.collateral.concentration : <"Local CDM extension: evaluation of the concentration limits of an eligible collateral schedule (gap G8).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.asset.common.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+
+// A limit is evaluated over the collateral that matches the criteria it belongs to (EligibleCollateralCriteria ->
+// collateralCriteria), narrowed by the limit's own concentrationLimitCriteria -> collateralCriteria when present.
+// Matching uses CDM's CheckCriteria. The measure is the value after haircuts, and a percentage limit is a share of the
+// value after haircuts of all the collateral given (held and proposed together). Limit types Asset and Issuer apply
+// to each asset or issuer separately; a limit without a type applies to the matching collateral as a whole. The other
+// types need market data that the schedule does not carry (exchange, sector, issue size, market capitalisation,
+// trading volume) and are rejected by a condition.
+
+func WithinNumberRange: <"True if a number is within a range; an absent bound does not limit.">
+    inputs:
+        x number (1..1)
+        range NumberRange (1..1)
+    output:
+        within boolean (1..1)
+
+    alias lower: range -> lowerBound
+    alias upper: range -> upperBound
+
+    set within:
+        (lower is absent or (if lower -> inclusive then x >= lower -> number else x > lower -> number))
+            and (upper is absent or (if upper -> inclusive then x <= upper -> number else x < upper -> number))
+
+func WithinMoneyRange: <"True if an amount in the base currency is within a money range; an absent bound does not limit.">
+    inputs:
+        x number (1..1)
+        range MoneyRange (1..1)
+        baseCurrency string (1..1)
+    output:
+        within boolean (1..1)
+
+    alias lower: range -> lowerBound
+    alias upper: range -> upperBound
+
+    condition CurrencyMatches: <"The bounds are in the base currency.">
+        (lower is absent or lower -> money -> unit -> currency = baseCurrency)
+            and (upper is absent or upper -> money -> unit -> currency = baseCurrency)
+
+    set within:
+        (lower is absent or (if lower -> inclusive then x >= lower -> money -> value else x > lower -> money -> value))
+            and (upper is absent
+                or (if upper -> inclusive then x <= upper -> money -> value else x < upper -> money -> value))
+
+func GroupConcentrationBreach: <"The breach of one limit by one group of collateral (one asset, one issuer, or all the matching collateral), absent if the group is within the limit.">
+    inputs:
+        limit ConcentrationLimit (1..1)
+        members ValuedCollateral (0..*) <"The collateral in the group.">
+        totalValue number (1..1) <"Value after haircuts of all the collateral.">
+        baseCurrency string (1..1)
+        asset Asset (0..1)
+        issuer LegalEntity (0..1)
+    output:
+        breach ConcentrationLimitBreach (0..1)
+
+    alias concentratedValue: members extract valueAfterHaircuts -> value then sum
+    alias percentage: if totalValue > 0 then concentratedValue / totalValue else 0.0
+    alias withinValue: limit -> valueLimit is absent or WithinMoneyRange(concentratedValue, limit -> valueLimit, baseCurrency)
+    alias withinPercentage: limit -> percentageLimit is absent or WithinNumberRange(percentage, limit -> percentageLimit)
+
+    set breach:
+        if members exists and (withinValue and withinPercentage) = False
+        then ConcentrationLimitBreach {
+                limit: limit,
+                asset: asset,
+                issuer: issuer,
+                concentratedValue: Money {
+                    value: concentratedValue,
+                    unit: UnitType {
+                        currency: baseCurrency,
+                        ...
+                    },
+                    ...
+                },
+                totalValue: Money {
+                    value: totalValue,
+                    unit: UnitType {
+                        currency: baseCurrency,
+                        ...
+                    },
+                    ...
+                },
+                percentage: percentage
+            }
+
+func LimitConcentrationBreaches: <"The breaches of one concentration limit by the collateral that matches its criteria.">
+    inputs:
+        limit ConcentrationLimit (1..1)
+        eligible ValuedCollateral (0..*) <"The collateral that matches the criteria the limit belongs to.">
+        totalValue number (1..1) <"Value after haircuts of all the collateral.">
+        baseCurrency string (1..1)
+    output:
+        breaches ConcentrationLimitBreach (0..*)
+
+    alias limitCriteria: limit -> concentrationLimitCriteria -> collateralCriteria
+    alias limitType: limit -> concentrationLimitCriteria -> concentrationLimitType
+    alias applies:
+        if limitCriteria exists
+        then eligible filter CheckCriteria(limitCriteria, item -> details)
+        else eligible
+
+    add breaches:
+        if limitType = ConcentrationLimitTypeEnum -> Asset
+        then (applies
+                extract position -> asset
+                then distinct
+                then extract a [
+                    GroupConcentrationBreach(
+                            limit,
+                            applies filter c [ c -> position -> asset = a ],
+                            totalValue,
+                            baseCurrency,
+                            a,
+                            empty
+                        )
+                ])
+        else if limitType = ConcentrationLimitTypeEnum -> Issuer
+        then (applies
+                extract details -> issuerName
+                then distinct
+                then extract issuerEntity [
+                    GroupConcentrationBreach(
+                            limit,
+                            applies filter c [ c -> details -> issuerName = issuerEntity ],
+                            totalValue,
+                            baseCurrency,
+                            empty,
+                            issuerEntity
+                        )
+                ])
+        else GroupConcentrationBreach(limit, applies, totalValue, baseCurrency, empty, empty)
+
+func ConcentrationLimitBreaches: <"The concentration limits of an eligible collateral schedule that a set of collateral breaches, evaluated on the value after haircuts. Pass the collateral held and the collateral proposed together: an empty result means the proposal keeps the portfolio within the schedule's limits.">
+    inputs:
+        specification EligibleCollateralSpecification (1..1) <"The eligible collateral schedule with its concentration limits.">
+        collateral ValuedCollateral (1..*) <"Collateral held and proposed.">
+        baseCurrency string (1..1) <"Base Currency of the agreement.">
+    output:
+        breaches ConcentrationLimitBreach (0..*)
+
+    alias included: specification -> criteria filter treatment -> isIncluded
+    alias totalValue: collateral extract valueAfterHaircuts -> value then sum
+
+    condition CurrencyMatches: <"The collateral is valued in the base currency.">
+        collateral extract valueAfterHaircuts -> unit -> currency then all = baseCurrency
+
+    condition EvaluatedLimitTypes: <"Only limits per asset, per issuer or without a type are evaluated; the other types need market data the schedule does not carry.">
+        (included
+            extract treatment -> concentrationLimit
+            then flatten
+            then filter
+                item -> concentrationLimitCriteria -> concentrationLimitType exists
+                    and item -> concentrationLimitCriteria -> concentrationLimitType <> ConcentrationLimitTypeEnum -> Asset
+                    and item -> concentrationLimitCriteria -> concentrationLimitType <> ConcentrationLimitTypeEnum -> Issuer
+            then count = 0)
+            and (included -> treatment -> concentrationLimit -> concentrationLimitCriteria -> averageTradingVolume
+                is absent)
+
+    add breaches:
+        included
+            extract criterion [
+                criterion -> treatment -> concentrationLimit
+                    extract limit [
+                        LimitConcentrationBreaches(
+                                limit,
+                                collateral filter CheckCriteria(criterion -> collateralCriteria, item -> details),
+                                totalValue,
+                                baseCurrency
+                            )
+                    ]
+                    then flatten
+            ]
+            then flatten

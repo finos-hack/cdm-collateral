@@ -1,0 +1,21 @@
+namespace cdmx.collateral.concentration : <"Local CDM extension: evaluation of the concentration limits of an eligible collateral schedule (gap G8). CDM 7.7.0 describes concentration limits (ConcentrationLimit) but no function evaluates them.">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.common.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+
+type ValuedCollateral: <"One collateral position with its value after haircuts and the asset and issuer details that the schedule's criteria are checked against.">
+    position CollateralPosition (1..1) <"The asset and quantity.">
+    valueAfterHaircuts Money (1..1) <"Value of the position after haircuts, in the base currency.">
+    details EligibilityQuery (1..1) <"Asset and issuer details, checked against the criteria with CDM's CheckCriteria.">
+
+type ConcentrationLimitBreach: <"A concentration limit that the collateral breaches.">
+    limit ConcentrationLimit (1..1) <"The limit breached.">
+    asset Asset (0..1) <"The asset, for a limit that applies to each asset.">
+    issuer LegalEntity (0..1) <"The issuer, for a limit that applies to each issuer.">
+    concentratedValue Money (1..1) <"Value after haircuts of the collateral the limit applies to.">
+    totalValue Money (1..1) <"Value after haircuts of all the collateral.">
+    percentage number (1..1) <"concentratedValue as a share of totalValue, for example 0.25 for 25%.">

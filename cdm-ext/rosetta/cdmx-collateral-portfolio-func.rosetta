@@ -1,0 +1,119 @@
+namespace cdmx.collateral.portfolio : <"Local CDM extension: collateral positions and balance kept up to date from settled margin call events (gap G5). CDM 7.7.0 has CollateralPortfolio, CollateralPosition and CollateralBalance, but no function updates them.">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.asset.common.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdmx.collateral.event.*
+import cdmx.collateral.margincall.*
+import cdmx.collateral.proposal.*
+
+func HeldQuantity: <"The total quantity of one asset across a list of collateral positions.">
+    inputs:
+        positions CollateralPosition (0..*)
+        asset Asset (1..1)
+    output:
+        quantity number (1..1)
+
+    set quantity:
+        positions
+            filter item -> asset = asset
+            then extract item -> priceQuantity only-element -> quantity -> value
+            then sum
+
+func NetCollateralPosition: <"The position held in one asset after a movement: held plus delivered less released quantity, in the unit of the first position in that asset. Absent when nothing is left.">
+    inputs:
+        asset Asset (1..1)
+        held CollateralPosition (0..*) <"Positions held before the event.">
+        incoming CollateralPosition (0..*) <"Positions delivered by the event.">
+        outgoing CollateralPosition (0..*) <"Positions released by the event.">
+    output:
+        position CollateralPosition (0..1)
+
+    alias quantity: HeldQuantity(held, asset) + HeldQuantity(incoming, asset) - HeldQuantity(outgoing, asset)
+    alias unit:
+        [held, incoming]
+            filter item -> asset = asset
+            then first
+            -> priceQuantity only-element -> quantity -> unit
+
+    set position:
+        if quantity > 0
+        then CollateralPosition {
+                priceQuantity: PriceQuantity {
+                    quantity: NonNegativeQuantitySchedule {
+                        value: quantity,
+                        unit: unit,
+                        ...
+                    },
+                    ...
+                },
+                asset: asset,
+                collateralPositionStatus: CollateralStatusEnum -> SettledAmount,
+                ...
+            }
+
+func ApplyCollateralEvent: <"The collateral portfolio between the pledgor and the secured party after one margin call event. Only a settlement changes it: a delivery adds the accepted proposal's positions and its value after haircuts, a return removes the released positions and the released value. Positions are netted per asset; the balance is the settled post-haircut value held, payer the pledgor and receiver the secured party.">
+    inputs:
+        portfolio CollateralPortfolio (0..1) <"Absent before the first settlement.">
+        event CollateralEvent (1..1)
+    output:
+        updated CollateralPortfolio (1..1)
+
+    alias settle: event -> instruction -> settle
+    alias delivery: event -> after -> direction = MarginCallActionEnum -> Delivery
+    alias deliveredProposal:
+        event -> after -> proposal
+            filter status = CollateralProposalStatusEnum -> Accepted
+                and item -> proposalIdentifier -> assignedIdentifier only-element -> identifier = settle -> proposalId
+            then only-element
+    alias held: portfolio -> collateralPosition
+    alias incoming: if settle exists and delivery then deliveredProposal -> proposedCollateral else empty
+    alias outgoing: if settle exists and delivery = False then settle -> releasedCollateral else empty
+    alias assets: [held, incoming] extract item -> asset then distinct
+
+    alias previousValue:
+        if portfolio -> collateralBalance exists
+        then portfolio -> collateralBalance only-element -> amountBaseCurrency -> value
+        else 0.0
+    alias valueIn: if settle exists and delivery then deliveredProposal -> valueAfterHaircuts -> value else 0.0
+    alias valueOut: if settle exists and delivery = False then settle -> releasedValue -> value else 0.0
+    alias currency: event -> after -> issuance -> callAmountInBaseCurrency -> unit -> currency
+
+    alias overReleased:
+        outgoing
+            extract item -> asset
+            then distinct
+            then filter a [ HeldQuantity(held, a) + HeldQuantity(incoming, a) < HeldQuantity(outgoing, a) ]
+
+    condition NotOverReleased: <"A return releases no more of an asset than is held.">
+        overReleased is absent
+
+    condition OneBalance: <"The portfolio keeps one balance, the settled post-haircut value held.">
+        portfolio -> collateralBalance count <= 1
+
+    set updated:
+        CollateralPortfolio {
+            portfolioIdentifier: portfolio -> portfolioIdentifier,
+            collateralPosition: assets extract a [ NetCollateralPosition(a, held, incoming, outgoing) ],
+            collateralBalance: CollateralBalance {
+                collateralBalanceStatus: CollateralStatusEnum -> SettledAmount,
+                haircutIndicator: HaircutIndicatorEnum -> PostHaircut,
+                amountBaseCurrency: Money {
+                    value: previousValue + valueIn - valueOut,
+                    unit: UnitType {
+                        currency: currency,
+                        ...
+                    },
+                    ...
+                },
+                payerReceiver: PartyReferencePayerReceiver {
+                    payerPartyReference: event -> after -> issuance -> partyRole filter role = PartyRoleEnum -> Pledgor then only-element -> partyReference,
+                    receiverPartyReference: event -> after -> issuance -> partyRole filter role = PartyRoleEnum -> SecuredParty then only-element -> partyReference,
+                    ...
+                }
+            },
+            legalAgreement: portfolio -> legalAgreement
+        }

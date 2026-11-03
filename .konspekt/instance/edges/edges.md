@@ -147,3 +147,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-topupmodelling-topupexcluded | notes | node:task-revaluation-top-up-modelling | noteworthy:nw-revaluation-top-up-excluded |  | accepted |
 | e-mrk-cispecsadr-remainingflows | marks | waypoint:wp-adr-ci-runs-live-specs | node:task-e2e-remaining-flows |  | accepted |
 | e-sup-cispecs-livestacklocal | supersedes | waypoint:wp-adr-ci-runs-live-specs | waypoint:wp-adr-live-stack-local-ui-driven |  | accepted |
+| e-note-gapclosure-portfoliopair | notes | node:task-cdm-gap-closure | noteworthy:nw-portfolio-per-pair-post-haircut |  | accepted |
+| e-note-gapclosure-valuationpct | notes | node:task-cdm-gap-closure | noteworthy:nw-cdm-valuation-percentage-as-haircut |  | accepted |
+| e-note-gapclosure-concentration | notes | node:task-cdm-gap-closure | noteworthy:nw-concentration-held-and-proposed-after-haircuts |  | proposed |
+| e-note-gapclosure-vmexposure | notes | node:task-cdm-gap-closure | noteworthy:nw-vm-exposure-from-netting-set |  | proposed |

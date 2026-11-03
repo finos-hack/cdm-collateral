@@ -1,0 +1,33 @@
+namespace cdmx.collateral.exposure : <"Local CDM extension: exposure netting for variation margin (gap G10).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+
+func NettedExposure: <"The Exposure of the secured party under a netting set: the sum of the transactions' mark-to-market values from the secured party's side, positive when the secured party would be owed on termination. Values of opposite sign offset each other.">
+    [calculation]
+    inputs:
+        nettingSet NettingSet (1..1)
+        securedParty Party (1..1) <"The party whose exposure is wanted: the netting set's valuation party or its counterparty.">
+        baseCurrency string (1..1) <"Base Currency of the credit support annex.">
+    output:
+        exposure Money (1..1)
+
+    alias valuationPartyExposure: nettingSet -> tradeExposure extract markToMarket -> value then sum
+
+    condition PartyOfTheNettingSet: <"The secured party is one of the netting set's two parties.">
+        securedParty = nettingSet -> valuationParty or securedParty = nettingSet -> counterparty
+
+    condition CurrencyMatches: <"Every value is a Base Currency Equivalent.">
+        (nettingSet -> tradeExposure filter markToMarket -> unit -> currency <> baseCurrency then count) = 0
+
+    set exposure:
+        Money {
+            value: if securedParty = nettingSet -> valuationParty then valuationPartyExposure else 0.0 - valuationPartyExposure,
+            unit: UnitType {
+                currency: baseCurrency,
+                ...
+            },
+            ...
+        }
