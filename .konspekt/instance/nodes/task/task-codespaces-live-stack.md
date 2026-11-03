@@ -2,8 +2,8 @@
 id: task-codespaces-live-stack
 type: task
 title: Run the live stack in GitHub Codespaces with the console reaching the services through forwarded URLs
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: devcontainer-live-stack
   sourceRef: 95c5dff4cf00f514d0354f18696dd767033021e8
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
 createdAt: 2026-11-01T01:00:00Z
-updatedAt: 2026-11-03T01:48:11Z
+updatedAt: 2026-11-03T03:05:59Z
 ```
 # Task: run the live stack in GitHub Codespaces
 
@@ -91,3 +91,15 @@ leftover bridge and rule. A new codespace `clean-try-vgx4wrxppjcpp9r` (display n
 six ports report healthy; the console proxy serves `/svc/A`, `/svc/B` and the SSE stream. Pending: the browser check
 on the forwarded 5173 URL, then deletion of the old codespace `automatic-fiesta-7rgqw5gv5vfxw4j` (the project owner's
 choice).
+
+## Result — 2026-11-03: browser path verified; resolved
+
+In the browser, on the private forwarded console URL of `clean_try`
+(`https://clean-try-vgx4wrxppjcpp9r-5173.app.github.dev`), the project owner opened the secured-party console
+(`/#/live/B`) and issued an IM call ($5,000,000, B to A; observed in service B's state through the proxy as
+`issued`), then opened the pledgor console (`/#/live/A`) and responded; both worked ("node A works, looks good").
+The console reached both services and the SSE stream through the same-origin proxy with only 5173 forwarded and
+private. The codespace also survived a stop and restart with the stack up and the ports still forwarded.
+
+Accepted and resolved by the project owner (source `5c190e38fe670e7310d923d91fea67ab10d39ab9`), together with [[wp-adr-console-same-origin-proxy]]. The
+old codespace `automatic-fiesta-7rgqw5gv5vfxw4j` was deleted at the project owner's request.

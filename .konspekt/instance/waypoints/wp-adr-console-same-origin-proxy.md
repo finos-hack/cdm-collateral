@@ -3,7 +3,7 @@ id: wp-adr-console-same-origin-proxy
 kind: decision
 subtype: adr
 timestamp: 2026-11-02T23:15:24Z
-review: proposed
+review: accepted
 provenance:
   conversationId: 988875b8-4ec1-4971-aceb-47c0f58236c5
   sourceRef: 11d6ad3ea1a0518924d73887fa242027bcf2ddd1
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-02T23:15:24Z
   confidence: 0.7
 createdAt: 2026-11-02T23:15:24Z
-updatedAt: 2026-11-02T23:15:24Z
+updatedAt: 2026-11-03T03:05:59Z
 ```
 # ADR: The console reaches the collateral services through a same-origin proxy in the dev container
 
@@ -31,3 +31,5 @@ current `Access-Control-Allow-Origin: *`, which the proxied path does not use. A
 without the Vite server does not have the proxy; it uses the direct URLs. Rejected alternative: per-port URLs derived
 from `CODESPACE_NAME` / `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN`, which leaves the private-port cookie and CORS
 questions open.
+
+Accepted by the project owner on 2026-11-03 (source `5c190e38fe670e7310d923d91fea67ab10d39ab9`) after the browser check on the clean codespace.

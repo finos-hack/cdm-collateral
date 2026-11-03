@@ -373,3 +373,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-remainingflows-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
 | waypoint:wp-adr-console-same-origin-proxy | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
 | edge:e-mrk-sameoriginproxy-codespacesstack | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
+| waypoint:wp-adr-console-same-origin-proxy | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| node:task-codespaces-live-stack | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| node:task-codespaces-live-stack | status | open | resolved | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
