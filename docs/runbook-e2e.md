@@ -235,6 +235,14 @@ feed through gateway mkt; B's gateway then calls `enforce`, which moves everythi
 consoles show `in default on the oracle feed` and `enforced ✓`. A stays in default on the persistent chain; only
 `reset` clears it.
 
+Revaluation flow (`flow-revaluation-top-up`): with IM in escrow, open the market operator console
+(`http://localhost:5173/#/live/operator`), enter a lower tUST price (for example 88.56) and click `Publish tUST`. The
+oracle publishes the price to the feed through gateway mkt. B's console then shows the "Revaluation" card: the
+required IM (agreed amounts of IM calls settled since the pair's last enforcement, less returns, top-ups excluded),
+the pledged value at the feed prices after haircuts, the shortfall, and the top-up amount (0 below the USD 500,000
+minimum transfer amount, otherwise rounded up to USD 10,000). `Issue top-up IM call → A` issues the call, which
+follows the IM flow. Set the tUST price back to 98.4 afterwards; the other specs value tUST at 98.4.
+
 ### Automated (Playwright live specs)
 
 ```bash
@@ -244,8 +252,9 @@ npm run test:e2e -- e2e/live.spec.ts
 CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 ```
 
-The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return` and
-`flow-default-enforcement`. The return and default specs set up their escrow through the service API, then drive
+The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
+`flow-default-enforcement`, `flow-oracle-update` and `flow-revaluation-top-up`. The return, default and revaluation
+specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and
 serves it on 4173 itself (`console/playwright.config.ts`); it does not use the 5173 dev server, but it needs the
 services on 8001/8002 and everything below them. Each run uses a distinct call amount, so the chain does not need a
@@ -328,6 +337,7 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 | `check-network.sh`: `Connection refused` | containers not running | `docker compose -f besu/docker-compose.yml ps`; `bash besu/start-network.sh` |
 | Block number stays at `0x0` | fewer than three validators running | `docker compose -f besu/docker-compose.yml logs` |
 | Playwright live specs `skipped` | service A not reachable on 8001 | section 4, steps 4–5 |
+| `build` fails with `EPERM` on `console/node_modules/@esbuild/win32-x64/esbuild.exe` (Windows) | the running console dev server holds the file; `npm ci` has already emptied part of `node_modules` | `bash scripts/live-e2e.sh down`, then `build` again |
 
 ## 10. Verification status of this runbook
 
@@ -347,6 +357,17 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
   nonce 5)": B's own node (bank-b) supplied nonce 0. The Besu containers had not restarted (started during `up`, 0
   restarts), and afterwards all four nodes reported the same height, 3 peers and the same pending nonce for B. The
   cause is not known. `check --grep flow-return` on the same chain then passed (37.3 s).
+- With `flow-revaluation-top-up` added: `build` while the stack was running failed with `EPERM` on the console's
+  `esbuild.exe` (section 9); `down`, `build`, `up` then worked. `check --grep flow-revaluation-top-up` passed (1.2 min)
+  on the used chain. The next full `check` failed `flow-return` once at the final CDM state comparison (A and B
+  reported different `stateHash` values; a minute later both gave the same hash for every return call). Each party
+  reports `converged` for the steps its own node shows, so the spec now polls until both fold the same step count to
+  the same hash. The full `check` after that failed `flow-vm-margin-call-transfer` with `ERC20InsufficientBalance`
+  (`0xe450d38c`): the pledgor had 4,982,000 tUSD left (`task-live-spec-balance-aware-amounts`).
+- After a third `reset`, `up` failed once in the contract deploy with an RPC internal error (-32603) on the new
+  chain; a second `up` exited 0. `check` then passed all six specs (3.3 min): `flow-im-margin-call-pledge` (29.5 s),
+  `flow-vm-margin-call-transfer` (26.0 s), `flow-return` (37.9 s), `flow-default-enforcement` (27.8 s),
+  `flow-oracle-update` (12.3 s), `flow-revaluation-top-up` (1.0 min).
 
 ### 2026-11-01 — GitHub Codespace, `check` run from the Windows host through a `gh` tunnel
 

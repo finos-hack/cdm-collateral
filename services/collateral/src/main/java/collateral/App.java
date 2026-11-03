@@ -12,6 +12,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +79,7 @@ public final class App {
         app.get("/api/v1/health", ctx -> ctx.json(Map.of("party", cfg.partyId, "role", cfg.role, "address", cfg.myAddress, "ok", true)));
         app.get("/api/v1/context", this::context);
         app.get("/api/v1/state", this::state);
+        app.get("/api/v1/revaluation", this::revaluation);
         app.get("/api/v1/calls/{id}/cdm-state", ctx -> ctx.json(cdmStateFor(ctx.pathParam("id"))));
         app.post("/api/v1/calls", this::issueCall);
         app.post("/api/v1/calls/{id}/response", this::respond);
@@ -250,6 +253,90 @@ public final class App {
                 "defaults", defaults)));
     }
 
+    /** IM agreement terms used by the revaluation (console/src/domain/reference.ts, 2018 ISDA IM CSA). */
+    static final long IM_MTA_USD = 500_000;
+    static final long IM_ROUNDING_USD = 10_000;
+
+    /**
+     * Revaluation of the initial margin held between the two parties (flow-revaluation-top-up transition 5). The
+     * requirement is the outstanding IM from calls: agreed amounts of settled IM calls minus settled return calls,
+     * counting only calls settled after the pair's last enforcement (enforcement empties the escrow). Top-up calls
+     * (tagged by the issuing party's store) restore value and are left out of the requirement, so this is the issuing
+     * secured party's view; the pledgor's service does not see the tags. The collateral is
+     * valued at the oracle feed prices, read through this party's own gateway, after the eligibility haircuts. A
+     * shortfall at or above the minimum transfer amount gives a top-up call amount, rounded up (delivery).
+     */
+    private void revaluation(Context ctx) {
+        String counterparty = cfg.partyId.equals("B") ? "A" : "B";
+        String cpAddr = cfg.partyAddress(counterparty);
+        String pledgor = cfg.role.equals("Pledgor") ? cfg.myAddress : cpAddr;
+        String securedParty = cfg.role.equals("Pledgor") ? cpAddr : cfg.myAddress;
+        BigInteger scale = cfg.priceScale;
+
+        JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
+        long lastEnforcement = -1;
+        for (JsonNode e : hist.get("enforced")) lastEnforcement = Math.max(lastEnforcement, e.get("block").asLong());
+        Map<String, Long> settledAt = new HashMap<>();
+        for (JsonNode s : hist.get("settled")) settledAt.merge(s.get("callId").asText().toLowerCase(), s.get("block").asLong(), Math::max);
+
+        BigInteger required = BigInteger.ZERO;
+        int imCalls = 0, returnCalls = 0, topUpCalls = 0;
+        String p = pledgor.toLowerCase(), sp = securedParty.toLowerCase();
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int kind = c.get("kind").asInt(), state = c.get("state").asInt();
+            if (state != 5 && state != 6) continue; // settled, or settled for the agreed part
+            String from = c.get("from").asText().toLowerCase(), to = c.get("to").asText().toLowerCase();
+            boolean pair = (from.equals(p) && to.equals(sp)) || (from.equals(sp) && to.equals(p));
+            Long block = settledAt.get(entry.get("callId").asText().toLowerCase());
+            if (!pair || block == null || block <= lastEnforcement) continue;
+            BigInteger agreed = new BigInteger(c.get("agreed").asText());
+            // A top-up restores the value of the posted IM; it does not raise the requirement.
+            if (kind == 0 && "top-up".equals(store.purposeOf(entry.get("callId").asText()))) { topUpCalls++; continue; }
+            if (kind == 0) { required = required.add(agreed); imCalls++; }
+            else if (kind == 2) { required = required.subtract(agreed); returnCalls++; }
+        }
+        if (required.signum() < 0) required = BigInteger.ZERO;
+
+        Map<String, BigInteger> priceByToken = new HashMap<>();
+        for (JsonNode pr : gw.get("/prices").get("prices")) {
+            if (!pr.get("price").isNull()) priceByToken.put(pr.get("token").asText().toLowerCase(), new BigInteger(pr.get("price").asText()));
+        }
+        BigInteger value = BigInteger.ZERO;
+        List<Map<String, Object>> tokens = new ArrayList<>();
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            String token = cfg.tokenAddress(sym);
+            BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", securedParty)).asText());
+            if (qty.signum() == 0) continue;
+            BigInteger price = priceByToken.getOrDefault(token.toLowerCase(), BigInteger.ZERO);
+            int haircutBps = cfg.registry.get("tokens").get(sym).get("haircutBps").asInt();
+            BigInteger v = qty.multiply(price).multiply(BigInteger.valueOf(10_000L - haircutBps)).divide(BigInteger.valueOf(10_000));
+            value = value.add(v);
+            tokens.add(new LinkedHashMap<>(Map.of("token", sym, "pledged", qty.toString(), "price", price.toString(),
+                    "haircutBps", haircutBps, "valueUsd", usd(v.toString()))));
+        }
+
+        BigInteger shortfall = required.subtract(value).max(BigInteger.ZERO);
+        BigInteger[] qr = shortfall.divideAndRemainder(scale);
+        long shortfallUsd = qr[0].longValueExact() + (qr[1].signum() > 0 ? 1 : 0);
+        long topUpUsd = shortfallUsd >= IM_MTA_USD ? ((shortfallUsd + IM_ROUNDING_USD - 1) / IM_ROUNDING_USD) * IM_ROUNDING_USD : 0;
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("requiredUsd", usd(required.toString()));
+        out.put("valueUsd", usd(value.toString()));
+        out.put("shortfallUsd", String.valueOf(shortfallUsd));
+        out.put("topUpUsd", String.valueOf(topUpUsd));
+        out.put("mtaUsd", String.valueOf(IM_MTA_USD));
+        out.put("roundingUsd", String.valueOf(IM_ROUNDING_USD));
+        out.put("imCalls", imCalls);
+        out.put("returnCalls", returnCalls);
+        out.put("topUpCalls", topUpCalls);
+        out.put("lastEnforcementBlock", lastEnforcement);
+        out.put("tokens", tokens);
+        ctx.json(out);
+    }
+
     /**
      * The cumulative CDM MarginCallState for a call, folded from the step documents (wp-adr-cdm-payload-carrier): read
      * the on-chain ordered step hashes from the gateway, fetch each document from the payload store by hash, verify
@@ -321,6 +408,7 @@ public final class App {
         record(callId, "IssueCall", cdm);
         gw.post("/calls", Map.of("callId", callId, "kind", CALL_KIND.get(kind), "to", cfg.partyAddress(toParty),
                 "amount", amountScaled, "deadline", deadline, "cdmHash", cdm.hash));
+        if ("top-up".equals(b.get("purpose"))) store.tagCall(callId, "top-up");
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash));
     }
 

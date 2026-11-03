@@ -128,6 +128,7 @@ export interface LedgerAdapter {
   isDefaulted(party: Address): Promise<boolean>;
   publishPrice(token: Address, priceScaled: bigint): Promise<{ txHash: Hex; block: bigint }>;
   priceOf(token: Address): Promise<bigint | null>;
+  settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[] }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
@@ -289,6 +290,31 @@ export class BesuAdapter implements LedgerAdapter {
     const out: { callId: Hex; call: OnChainCall }[] = [];
     for (const callId of ids) out.push({ callId, call: await this.getCall(callId) });
     return out;
+  }
+
+  // Settlement history for revaluation (flow-revaluation-top-up): the block of every CallSettled event, and the
+  // Enforced events for one pledgor/secured-party pair. Enforcement moves the pair's whole escrow to the secured
+  // party, so a reader counts only the calls settled after the pair's last enforcement. Scanned in windows like
+  // listCalls.
+  async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[] }> {
+    const settledEvent = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallSettled") as never;
+    const enforcedEvent = controlAbi.find((x: any) => x.type === "event" && x.name === "Enforced") as never;
+    const latest = await this.pub.getBlockNumber();
+    const start = BigInt(this.reg.deployBlock ?? 0);
+    const WINDOW = 4000n;
+    const settled: { callId: Hex; block: string }[] = [];
+    const enforced: { callId: Hex; block: string }[] = [];
+    for (let from = start; from <= latest; from += WINDOW) {
+      const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
+      for (const log of await this.pub.getLogs({ address: this.reg.contracts.marginCall, event: settledEvent, fromBlock: from, toBlock: to })) {
+        settled.push({ callId: (log as any).args.callId as Hex, block: (log as any).blockNumber.toString() });
+      }
+      const pair = { securedParty, pledgor } as never;
+      for (const log of await this.pub.getLogs({ address: this.reg.contracts.collateralControl, event: enforcedEvent, args: pair, fromBlock: from, toBlock: to })) {
+        enforced.push({ callId: (log as any).args.callId as Hex, block: (log as any).blockNumber.toString() });
+      }
+    }
+    return { settled, enforced };
   }
 
   // The lifecycle steps of one call, in chain order, each with its CDM hash — the authoritative ordered commitment

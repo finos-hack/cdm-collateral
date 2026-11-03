@@ -10,6 +10,8 @@ import react from "@vitejs/plugin-react";
 const serviceProxy = {
   "/svc/A": { target: "http://localhost:8001", rewrite: (p: string) => p.replace(/^\/svc\/A/, "") },
   "/svc/B": { target: "http://localhost:8002", rewrite: (p: string) => p.replace(/^\/svc\/B/, "") },
+  // The market operator's oracle service (operator console, flow-revaluation-top-up).
+  "/svc/oracle": { target: "http://localhost:8100", rewrite: (p: string) => p.replace(/^\/svc\/oracle/, "") },
 };
 
 // base "./" so the built console also works when served from a sub-path or opened as static files.

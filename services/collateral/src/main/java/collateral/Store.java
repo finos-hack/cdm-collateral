@@ -55,6 +55,11 @@ public final class Store implements AutoCloseable {
                       UNIQUE(event, block, log_index)
                     )""");
                 st.execute("""
+                    CREATE TABLE IF NOT EXISTS call_purpose (
+                      call_id TEXT PRIMARY KEY,
+                      purpose TEXT NOT NULL
+                    )""");
+                st.execute("""
                     CREATE TABLE IF NOT EXISTS margin_call_state (
                       call_id TEXT PRIMARY KEY,
                       state_json TEXT NOT NULL,
@@ -93,6 +98,32 @@ public final class Store implements AutoCloseable {
             ins.setString(5, cdm.json);
             ins.setString(6, Instant.now().toString());
             ins.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Tag a call this party issued with its purpose (e.g. "top-up": a revaluation top-up, which restores the value of
+     * the posted IM and so does not add to the IM requirement; flow-revaluation-top-up).
+     */
+    public void tagCall(String callId, String purpose) {
+        try (PreparedStatement up = conn.prepareStatement(
+                "INSERT INTO call_purpose(call_id, purpose) VALUES(?,?) ON CONFLICT(call_id) DO UPDATE SET purpose = excluded.purpose")) {
+            up.setString(1, callId.toLowerCase());
+            up.setString(2, purpose);
+            up.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** The purpose a call was tagged with, or null. */
+    public String purposeOf(String callId) {
+        try (PreparedStatement q = conn.prepareStatement("SELECT purpose FROM call_purpose WHERE call_id = ?")) {
+            q.setString(1, callId.toLowerCase());
+            ResultSet rs = q.executeQuery();
+            return rs.next() ? rs.getString(1) : null;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

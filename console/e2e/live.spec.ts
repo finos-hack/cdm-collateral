@@ -89,16 +89,19 @@ const pledgedOf = async (gw: string, token: string, p: Parties) =>
   BigInt(await call<string>(`${gw}/pledged?token=${token}&pledgor=${p.a}&securedParty=${p.b}`));
 
 // The CDM MarginCallState each party folds from the chain and the payload store; both must converge on the same hash.
+// "converged" is per party: every step its own node shows has been folded. A node a block behind can report converged
+// on fewer steps, so poll until both parties fold the same number of steps to the same hash.
 async function expectConvergedCdmState(callId: string) {
-  const hashes: string[] = [];
-  for (const svc of [SERVICE.A, SERVICE.B]) {
-    await expect
-      .poll(async () => (await call<{ converged: boolean }>(`${svc}/calls/${callId}/cdm-state`)).converged, { timeout: 60_000 })
-      .toBe(true);
-    hashes.push((await call<{ stateHash: string }>(`${svc}/calls/${callId}/cdm-state`)).stateHash);
-  }
-  expect(hashes[0]).toMatch(/^0x[0-9a-f]{64}$/i);
-  expect(hashes[1]).toBe(hashes[0]);
+  type Fold = { converged: boolean; totalSteps: number; stateHash: string };
+  let a: Fold | undefined, b: Fold | undefined;
+  await expect
+    .poll(async () => {
+      a = await call<Fold>(`${SERVICE.A}/calls/${callId}/cdm-state`);
+      b = await call<Fold>(`${SERVICE.B}/calls/${callId}/cdm-state`);
+      return a.converged && b.converged && a.totalSteps === b.totalSteps && a.stateHash === b.stateHash;
+    }, { timeout: 60_000 })
+    .toBe(true);
+  expect(a!.stateHash).toMatch(/^0x[0-9a-f]{64}$/i);
 }
 
 let stackUp = false;
@@ -402,4 +405,85 @@ test("flow-oracle-update: operator edits a price -> oracle publishes via the mkt
   for (const gw of [GATEWAY.A, GATEWAY.B]) {
     await expect.poll(() => onChain(gw), { timeout: 30_000 }).toBe(original);
   }
+});
+
+// --- flow-revaluation-top-up ---
+// The operator lowers the tUST price in the operator console (#/live/operator); the oracle publishes it to the feed. The
+// secured party's console revalues the pledged IM at the feed prices after haircuts and offers a top-up IM call for the
+// shortfall (minimum transfer amount USD 500,000, rounded up to USD 10,000). The top-up is settled like any IM call and
+// does not add to the requirement (wp-adr-revaluation-outstanding-im-from-calls). The tUST price is restored at the
+// end because the other specs value tUST at 98.4.
+type Revaluation = { requiredUsd: string; valueUsd: string; shortfallUsd: string; topUpUsd: string; topUpCalls: number };
+
+test("flow-revaluation-top-up: operator lowers a price -> secured party revalues -> top-up IM call settled, shortfall closed", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const usd = (n: number | string) => `USD ${Number(n).toLocaleString("en-US")}`;
+  const lowered = Math.round(PRICE_TUST * 0.9 * 100) / 100; // 88.56: a 10% drop
+  const imUsd = 8_000_000 + (Date.now() % 9000) * 10; // after the drop the shortfall is about USD 0.8m, above the MTA
+  const imQty = Math.ceil(imUsd / TUST_VALUE) + 100;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  const before = await call<Revaluation>(`${SERVICE.B}/revaluation`);
+  await pledgeThroughServices(imUsd, imQty);
+  await waitForSettledOnChain("IM", imUsd);
+  await expect.poll(async () => Number((await call<Revaluation>(`${SERVICE.B}/revaluation`)).requiredUsd), { timeout: 30_000 })
+    .toBe(Number(before.requiredUsd) + imUsd);
+
+  try {
+    // 1-4. The market operator lowers the tUST price in the operator console; the oracle publishes it to the feed.
+    await page.goto("/#/live/operator");
+    await page.getByLabel("New price tUST").fill(String(lowered));
+    await page.getByRole("button", { name: "Publish tUST" }).click();
+    await expect(page.getByRole("status")).toContainText(`tUST published at USD ${lowered}`, { timeout: STEP_TIMEOUT });
+
+    // 5. The secured party's service revalues at the new feed price and its console shows the shortfall and top-up.
+    let reval = before;
+    await expect
+      .poll(async () => Number((reval = await call<Revaluation>(`${SERVICE.B}/revaluation`)).topUpUsd), { timeout: 30_000 })
+      .toBeGreaterThan(0);
+    const topUpUsd = Number(reval.topUpUsd);
+    expect(topUpUsd % 10_000).toBe(0);
+    expect(topUpUsd).toBeGreaterThanOrEqual(Number(reval.shortfallUsd));
+
+    await page.goto("/#/live/B");
+    const card = page.getByTestId("revaluation");
+    await expect(card.getByTestId("top-up")).toHaveText(usd(topUpUsd), { timeout: STEP_TIMEOUT });
+
+    // 6. The secured party issues the top-up IM call from the revaluation panel.
+    await card.getByRole("button", { name: "Issue top-up IM call → A" }).click();
+    let topUpCall: string | undefined;
+    await expect
+      .poll(async () => {
+        const { calls } = await call<{ calls: { callId: string; kind: string; amountUsd: string; state: string }[] }>(`${SERVICE.A}/state`);
+        topUpCall = calls.find((c) => c.kind === "IM" && c.amountUsd === String(topUpUsd) && c.state === "issued")?.callId;
+        return topUpCall ?? null;
+      }, { timeout: 30_000 })
+      .not.toBeNull();
+
+    // 7. The top-up settles like an IM call, with tUST valued at the lowered feed price (the on-chain pledge check).
+    const topUpQty = Math.ceil(topUpUsd / (lowered * HAIRCUT)) + 100;
+    await call(`${SERVICE.A}/calls/${topUpCall}/response`, "POST", { response: "full" });
+    const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${topUpCall}/proposal`, "POST", { assets: [{ token: "tUST", qty: topUpQty }] });
+    await call(`${SERVICE.B}/calls/${topUpCall}/decision`, "POST", { proposalId, accept: true });
+    await call(`${SERVICE.A}/calls/${topUpCall}/pledge`, "POST", { proposalId });
+    await waitForSettledOnChain("IM", topUpUsd);
+
+    // The shortfall is closed and the requirement is unchanged: the top-up restored value, it was not new IM.
+    await expect.poll(async () => (reval = await call<Revaluation>(`${SERVICE.B}/revaluation`)).shortfallUsd, { timeout: 30_000 }).toBe("0");
+    expect(Number(reval.requiredUsd)).toBe(Number(before.requiredUsd) + imUsd);
+    expect(reval.topUpCalls).toBe(before.topUpCalls + 1);
+    await expect(card.getByTestId("shortfall")).toHaveText("USD 0", { timeout: STEP_TIMEOUT });
+    await expect(card.getByRole("button", { name: /Issue top-up/ })).toHaveCount(0);
+  } finally {
+    await call(`${ORACLE}/market-data/tUST`, "PUT", { price: String(PRICE_TUST) });
+  }
+  const p = await parties();
+  for (const gw of [GATEWAY.A, GATEWAY.B]) {
+    await expect.poll(async () => (await call<{ price: string | null }>(`${gw}/prices/${p.tokens["tUST"]}`)).price, { timeout: 30_000 })
+      .toBe(String(BigInt(Math.round(PRICE_TUST * 100)) * 1_000_000n));
+  }
+
+  expect(errors).toEqual([]);
 });
