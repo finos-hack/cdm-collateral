@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T15:57:23Z
   confidence: 0.85
 createdAt: 2026-11-01T15:57:23Z
-updatedAt: 2026-11-03T16:24:46Z
+updatedAt: 2026-11-03T17:30:00Z
 ```
 # Task: wire the four remaining CALM flows into the live stack
 
@@ -78,4 +78,5 @@ Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed sco
   - a live spec.
   Console vitest: 62 pass. After `reset`, all six live specs pass. On the used chain, one `flow-return` run read the
   two parties' CDM state hashes before both had folded the same steps, so the spec now polls until they match.
-- Left on this task: the "Done when" condition that `e2e-live-stack.yml` runs the specs.
+- CI runs the specs ([[wp-adr-ci-runs-live-specs]], PR #16): the `e2e-live-stack` run 41681112529 passed all six
+  live specs on a fresh runner chain (3.4 min). Every "Done when" condition is met once PR #16 merges.
