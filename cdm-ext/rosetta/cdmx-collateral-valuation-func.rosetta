@@ -10,7 +10,8 @@ import cdm.legaldocumentation.csa.*
 // haircut is subtracted twice and additionalHaircutPercentage never. Rune calls functions by name, so the corrected
 // function is used only by callers that name it: UndisputedAdjustedPostedCreditSupportAmount, DeliveryAmount and
 // ReturnAmount are restated below on top of it. CreditSupportAmount does not use the item value and is CDM's own.
-// The haircut formula is otherwise CDM's: value x (1 - (haircut + FX haircut + additional haircut)).
+// The haircut formula is otherwise CDM's: value x (1 - (haircut + FX haircut + additional haircut)). CDM describes
+// haircutPercentage as the Valuation Percentage but subtracts it (defect D17): pass the haircut, 1 - Valuation Percentage.
 
 func CorrectedPostedCreditSupportItemAmount: <"The Value of one Posted Credit Support item after its haircut, FX haircut and additional haircut, less its disputed value (CDM PostedCreditSupportItemAmount with D1 corrected). An absent FX or additional haircut counts as zero.">
     [docReference ISDA CSA_IM_NewYork_2018 paragraph "13"]

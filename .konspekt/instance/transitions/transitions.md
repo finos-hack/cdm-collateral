@@ -487,3 +487,7 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-cdm-valuation-percentage-as-haircut | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
 | edge:e-note-gapclosure-portfoliopair | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
 | edge:e-note-gapclosure-valuationpct | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
+| noteworthy:nw-portfolio-per-pair-post-haircut | review | proposed | accepted | 2026-11-03T20:41:24Z |  | denisurusov |
+| noteworthy:nw-cdm-valuation-percentage-as-haircut | review | proposed | accepted | 2026-11-03T20:41:24Z |  | denisurusov |
+| edge:e-note-gapclosure-portfoliopair | review | proposed | accepted | 2026-11-03T20:41:24Z |  | denisurusov |
+| edge:e-note-gapclosure-valuationpct | review | proposed | accepted | 2026-11-03T20:41:24Z |  | denisurusov |

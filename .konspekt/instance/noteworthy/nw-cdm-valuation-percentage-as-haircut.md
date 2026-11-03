@@ -1,7 +1,7 @@
 ```yaml
 id: nw-cdm-valuation-percentage-as-haircut
 kind: fact
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 89416143b9918f5fb8fcd0bda74895ebfe36c623
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T18:04:30Z
   confidence: 0.6
 createdAt: 2026-11-03T18:04:30Z
-updatedAt: 2026-11-03T18:04:30Z
+updatedAt: 2026-11-03T20:41:24Z
 ```
 # Fact: CDM describes `haircutPercentage` as the Valuation Percentage but subtracts it as a haircut
 
@@ -22,6 +22,4 @@ Under the ISDA IM CSA, a Valuation Percentage is the share of the value that cou
 passes it as described would get 2% of the value.
 
 The G7 replacement (`CorrectedPostedCreditSupportItemAmount`, [[task-cdm-gap-closure]]) keeps CDM's subtractive
-formula, so callers pass the haircut (1 − Valuation Percentage). Found while closing G7. This is not yet in
-`docs/analysis/defects.md`: if confirmed, it becomes a new defect entry and a description fix in the extension's
-documentation.
+formula, so callers pass the haircut (1 − Valuation Percentage). Found while closing G7. Recorded as defect D17 in `docs/analysis/defects.md` (2026-11-03).

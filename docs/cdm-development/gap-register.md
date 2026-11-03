@@ -145,7 +145,7 @@ Every source ID and where it went.
 
 | Source | Gap | Source | Gap | Source | Gap |
 |---|---|---|---|---|---|
-| F2 | G1, G3, G4, G6 | D1 | G7 | B1 | G24 |
+| F2 | G1, G3, G4, G6 | D1, D17 | G7 | B1 | G24 |
 | M1 | G29 | D2 | G12 | B2 | G1, G25 |
 | M2 | G8 | D3 | G31 | B3 | G26 |
 | M3 | G9 | D4 | G18 | B4 | none (FINOS smart-contract taskforce; context) |
