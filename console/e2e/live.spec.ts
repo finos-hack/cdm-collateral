@@ -1,12 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-// Live end-to-end test for flow-im-margin-call-pledge driven through the two wired party consoles (route #/live/A,
-// #/live/B) against the running stack: collateral services (8001/8002) -> ledger gateways (8201/8202) -> Besu.
-// Unlike the mock scenario specs, this requires the backend stack to be up (orchestrate.mjs / README). A unique
-// call amount per run identifies this cycle's call among any left on the persistent chain by earlier runs.
+// Live end-to-end tests for every CALM flow, driven through the party consoles (#/live/A, #/live/B) and the market
+// operator console (#/live/operator) against the running stack: collateral services (8001/8002), oracle service
+// (8100) -> ledger gateways (8201/8202/8200) -> Besu. Unlike the mock scenario specs, these need the backend stack up
+// (scripts/live-e2e.sh up). A unique call amount per run identifies this cycle's call among any left on the
+// persistent chain by earlier runs.
 //
 // The stack is not started by Playwright's webServer, so these tests are skipped when the collateral service is
-// unreachable (e.g. CI, which runs only the mock scenario specs). Start the stack with orchestrate.mjs to run them.
+// unreachable (console.yml, which runs only the mock scenario specs). e2e-live-stack.yml brings the stack up and runs
+// them through scripts/live-e2e.sh check with E2E_REQUIRE_STACK=1 (wp-adr-ci-runs-live-specs).
 const PRICE_TUST = 98.4;
 const HAIRCUT = 0.98;
 
