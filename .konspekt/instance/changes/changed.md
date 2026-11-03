@@ -539,3 +539,12 @@ excluded.
 | task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/src/test/java/cdmx/PortfolioTest.java | 2026-11-03T18:04:25Z |
 | task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/src/test/java/cdmx/ValuationTest.java | 2026-11-03T18:04:25Z |
 | task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | docs/cdm-development/gap-register.md | 2026-11-03T18:04:25Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/README.md | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/rosetta/cdmx-collateral-concentration-func.rosetta | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/rosetta/cdmx-collateral-concentration-type.rosetta | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/rosetta/cdmx-collateral-exposure-func.rosetta | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/rosetta/cdmx-collateral-exposure-type.rosetta | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/rosetta/cdmx-collateral-valuation-vm-func.rosetta | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/src/test/java/cdmx/ConcentrationTest.java | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/src/test/java/cdmx/VariationMarginTest.java | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | docs/cdm-development/gap-register.md | 2026-11-03T20:54:04Z |

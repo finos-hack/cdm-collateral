@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-11-03T18:04:30Z
+updatedAt: 2026-11-03T20:54:04Z
 ```
 # Task: CDM gap closure
 
@@ -47,3 +47,13 @@ Progress 2026-11-03T18:04:30Z (valuation group started; G5 together with it, as 
 - Extension tests: 41 pass; the collateral service builds against the new jar. Found along the way:
   [[nw-cdm-valuation-percentage-as-haircut]]. Next: G8 (concentration limits), G9 (VM CSA amounts), G10 (exposure
   netting).
+
+Progress 2026-11-03T20:54:04Z (valuation group finished):
+- G5 and G7 notes accepted 2026-11-03T20:41:24Z; the Valuation Percentage finding is defect D17 in
+  `docs/analysis/defects.md`.
+- G8 closed (proposed, for review): `cdmx.collateral.concentration` `ConcentrationLimitBreaches`
+  ([[nw-concentration-held-and-proposed-after-haircuts]]).
+- G9 and G10 closed (proposed, for review): `CreditSupportAmountVM`, `DeliveryAmountVM`, `ReturnAmountVM`;
+  `cdmx.collateral.exposure` `NettingSet`, `NettedExposure` ([[nw-vm-exposure-from-netting-set]]).
+- Extension tests: 65 pass; the collateral service builds against the new jar. Next after review: the CSA extensions,
+  starting with close-out netting (G15).
