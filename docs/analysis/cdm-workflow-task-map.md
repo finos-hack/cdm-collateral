@@ -15,8 +15,8 @@ as of `main` at `916f51f` (PR #11, 2026-11-03).
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other
 agreement families (section C). Section B starts only after the rest of section A is done: `flow-oracle-update`,
 `flow-revaluation-top-up` and the valuation gaps G7–G10 (`nw-core-cycle-first`, project owner). The order of the
-rows in section B (`nw-csa-extension-order`) and section C (`nw-agreement-family-order`) is proposed by the
-maintainer and not yet accepted.
+rows in section B (`nw-csa-extension-order`) and section C (`nw-agreement-family-order`) was proposed by the
+maintainer and accepted by the project owner (2026-11-03).
 
 ## A. ISDA CSA margin cycle — implemented in the prototype
 
@@ -36,7 +36,7 @@ maintainer and not yet accepted.
 
 ## B. ISDA CSA workflows with no prototype flow
 
-Rows are in the proposed build order (`nw-csa-extension-order`): gap-register priority first, then workflows that
+Rows are in build order (`nw-csa-extension-order`): gap-register priority first, then workflows that
 extend flows the prototype already runs.
 
 | # | Workflow | CDM status | Task |
@@ -55,7 +55,7 @@ reporting (G36).
 
 ## C. Other agreement families — after the CSA cycle
 
-Rows are in the proposed build order (`nw-agreement-family-order`): repo and securities lending (P2) before triparty
+Rows are in build order (`nw-agreement-family-order`): repo and securities lending (P2) before triparty
 and CCP (P3).
 
 | Family | Workflows in the analysis | Main gaps | Task |
