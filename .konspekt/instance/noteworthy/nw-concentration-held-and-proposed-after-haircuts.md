@@ -1,7 +1,7 @@
 ```yaml
 id: nw-concentration-held-and-proposed-after-haircuts
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: d73a117f54291c2304fe402650272d50c599ab6b
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T20:54:04Z
   confidence: 0.7
 createdAt: 2026-11-03T20:54:04Z
-updatedAt: 2026-11-03T20:54:04Z
+updatedAt: 2026-11-03T21:48:03Z
 ```
 # Decision: concentration limits evaluated on held and proposed collateral together, after haircuts
 

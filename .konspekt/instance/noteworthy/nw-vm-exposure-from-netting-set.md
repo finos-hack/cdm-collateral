@@ -1,7 +1,7 @@
 ```yaml
 id: nw-vm-exposure-from-netting-set
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: e8e7767cdb71e904d14cd41832f44ea6aa3864d5
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T20:54:04Z
   confidence: 0.7
 createdAt: 2026-11-03T20:54:04Z
-updatedAt: 2026-11-03T20:54:04Z
+updatedAt: 2026-11-03T21:48:03Z
 ```
 # Decision: VM Exposure netted from one netting set in the base currency; VM amounts on the G7 valuation
 
