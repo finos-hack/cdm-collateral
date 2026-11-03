@@ -2,7 +2,7 @@
 id: task-react-console
 type: task
 title: React party console
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: architecture-design

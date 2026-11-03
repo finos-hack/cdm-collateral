@@ -108,8 +108,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-cilivestack-status | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-e2e-stack-status |  | accepted |
 | e-note-cilivestack-first-run | notes | node:task-ci-live-e2e-stack | noteworthy:nw-ci-live-stack-first-run |  | accepted |
 | e-sup-livestacklocal-cilivestacksteps | supersedes | waypoint:wp-adr-live-stack-local-ui-driven | noteworthy:nw-ci-live-stack-steps |  | accepted |
-| e-dec-e2ewiring-devcontainerstartup | decomposes | node:task-e2e-wiring | node:task-devcontainer-stack-startup |  | proposed |
-| e-lnk-devcontainerstack-devcontainerstartup | links | node:task-devcontainer-live-stack | node:task-devcontainer-stack-startup |  | proposed |
+| e-dec-e2ewiring-devcontainerstartup | decomposes | node:task-e2e-wiring | node:task-devcontainer-stack-startup |  | accepted |
+| e-lnk-devcontainerstack-devcontainerstartup | links | node:task-devcontainer-live-stack | node:task-devcontainer-stack-startup |  | accepted |
 | e-dec-e2ewiring-codespacesstack | decomposes | node:task-e2e-wiring | node:task-codespaces-live-stack |  | accepted |
 | e-lnk-devcontainerstartup-codespacesstack | links | node:task-devcontainer-stack-startup | node:task-codespaces-live-stack |  | accepted |
 | e-dec-e2ewiring-remainingflows | decomposes | node:task-e2e-wiring | node:task-e2e-remaining-flows |  | rejected |

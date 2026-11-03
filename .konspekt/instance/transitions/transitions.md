@@ -389,3 +389,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
 | edge:e-lnk-devcontainerstartup-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
 | edge:e-lnk-remainingflows-livecheckout | review | proposed | accepted | 2026-11-03T03:31:02Z |  | denisurusov |
+| node:task-devcontainer-stack-startup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
+| edge:e-dec-e2ewiring-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
+| edge:e-lnk-devcontainerstack-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
+| node:task-react-console | status | open | resolved | 2026-11-03T03:33:39Z |  | denisurusov |
