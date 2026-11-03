@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T22:01:07Z
   confidence: 0.8
 createdAt: 2026-11-01T22:01:07Z
-updatedAt: 2026-11-01T22:01:07Z
+updatedAt: 2026-11-03T03:25:20Z
 ```
 # Task: size the live specs' call amounts to the pledgor's free balance
 
@@ -33,3 +33,5 @@ passing on a long-lived chain without a reset. To think through before building:
 
 Rejected options, kept for the record: (b) topping up the pledgor's test tokens in deploy or test setup; (c) running
 `live-e2e.sh reset` when it happens, which deletes the chain and the stored documents.
+
+Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed scope) to [[goal-end-to-end-flow]] by the project owner (source `2d89f9ce09676a084c6672f5a9ba1b887d6112c5`).

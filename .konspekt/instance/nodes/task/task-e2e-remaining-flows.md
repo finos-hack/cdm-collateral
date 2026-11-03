@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T15:57:23Z
   confidence: 0.85
 createdAt: 2026-11-01T15:57:23Z
-updatedAt: 2026-11-01T15:57:23Z
+updatedAt: 2026-11-03T03:25:20Z
 ```
 # Task: wire the four remaining CALM flows into the live stack
 
@@ -35,3 +35,5 @@ already states. Final confirmation is with a business SME: [[task-revaluation-to
 
 Done when each of the four flows has a live Playwright test in `console/e2e/live.spec.ts` that asserts on-chain
 state through the gateway, and `e2e-live-stack.yml` passes with all of them running.
+
+Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed scope) to [[goal-end-to-end-flow]] by the project owner (source `2d89f9ce09676a084c6672f5a9ba1b887d6112c5`).
