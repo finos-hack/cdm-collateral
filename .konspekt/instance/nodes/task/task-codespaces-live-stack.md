@@ -54,3 +54,20 @@ containers were running; `live-e2e.sh status` showed 8300, 8201, 8202, 8001, 800
 `stack.log` held only the pre-rebuild run. Why `postStartCommand` did not bring the rest of the stack up is not yet
 known: `gh codespace logs` fails without an SSH server in the image. The `sshd` devcontainer feature was added so the
 creation log and in-codespace commands are reachable through `gh codespace logs` / `gh codespace ssh`.
+
+## Finding — 2026-11-03: stale Docker networking state blocks Besu peering
+
+After the sshd rebuild (`b46022a`), `gh codespace ssh` worked (`gh codespace logs` still exited 255; the creation log
+was read from `/workspaces/.codespaces/.persistedshare/creation.log`). `postStartCommand` failed with `besu did not
+produce a block within 120 s`. All four validators were in QBFT round changes (round 8 after ~17 min) with 0 peers.
+Cause, observed in the codespace (Docker 29.9.2, iptables 1.8.10 legacy):
+
+- two DOWN bridges `br-17073ca2b38b`, `br-9c19116227d8` from earlier `besu_besu` networks, each holding
+  `172.28.0.1/24`, with `linkdown` routes for `172.28.0.0/24` ahead of the live `br-18e880927686`. Host-to-container
+  traffic (published RPC ports) timed out. Deleting the two bridges restored host RPC (block `0x841`).
+- the `raw` table `PREROUTING` chain still holds Docker's per-network rules for those bridges
+  (`-d 172.28.0.1x/32 ! -i br-<old> -j DROP`), which drop every packet to the Besu containers arriving on the live
+  bridge, so validator-to-validator TCP fails. Not yet removed (the agent's permission check denied the iptables
+  change).
+
+How the stale networks survive a full rebuild is not yet known.
