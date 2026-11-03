@@ -3,7 +3,7 @@ id: investigation-cdm-workflow-task-map
 type: investigation
 title: Map every CDM collateral workflow to the tasks that implement it
 status: active
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:18:57Z
   confidence: 0.85
 createdAt: 2026-11-03T14:18:57Z
-updatedAt: 2026-11-03T14:18:57Z
+updatedAt: 2026-11-03T14:47:29Z
 ```
 # Investigation: map every CDM collateral workflow to the tasks that implement it
 
