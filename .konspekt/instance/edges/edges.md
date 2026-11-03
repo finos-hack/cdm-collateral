@@ -110,13 +110,13 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-sup-livestacklocal-cilivestacksteps | supersedes | waypoint:wp-adr-live-stack-local-ui-driven | noteworthy:nw-ci-live-stack-steps |  | accepted |
 | e-dec-e2ewiring-devcontainerstartup | decomposes | node:task-e2e-wiring | node:task-devcontainer-stack-startup |  | proposed |
 | e-lnk-devcontainerstack-devcontainerstartup | links | node:task-devcontainer-live-stack | node:task-devcontainer-stack-startup |  | proposed |
-| e-dec-e2ewiring-codespacesstack | decomposes | node:task-e2e-wiring | node:task-codespaces-live-stack |  | proposed |
-| e-lnk-devcontainerstartup-codespacesstack | links | node:task-devcontainer-stack-startup | node:task-codespaces-live-stack |  | proposed |
+| e-dec-e2ewiring-codespacesstack | decomposes | node:task-e2e-wiring | node:task-codespaces-live-stack |  | accepted |
+| e-lnk-devcontainerstartup-codespacesstack | links | node:task-devcontainer-stack-startup | node:task-codespaces-live-stack |  | accepted |
 | e-dec-e2ewiring-remainingflows | decomposes | node:task-e2e-wiring | node:task-e2e-remaining-flows |  | rejected |
 | e-dec-bizcase-topupmodelling | decomposes | node:goal-business-case | node:task-revaluation-top-up-modelling |  | proposed |
 | e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | proposed |
 | e-dec-e2ewiring-livecheckout | decomposes | node:task-e2e-wiring | node:task-live-flow-checkout-script |  | accepted |
-| e-lnk-remainingflows-livecheckout | links | node:task-e2e-remaining-flows | node:task-live-flow-checkout-script |  | proposed |
+| e-lnk-remainingflows-livecheckout | links | node:task-e2e-remaining-flows | node:task-live-flow-checkout-script |  | accepted |
 | e-lnk-cilivestack-livecheckout | links | node:task-ci-live-e2e-stack | node:task-live-flow-checkout-script |  | accepted |
 | e-dec-e2ewiring-balanceaware | decomposes | node:task-e2e-wiring | node:task-live-spec-balance-aware-amounts |  | rejected |
 | e-lnk-livecheckout-balanceaware | links | node:task-live-flow-checkout-script | node:task-live-spec-balance-aware-amounts |  | proposed |

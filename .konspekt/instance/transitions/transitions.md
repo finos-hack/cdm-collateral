@@ -386,3 +386,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2eflow-remainingflows | review |  | accepted | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
 | edge:e-dec-e2eflow-balanceaware | review |  | accepted | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
 | node:task-e2e-wiring | status | active | resolved | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
+| edge:e-dec-e2ewiring-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-lnk-devcontainerstartup-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-lnk-remainingflows-livecheckout | review | proposed | accepted | 2026-11-03T03:31:02Z |  | denisurusov |
