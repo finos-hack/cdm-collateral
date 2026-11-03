@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
 createdAt: 2026-11-01T01:00:00Z
-updatedAt: 2026-11-02T23:50:07Z
+updatedAt: 2026-11-03T00:40:32Z
 ```
 # Task: run the live stack in GitHub Codespaces
 
@@ -71,3 +71,12 @@ Cause, observed in the codespace (Docker 29.9.2, iptables 1.8.10 legacy):
   change).
 
 How the stale networks survive a full rebuild is not yet known.
+
+Recovery (the project owner ran the iptables deletions in the codespace terminal): the eight stale `raw` DROP rules
+and two stale `nat` `POSTROUTING -s 172.28.0.0/24 ! -o br-<old> -j MASQUERADE` rules were deleted. The MASQUERADE
+rules matched container-to-container traffic on the live bridge and rewrote its source to `172.28.0.1`; after their
+removal and a restart of the four Besu containers, peering recovered and blocks resumed (`0x841` → `0x847` within
+30 s). `live-e2e.sh up` then brought the whole stack up. Through the proxy inside the codespace:
+`/svc/B/api/v1/context` and `/svc/A/api/v1/health` return the service responses, and `/svc/B/api/v1/events` with
+`Accept: text/event-stream` returns `text/event-stream` and holds the connection open, matching the direct service.
+Pending: the browser check on the forwarded 5173 URL.
