@@ -342,6 +342,11 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
   same chain passed four specs and failed `flow-vm-margin-call-transfer`, with the call left `agreed`: the first run's
   VM call (USD 9,850,000) had left the pledgor 5,150,000 tUSD, below this run's call (8,083,000), so
   `settleByTransfer` reverted (`task-live-spec-balance-aware-amounts`).
+- After a second `reset`, `up` and `check` ran all five specs on fresh balances: four passed and `flow-return` failed
+  in its setup. Gateway B's `decision` write was rejected with "Nonce too low (transaction nonce 0 below sender account
+  nonce 5)": B's own node (bank-b) supplied nonce 0. The Besu containers had not restarted (started during `up`, 0
+  restarts), and afterwards all four nodes reported the same height, 3 peers and the same pending nonce for B. The
+  cause is not known. `check --grep flow-return` on the same chain then passed (37.3 s).
 
 ### 2026-11-01 — GitHub Codespace, `check` run from the Windows host through a `gh` tunnel
 
