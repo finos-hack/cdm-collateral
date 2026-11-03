@@ -138,6 +138,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-e2eflow-ccp | decomposes | node:goal-end-to-end-flow | node:task-ccp-workflows |  | accepted |
 | e-lnk-csaextensions-gapclosure | links | node:task-csa-workflow-extensions | node:task-cdm-gap-closure |  | accepted |
 | e-note-workflowtaskmap-corefirst | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-core-cycle-first |  | accepted |
-| e-note-workflowtaskmap-csaorder | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-csa-extension-order |  | proposed |
-| e-note-csaextensions-csaorder | notes | node:task-csa-workflow-extensions | noteworthy:nw-csa-extension-order |  | proposed |
-| e-note-workflowtaskmap-familyorder | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-agreement-family-order |  | proposed |
+| e-note-workflowtaskmap-csaorder | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-csa-extension-order |  | accepted |
+| e-note-csaextensions-csaorder | notes | node:task-csa-workflow-extensions | noteworthy:nw-csa-extension-order |  | accepted |
+| e-note-workflowtaskmap-familyorder | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-agreement-family-order |  | accepted |

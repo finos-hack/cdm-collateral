@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.8
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-03T14:47:29Z
+updatedAt: 2026-11-03T15:18:20Z
 ```
 # Task: implement the ISDA CSA workflows that have no prototype flow yet
 
@@ -31,4 +31,4 @@ the other agreement families. This task is the CSA part that the prototype does 
 Each workflow needs the CDM side (the gap closed in `cdm-ext`, as [[task-cdm-gap-closure]] does for the margin call
 lifecycle), a flow in `architecture/prototype.architecture.json`, the contracts, gateway, services and console
 steps, and a live spec. Work starts after the rest of the core cycle ([[nw-core-cycle-first]]); the order of the
-list above is proposed in [[nw-csa-extension-order]]. Splitting this task into one task per workflow is still open.
+list above is set in [[nw-csa-extension-order]]. Splitting this task into one task per workflow is still open.

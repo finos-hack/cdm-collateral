@@ -1,7 +1,7 @@
 ```yaml
 id: nw-agreement-family-order
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: f2af9c708d4dfb0afca4f8657294d0883797c5b2
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T14:47:29Z
   confidence: 0.6
 createdAt: 2026-11-03T14:47:29Z
-updatedAt: 2026-11-03T14:47:29Z
+updatedAt: 2026-11-03T15:18:20Z
 ```
 # Decision: order of the agreement families after the CSA cycle
 
@@ -23,3 +23,5 @@ request ("your call", 2026-11-03). Proposes an answer to business case §8 item 
 3. Triparty ([[task-triparty-workflows]]). G22 is P3. The agent values, allocates and settles collateral for repo and
    lending trades, so it builds on both (inferred).
 4. CCP ([[task-ccp-workflows]]). G23 is P3; lowest coverage (0–2).
+
+Accepted by the project owner on 2026-11-03; business case §8 item 2 is marked decided.

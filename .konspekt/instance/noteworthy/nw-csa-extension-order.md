@@ -1,7 +1,7 @@
 ```yaml
 id: nw-csa-extension-order
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: f2af9c708d4dfb0afca4f8657294d0883797c5b2
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T14:47:29Z
   confidence: 0.65
 createdAt: 2026-11-03T14:47:29Z
-updatedAt: 2026-11-03T14:47:29Z
+updatedAt: 2026-11-03T15:18:20Z
 ```
 # Decision: order of the CSA workflow extensions
 
@@ -25,3 +25,5 @@ priority, workflows that extend flows the prototype already runs come first.
 6. Settlement netting. No gap ID; sits inside the transfer step and needs several calls settling together.
 7. Collateral allocation and optimisation (G34, P3). Replaces the hand-chosen proposal.
 8. Reconciliation (G35, out of scope). Only if business case §8 item 3 moves it back into scope.
+
+Accepted by the project owner on 2026-11-03.

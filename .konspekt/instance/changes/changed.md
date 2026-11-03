@@ -503,3 +503,5 @@ excluded.
 | investigation-cdm-workflow-task-map | 4b3592dc18bdf095710198c0eb0c28e1a1ee2c9f | architecture/prototype.architecture.json | 2026-11-03T14:29:49Z |
 | investigation-cdm-workflow-task-map | 4b3592dc18bdf095710198c0eb0c28e1a1ee2c9f | docs/analysis/cdm-workflow-task-map.md | 2026-11-03T14:29:49Z |
 | investigation-cdm-workflow-task-map | 5d81b5d289064fc07d3898003334a2369d98fd13 | docs/analysis/cdm-workflow-task-map.md | 2026-11-03T14:48:40Z |
+| investigation-cdm-workflow-task-map | 159fe5bd95f5ddef9259fe1e98bf7a491565e3f0 | docs/analysis/business-case.md | 2026-11-03T15:18:39Z |
+| investigation-cdm-workflow-task-map | 159fe5bd95f5ddef9259fe1e98bf7a491565e3f0 | docs/analysis/cdm-workflow-task-map.md | 2026-11-03T15:18:39Z |

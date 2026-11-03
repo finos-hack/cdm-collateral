@@ -464,3 +464,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-workflowtaskmap-csaorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
 | edge:e-note-csaextensions-csaorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
 | edge:e-note-workflowtaskmap-familyorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
+| noteworthy:nw-csa-extension-order | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| noteworthy:nw-agreement-family-order | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| edge:e-note-workflowtaskmap-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| edge:e-note-csaextensions-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| edge:e-note-workflowtaskmap-familyorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |

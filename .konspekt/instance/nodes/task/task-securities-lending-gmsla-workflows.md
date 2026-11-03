@@ -11,13 +11,13 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.75
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-03T14:47:29Z
+updatedAt: 2026-11-03T15:18:20Z
 ```
 # Task: implement the securities lending (GMSLA) collateral workflows
 
 Section C of the workflow map (`docs/analysis/cdm-workflow-task-map.md`), from [[investigation-cdm-workflow-task-map]]. Starts after the ISDA CSA cycle
 ([[task-csa-workflow-extensions]]), per the build order the project owner set on 2026-11-03; the order among the four
-agreement families is proposed in [[nw-agreement-family-order]] (business case §8 item 2).
+agreement families is set in [[nw-agreement-family-order]] (business case §8 item 2).
 
 Workflows in the analysis for securities lending (GMSLA): terms, marking, loan return, recall, substitution, rebate and fees. Main CDM gaps: G21 (agreement terms), G12 (marking not calculated), G18 (recall). Scope per workflow, prototype flows and live specs are
 to be defined when this task starts.
