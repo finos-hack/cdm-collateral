@@ -4,7 +4,7 @@
   "name": "CDM collateral prototype",
   "description": "Local prototype architecture for CDM-based initial-margin management with tokenized collateral on Hyperledger Besu.",
   "metadata": {
-    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-vm-margin-call-transfer, flow-return), flow-default-enforcement and flow-oracle-update run live on the contracts, ledger gateway, collateral service, oracle service (default notices and prices), CDM payload store and console (task-e2e-wiring, task-e2e-remaining-flows); flow-revaluation-top-up is design only",
+    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-vm-margin-call-transfer, flow-return), flow-default-enforcement, flow-oracle-update and flow-revaluation-top-up run live on the contracts, ledger gateway, collateral service, oracle service (default notices and prices), CDM payload store and console (task-e2e-wiring, task-e2e-remaining-flows)",
     "goal": "goal-architecture-design",
     "task": "task-local-environment-setup",
     "asrs": [
@@ -610,7 +610,7 @@
     },
     {
       "unique-id": "service-to-gateway",
-      "description": "Submits its own participant's ledger instructions, each with the cdmHash of the step's CDM document: issue, respond, propose, decide, and settle (IM pledge, VM transfer, return release or transfer back); enforce. Reads a call's lifecycle steps in chain order with their cdmHash (/ledger/v1/calls/{id}/steps) as the input to its fold.",
+      "description": "Submits its own participant's ledger instructions, each with the cdmHash of the step's CDM document: issue, respond, propose, decide, and settle (IM pledge, VM transfer, return release or transfer back); enforce. Reads a call's lifecycle steps in chain order with their cdmHash (/ledger/v1/calls/{id}/steps) as the input to its fold. Reads oracle feed prices, pledged quantities and settlement history (CallSettled, Enforced) for the revaluation.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -1125,37 +1125,37 @@
     {
       "unique-id": "flow-revaluation-top-up",
       "name": "Collateral revaluation and top-up call",
-      "description": "The market operator lowers the NAV or price of a pledged token; the secured party's revaluation shows a shortfall and it issues a top-up call, which then follows the IM call flow.",
+      "description": "The market operator lowers the price of a pledged token in the operator console; the oracle publishes it to the feed. The secured party revalues the pledged IM at the feed prices after haircuts against the outstanding IM from settled calls, sees a shortfall and issues a top-up IM call (minimum transfer amount USD 500,000, rounded up to USD 10,000), which then follows the IM call flow. A top-up does not add to the requirement (wp-adr-revaluation-outstanding-im-from-calls).",
       "transitions": [
         {
           "relationship-unique-id": "operator-uses-console",
           "sequence-number": 1,
-          "description": "Market operator changes the NAV or price of a token."
+          "description": "Market operator edits the price of a token in the operator console (#/live/operator)."
         },
         {
           "relationship-unique-id": "console-to-oracle",
           "sequence-number": 2,
-          "description": "Operator console sends the new mock value."
-        },
-        {
-          "relationship-unique-id": "oracle-to-market-data",
-          "sequence-number": 3,
-          "description": "Oracle updates the mock market data."
+          "description": "Operator console sends the new mock price (PUT /oracle/v1/market-data/{symbol})."
         },
         {
           "relationship-unique-id": "oracle-to-gateway",
-          "sequence-number": 4,
-          "description": "Oracle publishes the new value on-chain."
+          "sequence-number": 3,
+          "description": "Oracle publishes the new price to the on-chain feed through the operator gateway before keeping it."
         },
         {
-          "relationship-unique-id": "service-to-oracle",
+          "relationship-unique-id": "oracle-to-market-data",
+          "sequence-number": 4,
+          "description": "Oracle updates the mock market data."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
           "sequence-number": 5,
-          "description": "Secured party's workflow service revalues pledged collateral after haircuts."
+          "description": "Secured party service revalues (GET /api/v1/revaluation): pledged quantities at the feed prices after haircuts against the outstanding IM from calls settled since the last enforcement, top-ups excluded."
         },
         {
           "relationship-unique-id": "console-to-service",
           "sequence-number": 6,
-          "description": "Secured party console shows the shortfall and the proposed top-up call."
+          "description": "Secured party console shows the shortfall and the top-up amount and issues the top-up IM call, which follows flow-im-margin-call-pledge."
         }
       ]
     },

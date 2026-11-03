@@ -137,6 +137,10 @@ route("GET", "/ledger/v1/prices/:token", async (p) => {
   return J({ token, price: await adapter.priceOf(token) });
 });
 
+route("GET", "/ledger/v1/settlement-history", async (_p, _b, url) =>
+  J(await adapter.settlementHistory(getAddress(url.searchParams.get("pledgor")!), getAddress(url.searchParams.get("securedParty")!))),
+);
+
 route("GET", "/ledger/v1/party-calls", async (_p, _b, url) =>
   J(await adapter.listCalls(getAddress(url.searchParams.get("party")!))),
 );

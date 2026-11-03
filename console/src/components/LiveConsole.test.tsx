@@ -4,7 +4,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LiveConsole } from "./LiveConsole";
-import type { LiveCall, LiveParty, LiveState } from "../domain/liveApi";
+import type { LiveCall, LiveParty, LiveRevaluation, LiveState } from "../domain/liveApi";
 
 class StubEventSource {
   addEventListener() {}
@@ -36,7 +36,11 @@ function call(over: Partial<LiveCall>): LiveCall {
 
 let posts: { path: string; body: unknown }[] = [];
 
-function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">) {
+const NO_SHORTFALL: LiveRevaluation = {
+  requiredUsd: "0", valueUsd: "0", shortfallUsd: "0", topUpUsd: "0", mtaUsd: "500000", roundingUsd: "10000", tokens: [],
+};
+
+function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">, reval: LiveRevaluation = NO_SHORTFALL) {
   posts = [];
   vi.stubGlobal("EventSource", StubEventSource);
   vi.stubGlobal(
@@ -47,7 +51,8 @@ function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">) {
         posts.push({ path, body: JSON.parse(String(init.body)) });
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
-      const body = path === "/context" ? { ...CONTEXT[party], priceScale: "100000000", tokens: [], agreement: "IM CSA" } : { party, role: CONTEXT[party].role, ...state };
+      if (path === "/revaluation") return new Response(JSON.stringify(reval), { status: 200 });
+      const body = path === "/context" ?{ ...CONTEXT[party], priceScale: "100000000", tokens: [], agreement: "IM CSA" } : { party, role: CONTEXT[party].role, ...state };
       return new Response(JSON.stringify(body), { status: 200 });
     }),
   );
@@ -141,5 +146,37 @@ describe("flow-default-enforcement", () => {
   it("the secured party sees the counterparty's default", async () => {
     serve("B", { calls: [], balances: balances("0"), defaults: { A: true, B: false } });
     expect(await screen.findByRole("status")).toHaveTextContent("Counterparty A in default on the oracle feed");
+  });
+});
+
+describe("flow-revaluation-top-up", () => {
+  const SHORTFALL: LiveRevaluation = {
+    requiredUsd: "8000000", valueUsd: "7216000", shortfallUsd: "784000", topUpUsd: "790000", mtaUsd: "500000", roundingUsd: "10000",
+    tokens: [{ token: "tUST", pledged: "83000", price: "8900000000", haircutBps: 200, valueUsd: "7216000" }],
+  };
+
+  it("the secured party sees the shortfall and issues a top-up IM call for the rounded amount", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("83000") }, SHORTFALL);
+    const card = await screen.findByTestId("revaluation");
+    expect(within(card).getByTestId("shortfall")).toHaveTextContent("USD 784,000");
+    expect(within(card).getByTestId("top-up")).toHaveTextContent("USD 790,000");
+    await user.click(within(card).getByRole("button", { name: "Issue top-up IM call → A" }));
+    await waitFor(() =>
+      expect(posts).toEqual([{ path: "/calls", body: { kind: "IM", toParty: "A", amountUsd: 790000, deadlineDays: 1, purpose: "top-up" } }]),
+    );
+  });
+
+  it("no top-up is offered below the minimum transfer amount", async () => {
+    serve("B", { calls: [], balances: balances("83000") }, { ...SHORTFALL, shortfallUsd: "120000", topUpUsd: "0" });
+    const card = await screen.findByTestId("revaluation");
+    expect(within(card).getByTestId("shortfall")).toHaveTextContent("USD 120,000");
+    expect(within(card).queryByRole("button", { name: /Issue top-up/ })).toBeNull();
+  });
+
+  it("the pledgor is not shown the revaluation", async () => {
+    serve("A", { calls: [], balances: balances("83000") }, SHORTFALL);
+    await screen.findByRole("heading", { name: "Call for a return" });
+    expect(screen.queryByTestId("revaluation")).toBeNull();
   });
 });

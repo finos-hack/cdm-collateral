@@ -5,7 +5,7 @@
 // (the pledgor acts on settlement) and return calls (the secured party agrees and releases). The secured party can
 // also declare the pledgor's default and enforce against the pledged initial margin (flow-default-enforcement).
 import { useCallback, useEffect, useState } from "react";
-import { api, serviceUrl, type LiveCall, type LiveContext, type LiveParty, type LiveState } from "../domain/liveApi";
+import { api, serviceUrl, type LiveCall, type LiveContext, type LiveParty, type LiveRevaluation, type LiveState } from "../domain/liveApi";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const usd = (s: string) => "USD " + Number(s).toLocaleString("en-US");
@@ -21,10 +21,14 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [qty, setQty] = useState(60_000);
   const [token, setToken] = useState("tUST");
 
+  const [reval, setReval] = useState<LiveRevaluation | null>(null);
+
   const refresh = useCallback(async () => {
     try {
       setState(await api.state(party));
       setError(null);
+      // Shown to the secured party only (render below); a failure here must not hide the call state.
+      api.revaluation(party).then(setReval).catch(() => setReval(null));
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
     }
@@ -108,6 +112,25 @@ export function LiveConsole({ party }: { party: LiveParty }) {
           </tbody>
         </table>
       </div>
+
+      {isSecured && reval && (
+        <div className="card" data-testid="revaluation">
+          <h3>Revaluation (oracle feed prices after haircuts)</h3>
+          <table className="tbl">
+            <tbody>
+              <tr><td>Required IM (settled calls less returns)</td><td>{usd(reval.requiredUsd)}</td></tr>
+              <tr><td>Pledged collateral value</td><td>{usd(reval.valueUsd)}</td></tr>
+              <tr><td>Shortfall</td><td data-testid="shortfall" className={Number(reval.shortfallUsd) > 0 ? "bad" : undefined}>{usd(reval.shortfallUsd)}</td></tr>
+              <tr><td>Top-up call (MTA {usd(reval.mtaUsd)}, rounded up to {usd(reval.roundingUsd)})</td><td data-testid="top-up">{usd(reval.topUpUsd)}</td></tr>
+            </tbody>
+          </table>
+          {Number(reval.topUpUsd) > 0 && (
+            <button disabled={busy} onClick={() => run(() => api.issueCall(party, other, Number(reval.topUpUsd), "IM", "top-up"))}>
+              Issue top-up IM call → {other}
+            </button>
+          )}
+        </div>
+      )}
 
       {isSecured && (
         <div className="card">

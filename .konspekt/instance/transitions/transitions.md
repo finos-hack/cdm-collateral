@@ -471,3 +471,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-workflowtaskmap-familyorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
 | waypoint:wp-adr-oracle-prices-on-request-ratings-offchain | review |  | accepted | 2026-11-03T15:31:39Z | 9fb38c6c305f7d6f3e87894c56f343b421c5df99 | denisurusov |
 | edge:e-mrk-oracleadr-remainingflows | review |  | accepted | 2026-11-03T15:31:39Z | 9fb38c6c305f7d6f3e87894c56f343b421c5df99 | denisurusov |
+| waypoint:wp-adr-revaluation-outstanding-im-from-calls | review |  | accepted | 2026-11-03T16:24:46Z | 7b7af5a7e92584d713a86f7f0a6dd5c3e64bb860 | denisurusov |
+| edge:e-mrk-revaladr-remainingflows | review |  | accepted | 2026-11-03T16:24:46Z | 7b7af5a7e92584d713a86f7f0a6dd5c3e64bb860 | denisurusov |
+| noteworthy:nw-revaluation-top-up-excluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
+| edge:e-note-remainingflows-topupexcluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
+| edge:e-note-topupmodelling-topupexcluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
+| noteworthy:nw-revaluation-top-up-excluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
+| edge:e-note-remainingflows-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
+| edge:e-note-topupmodelling-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
