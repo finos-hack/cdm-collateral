@@ -483,3 +483,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-cispecsadr-remainingflows | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
 | edge:e-sup-cispecs-livestacklocal | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
 | node:task-e2e-remaining-flows | status | active | resolved | 2026-11-03T17:51:55Z |  | denisurusov |
+| noteworthy:nw-portfolio-per-pair-post-haircut | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
+| noteworthy:nw-cdm-valuation-percentage-as-haircut | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
+| edge:e-note-gapclosure-portfoliopair | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
+| edge:e-note-gapclosure-valuationpct | review |  | proposed | 2026-11-03T18:04:30Z |  |  |

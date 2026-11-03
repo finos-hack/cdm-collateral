@@ -533,3 +533,9 @@ excluded.
 | task-e2e-remaining-flows | 3e8a86896d3237e85772f20a2a87368decd12f04 | .github/workflows/e2e-live-stack.yml | 2026-11-03T17:07:07Z |
 | task-e2e-remaining-flows | 3e8a86896d3237e85772f20a2a87368decd12f04 | console/e2e/live.spec.ts | 2026-11-03T17:07:07Z |
 | task-e2e-remaining-flows | 95c5e03b601b69b086397ae923f04aa6ff218142 | .github/workflows/e2e-live-stack.yml | 2026-11-03T17:19:44Z |
+| task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/README.md | 2026-11-03T18:04:25Z |
+| task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/rosetta/cdmx-collateral-portfolio-func.rosetta | 2026-11-03T18:04:25Z |
+| task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/rosetta/cdmx-collateral-valuation-func.rosetta | 2026-11-03T18:04:25Z |
+| task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/src/test/java/cdmx/PortfolioTest.java | 2026-11-03T18:04:25Z |
+| task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | cdm-ext/src/test/java/cdmx/ValuationTest.java | 2026-11-03T18:04:25Z |
+| task-cdm-gap-closure | 78a91206e40605b34ff534ed34bfa5ac3eee9ba2 | docs/cdm-development/gap-register.md | 2026-11-03T18:04:25Z |

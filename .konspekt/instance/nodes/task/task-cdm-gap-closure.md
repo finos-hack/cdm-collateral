@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-10-18T01:27:28Z
+updatedAt: 2026-11-03T18:04:30Z
 ```
 # Task: CDM gap closure
 
@@ -38,3 +38,12 @@ JSON fails for choice types (D16). CI job `java` added to `cdm-ext.yml`. Languag
 (`nw-cdm-stay-on-python`) until the project owner decides.
 
 Decided 2026-10-18T01:27:28Z: Java for CDM and the services, Javalin, Java code, Python build retired (`wp-adr-java-cdm-stack`). G39 closed.
+
+Progress 2026-11-03T18:04:30Z (valuation group started; G5 together with it, as agreed 2026-10-17):
+- G7 closed (proposed, for review): `cdmx.collateral.valuation` corrects D1, and restates the three CDM callers on top
+  of the corrected function.
+- G5 closed (proposed, for review): `cdmx.collateral.portfolio` `ApplyCollateralEvent`
+  ([[nw-portfolio-per-pair-post-haircut]]).
+- Extension tests: 41 pass; the collateral service builds against the new jar. Found along the way:
+  [[nw-cdm-valuation-percentage-as-haircut]]. Next: G8 (concentration limits), G9 (VM CSA amounts), G10 (exposure
+  netting).
