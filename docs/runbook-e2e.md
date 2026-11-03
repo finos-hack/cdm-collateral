@@ -20,7 +20,7 @@ Start order is top to bottom. Each row depends on the rows above it.
 | 4 | Ledger gateway, bank-a | `node gateway/src/server.ts` (`NODE=bank-a`) | 8201 | `curl localhost:8201/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-b | `node gateway/src/server.ts` (`NODE=bank-b`) | 8202 | `curl localhost:8202/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, mkt (market operator, oracle publisher key) | `node gateway/src/server.ts` (`NODE=mkt`) | 8200 | `curl localhost:8200/ledger/v1/health` | `orchestrate.mjs` |
-| 5 | Oracle service (default notices only; prices are `flow-oracle-update`) | `java -jar services/oracle/target/oracle-service.jar` | 8100 | `curl localhost:8100/oracle/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
+| 5 | Oracle service (default notices; mock market data and price publishing, `flow-oracle-update`) | `java -jar services/oracle/target/oracle-service.jar` | 8100 | `curl localhost:8100/oracle/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service A (pledgor, bank-a) | `java -jar services/collateral/target/collateral-service.jar` | 8001 | `curl localhost:8001/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service B (secured party, bank-b) | same jar, `PARTY_ID=B` | 8002 | `curl localhost:8002/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 6 | Party console (Vite dev server) | `npm run dev` in `console/` | 5173 | open `http://localhost:5173/#/live/A` | `orchestrate.mjs` |
@@ -330,6 +330,23 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 | Playwright live specs `skipped` | service A not reachable on 8001 | section 4, steps 4–5 |
 
 ## 10. Verification status of this runbook
+
+### 2026-11-03 — `reset`, `up` and `check` on Windows 11 (Git Bash, Docker Desktop, Node 24.13)
+
+- `reset`, then `up` on a fresh chain: the Besu genesis step failed until `besu/start-network.sh` set
+  `MSYS_NO_PATHCONV=1` (Git Bash rewrote `/data/...` to `C:/Program Files/Git/data/...`). After the fix, `up` exited 0
+  with all seven health checks OK.
+- `check` passed all four live specs then present: `flow-im-margin-call-pledge` (31.3 s),
+  `flow-vm-margin-call-transfer` (25.8 s), `flow-return` (37.4 s), `flow-default-enforcement` (28.4 s).
+- With `flow-oracle-update` added: `check --grep flow-oracle-update` passed (12.9 s). The next full `check` on the
+  same chain passed four specs and failed `flow-vm-margin-call-transfer`, with the call left `agreed`: the first run's
+  VM call (USD 9,850,000) had left the pledgor 5,150,000 tUSD, below this run's call (8,083,000), so
+  `settleByTransfer` reverted (`task-live-spec-balance-aware-amounts`).
+- After a second `reset`, `up` and `check` ran all five specs on fresh balances: four passed and `flow-return` failed
+  in its setup. Gateway B's `decision` write was rejected with "Nonce too low (transaction nonce 0 below sender account
+  nonce 5)": B's own node (bank-b) supplied nonce 0. The Besu containers had not restarted (started during `up`, 0
+  restarts), and afterwards all four nodes reported the same height, 3 peers and the same pending nonce for B. The
+  cause is not known. `check --grep flow-return` on the same chain then passed (37.3 s).
 
 ### 2026-11-01 — GitHub Codespace, `check` run from the Windows host through a `gh` tunnel
 

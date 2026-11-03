@@ -13,7 +13,10 @@ Sources: [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md),
 as of `main` at `916f51f` (PR #11, 2026-11-03).
 
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other
-agreement families (section C).
+agreement families (section C). Section B starts only after the rest of section A is done: `flow-oracle-update`,
+`flow-revaluation-top-up` and the valuation gaps G7–G10 (`nw-core-cycle-first`, project owner). The order of the
+rows in section B (`nw-csa-extension-order`) and section C (`nw-agreement-family-order`) was proposed by the
+maintainer and accepted by the project owner (2026-11-03).
 
 ## A. ISDA CSA margin cycle — implemented in the prototype
 
@@ -33,21 +36,27 @@ agreement families (section C).
 
 ## B. ISDA CSA workflows with no prototype flow
 
-| Workflow | CDM status | Task |
-|---|---|---|
-| Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, D5) | `task-csa-workflow-extensions` |
-| Interest on cash collateral | types only (2): G17 | `task-csa-workflow-extensions` |
-| Collateral allocation and optimisation | absent (0): G34; the pledgor chooses assets by hand | `task-csa-workflow-extensions` |
-| Close-out netting on default | elections only (0–2): G15 | `task-csa-workflow-extensions` |
-| Settlement netting | absent (0–2), no gap ID; "inside the transfer step when built" (CSA matrix) | `task-csa-workflow-extensions` |
-| Amendment of agreement terms | modelled for the CSA (4) | `task-csa-workflow-extensions` |
-| Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings) | `task-csa-workflow-extensions` |
-| Reconciliation | absent (0): G35, classified out of scope; reopened as an open decision (business case §8 item 3) | `task-csa-workflow-extensions` (decision first) |
+Rows are in build order (`nw-csa-extension-order`): gap-register priority first, then workflows that
+extend flows the prototype already runs.
+
+| # | Workflow | CDM status | Task |
+|---|---|---|---|
+| 1 | Close-out netting on default | elections only (0–2): G15, P2 | `task-csa-workflow-extensions` |
+| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | `task-csa-workflow-extensions` |
+| 3 | Interest on cash collateral | types only (2): G17, P2 | `task-csa-workflow-extensions` |
+| 4 | Amendment of agreement terms | modelled for the CSA (4) | `task-csa-workflow-extensions` |
+| 5 | Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings) | `task-csa-workflow-extensions` |
+| 6 | Settlement netting | absent (0–2), no gap ID; "inside the transfer step when built" (CSA matrix) | `task-csa-workflow-extensions` |
+| 7 | Collateral allocation and optimisation | absent (0): G34, P3; the pledgor chooses assets by hand | `task-csa-workflow-extensions` |
+| 8 | Reconciliation | absent (0): G35, classified out of scope; reopened as an open decision (business case §8 item 3) | `task-csa-workflow-extensions` (decision first) |
 
 Out of scope per the gap register and business case: ISDA SIMM calculation (G13, input only) and regulatory
 reporting (G36).
 
 ## C. Other agreement families — after the CSA cycle
+
+Rows are in build order (`nw-agreement-family-order`): repo and securities lending (P2) before triparty
+and CCP (P3).
 
 | Family | Workflows in the analysis | Main gaps | Task |
 |---|---|---|---|

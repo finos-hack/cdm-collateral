@@ -35,6 +35,16 @@ public class OperatorGateway {
         return send("GET", "/defaults/" + party, null);
     }
 
+    /** Every registry token with its price on the oracle feed: {priceScale, prices: [{symbol, token, price}]}. */
+    public Map<String, Object> prices() {
+        return send("GET", "/prices", null);
+    }
+
+    /** Write a token's price (scaled by priceScale) to the oracle feed; returns the mined transaction {txHash, block}. */
+    public Map<String, Object> publishPrice(String token, String priceScaled) {
+        return send("POST", "/oracle/prices", Map.of("token", token, "price", priceScaled));
+    }
+
     private Map<String, Object> send(String method, String path, Map<String, Object> body) {
         try {
             HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + "/ledger/v1" + path))

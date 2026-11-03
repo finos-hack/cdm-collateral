@@ -98,6 +98,9 @@ const controlAbi = parseAbi([
 const oracleAbi = parseAbi([
   "function setDefault(address party, bool inDefault)",
   "function isDefaulted(address party) view returns (bool)",
+  "function publishPrice(address token, uint256 priceScaled)",
+  "function price(address token) view returns (uint256)",
+  "function hasPrice(address token) view returns (bool)",
   "function publisher() view returns (address)",
   "event DefaultPublished(address indexed party, bool inDefault)",
 ]);
@@ -123,6 +126,8 @@ export interface LedgerAdapter {
   enforce(callId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   setDefault(party: Address, inDefault: boolean): Promise<{ txHash: Hex; block: bigint }>;
   isDefaulted(party: Address): Promise<boolean>;
+  publishPrice(token: Address, priceScaled: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  priceOf(token: Address): Promise<bigint | null>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
@@ -228,6 +233,22 @@ export class BesuAdapter implements LedgerAdapter {
       throw new Error(`this gateway signs as ${this.account}, not the oracle publisher ${this.reg.publisher}; default status is written through the operator's gateway`);
     }
     return this.send(this.reg.contracts.oracleFeed, oracleAbi, "setDefault", [party, inDefault]);
+  }
+
+  /** Write a token's price (scaled by OracleFeed.PRICE_SCALE) to the oracle feed (flow-oracle-update transition 3).
+   * Publisher key only, like setDefault: only the operator's gateway instance can serve it. */
+  async publishPrice(token: Address, priceScaled: bigint) {
+    if (getAddress(this.reg.publisher) !== this.account) {
+      throw new Error(`this gateway signs as ${this.account}, not the oracle publisher ${this.reg.publisher}; prices are written through the operator's gateway`);
+    }
+    return this.send(this.reg.contracts.oracleFeed, oracleAbi, "publishPrice", [token, priceScaled]);
+  }
+
+  /** A token's price on the oracle feed (scaled by PRICE_SCALE), or null when none has been published. */
+  async priceOf(token: Address): Promise<bigint | null> {
+    const feed = this.reg.contracts.oracleFeed;
+    if (!(await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "hasPrice", args: [token] }))) return null;
+    return (await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "price", args: [token] })) as bigint;
   }
 
   async isDefaulted(party: Address): Promise<boolean> {

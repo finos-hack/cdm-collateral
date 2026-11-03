@@ -211,8 +211,9 @@ measure the completion goals; S8 follows G26.
    defects reach FINOS through the collaboration (§2), while the project formally sits outside FINOS governance for
    now and the `cdm-ext` extensions stay maintained in this repository. The amendment is also recorded in
    `nw-finos-collaboration`.
-2. **Order of the families after the first milestone.** C2 covers all five families; the order in which repo,
-   securities lending, triparty and CCP margin are built (O1–O3, O9, O10) is not decided.
+2. **Order of the families after the first milestone — decided 2026-11-03.** C2 covers all five families. After the
+   ISDA CSA cycle, repo is built first, then securities lending, triparty and CCP margin (O1–O3, O9, O10), as recorded
+   in `nw-agreement-family-order` and `docs/analysis/cdm-workflow-task-map.md`.
 3. **G35 classification.** Whether reconciliation (G35) moves back into scope, given V6 (§4, Gaps outside C1).
 4. **Assets outside the regulatory classes.** Whether real estate, credit claims, letters of credit and other assets
    no taxonomy in the mapping classifies are in scope for C1 and C2. If they are, a new gap is needed in the

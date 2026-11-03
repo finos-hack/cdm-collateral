@@ -28,6 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AppTest {
     private static final String PARTY = "0x00000000000000000000000000000000000000a1";
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String TUST = "0x00000000000000000000000000000000000000b1";
+    private static final String TUSD = "0x00000000000000000000000000000000000000b3";
+    /** The operator gateway's GET /prices: tUST at 98.40 and tUSD at 1.00 on the feed, tNEW with no price yet. */
+    private static final String PRICES = "{\"priceScale\":\"100000000\",\"prices\":["
+            + "{\"symbol\":\"tUST\",\"token\":\"" + TUST + "\",\"price\":\"9840000000\"},"
+            + "{\"symbol\":\"tUSD\",\"token\":\"" + TUSD + "\",\"price\":\"100000000\"},"
+            + "{\"symbol\":\"tNEW\",\"token\":\"0x00000000000000000000000000000000000000b9\",\"price\":null}]}";
 
     private HttpServer stub;
     private final List<String> received = new CopyOnWriteArrayList<>();
@@ -41,6 +48,13 @@ class AppTest {
         stub = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         stub.createContext("/ledger/v1/", ex -> {
             String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (ex.getRequestMethod().equals("GET") && ex.getRequestURI().getPath().equals("/ledger/v1/prices")) {
+                byte[] list = PRICES.getBytes(StandardCharsets.UTF_8);
+                ex.sendResponseHeaders(200, list.length);
+                ex.getResponseBody().write(list);
+                ex.close();
+                return;
+            }
             received.add(ex.getRequestMethod() + " " + ex.getRequestURI().getPath() + " " + body);
             byte[] out = (stubStatus == 200
                     ? "{\"txHash\":\"0xabc\",\"block\":\"7\"}"
@@ -124,5 +138,95 @@ class AppTest {
                 HttpResponse.BodyHandlers.ofString());
         assertEquals(200, res.statusCode());
         assertTrue(received.get(0).startsWith("GET /ledger/v1/defaults/" + PARTY));
+    }
+
+    // flow-oracle-update: mock market data and price publishing.
+
+    private HttpResponse<String> get(String path) throws Exception {
+        return http.send(HttpRequest.newBuilder(URI.create(base + path)).GET().build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> put(String path, String json) throws Exception {
+        return http.send(HttpRequest.newBuilder(URI.create(base + path))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(json)).build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> token(String symbol) throws Exception {
+        List<Map<String, Object>> tokens = (List<Map<String, Object>>) json(get("/market-data").body()).get("tokens");
+        return tokens.stream().filter(t -> symbol.equals(t.get("symbol"))).findFirst().orElseThrow();
+    }
+
+    @Test
+    void marketDataStartsFromTheOnChainPricesWithMockRatings() throws Exception {
+        HttpResponse<String> res = get("/market-data");
+        assertEquals(200, res.statusCode(), res.body());
+        assertEquals("100000000", json(res.body()).get("priceScale"));
+        Map<String, Object> tust = token("tUST");
+        assertEquals("9840000000", tust.get("price"));
+        assertEquals("98.4", tust.get("priceUsd"));
+        assertEquals("AA+", tust.get("rating"));
+        assertEquals(null, token("tUSD").get("rating"));
+        assertEquals(null, token("tNEW").get("price"));
+        assertTrue(received.isEmpty(), "reading market data writes nothing");
+    }
+
+    @Test
+    void anOperatorPriceEditIsPublishedOnChain() throws Exception {
+        HttpResponse<String> res = put("/market-data/tUST", "{\"price\":\"97.5\"}");
+        assertEquals(200, res.statusCode(), res.body());
+        Map<String, Object> out = json(res.body());
+        assertEquals("9750000000", out.get("price"));
+        assertEquals(Map.of("txHash", "0xabc", "block", "7"), out.get("tx"));
+        assertEquals(1, received.size());
+        String req = received.get(0);
+        assertTrue(req.startsWith("POST /ledger/v1/oracle/prices "), req);
+        assertEquals(Map.of("token", TUST, "price", "9750000000"), json(req.substring(req.indexOf('{'))));
+        assertEquals("9750000000", token("tUST").get("price"));
+    }
+
+    @Test
+    void aRatingOnlyEditStaysOffChain() throws Exception {
+        HttpResponse<String> res = put("/market-data/tUST", "{\"rating\":\"AA\"}");
+        assertEquals(200, res.statusCode(), res.body());
+        assertEquals("AA", token("tUST").get("rating"));
+        assertEquals("9840000000", token("tUST").get("price"));
+        assertTrue(received.isEmpty(), "a rating change is not written to the feed");
+    }
+
+    @Test
+    void rejectsAPriceFinerThanTheFeedScale() throws Exception {
+        HttpResponse<String> res = put("/market-data/tUST", "{\"price\":\"97.123456789\"}");
+        assertEquals(400, res.statusCode());
+        assertTrue(received.isEmpty());
+    }
+
+    @Test
+    void rejectsAnUnknownSymbol() throws Exception {
+        HttpResponse<String> res = put("/market-data/tXYZ", "{\"price\":\"1\"}");
+        assertEquals(400, res.statusCode());
+        assertTrue(json(res.body()).get("error").toString().contains("tXYZ"));
+    }
+
+    @Test
+    void keepsTheOldPriceWhenTheGatewayRefuses() throws Exception {
+        stubStatus = 400;
+        HttpResponse<String> res = put("/market-data/tUST", "{\"price\":\"90\"}");
+        assertEquals(502, res.statusCode());
+        stubStatus = 200;
+        assertEquals("9840000000", token("tUST").get("price"));
+    }
+
+    @Test
+    void publishesEveryPricedTokenOrOneSymbol() throws Exception {
+        HttpResponse<String> all = post("/prices/publish", "");
+        assertEquals(200, all.statusCode(), all.body());
+        assertEquals(2, received.size(), "tNEW has no price and is skipped");
+        received.clear();
+        HttpResponse<String> one = post("/prices/publish", "{\"symbol\":\"tUSD\"}");
+        assertEquals(200, one.statusCode(), one.body());
+        assertEquals(1, received.size());
+        assertEquals(Map.of("token", TUSD, "price", "100000000"), json(received.get(0).substring(received.get(0).indexOf('{'))));
     }
 }

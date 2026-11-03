@@ -342,3 +342,64 @@ test("flow-default-enforcement: secured party declares default -> oracle feed ->
 
   expect(errors).toEqual([]);
 });
+
+// --- flow-oracle-update ---
+// The oracle service (8100) holds mock market data and publishes prices to the oracle feed through the market
+// operator's gateway (8200), the only one holding the publisher key. Each party reads the feed from its own node.
+const ORACLE = "http://localhost:8100/oracle/v1";
+const GATEWAY_MKT = "http://localhost:8200/ledger/v1";
+// tMMF is used by no other live spec, so changing its price cannot move another spec's valuation; the test restores
+// the original price at the end either way.
+const ORACLE_TOKEN = "tMMF";
+
+test("flow-oracle-update: operator edits a price -> oracle publishes via the mkt gateway -> both parties read it on-chain", async () => {
+  test.setTimeout(TEST_TIMEOUT);
+  type MarketToken = { symbol: string; token: string; price: string | null; priceUsd: string | null; rating: string | null };
+  const market = await call<{ priceScale: string; tokens: MarketToken[] }>(`${ORACLE}/market-data`);
+  const entry = market.tokens.find((t) => t.symbol === ORACLE_TOKEN);
+  expect(entry, `${ORACLE_TOKEN} in the oracle's market data`).toBeTruthy();
+  const token = entry!.token;
+  const onChain = async (gw: string) => (await call<{ price: string | null }>(`${gw}/prices/${token}`)).price;
+
+  // The mock data starts from the feed: the oracle's price and every party's on-chain read agree.
+  const original = await onChain(GATEWAY.A);
+  expect(original).not.toBeNull();
+  expect(await onChain(GATEWAY.B)).toBe(original);
+  expect(entry!.price).toBe(original);
+
+  // A new price that differs from the current one on every run (0.95 or 0.96 USD).
+  const scale = BigInt(market.priceScale);
+  const newUsd = BigInt(original!) === (95n * scale) / 100n ? "0.96" : "0.95";
+  const newScaled = ((BigInt(newUsd.replace(".", "")) * scale) / 100n).toString();
+
+  try {
+    // 1-3. The operator's edit is published through the mkt gateway with the publisher key and mined.
+    const edit = await call<{ price: string; tx: { txHash: string; block: string } }>(`${ORACLE}/market-data/${ORACLE_TOKEN}`, "PUT", { price: newUsd });
+    expect(edit.price).toBe(newScaled);
+    expect(edit.tx.txHash).toMatch(/^0x[0-9a-f]{64}$/i);
+
+    // Every party's gateway reads the new price from its own Besu node.
+    for (const gw of [GATEWAY.A, GATEWAY.B, GATEWAY_MKT]) {
+      await expect.poll(() => onChain(gw), { timeout: 30_000 }).toBe(newScaled);
+    }
+
+    // A party's gateway does not hold the publisher key, so it refuses a feed write.
+    const refused = await fetch(`${GATEWAY.A}/oracle/prices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, price: original }),
+    });
+    expect(refused.ok).toBe(false);
+    expect(await onChain(GATEWAY.A)).toBe(newScaled);
+
+    // Republishing on request writes the oracle's current price again.
+    const republished = await call<{ published: { symbol: string; price: string }[] }>(`${ORACLE}/prices/publish`, "POST", { symbol: ORACLE_TOKEN });
+    expect(republished.published).toEqual([expect.objectContaining({ symbol: ORACLE_TOKEN, price: newScaled })]);
+  } finally {
+    const scaledToUsd = (s: string) => (Number(BigInt(s)) / Number(scale)).toString();
+    await call(`${ORACLE}/market-data/${ORACLE_TOKEN}`, "PUT", { price: scaledToUsd(original!) });
+  }
+  for (const gw of [GATEWAY.A, GATEWAY.B]) {
+    await expect.poll(() => onChain(gw), { timeout: 30_000 }).toBe(original);
+  }
+});

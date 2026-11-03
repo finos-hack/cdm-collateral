@@ -442,3 +442,32 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2eflow-triparty | review |  | proposed | 2026-11-03T14:29:20Z |  |  |
 | edge:e-dec-e2eflow-ccp | review |  | proposed | 2026-11-03T14:29:20Z |  |  |
 | edge:e-lnk-csaextensions-gapclosure | review |  | proposed | 2026-11-03T14:29:20Z |  |  |
+| node:investigation-cdm-workflow-task-map | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| artifact:artifact-cdm-workflow-task-map | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| node:task-csa-workflow-extensions | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| node:task-repo-gmra-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| node:task-securities-lending-gmsla-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| node:task-triparty-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| node:task-ccp-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-dec-e2eflow-workflowtaskmap | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-prod-workflowtaskmap-map | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-dec-e2eflow-csaextensions | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-dec-e2eflow-repogmra | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-dec-e2eflow-seclendinggmsla | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-dec-e2eflow-triparty | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-dec-e2eflow-ccp | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-lnk-csaextensions-gapclosure | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| noteworthy:nw-core-cycle-first | review |  | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| edge:e-note-workflowtaskmap-corefirst | review |  | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| noteworthy:nw-csa-extension-order | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
+| noteworthy:nw-agreement-family-order | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
+| edge:e-note-workflowtaskmap-csaorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
+| edge:e-note-csaextensions-csaorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
+| edge:e-note-workflowtaskmap-familyorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
+| noteworthy:nw-csa-extension-order | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| noteworthy:nw-agreement-family-order | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| edge:e-note-workflowtaskmap-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| edge:e-note-csaextensions-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| edge:e-note-workflowtaskmap-familyorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
+| waypoint:wp-adr-oracle-prices-on-request-ratings-offchain | review |  | accepted | 2026-11-03T15:31:39Z | 9fb38c6c305f7d6f3e87894c56f343b421c5df99 | denisurusov |
+| edge:e-mrk-oracleadr-remainingflows | review |  | accepted | 2026-11-03T15:31:39Z | 9fb38c6c305f7d6f3e87894c56f343b421c5df99 | denisurusov |

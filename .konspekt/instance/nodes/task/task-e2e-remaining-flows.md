@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T15:57:23Z
   confidence: 0.85
 createdAt: 2026-11-01T15:57:23Z
-updatedAt: 2026-11-03T12:50:48Z
+updatedAt: 2026-11-03T15:31:52Z
 ```
 # Task: wire the four remaining CALM flows into the live stack
 
@@ -23,7 +23,7 @@ Scope (a) from the 2026-11-01 coverage check (source excerpt): the four CALM flo
 |---|---|---|
 | `flow-return` | `CollateralControl.returnCollateral` / `returnByTransfer`; `POST /api/v1/calls/{id}/return` | live e2e test; check console wiring |
 | `flow-default-enforcement` | `CollateralControl.enforce`; `OracleFeed.setDefault` | gateway and service routes, console action, live e2e test |
-| `flow-oracle-update` | `OracleFeed.publishPrice` | Java oracle service + mock market data (layer 3 of [[task-e2e-wiring]]), live e2e test |
+| `flow-oracle-update` | done 2026-11-03: oracle mock market data and price publishing, gateway price routes, live spec | — |
 | `flow-revaluation-top-up` | nothing | revaluation, top-up call, live e2e test; depends on `flow-oracle-update` |
 
 Split agreed with the project owner on 2026-11-01: scope (b), `flow-return` and `flow-default-enforcement`, goes
@@ -58,3 +58,16 @@ Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed sco
   failed with a deploy transaction never confirmed and passed on rerun; that step is to capture the cause next time.
 - Proposed entities to disposition next session: this task, `artifact-react-console`, `artifact-e2e-runbook`,
   `task-revaluation-top-up-modelling`, `task-live-spec-balance-aware-amounts`.
+
+## Progress — 2026-11-03
+
+- Scope (b) merged in PR #11: `flow-return` and `flow-default-enforcement` have live specs that pass locally on
+  Windows after `live-e2e.sh reset`.
+- `flow-oracle-update` implemented on branch `flow-oracle-update`
+  ([[wp-adr-oracle-prices-on-request-ratings-offchain]]): mock market data and price publishing in
+  `services/oracle`, `POST /ledger/v1/oracle/prices` (operator gateway only) and `GET /ledger/v1/prices[/:token]` in
+  the gateway, and a live spec. Oracle unit tests: 13 pass. Live: the new spec passes; a full `check` on the same
+  chain then failed only `flow-vm-margin-call-transfer`, on pledgor balance depletion
+  ([[task-live-spec-balance-aware-amounts]]).
+- Left on this task: `flow-revaluation-top-up`, and the "Done when" condition that `e2e-live-stack.yml` runs the
+  specs.

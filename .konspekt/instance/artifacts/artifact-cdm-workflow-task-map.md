@@ -3,7 +3,7 @@ id: artifact-cdm-workflow-task-map
 name: CDM collateral workflow to task map
 kind: analysis
 location: docs/analysis/cdm-workflow-task-map.md
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: 3d50de191d1f9ab4e959c8bfb0bd04d2e397ca05
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.8
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-03T14:29:20Z
+updatedAt: 2026-11-03T14:47:29Z
 ```
 # CDM collateral workflow to task map
 
