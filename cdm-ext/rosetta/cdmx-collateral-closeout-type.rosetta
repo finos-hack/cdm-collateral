@@ -1,0 +1,36 @@
+namespace cdmx.collateral.closeout : <"Local CDM extension: close-out netting on default under the ISDA 2002 Master Agreement and the application of collateral (gap G15). CDM 7.7.0 has the elections (automaticEarlyTermination, terminationCurrency, automaticSetOff) but no close-out calculation.">
+version "${project.version}"
+
+import cdm.base.staticdata.identifier.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+
+enum CollateralArrangementEnum: <"How the collateral is held, which decides how it enters the close-out.">
+    SecurityInterest <"Pledged under a security interest (New York law CSAs, IM CSAs): outside the Early Termination Amount; the secured party applies it to what it is owed and returns any surplus.">
+    TitleTransfer <"Transferred outright (English law CSAs): the Value of the Credit Support Balance is an Unpaid Amount owed to the Transferor in the Early Termination Amount.">
+
+type CloseOutAmount: <"The Close-out Amount of one Terminated Transaction (ISDA 2002 MA Section 14), from the Non-defaulting Party's side.">
+    tradeIdentifier Identifier (1..1) <"Identifies the Terminated Transaction.">
+    amount Money (1..1) <"Positive when the Non-defaulting Party would pay to replace the transaction (a loss to it), negative when it would gain; in the Termination Currency.">
+
+type UnpaidAmount: <"An Unpaid Amount (ISDA 2002 MA Section 14): an amount that fell due before the Early Termination Date and was not paid.">
+    owedTo Party (1..1) <"The party the amount is owed to.">
+    amount Money (1..1) <"The amount, positive, in the Termination Currency.">
+    description string (0..1)
+
+    condition Positive: <"An Unpaid Amount is stated as a positive amount owed to one party.">
+        amount -> value > 0
+
+type CloseOutStatement: <"The close-out of a netting set after an Event of Default: the Early Termination Amount, the collateral applied, and what remains payable and by whom.">
+    nonDefaultingParty Party (1..1)
+    defaultingParty Party (1..1)
+    arrangement CollateralArrangementEnum (1..1)
+    closeOutAmount CloseOutAmount (0..*) <"One per Terminated Transaction.">
+    unpaidAmount UnpaidAmount (0..*) <"Including, under title transfer, the Value of the Credit Support Balance.">
+    earlyTerminationAmount Money (1..1) <"ISDA 2002 MA Section 6(e)(i): positive when payable by the Defaulting Party to the Non-defaulting Party, negative when payable the other way.">
+    collateralHeld Money (1..1) <"Value of the collateral the Non-defaulting Party holds from the Defaulting Party.">
+    collateralApplied Money (1..1) <"Under security interest, the part of collateralHeld applied to the Early Termination Amount; zero under title transfer, where the collateral is already netted as an Unpaid Amount.">
+    amountPayable Money (1..1) <"What remains after the collateral is applied: positive when payable by the Defaulting Party, negative when payable to it (including any collateral surplus returned).">
+
+    condition TwoParties: <"The Non-defaulting Party and the Defaulting Party differ.">
+        nonDefaultingParty <> defaultingParty

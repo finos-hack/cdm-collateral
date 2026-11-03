@@ -1,0 +1,114 @@
+namespace cdmx.collateral.closeout : <"Local CDM extension: close-out netting on default under the ISDA 2002 Master Agreement and the application of collateral (gap G15).">
+version "${project.version}"
+
+import cdm.base.*
+import cdm.base.math.*
+import cdm.legaldocumentation.master.isda.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+
+// Scope: the ISDA 2002 Master Agreement, Section 6(e)(i), when the Non-defaulting Party determines the Close-out
+// Amounts. All amounts are in the Termination Currency (conversion is the caller's). Collateral held by the
+// Non-defaulting Party from the Defaulting Party enters by arrangement: under title transfer as an Unpaid Amount owed to
+// the Defaulting Party; under security interest it is applied after the Early Termination Amount, and any surplus is
+// returned. Collateral the Non-defaulting Party posted to the Defaulting Party is passed by the caller: as an Unpaid
+// Amount owed to the Non-defaulting Party under title transfer; under security interest it is returned and does not
+// enter the calculation. GMRA, GMSLA and CCP close-out are not covered.
+
+func EarlyTerminationAmount: <"ISDA 2002 MA Section 6(e)(i): the sum of the Close-out Amounts and the Unpaid Amounts owed to the Non-defaulting Party, less the Unpaid Amounts owed to the Defaulting Party. Positive when payable by the Defaulting Party.">
+    [docReference ISDA ISDA_MA_2002 section "6(e)(i)"]
+    [calculation]
+    inputs:
+        nonDefaultingParty Party (1..1)
+        defaultingParty Party (1..1)
+        closeOutAmounts CloseOutAmount (0..*)
+        unpaidAmounts UnpaidAmount (0..*)
+        terminationCurrency string (1..1)
+    output:
+        result Money (1..1)
+
+    alias owedToNonDefaulting:
+        unpaidAmounts filter owedTo = nonDefaultingParty then extract amount -> value then sum
+    alias owedToDefaulting:
+        unpaidAmounts filter owedTo = defaultingParty then extract amount -> value then sum
+
+    condition TwoParties: <"The Non-defaulting Party and the Defaulting Party differ.">
+        nonDefaultingParty <> defaultingParty
+
+    condition UnpaidToAParty: <"Every Unpaid Amount is owed to one of the two parties.">
+        (unpaidAmounts filter owedTo <> nonDefaultingParty and owedTo <> defaultingParty then count) = 0
+
+    condition CurrencyMatches: <"Every amount is in the Termination Currency.">
+        (closeOutAmounts filter amount -> unit -> currency <> terminationCurrency then count) = 0
+            and (unpaidAmounts filter amount -> unit -> currency <> terminationCurrency then count) = 0
+
+    set result -> value:
+        (closeOutAmounts extract amount -> value then sum) + owedToNonDefaulting - owedToDefaulting
+
+    set result -> unit -> currency: terminationCurrency
+
+func CloseOutNetting: <"The close-out statement after an Event of Default: the Early Termination Amount over the netting set, the collateral held by the Non-defaulting Party applied by arrangement, and the amount that remains payable.">
+    [docReference ISDA ISDA_MA_2002 section "6(e)"]
+    [calculation]
+    inputs:
+        nonDefaultingParty Party (1..1)
+        defaultingParty Party (1..1)
+        arrangement CollateralArrangementEnum (1..1)
+        closeOutAmounts CloseOutAmount (0..*)
+        unpaidAmounts UnpaidAmount (0..*) <"Unpaid Amounts other than the Credit Support Balance, which is added here under title transfer.">
+        collateralHeld Money (1..1) <"Value of the collateral the Non-defaulting Party holds from the Defaulting Party, after haircuts (for example ApplyCollateralEvent's balance, or CorrectedUndisputedAdjustedPostedCreditSupportAmount).">
+        terminationCurrency string (1..1)
+    output:
+        statement CloseOutStatement (1..1)
+
+    alias titleTransfer: arrangement = CollateralArrangementEnum -> TitleTransfer
+
+    alias creditSupportBalance:
+        if titleTransfer and collateralHeld -> value > 0
+        then UnpaidAmount {
+                owedTo: defaultingParty,
+                amount: collateralHeld,
+                description: "Value of the Credit Support Balance (VM), owed to the Transferor"
+            }
+
+    alias allUnpaid: [unpaidAmounts, creditSupportBalance]
+
+    alias eta:
+        EarlyTerminationAmount(nonDefaultingParty, defaultingParty, closeOutAmounts, allUnpaid, terminationCurrency)
+
+    alias applied: if titleTransfer then 0.0 else Min(collateralHeld -> value, Max(eta -> value, 0.0))
+
+    alias payable: if titleTransfer then eta -> value else eta -> value - collateralHeld -> value
+
+    condition CollateralCurrency: <"The collateral is valued in the Termination Currency.">
+        collateralHeld -> unit -> currency = terminationCurrency
+
+    condition CollateralNotNegative: <"The Value of the collateral held is not negative.">
+        collateralHeld -> value >= 0
+
+    set statement:
+        CloseOutStatement {
+            nonDefaultingParty: nonDefaultingParty,
+            defaultingParty: defaultingParty,
+            arrangement: arrangement,
+            closeOutAmount: closeOutAmounts,
+            unpaidAmount: allUnpaid,
+            earlyTerminationAmount: eta,
+            collateralHeld: collateralHeld,
+            collateralApplied: Money {
+                value: applied,
+                unit: UnitType {
+                    currency: terminationCurrency,
+                    ...
+                },
+                ...
+            },
+            amountPayable: Money {
+                value: payable,
+                unit: UnitType {
+                    currency: terminationCurrency,
+                    ...
+                },
+                ...
+            }
+        }
