@@ -17,9 +17,9 @@
 #           cdm-ext install into ~/.m2, then the collateral service and oracle service jars. Uses mvn when on PATH, else cdm-ext/mvnw. The
 #           dev container runs it once on creation (postCreateCommand).
 #   check   Run every live flow (console/e2e/live.spec.ts) against the running stack: fails at once if the stack is
-#           not up, installs Playwright's Chromium if absent, then runs the specs against the console on 5173
-#           (override with E2E_BASE_URL). Extra arguments go to Playwright, e.g. `check --grep flow-return`. The exit
-#           code is Playwright's.
+#           not up, installs Playwright's Chromium if absent (skipped when CHROMIUM_PATH is set), then runs the specs
+#           against the console on 5173 (override with E2E_BASE_URL). Extra arguments go to Playwright, e.g.
+#           `check --grep flow-return`. The exit code is Playwright's.
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
 # JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
@@ -227,9 +227,14 @@ cmd_check() {
     print_status >&2
     die "stack not up — run: bash scripts/live-e2e.sh up"
   fi
-  # A no-op when the browser is already installed; the dev container image ships none.
-  say "ensuring the Playwright Chromium browser is installed"
-  ( cd console && npx playwright install chromium )
+  # CHROMIUM_PATH names a preinstalled browser (console/playwright.config.ts), so the download is skipped. Otherwise the
+  # install is a no-op when Playwright's Chromium is already present; the dev container image ships none.
+  if [ -n "${CHROMIUM_PATH:-}" ]; then
+    say "using the preinstalled Chromium at $CHROMIUM_PATH (CHROMIUM_PATH); skipping the Playwright download"
+  else
+    say "ensuring the Playwright Chromium browser is installed"
+    ( cd console && npx playwright install chromium )
+  fi
   say "running the live flows (console/e2e/live.spec.ts) against ${E2E_BASE_URL:-http://localhost:5173}"
   cd console
   E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:5173}" E2E_REQUIRE_STACK=1 \
