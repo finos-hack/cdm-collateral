@@ -7,6 +7,7 @@
 # end-to-end stack build + runtime artifacts (task-e2e-wiring)
 gateway/node_modules/
 services/collateral/target/
+services/oracle/target/
 services/collateral/data/
 data/
 contracts/deployments/

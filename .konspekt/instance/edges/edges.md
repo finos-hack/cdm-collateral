@@ -124,3 +124,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-sameoriginproxy-codespacesstack | marks | waypoint:wp-adr-console-same-origin-proxy | node:task-codespaces-live-stack |  | accepted |
 | e-dec-e2eflow-remainingflows | decomposes | node:goal-end-to-end-flow | node:task-e2e-remaining-flows |  | accepted |
 | e-dec-e2eflow-balanceaware | decomposes | node:goal-end-to-end-flow | node:task-live-spec-balance-aware-amounts |  | accepted |
+| e-note-remainingflows-returndefault | notes | node:task-e2e-remaining-flows | noteworthy:nw-return-default-flows-wired |  | proposed |
+| e-note-remainingflows-depletion | notes | node:task-e2e-remaining-flows | noteworthy:nw-live-spec-balance-depletion |  | proposed |
+| e-note-livecheckout-depletion | notes | node:task-live-flow-checkout-script | noteworthy:nw-live-spec-balance-depletion |  | proposed |

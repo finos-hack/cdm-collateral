@@ -64,6 +64,9 @@ jobs:
       - name: Build collateral service jar
         run: mvn -B -q -f services/collateral/pom.xml -DskipTests package
 
+      - name: Build oracle service jar
+        run: mvn -B -q -f services/oracle/pom.xml -DskipTests package
+
       - name: Install Node dependencies
         run: |
           npm --prefix contracts ci
@@ -73,7 +76,7 @@ jobs:
 
       # 2-4. Deploy and start. scripts/live-e2e.sh up starts the Besu network (generating genesis and keys on a fresh
       #      runner), waits for blocks, deploys the contracts (no deployment exists on a fresh runner), starts the
-      #      store, gateways, services and console through orchestrate.mjs, and exits non-zero unless all five health
+      #      store, gateways, services and console through orchestrate.mjs, and exits non-zero unless all seven health
       #      checks pass within 180 s. The stack keeps running after the step.
       - name: Build, deploy and start the live stack
         run: bash scripts/live-e2e.sh up

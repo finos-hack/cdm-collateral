@@ -27,6 +27,7 @@ function broadcast(e: unknown): void {
   }
 }
 adapter.watchSteps((e) => broadcast(e));
+adapter.watchLedgerEvents((e) => broadcast(e));
 
 type Handler = (params: Record<string, string>, body: any, url: URL) => Promise<unknown>;
 interface Route {
@@ -98,6 +99,23 @@ route("POST", "/ledger/v1/calls/:id/return-transfer", async (p, b) => {
   for (const a of assets) approvals.push(await adapter.approve(a.token, control, a.qty));
   const transfer = await adapter.returnByTransfer(p.id as Hex, assets, b.cdmHash as Hex);
   return J({ approvals, transfer });
+});
+
+route("POST", "/ledger/v1/calls/:id/enforce", async (p) =>
+  // Default enforcement: the secured party's gateway seizes the escrowed initial margin once the oracle feed records
+  // the pledgor's default (flow-default-enforcement transition 5).
+  J(await adapter.enforce(p.id as Hex)),
+);
+
+route("POST", "/ledger/v1/oracle/defaults", async (_p, b) =>
+  // Oracle feed write (architecture relationship oracle-to-gateway). Only the operator's gateway holds the publisher
+  // key, so only that instance can serve this; any other instance refuses before submitting.
+  J(await adapter.setDefault(getAddress(b.party), b.inDefault === undefined ? true : Boolean(b.inDefault))),
+);
+
+route("GET", "/ledger/v1/defaults/:party", async (p) => {
+  const party = getAddress(p.party);
+  return { party, inDefault: await adapter.isDefaulted(party) };
 });
 
 route("GET", "/ledger/v1/party-calls", async (_p, _b, url) =>

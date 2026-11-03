@@ -394,3 +394,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-devcontainerstack-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
 | node:task-react-console | status | open | resolved | 2026-11-03T03:33:39Z |  | denisurusov |
 | node:goal-test-konspekt-adoption | status | active | resolved | 2026-11-03T03:36:56Z |  | denisurusov |
+| noteworthy:nw-return-default-flows-wired | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| noteworthy:nw-live-spec-balance-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-remainingflows-returndefault | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-remainingflows-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-livecheckout-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |

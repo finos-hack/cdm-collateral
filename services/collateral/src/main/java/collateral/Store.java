@@ -43,6 +43,18 @@ public final class Store implements AutoCloseable {
                       n INTEGER NOT NULL
                     )""");
                 st.execute("""
+                    CREATE TABLE IF NOT EXISTS ledger_events (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      event TEXT NOT NULL,
+                      call_id TEXT,
+                      party TEXT,
+                      block TEXT NOT NULL,
+                      log_index INTEGER NOT NULL,
+                      detail_json TEXT NOT NULL,
+                      created_at TEXT NOT NULL,
+                      UNIQUE(event, block, log_index)
+                    )""");
+                st.execute("""
                     CREATE TABLE IF NOT EXISTS margin_call_state (
                       call_id TEXT PRIMARY KEY,
                       state_json TEXT NOT NULL,
@@ -98,6 +110,39 @@ public final class Store implements AutoCloseable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Record a settlement or oracle-feed event pushed by this party's gateway (Returned, Enforced, DefaultPublished).
+     * An event is identified by its chain position (block, log index), so a replay after a reconnect is ignored.
+     */
+    public synchronized void recordEvent(String event, String callId, String party, String block, long logIndex, String detailJson) {
+        try (PreparedStatement ins = conn.prepareStatement(
+                "INSERT OR IGNORE INTO ledger_events(event, call_id, party, block, log_index, detail_json, created_at) VALUES(?,?,?,?,?,?,?)")) {
+            ins.setString(1, event);
+            ins.setString(2, callId == null ? null : callId.toLowerCase());
+            ins.setString(3, party == null ? null : party.toLowerCase());
+            ins.setString(4, block);
+            ins.setLong(5, logIndex);
+            ins.setString(6, detailJson);
+            ins.setString(7, java.time.Instant.now().toString());
+            ins.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** The names of the events recorded for a call, oldest first (e.g. whether a call was enforced). */
+    public List<String> eventsFor(String callId) {
+        List<String> out = new ArrayList<>();
+        try (PreparedStatement q = conn.prepareStatement("SELECT event FROM ledger_events WHERE call_id = ? ORDER BY id")) {
+            q.setString(1, callId.toLowerCase());
+            ResultSet rs = q.executeQuery();
+            while (rs.next()) out.add(rs.getString(1));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return out;
     }
 
     public List<Map<String, Object>> messagesFor(String callId) {

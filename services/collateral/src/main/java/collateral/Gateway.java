@@ -19,11 +19,18 @@ import java.util.Map;
  */
 public final class Gateway {
     private final String baseUrl;
+    private final String prefix;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public Gateway(String baseUrl) {
+        this(baseUrl, "/ledger/v1");
+    }
+
+    /** A JSON client for another service with the same conventions, e.g. the oracle service under /oracle/v1. */
+    public Gateway(String baseUrl, String prefix) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        this.prefix = prefix;
     }
 
     public JsonNode post(String path, Map<String, Object> body) {
@@ -43,7 +50,7 @@ public final class Gateway {
 
     private JsonNode send(String method, String path, Map<String, Object> body) {
         try {
-            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + "/ledger/v1" + path))
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + prefix + path))
                     .timeout(Duration.ofSeconds(60))
                     .header("Content-Type", "application/json");
             if ("POST".equals(method)) {
@@ -55,7 +62,7 @@ public final class Gateway {
             JsonNode node = res.body() == null || res.body().isBlank() ? mapper.nullNode() : mapper.readTree(res.body());
             if (res.statusCode() >= 300) {
                 String msg = node.has("error") ? node.get("error").asText() : res.body();
-                throw new RuntimeException("gateway " + method + " " + path + " -> " + res.statusCode() + ": " + msg);
+                throw new RuntimeException(baseUrl + prefix + " " + method + " " + path + " -> " + res.statusCode() + ": " + msg);
             }
             return node;
         } catch (RuntimeException e) {

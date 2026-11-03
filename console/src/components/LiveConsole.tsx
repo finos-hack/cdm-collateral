@@ -2,7 +2,8 @@
 // instead of the in-browser engine mock. One instance per party (route #/live/A, #/live/B). Polls the party's
 // workflow service for on-chain call, proposal and balance state and offers the lifecycle actions for its role.
 // Actions are keyed on the call's from/to/kind/state (not the party's role), so the same row serves delivery calls
-// (the pledgor acts on settlement) and return calls (the secured party agrees and releases).
+// (the pledgor acts on settlement) and return calls (the secured party agrees and releases). The secured party can
+// also declare the pledgor's default and enforce against the pledged initial margin (flow-default-enforcement).
 import { useCallback, useEffect, useState } from "react";
 import { api, serviceUrl, type LiveCall, type LiveContext, type LiveParty, type LiveState } from "../domain/liveApi";
 
@@ -64,6 +65,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 
   const isSecured = ctx.role === "Secured Party";
   const other = ctx.counterparty;
+  const hasPledged = !!state?.balances.some((b) => Number(b.pledged) > 0);
+  const inDefault = (["A", "B"] as LiveParty[]).filter((p) => state?.defaults?.[p]);
 
   return (
     <div>
@@ -81,6 +84,12 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       </div>
 
       {error && <div className="card bad">{error}</div>}
+
+      {inDefault.length > 0 && (
+        <div className="card bad" role="status">
+          {inDefault.map((p) => (p === ctx.party ? `This party (${p})` : `Counterparty ${p}`)).join(", ")} in default on the oracle feed
+        </div>
+      )}
 
       <div className="card">
         <h3>Collateral balances (on-chain)</h3>
@@ -142,7 +151,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         <h3>Margin calls</h3>
         {!state?.calls.length && <div className="small">No calls yet.</div>}
         {state?.calls.map((c) => (
-          <CallRow key={c.callId} call={c} party={party} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} />
+          <CallRow key={c.callId} call={c} party={party} hasPledged={hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} />
         ))}
       </div>
     </div>
@@ -152,6 +161,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 function CallRow(props: {
   call: LiveCall;
   party: LiveParty;
+  hasPledged: boolean;
   busy: boolean;
   token: string;
   qty: number;
@@ -159,7 +169,7 @@ function CallRow(props: {
   setQty: (n: number) => void;
   run: (fn: () => Promise<unknown>) => void;
 }) {
-  const { call: c, party, busy, token, qty, setToken, setQty, run } = props;
+  const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run } = props;
   const [partialUsd, setPartialUsd] = useState(0);
   const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
   const accepted = c.proposals.find((p) => p.state === "accepted");
@@ -176,6 +186,9 @@ function CallRow(props: {
   const canPledge = acts && c.kind === "IM" && accepted && !settled;
   const canTransfer = acts && c.kind === "VM" && accepted && !settled;
   const canReturn = acts && c.kind === "Return" && agreedOpen && !settled;
+  // Enforcement seizes everything the pledgor has in escrow with this secured party, so it is offered on a settled IM
+  // call the party issued while anything is still pledged.
+  const canEnforce = c.from === party && c.kind === "IM" && settled && !c.enforced && hasPledged;
 
   return (
     <div className="subcard">
@@ -251,7 +264,11 @@ function CallRow(props: {
             <button disabled={busy} onClick={() => run(() => api.returnSettle(party, c.callId, "transfer", [{ token, qty }]))}>Return by transfer</button>
           </>
         )}
+        {canEnforce && (
+          <button disabled={busy} onClick={() => run(() => api.enforce(party, c.callId))}>Declare default &amp; enforce</button>
+        )}
         {settled && <span className="ok">settled on-chain ✓</span>}
+        {c.enforced && <span className="bad">enforced ✓</span>}
       </div>
 
       {c.messages.length > 0 && (
