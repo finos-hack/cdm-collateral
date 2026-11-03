@@ -548,3 +548,6 @@ excluded.
 | task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/src/test/java/cdmx/ConcentrationTest.java | 2026-11-03T20:54:04Z |
 | task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | cdm-ext/src/test/java/cdmx/VariationMarginTest.java | 2026-11-03T20:54:04Z |
 | task-cdm-gap-closure | a7732cdc4720676ab283f473685196d5d5bafd39 | docs/cdm-development/gap-register.md | 2026-11-03T20:54:04Z |
+| task-cdm-gap-closure | 15eacf78bb64f1bb66cd85c85a20e78d590d6c55 | cdm-ext/rosetta/cdmx-collateral-valuation-func.rosetta | 2026-11-03T20:42:41Z |
+| task-cdm-gap-closure | 15eacf78bb64f1bb66cd85c85a20e78d590d6c55 | docs/analysis/defects.md | 2026-11-03T20:42:41Z |
+| task-cdm-gap-closure | 15eacf78bb64f1bb66cd85c85a20e78d590d6c55 | docs/cdm-development/gap-register.md | 2026-11-03T20:42:41Z |
