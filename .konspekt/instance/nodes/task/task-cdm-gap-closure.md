@@ -10,7 +10,7 @@ provenance:
   contentHash: c559e965491f960d039091cb857d61d9cb85ac25
   timestamp: 2026-10-17T00:22:35Z
 createdAt: 2026-10-17T00:22:35Z
-updatedAt: 2026-11-03T20:54:04Z
+updatedAt: 2026-11-03T21:52:19Z
 ```
 # Task: CDM gap closure
 
@@ -57,3 +57,9 @@ Progress 2026-11-03T20:54:04Z (valuation group finished):
   `cdmx.collateral.exposure` `NettingSet`, `NettedExposure` ([[nw-vm-exposure-from-netting-set]]).
 - Extension tests: 65 pass; the collateral service builds against the new jar. Next after review: the CSA extensions,
   starting with close-out netting (G15).
+
+Progress 2026-11-03T21:52:19Z (CSA extensions started):
+- G8 and G9/G10 notes accepted; PR #17 merged.
+- G15 partial (proposed, for review): `cdmx.collateral.closeout` `EarlyTerminationAmount`, `CloseOutNetting` under the
+  ISDA 2002 MA ([[nw-closeout-collateral-by-arrangement]]). Open: GMRA, GMSLA, CCP close-out; Section 6(e)(ii).
+- Extension tests: 75 pass; the collateral service builds against the new jar.
