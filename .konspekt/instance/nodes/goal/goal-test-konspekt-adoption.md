@@ -2,7 +2,7 @@
 id: goal-test-konspekt-adoption
 type: goal
 title: Test konspekt adoption
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-kit-patch

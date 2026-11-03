@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T15:57:23Z
   confidence: 0.85
 createdAt: 2026-11-01T15:57:23Z
-updatedAt: 2026-11-03T03:25:20Z
+updatedAt: 2026-11-03T03:46:43Z
 ```
 # Task: wire the four remaining CALM flows into the live stack
 
@@ -37,3 +37,24 @@ Done when each of the four flows has a live Playwright test in `console/e2e/live
 state through the gateway, and `e2e-live-stack.yml` passes with all of them running.
 
 Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed scope) to [[goal-end-to-end-flow]] by the project owner (source `2d89f9ce09676a084c6672f5a9ba1b887d6112c5`).
+
+## State — 2026-11-03: where the next session starts
+
+- Scope (b) is implemented on branch `origin/e2e-return-default` (cloud session, 2026-11-01, commits
+  `2e0e130`..`2336c1e`; its notes are `nw-return-default-flows-wired` and `nw-live-spec-balance-depletion` on that
+  branch, both proposed): gateway events and routes for return, enforce and default; a default-notice oracle service
+  (`services/oracle`, 8100); the mkt gateway (8200) in the stack; console "Declare default & enforce"; live specs for
+  `flow-return` and `flow-default-enforcement`. Not merged; never run in `e2e-live-stack.yml` or a codespace.
+- A trial merge into the `e2e-wiring` line (now `main` at `09bb91a`, PR #10) conflicts only in the append-only
+  konspekt logs (`changes/changed.md`, `commands/executed.md`, `edges/edges.md`, `transitions/transitions.md`;
+  resolve by keeping both sides' rows); code merges cleanly.
+- Next steps agreed with the project owner: branch from `main`, merge `origin/e2e-return-default`, add 8100 and 8200
+  to `forwardPorts`, run unit tests (console, `mvn test` for collateral and oracle, gateway), run all four live specs
+  in codespace `clean_try` over `gh codespace ssh`, open a PR. Then `flow-oracle-update` and
+  `flow-revaluation-top-up`.
+- Two local, unpushed commits on `e2e-wiring` (`6ac0121`, `481e5b3`) add a failure-only Besu-logs step to
+  `e2e-live-stack.yml`. Pushing them needs the `workflow` scope on gh's token
+  (`gh auth refresh -h github.com -s workflow`); carry them into the scope (b) PR. PR #10's first `live-stack` run
+  failed with a deploy transaction never confirmed and passed on rerun; that step is to capture the cause next time.
+- Proposed entities to disposition next session: this task, `artifact-react-console`, `artifact-e2e-runbook`,
+  `task-revaluation-top-up-modelling`, `task-live-spec-balance-aware-amounts`.
