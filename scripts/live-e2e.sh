@@ -80,22 +80,28 @@ rpc() { curl -s -m 5 "http://localhost:$1" -H 'content-type: application/json' -
 
 start_besu() {
   if [ -f besu/.env ] && [ -f besu/networkFiles/genesis.json ]; then
+    # Leftover bridges and iptables rules from earlier besu_besu networks block validator peering (besu/clean-stale-network.sh).
+    bash besu/clean-stale-network.sh
     "${compose[@]}" up -d
   else
     # First time on this clone (no generated genesis/keys): start-network.sh generates them, then brings the nodes up.
     say "besu network files missing — generating via besu/start-network.sh"
     bash besu/start-network.sh
   fi
-  # Wait for a non-zero block height (QBFT produces a block every 2 s once at least three validators peer).
-  local i n
+  # Wait until the block height advances (QBFT produces a block every 2 s once at least three validators peer). A
+  # non-zero height alone is not enough: a restarted node reports its stored height even while consensus is stalled.
+  local i n first=""
   for i in $(seq 1 60); do
     # A node that has just started refuses or drops the connection (curl exit 7 / 52); under set -e that must not end
     # the script, so the poll tolerates a failed request and retries.
     n="$( { rpc 8545 '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' || true; } | sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p')"
-    if [ -n "$n" ] && [ "$n" != "0x0" ]; then say "besu producing blocks (height $n)"; return 0; fi
+    if [ -n "$n" ]; then
+      [ -z "$first" ] && first="$n"
+      if [ "$n" != "$first" ]; then say "besu producing blocks (height $first -> $n)"; return 0; fi
+    fi
     sleep 2
   done
-  die "besu did not produce a block within 120 s — check: bash besu/check-network.sh"
+  die "besu block height did not advance within 120 s (height ${first:-unknown}) — check: bash besu/check-network.sh"
 }
 
 deploy_if_needed() {
