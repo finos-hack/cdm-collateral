@@ -1,0 +1,195 @@
+namespace cdmx.collateral.substitution : <"Local CDM extension: substitution of posted collateral under an ISDA CSA (gap G16).">
+version "${project.version}"
+
+import cdm.base.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.legaldocumentation.csa.*
+import cdm.observable.asset.*
+import cdmx.collateral.portfolio.*
+import cdmx.collateral.transfer.*
+
+// Scope: the ISDA CSA substitution of Paragraph 4(d): on notice the pledgor offers substitute credit support for posted
+// items; if its Substitution election needs consent (Paragraph 13 (f)(ii)) the secured party consents or refuses; on
+// settlement the substitute is delivered and the original items are returned. The secured party only returns items
+// worth no more than the substitute (the proviso to Paragraph 4(d)(ii)). Both legs settle on the event date; the CSA
+// allows the return up to the Local Business Day after the substitute is received. Eligibility and concentration of
+// the substitute are checked separately (CDM CheckEligibilityByDetails, G8 ConcentrationLimitBreaches).
+
+func SubstitutionNeedsConsent: <"Whether the pledgor needs the secured party's consent to substitute: its SubstitutionPartyElection -> needsConsent; false when the parties made no election for it.">
+    [docReference ISDA CSA_VM_2016 paragraph "13" clause "(f)(ii)" name "Consent"]
+    inputs:
+        elections Substitution (0..1)
+        pledgorRole CounterpartyRoleEnum (1..1)
+    output:
+        needsConsent boolean (1..1)
+
+    alias election: elections -> partyElection filter party = pledgorRole
+
+    set needsConsent:
+        if election exists then election only-element -> needsConsent = True else False
+
+func Create_SubstitutionState: <"The substitution after one step.">
+    inputs:
+        before SubstitutionState (0..1)
+        elections Substitution (0..1)
+        eventDate date (1..1)
+        instruction SubstitutionInstruction (1..1)
+    output:
+        after SubstitutionState (1..1)
+
+    set after:
+        if instruction -> request exists
+        then SubstitutionState {
+                request: instruction -> request,
+                status: SubstitutionStatusEnum -> Requested,
+                consentRequired: SubstitutionNeedsConsent(elections, instruction -> request -> pledgorRole),
+                ...
+            }
+        else if instruction -> consent exists
+        then SubstitutionState {
+                request: before -> request,
+                status: if instruction -> consent -> consent = True
+                    then SubstitutionStatusEnum -> Consented
+                    else SubstitutionStatusEnum -> Refused,
+                consentRequired: before -> consentRequired,
+                refusalReason: instruction -> consent -> reason,
+                ...
+            }
+        else SubstitutionState {
+                request: before -> request,
+                status: SubstitutionStatusEnum -> Settled,
+                consentRequired: before -> consentRequired,
+                substitutionDate: eventDate,
+                ...
+            }
+
+func Create_CollateralSubstitution: <"Applies one substitution step and records it as an event. A request needs the original items held and a substitute worth at least as much; consent applies only where it is needed; a settlement delivers the substitute, returns the original items and updates the portfolio.">
+    inputs:
+        before SubstitutionState (0..1) <"Absent for the request.">
+        portfolio CollateralPortfolio (1..1) <"The collateral held, as ApplyCollateralEvent keeps it.">
+        elections Substitution (0..1) <"CDM's CSA Substitution elections.">
+        eventIdentifier string (1..1)
+        eventDate date (1..1)
+        timestamp zonedDateTime (1..1)
+        instruction SubstitutionInstruction (1..1)
+    output:
+        event CollateralSubstitution (1..1)
+
+    alias request: if instruction -> request exists then instruction -> request else before -> request
+    alias settle: instruction -> settle exists
+    alias balance: portfolio -> collateralBalance only-element
+    alias pledgor: balance -> payerReceiver -> payerPartyReference
+    alias securedParty: balance -> payerReceiver -> receiverPartyReference
+    alias held: portfolio -> collateralPosition
+    alias incoming: if settle then request -> substituteCollateral else empty
+    alias outgoing: if settle then request -> originalCollateral else empty
+    alias assets: [held, incoming] extract item -> asset then distinct
+
+    condition RequestFirst: <"A substitution starts with the request; later steps follow it.">
+        if instruction -> request exists then before is absent else before exists
+
+    condition SameSubstitution: <"A consent or settlement names the substitution requested.">
+        (instruction -> consent is absent
+            or instruction -> consent -> substitutionIdentifier = before -> request -> substitutionIdentifier)
+        and (instruction -> settle is absent
+            or instruction -> settle -> substitutionIdentifier = before -> request -> substitutionIdentifier)
+
+    condition ConsentWhenNeeded: <"Consent is given or refused only for a requested substitution that needs it.">
+        if instruction -> consent exists
+        then before -> status = SubstitutionStatusEnum -> Requested and before -> consentRequired = True
+
+    condition SettleWhenAllowed: <"A substitution settles once requested without need of consent, or once consented.">
+        if instruction -> settle exists
+        then before -> status = SubstitutionStatusEnum -> Consented
+            or (before -> status = SubstitutionStatusEnum -> Requested and before -> consentRequired = False)
+
+    condition OneBalance: <"The portfolio keeps one balance, the settled post-haircut value held.">
+        portfolio -> collateralBalance count = 1
+
+    condition OriginalHeld: <"The items to be returned are held, no more of an asset than is held.">
+        (request -> originalCollateral
+            extract item -> asset
+            then distinct
+            then filter a [ HeldQuantity(held, a) < HeldQuantity(request -> originalCollateral, a) ]
+            then count) = 0
+
+    condition SubstituteCoversOriginal: <"The secured party returns items worth no more than the substitute (ISDA CSA Paragraph 4(d)(ii)).">
+        request -> originalValue -> value <= request -> substituteValue -> value
+
+    condition BalanceCurrency: <"The values are in the balance currency.">
+        request -> substituteValue -> unit -> currency = balance -> amountBaseCurrency -> unit -> currency
+
+    set event:
+        CollateralSubstitution {
+            eventIdentifier: eventIdentifier,
+            eventDate: eventDate,
+            timestamp: timestamp,
+            instruction: instruction,
+            before: before,
+            after: Create_SubstitutionState(before, elections, eventDate, instruction),
+            portfolioBefore: portfolio,
+            portfolioAfter:
+                if settle
+                then CollateralPortfolio {
+                        portfolioIdentifier: portfolio -> portfolioIdentifier,
+                        collateralPosition: assets extract a [ NetCollateralPosition(a, held, incoming, outgoing) ],
+                        collateralBalance: CollateralBalance {
+                            collateralBalanceStatus: balance -> collateralBalanceStatus,
+                            haircutIndicator: balance -> haircutIndicator,
+                            amountBaseCurrency: Money {
+                                value: balance -> amountBaseCurrency -> value
+                                    + request -> substituteValue -> value
+                                    - request -> originalValue -> value,
+                                unit: balance -> amountBaseCurrency -> unit,
+                                ...
+                            },
+                            payerReceiver: balance -> payerReceiver
+                        },
+                        legalAgreement: portfolio -> legalAgreement
+                    }
+                else portfolio,
+            ...
+        }
+    // Each direction has its own extract (see Create_CollateralEvent).
+    add event -> transfer: incoming extract Create_CollateralTransfer(item, pledgor, securedParty, eventDate)
+    add event -> transfer: outgoing extract Create_CollateralTransfer(item, securedParty, pledgor, eventDate)
+    set event -> eventQualifier:
+        if Qualify_SubstitutionRequested(event) then "SubstitutionRequested"
+        else if Qualify_SubstitutionConsented(event) then "SubstitutionConsented"
+        else if Qualify_SubstitutionRefused(event) then "SubstitutionRefused"
+        else if Qualify_CollateralSubstituted(event) then "CollateralSubstituted"
+
+func Qualify_SubstitutionRequested: <"The pledgor gave notice of a substitution.">
+    inputs:
+        event CollateralSubstitution (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> request exists
+
+func Qualify_SubstitutionConsented: <"The secured party consented to a substitution.">
+    inputs:
+        event CollateralSubstitution (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> consent exists and event -> after -> status = SubstitutionStatusEnum -> Consented
+
+func Qualify_SubstitutionRefused: <"The secured party refused consent to a substitution.">
+    inputs:
+        event CollateralSubstitution (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> consent exists and event -> after -> status = SubstitutionStatusEnum -> Refused
+
+func Qualify_CollateralSubstituted: <"Replaces CDM's Qualify_Substitution for CSA collateral (D5): the substitute was delivered and the original items returned. No trade changes, so the event is not a Renegotiation.">
+    inputs:
+        event CollateralSubstitution (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> settle exists
+            and event -> after -> status = SubstitutionStatusEnum -> Settled
+            and event -> transfer exists
