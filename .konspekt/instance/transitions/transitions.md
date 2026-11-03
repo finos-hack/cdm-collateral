@@ -505,3 +505,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-gapclosure-closeout | review | proposed | accepted | 2026-11-03T23:07:44Z |  | denisurusov |
 | noteworthy:nw-enforcement-event-by-election | review |  | proposed | 2026-11-03T23:08:40Z |  |  |
 | edge:e-note-gapclosure-enforcement | review |  | proposed | 2026-11-03T23:08:40Z |  |  |
+| noteworthy:nw-enforcement-event-by-election | review | proposed | accepted | 2026-11-03T23:55:33Z |  | denisurusov |
+| edge:e-note-gapclosure-enforcement | review | proposed | accepted | 2026-11-03T23:55:33Z |  | denisurusov |
+| node:task-sme-enforcement-event-definition | review |  | proposed | 2026-11-03T23:55:33Z |  |  |
+| node:task-sme-enforcement-event-definition | status |  | open | 2026-11-03T23:55:33Z |  |  |
+| edge:e-dec-cdmdev-smeenforcement | review |  | proposed | 2026-11-03T23:55:33Z |  |  |
+| edge:e-lnk-gapclosure-smeenforcement | review |  | proposed | 2026-11-03T23:55:33Z |  |  |

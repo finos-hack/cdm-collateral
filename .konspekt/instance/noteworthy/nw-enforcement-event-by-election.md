@@ -1,7 +1,7 @@
 ```yaml
 id: nw-enforcement-event-by-election
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: aa91f5ad7f70c8da3e070cfedaa084482327172f
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T23:08:40Z
   confidence: 0.6
 createdAt: 2026-11-03T23:08:40Z
-updatedAt: 2026-11-03T23:08:40Z
+updatedAt: 2026-11-03T23:55:33Z
 ```
 # Decision: enforcement against segregated IM is its own event over the portfolio, gated by CDM's enforcementEvent elections
 
@@ -30,3 +30,6 @@ How gap G14 is closed in `cdm-ext/rosetta/cdmx-collateral-enforcement-*.rosetta`
   caller; it is what `CloseOutNetting` applies as `collateralHeld` ([[nw-closeout-collateral-by-arrangement]]).
 
 Not modelled: the sale or appropriation itself and the custodian's own steps.
+
+The project owner kept this reading (2026-11-03) and asked for it to be checked against the Security Agreement text
+with a business SME: [[task-sme-enforcement-event-definition]].
