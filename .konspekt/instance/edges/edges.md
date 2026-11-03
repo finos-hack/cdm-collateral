@@ -141,3 +141,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-workflowtaskmap-csaorder | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-csa-extension-order |  | accepted |
 | e-note-csaextensions-csaorder | notes | node:task-csa-workflow-extensions | noteworthy:nw-csa-extension-order |  | accepted |
 | e-note-workflowtaskmap-familyorder | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-agreement-family-order |  | accepted |
+| e-mrk-oracleadr-remainingflows | marks | waypoint:wp-adr-oracle-prices-on-request-ratings-offchain | node:task-e2e-remaining-flows |  | accepted |

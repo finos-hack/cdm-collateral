@@ -505,3 +505,12 @@ excluded.
 | investigation-cdm-workflow-task-map | 5d81b5d289064fc07d3898003334a2369d98fd13 | docs/analysis/cdm-workflow-task-map.md | 2026-11-03T14:48:40Z |
 | investigation-cdm-workflow-task-map | 159fe5bd95f5ddef9259fe1e98bf7a491565e3f0 | docs/analysis/business-case.md | 2026-11-03T15:18:39Z |
 | investigation-cdm-workflow-task-map | 159fe5bd95f5ddef9259fe1e98bf7a491565e3f0 | docs/analysis/cdm-workflow-task-map.md | 2026-11-03T15:18:39Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | architecture/prototype.architecture.json | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | console/e2e/live.spec.ts | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | docs/runbook-e2e.md | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | gateway/src/besu.ts | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | gateway/src/server.ts | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/main/java/oracle/App.java | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/main/java/oracle/MarketData.java | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/main/java/oracle/OperatorGateway.java | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/test/java/oracle/AppTest.java | 2026-11-03T15:32:13Z |
