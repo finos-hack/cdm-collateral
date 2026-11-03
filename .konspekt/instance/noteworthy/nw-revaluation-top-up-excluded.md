@@ -1,7 +1,7 @@
 ```yaml
 id: nw-revaluation-top-up-excluded
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: ccf19a7ba620e62c91c5113cd2408a7f5b6c9d82

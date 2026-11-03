@@ -476,3 +476,6 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-revaluation-top-up-excluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
 | edge:e-note-remainingflows-topupexcluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
 | edge:e-note-topupmodelling-topupexcluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
+| noteworthy:nw-revaluation-top-up-excluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
+| edge:e-note-remainingflows-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
+| edge:e-note-topupmodelling-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
