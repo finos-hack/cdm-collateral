@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
 createdAt: 2026-11-01T01:00:00Z
-updatedAt: 2026-11-03T00:40:32Z
+updatedAt: 2026-11-03T01:48:11Z
 ```
 # Task: run the live stack in GitHub Codespaces
 
@@ -80,3 +80,14 @@ removal and a restart of the four Besu containers, peering recovered and blocks 
 `/svc/B/api/v1/context` and `/svc/A/api/v1/health` return the service responses, and `/svc/B/api/v1/events` with
 `Accept: text/event-stream` returns `text/event-stream` and holds the connection open, matching the direct service.
 Pending: the browser check on the forwarded 5173 URL.
+
+## Progress — 2026-11-03: clean codespace reconstruction
+
+`besu/clean-stale-network.sh` (`e167324`) now runs before Besu starts and removes leftover bridges and the iptables
+rules that name them; `start_besu` waits for the block height to advance. Verified in the old codespace with a seeded
+leftover bridge and rule. A new codespace `clean-try-vgx4wrxppjcpp9r` (display name `clean_try`, `standardLinux32gb`,
+`e2e-wiring` at `3e16dee`) was created at the project owner's request. With no manual step, `postCreateCommand` and
+`postStartCommand` both exited 0; the new chain advanced `0x0 -> 0x2`; the cleanup script found nothing to remove; all
+six ports report healthy; the console proxy serves `/svc/A`, `/svc/B` and the SSE stream. Pending: the browser check
+on the forwarded 5173 URL, then deletion of the old codespace `automatic-fiesta-7rgqw5gv5vfxw4j` (the project owner's
+choice).
