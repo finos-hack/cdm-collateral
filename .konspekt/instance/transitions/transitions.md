@@ -376,3 +376,4 @@ into state history — an instance without it is v1-conformant and records none.
 | waypoint:wp-adr-console-same-origin-proxy | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
 | node:task-codespaces-live-stack | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
 | node:task-codespaces-live-stack | status | open | resolved | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-mrk-sameoriginproxy-codespacesstack | review | proposed | accepted | 2026-11-03T03:11:11Z | 551fcc742556f79f90b83c29c01b8cbd240e0e4b | denisurusov |

@@ -121,4 +121,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-e2ewiring-balanceaware | decomposes | node:task-e2e-wiring | node:task-live-spec-balance-aware-amounts |  | proposed |
 | e-lnk-livecheckout-balanceaware | links | node:task-live-flow-checkout-script | node:task-live-spec-balance-aware-amounts |  | proposed |
 | e-lnk-remainingflows-balanceaware | links | node:task-e2e-remaining-flows | node:task-live-spec-balance-aware-amounts |  | proposed |
-| e-mrk-sameoriginproxy-codespacesstack | marks | waypoint:wp-adr-console-same-origin-proxy | node:task-codespaces-live-stack |  | proposed |
+| e-mrk-sameoriginproxy-codespacesstack | marks | waypoint:wp-adr-console-same-origin-proxy | node:task-codespaces-live-stack |  | accepted |
