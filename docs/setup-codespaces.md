@@ -40,6 +40,20 @@ On the options page:
 
 To reopen it later: https://github.com/codespaces lists your codespaces.
 
+**From the command line** (GitHub CLI, `gh` 2.103.3 or later):
+
+```bash
+gh codespace create -R denisurusov/cdm-collateral -b <branch> -m standardLinux32gb --display-name <name>
+gh codespace code --web -c <codespace-name>    # required once: opens the editor, which sets up the forwarded ports
+gh codespace ports -c <codespace-name>         # lists the forwarded URLs, e.g. https://<codespace-name>-5173.app.github.dev
+```
+
+A codespace created this way has no forwarded ports until an editor connects to it once: before that,
+`gh codespace ports` lists nothing, `https://<codespace-name>-5173.app.github.dev` reports that the page cannot be
+found, and `gh codespace ports visibility` fails with `404 Not Found`. After the first connection the ports remain
+registered across stop and restart. The dev container includes an SSH server, so `gh codespace ssh -c <name> -- <cmd>`
+runs commands in the codespace without opening the editor.
+
 Free allowance for personal accounts (check GitHub's billing page for current figures): reported as 120 core-hours a
 month, about 30 hours on a 4-core machine. A codespace stops after 30 minutes without activity (default); stopped
 codespaces use only storage.
@@ -103,3 +117,5 @@ Tests and modes: [`../console/README.md`](../console/README.md).
 | `live-e2e.sh`: `missing services/collateral/target/collateral-service.jar` | The post-create build failed or did not run; run `bash scripts/live-e2e.sh build` and read its output |
 | `Docker is not running` from `start-network.sh` | The Docker-in-Docker daemon did not start; rebuild the container (**Codespaces: Rebuild Container**) |
 | Blocks stay at `0x0` | At least three nodes must run; `docker compose -f besu/docker-compose.yml logs` |
+| Block height does not advance, `peers` `0x0`, nodes log `Moved to round …` | Leftover bridges or iptables rules from an earlier Besu network: `bash besu/clean-stale-network.sh` (also run by `live-e2e.sh up`), then `bash scripts/live-e2e.sh up` |
+| `https://<codespace-name>-5173.app.github.dev` cannot be found | No editor has connected since the codespace was created from the command line: `gh codespace code --web -c <codespace-name>` (section 1) |
