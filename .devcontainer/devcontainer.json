@@ -10,24 +10,36 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/java:1": { "version": "21" },
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    // sshd: lets `gh codespace ssh` / `gh codespace logs` run commands and read the creation log from outside the
+    // codespace (task-codespaces-live-stack). Access goes through gh's GitHub authentication.
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "postCreateCommand": "bash scripts/live-e2e.sh build",
   "postStartCommand": "bash scripts/live-e2e.sh up",
-  // 8001/8002: the console calls the collateral services directly from the browser (console/src/domain/liveApi.ts),
-  // so they must be forwarded for the live flow to work (task-devcontainer-live-stack).
+  // 8001/8002: in the container the browser reaches the services through the console's proxy (VITE_SERVICE_PROXY
+  // below), so only 5173 is needed for the live flow. 8001/8002 stay published and forwarded for direct calls (an
+  // explicit VITE_SERVICE_<P>_URL, curl, `live-e2e.sh check` through a tunnel) (task-devcontainer-live-stack).
   // appPort: Docker publishes these on the host's loopback when the container is created, so a host browser reaches
   // the console and both services without an IDE doing the forwarding (forwardPorts is applied only by a client such
   // as VS Code or Codespaces). Bound to 127.0.0.1 because the services have no authentication. The console dev server
   // must listen on 0.0.0.0 for a published port to reach it (CONSOLE_HOST, orchestrate.mjs); the Javalin services
   // already listen on all interfaces.
   "appPort": ["127.0.0.1:5173:5173", "127.0.0.1:8001:8001", "127.0.0.1:8002:8002"],
-  "containerEnv": { "CONSOLE_HOST": "0.0.0.0" },
-  "forwardPorts": [5173, 8001, 8002, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
+  // VITE_SERVICE_PROXY=1: the console calls the services through its own dev server (/svc/A, /svc/B; vite.config.ts),
+  // so a browser needs only 5173. In Codespaces this avoids per-port *.app.github.dev URLs, the private-port auth
+  // cookie on cross-origin requests, and CORS (task-codespaces-live-stack).
+  "containerEnv": { "CONSOLE_HOST": "0.0.0.0", "VITE_SERVICE_PROXY": "1" },
+  // 8300/8201/8202 (payload store, gateways A/B): the browser does not call them, but `live-e2e.sh check` and `status`
+  // health-check them, and `gh codespace ports forward` tunnels only ports listed here (task-codespaces-live-stack).
+  "forwardPorts": [5173, 8001, 8002, 8201, 8202, 8300, 8545, 8546, 8547, 8548, 8549, 8550, 8551, 8552],
   "portsAttributes": {
     "5173": { "label": "Collateral Console" },
     "8001": { "label": "Collateral service A (pledgor)" },
     "8002": { "label": "Collateral service B (secured party)" },
+    "8201": { "label": "Gateway A" },
+    "8202": { "label": "Gateway B" },
+    "8300": { "label": "Payload store" },
     "8545": { "label": "Besu mkt RPC" },
     "8547": { "label": "Besu bank-a RPC" },
     "8549": { "label": "Besu bank-b RPC" },

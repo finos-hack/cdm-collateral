@@ -75,7 +75,17 @@ bash scripts/live-e2e.sh status   # print the five health checks and the console
 bash scripts/live-e2e.sh down     # stop store, gateways, services and console; stop the Besu containers (chain kept)
 bash scripts/live-e2e.sh reset    # down, then delete the chain, the deployment and the off-chain state (section 8)
 bash scripts/live-e2e.sh build    # the one-time build of section 3 (mvn if on PATH, else cdm-ext/mvnw)
+bash scripts/live-e2e.sh check    # run every live flow (console/e2e/live.spec.ts) against the running stack
 ```
+
+`check` fails at once if a health check or the console is down. It installs Playwright's Chromium if absent, then
+runs the live specs against the console on 5173 (`E2E_BASE_URL` overrides the URL). Extra arguments go to
+Playwright, for example `bash scripts/live-e2e.sh check --grep flow-vm`. The exit code is Playwright's. Each run of
+the flows moves tokens on the chain, so on a long-lived chain the pledgor eventually lacks the free balance a flow
+needs (see the 2026-11-01 `check` entry in section 10); `reset` gives a fresh chain.
+
+With the dev container, run `check` on the host, not inside the container: `appPort` publishes 5173, 8001 and 8002
+on the host's `127.0.0.1`, so the same command tests the container's stack from outside it.
 
 The dev container runs `build` once when it is created and `up` every time it starts
 ([`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json)).
@@ -297,6 +307,37 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 
 ## 10. Verification status of this runbook
 
+### 2026-11-01 — GitHub Codespace, `check` run from the Windows host through a `gh` tunnel
+
+Codespace on `e2e-wiring` at `9909d9d` (4-core), stack started by `postStartCommand`. From Windows 11 (Git Bash),
+`gh codespace ports forward 5173:5173 8001:8001 8002:8002 8201:8201 8202:8202 8300:8300 -c <codespace>` tunnelled
+the six ports to `127.0.0.1`. `live-e2e.sh status` showed all six healthy (store `count: 0`), and
+`live-e2e.sh check` passed both live specs: `flow-im-margin-call-pledge` (30.0 s) and `flow-vm-margin-call-transfer`
+(28.1 s), exit 0.
+
+- `gh codespace ports forward` tunnels only ports listed in `forwardPorts`. Before `cbaf7ed` added 8201, 8202 and
+  8300, `check`'s health precondition could not pass over a tunnel.
+- With `gh` 2.83.2, forwarding a port that an earlier `gh` session had already forwarded failed with
+  `create tunnel port failed … 400: Bad Request`, and neither a Codespace restart nor `gh codespace rebuild --full`
+  cleared it. `gh` 2.103.3 forwarded the same ports without the error.
+- `gh` 2.103.3 exits the whole forward when one port refuses the connection, so open the tunnel only after the stack
+  is up.
+- `gh codespace ssh` fails: the image has no sshd.
+- An older Codespace, rebuilt after `git pull`, failed in `up` with "besu did not produce a block within 120 s". It
+  was deleted without finding the cause.
+
+### 2026-11-01 — `scripts/live-e2e.sh check` on Windows 11 (Git Bash, Docker Desktop)
+
+- With the stack down, `check` printed the health checks and exited 1 with "stack not up".
+- After `up` (existing chain and deployment, store `count: 144`), `check` ran both live specs:
+  `flow-im-margin-call-pledge` passed, and `flow-vm-margin-call-transfer` failed with the call left `agreed`. In
+  `stack.log`, gateway A's `settleByTransfer` reverted. The pledgor had 4,185,000 tUSD free, and the VM test transfers
+  between 1,000,000 and 9,999,000 tUSD per run (`console/e2e/live.spec.ts`); every VM call left `agreed` on this
+  chain (6,933,000 to 9,569,000) is above that balance. This is test data running out on a long-lived chain, not a
+  fault in `check`.
+- `check --grep flow-vm` ran only the VM spec, so Playwright arguments pass through; it failed the same way.
+- `check` exited 1 in both failing runs, matching Playwright's result.
+
 ### 2026-11-01 — dev container with `appPort`, both live flows driven from the Windows host
 
 A fresh dev container from commit `c9e0983`, created with `@devcontainers/cli` 0.90.0. The CLI applied `appPort`: the
@@ -364,5 +405,4 @@ Observed:
 Not verified in that container (no Docker): the Besu steps, `deploy:besu`, `npm run cycle`, `orchestrate.mjs` end to
 end, and the Playwright live specs. The 2026-10-29 to 2026-10-31 entries above cover those steps.
 
-Not verified anywhere yet: `scripts/live-e2e.sh up` inside the dev container, and the full reset (section 8 or
-`live-e2e.sh reset`).
+Not verified anywhere yet: the full reset (section 8 or `live-e2e.sh reset`).

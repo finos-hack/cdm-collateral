@@ -3,7 +3,7 @@ id: wp-adr-cdm-payload-carrier
 kind: decision
 subtype: adr
 timestamp: 2026-10-24T22:39:50Z
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-wiring
   sourceRef: 1f2f8020c00697a79ad759b8412ab8183e589a38
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-24T22:39:50Z
   confidence: 0.8
 createdAt: 2026-10-24T22:39:50Z
-updatedAt: 2026-10-24T22:39:50Z
+updatedAt: 2026-11-03T03:25:20Z
 ```
 # ADR: CDM payload carrier — off-chain content-addressed store anchored by the on-chain hash
 
@@ -47,3 +47,5 @@ and the gateway and service changes above. Production shape is a shared content-
 control; protocol-layer privacy (e.g. Canton/Daml) is a platform change and out of scope here. Unverified until
 implemented: the fold across both services for the IM flow; behaviour of the store and verification under the four
 remaining CALM flows.
+
+Accepted by the project owner on 2026-11-03 (source `2d89f9ce09676a084c6672f5a9ba1b887d6112c5`).

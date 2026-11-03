@@ -40,6 +40,20 @@ On the options page:
 
 To reopen it later: https://github.com/codespaces lists your codespaces.
 
+**From the command line** (GitHub CLI, `gh` 2.103.3 or later):
+
+```bash
+gh codespace create -R denisurusov/cdm-collateral -b <branch> -m standardLinux32gb --display-name <name>
+gh codespace code --web -c <codespace-name>    # required once: opens the editor, which sets up the forwarded ports
+gh codespace ports -c <codespace-name>         # lists the forwarded URLs, e.g. https://<codespace-name>-5173.app.github.dev
+```
+
+A codespace created this way has no forwarded ports until an editor connects to it once: before that,
+`gh codespace ports` lists nothing, `https://<codespace-name>-5173.app.github.dev` reports that the page cannot be
+found, and `gh codespace ports visibility` fails with `404 Not Found`. After the first connection the ports remain
+registered across stop and restart. The dev container includes an SSH server, so `gh codespace ssh -c <name> -- <cmd>`
+runs commands in the codespace without opening the editor.
+
 Free allowance for personal accounts (check GitHub's billing page for current figures): reported as 120 core-hours a
 month, about 30 hours on a 4-core machine. A codespace stops after 30 minutes without activity (default); stopped
 codespaces use only storage.
@@ -75,12 +89,12 @@ Every time the container starts, `scripts/live-e2e.sh up` starts the console dev
 services on 8001 and 8002. Open it from the **Ports** panel ("Collateral Console"). Check the stack from the terminal
 with `bash scripts/live-e2e.sh status`; its log is `stack.log` at the repository root.
 
-**In a local dev container** (VS Code Dev Containers) the forwarded ports map to `localhost`, so the console reaches
-the services at its default `http://localhost:8001` / `http://localhost:8002`.
-
-**In a codespace** the browser reaches forwarded ports at `https://<codespace-name>-<port>.app.github.dev`, so the
-console's default service URLs do not resolve and the live pages show no data. Making this work (setting
-`VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL`, port visibility, CORS) is `task-codespaces-live-stack`.
+The dev container sets `VITE_SERVICE_PROXY=1`, so the console calls the services on its own origin (`/svc/A/...`,
+`/svc/B/...`) and the console dev server forwards those requests to 8001 / 8002 inside the container
+(`console/vite.config.ts`). The browser needs only port 5173. This applies in a local dev container and in a
+codespace: in a codespace the console at `https://<codespace-name>-5173.app.github.dev` reaches the services without
+per-port URLs, without a cross-origin request to a private port, and without CORS. An explicit
+`VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL` still takes precedence over the proxy.
 
 **After new commits**, rebuild and restart from the terminal:
 
@@ -103,3 +117,5 @@ Tests and modes: [`../console/README.md`](../console/README.md).
 | `live-e2e.sh`: `missing services/collateral/target/collateral-service.jar` | The post-create build failed or did not run; run `bash scripts/live-e2e.sh build` and read its output |
 | `Docker is not running` from `start-network.sh` | The Docker-in-Docker daemon did not start; rebuild the container (**Codespaces: Rebuild Container**) |
 | Blocks stay at `0x0` | At least three nodes must run; `docker compose -f besu/docker-compose.yml logs` |
+| Block height does not advance, `peers` `0x0`, nodes log `Moved to round …` | Leftover bridges or iptables rules from an earlier Besu network: `bash besu/clean-stale-network.sh` (also run by `live-e2e.sh up`), then `bash scripts/live-e2e.sh up` |
+| `https://<codespace-name>-5173.app.github.dev` cannot be found | No editor has connected since the codespace was created from the command line: `gh codespace code --web -c <codespace-name>` (section 1) |

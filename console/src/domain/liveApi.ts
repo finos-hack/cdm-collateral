@@ -6,9 +6,13 @@ export type LiveParty = "A" | "B";
 
 const DEFAULT_URL: Record<LiveParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002" };
 
-export function serviceUrl(party: LiveParty): string {
-  const env = (import.meta as any).env ?? {};
-  return (party === "A" ? env.VITE_SERVICE_A_URL : env.VITE_SERVICE_B_URL) ?? DEFAULT_URL[party];
+// Precedence: an explicit VITE_SERVICE_<P>_URL, then the same-origin proxy path when VITE_SERVICE_PROXY=1 (set in the
+// devcontainer; the dev/preview server forwards /svc/<P> to the service, vite.config.ts), then localhost.
+export function serviceUrl(party: LiveParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
+  const explicit = party === "A" ? env.VITE_SERVICE_A_URL : env.VITE_SERVICE_B_URL;
+  if (explicit) return explicit;
+  if (env.VITE_SERVICE_PROXY === "1") return `/svc/${party}`;
+  return DEFAULT_URL[party];
 }
 
 export interface LiveContext {

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # scripts/live-e2e.sh — bring the live end-to-end stack up locally and leave it running, so an engineer can drive
 # the collateral flow (issue -> agree -> propose -> accept -> pledge/transfer, i.e. post and pay) by hand through the
-# console UI. The flow is NOT automated here; that is the Playwright live specs (console/e2e/live.spec.ts). This
-# script only stands up and tears down the environment (task-ci-live-e2e-stack).
+# console UI, or run the flows automatically with `check` (the Playwright live specs, console/e2e/live.spec.ts,
+# task-live-flow-checkout-script). CI runs only up and status (task-ci-live-e2e-stack, wp-adr-live-stack-local-ui-driven).
 #
 # Subcommands:
 #   up      (default) Stop any stack from a previous run (stop-and-replace), then start the Besu network, deploy the
@@ -15,6 +15,10 @@
 #   build   The one-time build of docs/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
 #           cdm-ext install into ~/.m2, then the collateral service jar. Uses mvn when on PATH, else cdm-ext/mvnw. The
 #           dev container runs it once on creation (postCreateCommand).
+#   check   Run every live flow (console/e2e/live.spec.ts) against the running stack: fails at once if the stack is
+#           not up, installs Playwright's Chromium if absent, then runs the specs against the console on 5173
+#           (override with E2E_BASE_URL). Extra arguments go to Playwright, e.g. `check --grep flow-return`. The exit
+#           code is Playwright's.
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
 # JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
@@ -76,22 +80,28 @@ rpc() { curl -s -m 5 "http://localhost:$1" -H 'content-type: application/json' -
 
 start_besu() {
   if [ -f besu/.env ] && [ -f besu/networkFiles/genesis.json ]; then
+    # Leftover bridges and iptables rules from earlier besu_besu networks block validator peering (besu/clean-stale-network.sh).
+    bash besu/clean-stale-network.sh
     "${compose[@]}" up -d
   else
     # First time on this clone (no generated genesis/keys): start-network.sh generates them, then brings the nodes up.
     say "besu network files missing — generating via besu/start-network.sh"
     bash besu/start-network.sh
   fi
-  # Wait for a non-zero block height (QBFT produces a block every 2 s once at least three validators peer).
-  local i n
+  # Wait until the block height advances (QBFT produces a block every 2 s once at least three validators peer). A
+  # non-zero height alone is not enough: a restarted node reports its stored height even while consensus is stalled.
+  local i n first=""
   for i in $(seq 1 60); do
     # A node that has just started refuses or drops the connection (curl exit 7 / 52); under set -e that must not end
     # the script, so the poll tolerates a failed request and retries.
     n="$( { rpc 8545 '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' || true; } | sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p')"
-    if [ -n "$n" ] && [ "$n" != "0x0" ]; then say "besu producing blocks (height $n)"; return 0; fi
+    if [ -n "$n" ]; then
+      [ -z "$first" ] && first="$n"
+      if [ "$n" != "$first" ]; then say "besu producing blocks (height $first -> $n)"; return 0; fi
+    fi
     sleep 2
   done
-  die "besu did not produce a block within 120 s — check: bash besu/check-network.sh"
+  die "besu block height did not advance within 120 s (height ${first:-unknown}) — check: bash besu/check-network.sh"
 }
 
 deploy_if_needed() {
@@ -196,11 +206,34 @@ cmd_build() {
   say "build done — start the stack with: bash scripts/live-e2e.sh up"
 }
 
+cmd_check() {
+  # Precondition: the stack is already up (one pass, no waiting). A down stack is a usage error, not a test failure.
+  local entry port path ok down=0
+  for entry in "${health[@]}"; do
+    port="${entry%%|*}"; path="${entry#*|}"
+    ok="$(curl -s -m 3 "localhost:$port$path" 2>/dev/null || true)"
+    case "$ok" in *'"ok":true'*) ;; *) down=1 ;; esac
+  done
+  [ "$(curl -s -m 3 -o /dev/null -w '%{http_code}' localhost:5173/ 2>/dev/null || true)" = "200" ] || down=1
+  if [ "$down" -eq 1 ]; then
+    print_status >&2
+    die "stack not up — run: bash scripts/live-e2e.sh up"
+  fi
+  # A no-op when the browser is already installed; the dev container image ships none.
+  say "ensuring the Playwright Chromium browser is installed"
+  ( cd console && npx playwright install chromium )
+  say "running the live flows (console/e2e/live.spec.ts) against ${E2E_BASE_URL:-http://localhost:5173}"
+  cd console
+  E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:5173}" E2E_REQUIRE_STACK=1 \
+    npx playwright test e2e/live.spec.ts --reporter=list "$@"
+}
+
 case "${1:-up}" in
   up) cmd_up ;;
   build) cmd_build ;;
+  check) shift; cmd_check "$@" ;;
   down) cmd_down ;;
   reset) cmd_reset ;;
   status) print_status ;;
-  *) die "unknown subcommand '${1}' — use: up | down | reset | status | build" ;;
+  *) die "unknown subcommand '${1}' — use: up | down | reset | status | build | check" ;;
 esac

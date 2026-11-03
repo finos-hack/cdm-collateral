@@ -2,7 +2,7 @@
 id: task-e2e-wiring
 type: task
 title: End-to-end wiring (contracts, gateway, services)
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: console-dev
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-10-17T20:56:54Z
   confidence: 0.8
 createdAt: 2026-10-17T20:56:54Z
-updatedAt: 2026-10-23T21:54:35Z
+updatedAt: 2026-11-03T03:25:20Z
 ```
 # Task: End-to-end wiring (contracts, gateway, services)
 
@@ -46,3 +46,17 @@ Layers to build, in dependency order:
 
 The console-wiring step (replace the in-browser `engine.ts` mock with live calls to its own participant's workflow
 service, gateway and oracle) stays under `task-react-console`; this task delivers the services it calls.
+
+## Resolved — 2026-11-03: scope narrowed to the delivered wiring
+
+The project owner narrowed this task to the wiring that was delivered and resolved it (source `2d89f9ce09676a084c6672f5a9ba1b887d6112c5`): "we're done
+with the wiring as such, and need to focus on the business side of things". Delivered: the Solidity contracts, the
+ledger gateway, the collateral workflow service with the CDM payload carrier ([[wp-adr-cdm-payload-carrier]],
+accepted with this resolution), orchestration and the live e2e harness, with `flow-im-margin-call-pledge` running
+end to end in CI ([[task-ci-live-e2e-stack]]), locally ([[task-live-flow-checkout-script]]) and in GitHub Codespaces
+([[task-codespaces-live-stack]]).
+
+Moved out of this task's scope, now directly under [[goal-end-to-end-flow]]: the four remaining CALM flows and the
+oracle service with mock market data (layer 3) — [[task-e2e-remaining-flows]] — and
+[[task-live-spec-balance-aware-amounts]]. The original "all five flows" scope above is kept as the record of what was
+planned.

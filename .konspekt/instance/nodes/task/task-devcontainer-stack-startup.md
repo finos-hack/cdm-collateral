@@ -3,7 +3,7 @@ id: task-devcontainer-stack-startup
 type: task
 title: Build and start the full live stack automatically when the devcontainer is created and started
 status: resolved
-review: proposed
+review: accepted
 provenance:
   conversationId: devcontainer-live-stack
   sourceRef: 95c5dff4cf00f514d0354f18696dd767033021e8

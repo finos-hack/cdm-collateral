@@ -362,3 +362,34 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | node:task-devcontainer-stack-startup | status | open | resolved | 2026-11-01T21:07:28Z | 71e098075ed6f5310fcd0558fcc16984f99b0612 | denisurusov |
+| node:task-live-flow-checkout-script | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
+| edge:e-dec-e2ewiring-livecheckout | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
+| edge:e-lnk-cilivestack-livecheckout | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
+| node:task-live-flow-checkout-script | status | open | resolved | 2026-11-01T21:58:22Z |  | denisurusov |
+| node:task-live-spec-balance-aware-amounts | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| node:task-live-spec-balance-aware-amounts | status |  | open | 2026-11-01T22:01:07Z |  |  |
+| edge:e-dec-e2ewiring-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| edge:e-lnk-livecheckout-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| edge:e-lnk-remainingflows-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
+| waypoint:wp-adr-console-same-origin-proxy | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
+| edge:e-mrk-sameoriginproxy-codespacesstack | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
+| waypoint:wp-adr-console-same-origin-proxy | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| node:task-codespaces-live-stack | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| node:task-codespaces-live-stack | status | open | resolved | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-mrk-sameoriginproxy-codespacesstack | review | proposed | accepted | 2026-11-03T03:11:11Z | 551fcc742556f79f90b83c29c01b8cbd240e0e4b | denisurusov |
+| waypoint:wp-adr-cdm-payload-carrier | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
+| edge:e-drv-ledgerneutrality-carrier | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
+| edge:e-drv-cdmdatalayer-carrier | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
+| edge:e-mrk-carrier-e2ewiring | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
+| edge:e-dec-e2ewiring-remainingflows | review | proposed | rejected | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
+| edge:e-dec-e2ewiring-balanceaware | review | proposed | rejected | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
+| edge:e-dec-e2eflow-remainingflows | review |  | accepted | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
+| edge:e-dec-e2eflow-balanceaware | review |  | accepted | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
+| node:task-e2e-wiring | status | active | resolved | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
+| edge:e-dec-e2ewiring-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-lnk-devcontainerstartup-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-lnk-remainingflows-livecheckout | review | proposed | accepted | 2026-11-03T03:31:02Z |  | denisurusov |
+| node:task-devcontainer-stack-startup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
+| edge:e-dec-e2ewiring-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
+| edge:e-lnk-devcontainerstack-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
+| node:task-react-console | status | open | resolved | 2026-11-03T03:33:39Z |  | denisurusov |

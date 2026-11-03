@@ -27,5 +27,6 @@ if [ ! -f networkFiles/genesis.json ]; then
   printf 'BOOTNODE_ENODE=enode://%s@172.28.0.11:30303\nBESU_USER=%s:%s\n' "$PUB" "$(id -u)" "$(id -g)" > .env
 fi
 
+bash ./clean-stale-network.sh
 docker compose up -d
 echo "Besu nodes: mkt 8545, bank-a 8547, bank-b 8549, bank-c 8551 (JSON-RPC); WebSocket on the next port up."
