@@ -1,9 +1,10 @@
 name: e2e-live-stack
 
-# Build, deploy and start the full live stack on a clean machine, then check that every component is healthy
-# (task-ci-live-e2e-stack). The collateral flow itself (issue -> agree -> propose -> accept -> pledge/transfer) is
-# driven by hand through the console UI, not by this job (wp-adr-live-stack-local-ui-driven). The Playwright live
-# specs (console/e2e/live.spec.ts) remain for local runs against a running stack.
+# Build, deploy and start the full live stack on a clean machine, check that every component is healthy
+# (task-ci-live-e2e-stack), then run the Playwright live specs (console/e2e/live.spec.ts) for every CALM flow against
+# it (task-e2e-remaining-flows, wp-adr-ci-runs-live-specs). The runner chain is fresh, so the specs start from the
+# genesis balances. Locally the engineer still drives the flows by hand or with the same specs
+# (wp-adr-live-stack-local-ui-driven).
 #
 # The stack is started by scripts/live-e2e.sh up, the same command an engineer runs locally, so CI and the local
 # bring-up share one definition. There is no teardown step: the stack is left running for the rest of the job. On a
@@ -11,7 +12,8 @@ name: e2e-live-stack
 # job verifies that the stack assembles and starts; the persistent, clickable stack is the local one.
 #
 # Dependency order: cdm-ext into the local Maven repo -> collateral service jar -> Node dependencies -> Besu QBFT
-# network -> deploy contracts (only if not deployed) -> store + two gateways + two services + console -> health checks.
+# network -> deploy contracts (only if not deployed) -> store + two gateways + two services + console -> health checks
+# -> live specs.
 
 on:
   push:
@@ -80,6 +82,27 @@ jobs:
       #      checks pass within 180 s. The stack keeps running after the step.
       - name: Build, deploy and start the live stack
         run: bash scripts/live-e2e.sh up
+
+      # 5. Live specs. The runner image ships Google Chrome (CHROME_BIN); passed as CHROMIUM_PATH, scripts/live-e2e.sh
+      #    check skips the Playwright browser download (console/playwright.config.ts uses it as executablePath). Only if
+      #    the image has no Chrome is Playwright Chromium installed, with its system libraries. check sets
+      #    E2E_REQUIRE_STACK=1 (a down stack fails instead of skipping) and runs every spec.
+      - name: Live specs (all CALM flows)
+        run: |
+          if [ -n "${CHROME_BIN:-}" ] && [ -x "${CHROME_BIN}" ]; then
+            export CHROMIUM_PATH="${CHROME_BIN}"
+          else
+            (cd console && npx playwright install --with-deps chromium)
+          fi
+          bash scripts/live-e2e.sh check
+
+      - name: Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-spec-results
+          path: console/test-results/
+          if-no-files-found: ignore
 
       - name: Stack status
         if: always()

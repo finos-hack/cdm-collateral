@@ -530,3 +530,6 @@ excluded.
 | task-e2e-remaining-flows | 15e3acf8f2d8fb5341193af931cc2a5eba2275ed | gateway/src/server.ts | 2026-11-03T16:25:57Z |
 | task-e2e-remaining-flows | 15e3acf8f2d8fb5341193af931cc2a5eba2275ed | services/collateral/src/main/java/collateral/App.java | 2026-11-03T16:25:57Z |
 | task-e2e-remaining-flows | 15e3acf8f2d8fb5341193af931cc2a5eba2275ed | services/collateral/src/main/java/collateral/Store.java | 2026-11-03T16:25:57Z |
+| task-e2e-remaining-flows | 3e8a86896d3237e85772f20a2a87368decd12f04 | .github/workflows/e2e-live-stack.yml | 2026-11-03T17:07:07Z |
+| task-e2e-remaining-flows | 3e8a86896d3237e85772f20a2a87368decd12f04 | console/e2e/live.spec.ts | 2026-11-03T17:07:07Z |
+| task-e2e-remaining-flows | 95c5e03b601b69b086397ae923f04aa6ff218142 | .github/workflows/e2e-live-stack.yml | 2026-11-03T17:19:44Z |

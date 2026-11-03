@@ -479,3 +479,6 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-revaluation-top-up-excluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
 | edge:e-note-remainingflows-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
 | edge:e-note-topupmodelling-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
+| waypoint:wp-adr-ci-runs-live-specs | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
+| edge:e-mrk-cispecsadr-remainingflows | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
+| edge:e-sup-cispecs-livestacklocal | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
