@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T15:57:23Z
   confidence: 0.85
 createdAt: 2026-11-01T15:57:23Z
-updatedAt: 2026-11-03T15:31:52Z
+updatedAt: 2026-11-03T16:24:46Z
 ```
 # Task: wire the four remaining CALM flows into the live stack
 
@@ -24,7 +24,7 @@ Scope (a) from the 2026-11-01 coverage check (source excerpt): the four CALM flo
 | `flow-return` | `CollateralControl.returnCollateral` / `returnByTransfer`; `POST /api/v1/calls/{id}/return` | live e2e test; check console wiring |
 | `flow-default-enforcement` | `CollateralControl.enforce`; `OracleFeed.setDefault` | gateway and service routes, console action, live e2e test |
 | `flow-oracle-update` | done 2026-11-03: oracle mock market data and price publishing, gateway price routes, live spec | — |
-| `flow-revaluation-top-up` | nothing | revaluation, top-up call, live e2e test; depends on `flow-oracle-update` |
+| `flow-revaluation-top-up` | done 2026-11-03: revaluation endpoint, operator console, top-up call from the secured party console, live spec | — |
 
 Split agreed with the project owner on 2026-11-01: scope (b), `flow-return` and `flow-default-enforcement`, goes
 to a Claude Code cloud session first. `flow-oracle-update` and `flow-revaluation-top-up` follow afterwards.
@@ -69,5 +69,13 @@ Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed sco
   the gateway, and a live spec. Oracle unit tests: 13 pass. Live: the new spec passes; a full `check` on the same
   chain then failed only `flow-vm-margin-call-transfer`, on pledgor balance depletion
   ([[task-live-spec-balance-aware-amounts]]).
-- Left on this task: `flow-revaluation-top-up`, and the "Done when" condition that `e2e-live-stack.yml` runs the
-  specs.
+- `flow-revaluation-top-up` implemented on branch `flow-revaluation-top-up`
+  ([[wp-adr-revaluation-outstanding-im-from-calls]], [[nw-revaluation-top-up-excluded]]):
+  - `GET /api/v1/revaluation` in the collateral service;
+  - `GET /ledger/v1/settlement-history` in the gateway;
+  - the operator console `#/live/operator`;
+  - a revaluation card with a top-up button in the secured party console;
+  - a live spec.
+  Console vitest: 62 pass. After `reset`, all six live specs pass. On the used chain, one `flow-return` run read the
+  two parties' CDM state hashes before both had folded the same steps, so the spec now polls until they match.
+- Left on this task: the "Done when" condition that `e2e-live-stack.yml` runs the specs.
