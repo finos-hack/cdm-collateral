@@ -63,7 +63,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-uxgrid-clickableui | marks | waypoint:wp-adr-ux-scenario-grid | node:task-clickable-ui |  |
 | e-prod-clickableui-html | produces | node:task-clickable-ui | artifact:artifact-clickable-ui-html |  | accepted |
 | e-dec-e2e-reactconsole | decomposes | node:goal-end-to-end-flow | node:task-react-console |  |
-| e-prod-reactconsole-app | produces | node:task-react-console | artifact:artifact-react-console |  | proposed |
+| e-prod-reactconsole-app | produces | node:task-react-console | artifact:artifact-react-console |  | accepted |
 | e-dec-e2e-wiring | decomposes | node:goal-end-to-end-flow | node:task-e2e-wiring |  | accepted |
 | e-dec-cdmdev-gapanalysis | decomposes | node:goal-cdm-development | node:task-cdm-gap-analysis |  |
 | e-dec-cdmdev-gapclosure | decomposes | node:goal-cdm-development | node:task-cdm-gap-closure |  |
@@ -100,7 +100,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-architecture-payload-carrier-revision-produces | produces | node:goal-architecture-design | artifact:artifact-architecture-payload-carrier-revision |  | accepted |
 | e-payload-carrier-component-docs-produces | produces | node:task-e2e-wiring | artifact:artifact-payload-carrier-component-docs |  | accepted |
 | e-gap-register-g26-carrier-produces | produces | node:task-cdm-gap-closure | artifact:artifact-gap-register-g26-carrier |  | accepted |
-| e-prod-e2ewiring-runbook | produces | node:task-e2e-wiring | artifact:artifact-e2e-runbook |  | proposed |
+| e-prod-e2ewiring-runbook | produces | node:task-e2e-wiring | artifact:artifact-e2e-runbook |  | accepted |
 | e-dec-e2ewiring-devcontainerstack | decomposes | node:task-e2e-wiring | node:task-devcontainer-live-stack |  | accepted |
 | e-lnk-cilivestack-devcontainerstack | links | node:task-ci-live-e2e-stack | node:task-devcontainer-live-stack |  | accepted |
 | e-mrk-livestacklocal-cilivestack | marks | waypoint:wp-adr-live-stack-local-ui-driven | node:task-ci-live-e2e-stack |  | accepted |
@@ -113,14 +113,19 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-e2ewiring-codespacesstack | decomposes | node:task-e2e-wiring | node:task-codespaces-live-stack |  | accepted |
 | e-lnk-devcontainerstartup-codespacesstack | links | node:task-devcontainer-stack-startup | node:task-codespaces-live-stack |  | accepted |
 | e-dec-e2ewiring-remainingflows | decomposes | node:task-e2e-wiring | node:task-e2e-remaining-flows |  | rejected |
-| e-dec-bizcase-topupmodelling | decomposes | node:goal-business-case | node:task-revaluation-top-up-modelling |  | proposed |
-| e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | proposed |
+| e-dec-bizcase-topupmodelling | decomposes | node:goal-business-case | node:task-revaluation-top-up-modelling |  | accepted |
+| e-lnk-remainingflows-topupmodelling | links | node:task-e2e-remaining-flows | node:task-revaluation-top-up-modelling |  | accepted |
 | e-dec-e2ewiring-livecheckout | decomposes | node:task-e2e-wiring | node:task-live-flow-checkout-script |  | accepted |
 | e-lnk-remainingflows-livecheckout | links | node:task-e2e-remaining-flows | node:task-live-flow-checkout-script |  | accepted |
 | e-lnk-cilivestack-livecheckout | links | node:task-ci-live-e2e-stack | node:task-live-flow-checkout-script |  | accepted |
 | e-dec-e2ewiring-balanceaware | decomposes | node:task-e2e-wiring | node:task-live-spec-balance-aware-amounts |  | rejected |
-| e-lnk-livecheckout-balanceaware | links | node:task-live-flow-checkout-script | node:task-live-spec-balance-aware-amounts |  | proposed |
-| e-lnk-remainingflows-balanceaware | links | node:task-e2e-remaining-flows | node:task-live-spec-balance-aware-amounts |  | proposed |
+| e-lnk-livecheckout-balanceaware | links | node:task-live-flow-checkout-script | node:task-live-spec-balance-aware-amounts |  | accepted |
+| e-lnk-remainingflows-balanceaware | links | node:task-e2e-remaining-flows | node:task-live-spec-balance-aware-amounts |  | accepted |
 | e-mrk-sameoriginproxy-codespacesstack | marks | waypoint:wp-adr-console-same-origin-proxy | node:task-codespaces-live-stack |  | accepted |
 | e-dec-e2eflow-remainingflows | decomposes | node:goal-end-to-end-flow | node:task-e2e-remaining-flows |  | accepted |
 | e-dec-e2eflow-balanceaware | decomposes | node:goal-end-to-end-flow | node:task-live-spec-balance-aware-amounts |  | accepted |
+| e-note-remainingflows-returndefault | notes | node:task-e2e-remaining-flows | noteworthy:nw-return-default-flows-wired |  | accepted |
+| e-note-remainingflows-depletion | notes | node:task-e2e-remaining-flows | noteworthy:nw-live-spec-balance-depletion |  | accepted |
+| e-note-livecheckout-depletion | notes | node:task-live-flow-checkout-script | noteworthy:nw-live-spec-balance-depletion |  | accepted |
+| e-note-balanceaware-depletion | notes | node:task-live-spec-balance-aware-amounts | noteworthy:nw-live-spec-balance-depletion |  | accepted |
+| e-dec-e2eflow-collateralunittests | decomposes | node:goal-end-to-end-flow | node:task-collateral-service-unit-tests |  | proposed |

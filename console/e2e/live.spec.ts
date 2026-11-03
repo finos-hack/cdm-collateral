@@ -20,7 +20,7 @@ const STEP_TIMEOUT = 30_000; // one step's UI window
 // gateway). Wait on it before the console "settled on-chain ✓" assertion, so SSE propagation lag to an already-open
 // page does not fail the test after the backend has settled. Checks both parties' services (8001 pledgor, 8002
 // secured party); the call is matched by kind and amount, which identify this run's call on the persistent chain.
-async function waitForSettledOnChain(kind: "IM" | "VM", amountUsd: number) {
+async function waitForSettledOnChain(kind: "IM" | "VM" | "Return", amountUsd: number) {
   for (const port of [8001, 8002]) {
     await expect
       .poll(
@@ -35,6 +35,70 @@ async function waitForSettledOnChain(kind: "IM" | "VM", amountUsd: number) {
       )
       .toBe("settled");
   }
+}
+
+// --- helpers for the flow-return and flow-default-enforcement specs ---
+
+const SERVICE = { A: "http://localhost:8001/api/v1", B: "http://localhost:8002/api/v1" } as const;
+const GATEWAY = { A: "http://localhost:8201/ledger/v1", B: "http://localhost:8202/ledger/v1" } as const;
+const ZERO_HASH = "0x" + "0".repeat(64);
+// tUST value after haircut per unit in USD (98.4 at a 2% haircut), the on-chain check in CollateralControl.
+const TUST_VALUE = PRICE_TUST * HAIRCUT;
+
+async function call<T = any>(url: string, method = "GET", body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(`${method} ${url} -> ${res.status}: ${JSON.stringify(json)}`);
+  return json as T;
+}
+
+// The console shows a call by its shortened id; this locates exactly one call's row.
+const shortId = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
+
+/**
+ * Setup for the return and enforcement specs: an IM call settled into escrow, driven through the same service API the
+ * consoles call (the UI path of this flow is covered by the flow-im-margin-call-pledge spec). Returns the callId.
+ */
+async function pledgeThroughServices(amountUsd: number, qty: number): Promise<string> {
+  const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
+  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tUST", qty }] });
+  await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
+  await call(`${SERVICE.A}/calls/${callId}/pledge`, "POST", { proposalId });
+  return callId;
+}
+
+interface Parties {
+  a: string;
+  b: string;
+  tokens: Record<string, string>; // symbol -> token address
+}
+
+async function parties(): Promise<Parties> {
+  const ctx = await call<{ address: string; counterpartyAddress: string; tokens: { symbol: string; address: string }[] }>(`${SERVICE.A}/context`);
+  return { a: ctx.address, b: ctx.counterpartyAddress, tokens: Object.fromEntries(ctx.tokens.map((t) => [t.symbol, t.address])) };
+}
+
+// On-chain reads through a party's own gateway (relationship harness-to-gateway). Amounts are decimal strings.
+const balanceOf = async (gw: string, token: string, owner: string) => BigInt(await call<string>(`${gw}/balance?token=${token}&owner=${owner}`));
+const pledgedOf = async (gw: string, token: string, p: Parties) =>
+  BigInt(await call<string>(`${gw}/pledged?token=${token}&pledgor=${p.a}&securedParty=${p.b}`));
+
+// The CDM MarginCallState each party folds from the chain and the payload store; both must converge on the same hash.
+async function expectConvergedCdmState(callId: string) {
+  const hashes: string[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => (await call<{ converged: boolean }>(`${svc}/calls/${callId}/cdm-state`)).converged, { timeout: 60_000 })
+      .toBe(true);
+    hashes.push((await call<{ stateHash: string }>(`${svc}/calls/${callId}/cdm-state`)).stateHash);
+  }
+  expect(hashes[0]).toMatch(/^0x[0-9a-f]{64}$/i);
+  expect(hashes[1]).toBe(hashes[0]);
 }
 
 let stackUp = false;
@@ -148,6 +212,133 @@ test("flow-vm-margin-call-transfer: issue VM -> agree -> propose -> accept -> tr
   await expect(rowA2.getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
   await page.goto("/#/live/B");
   await expect(page.locator(".subcard", { hasText: label }).getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-return: pledgor calls a return -> secured party agrees -> releases escrow, settled on-chain", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens["tUST"];
+  // Return amount below the IM call range of the other specs (all >= USD 1,000,000), so the label does not collide, and
+  // small, because each run leaves part of the pledged tUST in escrow on the persistent chain.
+  const returnUsd = 50_000 + (Date.now() % 9000) * 10;
+  const label = `USD ${returnUsd.toLocaleString("en-US")}`;
+  const releaseQty = Math.floor(returnUsd / TUST_VALUE) - 1; // value after haircut must not exceed the agreed return
+  const pledgeUsd = 2 * returnUsd;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: initial margin in escrow from A (pledgor) with B (secured party).
+  await pledgeThroughServices(pledgeUsd, pledgeQty);
+  const freeBefore = await balanceOf(GATEWAY.A, tUST, p.a);
+  const pledgedBefore = await pledgedOf(GATEWAY.B, tUST, p);
+  expect(pledgedBefore >= BigInt(releaseQty)).toBe(true);
+
+  // 1-5. Pledgor (BANK-A) calls for the return in its console; the call is recorded on-chain with the pledgor key.
+  await page.goto("/#/live/A");
+  const returnCard = page.locator(".card", { hasText: "Call for a return" });
+  await returnCard.getByRole("spinbutton").fill(String(returnUsd));
+  await returnCard.getByRole("button", { name: "Call return → B" }).click();
+  await expect(page.locator(".subcard", { hasText: label })).toBeVisible({ timeout: STEP_TIMEOUT });
+  const stateA = await call<{ calls: { callId: string; kind: string; amountUsd: string; from: string; to: string }[] }>(`${SERVICE.A}/state`);
+  const returnCall = stateA.calls.find((c) => c.kind === "Return" && c.amountUsd === String(returnUsd) && c.from === "A");
+  expect(returnCall, "the return call is on-chain").toBeTruthy();
+  const callId = returnCall!.callId;
+  expect(returnCall!.to).toBe("B");
+
+  // 6-8. Secured party (BANK-B) sees the return call and agrees it in full.
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: shortId(callId) });
+  await expect(rowB.getByRole("button", { name: "Agree in full" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Agree in full" }).click();
+
+  // 9-13. Secured party releases the escrowed tUST; the control contract checks the agreed amount and transfers it back.
+  await expect(rowB.getByRole("button", { name: "Release escrow" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("combobox").selectOption("tUST");
+  await rowB.getByRole("spinbutton").fill(String(releaseQty));
+  await rowB.getByRole("button", { name: "Release escrow" }).click();
+
+  // 14. Both services see the call settled; both consoles show it.
+  await waitForSettledOnChain("Return", returnUsd);
+  await expect(rowB.getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await expect(page.locator(".subcard", { hasText: shortId(callId) }).getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // On-chain state through each party's gateway: the return call is settled with its settle cdmHash anchored, and the
+  // released tUST moved from escrow back to the pledgor.
+  const onChain = await call<{ kind: number; state: number; agreed: string; settleCdmHash: string }>(`${GATEWAY.A}/calls/${callId}`);
+  expect(onChain.kind).toBe(2); // Return
+  expect(onChain.state).toBe(5); // Settled
+  expect(BigInt(onChain.agreed)).toBe(BigInt(returnUsd) * 100_000_000n);
+  expect(onChain.settleCdmHash).not.toBe(ZERO_HASH);
+  expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(freeBefore + BigInt(releaseQty));
+  expect(await pledgedOf(GATEWAY.B, tUST, p)).toBe(pledgedBefore - BigInt(releaseQty));
+
+  // Each service folded the issue, respond and settle steps into the same MarginCallState.
+  await expectConvergedCdmState(callId);
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-default-enforcement: secured party declares default -> oracle feed -> enforce, escrow seized on-chain", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  // Small, because enforcement moves the pledged tUST to the secured party for good on the persistent chain. The row is
+  // found by callId, so the amount needs no unique label.
+  const pledgeUsd = 100_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: initial margin in escrow from A (pledgor) with B (secured party).
+  const callId = await pledgeThroughServices(pledgeUsd, pledgeQty);
+  await waitForSettledOnChain("IM", pledgeUsd);
+
+  // Enforcement seizes everything A has in escrow with B, including collateral left by earlier runs.
+  const symbols = Object.keys(p.tokens);
+  const pledgedBefore: Record<string, bigint> = {};
+  const securedFreeBefore: Record<string, bigint> = {};
+  for (const sym of symbols) {
+    pledgedBefore[sym] = await pledgedOf(GATEWAY.B, p.tokens[sym], p);
+    securedFreeBefore[sym] = await balanceOf(GATEWAY.B, p.tokens[sym], p.b);
+  }
+  expect(pledgedBefore["tUST"] >= BigInt(pledgeQty)).toBe(true);
+
+  // 1-7. Secured party (BANK-B) declares the default and enforces in its console: the service forwards the notice to
+  // the oracle service, which publishes it through the operator's gateway; then B's gateway submits enforce().
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: shortId(callId) });
+  await expect(rowB.getByRole("button", { name: "Declare default & enforce" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Declare default & enforce" }).click();
+
+  // 8. Each service records the enforcement from its gateway's event stream; the pledgor's service sees the default.
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => (await call<{ calls: { callId: string; enforced?: boolean }[] }>(`${svc}/state`)).calls.find((c) => c.callId === callId)?.enforced, {
+        timeout: 60_000,
+      })
+      .toBe(true);
+  }
+  await expect(rowB.getByText("enforced ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(page.getByRole("status")).toContainText("Counterparty A in default on the oracle feed", { timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await expect(page.locator(".subcard", { hasText: shortId(callId) }).getByText("enforced ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(page.getByRole("status")).toContainText("This party (A) in default on the oracle feed", { timeout: STEP_TIMEOUT });
+
+  // On-chain state through each party's gateway: A is in default on the oracle feed, nothing is left in escrow, and the
+  // secured party holds what was pledged.
+  for (const gw of [GATEWAY.A, GATEWAY.B]) {
+    expect((await call<{ inDefault: boolean }>(`${gw}/defaults/${p.a}`)).inDefault).toBe(true);
+  }
+  expect((await call<{ inDefault: boolean }>(`${GATEWAY.A}/defaults/${p.b}`)).inDefault).toBe(false);
+  for (const sym of symbols) {
+    expect(await pledgedOf(GATEWAY.A, p.tokens[sym], p)).toBe(0n);
+    expect(await balanceOf(GATEWAY.B, p.tokens[sym], p.b)).toBe(securedFreeBefore[sym] + pledgedBefore[sym]);
+  }
 
   expect(errors).toEqual([]);
 });

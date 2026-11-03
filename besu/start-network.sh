@@ -2,7 +2,7 @@
 # Start the four-node QBFT Besu network (one validator per default participant).
 # First run: generates the genesis file and four validator keys, gives each node one key and writes the
 # bootnode address to besu/.env. Later runs: starts the existing network. Used by the dev container
-# (.devcontainer/devcontainer.json) and usable on any Linux or macOS machine with Docker.
+# (.devcontainer/devcontainer.json) and usable on any Linux or macOS machine with Docker, and from Git Bash on Windows.
 set -euo pipefail
 cd "$(dirname "$0")"
 IMAGE=hyperledger/besu:26.9.0
@@ -14,7 +14,9 @@ docker info >/dev/null 2>&1 || { echo "Docker is not running" >&2; exit 1; }
 
 if [ ! -f networkFiles/genesis.json ]; then
   rm -rf networkFiles
-  docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/data" "$IMAGE" \
+  # MSYS_NO_PATHCONV: Git Bash on Windows otherwise rewrites the container paths /data/... to C:/Program Files/Git/...
+  # (no effect on Linux or macOS).
+  MSYS_NO_PATHCONV=1 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/data" "$IMAGE" \
     operator generate-blockchain-config \
     --config-file=/data/qbftConfigFile.json --to=/data/networkFiles --private-key-file-name=key
   mapfile -t KEYS < <(find networkFiles/keys -mindepth 1 -maxdepth 1 -type d | sort)

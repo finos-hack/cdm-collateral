@@ -37,6 +37,9 @@ NODE=bank-b PORT=8202 npm run serve
 | POST | `/calls/:id/transfer` | approve each proposal asset and settle a VM call by title transfer |
 | POST | `/calls/:id/return` | release escrowed IM for an agreed return call |
 | POST | `/calls/:id/return-transfer` | approve and transfer equivalent VM back for a return call |
+| POST | `/calls/:id/enforce` | seize the pledgor's escrowed IM once the oracle feed records its default (secured party key) |
+| POST | `/oracle/defaults` | `{party, inDefault}` to the oracle feed; served only by the operator's gateway (`NODE=mkt`, publisher key) |
+| GET | `/defaults/:party` | default status on the oracle feed |
 | GET | `/party-calls?party=0x…` | calls whose `from` or `to` is this party (from `CallIssued` logs) |
 | GET | `/calls/:id` | on-chain call state |
 | GET | `/calls/:id/steps` | the call's lifecycle steps in chain order, each with its CDM hash (fold input) |
@@ -46,5 +49,7 @@ NODE=bank-b PORT=8202 npm run serve
 | GET | `/events` | Server-Sent Events: one chain subscription (eth_subscribe over the Besu ws) fanned out |
 
 Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
-carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`); the workflow service relays it to
-the console so state changes push instead of being polled.
+carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned` and `Enforced`
+events of the collateral control contract and `DefaultPublished` of the oracle feed (`event`, `callId` and/or `party`);
+the workflow service records the latter and relays everything to the console so state changes push instead of being
+polled.

@@ -3,7 +3,7 @@ id: task-revaluation-top-up-modelling
 type: task
 title: Confirm with a business SME how a revaluation shortfall is called: margin call or a dedicated top-up call
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: a0a131229621583bdc928c4ec7e06c59defc6b9b

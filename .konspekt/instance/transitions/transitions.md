@@ -393,3 +393,31 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
 | edge:e-lnk-devcontainerstack-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
 | node:task-react-console | status | open | resolved | 2026-11-03T03:33:39Z |  | denisurusov |
+| node:goal-test-konspekt-adoption | status | active | resolved | 2026-11-03T03:36:56Z |  | denisurusov |
+| noteworthy:nw-return-default-flows-wired | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| noteworthy:nw-live-spec-balance-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-remainingflows-returndefault | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-remainingflows-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| edge:e-note-livecheckout-depletion | review |  | proposed | 2026-11-01T16:45:36Z |  |  |
+| node:task-e2e-remaining-flows | review | proposed | accepted | 2026-11-03T12:47:43Z |  | denisurusov |
+| artifact:artifact-react-console | review | proposed | accepted | 2026-11-03T12:48:28Z |  | denisurusov |
+| edge:e-prod-reactconsole-app | review | proposed | accepted | 2026-11-03T12:48:28Z |  | denisurusov |
+| artifact:artifact-e2e-runbook | review | proposed | accepted | 2026-11-03T12:48:40Z |  | denisurusov |
+| edge:e-prod-e2ewiring-runbook | review | proposed | accepted | 2026-11-03T12:48:40Z |  | denisurusov |
+| node:task-revaluation-top-up-modelling | review | proposed | accepted | 2026-11-03T12:49:03Z |  | denisurusov |
+| edge:e-dec-bizcase-topupmodelling | review | proposed | accepted | 2026-11-03T12:49:03Z |  | denisurusov |
+| edge:e-lnk-remainingflows-topupmodelling | review | proposed | accepted | 2026-11-03T12:49:03Z |  | denisurusov |
+| node:task-live-spec-balance-aware-amounts | review | proposed | accepted | 2026-11-03T12:49:19Z |  | denisurusov |
+| edge:e-lnk-livecheckout-balanceaware | review | proposed | accepted | 2026-11-03T12:49:19Z |  | denisurusov |
+| edge:e-lnk-remainingflows-balanceaware | review | proposed | accepted | 2026-11-03T12:49:19Z |  | denisurusov |
+| edge:e-note-balanceaware-depletion | review |  | proposed | 2026-11-03T12:50:15Z |  |  |
+| noteworthy:nw-return-default-flows-wired | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| noteworthy:nw-live-spec-balance-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| edge:e-note-remainingflows-returndefault | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| edge:e-note-remainingflows-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| edge:e-note-livecheckout-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| edge:e-note-balanceaware-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| node:task-e2e-remaining-flows | status | open | active | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| node:task-collateral-service-unit-tests | review |  | proposed | 2026-11-03T14:01:12Z |  |  |
+| node:task-collateral-service-unit-tests | status |  | open | 2026-11-03T14:01:12Z |  |  |
+| edge:e-dec-e2eflow-collateralunittests | review |  | proposed | 2026-11-03T14:01:12Z |  |  |

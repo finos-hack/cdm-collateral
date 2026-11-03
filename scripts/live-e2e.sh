@@ -6,19 +6,20 @@
 #
 # Subcommands:
 #   up      (default) Stop any stack from a previous run (stop-and-replace), then start the Besu network, deploy the
-#           contracts if they are not deployed yet, start store + two gateways + two services + the console dev
-#           server, wait until all health checks pass, print the URLs and leave everything running.
+#           contracts if they are not deployed yet, start store + three gateways (bank-a, bank-b and the market
+#           operator mkt) + the oracle service + two collateral services + the console dev server, wait until all
+#           health checks pass, print the URLs and leave everything running.
 #   down    Stop the store/gateways/services/console and stop the Besu containers. The Besu chain on disk is kept.
 #   reset   down, then delete the chain, the deployment and the off-chain state (runbook section 8). The next up
 #           re-creates the Besu network and redeploys.
-#   status  Print the five health checks and the console port without changing anything.
+#   status  Print the seven health checks and the console port without changing anything.
 #   build   The one-time build of docs/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
-#           cdm-ext install into ~/.m2, then the collateral service jar. Uses mvn when on PATH, else cdm-ext/mvnw. The
+#           cdm-ext install into ~/.m2, then the collateral service and oracle service jars. Uses mvn when on PATH, else cdm-ext/mvnw. The
 #           dev container runs it once on creation (postCreateCommand).
 #   check   Run every live flow (console/e2e/live.spec.ts) against the running stack: fails at once if the stack is
-#           not up, installs Playwright's Chromium if absent, then runs the specs against the console on 5173
-#           (override with E2E_BASE_URL). Extra arguments go to Playwright, e.g. `check --grep flow-return`. The exit
-#           code is Playwright's.
+#           not up, installs Playwright's Chromium if absent (skipped when CHROMIUM_PATH is set), then runs the specs
+#           against the console on 5173 (override with E2E_BASE_URL). Extra arguments go to Playwright, e.g.
+#           `check --grep flow-return`. The exit code is Playwright's.
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
 # JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
@@ -33,18 +34,21 @@ cd "$root"
 compose=(docker compose -f besu/docker-compose.yml)
 registry="contracts/deployments/besu.json"
 jar="services/collateral/target/collateral-service.jar"
+oracle_jar="services/oracle/target/oracle-service.jar"
 stack_log="$root/stack.log"
 pidfile="$root/.live-e2e.pid"
 # Health endpoints in start order. The console (5173) is checked separately because its root path has no JSON body.
 health=(
   "8300|/store/v1/health"
+  "8200|/ledger/v1/health"
   "8201|/ledger/v1/health"
   "8202|/ledger/v1/health"
   "8001|/api/v1/health"
   "8002|/api/v1/health"
+  "8100|/oracle/v1/health"
 )
-backend_ports=(8300 8201 8202 8001 8002)
-all_ports=(8300 8201 8202 8001 8002 5173 4173)
+backend_ports=(8300 8200 8201 8202 8100 8001 8002)
+all_ports=(8300 8200 8201 8202 8100 8001 8002 5173 4173)
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'live-e2e: %s\n' "$*" >&2; exit 1; }
@@ -139,6 +143,7 @@ print_status() {
 
 cmd_up() {
   [ -f "$jar" ] || die "missing $jar — build it once: see docs/runbook-e2e.md section 3"
+  [ -f "$oracle_jar" ] || die "missing $oracle_jar — build it once: bash scripts/live-e2e.sh build"
   say "stop-and-replace: stopping any stack from a previous run"
   stop_stack
   say "starting besu network"
@@ -203,6 +208,9 @@ cmd_build() {
   say "building the collateral service jar"
   "${mvn[@]}" -B -q -f services/collateral/pom.xml -DskipTests package
   [ -f "$jar" ] || die "build finished but $jar is missing"
+  say "building the oracle service jar"
+  "${mvn[@]}" -B -q -f services/oracle/pom.xml -DskipTests package
+  [ -f "$oracle_jar" ] || die "build finished but $oracle_jar is missing"
   say "build done — start the stack with: bash scripts/live-e2e.sh up"
 }
 
@@ -219,9 +227,14 @@ cmd_check() {
     print_status >&2
     die "stack not up — run: bash scripts/live-e2e.sh up"
   fi
-  # A no-op when the browser is already installed; the dev container image ships none.
-  say "ensuring the Playwright Chromium browser is installed"
-  ( cd console && npx playwright install chromium )
+  # CHROMIUM_PATH names a preinstalled browser (console/playwright.config.ts), so the download is skipped. Otherwise the
+  # install is a no-op when Playwright's Chromium is already present; the dev container image ships none.
+  if [ -n "${CHROMIUM_PATH:-}" ]; then
+    say "using the preinstalled Chromium at $CHROMIUM_PATH (CHROMIUM_PATH); skipping the Playwright download"
+  else
+    say "ensuring the Playwright Chromium browser is installed"
+    ( cd console && npx playwright install chromium )
+  fi
   say "running the live flows (console/e2e/live.spec.ts) against ${E2E_BASE_URL:-http://localhost:5173}"
   cd console
   E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:5173}" E2E_REQUIRE_STACK=1 \

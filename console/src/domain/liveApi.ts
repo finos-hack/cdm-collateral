@@ -45,6 +45,10 @@ export interface LiveCall {
   cdmHash: string;
   proposals: LiveProposal[];
   messages: { msgType: string; direction: string; cdmHash: string; cdmJson: string; createdAt: string }[];
+  /** Settlement and feed events this party's service recorded for the call (Returned, Enforced). */
+  events?: string[];
+  /** The secured party enforced against the pledged initial margin under this call (flow-default-enforcement). */
+  enforced?: boolean;
 }
 
 export interface LiveState {
@@ -52,6 +56,8 @@ export interface LiveState {
   role: string;
   calls: LiveCall[];
   balances: { token: string; free: string; pledged: string }[];
+  /** Default status of each counterparty on the oracle feed, read through this party's gateway. */
+  defaults?: Partial<Record<LiveParty, boolean>>;
 }
 
 async function req<T>(party: LiveParty, method: string, path: string, body?: unknown): Promise<T> {
@@ -83,4 +89,7 @@ export const api = {
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/transfer`, { proposalId }),
   returnSettle: (p: LiveParty, callId: string, via: "release" | "transfer", assets: { token: string; qty: number }[]) =>
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/return`, { via, assets }),
+  /** Declare the pledgor's default (published to the oracle feed through the oracle service) and enforce. */
+  enforce: (p: LiveParty, callId: string) =>
+    req<{ ok: boolean; pledgor: string; defaultTx: string; enforceTx: string }>(p, "POST", `/calls/${callId}/enforce`, {}),
 };
