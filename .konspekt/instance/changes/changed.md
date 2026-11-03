@@ -556,3 +556,8 @@ excluded.
 | task-cdm-gap-closure | 55b6ba2fdb98d35561b1ee07891372091d5b1ec0 | cdm-ext/rosetta/cdmx-collateral-closeout-type.rosetta | 2026-11-03T21:52:19Z |
 | task-cdm-gap-closure | 55b6ba2fdb98d35561b1ee07891372091d5b1ec0 | cdm-ext/src/test/java/cdmx/CloseOutTest.java | 2026-11-03T21:52:19Z |
 | task-cdm-gap-closure | 55b6ba2fdb98d35561b1ee07891372091d5b1ec0 | docs/cdm-development/gap-register.md | 2026-11-03T21:52:19Z |
+| task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | cdm-ext/README.md | 2026-11-03T23:08:40Z |
+| task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | cdm-ext/rosetta/cdmx-collateral-enforcement-func.rosetta | 2026-11-03T23:08:40Z |
+| task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | cdm-ext/rosetta/cdmx-collateral-enforcement-type.rosetta | 2026-11-03T23:08:40Z |
+| task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | cdm-ext/src/test/java/cdmx/EnforcementTest.java | 2026-11-03T23:08:40Z |
+| task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | docs/cdm-development/gap-register.md | 2026-11-03T23:08:40Z |

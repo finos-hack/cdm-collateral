@@ -152,3 +152,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-gapclosure-concentration | notes | node:task-cdm-gap-closure | noteworthy:nw-concentration-held-and-proposed-after-haircuts |  | accepted |
 | e-note-gapclosure-vmexposure | notes | node:task-cdm-gap-closure | noteworthy:nw-vm-exposure-from-netting-set |  | accepted |
 | e-note-gapclosure-closeout | notes | node:task-cdm-gap-closure | noteworthy:nw-closeout-collateral-by-arrangement |  | accepted |
+| e-note-gapclosure-enforcement | notes | node:task-cdm-gap-closure | noteworthy:nw-enforcement-event-by-election |  | proposed |

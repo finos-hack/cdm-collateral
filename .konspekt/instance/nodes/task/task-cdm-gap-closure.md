@@ -63,3 +63,10 @@ Progress 2026-11-03T21:52:19Z (CSA extensions started):
 - G15 partial (proposed, for review): `cdmx.collateral.closeout` `EarlyTerminationAmount`, `CloseOutNetting` under the
   ISDA 2002 MA ([[nw-closeout-collateral-by-arrangement]]). Open: GMRA, GMSLA, CCP close-out; Section 6(e)(ii).
 - Extension tests: 75 pass; the collateral service builds against the new jar.
+
+Progress 2026-11-03T23:08:40Z (G14):
+- G15 close-out note accepted; PR #18 merged.
+- G14 closed (proposed, for review): `cdmx.collateral.enforcement` `Create_CollateralEnforcement`,
+  `EnforcementEventOccurred`, `Qualify_CollateralEnforced` ([[nw-enforcement-event-by-election]]). The realised value
+  feeds `CloseOutNetting` (G15).
+- Extension tests: 89 pass; the collateral service builds against the new jar.
