@@ -1,0 +1,117 @@
+namespace cdmx.collateral.valuation : <"Local CDM extension: Credit Support, Delivery and Return Amount under the 2016 ISDA VM CSA (gap G9).">
+version "${project.version}"
+
+import cdm.base.*
+import cdm.base.math.*
+import cdm.observable.asset.*
+import cdm.legaldocumentation.csa.*
+
+// CDM 7.7.0 has DeliveryAmount, ReturnAmount and CreditSupportAmount for the 2018 IM CSA only. Under the 2016 VM CSA the
+// Credit Support Amount (VM) follows from the Secured Party's Exposure (for example NettedExposure, gap G10). The
+// Value of the credit support held (Posted Credit Support (VM) under New York law, Credit Support Balance (VM) under
+// English law) is valued as for IM with CorrectedUndisputedAdjustedPostedCreditSupportAmount (gap G7, defects D1 and
+// D17: haircutPercentage is the haircut, 0.0 for cash in the base currency).
+
+func CreditSupportAmountVM: <"Credit Support Amount (VM): the Secured Party's Exposure less any Threshold, zero if negative.">
+    [docReference ISDA CSA_VM_2016 paragraph "3"]
+    [calculation]
+    inputs:
+        exposure Money (1..1) <"The Secured Party's Exposure, as a Base Currency Equivalent.">
+        threshold Money (0..1) <"A Threshold where the agreement specifies one; absent counts as zero.">
+        baseCurrency string (1..1)
+    output:
+        result Money (1..1)
+
+    alias thresholdValue: if threshold exists then threshold -> value else 0.0
+
+    condition CurrencyMatches: <"The exposure and the threshold are in the base currency.">
+        exposure -> unit -> currency = baseCurrency
+            and (threshold is absent or threshold -> unit -> currency = baseCurrency)
+
+    set result -> value: Max(exposure -> value - thresholdValue, 0.0)
+
+    set result -> unit -> currency: baseCurrency
+
+func DeliveryAmountVM: <"Delivery Amount (VM): the Credit Support Amount (VM) less the Value of the credit support held, less any disputed amount; rounded up, zero below the Minimum Transfer Amount.">
+    [docReference ISDA CSA_VM_2016 paragraph "2" name "Delivery Amount (VM)"]
+    [calculation]
+    inputs:
+        postedCreditSupportItems PostedCreditSupportItem (0..*) <"The credit support held by the Secured Party.">
+        priorDeliveryAmountAdjustment Money (1..1)
+        priorReturnAmountAdjustment Money (1..1)
+        disputedTransferredPostedCreditSupportAmount Money (1..1)
+        exposure Money (1..1) <"The Secured Party's Exposure.">
+        threshold Money (0..1)
+        minimumTransferAmount Money (1..1)
+        rounding CollateralRounding (1..1)
+        disputedDeliveryAmount Money (1..1)
+        baseCurrency string (1..1)
+    output:
+        result Money (1..1)
+
+    alias held:
+        CorrectedUndisputedAdjustedPostedCreditSupportAmount(
+                postedCreditSupportItems,
+                priorDeliveryAmountAdjustment,
+                priorReturnAmountAdjustment,
+                disputedTransferredPostedCreditSupportAmount,
+                baseCurrency
+            )
+
+    alias creditSupportAmount: CreditSupportAmountVM(exposure, threshold, baseCurrency)
+
+    alias undisputedDeliveryAmount:
+        Max(Max(creditSupportAmount -> value - held -> value, 0.0) - disputedDeliveryAmount -> value, 0.0)
+
+    condition CurrencyMatches: <"The minimum transfer amount and the disputed delivery amount are in the base currency.">
+        baseCurrency = minimumTransferAmount -> unit -> currency
+            and baseCurrency = disputedDeliveryAmount -> unit -> currency
+
+    set result -> value:
+        if undisputedDeliveryAmount >= minimumTransferAmount -> value
+        then RoundToNearest(undisputedDeliveryAmount, rounding -> deliveryAmount, RoundingModeEnum -> Up)
+        else 0.0
+
+    set result -> unit -> currency: baseCurrency
+
+func ReturnAmountVM: <"Return Amount (VM): the Value of the credit support held less the Credit Support Amount (VM), less any disputed amount; rounded down, zero below the Minimum Transfer Amount.">
+    [docReference ISDA CSA_VM_2016 paragraph "2" name "Return Amount (VM)"]
+    [calculation]
+    inputs:
+        postedCreditSupportItems PostedCreditSupportItem (0..*) <"The credit support held by the Secured Party.">
+        priorDeliveryAmountAdjustment Money (1..1)
+        priorReturnAmountAdjustment Money (1..1)
+        disputedTransferredPostedCreditSupportAmount Money (1..1)
+        exposure Money (1..1) <"The Secured Party's Exposure.">
+        threshold Money (0..1)
+        minimumTransferAmount Money (1..1)
+        rounding CollateralRounding (1..1)
+        disputedReturnAmount Money (1..1)
+        baseCurrency string (1..1)
+    output:
+        result Money (1..1)
+
+    alias held:
+        CorrectedUndisputedAdjustedPostedCreditSupportAmount(
+                postedCreditSupportItems,
+                priorDeliveryAmountAdjustment,
+                priorReturnAmountAdjustment,
+                disputedTransferredPostedCreditSupportAmount,
+                baseCurrency
+            )
+
+    alias creditSupportAmount: CreditSupportAmountVM(exposure, threshold, baseCurrency)
+
+    alias undisputedReturnAmount:
+        Max(Max(held -> value - creditSupportAmount -> value, 0.0) - disputedReturnAmount -> value, 0.0)
+
+    condition CurrencyMatches: <"The minimum transfer amount and the disputed return amount are in the base currency.">
+        baseCurrency = minimumTransferAmount -> unit -> currency
+            and baseCurrency = disputedReturnAmount -> unit -> currency
+
+    set result -> value:
+        if undisputedReturnAmount >= minimumTransferAmount -> value
+        then RoundToNearest(undisputedReturnAmount, rounding -> returnAmount, RoundingModeEnum -> Down)
+        else 0.0
+
+    set result -> unit -> currency: baseCurrency
