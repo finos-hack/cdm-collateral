@@ -83,14 +83,18 @@ jobs:
       - name: Build, deploy and start the live stack
         run: bash scripts/live-e2e.sh up
 
-      # 5. Live specs. Chromium with its system libraries (the runner has none); scripts/live-e2e.sh check then finds
-      #    the browser present, sets E2E_REQUIRE_STACK=1 (a down stack fails instead of skipping) and runs every spec.
-      - name: Install Playwright Chromium
-        working-directory: console
-        run: npx playwright install --with-deps chromium
-
+      # 5. Live specs. The runner image ships Google Chrome (CHROME_BIN); passed as CHROMIUM_PATH, scripts/live-e2e.sh
+      #    check skips the Playwright browser download (console/playwright.config.ts uses it as executablePath). Only if
+      #    the image has no Chrome is Playwright Chromium installed, with its system libraries. check sets
+      #    E2E_REQUIRE_STACK=1 (a down stack fails instead of skipping) and runs every spec.
       - name: Live specs (all CALM flows)
-        run: bash scripts/live-e2e.sh check
+        run: |
+          if [ -n "${CHROME_BIN:-}" ] && [ -x "${CHROME_BIN}" ]; then
+            export CHROMIUM_PATH="${CHROME_BIN}"
+          else
+            (cd console && npx playwright install --with-deps chromium)
+          fi
+          bash scripts/live-e2e.sh check
 
       - name: Playwright results
         if: failure()
