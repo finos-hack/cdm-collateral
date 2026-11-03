@@ -514,3 +514,4 @@ excluded.
 | task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/main/java/oracle/MarketData.java | 2026-11-03T15:32:13Z |
 | task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/main/java/oracle/OperatorGateway.java | 2026-11-03T15:32:13Z |
 | task-e2e-remaining-flows | 2a21629780d74e6469f38bcbe4e6d5699f8ba312 | services/oracle/src/test/java/oracle/AppTest.java | 2026-11-03T15:32:13Z |
+| task-e2e-remaining-flows | b28cb8a91d3b5dcbeaa79b0307471cd231c8acf7 | docs/runbook-e2e.md | 2026-11-03T15:48:36Z |
