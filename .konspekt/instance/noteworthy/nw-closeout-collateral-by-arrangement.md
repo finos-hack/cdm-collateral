@@ -1,7 +1,7 @@
 ```yaml
 id: nw-closeout-collateral-by-arrangement
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: ef36ee9f01c3691510a6674082845047138e3ba7
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T21:52:19Z
   confidence: 0.7
 createdAt: 2026-11-03T21:52:19Z
-updatedAt: 2026-11-03T21:52:19Z
+updatedAt: 2026-11-03T23:07:44Z
 ```
 # Decision: close-out under ISDA 2002 MA 6(e)(i); collateral enters by arrangement (pledge applied after, title transfer netted in)
 
