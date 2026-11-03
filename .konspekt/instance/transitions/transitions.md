@@ -418,3 +418,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-livecheckout-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
 | edge:e-note-balanceaware-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
 | node:task-e2e-remaining-flows | status | open | active | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| node:task-collateral-service-unit-tests | review |  | proposed | 2026-11-03T14:01:12Z |  |  |
+| node:task-collateral-service-unit-tests | status |  | open | 2026-11-03T14:01:12Z |  |  |
+| edge:e-dec-e2eflow-collateralunittests | review |  | proposed | 2026-11-03T14:01:12Z |  |  |

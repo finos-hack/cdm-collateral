@@ -128,3 +128,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-remainingflows-depletion | notes | node:task-e2e-remaining-flows | noteworthy:nw-live-spec-balance-depletion |  | accepted |
 | e-note-livecheckout-depletion | notes | node:task-live-flow-checkout-script | noteworthy:nw-live-spec-balance-depletion |  | accepted |
 | e-note-balanceaware-depletion | notes | node:task-live-spec-balance-aware-amounts | noteworthy:nw-live-spec-balance-depletion |  | accepted |
+| e-dec-e2eflow-collateralunittests | decomposes | node:goal-end-to-end-flow | node:task-collateral-service-unit-tests |  | proposed |
