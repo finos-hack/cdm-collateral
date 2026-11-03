@@ -499,3 +499,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-gapclosure-concentration | review | proposed | accepted | 2026-11-03T21:48:03Z |  | denisurusov |
 | noteworthy:nw-vm-exposure-from-netting-set | review | proposed | accepted | 2026-11-03T21:48:03Z |  | denisurusov |
 | edge:e-note-gapclosure-vmexposure | review | proposed | accepted | 2026-11-03T21:48:03Z |  | denisurusov |
+| noteworthy:nw-closeout-collateral-by-arrangement | review |  | proposed | 2026-11-03T21:52:19Z |  |  |
+| edge:e-note-gapclosure-closeout | review |  | proposed | 2026-11-03T21:52:19Z |  |  |
