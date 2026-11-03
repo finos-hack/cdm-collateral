@@ -1,0 +1,123 @@
+namespace cdmx.collateral.enforcement : <"Local CDM extension: enforcement against segregated initial margin (gap G14).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.legaldocumentation.csa.*
+import cdm.observable.asset.*
+import cdmx.collateral.portfolio.*
+import cdmx.collateral.transfer.*
+
+// Scope: one secured party enforcing against collateral the pledgor holds in a segregated account (the prototype's
+// control contract, or a custodian under a control agreement). The enforcement takes the positions out of the
+// portfolio and transfers them to the secured party; what they realise is applied in the close-out (G15,
+// CloseOutNetting). Sale, appropriation mechanics and the custodian's own steps are not modelled.
+
+func EnforcementEventOccurred: <"Whether an Enforcement Event has occurred on a date, under the Security Agreement's elections (CDM SecurityAgreementElections -> enforcementEvent). Without elections, or with earlyTerminationDate elected, an Early Termination Date designated on or before the date; with failureToPay elected, also a Failure to Pay or Deliver notified on or before the date.">
+    inputs:
+        elections SecurityAgreementElections (0..1)
+        notice DefaultNotice (1..1)
+        onDate date (1..1)
+    output:
+        occurred boolean (1..1)
+
+    alias terms: elections -> enforcementEvent
+    alias onEarlyTermination:
+        (terms is absent or terms -> earlyTerminationDate = True)
+            and notice -> earlyTerminationDate exists
+            and notice -> earlyTerminationDate <= onDate
+    alias onFailureToPay:
+        terms -> failureToPay = True
+            and notice -> eventOfDefault = EventOfDefaultEnum -> FailureToPayOrDeliver
+            and notice -> noticeDate <= onDate
+
+    set occurred: onEarlyTermination or onFailureToPay
+
+func Create_CollateralEnforcement: <"Enforcement by the secured party against the segregated collateral after an Event of Default with respect to the pledgor: the positions taken leave the portfolio, their value after haircuts leaves the balance, and each moves to the secured party.">
+    inputs:
+        portfolio CollateralPortfolio (1..1) <"The collateral held, as ApplyCollateralEvent keeps it.">
+        elections SecurityAgreementElections (0..1)
+        eventIdentifier string (1..1)
+        eventDate date (1..1)
+        timestamp zonedDateTime (1..1)
+        instruction EnforcementInstruction (1..1)
+    output:
+        enforcement CollateralEnforcement (1..1)
+
+    alias balance: portfolio -> collateralBalance only-element
+    alias pledgor: balance -> payerReceiver -> payerPartyReference
+    alias securedParty: balance -> payerReceiver -> receiverPartyReference
+    alias held: portfolio -> collateralPosition
+    alias taken: instruction -> enforcedCollateral
+    alias assets: held extract item -> asset then distinct
+
+    // Conditions spell out the paths: pre-conditions are checked before aliases are assigned.
+    condition OneBalance: <"The portfolio keeps one balance, the settled post-haircut value held.">
+        portfolio -> collateralBalance count = 1
+
+    condition PledgorDefaulted: <"The Defaulting Party is the pledgor of the portfolio.">
+        instruction -> notice -> defaultingParty
+            = portfolio -> collateralBalance only-element -> payerReceiver -> payerPartyReference
+
+    condition SecuredPartyEnforces: <"Only the secured party of the portfolio enforces.">
+        instruction -> notice -> nonDefaultingParty
+            = portfolio -> collateralBalance only-element -> payerReceiver -> receiverPartyReference
+
+    condition EnforcementEvent: <"An Enforcement Event has occurred on the enforcement date.">
+        EnforcementEventOccurred(elections, instruction -> notice, eventDate)
+
+    condition ExclusiveControl: <"The custodian or control contract has given the secured party exclusive control.">
+        instruction -> exclusiveControl = True
+
+    condition NotOverEnforced: <"An enforcement takes no more of an asset than is held.">
+        (instruction -> enforcedCollateral
+            extract item -> asset
+            then distinct
+            then filter a [ HeldQuantity(portfolio -> collateralPosition, a) < HeldQuantity(instruction -> enforcedCollateral, a) ]
+            then count) = 0
+
+    condition ValueWithinBalance: <"The value taken is in the balance currency and not more than the balance.">
+        instruction -> enforcedValue -> unit -> currency
+                = portfolio -> collateralBalance only-element -> amountBaseCurrency -> unit -> currency
+            and instruction -> enforcedValue -> value >= 0
+            and instruction -> enforcedValue -> value
+                <= portfolio -> collateralBalance only-element -> amountBaseCurrency -> value
+
+    set enforcement:
+        CollateralEnforcement {
+            eventIdentifier: eventIdentifier,
+            eventDate: eventDate,
+            timestamp: timestamp,
+            instruction: instruction,
+            before: portfolio,
+            after: CollateralPortfolio {
+                portfolioIdentifier: portfolio -> portfolioIdentifier,
+                collateralPosition: assets extract a [ NetCollateralPosition(a, held, empty, taken) ],
+                collateralBalance: CollateralBalance {
+                    collateralBalanceStatus: balance -> collateralBalanceStatus,
+                    haircutIndicator: balance -> haircutIndicator,
+                    amountBaseCurrency: Money {
+                        value: balance -> amountBaseCurrency -> value - instruction -> enforcedValue -> value,
+                        unit: balance -> amountBaseCurrency -> unit,
+                        ...
+                    },
+                    payerReceiver: balance -> payerReceiver
+                },
+                legalAgreement: portfolio -> legalAgreement
+            },
+            transfer: taken extract Create_CollateralTransfer(item, pledgor, securedParty, eventDate),
+            ...
+        }
+    set enforcement -> eventQualifier:
+        if Qualify_CollateralEnforced(enforcement) then "CollateralEnforced"
+
+func Qualify_CollateralEnforced: <"The secured party enforced against the segregated collateral: positions moved from the pledgor to the secured party after an Event of Default with respect to the pledgor.">
+    inputs:
+        enforcement CollateralEnforcement (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        enforcement -> transfer exists
+            and enforcement -> instruction -> notice -> defaultingParty
+                = enforcement -> before -> collateralBalance only-element -> payerReceiver -> payerPartyReference

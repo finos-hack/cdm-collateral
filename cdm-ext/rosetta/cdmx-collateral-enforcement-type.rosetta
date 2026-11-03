@@ -1,0 +1,50 @@
+namespace cdmx.collateral.enforcement : <"Local CDM extension: enforcement against segregated initial margin after an Event of Default (gap G14). CDM 7.7.0 has the custody and security agreement terms (CustodyArrangements, ControlAgreement, SecurityAgreementElections -> enforcementEvent) but no enforcement step.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+enum EventOfDefaultEnum: <"The Events of Default of the ISDA 2002 Master Agreement, Section 5(a).">
+    FailureToPayOrDeliver <"Section 5(a)(i).">
+    BreachOrRepudiationOfAgreement <"Section 5(a)(ii).">
+    CreditSupportDefault <"Section 5(a)(iii).">
+    Misrepresentation <"Section 5(a)(iv).">
+    DefaultUnderSpecifiedTransaction <"Section 5(a)(v).">
+    CrossDefault <"Section 5(a)(vi).">
+    Bankruptcy <"Section 5(a)(vii).">
+    MergerWithoutAssumption <"Section 5(a)(viii).">
+
+type DefaultNotice: <"The Non-defaulting Party's notice of an Event of Default with respect to the pledgor, delivered as ISDA 2002 MA Section 12 requires (off-chain in the prototype), and the Early Termination Date it designates (Section 6(a)).">
+    defaultingParty Party (1..1) <"The pledgor.">
+    nonDefaultingParty Party (1..1) <"The secured party.">
+    eventOfDefault EventOfDefaultEnum (1..1)
+    noticeDate date (1..1) <"When the notice was effective.">
+    earlyTerminationDate date (0..1) <"The Early Termination Date designated; absent if none has been designated yet.">
+
+    condition TwoParties: <"The Defaulting Party and the Non-defaulting Party differ.">
+        defaultingParty <> nonDefaultingParty
+
+    condition EarlyTerminationOnOrAfterNotice: <"The Early Termination Date is not before the notice.">
+        if earlyTerminationDate exists then earlyTerminationDate >= noticeDate
+
+type EnforcementInstruction: <"The secured party's instruction to enforce against the segregated collateral.">
+    notice DefaultNotice (1..1)
+    exclusiveControl boolean (1..1) <"The custodian or control contract has given the secured party exclusive control of the segregated account: under a control agreement, after a Notice of Exclusive Control (CDM ControlAgreementNecEvent); in the prototype, the control contract confirming the default on the oracle feed.">
+    enforcedCollateral CollateralPosition (1..*) <"The positions taken, all or part of those held.">
+    enforcedValue Money (1..1) <"Value after haircuts of the positions taken, removed from the portfolio balance.">
+    realisedValue Money (1..1) <"What the positions taken are worth to the secured party: sale proceeds, or their value under the Valuation of Appropriated Collateral election (CDM SecurityAgreementElections -> appropriatedCollateralValuation). The amount CloseOutNetting applies as collateralHeld.">
+
+    condition RealisedValueNotNegative: <"The realised value is not negative.">
+        realisedValue -> value >= 0
+
+type CollateralEnforcement: <"One enforcement as an event: the instruction, the portfolio before and after, and the transfers of the positions taken to the secured party.">
+    [rootType]
+    eventIdentifier string (1..1)
+    eventDate date (1..1) <"The enforcement date, which is also the transfers' settlement date.">
+    timestamp zonedDateTime (1..1) <"When the enforcement took effect, for example the ledger block time.">
+    instruction EnforcementInstruction (1..1)
+    before CollateralPortfolio (1..1)
+    after CollateralPortfolio (1..1)
+    transfer TransferState (1..*) <"One per position taken, pledgor to secured party.">
+    eventQualifier string (0..1) <"CollateralEnforced (Qualify_CollateralEnforced).">
