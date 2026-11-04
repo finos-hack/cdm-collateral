@@ -2,7 +2,7 @@
 id: task-konspekt-index-cross-mode-portability
 type: task
 title: Add cross-mode portability to konspekt's index.html
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-cross-mode-portability
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-04T02:34:39Z
   confidence: 0.9
 createdAt: 2026-11-04T02:34:39Z
-updatedAt: 2026-11-04T02:50:57Z
+updatedAt: 2026-11-04T02:59:07Z
 ```
 # Task: add cross-mode portability to konspekt's index.html
 
@@ -33,3 +33,10 @@ Pull request https://github.com/finos-labs/konspekt/pull/102 (branch `claude/ind
 across cloud, CLI and IDE sessions", and an extended FAQ answer under "Why not the model's built-in memory?" that
 states the limit for a chat with no repository access. Both slides were rendered at 1600×900 with no overflow. The
 task stays open until the pull request is merged.
+
+## Resolution — 2026-11-04
+
+finos-labs/konspekt#102 was merged by the project owner at 2026-11-04T02:58:40Z (head `1b301ae`). Besides the
+`docs/index.html` change, the PR binds it to konspekt's `task-presentation-refresh` (`53b4a80`) and fixes the
+`audit` check failing on `main` by binding `99c67af` (`ROADMAP.md`) to `task-promo-video` (`1b301ae`). Resolved on
+merge, as the project owner instructed.
