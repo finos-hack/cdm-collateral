@@ -153,6 +153,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-gapclosure-vmexposure | notes | node:task-cdm-gap-closure | noteworthy:nw-vm-exposure-from-netting-set |  | accepted |
 | e-note-gapclosure-closeout | notes | node:task-cdm-gap-closure | noteworthy:nw-closeout-collateral-by-arrangement |  | accepted |
 | e-note-gapclosure-enforcement | notes | node:task-cdm-gap-closure | noteworthy:nw-enforcement-event-by-election |  | accepted |
-| e-dec-cdmdev-smeenforcement | decomposes | node:goal-cdm-development | node:task-sme-enforcement-event-definition |  | proposed |
-| e-lnk-gapclosure-smeenforcement | links | node:task-cdm-gap-closure | node:task-sme-enforcement-event-definition |  | proposed |
-| e-note-gapclosure-substitution | notes | node:task-cdm-gap-closure | noteworthy:nw-substitution-csa-lifecycle |  | proposed |
+| e-dec-cdmdev-smeenforcement | decomposes | node:goal-cdm-development | node:task-sme-enforcement-event-definition |  | accepted |
+| e-lnk-gapclosure-smeenforcement | links | node:task-cdm-gap-closure | node:task-sme-enforcement-event-definition |  | accepted |
+| e-note-gapclosure-substitution | notes | node:task-cdm-gap-closure | noteworthy:nw-substitution-csa-lifecycle |  | accepted |

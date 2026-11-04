@@ -513,3 +513,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-gapclosure-smeenforcement | review |  | proposed | 2026-11-03T23:55:33Z |  |  |
 | noteworthy:nw-substitution-csa-lifecycle | review |  | proposed | 2026-11-03T23:59:58Z |  |  |
 | edge:e-note-gapclosure-substitution | review |  | proposed | 2026-11-03T23:59:58Z |  |  |
+| noteworthy:nw-substitution-csa-lifecycle | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
+| node:task-sme-enforcement-event-definition | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
+| edge:e-note-gapclosure-substitution | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
+| edge:e-dec-cdmdev-smeenforcement | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
+| edge:e-lnk-gapclosure-smeenforcement | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
