@@ -546,3 +546,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smeregistered | review | proposed | accepted | 2026-11-04T02:27:36Z |  | denisurusov |
 | edge:e-lnk-gapclosure-smeregistered | review | proposed | accepted | 2026-11-04T02:27:36Z |  | denisurusov |
 | edge:e-sup-ledgeranchor-ledgerref | review | proposed | accepted | 2026-11-04T02:27:08Z |  | denisurusov |
+| noteworthy:nw-ledger-anchor-implementation | review |  | proposed | 2026-11-04T02:39:30Z |  |  |
+| edge:e-note-g25redesign-implementation | review |  | proposed | 2026-11-04T02:39:30Z |  |  |

@@ -19,3 +19,10 @@ Under [[task-cdm-gap-closure]]. Implement [[nw-ledger-anchor-redesign]] in `cdm-
 and remove the attributes and functions of the rejected design ([[nw-ledger-reference-and-token-identity]]) from the
 margin call, event, enforcement and substitution files and their tests. Per the project owner (2026-11-04): done
 before the P2 gaps, in a separate session. G25 stays reopened in the gap register until this task is done.
+
+Progress 2026-11-04T02:39:30Z:
+- Implemented in `cdm-ext` commit 27348a5: the rejected attributes and functions removed; `LedgerAnchor`,
+  `Create_LedgerAnchor`, `AnchorFor`, `AnchorStatus`, `MarginCallStepAnchorStatus`, `TransferComplete` and
+  `RecordKeeperConfirmation` added ([[nw-ledger-anchor-implementation]]). Extension tests: 126 pass; the collateral
+  service builds. G25 is closed (proposed, for review) in the gap register.
+- Open: the collateral service does not build anchors from the gateway's events yet.
