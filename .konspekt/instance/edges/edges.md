@@ -164,4 +164,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-g25redesign-ledgeranchor | notes | node:task-g25-ledger-anchor-redesign | noteworthy:nw-ledger-anchor-redesign |  | accepted |
 | e-dec-cdmdev-smeregistered | decomposes | node:goal-cdm-development | node:task-sme-registered-asset-completion |  | accepted |
 | e-lnk-gapclosure-smeregistered | links | node:task-cdm-gap-closure | node:task-sme-registered-asset-completion |  | accepted |
-| e-note-g25redesign-implementation | notes | node:task-g25-ledger-anchor-redesign | noteworthy:nw-ledger-anchor-implementation |  | proposed |
+| e-note-g25redesign-implementation | notes | node:task-g25-ledger-anchor-redesign | noteworthy:nw-ledger-anchor-implementation |  | accepted |
