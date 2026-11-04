@@ -537,3 +537,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-g25redesign-ledgeranchor | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
 | edge:e-dec-cdmdev-smeregistered | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
 | edge:e-lnk-gapclosure-smeregistered | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| noteworthy:nw-ledger-anchor-redesign | review | proposed | accepted | 2026-11-04T02:27:08Z |  | denisurusov |
+| edge:e-note-gapclosure-ledgeranchor | review | proposed | accepted | 2026-11-04T02:27:08Z |  | denisurusov |
+| node:task-g25-ledger-anchor-redesign | review | proposed | accepted | 2026-11-04T02:27:22Z |  | denisurusov |
+| edge:e-dec-gapclosure-g25redesign | review | proposed | accepted | 2026-11-04T02:27:22Z |  | denisurusov |
+| edge:e-note-g25redesign-ledgeranchor | review | proposed | accepted | 2026-11-04T02:27:22Z |  | denisurusov |
+| node:task-sme-registered-asset-completion | review | proposed | accepted | 2026-11-04T02:27:36Z |  | denisurusov |
+| edge:e-dec-cdmdev-smeregistered | review | proposed | accepted | 2026-11-04T02:27:36Z |  | denisurusov |
+| edge:e-lnk-gapclosure-smeregistered | review | proposed | accepted | 2026-11-04T02:27:36Z |  | denisurusov |
+| edge:e-sup-ledgeranchor-ledgerref | review | proposed | accepted | 2026-11-04T02:27:08Z |  | denisurusov |

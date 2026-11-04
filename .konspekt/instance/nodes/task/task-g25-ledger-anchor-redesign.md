@@ -3,7 +3,7 @@ id: task-g25-ledger-anchor-redesign
 type: task
 title: Rework G25 as append-only ledger anchors derived from the chain
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 67989287b51231983b6e1159a2195a185f5d16b3
