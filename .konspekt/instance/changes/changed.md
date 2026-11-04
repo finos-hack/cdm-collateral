@@ -584,3 +584,4 @@ excluded.
 | task-cdm-gap-closure | 79f9e8b6c475fd338117378ff776b6267b14ce06 | cdm-ext/src/test/java/cdmx/LedgerTest.java | 2026-11-04T00:15:20Z |
 | task-cdm-gap-closure | 79f9e8b6c475fd338117378ff776b6267b14ce06 | cdm-ext/src/test/java/cdmx/SubstitutionTest.java | 2026-11-04T00:15:20Z |
 | task-cdm-gap-closure | 79f9e8b6c475fd338117378ff776b6267b14ce06 | docs/cdm-development/gap-register.md | 2026-11-04T00:15:20Z |
+| task-cdm-gap-closure | 6a09211522581e30866e020f30e806b52042afdd | docs/cdm-development/gap-register.md | 2026-11-04T02:21:16Z |

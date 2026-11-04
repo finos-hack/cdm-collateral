@@ -522,3 +522,18 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-gapclosure-dispute | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
 | noteworthy:nw-ledger-reference-and-token-identity | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
 | edge:e-note-gapclosure-ledger | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
+| noteworthy:nw-dispute-record-beside-call | review | proposed | accepted | 2026-11-04T02:15:33Z |  | denisurusov |
+| edge:e-note-gapclosure-dispute | review | proposed | accepted | 2026-11-04T02:15:33Z |  | denisurusov |
+| noteworthy:nw-ledger-reference-and-token-identity | review | proposed | rejected | 2026-11-04T02:21:16Z | 67989287b51231983b6e1159a2195a185f5d16b3 | denisurusov |
+| edge:e-note-gapclosure-ledger | review | proposed | rejected | 2026-11-04T02:21:16Z | 67989287b51231983b6e1159a2195a185f5d16b3 | denisurusov |
+| noteworthy:nw-ledger-anchor-redesign | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| node:task-g25-ledger-anchor-redesign | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| node:task-g25-ledger-anchor-redesign | status |  | open | 2026-11-04T02:21:16Z |  |  |
+| node:task-sme-registered-asset-completion | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| node:task-sme-registered-asset-completion | status |  | open | 2026-11-04T02:21:16Z |  |  |
+| edge:e-sup-ledgeranchor-ledgerref | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| edge:e-note-gapclosure-ledgeranchor | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| edge:e-dec-gapclosure-g25redesign | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| edge:e-note-g25redesign-ledgeranchor | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| edge:e-dec-cdmdev-smeregistered | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
+| edge:e-lnk-gapclosure-smeregistered | review |  | proposed | 2026-11-04T02:21:16Z |  |  |

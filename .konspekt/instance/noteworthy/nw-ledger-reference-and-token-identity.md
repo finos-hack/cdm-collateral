@@ -1,7 +1,7 @@
 ```yaml
 id: nw-ledger-reference-and-token-identity
 kind: decision
-review: proposed
+review: rejected
 provenance:
   conversationId: cdm-development
   sourceRef: 1196485feb767867744d28d3eebfaaac64e6fc01
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-04T00:15:20Z
   confidence: 0.7
 createdAt: 2026-11-04T00:15:20Z
-updatedAt: 2026-11-04T00:15:20Z
+updatedAt: 2026-11-04T02:21:16Z
 ```
 # Decision: token identity as a TokenizedAsset beside the CDM Asset; ledger references attached to CDM records after mining
 
@@ -26,3 +26,6 @@ How gaps G24 and G25 are closed in `cdm-ext/rosetta/cdmx-collateral-ledger-*.ros
   Existing function signatures are unchanged, so the collateral service is unaffected. `ContentAnchored` compares the
   hash recorded on-chain with one the caller computes (Rune has no hash function; in the prototype keccak256 of the CDM
   JSON) ([[concept-asr-onchain-call-state]]).
+
+Rejected by the project owner on 2026-11-04: the design reverses `concept-asr-onchain-call-state` and rewrites
+existing records. Superseded by [[nw-ledger-anchor-redesign]].

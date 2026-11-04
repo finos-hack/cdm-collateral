@@ -88,3 +88,10 @@ Progress 2026-11-04T00:15:20Z (remaining P1 gaps):
 - G29 closed (proposed, for review): every extension function runs in the tests.
 - Extension tests: 120 pass; the collateral service builds against the new jar. All P1 gaps are now closed or
   proposed as closed.
+
+Progress 2026-11-04T02:21:16Z (G24/G25 review):
+- G3 dispute note accepted; PR #21 merged.
+- [[nw-ledger-reference-and-token-identity]] rejected by the project owner; G25 reopened. Redesign proposed in
+  [[nw-ledger-anchor-redesign]], work in [[task-g25-ledger-anchor-redesign]], in a separate session before the P2
+  gaps. The completion rule for Registered and Claim assets goes to the SME
+  ([[task-sme-registered-asset-completion]]).
