@@ -60,7 +60,7 @@ class SubstitutionTest {
 
     private CollateralSubstitution run(SubstitutionState before, CollateralPortfolio p, Substitution elections,
                                        SubstitutionInstruction instruction) {
-        return substitute.evaluate(before, p, elections, "S-1/" + (before == null ? 1 : 2), D, T, instruction);
+        return substitute.evaluate(before, p, elections, "S-1/" + (before == null ? 1 : 2), D, T, instruction, null);
     }
 
     private static String isin(UnscheduledTransfer u) {

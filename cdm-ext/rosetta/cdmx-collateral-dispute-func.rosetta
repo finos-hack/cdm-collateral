@@ -1,0 +1,100 @@
+namespace cdmx.collateral.dispute : <"Local CDM extension: raising and resolving a margin call dispute (gap G3).">
+version "${project.version}"
+
+import cdm.base.*
+import cdm.base.math.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.legaldocumentation.csa.*
+import cdm.observable.asset.*
+import cdmx.collateral.margincall.*
+
+// Scope: ISDA CSA Paragraph 5. The disputing party transfers the undisputed amount (the margin call settles the agreed
+// part, G1) and the parties consult; if they have not agreed by the Resolution Time, the amount is recalculated under
+// the agreement's procedure. Here the dispute is its own record next to the margin call: the call keeps its agreed and
+// disputed amounts, and the resolution states what is still due, which the called party transfers through a new call.
+// The recalculation itself (quotations, SIMM rerun, collateral revaluation) is the caller's.
+
+func Create_Dispute: <"Records the dispute of a margin call that was partially agreed or disputed, from the call's own amounts.">
+    [docReference ISDA CSA_VM_2016 paragraph "5"]
+    inputs:
+        call MarginCallState (1..1)
+        disputeIdentifier string (1..1)
+        disputingParty Party (1..1)
+        subject DisputeSubjectEnum (1..1)
+        reason string (1..1)
+        raisedAt zonedDateTime (1..1)
+        resolutionDeadline zonedDateTime (0..1)
+    output:
+        dispute Dispute (1..1)
+
+    condition CallDisputed: <"The call has a disputed amount.">
+        call -> disputedAmount exists and call -> disputedAmount -> value > 0
+
+    condition PartyToTheCall: <"The disputing party is one of the call's two parties.">
+        (call -> issuance -> partyRole filter partyReference = disputingParty then count) = 1
+
+    set dispute:
+        Dispute {
+            disputeIdentifier: disputeIdentifier,
+            callIdentifier: call -> issuance -> callIdentifier,
+            disputingParty: disputingParty,
+            subject: subject,
+            reason: reason,
+            calledAmount: call -> issuance -> callAmountInBaseCurrency,
+            agreedAmount: call -> agreedAmount,
+            disputedAmount: call -> disputedAmount,
+            raisedAt: raisedAt,
+            resolutionDeadline: resolutionDeadline,
+            status: DisputeStatusEnum -> Open,
+            ...
+        }
+
+func ResolveDispute: <"Resolves an open dispute at an amount between the agreed and the called amount; the difference to the agreed amount is still due. Recalculation applies only once the Resolution Time has passed.">
+    [docReference ISDA CSA_VM_2016 paragraph "5"]
+    inputs:
+        dispute Dispute (1..1)
+        method DisputeResolutionMethodEnum (1..1)
+        resolvedAmount Money (1..1)
+        resolvedAt zonedDateTime (1..1)
+    output:
+        resolved Dispute (1..1)
+
+    condition Open: <"Only an open dispute is resolved.">
+        dispute -> status = DisputeStatusEnum -> Open
+
+    condition SameCurrency: <"The resolved amount is in the call currency.">
+        resolvedAmount -> unit -> currency = dispute -> calledAmount -> unit -> currency
+
+    condition WithinDispute: <"The resolved amount is between the agreed and the called amount.">
+        resolvedAmount -> value >= dispute -> agreedAmount -> value
+            and resolvedAmount -> value <= dispute -> calledAmount -> value
+
+    condition RecalculationAfterResolutionTime: <"Recalculation follows a dispute not agreed by the Resolution Time.">
+        if method = DisputeResolutionMethodEnum -> Recalculation
+        then dispute -> resolutionDeadline exists and resolvedAt > dispute -> resolutionDeadline
+
+    set resolved:
+        Dispute {
+            disputeIdentifier: dispute -> disputeIdentifier,
+            callIdentifier: dispute -> callIdentifier,
+            disputingParty: dispute -> disputingParty,
+            subject: dispute -> subject,
+            reason: dispute -> reason,
+            calledAmount: dispute -> calledAmount,
+            agreedAmount: dispute -> agreedAmount,
+            disputedAmount: dispute -> disputedAmount,
+            raisedAt: dispute -> raisedAt,
+            resolutionDeadline: dispute -> resolutionDeadline,
+            status: DisputeStatusEnum -> Resolved,
+            resolution: DisputeResolutionRecord {
+                method: method,
+                resolvedAmount: resolvedAmount,
+                additionalAmountDue: Money {
+                    value: resolvedAmount -> value - dispute -> agreedAmount -> value,
+                    unit: resolvedAmount -> unit,
+                    ...
+                },
+                resolvedAt: resolvedAt
+            }
+        }

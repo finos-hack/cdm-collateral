@@ -3,6 +3,7 @@ version "${project.version}"
 
 import cdm.base.staticdata.party.*
 import cdm.event.common.*
+import cdmx.collateral.ledger.*
 import cdmx.collateral.margincall.*
 import cdmx.collateral.proposal.*
 import cdmx.collateral.transfer.*
@@ -143,3 +144,23 @@ func Qualify_CollateralReturned: <"Collateral held was released on a return call
     set is_event:
         event -> instruction -> settle exists
             and event -> after -> direction = MarginCallActionEnum -> Return
+
+func AnchorCollateralEvent: <"Links a margin call event to the ledger transaction that records it (G25): on the event and on its step in the state after.">
+    inputs:
+        event CollateralEvent (1..1)
+        ledgerReference LedgerReference (1..1)
+    output:
+        anchored CollateralEvent (1..1)
+
+    set anchored:
+        CollateralEvent {
+            eventIdentifier: event -> eventIdentifier,
+            eventDate: event -> eventDate,
+            timestamp: event -> timestamp,
+            instruction: event -> instruction,
+            before: event -> before,
+            after: AnchorMarginCallStep(event -> after, event -> eventIdentifier, ledgerReference),
+            eventQualifier: event -> eventQualifier,
+            transfer: event -> transfer,
+            ledgerReference: ledgerReference
+        }

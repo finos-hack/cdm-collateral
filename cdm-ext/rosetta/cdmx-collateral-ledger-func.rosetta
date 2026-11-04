@@ -1,0 +1,44 @@
+namespace cdmx.collateral.ledger : <"Local CDM extension: lookups between CDM assets and tokens (G24), and anchoring CDM records to ledger transactions (G25).">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.common.*
+
+func TokenForAsset: <"The token representing a CDM asset on a network, from a list of known tokens.">
+    inputs:
+        tokens TokenizedAsset (0..*)
+        asset Asset (1..1)
+        networkName string (1..1)
+    output:
+        token TokenizedAsset (0..1)
+
+    condition OneTokenPerAssetAndNetwork: <"An asset has at most one token on a network.">
+        (tokens filter item -> asset = asset and item -> network -> name = networkName then count) <= 1
+
+    set token:
+        tokens filter item -> asset = asset and item -> network -> name = networkName then first
+
+func AssetForToken: <"The CDM asset a token contract on a network represents, from a list of known tokens.">
+    inputs:
+        tokens TokenizedAsset (0..*)
+        networkName string (1..1)
+        tokenContract string (1..1)
+    output:
+        asset Asset (0..1)
+
+    condition OneTokenPerContract: <"A contract on a network represents one asset.">
+        (tokens filter item -> network -> name = networkName and item -> tokenContract = tokenContract then count) <= 1
+
+    set asset:
+        tokens filter item -> network -> name = networkName and item -> tokenContract = tokenContract
+            then first
+            -> asset
+
+func ContentAnchored: <"Whether the ledger record carries the hash of the CDM content, computed by the caller (Rune has no hash function).">
+    inputs:
+        reference LedgerReference (1..1)
+        contentHash string (1..1)
+    output:
+        anchored boolean (1..1)
+
+    set anchored:
+        reference -> contentHash exists and reference -> contentHash = contentHash
