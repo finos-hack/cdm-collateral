@@ -518,3 +518,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-gapclosure-substitution | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
 | edge:e-dec-cdmdev-smeenforcement | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
 | edge:e-lnk-gapclosure-smeenforcement | review | proposed | accepted | 2026-11-04T00:10:23Z |  | denisurusov |
+| noteworthy:nw-dispute-record-beside-call | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
+| edge:e-note-gapclosure-dispute | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
+| noteworthy:nw-ledger-reference-and-token-identity | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
+| edge:e-note-gapclosure-ledger | review |  | proposed | 2026-11-04T00:15:20Z |  |  |

@@ -78,3 +78,13 @@ Progress 2026-11-03T23:59:58Z (G16):
   `SubstitutionNeedsConsent`, `Qualify_CollateralSubstituted` replacing CDM's `Qualify_Substitution` for CSA
   collateral ([[nw-substitution-csa-lifecycle]]). Open: triparty agent (T8) and CCP (C18) substitution.
 - Extension tests: 99 pass; the collateral service builds against the new jar.
+
+Progress 2026-11-04T00:15:20Z (remaining P1 gaps):
+- G16 note and the SME Enforcement Event task accepted; PR #20 merged.
+- G3 closed (proposed, for review): `cdmx.collateral.dispute` `Create_Dispute`, `ResolveDispute`
+  ([[nw-dispute-record-beside-call]]).
+- G24 and G25 closed (proposed, for review): `cdmx.collateral.ledger` `TokenizedAsset`, `LedgerReference`,
+  `AnchorCollateralEvent`, `AnchorMarginCallStep`, `ContentAnchored` ([[nw-ledger-reference-and-token-identity]]).
+- G29 closed (proposed, for review): every extension function runs in the tests.
+- Extension tests: 120 pass; the collateral service builds against the new jar. All P1 gaps are now closed or
+  proposed as closed.

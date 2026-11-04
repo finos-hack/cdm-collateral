@@ -156,3 +156,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeenforcement | decomposes | node:goal-cdm-development | node:task-sme-enforcement-event-definition |  | accepted |
 | e-lnk-gapclosure-smeenforcement | links | node:task-cdm-gap-closure | node:task-sme-enforcement-event-definition |  | accepted |
 | e-note-gapclosure-substitution | notes | node:task-cdm-gap-closure | noteworthy:nw-substitution-csa-lifecycle |  | accepted |
+| e-note-gapclosure-dispute | notes | node:task-cdm-gap-closure | noteworthy:nw-dispute-record-beside-call |  | proposed |
+| e-note-gapclosure-ledger | notes | node:task-cdm-gap-closure | noteworthy:nw-ledger-reference-and-token-identity |  | proposed |
