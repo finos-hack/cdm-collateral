@@ -382,6 +382,19 @@ public final class App {
             if (st.getStepRecord() != null) for (var r : st.getStepRecord()) recorded.add(String.valueOf(r.getStep()));
             result.put("stepRecord", recorded);
             result.put("stateHash", Cdm.keccakHex(json)); // same state -> same hash on both parties
+            // G25: each folded step's ledger anchor, built from the same chain events by both parties, kept apart from
+            // the state so stateHash is unaffected (nw-ledger-anchor-redesign). A failure is reported, not thrown, so the
+            // fold stays readable.
+            try {
+                List<cdmx.collateral.ledger.LedgerAnchor> anchors = CdmAnchors.anchors(steps, docs);
+                List<Map<String, Object>> statuses = CdmAnchors.statuses(st, anchors);
+                result.put("anchors", statuses);
+                result.put("anchorHash", Cdm.keccakHex(CdmRuntime.toJson(anchors))); // same chain -> same hash on both parties
+                result.put("anchored", statuses.stream().allMatch(s -> "Complete".equals(s.get("status"))));
+            } catch (RuntimeException e) {
+                result.put("anchored", false);
+                result.put("anchorError", String.valueOf(e.getMessage()));
+            }
         }
         result.put("converged", converged);
         if (converged) foldCache.put(callId, new FoldCache(sig.toString(), result)); // cache only once fully folded
