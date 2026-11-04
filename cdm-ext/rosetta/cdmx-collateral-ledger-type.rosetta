@@ -1,0 +1,52 @@
+namespace cdmx.collateral.ledger : <"Local CDM extension: tokenized asset identity (gap G24) and references from CDM records to the ledger (gap G25). CDM 7.7.0 has no attribute for a token's network, contract, standard, ISO 24165 DTI or authoritative record, and its DigitalAsset excludes tokenized assets; nothing links a CDM event to a ledger transaction.">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.common.*
+import cdm.base.staticdata.party.*
+
+enum TokenStandardEnum: <"The token standard the contract implements.">
+    ERC20 <"Fungible token (EIP-20).">
+    ERC1400 <"Security token with partitions and transfer restrictions.">
+    ERC3643 <"Permissioned token with on-chain identity (T-REX).">
+    Other <"Another standard, named in tokenStandardName.">
+
+enum AuthoritativeRecordEnum: <"Which record decides who holds the asset.">
+    Bearer <"The token is the asset: the ledger is the record of ownership.">
+    Registered <"The token mirrors a register kept off the ledger (for example a transfer agent, or DTC's books and records for DTCC tokens); the register decides.">
+    Claim <"The token is a claim on an intermediary that holds the asset; the intermediary's books decide.">
+
+type LedgerNetwork: <"The ledger a token or record lives on.">
+    name string (1..1) <"For example 'besu-prototype'.">
+    platform string (1..1) <"For example 'Hyperledger Besu' or 'Canton'.">
+    chainId int (0..1) <"EVM chain id, where the platform has one.">
+
+type TokenizedAsset: <"The on-chain representation of a CDM asset: which network and contract, which standard, its ISO 24165 DTI where one exists, and which record is legally authoritative.">
+    [rootType]
+    asset Asset (1..1) <"The asset as CDM describes it, for example a Security with its ISIN.">
+    dti string (0..1) <"ISO 24165 Digital Token Identifier.">
+    network LedgerNetwork (1..1)
+    tokenContract string (1..1) <"The contract address, lower-case hex with 0x prefix on EVM ledgers.">
+    tokenStandard TokenStandardEnum (1..1)
+    tokenStandardName string (0..1)
+    decimals int (0..1) <"Decimal places of the on-chain quantity: on-chain units = quantity x 10^decimals.">
+    authoritativeRecord AuthoritativeRecordEnum (1..1)
+    recordKeeper LegalEntity (0..1) <"Who keeps the authoritative record when it is not the ledger: the registrar or the intermediary.">
+
+    condition RecordKeeperOffLedger: <"A registered or claim token names who keeps the authoritative record.">
+        if authoritativeRecord <> AuthoritativeRecordEnum -> Bearer then recordKeeper exists
+
+    condition OtherStandardNamed: <"A standard outside the list is named.">
+        if tokenStandard = TokenStandardEnum -> Other then tokenStandardName exists
+
+type LedgerReference: <"Where a CDM record is anchored on the ledger: the transaction, its block, the contract and log, and the hash of the CDM content recorded there.">
+    network LedgerNetwork (1..1)
+    contractAddress string (1..1)
+    transactionHash string (1..1)
+    blockNumber int (1..1)
+    blockTimestamp zonedDateTime (0..1)
+    logIndex int (0..1)
+    eventName string (0..1) <"The contract event, for example 'CallIssued' or 'Enforced'.">
+    contentHash string (0..1) <"The hash of the CDM content recorded on-chain (in the prototype, cdmHash: keccak256 of the CDM JSON).">
+
+    condition NonNegativeBlock:
+        blockNumber >= 0

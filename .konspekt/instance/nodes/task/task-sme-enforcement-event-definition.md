@@ -3,7 +3,7 @@ id: task-sme-enforcement-event-definition
 type: task
 title: Confirm with a business SME what an Enforcement Event is under the IM Security Agreement
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 674efc0066984797811930c097b69847c345e30e
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T23:55:33Z
   confidence: 0.8
 createdAt: 2026-11-03T23:55:33Z
-updatedAt: 2026-11-03T23:55:33Z
+updatedAt: 2026-11-04T00:10:23Z
 ```
 # Task: confirm the Enforcement Event definition
 

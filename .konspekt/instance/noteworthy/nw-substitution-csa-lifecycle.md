@@ -1,7 +1,7 @@
 ```yaml
 id: nw-substitution-csa-lifecycle
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: f66560c3555c8efa6daf73880fa06b47e62422f9
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-03T23:59:58Z
   confidence: 0.7
 createdAt: 2026-11-03T23:59:58Z
-updatedAt: 2026-11-03T23:59:58Z
+updatedAt: 2026-11-04T00:10:23Z
 ```
 # Decision: CSA substitution is its own lifecycle over the portfolio; consent by election; substitute worth at least the original
 

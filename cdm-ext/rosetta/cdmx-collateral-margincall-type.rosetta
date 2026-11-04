@@ -4,6 +4,7 @@ version "${project.version}"
 import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.observable.asset.*
+import cdmx.collateral.ledger.*
 import cdmx.collateral.proposal.*
 
 enum MarginCallStatusEnum: <"State of a margin call.">
@@ -58,6 +59,7 @@ type MarginCallStepRecord: <"One applied step, for the audit trail.">
     identifier string (1..1)
     timestamp zonedDateTime (1..1) <"When the step took effect, for example the ledger block time.">
     step MarginCallStepEnum (1..1)
+    ledgerReference LedgerReference (0..1) <"The ledger transaction that records this (G25).">
 
 type MarginCallState: <"Cumulative record of one margin call: the call, the response, proposals and settlement, with the steps applied so far.">
     [rootType]

@@ -1,0 +1,45 @@
+namespace cdmx.collateral.dispute : <"Local CDM extension: the dispute record and its resolution (gap G3). CDM 7.7.0 has the Dispute response type and the DisputeResolution elections (resolutionTime, recalculationOfValue, value) but no dispute record and no resolution step.">
+version "${project.version}"
+
+import cdm.base.staticdata.identifier.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+
+enum DisputeSubjectEnum: <"What is disputed (ISDA CSA Paragraph 5).">
+    Amount <"The Delivery Amount or Return Amount, for example the Exposure or, for IM, the SIMM inputs behind it.">
+    Value <"The Value of Posted Credit Support or of a Transfer.">
+
+enum DisputeStatusEnum:
+    Open <"Raised; the undisputed part is settled through the margin call; the disputed amount waits.">
+    Resolved
+
+enum DisputeResolutionMethodEnum: <"How the dispute was settled.">
+    Agreement <"The parties agreed an amount in consultation before the Resolution Time.">
+    Recalculation <"Not agreed by the Resolution Time; recalculated under the agreement's procedure (CDM DisputeResolution -> recalculationOfValue, value).">
+
+type DisputeResolutionRecord: <"The outcome of a dispute.">
+    method DisputeResolutionMethodEnum (1..1)
+    resolvedAmount Money (1..1) <"What the call amount turns out to be: between the agreed and the called amount.">
+    additionalAmountDue Money (1..1) <"Resolved less agreed amount: what the called party still transfers, through a new call.">
+    resolvedAt zonedDateTime (1..1)
+
+type Dispute: <"A dispute over part of a margin call: the amounts at issue, why, by when it must be resolved, and how it was.">
+    [rootType]
+    disputeIdentifier string (1..1)
+    callIdentifier Identifier (1..1) <"The margin call disputed.">
+    disputingParty Party (1..1)
+    subject DisputeSubjectEnum (1..1)
+    reason string (1..1) <"For example 'SIMM IR delta sensitivities differ'.">
+    calledAmount Money (1..1)
+    agreedAmount Money (1..1) <"The undisputed part, settled through the call.">
+    disputedAmount Money (1..1)
+    raisedAt zonedDateTime (1..1)
+    resolutionDeadline zonedDateTime (0..1) <"The Resolution Time on the day it falls (CDM DisputeResolution -> resolutionTime), computed by the caller.">
+    status DisputeStatusEnum (1..1)
+    resolution DisputeResolutionRecord (0..1)
+
+    condition ResolutionWhenResolved: <"A resolved dispute has its resolution; an open one has none.">
+        if status = DisputeStatusEnum -> Resolved then resolution exists else resolution is absent
+
+    condition DisputedPositive: <"Something is disputed.">
+        disputedAmount -> value > 0

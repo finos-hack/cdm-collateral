@@ -27,6 +27,8 @@ Built on CDM **7.7.0** (`org.finos.cdm:cdm-java` on Maven Central) with CDM's ow
 | `rosetta/cdmx-collateral-closeout-type.rosetta`, `-func.rosetta` | G15: `EarlyTerminationAmount` (ISDA 2002 MA Section 6(e)(i): Close-out Amounts and Unpaid Amounts netted), `CloseOutNetting` (`CloseOutStatement`: collateral applied under security interest, or netted as an Unpaid Amount under title transfer; amount payable), `CloseOutAmount`, `UnpaidAmount`, `CollateralArrangementEnum` |
 | `rosetta/cdmx-collateral-enforcement-type.rosetta`, `-func.rosetta` | G14: `Create_CollateralEnforcement` (`CollateralEnforcement` event: positions taken out of the `CollateralPortfolio` and transferred to the secured party), `EnforcementEventOccurred` (CDM `SecurityAgreementElections -> enforcementEvent`), `Qualify_CollateralEnforced`, `DefaultNotice`, `EnforcementInstruction`, `EventOfDefaultEnum` |
 | `rosetta/cdmx-collateral-substitution-type.rosetta`, `-func.rosetta` | G16: `Create_CollateralSubstitution` (`CollateralSubstitution` event: request, consent, settlement under ISDA CSA Paragraph 4(d); portfolio updated on settlement), `Create_SubstitutionState`, `SubstitutionNeedsConsent` (CDM `Substitution` elections), four `Qualify_` functions with `Qualify_CollateralSubstituted` replacing CDM's `Qualify_Substitution` for CSA collateral (D5) |
+| `rosetta/cdmx-collateral-dispute-type.rosetta`, `-func.rosetta` | G3: `Create_Dispute` (`Dispute` record from the call's amounts), `ResolveDispute` (by agreement, or by recalculation after the Resolution Time; additional amount due) |
+| `rosetta/cdmx-collateral-ledger-type.rosetta`, `-func.rosetta` | G24: `TokenizedAsset` (network, contract, standard, DTI, authoritative record), `TokenForAsset`, `AssetForToken`. G25: `LedgerReference` (on step records and the three event types), `ContentAnchored`; `AnchorMarginCallStep` and `AnchorCollateralEvent` are in the margin call and event namespaces |
 | `pom.xml`, `mvnw`, `mvnw.cmd`, `.mvn/` | Maven build (wrapper pins Maven 3.9.11): unpacks CDM's `.rosetta` files from the `cdm-java` jar (to resolve references), generates Java for `cdmx.*` only (`src/main/resources/rune-config.yml`), compiles, runs the tests |
 | `src/test/java/cdmx/ProposalTest.java` | Proposal functions, pre-conditions, type conditions, Rune JSON round trip |
 | `src/test/java/cdmx/MarginCallTest.java` | The console scenarios (im-call, im-dispute, im-return) through the lifecycle; wrong order, amounts and currencies rejected; earlier states unchanged; CDM's full validation of the settled state |
@@ -38,6 +40,8 @@ Built on CDM **7.7.0** (`org.finos.cdm:cdm-java` on Maven Central) with CDM's ow
 | `src/test/java/cdmx/CloseOutTest.java` | G15: im-default (pledged collateral applied, surplus owed back); shortfall; netting of trades and Unpaid Amounts; negative Early Termination Amount; title transfer with the Credit Support Balance as an Unpaid Amount; party and currency checks; Rune JSON round trip |
 | `src/test/java/cdmx/EnforcementTest.java` | G14: im-default (all pledged tUST moved to BANK-B, realised value applied in the close-out); partial enforcement; Enforcement Event by election (Early Termination Date, Failure to Pay); pledgor, secured party, exclusive control, quantity and balance checks; Rune JSON round trip |
 | `src/test/java/cdmx/SubstitutionTest.java` | G16: tUST swapped for money market fund tokens without and with a consent election; refusal; consent only where needed; the other party's election; substitute value, held items, identifier and step order checks; Rune JSON round trip |
+| `src/test/java/cdmx/DisputeTest.java` | G3: im-dispute (USD 0.5m of USD 12.4m disputed); resolution by agreement and by recalculation; Resolution Time, range, once-only, undisputed call and party checks; Rune JSON round trip |
+| `src/test/java/cdmx/LedgerTest.java` | G24, G25: tUST and tMMF tokens on the prototype Besu network both ways; unknown and duplicate tokens; record keeper and standard checks; a settled call anchored on the event and its step; content hash; enforcement with its reference; Rune JSON round trip |
 | `src/test/java/cdmx/Data.java` | Rune JSON builders for test data |
 | `src/test/java/cdmx/Cdm.java` | CDM Java runtime for the tests: Guice injector with `CdmRuntimeModule`, `RuneJsonObjectMapper`, `RosettaTypeValidator` |
 
@@ -94,7 +98,7 @@ extension mirrors the pattern in `cdmx.collateral.margincall` instead of extendi
 
 Each step takes its timestamp as an input, so the ledger's block time can be used and tests are deterministic. The call names its pledgor and secured party in
 CDM's `MarginCallBase -> partyRole` (condition `PledgorAndSecuredParty`); they are the payer and receiver of the
-transfers. Not covered yet: balance updates (G5) and dispute resolution beyond recording the disputed amount (G3).
+transfers. Balance updates (G5) are in `cdmx.collateral.portfolio`; dispute resolution (G3) is in `cdmx.collateral.dispute`, next to the call.
 
 ## Events, qualification and transfers (G1, G4)
 

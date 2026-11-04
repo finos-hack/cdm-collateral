@@ -4,6 +4,7 @@ version "${project.version}"
 import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.observable.asset.*
+import cdmx.collateral.ledger.*
 
 enum SubstitutionStatusEnum: <"State of a substitution.">
     Requested <"The pledgor has given notice; waiting for the secured party's consent where consent is needed, otherwise for settlement.">
@@ -61,6 +62,7 @@ type CollateralSubstitution: <"One substitution step as an event: the substituti
     portfolioAfter CollateralPortfolio (1..1) <"Changed only by a settlement.">
     transfer TransferState (0..*) <"On settlement: the substitute, pledgor to secured party, then the original items, secured party to pledgor.">
     eventQualifier string (0..1) <"SubstitutionRequested, SubstitutionConsented, SubstitutionRefused or CollateralSubstituted.">
+    ledgerReference LedgerReference (0..1) <"The ledger transaction that records this (G25).">
 
     condition TransfersOnlyOnSettlement: <"Only a settlement moves collateral.">
         if transfer exists then instruction -> settle exists
