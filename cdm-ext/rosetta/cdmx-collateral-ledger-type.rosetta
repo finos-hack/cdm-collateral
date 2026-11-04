@@ -1,8 +1,12 @@
-namespace cdmx.collateral.ledger : <"Local CDM extension: tokenized asset identity (gap G24) and references from CDM records to the ledger (gap G25). CDM 7.7.0 has no attribute for a token's network, contract, standard, ISO 24165 DTI or authoritative record, and its DigitalAsset excludes tokenized assets; nothing links a CDM event to a ledger transaction.">
+namespace cdmx.collateral.ledger : <"Local CDM extension: tokenized asset identity (gap G24) and ledger anchors for CDM records (gap G25). CDM 7.7.0 has no attribute for a token's network, contract, standard, ISO 24165 DTI or authoritative record, and its DigitalAsset excludes tokenized assets; nothing links a CDM record to a ledger transaction.">
 version "${project.version}"
 
 import cdm.base.staticdata.asset.common.*
 import cdm.base.staticdata.party.*
+
+// G25 (nw-ledger-anchor-redesign): the chain records each state change and the hash of the CDM instruction behind it
+// (concept-asr-onchain-call-state). A LedgerAnchor is a separate, append-only record that both parties build from the
+// same chain data; CDM events and states hold no ledger data and do not change once created.
 
 enum TokenStandardEnum: <"The token standard the contract implements.">
     ERC20 <"Fungible token (EIP-20).">
@@ -38,15 +42,49 @@ type TokenizedAsset: <"The on-chain representation of a CDM asset: which network
     condition OtherStandardNamed: <"A standard outside the list is named.">
         if tokenStandard = TokenStandardEnum -> Other then tokenStandardName exists
 
-type LedgerReference: <"Where a CDM record is anchored on the ledger: the transaction, its block, the contract and log, and the hash of the CDM content recorded there.">
+enum LedgerTransactionStatusEnum: <"How far a ledger transaction has got.">
+    Mined <"Included in a block that can still be replaced.">
+    Final <"Included in a block that cannot be replaced (on QBFT, as soon as it is mined).">
+    Reverted <"Executed and reverted: it changed nothing on the ledger.">
+
+enum AnchoredRecordEnum: <"The kind of CDM record an anchor is for, which also fixes the instruction that is hashed.">
+    MarginCallStep <"A margin call step; the hashed document is its MarginCallInstruction.">
+    Enforcement <"An enforcement; the hashed document is its EnforcementInstruction.">
+    Substitution <"A substitution step; the hashed document is its SubstitutionInstruction.">
+
+enum AnchorStatusEnum: <"Whether a CDM record and the ledger agree.">
+    Missing <"No anchor: the ledger has not recorded the record's hash.">
+    Pending <"Anchored, but fewer final transactions than the record implies.">
+    Complete <"Every transaction the record implies is final and none is reverted.">
+    Failed <"A transaction of the record was reverted.">
+
+type LedgerTransaction: <"One contract event (log) of a ledger transaction, as both parties read it from the chain.">
     network LedgerNetwork (1..1)
     contractAddress string (1..1)
     transactionHash string (1..1)
     blockNumber int (1..1)
     blockTimestamp zonedDateTime (0..1)
     logIndex int (0..1)
-    eventName string (0..1) <"The contract event, for example 'CallIssued' or 'Enforced'.">
-    contentHash string (0..1) <"The hash of the CDM content recorded on-chain (in the prototype, cdmHash: keccak256 of the CDM JSON).">
+    eventName string (0..1) <"The contract event, for example 'CallIssued', 'Pledged' or 'Enforced'.">
+    recordedHash string (0..1) <"The CDM document hash the contract event carries (cdmHash in the prototype), if it carries one.">
+    status LedgerTransactionStatusEnum (1..1)
 
     condition NonNegativeBlock:
         blockNumber >= 0
+
+type LedgerAnchor: <"Where the ledger records one CDM record: the hash of the record's instruction and the transactions that carry it or move collateral in the same transaction. Append-only; built from chain data with Create_LedgerAnchor.">
+    [rootType]
+    recordKind AnchoredRecordEnum (1..1)
+    recordIdentifier string (1..1) <"The step identifier or the event identifier.">
+    documentHash string (1..1) <"keccak256 over the Rune JSON bytes of the record's instruction (Rune has no hash function; the caller computes it).">
+    transaction LedgerTransaction (1..*)
+
+    condition TransactionsCarryTheHash: <"A transaction that carries a hash carries this record's hash.">
+        (transaction filter t [ t -> recordedHash exists and t -> recordedHash <> documentHash ] then count) = 0
+
+type RecordKeeperConfirmation: <"The record keeper's confirmation that its record shows the transfer of a CDM record, for a registered or claim token. Provisional: what must be confirmed waits for task-sme-registered-asset-completion.">
+    recordKeeper LegalEntity (1..1)
+    asset Asset (1..1)
+    recordIdentifier string (1..1) <"The CDM record (step or event identifier) whose transfer is confirmed.">
+    confirmedAt zonedDateTime (1..1)
+    reference string (0..1) <"The record keeper's own reference.">

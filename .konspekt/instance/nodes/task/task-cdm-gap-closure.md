@@ -95,3 +95,7 @@ Progress 2026-11-04T02:21:16Z (G24/G25 review):
   [[nw-ledger-anchor-redesign]], work in [[task-g25-ledger-anchor-redesign]], in a separate session before the P2
   gaps. The completion rule for Registered and Claim assets goes to the SME
   ([[task-sme-registered-asset-completion]]).
+
+Progress 2026-11-04T02:39:30Z (G25 rework):
+- G25 reimplemented as append-only ledger anchors ([[task-g25-ledger-anchor-redesign]],
+  [[nw-ledger-anchor-implementation]]); closed (proposed, for review). Extension tests: 126 pass.

@@ -3,7 +3,7 @@ id: task-sme-registered-asset-completion
 type: task
 title: Confirm with a business SME what completes settlement and enforcement of registered and claim-based tokens
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 67989287b51231983b6e1159a2195a185f5d16b3

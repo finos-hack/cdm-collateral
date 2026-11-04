@@ -24,6 +24,13 @@
             <version>${cdm.version}</version>
         </dependency>
         <dependency>
+            <!-- keccak256 in LedgerTest, as the collateral service hashes CDM documents (G25) -->
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.78.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.11.4</version>

@@ -1,7 +1,7 @@
 ```yaml
 id: nw-ledger-anchor-redesign
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 67989287b51231983b6e1159a2195a185f5d16b3

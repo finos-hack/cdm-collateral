@@ -6,7 +6,6 @@ import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.legaldocumentation.csa.*
 import cdm.observable.asset.*
-import cdmx.collateral.ledger.*
 import cdmx.collateral.portfolio.*
 import cdmx.collateral.transfer.*
 
@@ -43,7 +42,6 @@ func Create_CollateralEnforcement: <"Enforcement by the secured party against th
         eventDate date (1..1)
         timestamp zonedDateTime (1..1)
         instruction EnforcementInstruction (1..1)
-        ledgerReference LedgerReference (0..1) <"The ledger transaction that records the step, if any (G25).">
     output:
         enforcement CollateralEnforcement (1..1)
 
@@ -109,7 +107,6 @@ func Create_CollateralEnforcement: <"Enforcement by the secured party against th
                 legalAgreement: portfolio -> legalAgreement
             },
             transfer: taken extract Create_CollateralTransfer(item, pledgor, securedParty, eventDate),
-            ledgerReference: ledgerReference,
             ...
         }
     set enforcement -> eventQualifier:

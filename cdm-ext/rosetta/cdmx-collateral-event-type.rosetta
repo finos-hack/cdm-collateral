@@ -2,7 +2,6 @@ namespace cdmx.collateral.event : <"Local CDM extension: margin call lifecycle e
 version "${project.version}"
 
 import cdm.event.common.*
-import cdmx.collateral.ledger.*
 import cdmx.collateral.margincall.*
 
 type CollateralEvent: <"One applied margin call step as an event.">
@@ -15,7 +14,6 @@ type CollateralEvent: <"One applied margin call step as an event.">
     after MarginCallState (1..1)
     eventQualifier string (0..1) <"Result of the qualification functions (Qualify_*), as in CDM's BusinessEvent.">
     transfer TransferState (0..*) <"The collateral movements a settlement step records, one per position.">
-    ledgerReference LedgerReference (0..1) <"The ledger transaction that records this (G25).">
 
     condition TransfersOnlyOnSettlement: <"Only a settlement step moves collateral.">
         if transfer exists
