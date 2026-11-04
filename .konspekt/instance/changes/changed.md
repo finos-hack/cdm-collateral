@@ -561,3 +561,8 @@ excluded.
 | task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | cdm-ext/rosetta/cdmx-collateral-enforcement-type.rosetta | 2026-11-03T23:08:40Z |
 | task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | cdm-ext/src/test/java/cdmx/EnforcementTest.java | 2026-11-03T23:08:40Z |
 | task-cdm-gap-closure | e00ca27850d692c5d1493e78412bb62d0ae23510 | docs/cdm-development/gap-register.md | 2026-11-03T23:08:40Z |
+| task-cdm-gap-closure | e7d16782e84a0db904b7866a2722d758d72327b2 | cdm-ext/README.md | 2026-11-03T23:59:58Z |
+| task-cdm-gap-closure | e7d16782e84a0db904b7866a2722d758d72327b2 | cdm-ext/rosetta/cdmx-collateral-substitution-func.rosetta | 2026-11-03T23:59:58Z |
+| task-cdm-gap-closure | e7d16782e84a0db904b7866a2722d758d72327b2 | cdm-ext/rosetta/cdmx-collateral-substitution-type.rosetta | 2026-11-03T23:59:58Z |
+| task-cdm-gap-closure | e7d16782e84a0db904b7866a2722d758d72327b2 | cdm-ext/src/test/java/cdmx/SubstitutionTest.java | 2026-11-03T23:59:58Z |
+| task-cdm-gap-closure | e7d16782e84a0db904b7866a2722d758d72327b2 | docs/cdm-development/gap-register.md | 2026-11-03T23:59:58Z |

@@ -70,3 +70,11 @@ Progress 2026-11-03T23:08:40Z (G14):
   `EnforcementEventOccurred`, `Qualify_CollateralEnforced` ([[nw-enforcement-event-by-election]]). The realised value
   feeds `CloseOutNetting` (G15).
 - Extension tests: 89 pass; the collateral service builds against the new jar.
+
+Progress 2026-11-03T23:59:58Z (G16):
+- G14 enforcement note accepted; PR #19 merged. The Enforcement Event reading goes to the SME:
+  [[task-sme-enforcement-event-definition]].
+- G16 partial (proposed, for review): `cdmx.collateral.substitution` `Create_CollateralSubstitution`,
+  `SubstitutionNeedsConsent`, `Qualify_CollateralSubstituted` replacing CDM's `Qualify_Substitution` for CSA
+  collateral ([[nw-substitution-csa-lifecycle]]). Open: triparty agent (T8) and CCP (C18) substitution.
+- Extension tests: 99 pass; the collateral service builds against the new jar.

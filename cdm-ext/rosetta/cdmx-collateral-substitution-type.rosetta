@@ -1,0 +1,66 @@
+namespace cdmx.collateral.substitution : <"Local CDM extension: substitution of posted collateral under an ISDA CSA (gap G16). CDM 7.7.0 has the CSA elections (Substitution, SubstitutionPartyElection) but its substitution function (Create_SubstitutionPrimitiveInstruction) is for repo and securities lending only (condition SecurityFinance), and the event is qualified as a Renegotiation (D5).">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+enum SubstitutionStatusEnum: <"State of a substitution.">
+    Requested <"The pledgor has given notice; waiting for the secured party's consent where consent is needed, otherwise for settlement.">
+    Consented <"The secured party consented.">
+    Refused <"The secured party refused consent; nothing moves.">
+    Settled <"The substitute was delivered and the original collateral returned.">
+
+type SubstitutionRequest: <"The pledgor's notice of substitution (ISDA CSA Paragraph 4(d)(i)): the posted items to be returned and the substitute credit support offered for them.">
+    substitutionIdentifier string (1..1)
+    pledgorRole CounterpartyRoleEnum (1..1) <"The pledgor's role in the CSA, to find its Substitution election.">
+    originalCollateral CollateralPosition (1..*) <"The posted items the pledgor asks to have returned.">
+    originalValue Money (1..1) <"Value after haircuts of the original items.">
+    substituteCollateral CollateralPosition (1..*) <"The substitute credit support.">
+    substituteValue Money (1..1) <"Value after haircuts of the substitute.">
+
+    condition SameCurrency: <"Both values are in the same currency.">
+        originalValue -> unit -> currency = substituteValue -> unit -> currency
+
+type SubstitutionConsentInstruction: <"The secured party's consent or refusal, where the pledgor's Substitution election needs consent (Paragraph 13 (f)(ii)).">
+    substitutionIdentifier string (1..1)
+    consent boolean (1..1)
+    reason string (0..1) <"Why consent was refused.">
+
+type SettleSubstitutionInstruction: <"The substitute is delivered and the original items are returned (Paragraph 4(d)(ii)).">
+    substitutionIdentifier string (1..1)
+
+type SubstitutionInstruction: <"Exactly one substitution step.">
+    request SubstitutionRequest (0..1)
+    consent SubstitutionConsentInstruction (0..1)
+    settle SettleSubstitutionInstruction (0..1)
+
+    condition OneStep:
+        one-of
+
+type SubstitutionState: <"Cumulative record of one substitution.">
+    [rootType]
+    request SubstitutionRequest (1..1)
+    status SubstitutionStatusEnum (1..1)
+    consentRequired boolean (1..1) <"From the pledgor's SubstitutionPartyElection -> needsConsent; false when not elected.">
+    refusalReason string (0..1)
+    substitutionDate date (0..1) <"When the substitution settled.">
+
+    condition DateOnSettlement: <"Only a settled substitution has a Substitution Date.">
+        if substitutionDate exists then status = SubstitutionStatusEnum -> Settled
+
+type CollateralSubstitution: <"One substitution step as an event: the substitution before and after, the collateral portfolio before and after, and on settlement the transfers both ways.">
+    [rootType]
+    eventIdentifier string (1..1)
+    eventDate date (1..1) <"For a settlement, also the transfers' settlement date.">
+    timestamp zonedDateTime (1..1) <"When the step took effect, for example the ledger block time.">
+    instruction SubstitutionInstruction (1..1)
+    before SubstitutionState (0..1) <"Absent for the request.">
+    after SubstitutionState (1..1)
+    portfolioBefore CollateralPortfolio (1..1)
+    portfolioAfter CollateralPortfolio (1..1) <"Changed only by a settlement.">
+    transfer TransferState (0..*) <"On settlement: the substitute, pledgor to secured party, then the original items, secured party to pledgor.">
+    eventQualifier string (0..1) <"SubstitutionRequested, SubstitutionConsented, SubstitutionRefused or CollateralSubstituted.">
+
+    condition TransfersOnlyOnSettlement: <"Only a settlement moves collateral.">
+        if transfer exists then instruction -> settle exists
