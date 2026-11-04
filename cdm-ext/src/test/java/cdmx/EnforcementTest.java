@@ -71,7 +71,7 @@ class EnforcementTest {
     }
 
     private CollateralEnforcement run(SecurityAgreementElections elections, EnforcementInstruction instruction) {
-        return enforce.evaluate(held(), elections, "E-1", ENFORCED, T, instruction, null);
+        return enforce.evaluate(held(), elections, "E-1", ENFORCED, T, instruction);
     }
 
     @Test

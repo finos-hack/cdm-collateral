@@ -1,7 +1,8 @@
-namespace cdmx.collateral.ledger : <"Local CDM extension: lookups between CDM assets and tokens (G24), and anchoring CDM records to ledger transactions (G25).">
+namespace cdmx.collateral.ledger : <"Local CDM extension: lookups between CDM assets and tokens (G24), and ledger anchors for CDM records with their completion checks (G25).">
 version "${project.version}"
 
 import cdm.base.staticdata.asset.common.*
+import cdmx.collateral.margincall.*
 
 func TokenForAsset: <"The token representing a CDM asset on a network, from a list of known tokens.">
     inputs:
@@ -33,12 +34,92 @@ func AssetForToken: <"The CDM asset a token contract on a network represents, fr
             then first
             -> asset
 
-func ContentAnchored: <"Whether the ledger record carries the hash of the CDM content, computed by the caller (Rune has no hash function).">
+func Create_LedgerAnchor: <"Builds the anchor of a CDM record from the contract events read from the chain: the events that carry the record's hash, and the events without a hash in the same transactions (for example the token transfers). Both parties read the same events, so they build the same anchor.">
     inputs:
-        reference LedgerReference (1..1)
-        contentHash string (1..1)
+        recordKind AnchoredRecordEnum (1..1)
+        recordIdentifier string (1..1)
+        documentHash string (1..1) <"keccak256 over the Rune JSON bytes of the record's instruction.">
+        observed LedgerTransaction (0..*) <"Contract events in chain order (block, then log index).">
     output:
-        anchored boolean (1..1)
+        anchor LedgerAnchor (1..1)
 
-    set anchored:
-        reference -> contentHash exists and reference -> contentHash = contentHash
+    alias hashed: observed filter item -> recordedHash = documentHash
+
+    condition HashOnChain: <"The ledger records the record's hash.">
+        observed filter item -> recordedHash = documentHash then exists
+
+    set anchor:
+        LedgerAnchor {
+            recordKind: recordKind,
+            recordIdentifier: recordIdentifier,
+            documentHash: documentHash,
+            transaction: observed
+                filter item -> recordedHash = documentHash
+                    or (item -> recordedHash is absent and (hashed extract item -> transactionHash) contains item -> transactionHash)
+        }
+
+func AnchorFor: <"The anchor of a CDM record, from a list of anchors.">
+    inputs:
+        anchors LedgerAnchor (0..*)
+        recordKind AnchoredRecordEnum (1..1)
+        recordIdentifier string (1..1)
+    output:
+        anchor LedgerAnchor (0..1)
+
+    condition OneAnchorPerRecord: <"A record has at most one anchor.">
+        (anchors filter item -> recordKind = recordKind and item -> recordIdentifier = recordIdentifier then count) <= 1
+
+    set anchor:
+        anchors filter item -> recordKind = recordKind and item -> recordIdentifier = recordIdentifier then first
+
+func AnchorStatus: <"Whether a record and the ledger agree: Failed if any transaction was reverted, Complete once the record's transactions are all final, Pending before that, Missing without an anchor.">
+    inputs:
+        anchor LedgerAnchor (0..1)
+        expectedTransactions int (1..1) <"How many ledger transactions the record implies; one for a margin call step.">
+    output:
+        status AnchorStatusEnum (1..1)
+
+    condition AtLeastOne:
+        expectedTransactions >= 1
+
+    set status:
+        if anchor is absent then AnchorStatusEnum -> Missing
+        else if (anchor -> transaction filter item -> status = LedgerTransactionStatusEnum -> Reverted then exists)
+        then AnchorStatusEnum -> Failed
+        else if (anchor -> transaction filter item -> status = LedgerTransactionStatusEnum -> Final
+                then extract item -> transactionHash then distinct then count) >= expectedTransactions
+            and (anchor -> transaction filter item -> status <> LedgerTransactionStatusEnum -> Final then count) = 0
+        then AnchorStatusEnum -> Complete
+        else AnchorStatusEnum -> Pending
+
+func MarginCallStepAnchorStatus: <"Whether an applied margin call step and the ledger agree. The step is one transaction.">
+    inputs:
+        state MarginCallState (1..1)
+        stepIdentifier string (1..1)
+        anchors LedgerAnchor (0..*)
+    output:
+        status AnchorStatusEnum (1..1)
+
+    condition StepApplied: <"The step is one the call has applied.">
+        (state -> stepRecord filter item -> identifier = stepIdentifier then count) = 1
+
+    set status:
+        AnchorStatus(AnchorFor(anchors, AnchoredRecordEnum -> MarginCallStep, stepIdentifier), 1)
+
+func TransferComplete: <"Whether the transfer of a tokenized asset under a CDM record is complete. For a Bearer token the final ledger transactions are enough; for a Registered or Claim token the record keeper also confirms its record (provisional rule, pending task-sme-registered-asset-completion).">
+    inputs:
+        token TokenizedAsset (1..1)
+        recordIdentifier string (1..1)
+        anchorStatus AnchorStatusEnum (1..1) <"From AnchorStatus for the record.">
+        confirmations RecordKeeperConfirmation (0..*)
+    output:
+        complete boolean (1..1)
+
+    set complete:
+        anchorStatus = AnchorStatusEnum -> Complete
+            and (token -> authoritativeRecord = AuthoritativeRecordEnum -> Bearer
+                or (confirmations
+                    filter item -> recordKeeper -> name = token -> recordKeeper -> name
+                        and item -> asset = token -> asset
+                        and item -> recordIdentifier = recordIdentifier
+                    then exists))

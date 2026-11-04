@@ -1,38 +1,50 @@
 package cdmx;
 
 import cdm.base.staticdata.asset.common.Asset;
-import cdmx.collateral.enforcement.CollateralEnforcement;
-import cdmx.collateral.enforcement.functions.Create_CollateralEnforcement;
+import cdm.base.staticdata.party.LegalEntity;
 import cdmx.collateral.event.CollateralEvent;
-import cdmx.collateral.event.functions.AnchorCollateralEvent;
-import cdmx.collateral.ledger.LedgerReference;
+import cdmx.collateral.ledger.AnchorStatusEnum;
+import cdmx.collateral.ledger.AnchoredRecordEnum;
+import cdmx.collateral.ledger.LedgerAnchor;
+import cdmx.collateral.ledger.LedgerTransaction;
+import cdmx.collateral.ledger.RecordKeeperConfirmation;
 import cdmx.collateral.ledger.TokenizedAsset;
+import cdmx.collateral.ledger.functions.AnchorFor;
+import cdmx.collateral.ledger.functions.AnchorStatus;
 import cdmx.collateral.ledger.functions.AssetForToken;
-import cdmx.collateral.ledger.functions.ContentAnchored;
+import cdmx.collateral.ledger.functions.Create_LedgerAnchor;
+import cdmx.collateral.ledger.functions.MarginCallStepAnchorStatus;
 import cdmx.collateral.ledger.functions.TokenForAsset;
-import cdmx.collateral.margincall.MarginCallStepRecord;
-import cdmx.collateral.margincall.functions.AnchorMarginCallStep;
-import com.rosetta.model.lib.records.Date;
+import cdmx.collateral.ledger.functions.TransferComplete;
+import cdmx.collateral.margincall.MarginCallInstruction;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static cdmx.Cdm.*;
 import static cdmx.Data.*;
-import static cdmx.EnforcementTest.held;
 import static cdmx.EnforcementTest.imDefault;
 import static cdmx.PortfolioTest.delivered;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Gaps G24 (tokenized asset identity) and G25 (references from CDM records to the ledger), on the prototype's Besu
- *  network (chain id 1337). Addresses, hashes and the DTI are invented. */
+/** Gaps G24 (tokenized asset identity) and G25 (ledger anchors, nw-ledger-anchor-redesign), on the prototype's Besu
+ *  network (chain id 1337, QBFT). Addresses, transaction hashes and the DTI are invented; document hashes are
+ *  keccak256 over the Rune JSON, as the collateral service computes cdmHash. */
 class LedgerTest {
     private static final String TUST = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
     private static final String TMMF = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
-    private static final String HASH = "0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658";
+    private static final String CONTROL = "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0";
+    private static final String TX_A = "0x" + "aa".repeat(32);
+    private static final String TX_B = "0x" + "bb".repeat(32);
+    private static final String TX_C = "0x" + "cc".repeat(32);
+    private static final String KEEPER = "Transfer Agent Ltd";
 
     static Map<String, Object> besu() {
         return o("name", "besu-prototype", "platform", "Hyperledger Besu", "chainId", 1337);
@@ -41,7 +53,7 @@ class LedgerTest {
     static Map<String, Object> tokenDoc(String isin, String contract, String record) {
         Map<String, Object> t = o("asset", security(isin), "network", besu(), "tokenContract", contract,
             "tokenStandard", "ERC20", "decimals", 0, "authoritativeRecord", record);
-        if (!"Bearer".equals(record)) t.put("recordKeeper", o("name", o("@data", "Transfer Agent Ltd")));
+        if (!"Bearer".equals(record)) t.put("recordKeeper", o("name", o("@data", KEEPER)));
         return t;
     }
 
@@ -52,9 +64,35 @@ class LedgerTest {
         return List.of(load(TokenizedAsset.class, tust), load(TokenizedAsset.class, tokenDoc("XS0000TMMF01", TMMF, "Registered")));
     }
 
-    static LedgerReference ref(String event, Number block) {
-        return load(LedgerReference.class, o("network", besu(), "contractAddress", TUST, "transactionHash",
-            "0x" + "ab".repeat(32), "blockNumber", block, "eventName", event, "contentHash", HASH));
+    static String keccak(String json) {
+        return "0x" + Hex.toHexString(new Keccak.Digest256().digest(json.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    /** One contract event as a party reads it from the chain; recordedHash is null for events that carry none. */
+    static LedgerTransaction log(String tx, int logIndex, String contract, String event, String recordedHash, String status) {
+        Map<String, Object> d = o("network", besu(), "contractAddress", contract, "transactionHash", tx,
+            "blockNumber", 42, "logIndex", logIndex, "eventName", event, "status", status);
+        if (recordedHash != null) d.put("recordedHash", recordedHash);
+        return load(LedgerTransaction.class, d);
+    }
+
+    private static String stepHash(CollateralEvent e) {
+        return keccak(toJson(e.getInstruction()));
+    }
+
+    /** The settlement step's events in chain order: tUST moves and CallSettled carries the hash in transaction A;
+     *  transactions B and C belong to other records. */
+    private static List<LedgerTransaction> chain(String hash, String status) {
+        return List.of(
+            log(TX_B, 0, CONTROL, "CallIssued", "0x" + "01".repeat(32), status),
+            log(TX_A, 0, TUST, "Transfer", null, status),
+            log(TX_A, 1, CONTROL, "CallSettled", hash, status),
+            log(TX_C, 0, TUST, "Transfer", null, status));
+    }
+
+    private static LedgerAnchor anchor(CollateralEvent e, String status) {
+        return fn(Create_LedgerAnchor.class).evaluate(AnchoredRecordEnum.MARGIN_CALL_STEP, e.getEventIdentifier(),
+            stepHash(e), chain(stepHash(e), status));
     }
 
     private static Asset asset(String isin) {
@@ -100,46 +138,123 @@ class LedgerTest {
         assertTrue(failedText(load(TokenizedAsset.class, doc)).contains("OtherStandardNamed"));
     }
 
-    // G25
+    // G25: the hashed document
 
     @Test
-    void aMarginCallEventIsAnchoredOnTheEventAndItsStep() {
+    void theInstructionHashIsStableAcrossARuneJsonRoundTrip() throws Exception {
+        String json = toJson(delivered().getInstruction());
+        String again = toJson(JSON.readValue(json, MarginCallInstruction.class));
+        assertEquals(json, again);
+        assertEquals(keccak(json), keccak(again));
+        assertTrue(keccak(json).matches("0x[0-9a-f]{64}"));
+    }
+
+    // G25: anchors
+
+    @Test
+    void aStepIsAnchoredFromTheChain() {
         CollateralEvent settled = delivered();
-        CollateralEvent anchored = fn(AnchorCollateralEvent.class).evaluate(settled, ref("CallSettled", 42));
-        assertEquals("CallSettled", anchored.getLedgerReference().getEventName());
-        List<? extends MarginCallStepRecord> steps = anchored.getAfter().getStepRecord();
-        MarginCallStepRecord last = steps.get(steps.size() - 1);
-        assertEquals(settled.getEventIdentifier(), last.getIdentifier());
-        assertEquals(42, last.getLedgerReference().getBlockNumber());
-        assertNull(steps.get(0).getLedgerReference());
-        assertEquals(settled.getAfter().getStatus(), anchored.getAfter().getStatus());
-        assertEquals(settled.getTransfer(), anchored.getTransfer());
-        assertEquals("", failedText(anchored));
+        LedgerAnchor a = anchor(settled, "Final");
+        assertEquals(stepHash(settled), a.getDocumentHash());
+        assertEquals(List.of("Transfer", "CallSettled"), a.getTransaction().stream().map(LedgerTransaction::getEventName).toList());
+        assertTrue(a.getTransaction().stream().allMatch(t -> TX_A.equals(t.getTransactionHash())));
+        assertEquals("", failedText(a));
     }
 
     @Test
-    void onlyAnAppliedStepIsAnchored() {
-        assertTrue(rejected(() -> fn(AnchorMarginCallStep.class).evaluate(delivered().getAfter(), "S-99", ref("CallSettled", 42)))
+    void bothPartiesBuildTheSameAnchorAndTheEventIsUnchanged() {
+        CollateralEvent settled = delivered();
+        String eventJson = toJson(settled);
+        LedgerAnchor mine = anchor(settled, "Final");
+        LedgerAnchor theirs = anchor(delivered(), "Final");
+        assertEquals(mine, theirs);
+        assertEquals(toJson(mine), toJson(theirs));
+        assertEquals(eventJson, toJson(settled));
+    }
+
+    @Test
+    void noAnchorWithoutTheHashOnChain() {
+        CollateralEvent settled = delivered();
+        assertTrue(rejected(() -> fn(Create_LedgerAnchor.class).evaluate(AnchoredRecordEnum.MARGIN_CALL_STEP,
+            settled.getEventIdentifier(), stepHash(settled), chain("0x" + "02".repeat(32), "Final")))
+            .contains("records the record's hash"));
+    }
+
+    @Test
+    void anAnchorHoldsOnlyItsOwnHash() {
+        LedgerAnchor a = anchor(delivered(), "Final");
+        List<LedgerTransaction> mixed = new ArrayList<>(a.getTransaction());
+        mixed.add(log(TX_B, 0, CONTROL, "CallIssued", "0x" + "01".repeat(32), "Final"));
+        assertTrue(failedText(a.toBuilder().setTransaction(mixed).build()).contains("TransactionsCarryTheHash"));
+    }
+
+    @Test
+    void theStatusFollowsTheTransactions() {
+        AnchorStatus status = fn(AnchorStatus.class);
+        CollateralEvent settled = delivered();
+        assertEquals(AnchorStatusEnum.MISSING, status.evaluate(null, 1));
+        assertEquals(AnchorStatusEnum.PENDING, status.evaluate(anchor(settled, "Mined"), 1));
+        assertEquals(AnchorStatusEnum.COMPLETE, status.evaluate(anchor(settled, "Final"), 1));
+        assertEquals(AnchorStatusEnum.FAILED, status.evaluate(anchor(settled, "Reverted"), 1));
+        assertEquals(AnchorStatusEnum.PENDING, status.evaluate(anchor(settled, "Final"), 2));
+    }
+
+    @Test
+    void aMarginCallStepAndTheLedgerAgree() {
+        CollateralEvent settled = delivered();
+        List<LedgerAnchor> anchors = List.of(anchor(settled, "Final"));
+        assertEquals(AnchorStatusEnum.COMPLETE,
+            fn(MarginCallStepAnchorStatus.class).evaluate(settled.getAfter(), settled.getEventIdentifier(), anchors));
+        String earlier = settled.getAfter().getStepRecord().get(0).getIdentifier();
+        assertEquals(AnchorStatusEnum.MISSING, fn(MarginCallStepAnchorStatus.class).evaluate(settled.getAfter(), earlier, anchors));
+        assertTrue(rejected(() -> fn(MarginCallStepAnchorStatus.class).evaluate(settled.getAfter(), "S-99", anchors))
             .contains("one the call has applied"));
     }
 
     @Test
-    void theContentHashIsCheckedAgainstTheLedger() {
-        assertTrue(fn(ContentAnchored.class).evaluate(ref("CallIssued", 7), HASH));
-        assertFalse(fn(ContentAnchored.class).evaluate(ref("CallIssued", 7), "0x" + "00".repeat(32)));
+    void anEnforcementIsAnchoredOnItsInstruction() {
+        String hash = keccak(toJson(imDefault()));
+        LedgerAnchor a = fn(Create_LedgerAnchor.class).evaluate(AnchoredRecordEnum.ENFORCEMENT, "E-1", hash,
+            List.of(log(TX_C, 0, TUST, "Transfer", null, "Final"), log(TX_C, 1, CONTROL, "Enforced", hash, "Final")));
+        assertEquals(a, fn(AnchorFor.class).evaluate(List.of(a), AnchoredRecordEnum.ENFORCEMENT, "E-1"));
+        assertNull(fn(AnchorFor.class).evaluate(List.of(a), AnchoredRecordEnum.SUBSTITUTION, "E-1"));
+        assertTrue(rejected(() -> fn(AnchorFor.class).evaluate(List.of(a, a), AnchoredRecordEnum.ENFORCEMENT, "E-1"))
+            .contains("at most one anchor"));
+    }
+
+    // G24 with G25: completion by authoritative record (provisional, task-sme-registered-asset-completion)
+
+    private static RecordKeeperConfirmation confirmation(String keeper, String isin, String record) {
+        return RecordKeeperConfirmation.builder()
+            .setRecordKeeper(load(LegalEntity.class, o("name", o("@data", keeper))))
+            .setAsset(asset(isin))
+            .setRecordIdentifier(record)
+            .setConfirmedAt(ZonedDateTime.of(2026, 10, 21, 10, 0, 0, 0, ZoneOffset.UTC))
+            .build();
     }
 
     @Test
-    void anEnforcementCarriesItsLedgerReference() {
-        CollateralEnforcement e = fn(Create_CollateralEnforcement.class).evaluate(held(), null, "E-1", Date.of(2026, 10, 21),
-            ZonedDateTime.of(2026, 10, 21, 9, 0, 0, 0, ZoneOffset.UTC), imDefault(), ref("Enforced", 120));
-        assertEquals("Enforced", e.getLedgerReference().getEventName());
-        assertEquals("", failedText(e));
+    void aBearerTransferNeedsOnlyTheLedger() {
+        TransferComplete complete = fn(TransferComplete.class);
+        TokenizedAsset tust = tokens().get(0);
+        assertTrue(complete.evaluate(tust, "S-5", AnchorStatusEnum.COMPLETE, List.of()));
+        assertFalse(complete.evaluate(tust, "S-5", AnchorStatusEnum.PENDING, List.of()));
     }
 
     @Test
-    void anAnchoredEventSurvivesARuneJsonRoundTrip() throws Exception {
-        CollateralEvent anchored = fn(AnchorCollateralEvent.class).evaluate(delivered(), ref("CallSettled", 42));
-        assertEquals(anchored, JSON.readValue(toJson(anchored), CollateralEvent.class));
+    void aRegisteredTransferNeedsTheRecordKeeper() {
+        TransferComplete complete = fn(TransferComplete.class);
+        TokenizedAsset tmmf = tokens().get(1);
+        assertFalse(complete.evaluate(tmmf, "S-5", AnchorStatusEnum.COMPLETE, List.of()));
+        assertTrue(complete.evaluate(tmmf, "S-5", AnchorStatusEnum.COMPLETE, List.of(confirmation(KEEPER, "XS0000TMMF01", "S-5"))));
+        assertFalse(complete.evaluate(tmmf, "S-5", AnchorStatusEnum.COMPLETE, List.of(confirmation("Another Registrar", "XS0000TMMF01", "S-5"))));
+        assertFalse(complete.evaluate(tmmf, "S-5", AnchorStatusEnum.COMPLETE, List.of(confirmation(KEEPER, "XS0000TMMF01", "S-4"))));
+        assertFalse(complete.evaluate(tmmf, "S-5", AnchorStatusEnum.FAILED, List.of(confirmation(KEEPER, "XS0000TMMF01", "S-5"))));
+    }
+
+    @Test
+    void anAnchorSurvivesARuneJsonRoundTrip() throws Exception {
+        LedgerAnchor a = anchor(delivered(), "Final");
+        assertEquals(a, JSON.readValue(toJson(a), LedgerAnchor.class));
     }
 }

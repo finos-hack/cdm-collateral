@@ -4,7 +4,6 @@ version "${project.version}"
 import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.observable.asset.*
-import cdmx.collateral.ledger.*
 
 enum EventOfDefaultEnum: <"The Events of Default of the ISDA 2002 Master Agreement, Section 5(a).">
     FailureToPayOrDeliver <"Section 5(a)(i).">
@@ -49,4 +48,3 @@ type CollateralEnforcement: <"One enforcement as an event: the instruction, the 
     after CollateralPortfolio (1..1)
     transfer TransferState (1..*) <"One per position taken, pledgor to secured party.">
     eventQualifier string (0..1) <"CollateralEnforced (Qualify_CollateralEnforced).">
-    ledgerReference LedgerReference (0..1) <"The ledger transaction that records this (G25).">

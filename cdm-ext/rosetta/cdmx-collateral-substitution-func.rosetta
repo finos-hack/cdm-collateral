@@ -6,7 +6,6 @@ import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.legaldocumentation.csa.*
 import cdm.observable.asset.*
-import cdmx.collateral.ledger.*
 import cdmx.collateral.portfolio.*
 import cdmx.collateral.transfer.*
 
@@ -74,7 +73,6 @@ func Create_CollateralSubstitution: <"Applies one substitution step and records 
         eventDate date (1..1)
         timestamp zonedDateTime (1..1)
         instruction SubstitutionInstruction (1..1)
-        ledgerReference LedgerReference (0..1) <"The ledger transaction that records the step, if any (G25).">
     output:
         event CollateralSubstitution (1..1)
 
@@ -151,7 +149,6 @@ func Create_CollateralSubstitution: <"Applies one substitution step and records 
                         legalAgreement: portfolio -> legalAgreement
                     }
                 else portfolio,
-            ledgerReference: ledgerReference,
             ...
         }
     // Each direction has its own extract (see Create_CollateralEvent).

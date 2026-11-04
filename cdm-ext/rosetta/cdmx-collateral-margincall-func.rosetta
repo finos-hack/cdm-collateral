@@ -3,7 +3,6 @@ version "${project.version}"
 
 import cdm.event.common.*
 import cdm.observable.asset.*
-import cdmx.collateral.ledger.*
 import cdmx.collateral.proposal.*
 
 func StepOf: <"Which lifecycle step an instruction performs.">
@@ -47,8 +46,7 @@ func Create_MarginCallState: <"Applies one step to a margin call and returns the
     alias record: MarginCallStepRecord {
             identifier: stepIdentifier,
             timestamp: timestamp,
-            step: StepOf(instruction),
-            ...
+            step: StepOf(instruction)
         }
 
     condition ExpectedStep: <"Only the step the call waits for can be applied.">
@@ -230,36 +228,3 @@ func ApplySettlement: <"Settles the agreed amount: delivery against the accepted
             stepRecord: state -> stepRecord
         }
     add next -> stepRecord: record
-
-func AnchorMarginCallStep: <"Links one applied step of a margin call to the ledger transaction that records it (G25).">
-    inputs:
-        state MarginCallState (1..1)
-        stepIdentifier string (1..1)
-        ledgerReference LedgerReference (1..1)
-    output:
-        anchored MarginCallState (1..1)
-
-    condition StepApplied: <"The step is one the call has applied.">
-        (state -> stepRecord filter identifier = stepIdentifier then count) = 1
-
-    set anchored:
-        MarginCallState {
-            issuance: state -> issuance,
-            direction: state -> direction,
-            status: state -> status,
-            response: state -> response,
-            agreedAmount: state -> agreedAmount,
-            disputedAmount: state -> disputedAmount,
-            proposal: state -> proposal,
-            settlement: state -> settlement,
-            stepRecord: state -> stepRecord
-                extract
-                    if identifier = stepIdentifier
-                    then MarginCallStepRecord {
-                            identifier: identifier,
-                            timestamp: timestamp,
-                            step: step,
-                            ledgerReference: ledgerReference
-                        }
-                    else item
-        }
