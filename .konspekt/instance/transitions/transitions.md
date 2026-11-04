@@ -550,3 +550,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-g25redesign-implementation | review |  | proposed | 2026-11-04T02:39:30Z |  |  |
 | noteworthy:nw-ledger-anchor-implementation | review | proposed | accepted | 2026-11-04T02:46:59Z |  | denisurusov |
 | edge:e-note-g25redesign-implementation | review | proposed | accepted | 2026-11-04T02:46:59Z |  | denisurusov |
+| node:task-g25-ledger-anchor-redesign | status | open | resolved | 2026-11-04T03:11:51Z | 30d8b3afe7270e41926a27c489077bee1626627e | denisurusov |
