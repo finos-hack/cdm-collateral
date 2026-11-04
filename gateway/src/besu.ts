@@ -3,7 +3,7 @@
 // QBFT gives immediate per-block finality, so a mined receipt is final (concept-asr-settlement-finality): each write
 // waits for its receipt before returning. The chain charges no gas (genesis zeroBaseFee, --min-gas-price=0), so every
 // write is a legacy transaction with gasPrice 0.
-import { createPublicClient, createWalletClient, defineChain, http, webSocket, getAddress, parseAbi } from "viem";
+import { createPublicClient, createWalletClient, defineChain, http, webSocket, getAddress, parseAbi, toEventSelector } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { loadNodeKey, loadRegistry } from "./registry.ts";
@@ -43,6 +43,38 @@ export interface LedgerEvent {
   block: string;
   logIndex: number;
 }
+
+/** One lifecycle step as callSteps reads it from the chain, with what the CDM LedgerAnchor needs (G25). */
+export interface CallStep {
+  step: string;
+  event: string;
+  cdmHash: Hex;
+  block: string;
+  logIndex: number;
+  txHash: Hex;
+  contract: string;
+  network: { name: string; platform: string; chainId: number };
+  status: "Final" | "Reverted";
+  /** The other events of the same transaction; `event` is absent for an event this gateway does not know. */
+  txLogs: { contract: string; logIndex: number; event?: string }[];
+}
+
+// Names of the events a step transaction can carry, by topic 0, for the txLogs of callSteps.
+const EVENT_BY_TOPIC = new Map<string, string>(
+  [
+    "CallIssued(bytes32,address,address,uint8,uint256,bytes32)",
+    "CallAnswered(bytes32,uint8,uint256,uint256,bytes32)",
+    "CollateralProposed(bytes32,uint256,bytes32)",
+    "ProposalDecided(bytes32,uint256,bool,bytes32)",
+    "CallSettled(bytes32,bool,bytes32)",
+    "Pledged(bytes32,address,address,uint256)",
+    "Transferred(bytes32,address,address,uint256)",
+    "Returned(bytes32,address,address)",
+    "Enforced(bytes32,address,address)",
+    "Transfer(address,address,uint256)",
+    "Approval(address,address,uint256)",
+  ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
+);
 
 export interface AssetArg {
   token: Address;
@@ -131,7 +163,7 @@ export interface LedgerAdapter {
   settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[] }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
-  callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]>;
+  callSteps(callId: Hex): Promise<CallStep[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -319,25 +351,42 @@ export class BesuAdapter implements LedgerAdapter {
 
   // The lifecycle steps of one call, in chain order, each with its CDM hash — the authoritative ordered commitment
   // list for the MarginCallState fold (wp-adr-cdm-payload-carrier). Read from the step events (callId is indexed).
-  async callSteps(callId: Hex): Promise<{ step: string; cdmHash: Hex; block: string; logIndex: number }[]> {
+  // Each step also carries what the service needs to build its CDM LedgerAnchor (G25, nw-ledger-anchor-redesign): the
+  // network, the transaction, the emitting contract, the transaction status, and the other events of the same
+  // transaction (for a settlement, the token Transfer and Pledged or Transferred logs). QBFT finalises at mining
+  // (concept-asr-settlement-finality), so a mined, successful transaction is Final.
+  async callSteps(callId: Hex): Promise<CallStep[]> {
     const specs = STEP_EVENTS;
     const latest = await this.pub.getBlockNumber();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
-    const rows: { step: string; cdmHash: Hex; block: string; logIndex: number; bn: bigint }[] = [];
+    const rows: (Omit<CallStep, "status" | "txLogs" | "network"> & { bn: bigint })[] = [];
     for (const s of specs) {
       const event = marginCallAbi.find((x: any) => x.type === "event" && x.name === s.name) as never;
       for (let from = start; from <= latest; from += WINDOW) {
         const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
         const logs = await this.pub.getLogs({ address: this.reg.contracts.marginCall, event, args: { callId } as never, fromBlock: from, toBlock: to });
         for (const log of logs) {
-          const a = (log as any).args as { cdmHash?: Hex };
-          rows.push({ step: s.step, cdmHash: a.cdmHash as Hex, block: (log as any).blockNumber.toString(), logIndex: Number((log as any).logIndex), bn: (log as any).blockNumber });
+          const l = log as any;
+          rows.push({
+            step: s.step, event: s.name, cdmHash: (l.args as { cdmHash?: Hex }).cdmHash as Hex,
+            block: l.blockNumber.toString(), logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex,
+            contract: (l.address as string).toLowerCase(), bn: l.blockNumber,
+          });
         }
       }
     }
     rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
-    return rows.map(({ bn, ...r }) => r);
+    const network = { name: "besu-prototype", platform: "Hyperledger Besu", chainId: this.reg.chainId };
+    const receipts = new Map<Hex, Awaited<ReturnType<PublicClient["getTransactionReceipt"]>>>();
+    for (const r of rows) if (!receipts.has(r.txHash)) receipts.set(r.txHash, await this.pub.getTransactionReceipt({ hash: r.txHash }));
+    return rows.map(({ bn, ...r }) => {
+      const receipt = receipts.get(r.txHash)!;
+      const txLogs = receipt.logs
+        .filter((x) => Number(x.logIndex) !== r.logIndex)
+        .map((x) => ({ contract: x.address.toLowerCase(), logIndex: Number(x.logIndex), event: EVENT_BY_TOPIC.get((x.topics[0] ?? "").toLowerCase()) }));
+      return { ...r, network, status: receipt.status === "success" ? "Final" : "Reverted", txLogs };
+    });
   }
 
   // Live subscription to the margin call lifecycle events over the WebSocket RPC (eth_subscribe). Each matching log is

@@ -2,7 +2,7 @@
 id: task-g25-ledger-anchor-redesign
 type: task
 title: Rework G25 as append-only ledger anchors derived from the chain
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: cdm-development
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-04T02:21:16Z
   confidence: 0.8
 createdAt: 2026-11-04T02:21:16Z
-updatedAt: 2026-11-04T02:21:16Z
+updatedAt: 2026-11-04T03:11:51Z
 ```
 # Task: rework G25 (ledger anchors)
 
@@ -26,3 +26,12 @@ Progress 2026-11-04T02:39:30Z:
   `RecordKeeperConfirmation` added ([[nw-ledger-anchor-implementation]]). Extension tests: 126 pass; the collateral
   service builds. G25 is closed (proposed, for review) in the gap register.
 - Open: the collateral service does not build anchors from the gateway's events yet.
+
+Progress 2026-11-04T03:04:25Z:
+- Service part done in commit 00fd02b: the gateway's `/calls/:id/steps` carries each step's transaction, contract,
+  network, status and the other events of its transaction; the collateral service builds each folded step's
+  `LedgerAnchor` (`CdmAnchors`) and `cdm-state` reports `anchors`, `anchored` and `anchorHash`. `CdmAnchorsTest`
+  (5) passes; all six live specs pass locally (2026-11-04) and require both parties' anchors to be Complete and equal.
+- Nothing in the task's scope is left open.
+
+Resolved by the project owner on 2026-11-04T03:11:51Z.

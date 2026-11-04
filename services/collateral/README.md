@@ -32,6 +32,13 @@ equals the on-chain hash, then folds the ordered `MarginCallInstruction` steps i
 chain-ordered documents through the same function, they derive an identical `MarginCallState` — verified by comparing
 the keccak `stateHash` across both services. See `GET /api/v1/calls/{id}/cdm-state`.
 
+The fold also builds each step's CDM `LedgerAnchor` (gap G25, `nw-ledger-anchor-redesign`; `CdmAnchors`): from the
+same `steps` response, each step's transaction, contract, status and the other events of its transaction
+(`Create_LedgerAnchor`), with the document hash computed from the payload. The anchors are kept apart from the
+`MarginCallState`, so `stateHash` does not change. `cdm-state` returns each step's anchor status
+(`MarginCallStepAnchorStatus`: Missing, Pending, Complete or Failed), `anchored` (every step Complete) and the keccak
+`anchorHash` of the anchors, which is equal on both services.
+
 ## Flows
 
 The service drives the full ISDA CSA lifecycle for both initial and variation margin:

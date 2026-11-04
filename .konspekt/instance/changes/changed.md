@@ -601,3 +601,13 @@ excluded.
 | task-g25-ledger-anchor-redesign | 27348a5abaa79b2a595c6190cda070853961de41 | cdm-ext/src/test/java/cdmx/LedgerTest.java | 2026-11-04T02:39:30Z |
 | task-g25-ledger-anchor-redesign | 27348a5abaa79b2a595c6190cda070853961de41 | cdm-ext/src/test/java/cdmx/SubstitutionTest.java | 2026-11-04T02:39:30Z |
 | task-g25-ledger-anchor-redesign | 27348a5abaa79b2a595c6190cda070853961de41 | docs/cdm-development/gap-register.md | 2026-11-04T02:39:30Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | console/e2e/live.spec.ts | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | docs/cdm-development/gap-register.md | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | docs/runbook-e2e.md | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | gateway/README.md | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | gateway/src/besu.ts | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | services/collateral/README.md | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | services/collateral/pom.xml | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | services/collateral/src/main/java/collateral/App.java | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | services/collateral/src/main/java/collateral/CdmAnchors.java | 2026-11-04T03:04:25Z |
+| task-g25-ledger-anchor-redesign | 00fd02b3ec13fca558266457f4762c832a0af4fb | services/collateral/src/test/java/collateral/CdmAnchorsTest.java | 2026-11-04T03:04:25Z |

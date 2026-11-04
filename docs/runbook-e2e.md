@@ -270,7 +270,7 @@ curl -s localhost:8001/api/v1/state                       # calls as party A see
 curl -s localhost:8201/ledger/v1/calls/<callId>           # raw on-chain call state
 curl -s localhost:8201/ledger/v1/calls/<callId>/steps     # lifecycle steps in chain order with their cdmHash
 curl -s localhost:8001/api/v1/calls/<callId>/cdm-state    # party A's folded CDM MarginCallState
-curl -s localhost:8002/api/v1/calls/<callId>/cdm-state    # party B's fold; its stateHash must equal party A's
+curl -s localhost:8002/api/v1/calls/<callId>/cdm-state    # party B's fold; its stateHash and anchorHash must equal party A's
 ```
 
 ## 6. Logs and state on disk

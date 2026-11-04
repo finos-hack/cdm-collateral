@@ -1,7 +1,7 @@
 ```yaml
 id: nw-ledger-anchor-implementation
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 39f7c17397e2c6cac4dc35d76c7f3571c6c65217

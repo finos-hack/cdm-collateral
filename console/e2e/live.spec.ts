@@ -94,16 +94,25 @@ const pledgedOf = async (gw: string, token: string, p: Parties) =>
 // "converged" is per party: every step its own node shows has been folded. A node a block behind can report converged
 // on fewer steps, so poll until both parties fold the same number of steps to the same hash.
 async function expectConvergedCdmState(callId: string) {
-  type Fold = { converged: boolean; totalSteps: number; stateHash: string };
+  // G25: each folded step also has a ledger anchor built from the chain events; both parties build the same anchors
+  // (anchorHash) and every step's anchor is Complete (nw-ledger-anchor-redesign).
+  type Fold = {
+    converged: boolean; totalSteps: number; stateHash: string;
+    anchored?: boolean; anchorHash?: string; anchors?: { identifier: string; status: string }[]; anchorError?: string;
+  };
   let a: Fold | undefined, b: Fold | undefined;
   await expect
     .poll(async () => {
       a = await call<Fold>(`${SERVICE.A}/calls/${callId}/cdm-state`);
       b = await call<Fold>(`${SERVICE.B}/calls/${callId}/cdm-state`);
-      return a.converged && b.converged && a.totalSteps === b.totalSteps && a.stateHash === b.stateHash;
+      return a.converged && b.converged && a.totalSteps === b.totalSteps && a.stateHash === b.stateHash
+        && !!a.anchored && !!b.anchored && a.anchorHash === b.anchorHash;
     }, { timeout: 60_000 })
     .toBe(true);
   expect(a!.stateHash).toMatch(/^0x[0-9a-f]{64}$/i);
+  expect(a!.anchorError).toBeUndefined();
+  expect(a!.anchors!.length).toBe(a!.totalSteps);
+  expect(a!.anchors!.every((s) => s.status === "Complete")).toBe(true);
 }
 
 let stackUp = false;

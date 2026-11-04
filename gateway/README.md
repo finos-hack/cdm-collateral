@@ -42,7 +42,7 @@ NODE=bank-b PORT=8202 npm run serve
 | GET | `/defaults/:party` | default status on the oracle feed |
 | GET | `/party-calls?party=0x…` | calls whose `from` or `to` is this party (from `CallIssued` logs) |
 | GET | `/calls/:id` | on-chain call state |
-| GET | `/calls/:id/steps` | the call's lifecycle steps in chain order, each with its CDM hash (fold input) |
+| GET | `/calls/:id/steps` | the call's lifecycle steps in chain order, each with its CDM hash (fold input), and for its CDM ledger anchor (G25): transaction hash, contract, network, status (`Final` once mined on QBFT, or `Reverted`) and the other events of the same transaction (`txLogs`) |
 | GET | `/calls/:id/proposals/:pid/{state,assets}` | proposal state / proposed assets |
 | GET | `/pledged?pledgor&securedParty&token` | escrowed balance |
 | GET | `/balance?token&owner` | free token balance |
