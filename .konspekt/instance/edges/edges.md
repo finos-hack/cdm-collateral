@@ -365,6 +365,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-e2eflow-ciminutes | decomposes | node:goal-end-to-end-flow | node:task-ci-actions-minutes |  | accepted |
 | e-note-gapclosure-dispute | notes | node:task-cdm-gap-closure | noteworthy:nw-dispute-record-beside-call |  | proposed |
 | e-note-gapclosure-ledger | notes | node:task-cdm-gap-closure | noteworthy:nw-ledger-reference-and-token-identity |  | proposed |
-| e-note-adoption-crossmode | notes | node:goal-test-konspekt-adoption | noteworthy:nw-konspekt-cross-mode-portability |  | proposed |
-| e-dec-adoption-konspektindex | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-index-cross-mode-portability |  | proposed |
-| e-note-konspektindex-crossmode | notes | node:task-konspekt-index-cross-mode-portability | noteworthy:nw-konspekt-cross-mode-portability |  | proposed |
+| e-note-adoption-crossmode | notes | node:goal-test-konspekt-adoption | noteworthy:nw-konspekt-cross-mode-portability |  | accepted |
+| e-dec-adoption-konspektindex | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-index-cross-mode-portability |  | accepted |
+| e-note-konspektindex-crossmode | notes | node:task-konspekt-index-cross-mode-portability | noteworthy:nw-konspekt-cross-mode-portability |  | accepted |

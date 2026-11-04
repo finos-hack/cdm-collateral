@@ -1,7 +1,7 @@
 ```yaml
 id: nw-konspekt-cross-mode-portability
 kind: fact
-review: proposed
+review: accepted
 provenance:
   conversationId: konspekt-cross-mode-portability
   sourceRef: d88914e2fa4bc037b42cbbff68355e13232ed16d
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-04T02:34:39Z
   confidence: 0.85
 createdAt: 2026-11-04T02:34:39Z
-updatedAt: 2026-11-04T02:34:39Z
+updatedAt: 2026-11-04T02:46:43Z
 ```
 # Fact: konspekt state in the repository carries project context across Claude modes, not only across vendors
 
