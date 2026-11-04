@@ -1,7 +1,7 @@
 ```yaml
 id: nw-dispute-record-beside-call
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: cdm-development
   sourceRef: 1196485feb767867744d28d3eebfaaac64e6fc01
