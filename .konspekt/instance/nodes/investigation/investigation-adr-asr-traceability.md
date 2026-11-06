@@ -24,8 +24,10 @@ Scope, as set by the project owner (2026-11-06):
 - In this instance, propose `drives` edges from the ASR behind each ADR that has one.
 - In the konspekt standard, list the ADRs no ASR drives in the view, and warn in conformance on an ADR with no
   inbound `drives` edge. The owner classes the missing warning as a konspekt defect.
-- Once every ADR passes that check, build the `adrs` list in `architecture/generate_architecture.py` from the ADR
-  waypoints on disk in place of the hard-coded six.
+- Once every ADR passes that check, build the `adrs` list of `architecture/prototype.architecture.json` from the ADR
+  waypoints on disk in place of the hard-coded six. The owner then made the JSON the source and retired
+  `generate_architecture.py` (2026-11-06, source `78166fa…`, see `nw-architecture-json-is-source`); `architecture/sync_adrs.py`
+  refreshes only the `adrs` field.
 
 Proposed `drives` edges (each `review: proposed`; the basis is the maintainer's reading of the ADR body):
 

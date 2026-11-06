@@ -204,3 +204,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-callstate-reval | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-revaluation-outstanding-im-from-calls |  | proposed |
 | e-drv-callstate-subst | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-substitution-fold-portfolio |  | proposed |
 | e-drv-cdmdata-subst | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-substitution-fold-portfolio |  | proposed |
+| e-note-adrtrace-jsonsource | notes | node:investigation-adr-asr-traceability | noteworthy:nw-architecture-json-is-source |  | proposed |

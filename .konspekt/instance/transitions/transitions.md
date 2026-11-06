@@ -661,3 +661,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-callstate-reval | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
 | edge:e-drv-callstate-subst | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
 | edge:e-drv-cdmdata-subst | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| noteworthy:nw-architecture-json-is-source | review |  | proposed | 2026-11-06T21:49:38Z |  |  |
+| edge:e-note-adrtrace-jsonsource | review |  | proposed | 2026-11-06T21:49:38Z |  |  |
