@@ -205,5 +205,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-callstate-subst | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-substitution-fold-portfolio |  | accepted |
 | e-drv-cdmdata-subst | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-substitution-fold-portfolio |  | accepted |
 | e-note-adrtrace-jsonsource | notes | node:investigation-adr-asr-traceability | noteworthy:nw-architecture-json-is-source |  | accepted |
-| e-drv-feedscope-oracleprices | drives | concept:concept-asr-onchain-feed-scope | waypoint:wp-adr-oracle-prices-on-request-ratings-offchain |  | proposed |
-| e-drv-agreementfidelity-scenariogrid | drives | concept:concept-asr-agreement-type-fidelity | waypoint:wp-adr-ux-scenario-grid |  | proposed |
+| e-drv-feedscope-oracleprices | drives | concept:concept-asr-onchain-feed-scope | waypoint:wp-adr-oracle-prices-on-request-ratings-offchain |  | accepted |
+| e-drv-agreementfidelity-scenariogrid | drives | concept:concept-asr-agreement-type-fidelity | waypoint:wp-adr-ux-scenario-grid |  | accepted |
