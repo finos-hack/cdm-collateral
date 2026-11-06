@@ -756,3 +756,4 @@ excluded.
 | task-csa-call-replacement | 1de903f6322b3db7866009f3f74e26b376511a5c | services/collateral/src/main/java/collateral/App.java | 2026-11-06T21:50:24Z |
 | task-csa-call-replacement | 1de903f6322b3db7866009f3f74e26b376511a5c | services/collateral/src/main/java/collateral/Cdm.java | 2026-11-06T21:50:24Z |
 | task-csa-call-replacement | 1de903f6322b3db7866009f3f74e26b376511a5c | services/collateral/src/test/java/collateral/CdmReplacementTest.java | 2026-11-06T21:50:24Z |
+| task-csa-call-replacement | 72bc9e1865b008bfc380f7185875f6c47132ab9a | architecture/prototype.architecture.json | 2026-11-06T22:59:21Z |
