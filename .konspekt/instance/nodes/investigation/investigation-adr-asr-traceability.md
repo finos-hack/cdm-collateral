@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:34:07Z
   confidence: 0.8
 createdAt: 2026-11-06T21:34:07Z
-updatedAt: 2026-11-06T21:34:07Z
+updatedAt: 2026-11-06T21:48:08Z
 ```
 # Investigation: make every ADR traceable to the ASRs that drive it
 
@@ -51,11 +51,10 @@ Proposed `drives` edges (each `review: proposed`; the basis is the maintainer's 
 | `e-drv-callstate-subst` | `concept-asr-onchain-call-state` | `wp-adr-substitution-fold-portfolio` | each substitution step is anchored by its hash on-chain |
 | `e-drv-cdmdata-subst` | `concept-asr-cdm-data-layer` | `wp-adr-substitution-fold-portfolio` | each step is a CDM SubstitutionInstruction folded through cdm-ext |
 
-No recorded ASR matches these ADRs, so they stay without a `drives` edge and the new check warns on them:
-- `wp-adr-ci-runs-live-specs`
-- `wp-adr-cloud-dev-environment`
-- `wp-adr-console-same-origin-proxy`
-- `wp-adr-oracle-prices-on-request-ratings-offchain`
-- `wp-adr-ux-scenario-grid`
+No recorded ASR matches five ADRs. The project owner chose (2026-11-06, source `829d8c3…`) to remove
+`subtype: adr` from the three tooling decisions, which stay `kind: decision` waypoints under their existing ids:
+`wp-adr-ci-runs-live-specs`, `wp-adr-cloud-dev-environment` and `wp-adr-console-same-origin-proxy`. The other two,
+`wp-adr-oracle-prices-on-request-ratings-offchain` and `wp-adr-ux-scenario-grid`, remain ADRs without a `drives` edge;
+their disposition is open.
 
 `wp-adr-live-stack-local-ui-driven` is superseded by `wp-adr-ci-runs-live-specs` and is exempt from the check.

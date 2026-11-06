@@ -1,7 +1,6 @@
 ```yaml
 id: wp-adr-ci-runs-live-specs
 kind: decision
-subtype: adr
 timestamp: 2026-11-03T17:05:51Z
 review: accepted
 provenance:
@@ -10,7 +9,7 @@ provenance:
   contentHash: db38e95ee8c10dee9650ada2a61e3c4905116a3a
   timestamp: 2026-11-03T17:05:51Z
 createdAt: 2026-11-03T17:05:51Z
-updatedAt: 2026-11-03T17:05:51Z
+updatedAt: 2026-11-06T21:48:08Z
 ```
 # ADR: CI runs the Playwright live specs for every CALM flow against the live stack
 

@@ -1,7 +1,6 @@
 ```yaml
 id: wp-adr-console-same-origin-proxy
 kind: decision
-subtype: adr
 timestamp: 2026-11-02T23:15:24Z
 review: accepted
 provenance:
@@ -11,7 +10,7 @@ provenance:
   timestamp: 2026-11-02T23:15:24Z
   confidence: 0.7
 createdAt: 2026-11-02T23:15:24Z
-updatedAt: 2026-11-03T03:05:59Z
+updatedAt: 2026-11-06T21:48:08Z
 ```
 # ADR: The console reaches the collateral services through a same-origin proxy in the dev container
 
