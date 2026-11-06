@@ -1401,6 +1401,58 @@
           "description": "Each gateway pushes the substitution events to its own workflow service; each service folds the three CDM steps through Create_CollateralSubstitution with the escrow it reads at the block before each step, and both reach the same state."
         }
       ]
+    },
+    {
+      "unique-id": "flow-interest-on-cash",
+      "name": "Interest on cash collateral",
+      "description": "The secured party pays the pledgor interest on its cash collateral (tUSD) for one Interest Period under the CSA's interest elections (cdm-ext Create_CollateralInterestStatement on CDM CollateralInterestParameters, gap G17). Interim reduction: every day of the period has the cash now in escrow and one observed rate (task-sme-interest-daily-balances). The CDM CollateralInterestStatement is carried off-chain and anchored by its hash; a negative amount is paid by the pledgor.",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 1,
+          "description": "Secured party enters the Interest Period and the observed rate and states the interest in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the period and rate to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 3,
+          "description": "Service reads the pledgor's tUSD in escrow through its gateway."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 4,
+          "description": "Service builds the CDM CollateralInterestStatement (daily accrual at ACT/360, rounded to whole USD, Transfer handling) and publishes it to the payload store, readable by both parties."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 5,
+          "description": "Service submits stateInterest with the transfer amount and the statement hash; the gateway approves the control contract for the tUSD and signs with the secured party key."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 6,
+          "description": "Contract checks the cash token is eligible with no haircut and, for a positive amount, transfers the tUSD from the secured party to the pledgor."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 7,
+          "description": "Each gateway pushes the InterestStated and InterestSettled events to its own workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 8,
+          "description": "The pledgor's service fetches the statement by its on-chain hash, recomputes it from its days and records it."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 9,
+          "description": "Both consoles list the statement as paid and verified; for a negative amount the pledgor pays it from its console (payInterest)."
+        }
+      ]
     }
   ]
 }

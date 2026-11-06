@@ -100,7 +100,11 @@ on-chain hash and recomputes it, `verified`), `GET /substitutions`, `POST /subst
 `substitute`; pledgor), `POST /substitutions/{id}/decision` (body `consent`, `reason`; secured party),
 `POST /substitutions/{id}/settle` (pledgor) and `GET /substitutions/{id}/cdm-state` (the steps folded through cdm-ext
 `Create_CollateralSubstitution` with the escrow read at the block before each step and kept in the store, since the
-node serves state for recent blocks only), and
+node serves state for recent blocks only), `GET /interest`, `POST /interest` (body `periodStart`, `periodEnd`,
+`observedRatePct`; secured party: CDM `CollateralInterestStatement` from cdm-ext `Create_CollateralInterestStatement` on
+the pledgor's tUSD in escrow under the agreement's `CollateralInterestParameters` in `CdmInterest`, then `stateInterest`
+on-chain; the listing fetches each statement by its on-chain hash and recomputes it, `verified`),
+`POST /interest/{id}/pay` (pledgor, negative amount), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

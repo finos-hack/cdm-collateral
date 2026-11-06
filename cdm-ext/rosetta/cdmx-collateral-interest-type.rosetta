@@ -16,6 +16,7 @@ type CashCollateralDay: <"One calendar day of an Interest Period: the cash colla
 type InterestAccrualDay: <"The interest accrued on one day of an Interest Period.">
     date date (1..1)
     balance Money (1..1)
+    observedRate number (0..1) <"The rate observed for the day, as given; with the balance and the parameters it lets a reader recompute the statement.">
     rate number (1..1) <"The Interest Rate applied: the fixed rate, or the observed rate after floor, cap, spread and the negative interest election.">
     amount number (1..1) <"balance x rate x the day count fraction for one day; rounded when the rounding frequency is daily. Negative when the rate is negative.">
 

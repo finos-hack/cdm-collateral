@@ -60,6 +60,7 @@ func CollateralInterestAccrual: <"The interest accrued on one day: balance x Int
         InterestAccrualDay {
             date: day -> date,
             balance: day -> balance,
+            observedRate: day -> observedRate,
             rate: rate,
             amount:
                 if rounding exists and calculationParameters -> roundingFrequency = RoundingFrequencyEnum -> Daily

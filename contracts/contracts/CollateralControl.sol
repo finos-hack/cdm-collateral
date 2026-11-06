@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {MarginCall} from "./MarginCall.sol";
 import {OracleFeed} from "./OracleFeed.sol";
-import {CallKind, CallState, ProposalState, SubstitutionState, Asset, Call, Proposal, Substitution} from "./CollateralTypes.sol";
+import {CallKind, CallState, ProposalState, SubstitutionState, InterestState, Asset, Call, Proposal, Substitution, InterestStatement} from "./CollateralTypes.sol";
 
 /// @title Collateral control contract
 /// @notice Performs settlement against the state recorded in the margin call contract (control-to-margin-call) and
@@ -39,6 +39,8 @@ contract CollateralControl is ReentrancyGuard {
     event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash);
     event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash);
     event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash);
+    event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash);
+    event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount);
 
     // Close-outs on default, by id: the hash of the CDM CloseOutStatement (cdm-ext cdmx.collateral.closeout, G15).
     mapping(bytes32 => bytes32) public closeOutCdmHash;
@@ -47,6 +49,9 @@ contract CollateralControl is ReentrancyGuard {
     mapping(bytes32 => Substitution) private _subs;
     mapping(bytes32 => Asset[]) private _subOriginal;
     mapping(bytes32 => Asset[]) private _subSubstitute;
+
+    // Interest on cash collateral (flow-interest-on-cash, G17).
+    mapping(bytes32 => InterestStatement) private _interest;
 
     error NotDeployer();
     error WrongKind();
@@ -65,6 +70,9 @@ contract CollateralControl is ReentrancyGuard {
     error NoSuchSubstitution();
     error EmptySubstitution();
     error SubstituteBelowOriginal(uint256 substituteValue, uint256 originalValue);
+    error InterestExists();
+    error NoSuchInterest();
+    error NotCash(address token);
 
     constructor(MarginCall marginCall_, OracleFeed oracle_) {
         deployer = msg.sender;
@@ -279,6 +287,48 @@ contract CollateralControl is ReentrancyGuard {
     function getSubstitutionAssets(bytes32 substitutionId) external view returns (Asset[] memory original, Asset[] memory substitute) {
         _loadSub(substitutionId);
         return (_subOriginal[substitutionId], _subSubstitute[substitutionId]);
+    }
+
+    /// @notice The secured party (this key) states the Interest Amount on the pledgor's cash collateral for one
+    /// Interest Period (flow-interest-on-cash, G17) and, when it is positive, pays it to the pledgor in the same
+    /// transaction (ISDA CSA Interest Amount, Transfer handling). A negative amount (negative interest) is recorded and
+    /// paid by the pledgor with payInterest. `cashToken` must be eligible with no haircut (cash). `amount` is in units of
+    /// the cash token. `cdmHash` is the hash of the CDM CollateralInterestStatement (wp-adr-cdm-payload-carrier).
+    function stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash) external nonReentrant {
+        address securedParty = msg.sender;
+        if (_interest[interestId].state != InterestState.None || cdmHash == bytes32(0)) revert InterestExists();
+        if (pledgor == securedParty || pledgor == address(0)) revert WrongParty();
+        Eligibility memory e = eligibility[cashToken];
+        if (!e.eligible || e.haircutBps != 0) revert NotCash(cashToken);
+        InterestStatement storage s = _interest[interestId];
+        s.pledgor = pledgor;
+        s.securedParty = securedParty;
+        s.cashToken = cashToken;
+        s.amount = amount;
+        s.cdmHash = cdmHash;
+        s.state = amount < 0 ? InterestState.Stated : InterestState.Settled;
+        emit InterestStated(interestId, securedParty, pledgor, cashToken, amount, cdmHash);
+        if (amount >= 0) {
+            if (amount > 0) IERC20(cashToken).transferFrom(securedParty, pledgor, uint256(amount));
+            emit InterestSettled(interestId, securedParty, pledgor, uint256(amount));
+        }
+    }
+
+    /// @notice The pledgor (this key) pays a negative Interest Amount stated by the secured party.
+    function payInterest(bytes32 interestId) external nonReentrant {
+        InterestStatement storage s = _interest[interestId];
+        if (s.state == InterestState.None) revert NoSuchInterest();
+        if (s.state != InterestState.Stated) revert BadState();
+        if (msg.sender != s.pledgor) revert WrongParty();
+        s.state = InterestState.Settled;
+        uint256 amount = uint256(-s.amount);
+        IERC20(s.cashToken).transferFrom(s.pledgor, s.securedParty, amount);
+        emit InterestSettled(interestId, s.pledgor, s.securedParty, amount);
+    }
+
+    function getInterest(bytes32 interestId) external view returns (InterestStatement memory) {
+        if (_interest[interestId].state == InterestState.None) revert NoSuchInterest();
+        return _interest[interestId];
     }
 
     // --- views ---

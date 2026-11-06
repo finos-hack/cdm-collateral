@@ -65,10 +65,10 @@ const shortId = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
  * Setup for the return and enforcement specs: an IM call settled into escrow, driven through the same service API the
  * consoles call (the UI path of this flow is covered by the flow-im-margin-call-pledge spec). Returns the callId.
  */
-async function pledgeThroughServices(amountUsd: number, qty: number): Promise<string> {
+async function pledgeThroughServices(amountUsd: number, qty: number, token = "tUST"): Promise<string> {
   const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
   await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
-  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tUST", qty }] });
+  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token, qty }] });
   await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
   await call(`${SERVICE.A}/calls/${callId}/pledge`, "POST", { proposalId });
   return callId;
@@ -661,5 +661,75 @@ test("flow-substitution: pledgor requests -> secured party consents -> pledgor s
   await page.goto("/#/live/B");
   await expect(page.getByTestId(`substitution-${id}`).getByText("substituted on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
 
+  expect(errors).toEqual([]);
+});
+
+// --- flow-interest-on-cash ---
+// The secured party states the interest it owes on the pledgor's cash collateral for one Interest Period (cdm-ext
+// Create_CollateralInterestStatement, G17): every day of the period has the tUSD now in escrow and the one observed rate
+// entered in the console (interim reduction, task-sme-interest-daily-balances). The control contract pays a positive
+// amount from B to A in the same transaction; both services fetch the statement by its on-chain hash and recompute it.
+type Interest = {
+  interestId: string; amountUsd: string; state: string; cdmHash: string; verified?: boolean; error?: string;
+  days?: number; balanceUsd?: string; ratePct?: string; interestAmountUsd?: string; transferAmountUsd?: string;
+};
+
+test("flow-interest-on-cash: secured party states interest on cash collateral -> paid to the pledgor on-chain, statement verified", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUSD = p.tokens["tUSD"];
+  const cashUsd = 100_000 + (Date.now() % 9000) * 10;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: cash initial margin (tUSD, no haircut) in escrow from A (pledgor) with B (secured party).
+  await pledgeThroughServices(cashUsd, cashUsd, "tUSD");
+  await waitForSettledOnChain("IM", cashUsd);
+  const cash = Number(await pledgedOf(GATEWAY.B, tUSD, p)); // all tUSD A has in escrow with B, earlier runs included
+  const expected = Math.round((cash * 0.043 * 30) / 360); // 4.30%, 30 days, ACT/360, whole USD
+  const aFreeBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+  const bFreeBefore = await balanceOf(GATEWAY.B, tUSD, p.b);
+  const known = new Set((await call<Interest[]>(`${SERVICE.B}/interest`)).map((i) => i.interestId));
+
+  // 1-7. Secured party (BANK-B) enters the period and the observed rate and states the interest in its console.
+  await page.goto("/#/live/B");
+  const card = page.getByTestId("interest");
+  await card.getByLabel("Period start").fill("2026-11-01");
+  await card.getByLabel("Period end").fill("2026-12-01");
+  await card.getByLabel("Observed rate (%)").fill("4.3");
+  await expect(card.getByRole("button", { name: "State interest → A" })).toBeEnabled({ timeout: STEP_TIMEOUT });
+  await card.getByRole("button", { name: "State interest → A" }).click();
+
+  // 8-9. Both services list the statement, paid, with the same checked document.
+  let mine: Interest | undefined;
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => {
+        mine = (await call<Interest[]>(`${svc}/interest`)).find((i) => !known.has(i.interestId));
+        return mine?.verified && mine.state === "settled" ? true : (mine?.error ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  const fromB = (await call<Interest[]>(`${SERVICE.B}/interest`)).find((i) => i.interestId === mine!.interestId)!;
+  expect(mine!.cdmHash).toBe(fromB.cdmHash);
+  expect(mine!.days).toBe(30);
+  expect(mine!.balanceUsd).toBe(String(cash));
+  expect(mine!.ratePct).toBe("4.3");
+  expect(mine!.interestAmountUsd).toBe(String(expected));
+  expect(mine!.amountUsd).toBe(String(expected));
+
+  // On-chain: the Interest Amount moved from B to A; the cash collateral in escrow is unchanged.
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aFreeBefore + BigInt(expected));
+  expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bFreeBefore - BigInt(expected));
+  expect(Number(await pledgedOf(GATEWAY.A, tUSD, p))).toBe(cash);
+
+  // Both consoles show the statement as paid and verified.
+  for (const who of ["B", "A"] as const) {
+    await page.goto(`/#/live/${who}`);
+    const row = page.getByTestId(`interest-${mine!.interestId}`);
+    await expect(row.getByText("paid on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(row.getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  }
   expect(errors).toEqual([]);
 });

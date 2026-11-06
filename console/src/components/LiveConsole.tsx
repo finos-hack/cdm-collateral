@@ -6,7 +6,8 @@
 // also declare the pledgor's default and enforce against the pledged initial margin (flow-default-enforcement), or
 // close out the netting set and apply the pledged collateral to the Early Termination Amount (flow-close-out-netting).
 // The pledgor can ask to substitute pledged collateral, which the secured party consents to or refuses
-// (flow-substitution).
+// (flow-substitution). The secured party states the interest it owes on the pledgor's cash collateral
+// (flow-interest-on-cash); the pledgor pays a negative amount.
 import { useCallback, useEffect, useState } from "react";
 import {
   api,
@@ -14,6 +15,7 @@ import {
   type LiveCall,
   type LiveCloseOut,
   type LiveContext,
+  type LiveInterest,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -38,6 +40,10 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [closeOuts, setCloseOuts] = useState<LiveCloseOut[]>([]);
   const [subs, setSubs] = useState<LiveSubstitution[]>([]);
   const [closeOutUsd, setCloseOutUsd] = useState(1_000_000);
+  const [interest, setInterest] = useState<LiveInterest[]>([]);
+  const [periodStart, setPeriodStart] = useState("2026-11-01");
+  const [periodEnd, setPeriodEnd] = useState("2026-12-01");
+  const [ratePct, setRatePct] = useState(4.3);
 
   const refresh = useCallback(async () => {
     try {
@@ -47,6 +53,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       api.revaluation(party).then(setReval).catch(() => setReval(null));
       api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([]));
       api.substitutions(party).then(setSubs).catch(() => setSubs([]));
+      api.interest(party).then(setInterest).catch(() => setInterest([]));
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
     }
@@ -88,6 +95,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const isSecured = ctx.role === "Secured Party";
   const other = ctx.counterparty;
   const hasPledged = !!state?.balances.some((b) => Number(b.pledged) > 0);
+  const cashHeld = Number(state?.balances.find((b) => b.token === "tUSD")?.pledged ?? 0);
   const inDefault = (["A", "B"] as LiveParty[]).filter((p) => state?.defaults?.[p]);
 
   return (
@@ -224,6 +232,59 @@ export function LiveConsole({ party }: { party: LiveParty }) {
                   <td title={`on-chain, whole units: ${usd(o.appliedUsd)}`}>{o.collateralAppliedUsd ? usd(o.collateralAppliedUsd) : "—"}</td>
                   <td>{o.amountPayableUsd ? usd(o.amountPayableUsd) : "—"}</td>
                   <td>{o.verified ? <span className="ok">statement verified ✓</span> : <span className="bad">{o.error ?? "unverified"}</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {isSecured && (
+        <div className="card" data-testid="interest">
+          <h3>Interest on cash collateral</h3>
+          <div className="row">
+            <label>
+              Period start <input aria-label="Period start" type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+            </label>
+            <label>
+              Period end <input aria-label="Period end" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+            </label>
+            <label>
+              Rate (%) <input aria-label="Observed rate (%)" type="number" value={ratePct} step={0.05} onChange={(e) => setRatePct(Number(e.target.value))} />
+            </label>
+            <button disabled={busy || cashHeld === 0} onClick={() => run(() => api.stateInterest(party, periodStart, periodEnd, ratePct))}>
+              State interest → {other}
+            </button>
+          </div>
+          <div className="small">
+            Interest on the {cashHeld.toLocaleString("en-US")} tUSD {other} has in escrow, every day of the period at the observed
+            rate, ACT/360, rounded to whole USD. A positive amount is paid to {other} at once; {other} pays a negative one.
+          </div>
+        </div>
+      )}
+
+      {interest.length > 0 && (
+        <div className="card">
+          <h3>Interest statements</h3>
+          <table className="tbl">
+            <thead>
+              <tr><th>Interest</th><th>Period</th><th>Cash held</th><th>Rate</th><th>Interest Amount</th><th>State</th><th>CDM</th></tr>
+            </thead>
+            <tbody>
+              {interest.map((i) => (
+                <tr key={i.interestId} data-testid={`interest-${i.interestId}`}>
+                  <td className="mono">{short(i.interestId)}</td>
+                  <td>{i.periodStart ? `${i.periodStart} to ${i.periodEnd} (${i.days} days)` : "—"}</td>
+                  <td>{i.balanceUsd ? usd(i.balanceUsd) : "—"}</td>
+                  <td>{i.ratePct ? `${i.ratePct}%` : "—"}</td>
+                  <td>{usd(i.amountUsd)}</td>
+                  <td>
+                    {i.state === "settled" ? <span className="ok">paid on-chain ✓</span> : i.state}
+                    {i.state === "stated" && !isSecured && (
+                      <button disabled={busy} onClick={() => run(() => api.payInterest(party, i.interestId))}>Pay interest</button>
+                    )}
+                  </td>
+                  <td>{i.verified ? <span className="ok">statement verified ✓</span> : <span className="bad">{i.error ?? "unverified"}</span>}</td>
                 </tr>
               ))}
             </tbody>

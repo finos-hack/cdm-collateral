@@ -246,6 +246,12 @@ and the substitute in "Substitute pledged collateral" and clicks `Request substi
 `Refuse`), then A clicks `Settle substitution`; the substitute moves into escrow and the original items back to A. Both
 consoles show `substituted on-chain ✓` and the CDM qualifier `CollateralSubstituted`.
 
+Interest flow (`flow-interest-on-cash`): while A has tUSD in escrow, B enters the period dates and the observed rate
+in "Interest on cash collateral" and clicks `State interest → A`. B's service builds the CDM
+`CollateralInterestStatement` (every day of the period at the tUSD now in escrow, ACT/360, whole USD) and calls
+`stateInterest`; the contract pays the amount from B to A. Both consoles list the statement with `paid on-chain ✓` and
+`statement verified ✓`. For a negative rate the statement waits for A to click `Pay interest`.
+
 Revaluation flow (`flow-revaluation-top-up`): with IM in escrow, open the market operator console
 (`http://localhost:5173/#/live/operator`), enter a lower tUST price (for example 88.56) and click `Publish tUST`. The
 oracle publishes the price to the feed through gateway mkt. B's console then shows the "Revaluation" card: the
@@ -264,8 +270,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 ```
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
-`flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting` and
-`flow-substitution`. The return, default and revaluation
+`flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
+`flow-substitution` and `flow-interest-on-cash`. The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and
 serves it on 4173 itself (`console/playwright.config.ts`); it does not use the 5173 dev server, but it needs the

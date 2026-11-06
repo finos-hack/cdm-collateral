@@ -46,6 +46,10 @@ NODE=bank-b PORT=8202 npm run serve
 | GET | `/substitutions?party=0x…` | substitutions the party is in (from `SubstitutionRequested` logs) |
 | GET | `/substitutions/:id` | on-chain substitution state, original and substitute assets |
 | GET | `/substitutions/:id/steps` | the substitution's steps in chain order, each with its CDM hash, block and block time (fold input) |
+| POST | `/interest` | `{interestId, pledgor, cashToken, amount, cdmHash}`: state the Interest Amount on cash collateral; for a positive amount approve the cash token first, and the contract pays the pledgor (secured party key, `flow-interest-on-cash`) |
+| POST | `/interest/:id/pay` | approve and pay a negative Interest Amount (pledgor key) |
+| GET | `/interest?party=0x…` | interest statements the party is in (from `InterestStated` logs), with the current state |
+| GET | `/interest/:id` | on-chain interest statement: parties, cash token, amount, state, statement hash |
 | GET | `/escrow-at?pledgor&securedParty&block` | escrowed tokens and feed prices at the end of a block (the CDM portfolio before a substitution step) |
 | POST | `/oracle/defaults` | `{party, inDefault}` to the oracle feed; served only by the operator's gateway (`NODE=mkt`, publisher key) |
 | GET | `/defaults/:party` | default status on the oracle feed |
@@ -59,7 +63,7 @@ NODE=bank-b PORT=8202 npm run serve
 
 Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
 carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned`, `Enforced`,
-`ClosedOut` and `Substitution{Requested,Decided,Settled}` events of the collateral control contract and
-`DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId` or `substitutionId`, and/or `party`);
+`ClosedOut`, `Substitution{Requested,Decided,Settled}` and `Interest{Stated,Settled}` events of the collateral control contract and
+`DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId`, `substitutionId` or `interestId`, and/or `party`);
 the workflow service records the latter and relays everything to the console so state changes push instead of being
 polled.

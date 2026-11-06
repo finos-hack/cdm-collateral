@@ -70,6 +70,23 @@ enum SubstitutionState {
     Settled
 }
 
+enum InterestState {
+    None,
+    Stated, // negative amount, awaiting the pledgor's payment
+    Settled
+}
+
+/// Interest on cash collateral for one Interest Period (G17). amount > 0 is paid by the secured party to the pledgor,
+/// amount < 0 by the pledgor to the secured party; in units of the cash token.
+struct InterestStatement {
+    address pledgor;
+    address securedParty;
+    address cashToken;
+    int256 amount;
+    InterestState state;
+    bytes32 cdmHash; // hash of the CDM CollateralInterestStatement
+}
+
 struct Substitution {
     address pledgor;
     address securedParty;

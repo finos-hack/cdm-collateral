@@ -75,7 +75,7 @@ flowchart LR
 | Besu local network | network, one node per participant | Hyperledger Besu in Docker Compose, four QBFT validators | Local stand-in for a permissioned network such as DTCC's private Besu network; each participant's gateway uses its own node; deterministic finality; tolerates one node down |
 | Tokenized collateral | contract | Solidity, ERC-20 with allow-list | Test tokens for a tokenized MMF and a tokenized US Treasury, carrying ISIN/CUSIP and DTI |
 | End-to-end test harness | test only | Playwright *(assumption)* | Drives N console instances in parallel and asserts every CALM flow, including on-chain state |
-| Collateral control contract | contract | Solidity | Holds pledged IM: pledge (only the accepted assets of an agreed call, up to the agreed amount), return (against an agreed return call), enforce (secured party, after default), close out (secured party, after default: apply to the amount owed, return the surplus), substitute (pledgor requests and settles, secured party consents) |
+| Collateral control contract | contract | Solidity | Holds pledged IM: pledge (only the accepted assets of an agreed call, up to the agreed amount), return (against an agreed return call), enforce (secured party, after default), close out (secured party, after default: apply to the amount owed, return the surplus), substitute (pledgor requests and settles, secured party consents), interest on cash collateral (secured party states and pays; pledgor pays a negative amount) |
 | Margin call contract | contract | Solidity | Each call's state (issued, agreed, partially agreed, disputed, settled), collateral proposal state (proposed, accepted, rejected) with assets and quantities, amounts and deadline; every step's event carries the `cdmHash` of its CDM document (`CallIssued`, `CallAnswered`, `CollateralProposed`, `ProposalDecided`, `CallSettled`); each change signed by the acting party. Every node can read it (`nw-assumption-besu-visibility`) |
 | Oracle feed contract | contract | Solidity | Latest price / NAV, rating and default status; written only by the oracle publisher |
 
@@ -128,6 +128,9 @@ READMEs are the authority. Oracle service: design only.
 7. **Substitution** (`flow-substitution`, G16) — the pledgor requests a substitution of pledged items, the secured
    party consents, and settlement moves the substitute into escrow and the originals back in one transaction; both
    services fold the three CDM steps to the same state.
+8. **Interest on cash collateral** (`flow-interest-on-cash`, G17) — the secured party enters an Interest Period and
+   the observed rate; its service builds the CDM `CollateralInterestStatement` on the pledgor's tUSD in escrow, and the
+   control contract pays the Interest Amount to the pledgor (a negative amount is paid by the pledgor).
 
 ## Running N participants
 
