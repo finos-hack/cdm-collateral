@@ -3,7 +3,7 @@ id: investigation-adr-asr-traceability
 type: investigation
 title: Make every ADR traceable to the ASRs that drive it
 status: active
-review: proposed
+review: accepted
 provenance:
   conversationId: adr-asr-traceability
   sourceRef: 0953f7c00879df50b76efe55dc3ad8bdd95ed118
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:34:07Z
   confidence: 0.8
 createdAt: 2026-11-06T21:34:07Z
-updatedAt: 2026-11-06T21:48:08Z
+updatedAt: 2026-11-06T21:53:08Z
 ```
 # Investigation: make every ADR traceable to the ASRs that drive it
 
@@ -29,7 +29,7 @@ Scope, as set by the project owner (2026-11-06):
   `generate_architecture.py` (2026-11-06, source `78166fa…`, see `nw-architecture-json-is-source`); `architecture/sync_adrs.py`
   refreshes only the `adrs` field.
 
-Proposed `drives` edges (each `review: proposed`; the basis is the maintainer's reading of the ADR body):
+`drives` edges (accepted by the project owner 2026-11-06; the basis is the maintainer's reading of the ADR body):
 
 | edge | ASR | ADR | basis |
 |------|-----|-----|-------|

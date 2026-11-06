@@ -9,9 +9,9 @@ provenance:
   contentHash: 41af88afd7f6994b53858c3b109793a399df3d06
   timestamp: 2026-10-16T22:20:33Z
 createdAt: 2026-10-16T22:20:33Z
-updatedAt: 2026-11-06T21:48:08Z
+updatedAt: 2026-11-06T21:52:57Z
 ```
-# ADR: Development environment in a public cloud (GitHub Codespaces)
+# Decision: Development environment in a public cloud (GitHub Codespaces)
 
 The prototype's primary development and demo environment is a GitHub Codespace built from
 `.devcontainer/devcontainer.json`: Ubuntu 24.04, Docker-in-Docker, Python 3.12, Node.js LTS, 4 cores and 16 GB,
