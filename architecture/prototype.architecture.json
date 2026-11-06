@@ -37,6 +37,7 @@
     ".konspekt/instance/waypoints/wp-adr-oracle-prices-on-request-ratings-offchain.md",
     ".konspekt/instance/waypoints/wp-adr-per-participant-services.md",
     ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
+    ".konspekt/instance/waypoints/wp-adr-replacement-call-link.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-substitution-fold-portfolio.md",
     ".konspekt/instance/waypoints/wp-adr-ux-scenario-grid.md"
