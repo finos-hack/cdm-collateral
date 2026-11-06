@@ -162,6 +162,7 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "CallWithdrawn(bytes32,bytes32)",
     "CancellationRequested(bytes32,address,bytes32)",
     "CancellationDecided(bytes32,bool,bytes32)",
+    "CallReplaced(bytes32,bytes32)",
     "Pledged(bytes32,address,address,uint256)",
     "Transferred(bytes32,address,address,uint256)",
     "Returned(bytes32,address,address)",
@@ -199,6 +200,9 @@ export interface OnChainCall {
   settleCdmHash: Hex;
   /** The party whose cancellation request is pending; the zero address when none (task-csa-call-cancellation). */
   cancellationRequestedBy: Address;
+  /** The cancelled call this call replaces, and the call that replaces this one; zero when none (task-csa-call-replacement). */
+  replaces?: Hex;
+  replacementOf?: Hex;
 }
 
 const marginCallAbi = parseAbi([
@@ -211,6 +215,9 @@ const marginCallAbi = parseAbi([
   "function decideProposal(bytes32 callId, uint256 proposalId, bool accept, bytes32 cdmHash)",
   "function getCall(bytes32 callId) view returns (Call)",
   "function withdrawCall(bytes32 callId, bytes32 cdmHash)",
+  "function issueReplacementCall(bytes32 callId, bytes32 replacedCallId, uint8 kind, address to, uint256 amount, uint64 deadline, bytes32 cdmHash)",
+  "function replaces(bytes32 callId) view returns (bytes32)",
+  "function replacementOf(bytes32 callId) view returns (bytes32)",
   "function requestCancellation(bytes32 callId, bytes32 cdmHash)",
   "function decideCancellation(bytes32 callId, bool accept, bytes32 cdmHash)",
   "function getProposal(bytes32 callId, uint256 proposalId) view returns (Proposal)",
@@ -223,6 +230,7 @@ const marginCallAbi = parseAbi([
   "event CallWithdrawn(bytes32 indexed callId, bytes32 cdmHash)",
   "event CancellationRequested(bytes32 indexed callId, address indexed by, bytes32 cdmHash)",
   "event CancellationDecided(bytes32 indexed callId, bool accepted, bytes32 cdmHash)",
+  "event CallReplaced(bytes32 indexed replacedCallId, bytes32 indexed callId)",
 ]);
 
 const controlAbi = parseAbi([
@@ -290,6 +298,7 @@ export interface LedgerAdapter {
   propose(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint; proposalId: bigint }>;
   decide(callId: Hex, proposalId: bigint, accept: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   withdrawCall(callId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  issueReplacementCall(callId: Hex, replacedCallId: Hex, kind: number, to: Address, amount: bigint, deadline: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   requestCancellation(callId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   decideCancellation(callId: Hex, accept: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   approve(token: Address, spender: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
@@ -399,6 +408,11 @@ export class BesuAdapter implements LedgerAdapter {
    * requests and the other decides. */
   withdrawCall(callId: Hex, cdmHash: Hex) {
     return this.send(this.reg.contracts.marginCall, marginCallAbi, "withdrawCall", [callId, cdmHash]);
+  }
+
+  /** A call that replaces a cancelled call (task-csa-call-replacement): same caller, called party and kind. */
+  issueReplacementCall(callId: Hex, replacedCallId: Hex, kind: number, to: Address, amount: bigint, deadline: bigint, cdmHash: Hex) {
+    return this.send(this.reg.contracts.marginCall, marginCallAbi, "issueReplacementCall", [callId, replacedCallId, kind, to, amount, deadline, cdmHash]);
   }
 
   requestCancellation(callId: Hex, cdmHash: Hex) {
@@ -663,12 +677,10 @@ export class BesuAdapter implements LedgerAdapter {
   }
 
   async getCall(callId: Hex): Promise<OnChainCall> {
-    return (await this.pub.readContract({
-      address: this.reg.contracts.marginCall,
-      abi: marginCallAbi,
-      functionName: "getCall",
-      args: [callId],
-    })) as OnChainCall;
+    const read = (functionName: "getCall" | "replaces" | "replacementOf") =>
+      this.pub.readContract({ address: this.reg.contracts.marginCall, abi: marginCallAbi, functionName, args: [callId] });
+    const [call, replaces, replacementOf] = await Promise.all([read("getCall"), read("replaces"), read("replacementOf")]);
+    return { ...(call as OnChainCall), replaces: replaces as Hex, replacementOf: replacementOf as Hex };
   }
 
   // Discover the calls a party is involved in by scanning CallIssued logs (from and to are indexed). Used by each

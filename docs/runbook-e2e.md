@@ -259,6 +259,11 @@ settled (agreed, partly agreed or disputed), either console offers `Request canc
 `Refuse cancellation`. On acceptance a proposal not yet delivered is shown `cancelled` and no collateral moves. These
 rules are assumptions awaiting a business SME (`task-sme-call-cancellation-rules`).
 
+Replacement flow (`flow-call-replacement`): on a cancelled call it issued, the calling party's console offers a
+`Replacement amount (USD)` field and `Issue replacement call`. The new call keeps the cancelled call's kind and called
+party; the cancelled call then shows `replaced by <call>` and the new call `replaces <call>` in both consoles. A
+cancelled call takes one replacement.
+
 Amendment flow (`flow-agreement-amendment`): each console shows "Agreement terms": the pledgor's minimum transfer
 amount, the rounding and each token's haircut in the CDM schedule beside the haircut the contract applies, with
 `terms verified against the chain ✓`. B enters a new MTA (for example 400000) and a tMMF haircut in basis points and
@@ -286,8 +291,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
-`flow-substitution`, `flow-interest-on-cash`, `flow-call-cancellation` and `flow-agreement-amendment` (last; it
-restores the baseline terms).
+`flow-substitution`, `flow-interest-on-cash`, `flow-call-cancellation`, `flow-call-replacement` and
+`flow-agreement-amendment` (last; it restores the baseline terms).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

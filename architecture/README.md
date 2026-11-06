@@ -141,6 +141,11 @@ READMEs are the authority. Oracle service: design only.
     (ISO 20022 colr.005 and colr.006). An accepted cancellation voids a proposal not yet delivered; both services fold
     the cdm-ext steps to the `Cancelled` status. The rules are assumptions to be confirmed by a business SME
     (`task-sme-call-cancellation-rules`).
+11. **Replacement of a cancelled call** (`flow-call-replacement`) — the calling party issues a corrected call that
+    names the call it cancelled. The contract links the two calls both ways (one replacement per cancelled call, same
+    caller, called party and kind), and the cdm-ext IssueCall step carries `replacesCall`, checked by
+    `ReplacementAllowed` against the cancelled call's state. The rules are assumptions awaiting the SME (question 5 of
+    `task-sme-call-cancellation-rules`).
 
 ## Running N participants
 

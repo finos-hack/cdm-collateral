@@ -1547,6 +1547,43 @@
           "description": "Each gateway pushes CancellationDecided; both services fold the call's steps to the same MarginCallState (Cancelled, qualifier MarginCallCancelled) with a complete ledger anchor per step."
         }
       ]
+    },
+    {
+      "unique-id": "flow-call-replacement",
+      "name": "Replacement of a cancelled margin call",
+      "description": "The calling party issues a corrected call that replaces a call it cancelled (flow-call-cancellation). The new call keeps the cancelled call's kind and called party; its cdm-ext IssueCall step names the cancelled call (replacesCall), and the contract links the two calls both ways, one replacement per cancelled call. The rules are assumptions to be confirmed in task-sme-call-cancellation-rules (question 5).",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 1,
+          "description": "The calling party (here the secured party) enters the corrected amount on its cancelled call and issues the replacement in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the replacement (the cancelled call's id and the amount) to the party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 3,
+          "description": "Service reads the cancelled call from the chain: the party called it, it is cancelled and has no replacement yet."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 4,
+          "description": "Service builds the IssueCall step naming the cancelled call, checks it against the cancelled call's folded CDM state (ReplacementAllowed), and publishes it to the payload store."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 5,
+          "description": "Service submits issueReplacementCall with the step hash; the contract checks the cancelled call (same caller, called party and kind, no replacement yet), issues the new call and emits CallIssued and CallReplaced."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 6,
+          "description": "Each gateway pushes the new call; both consoles show the link (replaces / replaced by), and the called party answers the new call as any other."
+        }
+      ]
     }
   ]
 }

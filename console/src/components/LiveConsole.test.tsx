@@ -226,6 +226,24 @@ describe("flow-call-cancellation", () => {
     expect(within(row).queryByRole("button", { name: "Pledge accepted collateral" })).toBeNull();
   });
 
+  it("the calling party replaces a cancelled call with a corrected amount (task-csa-call-replacement)", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [call({ state: "cancelled" })], balances: balances("0") });
+    const row = await rowOf();
+    const amount = within(row).getByLabelText("Replacement amount (USD)");
+    await user.clear(amount);
+    await user.type(amount, "1800000");
+    await user.click(within(row).getByRole("button", { name: "Issue replacement call" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/calls", body: { replacesCallId: call({}).callId, amountUsd: 1800000, deadlineDays: 1 } }]));
+  });
+
+  it("a replaced call shows its replacement and offers no second one; the replacement names the call it replaces", async () => {
+    serve("B", { calls: [call({ state: "cancelled", replacedBy: "0xbeef000000000000000000000000000000000000000000000000000000000001" })], balances: balances("0") });
+    const row = await rowOf();
+    expect(within(row).getByText(/replaced by/)).toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: "Issue replacement call" })).toBeNull();
+  });
+
   it("a cancelled call shows the cancellation and no further action", async () => {
     serve("A", { calls: [call({ state: "cancelled" })], balances: balances("0") });
     const row = await rowOf();

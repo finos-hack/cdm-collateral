@@ -18,6 +18,9 @@ contract MarginCall {
     mapping(bytes32 => Call) private _calls;
     mapping(bytes32 => mapping(uint256 => Proposal)) private _proposals;
     mapping(bytes32 => mapping(uint256 => Asset[])) private _proposalAssets;
+    // Replacement links (task-csa-call-replacement): one replacement per cancelled call.
+    mapping(bytes32 => bytes32) public replacementOf; // cancelled call -> the call that replaces it
+    mapping(bytes32 => bytes32) public replaces; // replacing call -> the cancelled call
 
     event CallIssued(bytes32 indexed callId, address indexed from, address indexed to, CallKind kind, uint256 amount, bytes32 cdmHash);
     event CallAnswered(bytes32 indexed callId, ResponseType response, uint256 agreed, uint256 disputed, bytes32 cdmHash);
@@ -27,6 +30,7 @@ contract MarginCall {
     event CallWithdrawn(bytes32 indexed callId, bytes32 cdmHash);
     event CancellationRequested(bytes32 indexed callId, address indexed by, bytes32 cdmHash);
     event CancellationDecided(bytes32 indexed callId, bool accepted, bytes32 cdmHash);
+    event CallReplaced(bytes32 indexed replacedCallId, bytes32 indexed callId);
 
     error NotDeployer();
     error NotControl();
@@ -42,6 +46,7 @@ contract MarginCall {
     error NoSuchProposal();
     error CancellationPending();
     error NoCancellationRequest();
+    error NotReplaceable();
 
     constructor() {
         deployer = msg.sender;
@@ -61,6 +66,31 @@ contract MarginCall {
     // --- lifecycle, each guarded by the acting party's key ---
 
     function issueCall(bytes32 callId, CallKind kind, address to, uint256 amount, uint64 deadline, bytes32 cdmHash) external {
+        _issue(callId, kind, to, amount, deadline, cdmHash);
+    }
+
+    /// @notice Issue a call that replaces a cancelled call (task-csa-call-replacement), for example a corrected amount.
+    /// The cancelled call must have the same caller, called party and kind, and no replacement yet. Emits `CallIssued`
+    /// for the new call, then `CallReplaced`. The CDM IssueCall step names the replaced call (`replacesCall`).
+    function issueReplacementCall(
+        bytes32 callId,
+        bytes32 replacedCallId,
+        CallKind kind,
+        address to,
+        uint256 amount,
+        uint64 deadline,
+        bytes32 cdmHash
+    ) external {
+        Call storage old = _load(replacedCallId);
+        if (old.state != CallState.Cancelled || replacementOf[replacedCallId] != bytes32(0)) revert NotReplaceable();
+        if (old.from != msg.sender || old.to != to || old.kind != kind) revert NotReplaceable();
+        _issue(callId, kind, to, amount, deadline, cdmHash);
+        replacementOf[replacedCallId] = callId;
+        replaces[callId] = replacedCallId;
+        emit CallReplaced(replacedCallId, callId);
+    }
+
+    function _issue(bytes32 callId, CallKind kind, address to, uint256 amount, uint64 deadline, bytes32 cdmHash) private {
         if (_calls[callId].state != CallState.None) revert CallExists();
         if (to == msg.sender || to == address(0)) revert WrongParty();
         Call storage c = _calls[callId];

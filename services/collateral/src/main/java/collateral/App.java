@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class App {
     private static final Map<String, Integer> CALL_KIND = Map.of("IM", 0, "VM", 1, "Return", 2);
+    private static final String[] CALL_KIND_NAME = {"IM", "VM", "Return"};
+    private static final String ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
     private static final Map<String, Integer> RESPONSE = Map.of("full", 0, "partial", 1, "dispute", 2);
     private static final String[] CALL_STATE = {"none", "issued", "agreed", "partially agreed", "disputed", "settled", "settled (agreed part)", "cancelled"};
     private static final String[] PROPOSAL_STATE = {"none", "proposed", "accepted", "rejected", "cancelled"};
@@ -593,6 +595,9 @@ public final class App {
             call.put("cdmHash", c.get("cdmHash").asText());
             String requester = c.path("cancellationRequestedBy").asText(ZERO_ADDRESS);
             call.put("cancellationRequestedBy", requester.equalsIgnoreCase(ZERO_ADDRESS) ? null : partyIdOf(requester));
+            String replacesId = c.path("replaces").asText(ZERO_HASH), replacedBy = c.path("replacementOf").asText(ZERO_HASH);
+            call.put("replaces", replacesId.equalsIgnoreCase(ZERO_HASH) ? null : replacesId);
+            call.put("replacedBy", replacedBy.equalsIgnoreCase(ZERO_HASH) ? null : replacedBy);
             long proposalCount = c.get("proposalCount").asLong();
             List<Map<String, Object>> proposals = new ArrayList<>();
             for (long pid = 0; pid < proposalCount; pid++) {
@@ -785,6 +790,19 @@ public final class App {
         return result;
     }
 
+    /** The validated CDM state of a call, folded from every step document (throws if one is not readable yet). */
+    private MarginCallState foldedCall(String callId) {
+        List<String> docs = new ArrayList<>();
+        for (JsonNode s : gw.get("/calls/" + callId + "/steps")) {
+            String hash = s.get("cdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash))
+                throw new RuntimeException("the CDM steps of call " + callId + " are not all readable here");
+            docs.add(doc);
+        }
+        return CdmFold.fold(docs);
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> body(Context ctx) {
         return ctx.bodyAsClass(Map.class);
@@ -792,8 +810,16 @@ public final class App {
 
     private void issueCall(Context ctx) {
         Map<String, Object> b = body(ctx);
-        String kind = (String) b.getOrDefault("kind", "IM");
-        String toParty = (String) b.getOrDefault("toParty", "A");
+        String replaces = (String) b.get("replacesCallId"); // a cancelled call this call replaces (task-csa-call-replacement)
+        JsonNode old = replaces == null ? null : gw.get("/calls/" + replaces);
+        if (old != null) {
+            if (!old.get("from").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the calling party replaces a call");
+            if (old.get("state").asInt() != 7) throw new RuntimeException("only a cancelled call can be replaced");
+            if (!old.path("replacementOf").asText(ZERO_HASH).equalsIgnoreCase(ZERO_HASH)) throw new RuntimeException("the call already has a replacement");
+        }
+        // A replacement keeps the replaced call's kind and called party; only the amount (and deadline) change.
+        String kind = old != null ? CALL_KIND_NAME[old.get("kind").asInt()] : (String) b.getOrDefault("kind", "IM");
+        String toParty = old != null ? partyIdOf(old.get("to").asText()) : (String) b.getOrDefault("toParty", "A");
         long amountUsd = ((Number) b.get("amountUsd")).longValue();
         long days = b.containsKey("deadlineDays") ? ((Number) b.get("deadlineDays")).longValue() : 1;
         String amountScaled = BigInteger.valueOf(amountUsd).multiply(cfg.priceScale).toString();
@@ -801,10 +827,15 @@ public final class App {
         long n = store.nextCallNumber(cfg.partyId);
         String callId = Cdm.onChainId(cfg.partyId + "-" + n + "-" + System.nanoTime());
         String direction = kind.equals("Return") ? "Return" : "Delivery";
-        Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, direction);
+        Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, direction,
+                replaces == null ? null : Cdm.cdmCallId(replaces));
+        if (replaces != null && !cdm.replaces(foldedCall(replaces)))
+            throw new RuntimeException("the CDM state of call " + replaces + " does not allow this replacement (ReplacementAllowed)");
         record(callId, "IssueCall", cdm);
-        gw.post("/calls", Map.of("callId", callId, "kind", CALL_KIND.get(kind), "to", cfg.partyAddress(toParty),
+        Map<String, Object> tx = new LinkedHashMap<>(Map.of("callId", callId, "kind", CALL_KIND.get(kind), "to", cfg.partyAddress(toParty),
                 "amount", amountScaled, "deadline", deadline, "cdmHash", cdm.hash));
+        if (replaces != null) tx.put("replaces", replaces);
+        gw.post("/calls", tx);
         if ("top-up".equals(b.get("purpose"))) store.tagCall(callId, "top-up");
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash));
     }
