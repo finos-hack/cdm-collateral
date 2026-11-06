@@ -639,3 +639,27 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cilivestack-deploydroppedtx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |
 | node:task-ci-deploy-dropped-tx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
 | edge:e-lnk-cilivestack-deploydroppedtx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
+| node:investigation-adr-asr-traceability | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| node:investigation-adr-asr-traceability | status |  | active | 2026-11-06T21:34:07Z |  |  |
+| edge:e-dec-archdesign-adrtrace | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-amendterms | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-cancelblocks | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-cancelblocks | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-cdmevents | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-extrune | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-localext | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-closeout | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-finality-closeout | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-consolerules | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-imseg | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-finality-imseg | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-interestsettle | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-finality-interestsettle | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-interestrules | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-javastack | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-perparty | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-reval | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-subst | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-subst | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| noteworthy:nw-architecture-json-is-source | review |  | proposed | 2026-11-06T21:49:38Z |  |  |
+| edge:e-note-adrtrace-jsonsource | review |  | proposed | 2026-11-06T21:49:38Z |  |  |

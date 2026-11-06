@@ -729,3 +729,9 @@ excluded.
 | task-csa-call-cancellation | b69747038b84a2eedb85abc0ca765216af747014 | services/collateral/src/test/java/collateral/CdmCancellationTest.java | 2026-11-06T20:36:29Z |
 | task-ci-deploy-dropped-tx | 493672b5c993a93cf79ad72eab88947225725a9c | .github/workflows/e2e-live-stack.yml | 2026-11-06T21:19:42Z |
 | task-ci-deploy-dropped-tx | 493672b5c993a93cf79ad72eab88947225725a9c | contracts/scripts/deploy.ts | 2026-11-06T21:19:42Z |
+| investigation-adr-asr-traceability | e5d8ded8a57acc47f677f0f3d938432e30c468dc | architecture/generate_architecture.py | 2026-11-06T21:35:25Z |
+| investigation-adr-asr-traceability | e5d8ded8a57acc47f677f0f3d938432e30c468dc | architecture/prototype.architecture.json | 2026-11-06T21:35:25Z |
+| investigation-adr-asr-traceability | 696ff06f1804db5d7f0f37ce27e85f3679300bfe | architecture/prototype.architecture.json | 2026-11-06T21:48:23Z |
+| investigation-adr-asr-traceability | 8d0b85735e6ee9cc96256e42e9960d83be3d7ce7 | architecture/generate_architecture.py | 2026-11-06T21:49:38Z |
+| investigation-adr-asr-traceability | 8d0b85735e6ee9cc96256e42e9960d83be3d7ce7 | architecture/sync_adrs.py | 2026-11-06T21:49:38Z |
+| investigation-adr-asr-traceability | 8d0b85735e6ee9cc96256e42e9960d83be3d7ce7 | architecture/README.md | 2026-11-06T21:49:38Z |

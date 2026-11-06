@@ -1,7 +1,6 @@
 ```yaml
 id: wp-adr-cloud-dev-environment
 kind: decision
-subtype: adr
 timestamp: 2026-10-16T22:20:33Z
 review: accepted
 provenance:
@@ -10,7 +9,7 @@ provenance:
   contentHash: 41af88afd7f6994b53858c3b109793a399df3d06
   timestamp: 2026-10-16T22:20:33Z
 createdAt: 2026-10-16T22:20:33Z
-updatedAt: 2026-10-18T01:27:28Z
+updatedAt: 2026-11-06T21:48:08Z
 ```
 # ADR: Development environment in a public cloud (GitHub Codespaces)
 
