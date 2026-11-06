@@ -7,6 +7,8 @@ import io.javalin.http.Context;
 import io.javalin.http.sse.SseClient;
 
 import java.math.BigInteger;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -91,6 +93,9 @@ public final class App {
         app.post("/api/v1/calls/{id}/enforce", this::enforce);
         app.get("/api/v1/close-outs", this::closeOuts);
         app.post("/api/v1/close-outs", this::closeOut);
+        app.get("/api/v1/interest", this::interestStatements);
+        app.post("/api/v1/interest", this::stateInterest);
+        app.post("/api/v1/interest/{id}/pay", this::payInterest);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
         app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
@@ -157,6 +162,11 @@ public final class App {
                 String party = e.hasNonNull("party") ? e.get("party").asText() : null;
                 if (event.equals("ClosedOut")) {
                     onClosedOut(e, party, block, logIndex, data);
+                } else if (event.equals("InterestStated")) {
+                    onInterestStated(e, party, block, logIndex, data);
+                } else if (event.equals("InterestSettled")) {
+                    String id = e.get("interestId").asText();
+                    if (party != null && (party.equalsIgnoreCase(cfg.myAddress) || party.equalsIgnoreCase(cfg.partyAddress(counterparty())))) store.recordEvent(event, id, party, block, logIndex, data);
                 } else if (event.startsWith("Substitution")) {
                     String id = e.get("substitutionId").asText();
                     if (substitutionInvolvesMe(id)) {
@@ -190,6 +200,26 @@ public final class App {
             if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
                 CdmCloseOut.verify(doc);
                 store.recordDocument(id, "CloseOutStatement", "in", hash, doc);
+            }
+        }
+    }
+
+    /**
+     * An InterestStated event (flow-interest-on-cash transition 9): the pledgor's service fetches the CDM
+     * CollateralInterestStatement by the hash the contract recorded, checks it and keeps it; each service records the event.
+     */
+    private void onInterestStated(JsonNode e, String pledgor, String block, long logIndex, String data) {
+        boolean iAmPledgor = pledgor != null && pledgor.equalsIgnoreCase(cfg.myAddress);
+        boolean withCounterparty = pledgor != null && pledgor.equalsIgnoreCase(cfg.partyAddress(counterparty()));
+        if (!iAmPledgor && !withCounterparty) return;
+        String id = e.get("interestId").asText();
+        store.recordEvent("InterestStated", id, pledgor, block, logIndex, data);
+        if (iAmPledgor) {
+            String hash = e.get("cdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
+                CdmInterest.verify(doc);
+                store.recordDocument(id, "CollateralInterestStatement", "in", hash, doc);
             }
         }
     }
@@ -720,6 +750,96 @@ public final class App {
                 if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("payload hash mismatch");
                 m.putAll(statementSummary(CdmCloseOut.verify(doc)));
                 m.put("verified", true);
+            } catch (RuntimeException e) {
+                m.put("verified", false);
+                m.put("error", String.valueOf(e.getMessage()));
+            }
+            out.add(m);
+        }
+        ctx.json(out);
+    }
+
+    // ---- interest on cash collateral (flow-interest-on-cash, G17) ----
+
+    private static final String[] INTEREST_STATE = {"none", "stated", "settled"};
+
+    /**
+     * State the Interest Amount on the pledgor's cash collateral for one Interest Period (secured party only). Interim
+     * reduction (task-sme-interest-daily-balances): every day of the period has the tUSD now in escrow and the one
+     * observed rate the secured party gives. The service builds the CDM CollateralInterestStatement
+     * (Create_CollateralInterestStatement under the agreement's CollateralInterestParameters), publishes it to the
+     * payload store and submits stateInterest with the transfer amount and the statement's hash; a positive amount is
+     * paid to the pledgor in the same transaction (transitions 3-7).
+     */
+    private void stateInterest(Context ctx) {
+        if (!cfg.role.equals("Secured Party")) throw new RuntimeException("only the secured party states interest");
+        Map<String, Object> b = body(ctx);
+        LocalDate start = LocalDate.parse(String.valueOf(b.get("periodStart")));
+        LocalDate end = LocalDate.parse(String.valueOf(b.get("periodEnd")));
+        BigDecimal rate = new BigDecimal(String.valueOf(b.get("observedRatePct"))).movePointLeft(2);
+        String pledgor = cfg.partyAddress(counterparty());
+        String cash = cfg.tokenAddress("tUSD");
+        long balance = new BigInteger(gw.getQuery("/pledged", Map.of("token", cash, "pledgor", pledgor, "securedParty", cfg.myAddress)).asText()).longValueExact();
+        if (balance == 0) throw new RuntimeException(counterparty() + " has no tUSD cash collateral in escrow");
+        CdmInterest c = CdmInterest.build(cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), start, end, balance, rate);
+        long amount = CdmInterest.usd(c.statement.getTransferAmount());
+        String interestId = Cdm.onChainId("interest-" + cfg.partyId + "-" + System.nanoTime());
+        store.recordDocument(interestId, "CollateralInterestStatement", "out", c.hash, c.json);
+        payloads.put(c.hash, c.json, callParties);
+        JsonNode tx = gw.post("/interest", Map.of("interestId", interestId, "pledgor", pledgor, "cashToken", cash,
+                "amount", String.valueOf(amount), "cdmHash", c.hash));
+        Map<String, Object> out = new LinkedHashMap<>(interestSummary(c.statement));
+        out.put("interestId", interestId);
+        out.put("cdmHash", c.hash);
+        out.put("stateTx", tx.path("stated").path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** Pay a negative Interest Amount the secured party stated (pledgor only). */
+    private void payInterest(Context ctx) {
+        if (!cfg.role.equals("Pledgor")) throw new RuntimeException("only the pledgor pays negative interest");
+        JsonNode tx = gw.post("/interest/" + ctx.pathParam("id") + "/pay", Map.of());
+        ctx.json(Map.of("payTx", tx.path("paid").path("txHash").asText()));
+    }
+
+    private static Map<String, Object> interestSummary(cdmx.collateral.interest.CollateralInterestStatement s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("periodStart", s.getPeriodStartDate().toString());
+        m.put("periodEnd", s.getPeriodEndDate().toString());
+        m.put("days", s.getAccrual().size());
+        m.put("balanceUsd", s.getAccrual().get(0).getBalance().getValue().toPlainString());
+        m.put("ratePct", s.getAccrual().get(0).getRate().movePointRight(2).stripTrailingZeros().toPlainString());
+        m.put("interestAmountUsd", String.valueOf(CdmInterest.usd(s.getInterestAmount())));
+        m.put("transferAmountUsd", String.valueOf(CdmInterest.usd(s.getTransferAmount())));
+        m.put("handling", s.getHandling().toString());
+        return m;
+    }
+
+    /**
+     * The interest statements this party is in, from the InterestStated events, each with its CDM
+     * CollateralInterestStatement fetched from the payload store by the on-chain hash and checked: the hash matches and
+     * Create_CollateralInterestStatement over the statement's days gives the same statement (verified).
+     */
+    private void interestStatements(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            String hash = r.get("cdmHash").asText();
+            m.put("interestId", r.get("interestId").asText());
+            m.put("securedParty", partyIdOf(r.get("securedParty").asText()));
+            m.put("pledgor", partyIdOf(r.get("pledgor").asText()));
+            m.put("amountUsd", r.get("amount").asText());
+            m.put("state", INTEREST_STATE[r.get("state").asInt()]);
+            m.put("cdmHash", hash);
+            m.put("block", r.get("block").asText());
+            String doc = payloads.get(hash);
+            try {
+                if (doc == null) throw new IllegalStateException("statement not readable in the payload store");
+                if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("payload hash mismatch");
+                var st = CdmInterest.verify(doc);
+                m.putAll(interestSummary(st));
+                m.put("verified", String.valueOf(CdmInterest.usd(st.getTransferAmount())).equals(r.get("amount").asText()));
+                if (!(Boolean) m.get("verified")) m.put("error", "the on-chain amount differs from the statement's transfer amount");
             } catch (RuntimeException e) {
                 m.put("verified", false);
                 m.put("error", String.valueOf(e.getMessage()));

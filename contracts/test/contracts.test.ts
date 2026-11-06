@@ -381,4 +381,53 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(control.write.settleSubstitution([S, H], { account: bankA.account })); // SubstituteBelowOriginal
     });
   });
+  describe("interest on cash collateral (G17)", () => {
+    const N = id(40);
+    let tUSD: any;
+    beforeEach(async () => {
+      tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "", "", ""]);
+      await control.write.setEligibility([tUSD.address, true, 0]);
+      await tUSD.write.mint([aAddr, 1000n]);
+      await tUSD.write.mint([bAddr, 1000n]);
+    });
+
+    it("pays a positive Interest Amount from the secured party to the pledgor at once", async () => {
+      await tUSD.write.approve([control.address, 35n], { account: bankB.account });
+      await control.write.stateInterest([N, aAddr, tUSD.address, 35n, H], { account: bankB.account });
+      const s = await control.read.getInterest([N]);
+      assert.equal(s.state, 2); // Settled
+      assert.equal(s.amount, 35n);
+      assert.equal(s.cdmHash, H);
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 1035n);
+      assert.equal(await tUSD.read.balanceOf([bAddr]), 965n);
+    });
+
+    it("records a negative Interest Amount for the pledgor to pay", async () => {
+      await control.write.stateInterest([N, aAddr, tUSD.address, -5n, H], { account: bankB.account });
+      assert.equal((await control.read.getInterest([N])).state, 1); // Stated
+      await assert.rejects(control.write.payInterest([N], { account: bankB.account })); // WrongParty
+      await tUSD.write.approve([control.address, 5n], { account: bankA.account });
+      await control.write.payInterest([N], { account: bankA.account });
+      assert.equal((await control.read.getInterest([N])).state, 2);
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 995n);
+      assert.equal(await tUSD.read.balanceOf([bAddr]), 1005n);
+      await assert.rejects(control.write.payInterest([N], { account: bankA.account })); // BadState
+    });
+
+    it("settles a zero amount with no transfer", async () => {
+      await control.write.stateInterest([N, aAddr, tUSD.address, 0n, H], { account: bankB.account });
+      assert.equal((await control.read.getInterest([N])).state, 2);
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 1000n);
+    });
+
+    it("rejects a reused id, a missing hash, a non-cash token, the secured party as pledgor and an unknown id", async () => {
+      await control.write.stateInterest([N, aAddr, tUSD.address, 0n, H], { account: bankB.account });
+      await assert.rejects(control.write.stateInterest([N, aAddr, tUSD.address, 0n, H], { account: bankB.account }));
+      await assert.rejects(control.write.stateInterest([id(41), aAddr, tUSD.address, 0n, zeroHash], { account: bankB.account }));
+      await assert.rejects(control.write.stateInterest([id(42), aAddr, tUST.address, 0n, H], { account: bankB.account })); // haircut
+      await assert.rejects(control.write.stateInterest([id(43), bAddr, tUSD.address, 0n, H], { account: bankB.account }));
+      await assert.rejects(control.read.getInterest([id(44)]));
+      await assert.rejects(control.write.payInterest([id(44)], { account: bankA.account }));
+    });
+  });
 });

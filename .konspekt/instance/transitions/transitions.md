@@ -601,3 +601,19 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-subfoldadr-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
 | node:task-csa-close-out-netting | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
 | node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| waypoint:wp-adr-interest-rate-rules-and-withholding | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
+| edge:e-mrk-interestadr-interest | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
+| waypoint:wp-adr-interest-rate-rules-and-withholding | review | proposed | accepted | 2026-11-06T15:35:07Z | 16dca9f0c1765191fa8235340845c442d5744245 | denisurusov |
+| edge:e-mrk-interestadr-interest | review | proposed | accepted | 2026-11-06T15:35:07Z | 16dca9f0c1765191fa8235340845c442d5744245 | denisurusov |
+| node:task-sme-interest-daily-balances | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
+| node:task-sme-interest-daily-balances | status |  | open | 2026-11-06T15:35:07Z |  |  |
+| edge:e-dec-cdmdev-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
+| edge:e-lnk-interest-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
+| waypoint:wp-adr-interest-onchain-settlement | review |  | proposed | 2026-11-06T15:51:39Z |  |  |
+| edge:e-mrk-interestsettle-interest | review |  | proposed | 2026-11-06T15:51:39Z |  |  |
+| waypoint:wp-adr-interest-onchain-settlement | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
+| node:task-sme-interest-daily-balances | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
+| edge:e-mrk-interestsettle-interest | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
+| edge:e-dec-cdmdev-smeinterest | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
+| edge:e-lnk-interest-smeinterest | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
+| node:task-csa-interest-on-cash | status | open | resolved | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |

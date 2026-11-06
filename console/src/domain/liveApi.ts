@@ -99,6 +99,13 @@ export const api = {
   /** Secured party: declare the pledgor's default if the feed does not show it, then close out against the escrow. */
   closeOut: (p: LiveParty, closeOutAmountUsd: number) =>
     req<LiveCloseOut & { closeOutTx: string; defaultTx?: string }>(p, "POST", "/close-outs", { closeOutAmountUsd }),
+  /** Interest statements on cash collateral (flow-interest-on-cash). */
+  interest: (p: LiveParty) => req<LiveInterest[]>(p, "GET", "/interest"),
+  /** Secured party: state the Interest Amount on the pledgor's tUSD for one period at one observed rate (percent). */
+  stateInterest: (p: LiveParty, periodStart: string, periodEnd: string, observedRatePct: number) =>
+    req<LiveInterest & { stateTx: string }>(p, "POST", "/interest", { periodStart, periodEnd, observedRatePct }),
+  /** Pledgor: pay a negative Interest Amount. */
+  payInterest: (p: LiveParty, interestId: string) => req<{ payTx: string }>(p, "POST", `/interest/${interestId}/pay`, {}),
   /** Substitutions of pledged collateral with their CDM fold (flow-substitution). */
   substitutions: (p: LiveParty) => req<LiveSubstitution[]>(p, "GET", "/substitutions"),
   requestSubstitution: (p: LiveParty, original: { token: string; qty: number }[], substitute: { token: string; qty: number }[]) =>
@@ -126,6 +133,27 @@ export interface LiveCloseOut {
   collateralHeldUsd?: string;
   collateralAppliedUsd?: string;
   amountPayableUsd?: string;
+}
+
+export interface LiveInterest {
+  interestId: string;
+  securedParty: LiveParty;
+  pledgor: LiveParty;
+  /** On-chain amount in tUSD: positive from the secured party to the pledgor, negative the other way. */
+  amountUsd: string;
+  state: "none" | "stated" | "settled";
+  cdmHash: string;
+  block?: string;
+  /** The statement was read from the payload store, matches the on-chain hash and amount, and recomputes from its days. */
+  verified?: boolean;
+  error?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  days?: number;
+  balanceUsd?: string;
+  ratePct?: string;
+  interestAmountUsd?: string;
+  transferAmountUsd?: string;
 }
 
 export interface LiveSubstitution {

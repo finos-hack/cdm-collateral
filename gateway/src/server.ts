@@ -149,6 +149,32 @@ route("GET", "/ledger/v1/substitutions/:id", async (p) => {
 
 route("GET", "/ledger/v1/substitutions/:id/steps", async (p) => J(await adapter.substitutionSteps(p.id as Hex)));
 
+// --- interest on cash collateral (flow-interest-on-cash, G17) ---
+
+route("POST", "/ledger/v1/interest", async (_p, b) => {
+  // The secured party's gateway states the Interest Amount; for a positive amount it first approves the control
+  // contract for the cash token, which pays the pledgor in the same transaction.
+  const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  const amount = BigInt(b.amount);
+  const cashToken = getAddress(b.cashToken);
+  const approval = amount > 0n ? await adapter.approve(cashToken, control, amount) : undefined;
+  const stated = await adapter.stateInterest(b.interestId as Hex, getAddress(b.pledgor), cashToken, amount, b.cdmHash as Hex);
+  return J({ approval, stated });
+});
+
+route("POST", "/ledger/v1/interest/:id/pay", async (p) => {
+  // The pledgor's gateway pays a negative Interest Amount: approve the control contract, then pay.
+  const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  const s = await adapter.getInterest(p.id as Hex);
+  const approval = await adapter.approve(s.cashToken, control, -s.amount);
+  const paid = await adapter.payInterest(p.id as Hex);
+  return J({ approval, paid });
+});
+
+route("GET", "/ledger/v1/interest", async (_p, _b, url) => J(await adapter.listInterest(getAddress(url.searchParams.get("party")!))));
+
+route("GET", "/ledger/v1/interest/:id", async (p) => J(await adapter.getInterest(p.id as Hex)));
+
 // The escrow and feed prices between a pledgor and a secured party at the end of a block (flow-substitution).
 route("GET", "/ledger/v1/escrow-at", async (_p, _b, url) =>
   J(await adapter.escrowAt(getAddress(url.searchParams.get("pledgor")!), getAddress(url.searchParams.get("securedParty")!), BigInt(url.searchParams.get("block")!))),

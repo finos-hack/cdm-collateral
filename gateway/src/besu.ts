@@ -43,12 +43,16 @@ export interface LedgerEvent {
     | "ClosedOut"
     | "SubstitutionRequested"
     | "SubstitutionDecided"
-    | "SubstitutionSettled";
+    | "SubstitutionSettled"
+    | "InterestStated"
+    | "InterestSettled";
   callId?: Hex;
   /** ClosedOut (flow-close-out-netting). */
   closeOutId?: Hex;
   /** SubstitutionRequested, SubstitutionDecided, SubstitutionSettled (flow-substitution). */
   substitutionId?: Hex;
+  /** InterestStated, InterestSettled (flow-interest-on-cash). */
+  interestId?: Hex;
   cdmHash?: Hex;
   party?: Address;
   inDefault?: boolean;
@@ -91,6 +95,20 @@ export interface CloseOutRecord {
   txHash: Hex;
 }
 
+/** Interest on cash collateral for one period as the control contract holds it (flow-interest-on-cash). */
+export interface InterestRecord {
+  interestId: Hex;
+  securedParty: Address;
+  pledgor: Address;
+  cashToken: Address;
+  /** Units of the cash token: positive from the secured party to the pledgor, negative the other way. */
+  amount: bigint;
+  state: number; // InterestState: None, Stated, Settled
+  cdmHash: Hex;
+  block: string;
+  txHash: Hex;
+}
+
 /** One lifecycle step as callSteps reads it from the chain, with what the CDM LedgerAnchor needs (G25). */
 export interface CallStep {
   step: string;
@@ -122,6 +140,8 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "SubstitutionRequested(bytes32,address,address,bytes32)",
     "SubstitutionDecided(bytes32,bool,bytes32)",
     "SubstitutionSettled(bytes32,bytes32)",
+    "InterestStated(bytes32,address,address,address,int256,bytes32)",
+    "InterestSettled(bytes32,address,address,uint256)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -179,6 +199,10 @@ const controlAbi = parseAbi([
   "function settleSubstitution(bytes32 substitutionId, bytes32 cdmHash)",
   "function getSubstitution(bytes32 substitutionId) view returns (Substitution)",
   "function getSubstitutionAssets(bytes32 substitutionId) view returns (Asset[] original, Asset[] substitute)",
+  "struct InterestStatement { address pledgor; address securedParty; address cashToken; int256 amount; uint8 state; bytes32 cdmHash; }",
+  "function stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
+  "function payInterest(bytes32 interestId)",
+  "function getInterest(bytes32 interestId) view returns (InterestStatement)",
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
   "event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
@@ -187,6 +211,8 @@ const controlAbi = parseAbi([
   "event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
   "event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash)",
   "event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash)",
+  "event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
+  "event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount)",
 ]);
 
 const oracleAbi = parseAbi([
@@ -227,6 +253,10 @@ export interface LedgerAdapter {
   getSubstitutionAssets(substitutionId: Hex): Promise<{ original: AssetArg[]; substitute: AssetArg[] }>;
   listSubstitutions(party: Address): Promise<{ substitutionId: Hex; substitution: OnChainSubstitution }[]>;
   substitutionSteps(substitutionId: Hex): Promise<SubstitutionStep[]>;
+  stateInterest(interestId: Hex, pledgor: Address, cashToken: Address, amount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  payInterest(interestId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getInterest(interestId: Hex): Promise<Omit<InterestRecord, "interestId" | "block" | "txHash">>;
+  listInterest(party: Address): Promise<InterestRecord[]>;
   escrowAt(pledgor: Address, securedParty: Address, block: bigint): Promise<{ token: Address; qty: bigint; price: bigint | null }[]>;
   setDefault(party: Address, inDefault: boolean): Promise<{ txHash: Hex; block: bigint }>;
   isDefaulted(party: Address): Promise<boolean>;
@@ -344,6 +374,36 @@ export class BesuAdapter implements LedgerAdapter {
       for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "ClosedOut", args)) {
         const a = l.args as { closeOutId: Hex; securedParty: Address; pledgor: Address; owed: bigint; applied: bigint; cdmHash: Hex };
         out.push({ ...a, block: l.blockNumber.toString(), txHash: l.transactionHash as Hex });
+      }
+    }
+    return out;
+  }
+
+  /** Interest on cash collateral (flow-interest-on-cash): the secured party states the amount (and pays it when
+   * positive); the pledgor pays a negative amount. */
+  stateInterest(interestId: Hex, pledgor: Address, cashToken: Address, amount: bigint, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "stateInterest", [interestId, pledgor, cashToken, amount, cdmHash]);
+  }
+
+  payInterest(interestId: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "payInterest", [interestId]);
+  }
+
+  async getInterest(interestId: Hex) {
+    const s = (await this.pub.readContract({ address: this.reg.contracts.collateralControl, abi: controlAbi, functionName: "getInterest", args: [interestId] })) as {
+      pledgor: Address; securedParty: Address; cashToken: Address; amount: bigint; state: number; cdmHash: Hex;
+    };
+    return { pledgor: s.pledgor, securedParty: s.securedParty, cashToken: s.cashToken, amount: s.amount, state: Number(s.state), cdmHash: s.cdmHash };
+  }
+
+  /** Every interest statement a party is in, from the InterestStated events, with the current state. */
+  async listInterest(party: Address): Promise<InterestRecord[]> {
+    const out: InterestRecord[] = [];
+    for (const args of [{ securedParty: party }, { pledgor: party }]) {
+      for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "InterestStated", args)) {
+        const a = l.args as { interestId: Hex; securedParty: Address; pledgor: Address; cashToken: Address; amount: bigint; cdmHash: Hex };
+        const { state } = await this.getInterest(a.interestId);
+        out.push({ ...a, state, block: l.blockNumber.toString(), txHash: l.transactionHash as Hex });
       }
     }
     return out;
@@ -618,13 +678,17 @@ export class BesuAdapter implements LedgerAdapter {
       onLogs: (logs) => {
         for (const log of logs) {
           const name = (log as any).eventName as LedgerEvent["event"];
-          const a = ((log as any).args ?? {}) as { callId?: Hex; pledgor?: Address; closeOutId?: Hex; substitutionId?: Hex; cdmHash?: Hex };
+          const a = ((log as any).args ?? {}) as { callId?: Hex; pledgor?: Address; payer?: Address; closeOutId?: Hex; substitutionId?: Hex; interestId?: Hex; cdmHash?: Hex };
           if (name === "Returned" || name === "Enforced") {
             onEvent({ event: name, callId: a.callId, party: a.pledgor, ...meta(log) });
           } else if (name === "ClosedOut") {
             onEvent({ event: name, closeOutId: a.closeOutId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "SubstitutionRequested" || name === "SubstitutionDecided" || name === "SubstitutionSettled") {
             onEvent({ event: name, substitutionId: a.substitutionId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          } else if (name === "InterestStated") {
+            onEvent({ event: name, interestId: a.interestId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          } else if (name === "InterestSettled") {
+            onEvent({ event: name, interestId: a.interestId, party: a.payer, ...meta(log) });
           }
         }
       },
