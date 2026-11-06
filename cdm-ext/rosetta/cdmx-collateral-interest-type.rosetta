@@ -1,0 +1,40 @@
+namespace cdmx.collateral.interest : <"Local CDM extension: interest on cash collateral under an ISDA CSA (gap G17). CDM 7.7.0 has the elections (CollateralInterestParameters: rate, day count, rounding, withholding tax, handling, rollover and write-off limits, the Interest Amount alternative) but no calculation of the Interest Amount or of its transfer.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+
+type CashCollateralDay: <"One calendar day of an Interest Period: the cash collateral held at the end of that day and the rate observed for it.">
+    date date (1..1)
+    balance Money (1..1) <"Cash collateral in the currency of the interest parameters held by the secured party at the end of the day (for a non-business day, the balance of the preceding business day).">
+    observedRate number (0..1) <"The floating rate observed for the day, before spread, floor, cap and the negative interest election, as a decimal (5% is 0.05). Not needed when the parameters carry a fixed rate.">
+
+    condition BalanceNotNegative: <"Cash collateral held is not negative.">
+        balance -> value >= 0
+
+type InterestAccrualDay: <"The interest accrued on one day of an Interest Period.">
+    date date (1..1)
+    balance Money (1..1)
+    rate number (1..1) <"The Interest Rate applied: the fixed rate, or the observed rate after floor, cap, spread and the negative interest election.">
+    amount number (1..1) <"balance x rate x the day count fraction for one day; rounded when the rounding frequency is daily. Negative when the rate is negative.">
+
+type CollateralInterestStatement: <"The Interest Amount for one Interest Period on cash collateral, and how it is handled: transferred, added to the posted collateral, or written off.">
+    securedParty Party (1..1) <"The party holding the cash collateral (the Secured Party or Transferee).">
+    pledgor Party (1..1) <"The party that posted the cash collateral (the Pledgor or Transferor).">
+    periodStartDate date (1..1) <"First day of the Interest Period, included.">
+    periodEndDate date (1..1) <"Day after the last day of the Interest Period (the period end, excluded).">
+    accrual InterestAccrualDay (1..*) <"One per calendar day of the Interest Period.">
+    grossInterestAmount Money (1..1) <"Sum of the daily amounts, rounded at period end when so elected.">
+    withholdingTax Money (1..1) <"Withholding tax on a positive gross amount, at the elected rate; zero otherwise.">
+    interestAmount Money (1..1) <"Gross amount less withholding tax. Positive when payable by the secured party to the pledgor, negative when payable by the pledgor to the secured party (negative interest).">
+    handling CollateralInterestHandlingEnum (1..1) <"The elected interest payment handling.">
+    transferAmount Money (1..1) <"The part of the Interest Amount transferred for the period: positive from the secured party to the pledgor, negative from the pledgor to the secured party.">
+    collateralAdjustment Money (1..1) <"The part of the Interest Amount that adjusts the posted cash collateral instead of being transferred (added to it when positive, deducted when negative): under the Adjust handling, below the rollover limit, or where the Interest Amount alternative withholds the transfer.">
+    writtenOff Money (1..1) <"The Interest Amount when it is below the write-off limit; zero otherwise.">
+
+    condition TwoParties: <"The secured party and the pledgor differ.">
+        securedParty <> pledgor
+
+    condition AmountsAddUp: <"The Interest Amount is transferred, adjusted or written off, and nothing else.">
+        transferAmount -> value + collateralAdjustment -> value + writtenOff -> value = interestAmount -> value

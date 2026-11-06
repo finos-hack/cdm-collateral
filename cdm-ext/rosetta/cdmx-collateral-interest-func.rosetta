@@ -1,0 +1,188 @@
+namespace cdmx.collateral.interest : <"Local CDM extension: interest on cash collateral under an ISDA CSA (gap G17).">
+version "${project.version}"
+
+import cdm.base.*
+import cdm.base.math.*
+import cdm.base.datetime.*
+import cdm.base.datetime.daycount.*
+import cdm.base.staticdata.party.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+
+// Scope: one currency and one Interest Period, simple daily accrual (ISDA 1994 NY CSA Paragraph 13 "Interest Amount":
+// the sum over each day of the cash held x the Interest Rate x the day count fraction for one day). The caller supplies
+// one CashCollateralDay per calendar day of the period with the rate observed for it; selecting the rate index, the
+// fixing calendar and the period dates is the caller's. Not covered: compounding (CompoundingTypeEnum Business or
+// Calendar), dated steps of spread, floor and cap schedules (only the initial value is used), the alternatives
+// ActualAmountReceived and Other, and payment dates and notification (CalculationFrequency, CollateralInterestNotification).
+
+func CollateralInterestRate: <"The Interest Rate for one day: the fixed rate; or the observed rate bounded by the floor and cap, plus the spread unless the spread is compressible and the observed rate is not positive. When negative interest is not elected the rate is floored at zero (the zero interest rate method of the ISDA 2014 Collateral Agreement Negative Interest Protocol).">
+    [calculation]
+    inputs:
+        calculationParameters CollateralInterestCalculationParameters (1..1)
+        observedRate number (0..1)
+    output:
+        rate number (1..1)
+
+    alias floating: calculationParameters -> floatingRate
+    alias spread: if floating -> spreadSchedule exists then floating -> spreadSchedule -> price -> value else 0.0
+    alias floor: floating -> floorRateSchedule -> price -> value
+    alias cap: floating -> capRateSchedule -> price -> value
+    alias floored: if floor exists then Max(observedRate, floor) else observedRate
+    alias bounded: if cap exists then Min(floored, cap) else floored
+    alias withSpread:
+        if floating -> compressibleSpread = True and bounded <= 0 then bounded else bounded + spread
+    alias raw: if calculationParameters -> fixedRate exists then calculationParameters -> fixedRate else withSpread
+
+    condition RateGiven: <"A fixed rate, or a floating rate with a rate observed for the day.">
+        calculationParameters -> fixedRate exists or (floating exists and observedRate exists)
+
+    set rate:
+        if floating exists and floating -> negativeInterest = False and raw < 0 then 0.0 else raw
+
+func CollateralInterestAccrual: <"The interest accrued on one day: balance x Interest Rate x the day count fraction for one day (1/360 for ACT/360), rounded when rounding is daily.">
+    [calculation]
+    inputs:
+        calculationParameters CollateralInterestCalculationParameters (1..1)
+        day CashCollateralDay (1..1)
+    output:
+        accrual InterestAccrualDay (1..1)
+
+    alias rate: CollateralInterestRate(calculationParameters, day -> observedRate)
+    alias rounding: calculationParameters -> rounding
+    alias unrounded:
+        day -> balance -> value * rate * YearFractionForOneDay(calculationParameters -> dayCountFraction)
+
+    condition RoundingPrecision: <"Rounding, when elected, gives the number of decimal places.">
+        if rounding exists then rounding -> precision exists
+
+    set accrual:
+        InterestAccrualDay {
+            date: day -> date,
+            balance: day -> balance,
+            rate: rate,
+            amount:
+                if rounding exists and calculationParameters -> roundingFrequency = RoundingFrequencyEnum -> Daily
+                then RoundToPrecision(unrounded, rounding -> precision, rounding -> roundingDirection, False)
+                else unrounded
+        }
+
+func Create_CollateralInterestStatement: <"The Interest Amount for one Interest Period on cash collateral and its handling. The daily amounts are summed and rounded; withholding tax is deducted from a positive amount; an amount below the write-off limit is written off; under Transfer the amount is transferred, under Adjust it is added to (or deducted from) the posted collateral, and under Transfer_or_Adjust it is transferred unless it is below the rollover limit. Under the Standard alternative a positive Interest Amount is transferred only to the extent the transfer does not create or increase a Delivery Amount; the rest stays as posted collateral. Under TransferIfDeliveryAmountBelowMTA it is transferred in full when the Delivery Amount it creates is below the Minimum Transfer Amount.">
+    [calculation]
+    inputs:
+        parameters CollateralInterestParameters (1..1) <"The agreement's interest parameters for the currency of the cash collateral.">
+        securedParty Party (1..1)
+        pledgor Party (1..1)
+        periodStartDate date (1..1)
+        periodEndDate date (1..1) <"Excluded: the period covers periodStartDate up to the day before periodEndDate.">
+        days CashCollateralDay (1..*) <"One per calendar day of the period.">
+        creditSupportExcess Money (0..1) <"Value of the posted collateral less the Credit Support Amount before the transfer (negative when a Delivery Amount is already due). Needed under the Standard and TransferIfDeliveryAmountBelowMTA alternatives.">
+        minimumTransferAmount Money (0..1) <"The pledgor's Minimum Transfer Amount. Needed under TransferIfDeliveryAmountBelowMTA.">
+    output:
+        statement CollateralInterestStatement (1..1)
+
+    alias calc: parameters -> interestCalculationParameters
+    alias handlingParameters: parameters -> interestHandlingParameters
+    alias handling: handlingParameters -> interestPaymentHandling
+    alias alternative: handlingParameters -> alternativeToInterestAmount
+    alias rounding: calc -> rounding
+    alias currency:
+        if parameters -> currency exists then parameters -> currency else days first -> balance -> unit -> currency
+
+    alias accrual: days extract CollateralInterestAccrual(calc, item)
+    alias sumOfDays: accrual extract amount then sum
+    alias roundAtEnd: rounding exists and calc -> roundingFrequency <> RoundingFrequencyEnum -> Daily
+    alias gross:
+        if roundAtEnd then RoundToPrecision(sumOfDays, rounding -> precision, rounding -> roundingDirection, False)
+        else sumOfDays
+    alias taxUnrounded:
+        if calc -> withholdingTaxRate exists and gross > 0 then gross * calc -> withholdingTaxRate else 0.0
+    alias tax:
+        if rounding exists
+        then RoundToPrecision(taxUnrounded, rounding -> precision, rounding -> roundingDirection, False)
+        else taxUnrounded
+    alias interest: gross - tax
+    alias magnitude: if interest < 0 then 0.0 - interest else interest
+
+    alias writeoff: handlingParameters -> writeoffLimit
+    alias belowWriteoff:
+        writeoff exists
+            and (magnitude < writeoff -> number or (writeoff -> inclusive = True and magnitude = writeoff -> number))
+    alias writtenOff: if belowWriteoff then interest else 0.0
+    alias remaining: interest - writtenOff
+
+    alias rollover: handlingParameters -> interestRolloverLimit
+    alias belowRollover:
+        rollover exists
+            and (magnitude < rollover -> number or (rollover -> inclusive = True and magnitude = rollover -> number))
+    alias toTransfer:
+        handling = CollateralInterestHandlingEnum -> Transfer
+            or (handling = CollateralInterestHandlingEnum -> Transfer_or_Adjust and belowRollover = False)
+
+    // Transferring a positive Interest Amount reduces the posted collateral by that amount, so the Delivery Amount
+    // after the transfer is what the amount exceeds the Credit Support excess by.
+    alias excess: creditSupportExcess -> value
+    alias deliveryAfter: Max(remaining - excess, 0.0)
+    alias withinExcess: Min(remaining, Max(excess, 0.0))
+    alias withheld:
+        remaining > 0 and alternative exists
+            and (alternative = AlternativeToInterestAmountEnum -> Standard
+                or (alternative = AlternativeToInterestAmountEnum -> TransferIfDeliveryAmountBelowMTA
+                    and deliveryAfter >= minimumTransferAmount -> value))
+    alias transfer:
+        if toTransfer = False then 0.0
+        else if withheld then withinExcess
+        else remaining
+
+    condition SimpleInterest: <"Compounding is not covered.">
+        if calc -> compoundingType exists then calc -> compoundingType = CompoundingTypeEnum -> None
+
+    condition AlternativeCovered: <"The ActualAmountReceived and Other alternatives are not covered.">
+        if alternative exists
+        then alternative = AlternativeToInterestAmountEnum -> Standard
+            or alternative = AlternativeToInterestAmountEnum -> TransferIfDeliveryAmountBelowMTA
+
+    condition ExcessGiven: <"The alternatives need the Credit Support excess, and TransferIfDeliveryAmountBelowMTA the Minimum Transfer Amount.">
+        if alternative exists then creditSupportExcess exists
+            and (alternative <> AlternativeToInterestAmountEnum -> TransferIfDeliveryAmountBelowMTA
+                or minimumTransferAmount exists)
+
+    condition OneDayEach: <"One entry per calendar day of the period, each inside it.">
+        (days extract date then distinct then count) = DateDifference(periodStartDate, periodEndDate)
+            and (days filter date < periodStartDate or date >= periodEndDate then count) = 0
+
+    condition OneCurrency: <"Every balance is in the currency of the parameters.">
+        (days filter balance -> unit -> currency <> currency then count) = 0
+
+    set statement:
+        CollateralInterestStatement {
+            securedParty: securedParty,
+            pledgor: pledgor,
+            periodStartDate: periodStartDate,
+            periodEndDate: periodEndDate,
+            accrual: accrual,
+            grossInterestAmount: CurrencyAmount(gross, currency),
+            withholdingTax: CurrencyAmount(tax, currency),
+            interestAmount: CurrencyAmount(interest, currency),
+            handling: handling,
+            transferAmount: CurrencyAmount(transfer, currency),
+            collateralAdjustment: CurrencyAmount(remaining - transfer, currency),
+            writtenOff: CurrencyAmount(writtenOff, currency)
+        }
+
+func CurrencyAmount: <"An amount of a currency as Money.">
+    inputs:
+        amount number (1..1)
+        currency string (1..1)
+    output:
+        money Money (1..1)
+
+    set money:
+        Money {
+            value: amount,
+            unit: UnitType {
+                currency: currency,
+                ...
+            },
+            ...
+        }
