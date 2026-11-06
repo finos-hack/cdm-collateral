@@ -42,8 +42,8 @@ extend flows the prototype already runs. Each row has its own task under `task-c
 
 | # | Workflow | CDM status | `cdm-ext` | Prototype | Task |
 |---|---|---|---|---|---|
-| 1 | Close-out netting on default | elections only (0–2): G15, P2 | ISDA 2002 MA Section 6(e) for the CSA (`cdmx.collateral.closeout`); GMRA, GMSLA and CCP close-out not covered | in progress | `task-csa-close-out-netting` |
-| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | ISDA CSA Paragraph 4(d) with consent (`cdmx.collateral.substitution`) | in progress | `task-csa-substitution` |
+| 1 | Close-out netting on default | elections only (0–2): G15, P2 | ISDA 2002 MA Section 6(e) for the CSA (`cdmx.collateral.closeout`); GMRA, GMSLA and CCP close-out not covered | `flow-close-out-netting`: built (`CollateralControl.closeOut`, gateway, service, console); live spec passes | `task-csa-close-out-netting` |
+| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | ISDA CSA Paragraph 4(d) with consent (`cdmx.collateral.substitution`) | `flow-substitution`: built (request, consent or refusal, settlement in `CollateralControl`, gateway, service, console); live spec passes | `task-csa-substitution` |
 | 3 | Interest on cash collateral | types only (2): G17, P2 | none | none | `task-csa-interest-on-cash` |
 | 4 | Amendment of agreement terms | modelled for the CSA (4) | none | none | `task-csa-amendment` |
 | 5 | Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings) | none | none | `task-csa-call-cancellation` |
