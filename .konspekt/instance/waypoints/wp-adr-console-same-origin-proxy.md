@@ -10,9 +10,9 @@ provenance:
   timestamp: 2026-11-02T23:15:24Z
   confidence: 0.7
 createdAt: 2026-11-02T23:15:24Z
-updatedAt: 2026-11-06T21:48:08Z
+updatedAt: 2026-11-06T21:52:57Z
 ```
-# ADR: The console reaches the collateral services through a same-origin proxy in the dev container
+# Decision: The console reaches the collateral services through a same-origin proxy in the dev container
 
 In the dev container (local and GitHub Codespaces) the console calls the collateral services on its own origin at
 `/svc/A/...` and `/svc/B/...`; the Vite dev and preview servers forward those requests to 8001 and 8002 on the

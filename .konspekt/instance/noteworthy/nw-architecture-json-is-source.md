@@ -1,7 +1,7 @@
 ```yaml
 id: nw-architecture-json-is-source
 kind: decision
-review: proposed
+review: accepted
 provenance:
   conversationId: adr-asr-traceability
   sourceRef: 78166fa212300a29ebb5956aa5db810841378e26
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-06T21:49:38Z
   confidence: 0.9
 createdAt: 2026-11-06T21:49:38Z
-updatedAt: 2026-11-06T21:49:38Z
+updatedAt: 2026-11-06T21:53:08Z
 ```
 # Decision: the CALM file is edited by hand; the generator script is retired
 
