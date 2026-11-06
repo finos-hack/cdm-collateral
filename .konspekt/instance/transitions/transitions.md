@@ -603,3 +603,9 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
 | waypoint:wp-adr-interest-rate-rules-and-withholding | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
 | edge:e-mrk-interestadr-interest | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
+| waypoint:wp-adr-interest-rate-rules-and-withholding | review | proposed | accepted | 2026-11-06T15:35:07Z | 16dca9f0c1765191fa8235340845c442d5744245 | denisurusov |
+| edge:e-mrk-interestadr-interest | review | proposed | accepted | 2026-11-06T15:35:07Z | 16dca9f0c1765191fa8235340845c442d5744245 | denisurusov |
+| node:task-sme-interest-daily-balances | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
+| node:task-sme-interest-daily-balances | status |  | open | 2026-11-06T15:35:07Z |  |  |
+| edge:e-dec-cdmdev-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
+| edge:e-lnk-interest-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |

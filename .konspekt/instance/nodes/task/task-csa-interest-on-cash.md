@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.75
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T15:26:06Z
+updatedAt: 2026-11-06T15:35:07Z
 ```
 # Task: build the interest on cash collateral flow (G17)
 
@@ -26,3 +26,11 @@ a live spec.
   `Create_CollateralInterestStatement`), `InterestTest` 21 tests; all 147 cdm-ext tests pass. Gap register G17 set to
   partial (proposed, for review). Readings of the CDM elections proposed in [[wp-adr-interest-rate-rules-and-withholding]].
 - Not done: the prototype flow (contracts, gateway, service, console, live spec, CALM flow).
+
+## Decisions 2026-11-06T15:35:07Z
+
+The project owner (2026-11-06): accepted [[wp-adr-interest-rate-rules-and-withholding]]. Live flow: the secured party enters the period dates and
+one observed rate in the console, and every day uses the current tUSD balance in escrow; the question goes to the SME
+([[task-sme-interest-daily-balances]]). Settlement: the secured party transfers tUSD to the pledgor (the pledgor to the secured party for a
+negative amount), with the statement hash anchored by a new `CollateralControl` function, on a new contract set on the
+same chain.

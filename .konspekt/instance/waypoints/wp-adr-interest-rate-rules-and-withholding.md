@@ -3,7 +3,7 @@ id: wp-adr-interest-rate-rules-and-withholding
 kind: decision
 subtype: adr
 timestamp: 2026-11-06T15:26:06Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 390933bfa4fb319310fab56fdb543a173e139753
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T15:26:06Z
   confidence: 0.6
 createdAt: 2026-11-06T15:26:06Z
-updatedAt: 2026-11-06T15:26:06Z
+updatedAt: 2026-11-06T15:35:07Z
 ```
 # ADR: how cdm-ext reads CDM's collateral interest elections
 
