@@ -3,7 +3,7 @@ id: wp-adr-interest-onchain-settlement
 kind: decision
 subtype: adr
 timestamp: 2026-11-06T15:51:39Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 16dca9f0c1765191fa8235340845c442d5744245
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T15:51:39Z
   confidence: 0.65
 createdAt: 2026-11-06T15:51:39Z
-updatedAt: 2026-11-06T15:51:39Z
+updatedAt: 2026-11-06T15:52:55Z
 ```
 # ADR: interest on cash collateral settles in whole tUSD, a negative amount in a second step
 

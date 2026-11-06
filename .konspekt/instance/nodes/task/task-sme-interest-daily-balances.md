@@ -3,7 +3,7 @@ id: task-sme-interest-daily-balances
 type: task
 title: Confirm with a business SME how the daily cash balances and rates of an Interest Period are taken
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 16dca9f0c1765191fa8235340845c442d5744245
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T15:35:07Z
   confidence: 0.7
 createdAt: 2026-11-06T15:35:07Z
-updatedAt: 2026-11-06T15:35:07Z
+updatedAt: 2026-11-06T15:52:55Z
 ```
 # Task: confirm how daily cash balances and rates are taken for collateral interest
 

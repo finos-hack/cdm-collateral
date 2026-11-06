@@ -2,7 +2,7 @@
 id: task-csa-interest-on-cash
 type: task
 title: Build the interest on cash collateral flow (G17)
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.75
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T15:51:39Z
+updatedAt: 2026-11-06T15:52:55Z
 ```
 # Task: build the interest on cash collateral flow (G17)
 
@@ -45,3 +45,10 @@ same chain.
   as `contracts/deployments/besu.pre-g17.json`): contract tests 32 of 32, cdm-ext 147 of 147, service tests 14 of 14,
   console unit tests 62 of 62, all 9 live specs pass.
 - Not done: not pushed, no PR.
+
+## Resolved 2026-11-06T15:52:55Z
+
+Resolved by the project owner (2026-11-06: "3. yes"), with [[wp-adr-interest-onchain-settlement]] and
+[[task-sme-interest-daily-balances]] accepted in the same decision. Open under G17: compounding, the ActualAmountReceived
+and Other alternatives, lending rebate and manufactured payments (C11, S12, S20). Pushed on branch
+`g17-interest-on-cash` for review.
