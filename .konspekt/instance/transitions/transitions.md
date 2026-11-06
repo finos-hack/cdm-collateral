@@ -601,3 +601,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-subfoldadr-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
 | node:task-csa-close-out-netting | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
 | node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| waypoint:wp-adr-interest-rate-rules-and-withholding | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
+| edge:e-mrk-interestadr-interest | review |  | proposed | 2026-11-06T15:26:06Z |  |  |

@@ -175,3 +175,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-csaext-reconciliation | decomposes | node:task-csa-workflow-extensions | node:task-csa-reconciliation |  | accepted |
 | e-mrk-closeoutadr-closeout | marks | waypoint:wp-adr-closeout-contract-applies-collateral | node:task-csa-close-out-netting |  | accepted |
 | e-mrk-subfoldadr-substitution | marks | waypoint:wp-adr-substitution-fold-portfolio | node:task-csa-substitution |  | accepted |
+| e-mrk-interestadr-interest | marks | waypoint:wp-adr-interest-rate-rules-and-withholding | node:task-csa-interest-on-cash |  | proposed |

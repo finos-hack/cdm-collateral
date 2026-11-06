@@ -649,3 +649,9 @@ excluded.
 | task-csa-close-out-netting | 8bb98918a0097a90fdafa85808f785c174b72c7b | services/collateral/src/test/java/collateral/CdmCloseOutSubstitutionTest.java | 2026-11-06T14:41:19Z |
 | task-csa-substitution | 8bb98918a0097a90fdafa85808f785c174b72c7b | services/collateral/src/test/java/collateral/CdmCloseOutSubstitutionTest.java | 2026-11-06T14:41:19Z |
 | task-csa-workflow-extensions | 34d13876bcacfbaa080c8fcf3b64728abe449f83 | docs/analysis/cdm-workflow-task-map.md | 2026-11-06T14:41:19Z |
+| task-csa-interest-on-cash | 6a2dbc5324563b7f1a23308857ddc8cf92071781 | cdm-ext/README.md | 2026-11-06T15:26:06Z |
+| task-csa-interest-on-cash | 6a2dbc5324563b7f1a23308857ddc8cf92071781 | cdm-ext/rosetta/cdmx-collateral-interest-func.rosetta | 2026-11-06T15:26:06Z |
+| task-csa-interest-on-cash | 6a2dbc5324563b7f1a23308857ddc8cf92071781 | cdm-ext/rosetta/cdmx-collateral-interest-type.rosetta | 2026-11-06T15:26:06Z |
+| task-csa-interest-on-cash | 6a2dbc5324563b7f1a23308857ddc8cf92071781 | cdm-ext/src/test/java/cdmx/InterestTest.java | 2026-11-06T15:26:06Z |
+| task-csa-interest-on-cash | 6a2dbc5324563b7f1a23308857ddc8cf92071781 | docs/analysis/cdm-workflow-task-map.md | 2026-11-06T15:26:06Z |
+| task-csa-interest-on-cash | 6a2dbc5324563b7f1a23308857ddc8cf92071781 | docs/cdm-development/gap-register.md | 2026-11-06T15:26:06Z |
