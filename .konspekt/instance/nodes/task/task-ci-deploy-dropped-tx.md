@@ -3,7 +3,7 @@ id: task-ci-deploy-dropped-tx
 type: task
 title: Diagnose a deploy transaction that is never mined in the CI live stack
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 372780d60f7248052397745dfba1afcf3e3d00f9
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:19:41Z
   confidence: 0.7
 createdAt: 2026-11-06T21:19:41Z
-updatedAt: 2026-11-06T21:20:00Z
+updatedAt: 2026-11-06T21:21:30Z
 ```
 # Task: diagnose a deploy transaction that is never mined in the CI live stack
 
@@ -39,3 +39,9 @@ reached, since the local chain dropped nothing. The live stack restarted on that
 `besu.pre-deploy-diag.json`) and the live specs passed 11/11. The CI step ran locally against the four nodes.
 The Besu log level is unchanged (INFO); a finer level for the transaction pool alone needs a log4j configuration
 per node.
+
+## Decision 2026-11-06T21:21:30Z
+
+Accepted by the project owner (2026-11-06: "1. yes"). The Besu log level stays at INFO ("2. b"): the
+transaction-pool queries and nonces are expected to show the cause if the failure recurs. The task stays open
+until a CI run shows the diagnostics or the owner closes it. Pushed on branch `deploy-dropped-tx` for review.
