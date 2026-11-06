@@ -272,3 +272,9 @@ at execution time.
 | task-csa-call-cancellation | 54637a9d8067cb2090358b03d33d1a3b0607cc6e |
 | task-csa-call-cancellation | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
 | task-csa-call-cancellation | 3e20375ab54f641bebc74c82ec9e8411c1646187 |
+| task-ci-deploy-dropped-tx | c2054f96d7e9c5964614cff0f13ae25682178acd |
+| task-ci-deploy-dropped-tx | 6f6a6ec7aa55af084321de1415dca2a93901d62c |
+| task-ci-deploy-dropped-tx | b22d15d4131912fe510baa32095420cc43492df4 |
+| task-ci-deploy-dropped-tx | 10954550d20c2e70bbd4c360a4c5f4744ff805e9 |
+| task-ci-deploy-dropped-tx | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
+| task-ci-deploy-dropped-tx | beaaab03a4b47e21c55030003c1f875892f88d97 |

@@ -2,9 +2,14 @@
 // Run through scripts/deploy-besu.mjs, which sets DEPLOYER_KEY to the market operator's node key so the deployer and
 // the oracle publisher are the mkt account (besu/mkt/data/key). Opening balances, prices and haircuts mirror the
 // console reference data (console/src/domain/reference.ts, scenarios.ts) so the live stack starts where the mock did.
-import { network } from "hardhat";
+//
+// Every transaction goes through send(): the script assigns nonces itself and waits for each receipt with a timeout. On
+// a timeout it prints the transaction's nonce, the account's latest and pending nonces, what the node returns for the
+// hash and the node's transaction pool, and sends the transaction once more with the same nonce if the node no longer
+// knows it (task-ci-deploy-dropped-tx: a CI run once waited on a mint the node never mined, cause unknown).
+import hre, { network } from "hardhat";
 import { privateKeyToAccount } from "viem/accounts";
-import { getAddress } from "viem";
+import { getAddress, getContractAddress, WaitForTransactionReceiptTimeoutError, type Hash } from "viem";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +22,9 @@ function partyAddress(node: string): `0x${string}` {
   const key = fs.readFileSync(besu(node), "utf8").trim() as `0x${string}`;
   return getAddress(privateKeyToAccount(key).address);
 }
+
+// 30 blocks at the 2 s QBFT block period; DEPLOY_RECEIPT_TIMEOUT_MS shortens it to exercise the timeout path.
+const RECEIPT_TIMEOUT_MS = Number(process.env.DEPLOY_RECEIPT_TIMEOUT_MS ?? 60_000);
 
 const RPC: Record<string, string> = {
   mkt: "http://localhost:8545",
@@ -56,24 +64,79 @@ async function main() {
   }
   console.log("deployer / publisher (mkt):", deployerAddr);
 
-  const marginCall = await viem.deployContract("MarginCall", []);
+  let nextNonce = await publicClient.getTransactionCount({ address: deployerAddr, blockTag: "pending" });
+
+  // Send one transaction with the next nonce and wait for its receipt; see the header comment for the timeout path.
+  async function send(label: string, submit: (nonce: number) => Promise<Hash>) {
+    const nonce = nextNonce++;
+    let hash = await submit(nonce);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: RECEIPT_TIMEOUT_MS });
+        if (receipt.status !== "success") throw new Error(`${label}: transaction ${hash} reverted in block ${receipt.blockNumber}`);
+        return receipt;
+      } catch (e) {
+        if (!(e instanceof WaitForTransactionReceiptTimeoutError)) throw e;
+        const [latest, pending, block, known, pool] = await Promise.all([
+          publicClient.getTransactionCount({ address: deployerAddr, blockTag: "latest" }),
+          publicClient.getTransactionCount({ address: deployerAddr, blockTag: "pending" }),
+          publicClient.getBlockNumber(),
+          publicClient.request({ method: "eth_getTransactionByHash", params: [hash] }) as Promise<{ blockNumber: string | null; nonce: string; to: string | null } | null>,
+          publicClient.request({ method: "txpool_besuTransactions" } as never).catch((err: Error) => `unavailable: ${err.message}`),
+        ]);
+        console.error(`${label}: no receipt for ${hash} after ${RECEIPT_TIMEOUT_MS / 1000} s (attempt ${attempt})`);
+        console.error(`  tx nonce ${nonce}; account nonce latest ${latest}, pending ${pending}; block ${block}`);
+        const seen = known && { blockNumber: known.blockNumber, nonce: known.nonce, to: known.to }; // input omitted
+        console.error("  eth_getTransactionByHash:", JSON.stringify(seen));
+        console.error("  txpool_besuTransactions:", JSON.stringify(pool));
+        if (known?.blockNumber) {
+          console.error("  the transaction is mined; reading its receipt");
+          const receipt = await publicClient.getTransactionReceipt({ hash });
+          if (receipt.status !== "success") throw new Error(`${label}: transaction ${hash} reverted in block ${receipt.blockNumber}`);
+          return receipt;
+        }
+        if (attempt > 1) throw e;
+        if (known === null) {
+          console.error(`  the node does not know the transaction; sending it again with nonce ${nonce}`);
+          hash = await submit(nonce);
+        } else {
+          console.error("  the node knows the transaction; waiting once more");
+        }
+      }
+    }
+  }
+
+  // Deploy with an explicit nonce; the address follows from the deployer and the nonce, so no lookup of the transaction
+  // is needed before the receipt.
+  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral">(name: N, args: readonly unknown[]) {
+    const { abi, bytecode } = await hre.artifacts.readArtifact(name);
+    let address: `0x${string}` | undefined;
+    await send(`deploy ${name}`, (nonce) => {
+      address = getContractAddress({ from: deployerAddr, nonce: BigInt(nonce) });
+      return deployer.deployContract({ abi, bytecode: bytecode as `0x${string}`, args: args as never, nonce });
+    });
+    return viem.getContractAt(name, address!);
+  }
+
+  const marginCall = await deploy("MarginCall", []);
   console.log("MarginCall           ", marginCall.address);
-  const oracle = await viem.deployContract("OracleFeed", [parties.mkt]);
+  const oracle = await deploy("OracleFeed", [parties.mkt]);
   console.log("OracleFeed           ", oracle.address);
-  const control = await viem.deployContract("CollateralControl", [marginCall.address, oracle.address]);
+  const control = await deploy("CollateralControl", [marginCall.address, oracle.address]);
   console.log("CollateralControl    ", control.address);
-  await marginCall.write.setControl([control.address]);
+  await send("MarginCall.setControl", (nonce) => marginCall.write.setControl([control.address], { nonce }));
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string }> = {};
   for (const t of TOKENS) {
-    const token = await viem.deployContract("TokenizedCollateral", [t.name, t.sym, t.isin, t.cusip, t.dti]);
+    const token = await deploy("TokenizedCollateral", [t.name, t.sym, t.isin, t.cusip, t.dti]);
     console.log(`  ${t.sym.padEnd(6)}           `, token.address);
     for (const [node, bals] of Object.entries(BALANCES)) {
       const amount = bals[t.sym] ?? 0n;
-      if (amount > 0n) await token.write.mint([parties[node as keyof typeof parties], amount]);
+      const to = parties[node as keyof typeof parties];
+      if (amount > 0n) await send(`${t.sym}.mint ${node}`, (nonce) => token.write.mint([to, amount], { nonce }));
     }
-    await control.write.setEligibility([token.address, true, t.haircutBps]);
-    await oracle.write.publishPrice([token.address, t.price], { account: deployer.account });
+    await send(`setEligibility ${t.sym}`, (nonce) => control.write.setEligibility([token.address, true, t.haircutBps], { nonce }));
+    await send(`publishPrice ${t.sym}`, (nonce) => oracle.write.publishPrice([token.address, t.price], { account: deployer.account, nonce }));
     tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti };
   }
 

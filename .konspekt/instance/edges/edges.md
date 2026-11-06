@@ -183,3 +183,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smecancel | decomposes | node:goal-cdm-development | node:task-sme-call-cancellation-rules |  | accepted |
 | e-lnk-cancel-smecancel | links | node:task-csa-call-cancellation | node:task-sme-call-cancellation-rules |  | accepted |
 | e-mrk-cancelblocks-cancel | marks | waypoint:wp-adr-cancellation-blocks-call | node:task-csa-call-cancellation |  | accepted |
+| e-lnk-cilivestack-deploydroppedtx | links | node:task-ci-live-e2e-stack | node:task-ci-deploy-dropped-tx |  | accepted |
