@@ -240,4 +240,145 @@ describe("CDM collateral contracts", async () => {
       assert.equal((await marginCall.read.getCall([R])).state, 5); // Settled
     });
   });
+  // tUST is 100.00 at a 2% haircut (98.00 a unit after haircut), tMMF 50.00 at 8% (46.00 a unit).
+  async function pledgeFor(callId: `0x${string}`, qty: bigint) {
+    await marginCall.write.issueCall([callId, IM, aAddr, 1n * SCALE, 0n, zeroHash], { account: bankB.account });
+    await marginCall.write.respond([callId, FULL, 0n, zeroHash], { account: bankA.account });
+    await marginCall.write.propose([callId, [{ token: tUST.address, qty }], zeroHash], { account: bankA.account });
+    await marginCall.write.decideProposal([callId, 0n, true, zeroHash], { account: bankB.account });
+    await tUST.write.approve([control.address, qty], { account: bankA.account });
+    await control.write.pledge([callId, 0n, zeroHash], { account: bankA.account });
+  }
+  const H = keccak256(toHex("cdm"));
+
+  describe("close-out netting on default (G15)", () => {
+    const O = id(20);
+
+    it("applies pledged collateral up to the amount owed, in whole units, and returns the surplus", async () => {
+      await pledgeFor(id(21), 11n); // 1,078.00 after haircut
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.closeOut([O, aAddr, 500n * SCALE, H], { account: bankB.account });
+      // ceil(500 / 98) = 6 units (588.00) applied, 5 returned.
+      assert.equal(await tUST.read.balanceOf([bAddr]), 6n);
+      assert.equal(await tUST.read.balanceOf([aAddr]), 1000n - 11n + 5n);
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 0n);
+      assert.equal(await control.read.closeOutCdmHash([O]), H);
+      const [ev] = await control.getEvents.ClosedOut();
+      assert.equal(ev.args.owed, 500n * SCALE);
+      assert.equal(ev.args.applied, 588n * SCALE);
+    });
+
+    it("applies everything when the amount owed exceeds the collateral held", async () => {
+      await pledgeFor(id(22), 11n);
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.closeOut([O, aAddr, 2000n * SCALE, H], { account: bankB.account });
+      assert.equal(await tUST.read.balanceOf([bAddr]), 11n);
+      assert.equal(await tUST.read.balanceOf([aAddr]), 1000n - 11n);
+    });
+
+    it("returns all collateral when nothing is owed", async () => {
+      await pledgeFor(id(23), 11n);
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.closeOut([O, aAddr, 0n, H], { account: bankB.account });
+      assert.equal(await tUST.read.balanceOf([bAddr]), 0n);
+      assert.equal(await tUST.read.balanceOf([aAddr]), 1000n);
+    });
+
+    it("applies across tokens in the order first pledged", async () => {
+      await pledgeFor(id(24), 2n); // 196.00
+      const C = id(25);
+      await marginCall.write.issueCall([C, IM, aAddr, 1n * SCALE, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.propose([C, [{ token: tMMF.address, qty: 10n }], zeroHash], { account: bankA.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
+      await tMMF.write.approve([control.address, 10n], { account: bankA.account });
+      await control.write.pledge([C, 0n, zeroHash], { account: bankA.account });
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.closeOut([O, aAddr, 300n * SCALE, H], { account: bankB.account });
+      // 2 tUST (196.00), then ceil(104 / 46) = 3 tMMF (138.00): 334.00 applied, 7 tMMF returned.
+      assert.equal(await tUST.read.balanceOf([bAddr]), 2n);
+      assert.equal(await tMMF.read.balanceOf([bAddr]), 3n);
+      assert.equal(await tMMF.read.balanceOf([aAddr]), 1000n - 3n);
+      const [ev] = await control.getEvents.ClosedOut();
+      assert.equal(ev.args.applied, 334n * SCALE);
+    });
+
+    it("rejects a close-out before a default is on the feed, without a statement hash, with a reused id, or with nothing pledged", async () => {
+      await pledgeFor(id(26), 11n);
+      await assert.rejects(control.write.closeOut([O, aAddr, 1n, H], { account: bankB.account })); // NoDefault
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await assert.rejects(control.write.closeOut([O, aAddr, 1n, zeroHash], { account: bankB.account }));
+      await control.write.closeOut([O, aAddr, 1n, H], { account: bankB.account });
+      await assert.rejects(control.write.closeOut([O, aAddr, 1n, H], { account: bankB.account })); // CloseOutExists
+      await assert.rejects(control.write.closeOut([id(27), aAddr, 1n, H], { account: bankB.account })); // NothingPledged
+    });
+
+    it("property: total supply is conserved across a close-out", async () => {
+      const supply = await tUST.read.totalSupply();
+      await pledgeFor(id(28), 11n);
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.closeOut([O, aAddr, 333n * SCALE, H], { account: bankB.account });
+      const sum = (await tUST.read.balanceOf([aAddr])) + (await tUST.read.balanceOf([bAddr])) + (await tUST.read.balanceOf([control.address]));
+      assert.equal(sum, supply);
+    });
+  });
+
+  describe("substitution of pledged collateral (G16)", () => {
+    const S = id(30);
+    const original = () => [{ token: tUST.address, qty: 5n }]; // 490.00 after haircut
+    const substitute = (qty: bigint) => [{ token: tMMF.address, qty }]; // 46.00 a unit after haircut
+
+    it("requests, consents and settles: the substitute enters escrow and the originals go back", async () => {
+      await pledgeFor(id(31), 11n);
+      await control.write.requestSubstitution([S, bAddr, original(), substitute(11n), H], { account: bankA.account }); // 506.00
+      assert.equal((await control.read.getSubstitution([S])).state, 1); // Requested
+      await control.write.decideSubstitution([S, true, H], { account: bankB.account });
+      await tMMF.write.approve([control.address, 11n], { account: bankA.account });
+      await control.write.settleSubstitution([S, H], { account: bankA.account });
+      const sub = await control.read.getSubstitution([S]);
+      assert.equal(sub.state, 4); // Settled
+      assert.equal(sub.settleCdmHash, H);
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 6n);
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tMMF.address]), 11n);
+      assert.equal(await tUST.read.balanceOf([aAddr]), 1000n - 11n + 5n);
+      assert.equal(await tMMF.read.balanceOf([aAddr]), 1000n - 11n);
+      const [orig, subst] = await control.read.getSubstitutionAssets([S]);
+      assert.equal(orig[0].qty, 5n);
+      assert.equal(subst[0].qty, 11n);
+    });
+
+    it("does not settle a refused substitution or one not yet consented", async () => {
+      await pledgeFor(id(32), 11n);
+      await control.write.requestSubstitution([S, bAddr, original(), substitute(11n), H], { account: bankA.account });
+      await tMMF.write.approve([control.address, 11n], { account: bankA.account });
+      await assert.rejects(control.write.settleSubstitution([S, H], { account: bankA.account })); // BadState: not consented
+      await control.write.decideSubstitution([S, false, H], { account: bankB.account });
+      assert.equal((await control.read.getSubstitution([S])).state, 3); // Refused
+      await assert.rejects(control.write.settleSubstitution([S, H], { account: bankA.account }));
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 11n);
+    });
+
+    it("rejects a substitute worth less than the originals and originals not in escrow", async () => {
+      await pledgeFor(id(33), 11n);
+      await assert.rejects(control.write.requestSubstitution([S, bAddr, original(), substitute(10n), H], { account: bankA.account })); // 460 < 490
+      await assert.rejects(control.write.requestSubstitution([S, bAddr, [{ token: tUST.address, qty: 12n }], substitute(100n), H], { account: bankA.account }));
+    });
+
+    it("lets only the secured party decide and only the pledgor settle", async () => {
+      await pledgeFor(id(34), 11n);
+      await control.write.requestSubstitution([S, bAddr, original(), substitute(11n), H], { account: bankA.account });
+      await assert.rejects(control.write.decideSubstitution([S, true, H], { account: bankA.account }));
+      await control.write.decideSubstitution([S, true, H], { account: bankB.account });
+      await assert.rejects(control.write.settleSubstitution([S, H], { account: bankB.account }));
+    });
+
+    it("checks the value again at settlement", async () => {
+      await pledgeFor(id(35), 11n);
+      await control.write.requestSubstitution([S, bAddr, original(), substitute(11n), H], { account: bankA.account });
+      await control.write.decideSubstitution([S, true, H], { account: bankB.account });
+      await oracle.write.publishPrice([tMMF.address, 40n * SCALE], { account: operator.account }); // 36.80 a unit: 404.80 < 490
+      await tMMF.write.approve([control.address, 11n], { account: bankA.account });
+      await assert.rejects(control.write.settleSubstitution([S, H], { account: bankA.account })); // SubstituteBelowOriginal
+    });
+  });
 });

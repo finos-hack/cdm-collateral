@@ -1282,6 +1282,125 @@
           "description": "Each gateway pushes the DefaultPublished and Enforced events to its own workflow service over Server-Sent Events; the pledgor's service records the default and each service records the enforcement."
         }
       ]
+    },
+    {
+      "unique-id": "flow-close-out-netting",
+      "name": "Close-out netting on default",
+      "description": "After a pledgor default the secured party, as the Non-defaulting Party, closes out the netting set under the ISDA 2002 Master Agreement Section 6(e) (cdm-ext CloseOutNetting, gap G15): the Early Termination Amount is netted, the pledged initial margin is applied to it under the security interest, and the surplus goes back to the pledgor. The CDM CloseOutStatement is carried off-chain and anchored by its hash.",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 1,
+          "description": "Secured party enters the Close-out Amount of the netting set and closes out in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the close-out to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-oracle",
+          "sequence-number": 3,
+          "description": "If the oracle feed does not show the default yet, the service sends the default notice to the oracle service."
+        },
+        {
+          "relationship-unique-id": "oracle-to-gateway",
+          "sequence-number": 4,
+          "description": "Oracle publishes the default status through the operator's gateway."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 5,
+          "description": "Service values the escrow after haircuts at the feed prices, builds the CDM CloseOutStatement and publishes it to the payload store, readable by both parties."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 6,
+          "description": "Service submits closeOut with the Early Termination Amount owed and the statement hash; the gateway signs with the secured party key."
+        },
+        {
+          "relationship-unique-id": "control-to-oracle-feed",
+          "sequence-number": 7,
+          "description": "Contract confirms the pledgor's default on the feed and reads the prices."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 8,
+          "description": "Contract applies whole units of pledged tokens, in the order first pledged, until the amount owed is covered, transfers them to the secured party and returns the rest to the pledgor."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 9,
+          "description": "Each gateway pushes the ClosedOut event to its own workflow service; the pledgor's service fetches the statement by its hash, recomputes it with CloseOutNetting and records it."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-substitution",
+      "name": "Substitution of pledged collateral",
+      "description": "The pledgor substitutes part of its pledged initial margin under ISDA CSA Paragraph 4(d) (cdm-ext Create_CollateralSubstitution, gap G16, defect D5): it gives notice, the secured party consents (the agreement elects consent, Paragraph 13 (f)(ii)), and on settlement the substitute enters escrow and the original items return in one transaction. Each step's CDM SubstitutionInstruction is carried off-chain and anchored by its hash.",
+      "transitions": [
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 1,
+          "description": "Pledgor chooses the pledged items to return and the substitute in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the request to the pledgor's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 3,
+          "description": "Service values both sides after haircuts at the feed prices and publishes the CDM SubstitutionInstruction (request) to the payload store."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 4,
+          "description": "Service submits requestSubstitution; the contract checks the originals are in escrow and the substitute is eligible and worth at least as much."
+        },
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 5,
+          "description": "Secured party sees the request in its console and consents or refuses."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 6,
+          "description": "Console submits the decision to the secured party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 7,
+          "description": "Service publishes the CDM SubstitutionInstruction (consent) to the payload store."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 8,
+          "description": "Service submits decideSubstitution, signed with the secured party key."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 9,
+          "description": "Pledgor settles the consented substitution in its console."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 10,
+          "description": "Pledgor's service publishes the CDM SubstitutionInstruction (settle) and submits settleSubstitution; the gateway approves the substitute first."
+        },
+        {
+          "relationship-unique-id": "control-to-tokens",
+          "sequence-number": 11,
+          "description": "Contract checks the values again at the current feed prices, moves the substitute into escrow and returns the original items to the pledgor."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 12,
+          "description": "Each gateway pushes the substitution events to its own workflow service; each service folds the three CDM steps through Create_CollateralSubstitution with the escrow it reads at the block before each step, and both reach the same state."
+        }
+      ]
     }
   ]
 }

@@ -58,3 +58,23 @@ struct Proposal {
     bytes32 cdmHash;
     bytes32 decisionCdmHash; // hash of the CDM DecideProposalInstruction, 0 until decided (wp-adr-cdm-payload-carrier)
 }
+
+// Substitution of pledged initial margin (ISDA CSA Paragraph 4(d); cdm-ext cdmx.collateral.substitution, G16). The
+// prototype's agreement elects consent for the pledgor (Paragraph 13 (f)(ii)), so every substitution needs the secured
+// party's consent before it settles.
+enum SubstitutionState {
+    None,
+    Requested,
+    Consented,
+    Refused,
+    Settled
+}
+
+struct Substitution {
+    address pledgor;
+    address securedParty;
+    SubstitutionState state;
+    bytes32 requestCdmHash; // hash of the CDM SubstitutionInstruction (request)
+    bytes32 decisionCdmHash; // hash of the CDM SubstitutionInstruction (consent or refusal), 0 until decided
+    bytes32 settleCdmHash; // hash of the CDM SubstitutionInstruction (settle), 0 until settled
+}

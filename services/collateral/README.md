@@ -93,7 +93,14 @@ the store and the two services, so the full stack needs no manual token setup.
 `GET /context`, `GET /state`, `POST /calls`, `POST /calls/{id}/response`, `POST /calls/{id}/proposal`,
 `POST /calls/{id}/decision`, `POST /calls/{id}/pledge` (IM settle), `POST /calls/{id}/transfer` (VM settle),
 `POST /calls/{id}/return` (return settle; body `via` = `release` | `transfer`), `GET /calls/{id}/cdm-state` (the
-cumulative fold; kept off the hot `/state` poll because the fold scans the chain and the store), and
+cumulative fold; kept off the hot `/state` poll because the fold scans the chain and the store),
+`GET /close-outs` and `POST /close-outs` (body `closeOutAmountUsd`; secured party: default notice if needed, CDM
+`CloseOutStatement` from cdm-ext `CloseOutNetting`, then `closeOut` on-chain; the listing fetches each statement by its
+on-chain hash and recomputes it, `verified`), `GET /substitutions`, `POST /substitutions` (body `original`,
+`substitute`; pledgor), `POST /substitutions/{id}/decision` (body `consent`, `reason`; secured party),
+`POST /substitutions/{id}/settle` (pledgor) and `GET /substitutions/{id}/cdm-state` (the steps folded through cdm-ext
+`Create_CollateralSubstitution` with the escrow read at the block before each step and kept in the store, since the
+node serves state for recent blocks only), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

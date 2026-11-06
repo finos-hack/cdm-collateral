@@ -3,9 +3,22 @@
 // workflow service for on-chain call, proposal and balance state and offers the lifecycle actions for its role.
 // Actions are keyed on the call's from/to/kind/state (not the party's role), so the same row serves delivery calls
 // (the pledgor acts on settlement) and return calls (the secured party agrees and releases). The secured party can
-// also declare the pledgor's default and enforce against the pledged initial margin (flow-default-enforcement).
+// also declare the pledgor's default and enforce against the pledged initial margin (flow-default-enforcement), or
+// close out the netting set and apply the pledged collateral to the Early Termination Amount (flow-close-out-netting).
+// The pledgor can ask to substitute pledged collateral, which the secured party consents to or refuses
+// (flow-substitution).
 import { useCallback, useEffect, useState } from "react";
-import { api, serviceUrl, type LiveCall, type LiveContext, type LiveParty, type LiveRevaluation, type LiveState } from "../domain/liveApi";
+import {
+  api,
+  serviceUrl,
+  type LiveCall,
+  type LiveCloseOut,
+  type LiveContext,
+  type LiveParty,
+  type LiveRevaluation,
+  type LiveState,
+  type LiveSubstitution,
+} from "../domain/liveApi";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const usd = (s: string) => "USD " + Number(s).toLocaleString("en-US");
@@ -22,6 +35,9 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [token, setToken] = useState("tUST");
 
   const [reval, setReval] = useState<LiveRevaluation | null>(null);
+  const [closeOuts, setCloseOuts] = useState<LiveCloseOut[]>([]);
+  const [subs, setSubs] = useState<LiveSubstitution[]>([]);
+  const [closeOutUsd, setCloseOutUsd] = useState(1_000_000);
 
   const refresh = useCallback(async () => {
     try {
@@ -29,6 +45,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       setError(null);
       // Shown to the secured party only (render below); a failure here must not hide the call state.
       api.revaluation(party).then(setReval).catch(() => setReval(null));
+      api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([]));
+      api.substitutions(party).then(setSubs).catch(() => setSubs([]));
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
     }
@@ -170,6 +188,60 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         </div>
       )}
 
+      {isSecured && (
+        <div className="card" data-testid="close-out">
+          <h3>Close-out on default</h3>
+          <div className="row">
+            <label>
+              Close-out Amount (USD){" "}
+              <input aria-label="Close-out Amount (USD)" type="number" value={closeOutUsd} step={250000} onChange={(e) => setCloseOutUsd(Number(e.target.value))} />
+            </label>
+            <button disabled={busy || !hasPledged} onClick={() => run(() => api.closeOut(party, closeOutUsd))}>
+              Declare default &amp; close out {other}
+            </button>
+          </div>
+          <div className="small">
+            ISDA 2002 MA Section 6(e): the Early Termination Amount is netted, the pledged collateral is applied to it and the
+            surplus is returned to {other}.
+          </div>
+        </div>
+      )}
+
+      {closeOuts.length > 0 && (
+        <div className="card">
+          <h3>Close-out statements</h3>
+          <table className="tbl">
+            <thead>
+              <tr><th>Close-out</th><th>Close-out Amount</th><th>Early Termination Amount</th><th>Collateral held</th><th>Applied</th><th>Payable</th><th>CDM</th></tr>
+            </thead>
+            <tbody>
+              {closeOuts.map((o) => (
+                <tr key={o.closeOutId} data-testid={`close-out-${o.closeOutId}`}>
+                  <td className="mono">{short(o.closeOutId)}</td>
+                  <td>{o.closeOutAmountUsd ? usd(o.closeOutAmountUsd) : "—"}</td>
+                  <td>{o.earlyTerminationAmountUsd ? usd(o.earlyTerminationAmountUsd) : "—"}</td>
+                  <td>{o.collateralHeldUsd ? usd(o.collateralHeldUsd) : "—"}</td>
+                  <td title={`on-chain, whole units: ${usd(o.appliedUsd)}`}>{o.collateralAppliedUsd ? usd(o.collateralAppliedUsd) : "—"}</td>
+                  <td>{o.amountPayableUsd ? usd(o.amountPayableUsd) : "—"}</td>
+                  <td>{o.verified ? <span className="ok">statement verified ✓</span> : <span className="bad">{o.error ?? "unverified"}</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {!isSecured && <SubstitutionRequest party={party} other={other} busy={busy} hasPledged={hasPledged} run={run} />}
+
+      {subs.length > 0 && (
+        <div className="card">
+          <h3>Substitutions</h3>
+          {subs.map((s) => (
+            <SubstitutionRow key={s.substitutionId} s={s} party={party} busy={busy} run={run} />
+          ))}
+        </div>
+      )}
+
       <div className="card">
         <h3>Margin calls</h3>
         {!state?.calls.length && <div className="small">No calls yet.</div>}
@@ -302,6 +374,75 @@ function CallRow(props: {
           ))}
         </details>
       )}
+    </div>
+  );
+}
+
+const TOKENS = ["tUST", "tMMF", "tUSD"];
+
+function SubstitutionRequest(props: { party: LiveParty; other: LiveParty; busy: boolean; hasPledged: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, busy, hasPledged, run } = props;
+  const [origToken, setOrigToken] = useState("tUST");
+  const [origQty, setOrigQty] = useState(1_000);
+  const [subToken, setSubToken] = useState("tUSD");
+  const [subQty, setSubQty] = useState(100_000);
+  return (
+    <div className="card" data-testid="substitution-request">
+      <h3>Substitute pledged collateral</h3>
+      <div className="row">
+        <label>
+          Return{" "}
+          <select aria-label="Original token" value={origToken} onChange={(e) => setOrigToken(e.target.value)}>
+            {TOKENS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+        <input aria-label="Original quantity" type="number" value={origQty} step={1000} onChange={(e) => setOrigQty(Number(e.target.value))} style={{ width: 110 }} />
+        <label>
+          for{" "}
+          <select aria-label="Substitute token" value={subToken} onChange={(e) => setSubToken(e.target.value)}>
+            {TOKENS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+        <input aria-label="Substitute quantity" type="number" value={subQty} step={1000} onChange={(e) => setSubQty(Number(e.target.value))} style={{ width: 120 }} />
+        <button
+          disabled={busy || !hasPledged}
+          onClick={() => run(() => api.requestSubstitution(party, [{ token: origToken, qty: origQty }], [{ token: subToken, qty: subQty }]))}
+        >
+          Request substitution → {other}
+        </button>
+      </div>
+      <div className="small">ISDA CSA Paragraph 4(d): the substitute must be worth at least the items returned; {other}'s consent is required.</div>
+    </div>
+  );
+}
+
+function SubstitutionRow(props: { s: LiveSubstitution; party: LiveParty; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { s, party, busy, run } = props;
+  const list = (xs: { token: string; qty: string }[]) => xs.map((a) => `${a.token} ${Number(a.qty).toLocaleString("en-US")}`).join(" + ");
+  return (
+    <div className="subcard" data-testid={`substitution-${s.substitutionId}`}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <div>
+          <span className="mono">{short(s.substitutionId)}</span> · {s.pledgor} → {s.securedParty} · <strong>{s.state}</strong>
+        </div>
+        <div className="small">return {list(s.original)} for {list(s.substitute)}</div>
+      </div>
+      <div className="row">
+        {s.securedParty === party && s.state === "requested" && (
+          <>
+            <button disabled={busy} onClick={() => run(() => api.decideSubstitution(party, s.substitutionId, true))}>Consent</button>
+            <button disabled={busy} onClick={() => run(() => api.decideSubstitution(party, s.substitutionId, false, "Refused by the secured party"))}>Refuse</button>
+          </>
+        )}
+        {s.pledgor === party && s.state === "consented" && (
+          <button disabled={busy} onClick={() => run(() => api.settleSubstitution(party, s.substitutionId))}>Settle substitution</button>
+        )}
+        {s.state === "settled" && <span className="ok">substituted on-chain ✓</span>}
+        {s.cdm.converged && s.cdm.qualifiers && (
+          <span className="small mono">CDM: {s.cdm.qualifiers[s.cdm.qualifiers.length - 1]}</span>
+        )}
+        {s.cdm.error && <span className="bad small">{s.cdm.error}</span>}
+      </div>
     </div>
   );
 }

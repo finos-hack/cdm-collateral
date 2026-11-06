@@ -94,7 +94,49 @@ export const api = {
     req<{ ok: boolean; pledgor: string; defaultTx: string; enforceTx: string }>(p, "POST", `/calls/${callId}/enforce`, {}),
   /** Revaluation of the pledged IM at the oracle feed prices after haircuts (flow-revaluation-top-up). */
   revaluation: (p: LiveParty) => req<LiveRevaluation>(p, "GET", "/revaluation"),
+  /** Close-outs on default with their checked CDM CloseOutStatement (flow-close-out-netting). */
+  closeOuts: (p: LiveParty) => req<LiveCloseOut[]>(p, "GET", "/close-outs"),
+  /** Secured party: declare the pledgor's default if the feed does not show it, then close out against the escrow. */
+  closeOut: (p: LiveParty, closeOutAmountUsd: number) =>
+    req<LiveCloseOut & { closeOutTx: string; defaultTx?: string }>(p, "POST", "/close-outs", { closeOutAmountUsd }),
+  /** Substitutions of pledged collateral with their CDM fold (flow-substitution). */
+  substitutions: (p: LiveParty) => req<LiveSubstitution[]>(p, "GET", "/substitutions"),
+  requestSubstitution: (p: LiveParty, original: { token: string; qty: number }[], substitute: { token: string; qty: number }[]) =>
+    req<{ substitutionId: string; originalUsd: string; substituteUsd: string }>(p, "POST", "/substitutions", { original, substitute }),
+  decideSubstitution: (p: LiveParty, substitutionId: string, consent: boolean, reason?: string) =>
+    req<{ ok: boolean }>(p, "POST", `/substitutions/${substitutionId}/decision`, { consent, reason }),
+  settleSubstitution: (p: LiveParty, substitutionId: string) => req<{ ok: boolean }>(p, "POST", `/substitutions/${substitutionId}/settle`, {}),
 };
+
+export interface LiveCloseOut {
+  closeOutId: string;
+  securedParty: LiveParty;
+  pledgor: LiveParty;
+  /** The Early Termination Amount owed by the pledgor (0 when not positive), as the contract recorded it. */
+  owedUsd: string;
+  /** Value after haircuts of the collateral the contract applied, in whole token units. */
+  appliedUsd: string;
+  cdmHash: string;
+  block?: string;
+  /** The statement was read from the payload store, matches the on-chain hash, and CloseOutNetting over its inputs gives it. */
+  verified?: boolean;
+  error?: string;
+  closeOutAmountUsd?: string;
+  earlyTerminationAmountUsd?: string;
+  collateralHeldUsd?: string;
+  collateralAppliedUsd?: string;
+  amountPayableUsd?: string;
+}
+
+export interface LiveSubstitution {
+  substitutionId: string;
+  pledgor: LiveParty;
+  securedParty: LiveParty;
+  state: "none" | "requested" | "consented" | "refused" | "settled";
+  original: { token: string; qty: string }[];
+  substitute: { token: string; qty: string }[];
+  cdm: { status: string; qualifiers?: string[]; stateHash?: string; converged: boolean; totalSteps: number; foldedSteps: number; error?: string };
+}
 
 export interface LiveRevaluation {
   requiredUsd: string;
