@@ -639,6 +639,62 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cilivestack-deploydroppedtx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |
 | node:task-ci-deploy-dropped-tx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
 | edge:e-lnk-cilivestack-deploydroppedtx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
+| node:investigation-adr-asr-traceability | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| node:investigation-adr-asr-traceability | status |  | active | 2026-11-06T21:34:07Z |  |  |
+| edge:e-dec-archdesign-adrtrace | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-amendterms | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-cancelblocks | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-cancelblocks | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-cdmevents | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-extrune | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-localext | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-closeout | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-finality-closeout | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-consolerules | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-imseg | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-finality-imseg | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-interestsettle | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-finality-interestsettle | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-interestrules | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-javastack | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-perparty | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-reval | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-callstate-subst | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| edge:e-drv-cdmdata-subst | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
+| noteworthy:nw-architecture-json-is-source | review |  | proposed | 2026-11-06T21:49:38Z |  |  |
+| edge:e-note-adrtrace-jsonsource | review |  | proposed | 2026-11-06T21:49:38Z |  |  |
+| concept:concept-asr-onchain-feed-scope | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
+| concept:concept-asr-agreement-type-fidelity | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
+| edge:e-drv-feedscope-oracleprices | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
+| edge:e-drv-agreementfidelity-scenariogrid | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
+| edge:e-dec-archdesign-adrtrace | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-amendterms | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-callstate-cancelblocks | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-cancelblocks | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-cdmevents | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-extrune | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-localext | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-closeout | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-finality-closeout | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-consolerules | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-callstate-imseg | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-finality-imseg | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-interestsettle | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-finality-interestsettle | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-interestrules | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-javastack | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-callstate-perparty | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-callstate-reval | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-callstate-subst | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-drv-cdmdata-subst | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| edge:e-note-adrtrace-jsonsource | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| node:investigation-adr-asr-traceability | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| noteworthy:nw-architecture-json-is-source | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| concept:concept-asr-onchain-feed-scope | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| concept:concept-asr-agreement-type-fidelity | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| edge:e-drv-feedscope-oracleprices | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| edge:e-drv-agreementfidelity-scenariogrid | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| node:investigation-adr-asr-traceability | status | active | resolved | 2026-11-06T22:40:11Z | 22aa20e558831db58e7cbd2e41943f4ee16e1f11 | denisurusov |
 | node:task-csa-call-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
 | node:task-csa-call-replacement | status |  | open | 2026-11-06T21:44:40Z |  |  |
 | waypoint:wp-adr-replacement-call-link | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
