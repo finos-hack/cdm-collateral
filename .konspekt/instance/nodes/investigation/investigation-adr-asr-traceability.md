@@ -2,7 +2,7 @@
 id: investigation-adr-asr-traceability
 type: investigation
 title: Make every ADR traceable to the ASRs that drive it
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: adr-asr-traceability
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:34:07Z
   confidence: 0.8
 createdAt: 2026-11-06T21:34:07Z
-updatedAt: 2026-11-06T21:53:08Z
+updatedAt: 2026-11-06T22:40:11Z
 ```
 # Investigation: make every ADR traceable to the ASRs that drive it
 
@@ -60,3 +60,7 @@ No recorded ASR matches five ADRs. The project owner chose (2026-11-06, source `
 their disposition is open.
 
 `wp-adr-live-stack-local-ui-driven` is superseded by `wp-adr-ci-runs-live-specs` and is exempt from the check.
+
+**Outcome.** Every ADR has an accepted inbound `drives` edge. In konspekt, finos-labs/konspekt#103 lists undriven ADRs in the view and
+warns on them; finos-labs/konspekt#104 makes a proposed ADR with no `drives` edge a conformance error and requires
+the edges in the same write. Resolved by the project owner (source `22aa20e`).

@@ -694,3 +694,4 @@ into state history — an instance without it is v1-conformant and records none.
 | concept:concept-asr-agreement-type-fidelity | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
 | edge:e-drv-feedscope-oracleprices | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
 | edge:e-drv-agreementfidelity-scenariogrid | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| node:investigation-adr-asr-traceability | status | active | resolved | 2026-11-06T22:40:11Z | 22aa20e558831db58e7cbd2e41943f4ee16e1f11 | denisurusov |
