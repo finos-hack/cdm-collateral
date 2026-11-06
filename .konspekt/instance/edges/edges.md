@@ -178,3 +178,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-interestadr-interest | marks | waypoint:wp-adr-interest-rate-rules-and-withholding | node:task-csa-interest-on-cash |  | accepted |
 | e-dec-cdmdev-smeinterest | decomposes | node:goal-cdm-development | node:task-sme-interest-daily-balances |  | proposed |
 | e-lnk-interest-smeinterest | links | node:task-csa-interest-on-cash | node:task-sme-interest-daily-balances |  | proposed |
+| e-mrk-interestsettle-interest | marks | waypoint:wp-adr-interest-onchain-settlement | node:task-csa-interest-on-cash |  | proposed |

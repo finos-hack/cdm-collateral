@@ -609,3 +609,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-interest-daily-balances | status |  | open | 2026-11-06T15:35:07Z |  |  |
 | edge:e-dec-cdmdev-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
 | edge:e-lnk-interest-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
+| waypoint:wp-adr-interest-onchain-settlement | review |  | proposed | 2026-11-06T15:51:39Z |  |  |
+| edge:e-mrk-interestsettle-interest | review |  | proposed | 2026-11-06T15:51:39Z |  |  |

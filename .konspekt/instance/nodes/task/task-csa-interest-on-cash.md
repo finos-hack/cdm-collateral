@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.75
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T15:35:07Z
+updatedAt: 2026-11-06T15:51:39Z
 ```
 # Task: build the interest on cash collateral flow (G17)
 
@@ -34,3 +34,14 @@ one observed rate in the console, and every day uses the current tUSD balance in
 ([[task-sme-interest-daily-balances]]). Settlement: the secured party transfers tUSD to the pledgor (the pledgor to the secured party for a
 negative amount), with the statement hash anchored by a new `CollateralControl` function, on a new contract set on the
 same chain.
+
+## Progress 2026-11-06T15:51:39Z
+
+- Prototype flow built in commit `0f04add` on branch `g17-interest-on-cash`:
+  `CollateralControl.stateInterest` and `payInterest`, gateway routes `/interest`, service `/api/v1/interest`
+  (`CdmInterest`), console card "Interest on cash collateral" and "Interest statements", CALM flow
+  `flow-interest-on-cash` and a live spec. Settlement design proposed in [[wp-adr-interest-onchain-settlement]].
+- Verified locally 2026-11-06 on a new contract deployment on the existing chain (the previous deployment file is kept
+  as `contracts/deployments/besu.pre-g17.json`): contract tests 32 of 32, cdm-ext 147 of 147, service tests 14 of 14,
+  console unit tests 62 of 62, all 9 live specs pass.
+- Not done: not pushed, no PR.
