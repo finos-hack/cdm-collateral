@@ -575,3 +575,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-csa-reconciliation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
 | node:task-csa-reconciliation | status |  | open | 2026-11-06T13:19:22Z |  |  |
 | edge:e-dec-csaext-reconciliation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| waypoint:wp-adr-closeout-contract-applies-collateral | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| waypoint:wp-adr-substitution-fold-portfolio | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| edge:e-mrk-closeoutadr-closeout | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| edge:e-mrk-subfoldadr-substitution | review |  | proposed | 2026-11-06T14:41:19Z |  |  |

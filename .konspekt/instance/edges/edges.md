@@ -173,3 +173,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-csaext-settlementnetting | decomposes | node:task-csa-workflow-extensions | node:task-csa-settlement-netting |  | proposed |
 | e-dec-csaext-allocation | decomposes | node:task-csa-workflow-extensions | node:task-csa-allocation |  | proposed |
 | e-dec-csaext-reconciliation | decomposes | node:task-csa-workflow-extensions | node:task-csa-reconciliation |  | proposed |
+| e-mrk-closeoutadr-closeout | marks | waypoint:wp-adr-closeout-contract-applies-collateral | node:task-csa-close-out-netting |  | proposed |
+| e-mrk-subfoldadr-substitution | marks | waypoint:wp-adr-substitution-fold-portfolio | node:task-csa-substitution |  | proposed |
