@@ -32,6 +32,7 @@ enum MarginCallStepEnum: <"The steps of the margin call lifecycle (ISO 20022 col
 type IssueCallInstruction: <"Step IssueCall.">
     issuance MarginCallIssuance (1..1) <"The call as CDM represents it.">
     direction MarginCallActionEnum (1..1) <"Delivery: the called party delivers collateral. Return: the called party releases collateral it holds.">
+    replacesCall string (0..1) <"The identifier of a cancelled call that this call replaces, for example a corrected call after a cancellation (task-csa-call-replacement). ReplacementAllowed checks it against the replaced call's state.">
 
     condition CallIdentified: <"The call carries an identifier so later steps can refer to it.">
         issuance -> callIdentifier exists
@@ -39,6 +40,10 @@ type IssueCallInstruction: <"Step IssueCall.">
     condition PledgorAndSecuredParty: <"The call names one pledgor and one secured party (MarginCallBase -> partyRole), who pay and receive the collateral transfers on settlement.">
         (issuance -> partyRole filter role = PartyRoleEnum -> Pledgor then count) = 1
             and (issuance -> partyRole filter role = PartyRoleEnum -> SecuredParty then count) = 1
+
+    condition NotItsOwnReplacement: <"A call does not replace itself.">
+        if replacesCall exists
+        then issuance -> callIdentifier -> assignedIdentifier -> identifier all <> replacesCall
 
 type DecideProposalInstruction: <"Step DecideProposal.">
     proposalId string (1..1) <"The proposal decided (its assigned identifier).">
@@ -109,6 +114,7 @@ type MarginCallState: <"Cumulative record of one margin call: the call, the resp
     settlement SettleCallInstruction (0..1)
     withdrawal WithdrawCallInstruction (0..1) <"Set when the calling party withdrew the call.">
     cancellation CancellationRequest (0..*) <"Cancellation requests in order; at most the last is still Requested.">
+    replacesCall string (0..1) <"The cancelled call this call replaces, from its IssueCall step.">
     stepRecord MarginCallStepRecord (1..*)
 
     condition AmountsAfterResponse: <"Agreed and disputed amounts are known once the call has been answered; a call withdrawn before a response has none.">
