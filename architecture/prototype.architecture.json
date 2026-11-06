@@ -1453,6 +1453,53 @@
           "description": "Both consoles list the statement as paid and verified; for a negative amount the pledgor pays it from its console (payInterest)."
         }
       ]
+    },
+    {
+      "unique-id": "flow-agreement-amendment",
+      "name": "Amendment of agreement terms",
+      "description": "Either party proposes an amendment of the IM CSA's terms: a new Minimum Transfer Amount through CDM's Create_AgreementEvent (intent AmendedTerms, qualified AgreementTermsChange by cdm-ext) and haircut changes to the eligibility schedule (cdm-ext Create_CollateralAgreementAmendment). The baseline agreement is CDM's published sample 2018 NY law IM CSA. The CDM CollateralAgreementAmendment is carried off-chain and anchored by its hash, chained from the pair's current agreement hash; the other party consents on-chain, the contract applies the haircuts to the pair, and both services fold the agreed amendments to the same terms.",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 1,
+          "description": "One party (here the secured party) enters a new pledgor MTA and a token's haircut and proposes the amendment in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the amendment to the party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 3,
+          "description": "Service builds the CDM CollateralAgreementAmendment over the terms in force (folded from the agreed amendments) and publishes it to the payload store, readable by both parties."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 4,
+          "description": "Service submits proposeAmendment with the haircut terms, the pair's current agreement hash (beforeHash) and the amendment hash; the contract accepts one pending amendment per pair."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 5,
+          "description": "Each gateway pushes the AmendmentProposed event to its own workflow service; both consoles list the proposal."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 6,
+          "description": "The other party (here the pledgor) consents in its console; its service fetches the amendment by its on-chain hash, verifies it against the terms in force and checks the on-chain haircut terms are the document's changes."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 7,
+          "description": "Service publishes its decision document and submits decideAmendment; on consent the contract copies the global schedule for the pair on its first amendment, applies the haircut terms and sets the pair's agreement hash to the amendment hash."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 8,
+          "description": "Each gateway pushes AmendmentDecided; both services fold the agreed amendments, read the pair's haircuts from the contract, and value collateral and revalue with the amended MTA and haircuts."
+        }
+      ]
     }
   ]
 }

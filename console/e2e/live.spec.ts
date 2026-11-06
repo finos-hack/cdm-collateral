@@ -733,3 +733,97 @@ test("flow-interest-on-cash: secured party states interest on cash collateral ->
   }
   expect(errors).toEqual([]);
 });
+
+interface Agreement {
+  mtaUsd: string;
+  roundingUsd: string;
+  haircuts: { token: string; eligible: boolean; haircutBps: number; onChainHaircutBps: number | null; matches: boolean }[];
+  agreementHash: string;
+  onChainAgreementHash: string;
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: { amendmentId: string; proposer: "A" | "B"; mine: boolean; state: string; mtaUsd: string | null }[];
+}
+
+// Last: the amendment changes the pair's terms, and the spec restores them (MTA 500,000, tMMF 4%) so a rerun of the
+// other specs sees the baseline terms.
+test("flow-agreement-amendment: secured party proposes new MTA and tMMF haircut -> pledgor consents -> terms applied on-chain and in both services", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: refuse an amendment a failed earlier run left pending.
+  const start = await call<Agreement>(`${SERVICE.B}/agreement`);
+  const left = start.amendments.find((m) => m.state === "proposed");
+  if (left) await call(`${left.proposer === "B" ? SERVICE.A : SERVICE.B}/amendments/${left.amendmentId}/decision`, "POST", { consent: false });
+  const known = new Set(start.amendments.map((m) => m.amendmentId));
+  const mta = start.mtaUsd === "400000" ? 450_000 : 400_000;
+  const bps = start.haircuts.find((h) => h.token === "tMMF")!.haircutBps === 1000 ? 1200 : 1000;
+
+  // 1-4. Secured party (BANK-B) proposes a new MTA and a tMMF haircut in its console.
+  await page.goto("/#/live/B");
+  const card = page.getByTestId("agreement");
+  await expect(card.getByText("terms verified against the chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await card.getByLabel("New MTA (USD)").fill(String(mta));
+  await card.getByLabel("Amended token").selectOption("tMMF");
+  await card.getByLabel("Haircut (bps)").fill(String(bps));
+  await expect(card.getByRole("button", { name: "Propose amendment → A" })).toBeEnabled({ timeout: STEP_TIMEOUT });
+  await card.getByRole("button", { name: "Propose amendment → A" }).click();
+
+  let id = "";
+  await expect
+    .poll(async () => {
+      const m = (await call<Agreement>(`${SERVICE.A}/agreement`)).amendments.find((x) => !known.has(x.amendmentId));
+      id = m?.amendmentId ?? "";
+      return m?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("proposed");
+
+  // 5-7. Pledgor (BANK-A) checks the CDM amendment and consents in its console.
+  await page.goto("/#/live/A");
+  const row = page.getByTestId(`amendment-${id}`);
+  await expect(row.getByRole("button", { name: "Consent" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await row.getByRole("button", { name: "Consent" }).click();
+  await expect(row.getByText("agreed on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 8. Both services fold the amendment to the same terms, matching the chain.
+  const folded: Agreement[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const a = await call<Agreement>(`${svc}/agreement`);
+        return a.verified && a.mtaUsd === String(mta) ? true : (a.problem ?? a.mtaUsd);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    folded.push(await call<Agreement>(`${svc}/agreement`));
+  }
+  expect(folded[0].agreementHash).toBe(folded[1].agreementHash);
+  expect(folded[0].agreementHash).not.toBe(start.agreementHash);
+  for (const a of folded) expect(a.haircuts.find((h) => h.token === "tMMF")).toMatchObject({ haircutBps: bps, onChainHaircutBps: bps, matches: true });
+  const onChain = await call<{ agreementHash: string; pendingAmendment: string; eligibility: { token: string; eligible: boolean; haircutBps: number }[] }>(
+    `${GATEWAY.A}/pair-terms?pledgor=${p.a}&securedParty=${p.b}`);
+  expect(onChain.agreementHash).toBe(folded[0].agreementHash);
+  expect(onChain.pendingAmendment).toBe(ZERO_HASH);
+  expect(onChain.eligibility.find((e) => e.token.toLowerCase() === p.tokens["tMMF"].toLowerCase())).toMatchObject({ eligible: true, haircutBps: bps });
+  const reval = await call<{ mtaUsd: string }>(`${SERVICE.B}/revaluation`);
+  expect(reval.mtaUsd).toBe(String(mta));
+
+  // Restore the baseline terms through the services: A proposes, B consents (either party may propose).
+  const { amendmentId } = await call<{ amendmentId: string }>(`${SERVICE.A}/amendments`, "POST", {
+    mtaUsd: 500_000, haircuts: [{ token: "tMMF", eligible: true, haircutBps: 400 }] });
+  await expect
+    .poll(async () => (await call<Agreement>(`${SERVICE.B}/agreement`)).amendments.find((m) => m.amendmentId === amendmentId)?.state ?? null, { timeout: 60_000 })
+    .toBe("proposed");
+  await call(`${SERVICE.B}/amendments/${amendmentId}/decision`, "POST", { consent: true });
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const a = await call<Agreement>(`${svc}/agreement`);
+        return a.verified && a.mtaUsd === "500000" && a.haircuts.find((h) => h.token === "tMMF")!.onChainHaircutBps === 400;
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  expect(errors).toEqual([]);
+});

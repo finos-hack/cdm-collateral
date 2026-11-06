@@ -70,6 +70,32 @@ enum SubstitutionState {
     Settled
 }
 
+enum AmendmentState {
+    None,
+    Proposed,
+    Agreed,
+    Refused
+}
+
+/// An amendment of the agreement terms between a pledgor and a secured party (task-csa-amendment). Either party
+/// proposes, the other consents or refuses; on consent the haircut terms apply to that pair.
+struct Amendment {
+    address pledgor;
+    address securedParty;
+    address proposer;
+    AmendmentState state;
+    bytes32 beforeHash; // the pair's agreement hash the amendment applies to (0 for the baseline)
+    bytes32 proposeCdmHash; // hash of the CDM CollateralAgreementAmendment
+    bytes32 decisionCdmHash; // hash of the decision document, 0 until decided
+}
+
+/// One token's eligibility and haircut after an amendment.
+struct HaircutTerm {
+    address token;
+    bool eligible;
+    uint16 haircutBps;
+}
+
 enum InterestState {
     None,
     Stated, // negative amount, awaiting the pledgor's payment

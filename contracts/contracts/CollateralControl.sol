@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {MarginCall} from "./MarginCall.sol";
 import {OracleFeed} from "./OracleFeed.sol";
-import {CallKind, CallState, ProposalState, SubstitutionState, InterestState, Asset, Call, Proposal, Substitution, InterestStatement} from "./CollateralTypes.sol";
+import {CallKind, CallState, ProposalState, SubstitutionState, InterestState, AmendmentState, Asset, Call, Proposal, Substitution, InterestStatement, Amendment, HaircutTerm} from "./CollateralTypes.sol";
 
 /// @title Collateral control contract
 /// @notice Performs settlement against the state recorded in the margin call contract (control-to-margin-call) and
@@ -25,6 +25,17 @@ contract CollateralControl is ReentrancyGuard {
     }
 
     mapping(address => Eligibility) public eligibility;
+    address[] private _scheduleTokens; // every token setEligibility has configured
+
+    // Eligibility per (pledgor, secured party) after an agreed amendment (task-csa-amendment); the global schedule
+    // applies to a pair until its first amendment.
+    mapping(address => mapping(address => mapping(address => Eligibility))) private _pairEligibility;
+    mapping(address => mapping(address => bool)) private _pairAmended;
+    /// Hash of the CDM amendment last agreed between a pledgor and a secured party (0: the baseline agreement).
+    mapping(address => mapping(address => bytes32)) public agreementHash;
+    mapping(address => mapping(address => bytes32)) public pendingAmendment;
+    mapping(bytes32 => Amendment) private _amendments;
+    mapping(bytes32 => HaircutTerm[]) private _amendmentTerms;
 
     // Pledged collateral held in escrow for initial margin, pooled per (pledgor, secured party).
     mapping(address => mapping(address => mapping(address => uint256))) private _pledged;
@@ -39,6 +50,8 @@ contract CollateralControl is ReentrancyGuard {
     event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash);
     event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash);
     event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash);
+    event AmendmentProposed(bytes32 indexed amendmentId, address indexed pledgor, address indexed securedParty, address proposer, bytes32 cdmHash);
+    event AmendmentDecided(bytes32 indexed amendmentId, bool consent, bytes32 cdmHash);
     event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash);
     event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount);
 
@@ -71,6 +84,10 @@ contract CollateralControl is ReentrancyGuard {
     error EmptySubstitution();
     error SubstituteBelowOriginal(uint256 substituteValue, uint256 originalValue);
     error InterestExists();
+    error AmendmentExists();
+    error AmendmentPending();
+    error StaleAgreement(bytes32 current, bytes32 given);
+    error NoSuchAmendment();
     error NoSuchInterest();
     error NotCash(address token);
 
@@ -83,7 +100,73 @@ contract CollateralControl is ReentrancyGuard {
     /// @notice Configure the initial-margin eligibility schedule used for the on-chain value check.
     function setEligibility(address token, bool eligible, uint16 haircutBps) external {
         if (msg.sender != deployer) revert NotDeployer();
+        bool known = false;
+        for (uint256 i = 0; i < _scheduleTokens.length; i++) if (_scheduleTokens[i] == token) known = true;
+        if (!known) _scheduleTokens.push(token);
         eligibility[token] = Eligibility({eligible: eligible, haircutBps: haircutBps});
+    }
+
+    /// @notice The eligibility and haircut that apply to a token between a pledgor and a secured party: the pair's own
+    /// after an agreed amendment, otherwise the global schedule.
+    function eligibilityFor(address pledgor, address securedParty, address token) public view returns (Eligibility memory) {
+        return _pairAmended[pledgor][securedParty] ? _pairEligibility[pledgor][securedParty][token] : eligibility[token];
+    }
+
+    /// @notice Propose an amendment of the agreement terms between `pledgor` and `securedParty` (task-csa-amendment);
+    /// the proposer (this key) is one of them. `terms` are the haircut changes (tokens not named keep theirs);
+    /// `beforeHash` must be the pair's current agreementHash, and only one amendment is pending at a time. `cdmHash` is
+    /// the hash of the CDM CollateralAgreementAmendment (wp-adr-cdm-payload-carrier), which also carries any election
+    /// change (MTA, rounding) that the services apply.
+    function proposeAmendment(bytes32 amendmentId, address pledgor, address securedParty, HaircutTerm[] calldata terms,
+                              bytes32 beforeHash, bytes32 cdmHash) external {
+        if (msg.sender != pledgor && msg.sender != securedParty) revert WrongParty();
+        if (pledgor == securedParty) revert WrongParty();
+        if (_amendments[amendmentId].state != AmendmentState.None || cdmHash == bytes32(0)) revert AmendmentExists();
+        if (pendingAmendment[pledgor][securedParty] != bytes32(0)) revert AmendmentPending();
+        if (agreementHash[pledgor][securedParty] != beforeHash) revert StaleAgreement(agreementHash[pledgor][securedParty], beforeHash);
+        for (uint256 i = 0; i < terms.length; i++) if (terms[i].haircutBps >= 10000) revert Ineligible(terms[i].token);
+        Amendment storage a = _amendments[amendmentId];
+        a.pledgor = pledgor;
+        a.securedParty = securedParty;
+        a.proposer = msg.sender;
+        a.state = AmendmentState.Proposed;
+        a.beforeHash = beforeHash;
+        a.proposeCdmHash = cdmHash;
+        for (uint256 i = 0; i < terms.length; i++) _amendmentTerms[amendmentId].push(terms[i]);
+        pendingAmendment[pledgor][securedParty] = amendmentId;
+        emit AmendmentProposed(amendmentId, pledgor, securedParty, msg.sender, cdmHash);
+    }
+
+    /// @notice The other party (this key) consents to or refuses a proposed amendment. On consent the haircut terms
+    /// apply to the pair (the global schedule is copied for the pair on its first amendment) and the pair's
+    /// agreementHash becomes the amendment's hash.
+    function decideAmendment(bytes32 amendmentId, bool consent, bytes32 cdmHash) external {
+        Amendment storage a = _amendments[amendmentId];
+        if (a.state == AmendmentState.None) revert NoSuchAmendment();
+        if (a.state != AmendmentState.Proposed) revert BadState();
+        address other = a.proposer == a.pledgor ? a.securedParty : a.pledgor;
+        if (msg.sender != other) revert WrongParty();
+        if (cdmHash == bytes32(0)) revert BadState();
+        a.state = consent ? AmendmentState.Agreed : AmendmentState.Refused;
+        a.decisionCdmHash = cdmHash;
+        pendingAmendment[a.pledgor][a.securedParty] = bytes32(0);
+        if (consent) {
+            if (!_pairAmended[a.pledgor][a.securedParty]) {
+                for (uint256 i = 0; i < _scheduleTokens.length; i++)
+                    _pairEligibility[a.pledgor][a.securedParty][_scheduleTokens[i]] = eligibility[_scheduleTokens[i]];
+                _pairAmended[a.pledgor][a.securedParty] = true;
+            }
+            HaircutTerm[] storage t = _amendmentTerms[amendmentId];
+            for (uint256 i = 0; i < t.length; i++)
+                _pairEligibility[a.pledgor][a.securedParty][t[i].token] = Eligibility({eligible: t[i].eligible, haircutBps: t[i].haircutBps});
+            agreementHash[a.pledgor][a.securedParty] = a.proposeCdmHash;
+        }
+        emit AmendmentDecided(amendmentId, consent, cdmHash);
+    }
+
+    function getAmendment(bytes32 amendmentId) external view returns (Amendment memory amendment, HaircutTerm[] memory terms) {
+        if (_amendments[amendmentId].state == AmendmentState.None) revert NoSuchAmendment();
+        return (_amendments[amendmentId], _amendmentTerms[amendmentId]);
     }
 
     /// @notice Pledge the accepted proposal's collateral into escrow for an initial-margin call. `cdmHash` is the CDM
@@ -96,7 +179,7 @@ contract CollateralControl is ReentrancyGuard {
         if (marginCall.getProposal(callId, proposalId).state != ProposalState.Accepted) revert ProposalNotAccepted();
 
         Asset[] memory assets = marginCall.getProposalAssets(callId, proposalId);
-        uint256 value = _valueAfterHaircut(assets);
+        uint256 value = _valueAfterHaircut(c.to, c.from, assets);
         if (value < c.agreed) revert ValueBelowAgreed(value, c.agreed);
 
         for (uint256 i = 0; i < assets.length; i++) {
@@ -135,7 +218,7 @@ contract CollateralControl is ReentrancyGuard {
 
         address pledgor = c.from;
         address securedParty = c.to;
-        uint256 value = _valueAfterHaircut(release);
+        uint256 value = _valueAfterHaircut(pledgor, securedParty, release);
         if (value > c.agreed) revert ReleaseExceedsCall(value, c.agreed);
 
         for (uint256 i = 0; i < release.length; i++) {
@@ -214,7 +297,7 @@ contract CollateralControl is ReentrancyGuard {
             _pledged[pledgor][securedParty][tokens[i]] = 0;
             uint256 take = 0;
             if (remaining > 0) {
-                uint256 unitValue = _unitValue(tokens[i]); // value after haircut of one unit, times 10000
+                uint256 unitValue = _unitValue(pledgor, securedParty, tokens[i]); // value after haircut of one unit, times 10000
                 if (unitValue > 0) {
                     take = (remaining * 10000 + unitValue - 1) / unitValue; // whole units, rounded up
                     if (take > qty) take = qty;
@@ -298,7 +381,7 @@ contract CollateralControl is ReentrancyGuard {
         address securedParty = msg.sender;
         if (_interest[interestId].state != InterestState.None || cdmHash == bytes32(0)) revert InterestExists();
         if (pledgor == securedParty || pledgor == address(0)) revert WrongParty();
-        Eligibility memory e = eligibility[cashToken];
+        Eligibility memory e = eligibilityFor(pledgor, securedParty, cashToken);
         if (!e.eligible || e.haircutBps != 0) revert NotCash(cashToken);
         InterestStatement storage s = _interest[interestId];
         s.pledgor = pledgor;
@@ -352,9 +435,9 @@ contract CollateralControl is ReentrancyGuard {
     }
 
     /// Value after haircut at the oracle price; reverts if any asset is ineligible. Scaled by OracleFeed.PRICE_SCALE.
-    function _valueAfterHaircut(Asset[] memory assets) private view returns (uint256 value) {
+    function _valueAfterHaircut(address pledgor, address securedParty, Asset[] memory assets) private view returns (uint256 value) {
         for (uint256 i = 0; i < assets.length; i++) {
-            Eligibility memory e = eligibility[assets[i].token];
+            Eligibility memory e = eligibilityFor(pledgor, securedParty, assets[i].token);
             if (!e.eligible) revert Ineligible(assets[i].token);
             uint256 priceScaled = oracle.price(assets[i].token);
             value += (assets[i].qty * priceScaled * (10000 - e.haircutBps)) / 10000;
@@ -362,8 +445,8 @@ contract CollateralControl is ReentrancyGuard {
     }
 
     /// Value after haircut of one unit at the oracle price, times 10000 (0 for an ineligible token). Scaled by PRICE_SCALE.
-    function _unitValue(address token) private view returns (uint256) {
-        Eligibility memory e = eligibility[token];
+    function _unitValue(address pledgor, address securedParty, address token) private view returns (uint256) {
+        Eligibility memory e = eligibilityFor(pledgor, securedParty, token);
         if (!e.eligible) return 0;
         return oracle.price(token) * (10000 - e.haircutBps);
     }
@@ -376,8 +459,8 @@ contract CollateralControl is ReentrancyGuard {
             uint256 held = _pledged[pledgor][securedParty][original[i].token];
             if (asked > held) revert NotPledged(original[i].token, held, asked);
         }
-        uint256 originalValue = _valueAfterHaircut(original);
-        uint256 substituteValue = _valueAfterHaircut(substitute);
+        uint256 originalValue = _valueAfterHaircut(pledgor, securedParty, original);
+        uint256 substituteValue = _valueAfterHaircut(pledgor, securedParty, substitute);
         if (substituteValue < originalValue) revert SubstituteBelowOriginal(substituteValue, originalValue);
     }
 

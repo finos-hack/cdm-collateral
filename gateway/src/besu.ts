@@ -45,7 +45,9 @@ export interface LedgerEvent {
     | "SubstitutionDecided"
     | "SubstitutionSettled"
     | "InterestStated"
-    | "InterestSettled";
+    | "InterestSettled"
+    | "AmendmentProposed"
+    | "AmendmentDecided";
   callId?: Hex;
   /** ClosedOut (flow-close-out-netting). */
   closeOutId?: Hex;
@@ -53,6 +55,9 @@ export interface LedgerEvent {
   substitutionId?: Hex;
   /** InterestStated, InterestSettled (flow-interest-on-cash). */
   interestId?: Hex;
+  /** AmendmentProposed, AmendmentDecided (flow-agreement-amendment). */
+  amendmentId?: Hex;
+  consent?: boolean;
   cdmHash?: Hex;
   party?: Address;
   inDefault?: boolean;
@@ -109,6 +114,25 @@ export interface InterestRecord {
   txHash: Hex;
 }
 
+/** One token's eligibility and haircut in an amendment, or as it applies to a pair (flow-agreement-amendment). */
+export interface HaircutTermArg {
+  token: Address;
+  eligible: boolean;
+  haircutBps: number;
+}
+
+/** An amendment of the agreement terms as the control contract holds it (flow-agreement-amendment). */
+export interface OnChainAmendment {
+  pledgor: Address;
+  securedParty: Address;
+  proposer: Address;
+  state: number; // AmendmentState: None, Proposed, Agreed, Refused
+  beforeHash: Hex;
+  proposeCdmHash: Hex;
+  decisionCdmHash: Hex;
+  terms: HaircutTermArg[];
+}
+
 /** One lifecycle step as callSteps reads it from the chain, with what the CDM LedgerAnchor needs (G25). */
 export interface CallStep {
   step: string;
@@ -142,6 +166,8 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "SubstitutionSettled(bytes32,bytes32)",
     "InterestStated(bytes32,address,address,address,int256,bytes32)",
     "InterestSettled(bytes32,address,address,uint256)",
+    "AmendmentProposed(bytes32,address,address,address,bytes32)",
+    "AmendmentDecided(bytes32,bool,bytes32)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -199,6 +225,15 @@ const controlAbi = parseAbi([
   "function settleSubstitution(bytes32 substitutionId, bytes32 cdmHash)",
   "function getSubstitution(bytes32 substitutionId) view returns (Substitution)",
   "function getSubstitutionAssets(bytes32 substitutionId) view returns (Asset[] original, Asset[] substitute)",
+  "struct Eligibility { bool eligible; uint16 haircutBps; }",
+  "struct HaircutTerm { address token; bool eligible; uint16 haircutBps; }",
+  "struct Amendment { address pledgor; address securedParty; address proposer; uint8 state; bytes32 beforeHash; bytes32 proposeCdmHash; bytes32 decisionCdmHash; }",
+  "function proposeAmendment(bytes32 amendmentId, address pledgor, address securedParty, HaircutTerm[] terms, bytes32 beforeHash, bytes32 cdmHash)",
+  "function decideAmendment(bytes32 amendmentId, bool consent, bytes32 cdmHash)",
+  "function getAmendment(bytes32 amendmentId) view returns (Amendment amendment, HaircutTerm[] terms)",
+  "function eligibilityFor(address pledgor, address securedParty, address token) view returns (Eligibility)",
+  "function agreementHash(address pledgor, address securedParty) view returns (bytes32)",
+  "function pendingAmendment(address pledgor, address securedParty) view returns (bytes32)",
   "struct InterestStatement { address pledgor; address securedParty; address cashToken; int256 amount; uint8 state; bytes32 cdmHash; }",
   "function stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
   "function payInterest(bytes32 interestId)",
@@ -211,6 +246,8 @@ const controlAbi = parseAbi([
   "event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
   "event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash)",
   "event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash)",
+  "event AmendmentProposed(bytes32 indexed amendmentId, address indexed pledgor, address indexed securedParty, address proposer, bytes32 cdmHash)",
+  "event AmendmentDecided(bytes32 indexed amendmentId, bool consent, bytes32 cdmHash)",
   "event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
   "event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount)",
 ]);
@@ -253,6 +290,11 @@ export interface LedgerAdapter {
   getSubstitutionAssets(substitutionId: Hex): Promise<{ original: AssetArg[]; substitute: AssetArg[] }>;
   listSubstitutions(party: Address): Promise<{ substitutionId: Hex; substitution: OnChainSubstitution }[]>;
   substitutionSteps(substitutionId: Hex): Promise<SubstitutionStep[]>;
+  proposeAmendment(amendmentId: Hex, pledgor: Address, securedParty: Address, terms: HaircutTermArg[], beforeHash: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  decideAmendment(amendmentId: Hex, consent: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getAmendment(amendmentId: Hex): Promise<OnChainAmendment>;
+  listAmendments(party: Address): Promise<{ amendmentId: Hex; block: string; amendment: OnChainAmendment }[]>;
+  pairTerms(pledgor: Address, securedParty: Address): Promise<{ agreementHash: Hex; pendingAmendment: Hex; eligibility: HaircutTermArg[] }>;
   stateInterest(interestId: Hex, pledgor: Address, cashToken: Address, amount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   payInterest(interestId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getInterest(interestId: Hex): Promise<Omit<InterestRecord, "interestId" | "block" | "txHash">>;
@@ -377,6 +419,55 @@ export class BesuAdapter implements LedgerAdapter {
       }
     }
     return out;
+  }
+
+  /** Amendment of the agreement terms (flow-agreement-amendment): either party proposes, the other decides. */
+  proposeAmendment(amendmentId: Hex, pledgor: Address, securedParty: Address, terms: HaircutTermArg[], beforeHash: Hex, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "proposeAmendment", [amendmentId, pledgor, securedParty, terms, beforeHash, cdmHash]);
+  }
+
+  decideAmendment(amendmentId: Hex, consent: boolean, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "decideAmendment", [amendmentId, consent, cdmHash]);
+  }
+
+  async getAmendment(amendmentId: Hex): Promise<OnChainAmendment> {
+    const [a, terms] = (await this.pub.readContract({ address: this.reg.contracts.collateralControl, abi: controlAbi, functionName: "getAmendment", args: [amendmentId] })) as unknown as [
+      Omit<OnChainAmendment, "terms" | "state"> & { state: number }, HaircutTermArg[],
+    ];
+    return { ...a, state: Number(a.state), terms: terms.map((t) => ({ token: t.token, eligible: t.eligible, haircutBps: Number(t.haircutBps) })) };
+  }
+
+  /** Every amendment a party is in, from the AmendmentProposed events (pledgor and securedParty are indexed), in chain order. */
+  async listAmendments(party: Address) {
+    const seen = new Map<string, { amendmentId: Hex; block: string; order: bigint }>();
+    for (const args of [{ pledgor: party }, { securedParty: party }]) {
+      for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "AmendmentProposed", args)) {
+        const id = (l.args as { amendmentId: Hex }).amendmentId;
+        seen.set(id, { amendmentId: id, block: l.blockNumber.toString(), order: l.blockNumber * 100000n + BigInt(l.logIndex) });
+      }
+    }
+    const out = [];
+    for (const r of [...seen.values()].sort((x, y) => (x.order < y.order ? -1 : 1))) {
+      out.push({ amendmentId: r.amendmentId, block: r.block, amendment: await this.getAmendment(r.amendmentId) });
+    }
+    return out;
+  }
+
+  /** The terms that apply between a pledgor and a secured party: agreement hash, pending amendment, each registry
+   * token's eligibility and haircut. */
+  async pairTerms(pledgor: Address, securedParty: Address) {
+    const read = (functionName: string, args: unknown[]) =>
+      this.pub.readContract({ address: this.reg.contracts.collateralControl, abi: controlAbi, functionName, args } as never);
+    const eligibility: HaircutTermArg[] = [];
+    for (const t of Object.values(this.reg.tokens) as { address: Address }[]) {
+      const e = (await read("eligibilityFor", [pledgor, securedParty, t.address])) as { eligible: boolean; haircutBps: number };
+      eligibility.push({ token: t.address, eligible: e.eligible, haircutBps: Number(e.haircutBps) });
+    }
+    return {
+      agreementHash: (await read("agreementHash", [pledgor, securedParty])) as Hex,
+      pendingAmendment: (await read("pendingAmendment", [pledgor, securedParty])) as Hex,
+      eligibility,
+    };
   }
 
   /** Interest on cash collateral (flow-interest-on-cash): the secured party states the amount (and pays it when
@@ -685,6 +776,10 @@ export class BesuAdapter implements LedgerAdapter {
             onEvent({ event: name, closeOutId: a.closeOutId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "SubstitutionRequested" || name === "SubstitutionDecided" || name === "SubstitutionSettled") {
             onEvent({ event: name, substitutionId: a.substitutionId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          } else if (name === "AmendmentProposed") {
+            onEvent({ event: name, amendmentId: (a as any).amendmentId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          } else if (name === "AmendmentDecided") {
+            onEvent({ event: name, amendmentId: (a as any).amendmentId, consent: (a as any).consent, cdmHash: a.cdmHash, ...meta(log) });
           } else if (name === "InterestStated") {
             onEvent({ event: name, interestId: a.interestId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "InterestSettled") {

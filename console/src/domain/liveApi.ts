@@ -99,6 +99,14 @@ export const api = {
   /** Secured party: declare the pledgor's default if the feed does not show it, then close out against the escrow. */
   closeOut: (p: LiveParty, closeOutAmountUsd: number) =>
     req<LiveCloseOut & { closeOutTx: string; defaultTx?: string }>(p, "POST", "/close-outs", { closeOutAmountUsd }),
+  /** The agreement terms in force and the pair's amendments (flow-agreement-amendment). */
+  agreement: (p: LiveParty) => req<LiveAgreement>(p, "GET", "/agreement"),
+  /** Either party: propose an amendment (a new pledgor MTA, haircut changes) to the counterparty. */
+  proposeAmendment: (p: LiveParty, mtaUsd: number | null, haircuts: LiveHaircutTerm[]) =>
+    req<{ amendmentId: string; cdmHash: string; proposeTx: string }>(p, "POST", "/amendments", { mtaUsd, haircuts }),
+  /** The other party: consent to or refuse a proposed amendment. */
+  decideAmendment: (p: LiveParty, amendmentId: string, consent: boolean) =>
+    req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/amendments/${amendmentId}/decision`, { consent }),
   /** Interest statements on cash collateral (flow-interest-on-cash). */
   interest: (p: LiveParty) => req<LiveInterest[]>(p, "GET", "/interest"),
   /** Secured party: state the Interest Amount on the pledgor's tUSD for one period at one observed rate (percent). */
@@ -133,6 +141,43 @@ export interface LiveCloseOut {
   collateralHeldUsd?: string;
   collateralAppliedUsd?: string;
   amountPayableUsd?: string;
+}
+
+export interface LiveHaircutTerm {
+  token: string;
+  eligible: boolean;
+  haircutBps: number;
+}
+
+export interface LiveAmendment {
+  amendmentId: string;
+  block: string;
+  proposer: LiveParty;
+  mine: boolean;
+  state: "none" | "proposed" | "agreed" | "refused";
+  cdmHash: string;
+  haircuts: LiveHaircutTerm[];
+  /** The pledgor's new Minimum Transfer Amount, when the amendment changes the elections. */
+  mtaUsd: string | null;
+  effectiveDate?: string;
+}
+
+export interface LiveAgreement {
+  agreement: string;
+  securedParty: string;
+  pledgor: string;
+  mtaUsd: string;
+  roundingUsd: string;
+  haircuts: (LiveHaircutTerm & { isin: string; onChainHaircutBps: number | null; matches: boolean })[];
+  /** Hash of the last agreed amendment as this service folded it, and as the contract records it. */
+  agreementHash: string;
+  onChainAgreementHash: string;
+  agreedAmendments: number;
+  /** Every agreed amendment verified, and the folded hash and haircuts match the chain. */
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: LiveAmendment[];
 }
 
 export interface LiveInterest {

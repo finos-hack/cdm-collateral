@@ -96,6 +96,9 @@ public final class App {
         app.get("/api/v1/interest", this::interestStatements);
         app.post("/api/v1/interest", this::stateInterest);
         app.post("/api/v1/interest/{id}/pay", this::payInterest);
+        app.get("/api/v1/agreement", this::agreement);
+        app.post("/api/v1/amendments", this::proposeAmendment);
+        app.post("/api/v1/amendments/{id}/decision", this::decideAmendment);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
         app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
@@ -167,6 +170,8 @@ public final class App {
                 } else if (event.equals("InterestSettled")) {
                     String id = e.get("interestId").asText();
                     if (party != null && (party.equalsIgnoreCase(cfg.myAddress) || party.equalsIgnoreCase(cfg.partyAddress(counterparty())))) store.recordEvent(event, id, party, block, logIndex, data);
+                } else if (event.equals("AmendmentProposed") || event.equals("AmendmentDecided")) {
+                    onAmendmentEvent(event, e, block, logIndex, data);
                 } else if (event.startsWith("Substitution")) {
                     String id = e.get("substitutionId").asText();
                     if (substitutionInvolvesMe(id)) {
@@ -228,6 +233,270 @@ public final class App {
         return cfg.partyId.equals("B") ? "A" : "B";
     }
 
+    // --- amendment of agreement terms (flow-agreement-amendment, task-csa-amendment) ---
+
+    private static final String[] AMENDMENT_STATE = {"none", "proposed", "agreed", "refused"};
+    private CdmAgreement.Terms baselineTerms;
+    private String termsFoldKey;
+    private Fold termsFold;
+    private Map<String, Integer> pairHaircuts;
+    private long pairHaircutsAt;
+
+    /** The terms after folding the pair's agreed amendments, whether every step verified, and the first problem. */
+    private record Fold(CdmAgreement.Terms terms, boolean verified, String problem, JsonNode amendments) {}
+
+    /** The baseline IM CSA between the two parties: the CDM sample with Party1 the secured party, Party2 the pledgor,
+     *  and the registry's haircuts (the deployed global schedule). */
+    private synchronized CdmAgreement.Terms baselineTerms() {
+        if (baselineTerms == null) {
+            Map<String, Integer> h = new LinkedHashMap<>();
+            cfg.registry.get("tokens").fieldNames().forEachRemaining(sym ->
+                    h.put(cfg.isin(sym), cfg.registry.get("tokens").get(sym).get("haircutBps").asInt()));
+            String[] ps = pledgorAndSecuredParty();
+            baselineTerms = CdmAgreement.baselineTerms(cfg.bankName(partyIdOf(ps[1])), cfg.bankName(partyIdOf(ps[0])), h);
+        }
+        return baselineTerms;
+    }
+
+    /** The amendments between this party and its counterparty, in chain order. */
+    private List<JsonNode> pairAmendments(JsonNode all) {
+        String[] ps = pledgorAndSecuredParty();
+        List<JsonNode> out = new ArrayList<>();
+        for (JsonNode r : all) {
+            JsonNode a = r.get("amendment");
+            if (a.get("pledgor").asText().equalsIgnoreCase(ps[0]) && a.get("securedParty").asText().equalsIgnoreCase(ps[1])) out.add(r);
+        }
+        return out;
+    }
+
+    /**
+     * Fold the pair's agreed amendments, in chain order, from the baseline (flow-agreement-amendment transition 8):
+     * fetch each CollateralAgreementAmendment by the hash the contract recorded, check the hash, that it chains from
+     * the terms before (beforeHash), and that it verifies against them (CdmAgreement.verify), then apply it. Both
+     * services fold the same documents to the same terms. Cached on the list of agreed amendment ids.
+     */
+    private synchronized Fold fold() {
+        JsonNode all = gw.getQuery("/amendments", Map.of("party", cfg.myAddress));
+        List<JsonNode> pair = pairAmendments(all);
+        StringBuilder key = new StringBuilder();
+        for (JsonNode r : pair) if (r.get("amendment").get("state").asInt() == 2) key.append(r.get("amendmentId").asText()).append(',');
+        if (termsFold != null && key.toString().equals(termsFoldKey)) return new Fold(termsFold.terms(), termsFold.verified(), termsFold.problem(), all);
+        CdmAgreement.Terms t = baselineTerms();
+        boolean ok = true;
+        String problem = null;
+        for (JsonNode r : pair) {
+            JsonNode a = r.get("amendment");
+            if (a.get("state").asInt() != 2) continue;
+            String id = r.get("amendmentId").asText();
+            try {
+                if (!a.get("beforeHash").asText().equalsIgnoreCase(t.hash())) throw new IllegalStateException("does not chain from the terms before");
+                String hash = a.get("proposeCdmHash").asText();
+                String doc = payloads.get(hash);
+                if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("document not in the payload store or hash mismatch");
+                t = CdmAgreement.apply(t, CdmAgreement.verify(doc, t), hash);
+            } catch (Exception ex) {
+                ok = false;
+                problem = "amendment " + id + ": " + ex.getMessage();
+                break;
+            }
+        }
+        termsFoldKey = key.toString();
+        termsFold = new Fold(t, ok, problem, all);
+        return termsFold;
+    }
+
+    /** Each registry token's haircut between the pair as the contract applies it (10000 when ineligible). */
+    private synchronized Map<String, Integer> pairHaircuts() {
+        if (pairHaircuts != null && System.currentTimeMillis() - pairHaircutsAt < 3000) return pairHaircuts;
+        String[] ps = pledgorAndSecuredParty();
+        JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", ps[0], "securedParty", ps[1]));
+        Map<String, Integer> out = new HashMap<>();
+        for (JsonNode e : pt.get("eligibility")) {
+            String sym = symbolOf(e.get("token").asText());
+            if (sym != null) out.put(sym, e.get("eligible").asBoolean() ? e.get("haircutBps").asInt() : 10_000);
+        }
+        pairHaircuts = out;
+        pairHaircutsAt = System.currentTimeMillis();
+        return out;
+    }
+
+    private synchronized void invalidateTerms() {
+        pairHaircuts = null;
+    }
+
+    private String symbolOf(String tokenAddress) {
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            if (cfg.tokenAddress(sym).equalsIgnoreCase(tokenAddress)) return sym;
+        }
+        return null;
+    }
+
+    private String symbolOfIsin(String isin) {
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            if (cfg.isin(sym).equals(isin)) return sym;
+        }
+        return null;
+    }
+
+    /** The agreement terms in force, the on-chain agreement hash and haircuts beside them, and the pair's amendments. */
+    private void agreement(Context ctx) {
+        Fold f = fold();
+        String[] ps = pledgorAndSecuredParty();
+        JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", ps[0], "securedParty", ps[1]));
+        Map<String, Integer> onChain = pairHaircuts();
+        List<Map<String, Object>> haircuts = new ArrayList<>();
+        cfg.registry.get("tokens").fieldNames().forEachRemaining(sym -> {
+            Integer cdm = CdmAgreement.haircutBps(f.terms().schedule(), cfg.isin(sym));
+            Integer chain = onChain.get(sym);
+            Map<String, Object> h = new LinkedHashMap<>();
+            h.put("token", sym);
+            h.put("isin", cfg.isin(sym));
+            h.put("eligible", cdm != null);
+            h.put("haircutBps", cdm == null ? 10_000 : cdm);
+            h.put("onChainHaircutBps", chain);
+            h.put("matches", chain != null && chain.equals(cdm == null ? 10_000 : cdm));
+            haircuts.add(h);
+        });
+        List<Map<String, Object>> amendments = new ArrayList<>();
+        for (JsonNode r : pairAmendments(f.amendments())) amendments.add(amendmentSummary(r));
+        String chainHash = pt.get("agreementHash").asText();
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("agreement", "2018 ISDA IM Credit Support Annex (Security Interest, New York law), CDM sample 01-2018-NY-Law-IM-CSA");
+        out.put("securedParty", cfg.bankName(partyIdOf(ps[1])));
+        out.put("pledgor", cfg.bankName(partyIdOf(ps[0])));
+        out.put("mtaUsd", String.valueOf(CdmAgreement.pledgorMtaUsd(f.terms().agreement())));
+        out.put("roundingUsd", String.valueOf(CdmAgreement.roundingUsd(f.terms().agreement())));
+        out.put("haircuts", haircuts);
+        out.put("agreementHash", f.terms().hash());
+        out.put("onChainAgreementHash", chainHash);
+        out.put("agreedAmendments", f.terms().amendments());
+        out.put("verified", f.verified() && chainHash.equalsIgnoreCase(f.terms().hash()) && haircuts.stream().allMatch(h -> (Boolean) h.get("matches")));
+        out.put("problem", f.problem());
+        String pending = pt.get("pendingAmendment").asText();
+        out.put("pendingAmendment", pending.equals(CdmAgreement.NO_HASH) ? null : pending);
+        out.put("amendments", amendments);
+        ctx.json(out);
+    }
+
+    private Map<String, Object> amendmentSummary(JsonNode r) {
+        JsonNode a = r.get("amendment");
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("amendmentId", r.get("amendmentId").asText());
+        m.put("block", r.get("block").asText());
+        m.put("proposer", partyIdOf(a.get("proposer").asText()));
+        m.put("mine", a.get("proposer").asText().equalsIgnoreCase(cfg.myAddress));
+        m.put("state", AMENDMENT_STATE[a.get("state").asInt()]);
+        m.put("cdmHash", a.get("proposeCdmHash").asText());
+        List<Map<String, Object>> terms = new ArrayList<>();
+        for (JsonNode t : a.get("terms"))
+            terms.add(new LinkedHashMap<>(Map.of("token", String.valueOf(symbolOf(t.get("token").asText())),
+                    "eligible", t.get("eligible").asBoolean(), "haircutBps", t.get("haircutBps").asInt())));
+        m.put("haircuts", terms);
+        String doc = payloads.get(a.get("proposeCdmHash").asText());
+        m.put("mtaUsd", null);
+        if (doc != null) {
+            try {
+                var am = CdmRuntime.JSON.readValue(doc, cdmx.collateral.amendment.CollateralAgreementAmendment.class);
+                if (am.getAgreementEvent() != null)
+                    m.put("mtaUsd", String.valueOf(CdmAgreement.pledgorMtaUsd(am.getAgreementEvent().getAfter().get(0))));
+                m.put("effectiveDate", am.getEffectiveDate().toString());
+            } catch (Exception ignored) {
+                // shown without the document's fields
+            }
+        }
+        return m;
+    }
+
+    /**
+     * Propose an amendment of the agreement terms (flow-agreement-amendment transitions 1-4): build the CDM
+     * CollateralAgreementAmendment over the terms in force (a new pledgor MTA and haircut changes), publish it, and
+     * record it on-chain chained from the pair's agreement hash. Either party proposes.
+     */
+    @SuppressWarnings("unchecked")
+    private void proposeAmendment(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        Fold f = fold();
+        if (!f.verified()) throw new RuntimeException("the agreed amendments do not verify: " + f.problem());
+        String[] ps = pledgorAndSecuredParty();
+        JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", ps[0], "securedParty", ps[1]));
+        if (!pt.get("pendingAmendment").asText().equals(CdmAgreement.NO_HASH)) throw new RuntimeException("an amendment is already pending");
+        if (!pt.get("agreementHash").asText().equalsIgnoreCase(f.terms().hash())) throw new RuntimeException("the on-chain agreement hash does not match the folded terms");
+        Long mta = b.get("mtaUsd") == null || String.valueOf(b.get("mtaUsd")).isBlank() ? null : Long.parseLong(String.valueOf(b.get("mtaUsd")));
+        List<CdmAgreement.Haircut> haircuts = new ArrayList<>();
+        List<Map<String, Object>> terms = new ArrayList<>();
+        for (Map<String, Object> h : (List<Map<String, Object>>) b.getOrDefault("haircuts", List.of())) {
+            String sym = String.valueOf(h.get("token"));
+            boolean eligible = Boolean.TRUE.equals(h.get("eligible"));
+            int bps = eligible ? ((Number) h.get("haircutBps")).intValue() : 0;
+            haircuts.add(new CdmAgreement.Haircut(cfg.isin(sym), eligible, bps));
+            terms.add(new LinkedHashMap<>(Map.of("token", cfg.tokenAddress(sym), "eligible", eligible, "haircutBps", bps)));
+        }
+        CdmAgreement.Proposal p = CdmAgreement.propose(f.terms(), mta, haircuts, LocalDate.now());
+        String amendmentId = Cdm.onChainId("amendment-" + cfg.partyId + "-" + System.nanoTime());
+        store.recordDocument(amendmentId, "CollateralAgreementAmendment", "out", p.hash(), p.json());
+        payloads.put(p.hash(), p.json(), callParties);
+        JsonNode tx = gw.post("/amendments", Map.of("amendmentId", amendmentId, "pledgor", ps[0], "securedParty", ps[1],
+                "terms", terms, "beforeHash", f.terms().hash(), "cdmHash", p.hash()));
+        ctx.json(Map.of("amendmentId", amendmentId, "cdmHash", p.hash(), "proposeTx", tx.path("txHash").asText()));
+    }
+
+    /**
+     * Consent to or refuse a proposed amendment (flow-agreement-amendment transitions 5-7; the other party only).
+     * Before consenting the service checks the CDM document against the terms in force and that the on-chain haircut
+     * terms are the document's haircut changes. The decision is published as a small JSON document and its hash
+     * recorded on-chain.
+     */
+    private void decideAmendment(Context ctx) {
+        String id = ctx.pathParam("id");
+        boolean consent = Boolean.TRUE.equals(body(ctx).get("consent"));
+        JsonNode a = gw.get("/amendments/" + id);
+        if (a.get("state").asInt() != 1) throw new RuntimeException("amendment " + id + " is not pending");
+        if (a.get("proposer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("the proposer cannot decide its own amendment");
+        if (consent) {
+            Fold f = fold();
+            if (!f.verified()) throw new RuntimeException("the agreed amendments do not verify: " + f.problem());
+            if (!a.get("beforeHash").asText().equalsIgnoreCase(f.terms().hash())) throw new RuntimeException("the amendment does not chain from the terms in force");
+            String hash = a.get("proposeCdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new RuntimeException("amendment document not in the payload store or hash mismatch");
+            var m = CdmAgreement.verify(doc, f.terms());
+            var changes = m.getHaircutChange() == null ? List.<cdmx.collateral.amendment.HaircutChange>of() : m.getHaircutChange();
+            if (changes.size() != a.get("terms").size()) throw new RuntimeException("the on-chain haircut terms are not the document's haircut changes");
+            for (var c : changes) {
+                String sym = symbolOfIsin(c.getAsset().getIdentifier().getValue());
+                boolean found = false;
+                for (JsonNode t : a.get("terms")) {
+                    if (sym == null || !t.get("token").asText().equalsIgnoreCase(cfg.tokenAddress(sym))) continue;
+                    found = t.get("eligible").asBoolean() == c.getIsIncluded()
+                            && (!c.getIsIncluded() || t.get("haircutBps").asInt() == c.getHaircutPercentage().movePointRight(4).intValueExact());
+                }
+                if (!found) throw new RuntimeException("the on-chain haircut terms are not the document's haircut changes");
+            }
+            store.recordDocument(id, "CollateralAgreementAmendment", "in", hash, doc);
+        }
+        String decision = CdmRuntime.toJson(new LinkedHashMap<>(Map.of("amendmentId", id, "proposeCdmHash", a.get("proposeCdmHash").asText(),
+                "consent", consent, "party", cfg.bankName(cfg.partyId), "date", LocalDate.now().toString())));
+        String dHash = Cdm.keccakHex(decision);
+        store.recordDocument(id, "AmendmentDecision", "out", dHash, decision);
+        payloads.put(dHash, decision, callParties);
+        JsonNode tx = gw.post("/amendments/" + id + "/decision", Map.of("consent", consent, "cdmHash", dHash));
+        invalidateTerms();
+        ctx.json(Map.of("amendmentId", id, "consent", consent, "decisionHash", dHash, "decisionTx", tx.path("txHash").asText()));
+    }
+
+    /** AmendmentProposed and AmendmentDecided: each service records the pair's events; a decision invalidates the
+     *  cached pair haircuts so valuation reads the new terms. */
+    private void onAmendmentEvent(String event, JsonNode e, String block, long logIndex, String data) {
+        String id = e.get("amendmentId").asText();
+        JsonNode a = gw.get("/amendments/" + id);
+        String[] ps = pledgorAndSecuredParty();
+        if (!a.get("pledgor").asText().equalsIgnoreCase(ps[0]) || !a.get("securedParty").asText().equalsIgnoreCase(ps[1])) return;
+        store.recordEvent(event, id, a.get("proposer").asText(), block, logIndex, data);
+        if (event.equals("AmendmentDecided")) invalidateTerms();
+    }
+
     /** {pledgor, secured party} addresses between this party and its counterparty. */
     private String[] pledgorAndSecuredParty() {
         String cpAddr = cfg.partyAddress(counterparty());
@@ -243,8 +512,10 @@ public final class App {
         return priceByToken;
     }
 
+    /** The haircut between the pair as the contract applies it (flow-agreement-amendment: per-pair once amended). */
     private int haircutBps(String symbol) {
-        return cfg.registry.get("tokens").get(symbol).get("haircutBps").asInt();
+        Integer h = pairHaircuts().get(symbol);
+        return h != null ? h : cfg.registry.get("tokens").get(symbol).get("haircutBps").asInt();
     }
 
     /** Value after haircut of qty units at a price, scaled by priceScale; the same integer arithmetic as CollateralControl. */
@@ -280,7 +551,7 @@ public final class App {
             tokens.add(new LinkedHashMap<>(Map.of(
                     "symbol", sym, "address", t.get("address").asText(),
                     "isin", t.get("isin").asText(), "cusip", t.get("cusip").asText(),
-                    "dti", t.get("dti").asText(), "haircutBps", t.get("haircutBps").asInt())));
+                    "dti", t.get("dti").asText(), "haircutBps", haircutBps(sym))));
         });
         ctx.json(new LinkedHashMap<>(Map.of(
                 "party", cfg.partyId, "role", cfg.role, "node", cfg.node, "address", cfg.myAddress,
@@ -359,9 +630,6 @@ public final class App {
                 "defaults", defaults)));
     }
 
-    /** IM agreement terms used by the revaluation (console/src/domain/reference.ts, 2018 ISDA IM CSA). */
-    static final long IM_MTA_USD = 500_000;
-    static final long IM_ROUNDING_USD = 10_000;
 
     /**
      * Revaluation of the initial margin held between the two parties (flow-revaluation-top-up transition 5). The
@@ -370,7 +638,8 @@ public final class App {
      * (tagged by the issuing party's store) restore value and are left out of the requirement, so this is the issuing
      * secured party's view; the pledgor's service does not see the tags. The collateral is
      * valued at the oracle feed prices, read through this party's own gateway, after the eligibility haircuts. A
-     * shortfall at or above the minimum transfer amount gives a top-up call amount, rounded up (delivery).
+     * shortfall at or above the minimum transfer amount gives a top-up call amount, rounded up (delivery). The minimum
+     * transfer amount (the pledgor's) and the rounding come from the agreement terms in force (flow-agreement-amendment).
      */
     private void revaluation(Context ctx) {
         String counterparty = cfg.partyId.equals("B") ? "A" : "B";
@@ -418,7 +687,7 @@ public final class App {
             BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", securedParty)).asText());
             if (qty.signum() == 0) continue;
             BigInteger price = priceByToken.getOrDefault(token.toLowerCase(), BigInteger.ZERO);
-            int haircutBps = cfg.registry.get("tokens").get(sym).get("haircutBps").asInt();
+            int haircutBps = haircutBps(sym);
             BigInteger v = qty.multiply(price).multiply(BigInteger.valueOf(10_000L - haircutBps)).divide(BigInteger.valueOf(10_000));
             value = value.add(v);
             tokens.add(new LinkedHashMap<>(Map.of("token", sym, "pledged", qty.toString(), "price", price.toString(),
@@ -428,15 +697,17 @@ public final class App {
         BigInteger shortfall = required.subtract(value).max(BigInteger.ZERO);
         BigInteger[] qr = shortfall.divideAndRemainder(scale);
         long shortfallUsd = qr[0].longValueExact() + (qr[1].signum() > 0 ? 1 : 0);
-        long topUpUsd = shortfallUsd >= IM_MTA_USD ? ((shortfallUsd + IM_ROUNDING_USD - 1) / IM_ROUNDING_USD) * IM_ROUNDING_USD : 0;
+        CdmAgreement.Terms terms = fold().terms();
+        long mtaUsd = CdmAgreement.pledgorMtaUsd(terms.agreement()), roundingUsd = CdmAgreement.roundingUsd(terms.agreement());
+        long topUpUsd = shortfallUsd >= mtaUsd ? ((shortfallUsd + roundingUsd - 1) / roundingUsd) * roundingUsd : 0;
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("requiredUsd", usd(required.toString()));
         out.put("valueUsd", usd(value.toString()));
         out.put("shortfallUsd", String.valueOf(shortfallUsd));
         out.put("topUpUsd", String.valueOf(topUpUsd));
-        out.put("mtaUsd", String.valueOf(IM_MTA_USD));
-        out.put("roundingUsd", String.valueOf(IM_ROUNDING_USD));
+        out.put("mtaUsd", String.valueOf(mtaUsd));
+        out.put("roundingUsd", String.valueOf(roundingUsd));
         out.put("imCalls", imCalls);
         out.put("returnCalls", returnCalls);
         out.put("topUpCalls", topUpCalls);

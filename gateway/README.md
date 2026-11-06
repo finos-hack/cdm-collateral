@@ -46,6 +46,11 @@ NODE=bank-b PORT=8202 npm run serve
 | GET | `/substitutions?party=0x…` | substitutions the party is in (from `SubstitutionRequested` logs) |
 | GET | `/substitutions/:id` | on-chain substitution state, original and substitute assets |
 | GET | `/substitutions/:id/steps` | the substitution's steps in chain order, each with its CDM hash, block and block time (fold input) |
+| POST | `/amendments` | `{amendmentId, pledgor, securedParty, terms: [{token, eligible, haircutBps}], beforeHash, cdmHash}`: propose an amendment of the pair's terms, chained from its agreement hash (either party's key, `flow-agreement-amendment`) |
+| POST | `/amendments/:id/decision` | `{consent, cdmHash}`: the other party consents (the haircut terms apply to the pair) or refuses |
+| GET | `/amendments?party=0x…` | amendments the party is in (from `AmendmentProposed` logs), in chain order, with state and terms |
+| GET | `/amendments/:id` | on-chain amendment: parties, proposer, state, beforeHash, amendment and decision hashes, haircut terms |
+| GET | `/pair-terms?pledgor&securedParty` | the pair's agreement hash, pending amendment, and each registry token's eligibility and haircut as the contract applies them |
 | POST | `/interest` | `{interestId, pledgor, cashToken, amount, cdmHash}`: state the Interest Amount on cash collateral; for a positive amount approve the cash token first, and the contract pays the pledgor (secured party key, `flow-interest-on-cash`) |
 | POST | `/interest/:id/pay` | approve and pay a negative Interest Amount (pledgor key) |
 | GET | `/interest?party=0x…` | interest statements the party is in (from `InterestStated` logs), with the current state |
@@ -63,7 +68,8 @@ NODE=bank-b PORT=8202 npm run serve
 
 Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
 carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned`, `Enforced`,
-`ClosedOut`, `Substitution{Requested,Decided,Settled}` and `Interest{Stated,Settled}` events of the collateral control contract and
-`DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId`, `substitutionId` or `interestId`, and/or `party`);
+`ClosedOut`, `Substitution{Requested,Decided,Settled}`, `Interest{Stated,Settled}` and `Amendment{Proposed,Decided}` events
+of the collateral control contract and `DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId`,
+`substitutionId`, `interestId` or `amendmentId`, and/or `party`);
 the workflow service records the latter and relays everything to the console so state changes push instead of being
 polled.

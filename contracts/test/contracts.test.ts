@@ -430,4 +430,52 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(control.write.payInterest([id(44)], { account: bankA.account }));
     });
   });
+  describe("amendment of agreement terms (task-csa-amendment)", () => {
+    const M = id(50);
+    const H2 = keccak256(toHex("cdm-2"));
+    const terms = (bps: number) => [{ token: tMMF.address, eligible: true, haircutBps: bps }];
+
+    it("applies agreed haircut terms to the pair only, and moves the pair's agreement hash", async () => {
+      await control.write.proposeAmendment([M, aAddr, bAddr, terms(1000), zeroHash, H], { account: bankB.account });
+      assert.equal(await control.read.pendingAmendment([aAddr, bAddr]), M);
+      assert.equal((await control.read.eligibilityFor([aAddr, bAddr, tMMF.address])).haircutBps, 800); // not yet
+      await control.write.decideAmendment([M, true, H2], { account: bankA.account });
+      const [a, t] = await control.read.getAmendment([M]);
+      assert.equal(a.state, 2); // Agreed
+      assert.equal(t[0].haircutBps, 1000);
+      assert.equal((await control.read.eligibilityFor([aAddr, bAddr, tMMF.address])).haircutBps, 1000);
+      assert.equal((await control.read.eligibilityFor([aAddr, bAddr, tUST.address])).haircutBps, 200); // copied
+      assert.equal((await control.read.eligibilityFor([bAddr, aAddr, tMMF.address])).haircutBps, 800); // other pair
+      assert.equal(await control.read.agreementHash([aAddr, bAddr]), H);
+      assert.equal(await control.read.pendingAmendment([aAddr, bAddr]), zeroHash);
+    });
+
+    it("values a pledge at the pair's amended haircut", async () => {
+      await control.write.proposeAmendment([M, aAddr, bAddr, [{ token: tUST.address, eligible: false, haircutBps: 0 }], zeroHash, H], { account: bankA.account });
+      await control.write.decideAmendment([M, true, H2], { account: bankB.account });
+      await assert.rejects(pledgeFor(id(51), 11n)); // tUST no longer eligible for this pair
+    });
+
+    it("leaves the terms unchanged on refusal", async () => {
+      await control.write.proposeAmendment([M, aAddr, bAddr, terms(1000), zeroHash, H], { account: bankB.account });
+      await control.write.decideAmendment([M, false, H2], { account: bankA.account });
+      assert.equal((await control.read.getAmendment([M]))[0].state, 3); // Refused
+      assert.equal((await control.read.eligibilityFor([aAddr, bAddr, tMMF.address])).haircutBps, 800);
+      assert.equal(await control.read.agreementHash([aAddr, bAddr]), zeroHash);
+    });
+
+    it("rejects an outsider, a stale before hash, a second pending amendment, a reused id and the proposer deciding", async () => {
+      const [, , , outsider] = await viem.getWalletClients();
+      await assert.rejects(control.write.proposeAmendment([M, aAddr, bAddr, terms(1000), zeroHash, H], { account: outsider.account }));
+      await assert.rejects(control.write.proposeAmendment([M, aAddr, bAddr, terms(1000), H, H], { account: bankB.account })); // stale
+      await control.write.proposeAmendment([M, aAddr, bAddr, terms(1000), zeroHash, H], { account: bankB.account });
+      await assert.rejects(control.write.proposeAmendment([id(52), aAddr, bAddr, terms(900), zeroHash, H], { account: bankA.account })); // pending
+      await assert.rejects(control.write.decideAmendment([M, true, H2], { account: bankB.account })); // proposer
+      await control.write.decideAmendment([M, true, H2], { account: bankA.account });
+      await assert.rejects(control.write.proposeAmendment([M, aAddr, bAddr, terms(900), H, H2], { account: bankA.account })); // reused id
+      await assert.rejects(control.write.decideAmendment([M, true, H2], { account: bankA.account })); // decided
+      await assert.rejects(control.write.proposeAmendment([id(53), aAddr, bAddr, [{ token: tMMF.address, eligible: true, haircutBps: 10000 }], H, H2], { account: bankA.account }));
+      await control.write.proposeAmendment([id(54), aAddr, bAddr, terms(900), H, H2], { account: bankA.account }); // next one
+    });
+  });
 });

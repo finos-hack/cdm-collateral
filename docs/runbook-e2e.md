@@ -252,12 +252,20 @@ in "Interest on cash collateral" and clicks `State interest → A`. B's service 
 `stateInterest`; the contract pays the amount from B to A. Both consoles list the statement with `paid on-chain ✓` and
 `statement verified ✓`. For a negative rate the statement waits for A to click `Pay interest`.
 
+Amendment flow (`flow-agreement-amendment`): each console shows "Agreement terms": the pledgor's minimum transfer
+amount, the rounding and each token's haircut in the CDM schedule beside the haircut the contract applies, with
+`terms verified against the chain ✓`. B enters a new MTA (for example 400000) and a tMMF haircut in basis points and
+clicks `Propose amendment → A`; A's console lists the amendment with `Consent` and `Refuse`. On `Consent` A's service
+checks the CDM `CollateralAgreementAmendment` against the terms in force and the contract applies the haircut to the
+pair; both consoles show `agreed on-chain ✓`, and revaluation and pledge checks use the new terms. Amend the terms
+back (MTA 500000, tMMF 400 bps) afterwards; the other specs use the baseline terms.
+
 Revaluation flow (`flow-revaluation-top-up`): with IM in escrow, open the market operator console
 (`http://localhost:5173/#/live/operator`), enter a lower tUST price (for example 88.56) and click `Publish tUST`. The
 oracle publishes the price to the feed through gateway mkt. B's console then shows the "Revaluation" card: the
 required IM (agreed amounts of IM calls settled since the pair's last enforcement, less returns, top-ups excluded),
-the pledged value at the feed prices after haircuts, the shortfall, and the top-up amount (0 below the USD 500,000
-minimum transfer amount, otherwise rounded up to USD 10,000). `Issue top-up IM call → A` issues the call, which
+the pledged value at the feed prices after haircuts, the shortfall, and the top-up amount (0 below the minimum
+transfer amount in force, USD 500,000 at baseline, otherwise rounded up to USD 10,000). `Issue top-up IM call → A` issues the call, which
 follows the IM flow. Set the tUST price back to 98.4 afterwards; the other specs value tUST at 98.4.
 
 ### Automated (Playwright live specs)
@@ -271,7 +279,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
-`flow-substitution` and `flow-interest-on-cash`. The return, default and revaluation
+`flow-substitution`, `flow-interest-on-cash` and `flow-agreement-amendment` (last; it restores the baseline terms).
+The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and
 serves it on 4173 itself (`console/playwright.config.ts`); it does not use the 5173 dev server, but it needs the

@@ -131,6 +131,11 @@ READMEs are the authority. Oracle service: design only.
 8. **Interest on cash collateral** (`flow-interest-on-cash`, G17) — the secured party enters an Interest Period and
    the observed rate; its service builds the CDM `CollateralInterestStatement` on the pledgor's tUSD in escrow, and the
    control contract pays the Interest Amount to the pledgor (a negative amount is paid by the pledgor).
+9. **Amendment of agreement terms** (`flow-agreement-amendment`) — either party proposes a new pledgor Minimum
+   Transfer Amount and haircut changes as a CDM `CollateralAgreementAmendment` (cdm-ext, over CDM's
+   `Create_AgreementEvent`; baseline: CDM's sample 2018 NY law IM CSA), chained from the pair's agreement hash; the
+   other party consents on-chain, the control contract applies the haircuts to the pair, and both services fold the
+   agreed amendments to the same terms.
 
 ## Running N participants
 
