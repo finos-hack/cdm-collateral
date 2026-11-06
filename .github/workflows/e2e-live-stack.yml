@@ -113,12 +113,24 @@ jobs:
         run: cat stack.log || true
 
       # On failure, the Besu nodes' own logs show whether consensus stalled (QBFT round changes, peer count) when a
-      # deploy transaction is never confirmed; stack.log does not include them.
+      # deploy transaction is never confirmed; stack.log does not include them. Each node's transaction pool and the
+      # deployer's nonces show whether a transaction is held or was dropped (task-ci-deploy-dropped-tx).
       - name: Besu logs
         if: failure()
         run: |
-          for n in besu-mkt besu-bank-a besu-bank-b besu-bank-c; do
+          rpc() { curl -s -m 5 -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$2\",\"params\":$3}" "http://localhost:$1" || echo "(no answer)"; echo; }
+          mkt=$(node -e "const { privateKeyToAccount } = require('./contracts/node_modules/viem/_cjs/accounts/index.js'); console.log(privateKeyToAccount(require('fs').readFileSync('besu/mkt/data/key', 'utf8').trim()).address)" 2>/dev/null || true)
+          for np in besu-mkt:8545 besu-bank-a:8547 besu-bank-b:8549 besu-bank-c:8551; do
+            n=${np%%:*}; port=${np##*:}
             echo "::group::$n"
-            docker logs --tail 200 "$n" 2>&1 || true
+            docker logs --tail 1000 "$n" 2>&1 || true
+            echo "--- eth_blockNumber"; rpc "$port" eth_blockNumber '[]'
+            echo "--- txpool_besuStatistics"; rpc "$port" txpool_besuStatistics '[]'
+            echo "--- txpool_besuTransactions"; rpc "$port" txpool_besuTransactions '[]'
+            if [ -n "$mkt" ]; then
+              echo "--- deployer $mkt nonce latest, pending"
+              rpc "$port" eth_getTransactionCount "[\"$mkt\",\"latest\"]"
+              rpc "$port" eth_getTransactionCount "[\"$mkt\",\"pending\"]"
+            fi
             echo "::endgroup::"
           done
