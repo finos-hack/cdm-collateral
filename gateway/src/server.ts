@@ -107,6 +107,53 @@ route("POST", "/ledger/v1/calls/:id/enforce", async (p) =>
   J(await adapter.enforce(p.id as Hex)),
 );
 
+// --- close-out netting on default (flow-close-out-netting, G15) ---
+
+route("POST", "/ledger/v1/close-outs", async (_p, b) =>
+  // The secured party's gateway submits the close-out: the control contract applies the pledged collateral to the
+  // amount owed and returns the surplus to the pledgor (transitions 6-7).
+  J(await adapter.closeOut(b.closeOutId as Hex, getAddress(b.pledgor), BigInt(b.owed), b.cdmHash as Hex)),
+);
+
+route("GET", "/ledger/v1/close-outs", async (_p, _b, url) => J(await adapter.listCloseOuts(getAddress(url.searchParams.get("party")!))));
+
+// --- substitution of pledged initial margin (flow-substitution, G16) ---
+
+const assetsOf = (xs: { token: string; qty: string }[]) => xs.map((a) => ({ token: getAddress(a.token), qty: BigInt(a.qty) }));
+
+route("POST", "/ledger/v1/substitutions", async (_p, b) =>
+  J(await adapter.requestSubstitution(b.substitutionId as Hex, getAddress(b.securedParty), assetsOf(b.original), assetsOf(b.substitute), b.cdmHash as Hex)),
+);
+
+route("POST", "/ledger/v1/substitutions/:id/decision", async (p, b) =>
+  J(await adapter.decideSubstitution(p.id as Hex, Boolean(b.consent), b.cdmHash as Hex)),
+);
+
+route("POST", "/ledger/v1/substitutions/:id/settle", async (p, b) => {
+  // The pledgor's gateway approves the control contract for each substitute asset, then settles: the substitute moves
+  // into escrow and the original items come back in the same transaction.
+  const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  const { substitute } = await adapter.getSubstitutionAssets(p.id as Hex);
+  const approvals = [];
+  for (const a of substitute) approvals.push(await adapter.approve(a.token, control, a.qty));
+  const settle = await adapter.settleSubstitution(p.id as Hex, b.cdmHash as Hex);
+  return J({ approvals, settle });
+});
+
+route("GET", "/ledger/v1/substitutions", async (_p, _b, url) => J(await adapter.listSubstitutions(getAddress(url.searchParams.get("party")!))));
+
+route("GET", "/ledger/v1/substitutions/:id", async (p) => {
+  const id = p.id as Hex;
+  return J({ substitution: await adapter.getSubstitution(id), ...(await adapter.getSubstitutionAssets(id)) });
+});
+
+route("GET", "/ledger/v1/substitutions/:id/steps", async (p) => J(await adapter.substitutionSteps(p.id as Hex)));
+
+// The escrow and feed prices between a pledgor and a secured party at the end of a block (flow-substitution).
+route("GET", "/ledger/v1/escrow-at", async (_p, _b, url) =>
+  J(await adapter.escrowAt(getAddress(url.searchParams.get("pledgor")!), getAddress(url.searchParams.get("securedParty")!), BigInt(url.searchParams.get("block")!))),
+);
+
 route("POST", "/ledger/v1/oracle/defaults", async (_p, b) =>
   // Oracle feed write (architecture relationship oracle-to-gateway). Only the operator's gateway holds the publisher
   // key, so only that instance can serve this; any other instance refuses before submitting.

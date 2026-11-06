@@ -38,6 +38,15 @@ NODE=bank-b PORT=8202 npm run serve
 | POST | `/calls/:id/return` | release escrowed IM for an agreed return call |
 | POST | `/calls/:id/return-transfer` | approve and transfer equivalent VM back for a return call |
 | POST | `/calls/:id/enforce` | seize the pledgor's escrowed IM once the oracle feed records its default (secured party key) |
+| POST | `/close-outs` | `{closeOutId, pledgor, owed, cdmHash}`: close out after the pledgor's default; the control contract applies escrowed IM to `owed` and returns the surplus (secured party key, `flow-close-out-netting`) |
+| GET | `/close-outs?party=0x…` | close-outs the party is in (from `ClosedOut` logs): owed, applied value, statement hash |
+| POST | `/substitutions` | `{substitutionId, securedParty, original, substitute, cdmHash}`: request a substitution of escrowed IM (pledgor key, `flow-substitution`) |
+| POST | `/substitutions/:id/decision` | `{consent, cdmHash}`: consent to or refuse a substitution (secured party key) |
+| POST | `/substitutions/:id/settle` | approve each substitute asset, then settle: substitute into escrow, originals back (pledgor key) |
+| GET | `/substitutions?party=0x…` | substitutions the party is in (from `SubstitutionRequested` logs) |
+| GET | `/substitutions/:id` | on-chain substitution state, original and substitute assets |
+| GET | `/substitutions/:id/steps` | the substitution's steps in chain order, each with its CDM hash, block and block time (fold input) |
+| GET | `/escrow-at?pledgor&securedParty&block` | escrowed tokens and feed prices at the end of a block (the CDM portfolio before a substitution step) |
 | POST | `/oracle/defaults` | `{party, inDefault}` to the oracle feed; served only by the operator's gateway (`NODE=mkt`, publisher key) |
 | GET | `/defaults/:party` | default status on the oracle feed |
 | GET | `/party-calls?party=0x…` | calls whose `from` or `to` is this party (from `CallIssued` logs) |
@@ -49,7 +58,8 @@ NODE=bank-b PORT=8202 npm run serve
 | GET | `/events` | Server-Sent Events: one chain subscription (eth_subscribe over the Besu ws) fanned out |
 
 Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
-carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned` and `Enforced`
-events of the collateral control contract and `DefaultPublished` of the oracle feed (`event`, `callId` and/or `party`);
+carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned`, `Enforced`,
+`ClosedOut` and `Substitution{Requested,Decided,Settled}` events of the collateral control contract and
+`DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId` or `substitutionId`, and/or `party`);
 the workflow service records the latter and relays everything to the console so state changes push instead of being
 polled.

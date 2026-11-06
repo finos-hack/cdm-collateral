@@ -165,3 +165,13 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeregistered | decomposes | node:goal-cdm-development | node:task-sme-registered-asset-completion |  | accepted |
 | e-lnk-gapclosure-smeregistered | links | node:task-cdm-gap-closure | node:task-sme-registered-asset-completion |  | accepted |
 | e-note-g25redesign-implementation | notes | node:task-g25-ledger-anchor-redesign | noteworthy:nw-ledger-anchor-implementation |  | accepted |
+| e-dec-csaext-closeout | decomposes | node:task-csa-workflow-extensions | node:task-csa-close-out-netting |  | accepted |
+| e-dec-csaext-substitution | decomposes | node:task-csa-workflow-extensions | node:task-csa-substitution |  | accepted |
+| e-dec-csaext-interest | decomposes | node:task-csa-workflow-extensions | node:task-csa-interest-on-cash |  | accepted |
+| e-dec-csaext-amendment | decomposes | node:task-csa-workflow-extensions | node:task-csa-amendment |  | accepted |
+| e-dec-csaext-cancellation | decomposes | node:task-csa-workflow-extensions | node:task-csa-call-cancellation |  | accepted |
+| e-dec-csaext-settlementnetting | decomposes | node:task-csa-workflow-extensions | node:task-csa-settlement-netting |  | accepted |
+| e-dec-csaext-allocation | decomposes | node:task-csa-workflow-extensions | node:task-csa-allocation |  | accepted |
+| e-dec-csaext-reconciliation | decomposes | node:task-csa-workflow-extensions | node:task-csa-reconciliation |  | accepted |
+| e-mrk-closeoutadr-closeout | marks | waypoint:wp-adr-closeout-contract-applies-collateral | node:task-csa-close-out-netting |  | accepted |
+| e-mrk-subfoldadr-substitution | marks | waypoint:wp-adr-substitution-fold-portfolio | node:task-csa-substitution |  | accepted |

@@ -551,3 +551,53 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-ledger-anchor-implementation | review | proposed | accepted | 2026-11-04T02:46:59Z |  | denisurusov |
 | edge:e-note-g25redesign-implementation | review | proposed | accepted | 2026-11-04T02:46:59Z |  | denisurusov |
 | node:task-g25-ledger-anchor-redesign | status | open | resolved | 2026-11-04T03:11:51Z | 30d8b3afe7270e41926a27c489077bee1626627e | denisurusov |
+| node:task-csa-close-out-netting | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-close-out-netting | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-closeout | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-substitution | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-substitution | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-substitution | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-interest-on-cash | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-interest-on-cash | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-interest | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-amendment | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-amendment | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-amendment | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-call-cancellation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-call-cancellation | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-cancellation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-settlement-netting | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-settlement-netting | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-settlementnetting | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-allocation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-allocation | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-allocation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-reconciliation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| node:task-csa-reconciliation | status |  | open | 2026-11-06T13:19:22Z |  |  |
+| edge:e-dec-csaext-reconciliation | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
+| waypoint:wp-adr-closeout-contract-applies-collateral | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| waypoint:wp-adr-substitution-fold-portfolio | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| edge:e-mrk-closeoutadr-closeout | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| edge:e-mrk-subfoldadr-substitution | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| waypoint:wp-adr-closeout-contract-applies-collateral | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| waypoint:wp-adr-substitution-fold-portfolio | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-close-out-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-interest-on-cash | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-call-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-settlement-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-interest | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-settlementnetting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-mrk-closeoutadr-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-mrk-subfoldadr-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-close-out-netting | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |

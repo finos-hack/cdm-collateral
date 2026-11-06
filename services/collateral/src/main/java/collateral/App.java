@@ -89,6 +89,13 @@ public final class App {
         app.post("/api/v1/calls/{id}/transfer", this::transfer);
         app.post("/api/v1/calls/{id}/return", this::returnCollateral);
         app.post("/api/v1/calls/{id}/enforce", this::enforce);
+        app.get("/api/v1/close-outs", this::closeOuts);
+        app.post("/api/v1/close-outs", this::closeOut);
+        app.get("/api/v1/substitutions", this::substitutions);
+        app.post("/api/v1/substitutions", this::requestSubstitution);
+        app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
+        app.post("/api/v1/substitutions/{id}/settle", this::settleSubstitution);
+        app.get("/api/v1/substitutions/{id}/cdm-state", ctx -> ctx.json(substitutionStateFor(ctx.pathParam("id"))));
         app.sse("/api/v1/events", client -> { // the console subscribes here (EventSource sends Accept: text/event-stream)
             client.keepAlive();
             client.sendComment("connected");
@@ -148,7 +155,15 @@ public final class App {
                 String event = e.get("event").asText();
                 String callId = e.hasNonNull("callId") ? e.get("callId").asText() : null;
                 String party = e.hasNonNull("party") ? e.get("party").asText() : null;
-                if (event.equals("DefaultPublished") || involvesMe(callId)) {
+                if (event.equals("ClosedOut")) {
+                    onClosedOut(e, party, block, logIndex, data);
+                } else if (event.startsWith("Substitution")) {
+                    String id = e.get("substitutionId").asText();
+                    if (substitutionInvolvesMe(id)) {
+                        store.recordEvent(event, id, party, block, logIndex, data);
+                        if (event.equals("SubstitutionSettled")) substitutionStateFor(id);
+                    }
+                } else if (event.equals("DefaultPublished") || involvesMe(callId)) {
                     store.recordEvent(event, callId, party, block, logIndex, data);
                 }
             } else if ("SettleCall".equals(e.path("step").asText()) && involvesMe(e.path("callId").asText(null))) {
@@ -157,6 +172,67 @@ public final class App {
         } catch (Exception ex) {
             System.err.println("event relay: could not process " + data + ": " + ex.getMessage());
         }
+    }
+
+    /**
+     * A ClosedOut event (flow-close-out-netting transition 8): the pledgor's service fetches the CDM CloseOutStatement by
+     * the hash the contract recorded, checks it and keeps it; each service records the event.
+     */
+    private void onClosedOut(JsonNode e, String pledgor, String block, long logIndex, String data) {
+        boolean iAmPledgor = pledgor != null && pledgor.equalsIgnoreCase(cfg.myAddress);
+        boolean withCounterparty = pledgor != null && pledgor.equalsIgnoreCase(cfg.partyAddress(counterparty()));
+        if (!iAmPledgor && !withCounterparty) return;
+        String id = e.get("closeOutId").asText();
+        store.recordEvent("ClosedOut", id, pledgor, block, logIndex, data);
+        if (iAmPledgor) {
+            String hash = e.get("cdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
+                CdmCloseOut.verify(doc);
+                store.recordDocument(id, "CloseOutStatement", "in", hash, doc);
+            }
+        }
+    }
+
+    private String counterparty() {
+        return cfg.partyId.equals("B") ? "A" : "B";
+    }
+
+    /** {pledgor, secured party} addresses between this party and its counterparty. */
+    private String[] pledgorAndSecuredParty() {
+        String cpAddr = cfg.partyAddress(counterparty());
+        return cfg.role.equals("Pledgor") ? new String[]{cfg.myAddress, cpAddr} : new String[]{cpAddr, cfg.myAddress};
+    }
+
+    /** The feed price of every registry token that has one, by lowercase address (scaled by priceScale). */
+    private Map<String, BigInteger> feedPrices() {
+        Map<String, BigInteger> priceByToken = new HashMap<>();
+        for (JsonNode pr : gw.get("/prices").get("prices")) {
+            if (!pr.get("price").isNull()) priceByToken.put(pr.get("token").asText().toLowerCase(), new BigInteger(pr.get("price").asText()));
+        }
+        return priceByToken;
+    }
+
+    private int haircutBps(String symbol) {
+        return cfg.registry.get("tokens").get(symbol).get("haircutBps").asInt();
+    }
+
+    /** Value after haircut of qty units at a price, scaled by priceScale; the same integer arithmetic as CollateralControl. */
+    private static BigInteger valueAfterHaircut(BigInteger qty, BigInteger price, int haircutBps) {
+        return qty.multiply(price).multiply(BigInteger.valueOf(10_000L - haircutBps)).divide(BigInteger.valueOf(10_000));
+    }
+
+    /** Value after haircuts of a list of {token symbol, qty} at the current feed prices, scaled by priceScale. */
+    private BigInteger valueOf(List<Map<String, Object>> assets) {
+        Map<String, BigInteger> prices = feedPrices();
+        BigInteger v = BigInteger.ZERO;
+        for (Map<String, Object> a : assets) {
+            String sym = (String) a.get("token");
+            BigInteger price = prices.get(cfg.tokenAddress(sym).toLowerCase());
+            if (price == null) throw new RuntimeException("no feed price for " + sym);
+            v = v.add(valueAfterHaircut(BigInteger.valueOf(((Number) a.get("qty")).longValue()), price, haircutBps(sym)));
+        }
+        return v;
     }
 
     /** Whether a call is one this party is a counterparty to (the gateway pushes every call on the chain). */
@@ -276,6 +352,8 @@ public final class App {
         JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
         long lastEnforcement = -1;
         for (JsonNode e : hist.get("enforced")) lastEnforcement = Math.max(lastEnforcement, e.get("block").asLong());
+        // A close-out also empties the pair's escrow (flow-close-out-netting).
+        for (JsonNode e : hist.path("closedOut")) lastEnforcement = Math.max(lastEnforcement, e.get("block").asLong());
         Map<String, Long> settledAt = new HashMap<>();
         for (JsonNode s : hist.get("settled")) settledAt.merge(s.get("callId").asText().toLowerCase(), s.get("block").asLong(), Math::max);
 
@@ -560,5 +638,278 @@ public final class App {
         JsonNode enforced = gw.post("/calls/" + callId + "/enforce", Map.of());
         ctx.json(new LinkedHashMap<>(Map.of("ok", true, "pledgor", pledgor,
                 "defaultTx", notice.path("tx").path("txHash").asText(), "enforceTx", enforced.path("txHash").asText())));
+    }
+
+    // ---- close-out netting on default (flow-close-out-netting, G15) ----
+
+    /**
+     * Close out after the pledgor's default (secured party only). The default notice goes to the oracle service first
+     * when the feed does not show it yet (transitions 3-5). The service values the escrow after haircuts at the feed
+     * prices, builds the CDM CloseOutStatement from the Close-out Amount the secured party gives (CloseOutNetting, ISDA
+     * 2002 MA Section 6(e)), publishes it to the payload store, and submits closeOut with the statement's hash and the
+     * Early Termination Amount owed (transition 6); the control contract applies the collateral and returns the surplus
+     * (transition 7).
+     */
+    private void closeOut(Context ctx) {
+        if (!cfg.role.equals("Secured Party")) throw new RuntimeException("only the secured party closes out");
+        Map<String, Object> b = body(ctx);
+        long closeOutAmountUsd = ((Number) b.get("closeOutAmountUsd")).longValue();
+        String pledgor = cfg.partyAddress(counterparty());
+        String defaultTx = null;
+        if (!gw.get("/defaults/" + pledgor).get("inDefault").asBoolean()) {
+            JsonNode notice = oracle.post("/defaults", Map.of("party", pledgor, "inDefault", true, "notifiedBy", cfg.bankName(cfg.partyId)));
+            defaultTx = notice.path("tx").path("txHash").asText(null);
+        }
+        BigInteger held = BigInteger.ZERO;
+        Map<String, BigInteger> prices = feedPrices();
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            String token = cfg.tokenAddress(sym);
+            BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", cfg.myAddress)).asText());
+            if (qty.signum() > 0) held = held.add(valueAfterHaircut(qty, prices.getOrDefault(token.toLowerCase(), BigInteger.ZERO), haircutBps(sym)));
+        }
+        if (held.signum() == 0) throw new RuntimeException("nothing is pledged by " + counterparty() + " to close out against");
+        long heldUsd = held.divide(cfg.priceScale).longValueExact();
+        CdmCloseOut c = CdmCloseOut.build(cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), closeOutAmountUsd, heldUsd);
+        long etaUsd = CdmCloseOut.usd(c.statement.getEarlyTerminationAmount());
+        BigInteger owed = BigInteger.valueOf(Math.max(etaUsd, 0)).multiply(cfg.priceScale);
+        String closeOutId = Cdm.onChainId("close-out-" + cfg.partyId + "-" + System.nanoTime());
+        store.recordDocument(closeOutId, "CloseOutStatement", "out", c.hash, c.json);
+        payloads.put(c.hash, c.json, callParties);
+        JsonNode tx = gw.post("/close-outs", Map.of("closeOutId", closeOutId, "pledgor", pledgor, "owed", owed.toString(), "cdmHash", c.hash));
+        Map<String, Object> out = new LinkedHashMap<>(statementSummary(c.statement));
+        out.put("closeOutId", closeOutId);
+        out.put("cdmHash", c.hash);
+        out.put("closeOutTx", tx.path("txHash").asText());
+        if (defaultTx != null) out.put("defaultTx", defaultTx);
+        ctx.json(out);
+    }
+
+    private static Map<String, Object> statementSummary(cdmx.collateral.closeout.CloseOutStatement s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        long closeOutAmount = 0;
+        if (s.getCloseOutAmount() != null) for (var a : s.getCloseOutAmount()) closeOutAmount += CdmCloseOut.usd(a.getAmount());
+        m.put("closeOutAmountUsd", String.valueOf(closeOutAmount));
+        m.put("earlyTerminationAmountUsd", String.valueOf(CdmCloseOut.usd(s.getEarlyTerminationAmount())));
+        m.put("collateralHeldUsd", String.valueOf(CdmCloseOut.usd(s.getCollateralHeld())));
+        m.put("collateralAppliedUsd", String.valueOf(CdmCloseOut.usd(s.getCollateralApplied())));
+        m.put("amountPayableUsd", String.valueOf(CdmCloseOut.usd(s.getAmountPayable())));
+        return m;
+    }
+
+    /**
+     * The close-outs this party is in, from the ClosedOut events, each with its CDM CloseOutStatement fetched from the
+     * payload store by the on-chain hash and checked: the hash matches and CloseOutNetting over the statement's inputs
+     * gives the same statement (verified). Both parties check the same document.
+     */
+    private void closeOuts(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/close-outs", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            String hash = r.get("cdmHash").asText();
+            m.put("closeOutId", r.get("closeOutId").asText());
+            m.put("securedParty", partyIdOf(r.get("securedParty").asText()));
+            m.put("pledgor", partyIdOf(r.get("pledgor").asText()));
+            m.put("owedUsd", usd(r.get("owed").asText()));
+            m.put("appliedUsd", usd(r.get("applied").asText()));
+            m.put("cdmHash", hash);
+            m.put("block", r.get("block").asText());
+            String doc = payloads.get(hash);
+            try {
+                if (doc == null) throw new IllegalStateException("statement not readable in the payload store");
+                if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("payload hash mismatch");
+                m.putAll(statementSummary(CdmCloseOut.verify(doc)));
+                m.put("verified", true);
+            } catch (RuntimeException e) {
+                m.put("verified", false);
+                m.put("error", String.valueOf(e.getMessage()));
+            }
+            out.add(m);
+        }
+        ctx.json(out);
+    }
+
+    // ---- substitution of pledged initial margin (flow-substitution, G16) ----
+
+    private static final String[] SUBSTITUTION_STATE = {"none", "requested", "consented", "refused", "settled"};
+    private final Map<String, FoldCache> substitutionCache = new ConcurrentHashMap<>();
+
+    private boolean substitutionInvolvesMe(String id) {
+        JsonNode s = gw.get("/substitutions/" + id).get("substitution");
+        return s.get("pledgor").asText().equalsIgnoreCase(cfg.myAddress) || s.get("securedParty").asText().equalsIgnoreCase(cfg.myAddress);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> assetsIn(Map<String, Object> b, String key) {
+        List<Map<String, Object>> xs = (List<Map<String, Object>>) b.get(key);
+        if (xs == null || xs.isEmpty()) throw new RuntimeException(key + " is empty");
+        return xs;
+    }
+
+    private List<Map<String, Object>> gwAssets(List<Map<String, Object>> xs) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<String, Object> a : xs) out.add(Map.of("token", cfg.tokenAddress((String) a.get("token")), "qty", String.valueOf(((Number) a.get("qty")).longValue())));
+        return out;
+    }
+
+    private List<Map<String, Object>> cdmAssets(List<Map<String, Object>> xs) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<String, Object> a : xs) out.add(new LinkedHashMap<>(Map.of("isin", cfg.isin((String) a.get("token")), "units", ((Number) a.get("qty")).longValue())));
+        return out;
+    }
+
+    /**
+     * The pledgor gives notice of a substitution (transitions 1-4): the escrowed items it asks back and the substitute it
+     * offers, each valued after haircuts at the feed prices. The CDM SubstitutionInstruction (request) goes to the payload
+     * store and its hash on-chain with the request.
+     */
+    private void requestSubstitution(Context ctx) {
+        if (!cfg.role.equals("Pledgor")) throw new RuntimeException("only the pledgor requests a substitution");
+        Map<String, Object> b = body(ctx);
+        List<Map<String, Object>> original = assetsIn(b, "original");
+        List<Map<String, Object>> substitute = assetsIn(b, "substitute");
+        long originalUsd = valueOf(original).divide(cfg.priceScale).longValueExact();
+        long substituteUsd = valueOf(substitute).divide(cfg.priceScale).longValueExact();
+        String id = Cdm.onChainId("substitution-" + cfg.partyId + "-" + System.nanoTime());
+        CdmSubstitution req = CdmSubstitution.request(id, cdmAssets(original), originalUsd, cdmAssets(substitute), substituteUsd);
+        store.recordDocument(id, "SubstitutionRequest", "out", req.hash, req.json);
+        payloads.put(req.hash, req.json, callParties);
+        gw.post("/substitutions", Map.of("substitutionId", id, "securedParty", cfg.partyAddress(counterparty()),
+                "original", gwAssets(original), "substitute", gwAssets(substitute), "cdmHash", req.hash));
+        ctx.json(Map.of("substitutionId", id, "cdmHash", req.hash, "originalUsd", String.valueOf(originalUsd), "substituteUsd", String.valueOf(substituteUsd)));
+    }
+
+    /** The secured party consents or refuses (transitions 5-8), under the agreement's consent election. */
+    private void decideSubstitution(Context ctx) {
+        String id = ctx.pathParam("id");
+        Map<String, Object> b = body(ctx);
+        boolean consent = Boolean.TRUE.equals(b.get("consent"));
+        CdmSubstitution d = CdmSubstitution.consent(id, consent, (String) b.get("reason"));
+        store.recordDocument(id, "SubstitutionConsent", "out", d.hash, d.json);
+        payloads.put(d.hash, d.json, callParties);
+        gw.post("/substitutions/" + id + "/decision", Map.of("consent", consent, "cdmHash", d.hash));
+        ctx.json(Map.of("ok", true, "decision", consent ? "consented" : "refused", "cdmHash", d.hash));
+    }
+
+    /** The pledgor settles a consented substitution (transitions 9-12): substitute into escrow, originals back. */
+    private void settleSubstitution(Context ctx) {
+        String id = ctx.pathParam("id");
+        CdmSubstitution st = CdmSubstitution.settle(id);
+        store.recordDocument(id, "SubstitutionSettle", "out", st.hash, st.json);
+        payloads.put(st.hash, st.json, callParties);
+        gw.post("/substitutions/" + id + "/settle", Map.of("cdmHash", st.hash));
+        ctx.json(Map.of("ok", true, "cdmHash", st.hash));
+    }
+
+    private List<Map<String, Object>> symbolAssets(JsonNode xs) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode a : xs) out.add(new LinkedHashMap<>(Map.of(
+                "token", symbolByAddress.getOrDefault(a.get("token").asText().toLowerCase(), a.get("token").asText()), "qty", a.get("qty").asText())));
+        return out;
+    }
+
+    /** The substitutions this party is in, with their on-chain state, assets and CDM fold. */
+    private void substitutions(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode entry : gw.getQuery("/substitutions", Map.of("party", cfg.myAddress))) {
+            String id = entry.get("substitutionId").asText();
+            JsonNode full = gw.get("/substitutions/" + id);
+            JsonNode s = full.get("substitution");
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("substitutionId", id);
+            m.put("pledgor", partyIdOf(s.get("pledgor").asText()));
+            m.put("securedParty", partyIdOf(s.get("securedParty").asText()));
+            m.put("state", SUBSTITUTION_STATE[s.get("state").asInt()]);
+            m.put("original", symbolAssets(full.get("original")));
+            m.put("substitute", symbolAssets(full.get("substitute")));
+            m.put("cdm", substitutionStateFor(id));
+            m.put("messages", store.messagesFor(id));
+            out.add(m);
+        }
+        ctx.json(out);
+    }
+
+    /**
+     * The CDM fold of one substitution (wp-adr-cdm-payload-carrier): the on-chain ordered step hashes, each document
+     * fetched from the payload store and checked against its hash, folded through Create_CollateralSubstitution with the
+     * portfolio both parties read at the block before each step. Cached once every step is folded.
+     */
+    private Map<String, Object> substitutionStateFor(String id) {
+        JsonNode steps = gw.get("/substitutions/" + id + "/steps");
+        StringBuilder sig = new StringBuilder();
+        for (JsonNode st : steps) sig.append(st.get("cdmHash").asText()).append(';');
+        FoldCache cached = substitutionCache.get(id);
+        if (cached != null && cached.sig().equals(sig.toString())) return cached.result();
+
+        JsonNode sub = gw.get("/substitutions/" + id).get("substitution");
+        String pledgor = sub.get("pledgor").asText(), securedParty = sub.get("securedParty").asText();
+        List<CdmSubstitution.Step> fold = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+        for (JsonNode st : steps) {
+            names.add(st.get("step").asText());
+            String hash = st.get("cdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc == null) break; // committed on-chain, not yet readable here
+            if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new RuntimeException("payload hash mismatch for substitution step " + st.get("step").asText());
+            long before = st.get("block").asLong() - 1;
+            fold.add(new CdmSubstitution.Step(doc, portfolioAt(id, pledgor, securedParty, before), st.get("timestamp").asLong()));
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalSteps", steps.size());
+        result.put("foldedSteps", fold.size());
+        result.put("steps", names);
+        boolean converged = steps.size() > 0 && fold.size() == steps.size();
+        if (fold.isEmpty()) {
+            result.put("status", "none");
+        } else {
+            try {
+                var events = CdmSubstitution.fold(id, fold);
+                var last = events.get(events.size() - 1);
+                String json = CdmRuntime.toJson(last);
+                store.saveState(id, json);
+                result.put("status", String.valueOf(last.getAfter().getStatus()));
+                result.put("qualifiers", events.stream().map(e -> String.valueOf(e.getEventQualifier())).toList());
+                result.put("stateHash", Cdm.keccakHex(json)); // same documents and chain -> same hash on both parties
+            } catch (RuntimeException e) {
+                converged = false;
+                result.put("status", "invalid");
+                result.put("error", String.valueOf(e.getMessage()));
+            }
+        }
+        result.put("converged", converged);
+        if (converged) substitutionCache.put(id, new FoldCache(sig.toString(), result));
+        return result;
+    }
+
+    /**
+     * The CDM portfolio of the pledgor's escrow with the secured party at the end of a block, valued after haircuts. Read
+     * once from this party's node and kept in the store: the node serves state for recent blocks only.
+     */
+    private cdm.event.common.CollateralPortfolio portfolioAt(String substitutionId, String pledgor, String securedParty, long block) {
+        String kept = store.portfolioAt(substitutionId, block);
+        try {
+            if (kept != null) return CdmRuntime.JSON.readValue(kept, cdm.event.common.CollateralPortfolio.class);
+        } catch (Exception e) {
+            throw new RuntimeException("stored portfolio unreadable: " + e.getMessage(), e);
+        }
+        cdm.event.common.CollateralPortfolio p = readPortfolioAt(pledgor, securedParty, block);
+        store.savePortfolioAt(substitutionId, block, CdmRuntime.toJson(p));
+        return p;
+    }
+
+    private cdm.event.common.CollateralPortfolio readPortfolioAt(String pledgor, String securedParty, long block) {
+        JsonNode escrow = gw.getQuery("/escrow-at", Map.of("pledgor", pledgor, "securedParty", securedParty, "block", String.valueOf(block)));
+        List<Map<String, Object>> positions = new ArrayList<>();
+        BigInteger value = BigInteger.ZERO;
+        for (JsonNode t : escrow) {
+            BigInteger qty = new BigInteger(t.get("qty").asText());
+            if (qty.signum() == 0) continue;
+            String sym = symbolByAddress.get(t.get("token").asText().toLowerCase());
+            if (sym == null) throw new RuntimeException("token " + t.get("token").asText() + " is not in the registry");
+            positions.add(Map.of("isin", cfg.isin(sym), "units", qty.longValueExact()));
+            if (!t.get("price").isNull()) value = value.add(valueAfterHaircut(qty, new BigInteger(t.get("price").asText()), haircutBps(sym)));
+        }
+        return CdmSubstitution.portfolio(positions, value.divide(cfg.priceScale).longValueExact(),
+                cfg.bankName(partyIdOf(pledgor)), cfg.bankName(partyIdOf(securedParty)));
     }
 }

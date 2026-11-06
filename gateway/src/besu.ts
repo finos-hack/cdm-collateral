@@ -36,12 +36,59 @@ export interface StepEvent {
 /** A settlement or oracle-feed event pushed alongside the lifecycle steps: Returned and Enforced from the collateral
  * control contract (flow-return, flow-default-enforcement), DefaultPublished from the oracle feed. */
 export interface LedgerEvent {
-  event: "Returned" | "Enforced" | "DefaultPublished";
+  event:
+    | "Returned"
+    | "Enforced"
+    | "DefaultPublished"
+    | "ClosedOut"
+    | "SubstitutionRequested"
+    | "SubstitutionDecided"
+    | "SubstitutionSettled";
   callId?: Hex;
+  /** ClosedOut (flow-close-out-netting). */
+  closeOutId?: Hex;
+  /** SubstitutionRequested, SubstitutionDecided, SubstitutionSettled (flow-substitution). */
+  substitutionId?: Hex;
+  cdmHash?: Hex;
   party?: Address;
   inDefault?: boolean;
   block: string;
   logIndex: number;
+}
+
+/** A substitution of pledged initial margin as the collateral control contract holds it (flow-substitution). */
+export interface OnChainSubstitution {
+  pledgor: Address;
+  securedParty: Address;
+  state: number; // SubstitutionState: None, Requested, Consented, Refused, Settled
+  requestCdmHash: Hex;
+  decisionCdmHash: Hex;
+  settleCdmHash: Hex;
+}
+
+/** One substitution step as substitutionSteps reads it from the chain. */
+export interface SubstitutionStep {
+  step: "request" | "consent" | "settle";
+  event: string;
+  cdmHash: Hex;
+  consent?: boolean;
+  block: string;
+  /** Block time, epoch seconds: the CDM event date and timestamp of the step. */
+  timestamp: number;
+  logIndex: number;
+  txHash: Hex;
+}
+
+/** One close-out on default as the ClosedOut event records it (flow-close-out-netting). */
+export interface CloseOutRecord {
+  closeOutId: Hex;
+  securedParty: Address;
+  pledgor: Address;
+  owed: bigint;
+  applied: bigint;
+  cdmHash: Hex;
+  block: string;
+  txHash: Hex;
 }
 
 /** One lifecycle step as callSteps reads it from the chain, with what the CDM LedgerAnchor needs (G25). */
@@ -71,6 +118,10 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "Transferred(bytes32,address,address,uint256)",
     "Returned(bytes32,address,address)",
     "Enforced(bytes32,address,address)",
+    "ClosedOut(bytes32,address,address,uint256,uint256,bytes32)",
+    "SubstitutionRequested(bytes32,address,address,bytes32)",
+    "SubstitutionDecided(bytes32,bool,bytes32)",
+    "SubstitutionSettled(bytes32,bytes32)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -120,11 +171,22 @@ const controlAbi = parseAbi([
   "function settleByTransfer(bytes32 callId, uint256 proposalId, bytes32 cdmHash)",
   "function returnCollateral(bytes32 callId, Asset[] release, bytes32 cdmHash)",
   "function returnByTransfer(bytes32 callId, Asset[] assets, bytes32 cdmHash)",
+  "struct Substitution { address pledgor; address securedParty; uint8 state; bytes32 requestCdmHash; bytes32 decisionCdmHash; bytes32 settleCdmHash; }",
   "function enforce(bytes32 callId)",
+  "function closeOut(bytes32 closeOutId, address pledgor, uint256 owed, bytes32 cdmHash)",
+  "function requestSubstitution(bytes32 substitutionId, address securedParty, Asset[] original, Asset[] substitute, bytes32 cdmHash)",
+  "function decideSubstitution(bytes32 substitutionId, bool consent, bytes32 cdmHash)",
+  "function settleSubstitution(bytes32 substitutionId, bytes32 cdmHash)",
+  "function getSubstitution(bytes32 substitutionId) view returns (Substitution)",
+  "function getSubstitutionAssets(bytes32 substitutionId) view returns (Asset[] original, Asset[] substitute)",
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
   "event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
   "event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
+  "event ClosedOut(bytes32 indexed closeOutId, address indexed securedParty, address indexed pledgor, uint256 owed, uint256 applied, bytes32 cdmHash)",
+  "event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
+  "event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash)",
+  "event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash)",
 ]);
 
 const oracleAbi = parseAbi([
@@ -156,11 +218,21 @@ export interface LedgerAdapter {
   returnCollateral(callId: Hex, release: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   returnByTransfer(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   enforce(callId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  closeOut(closeOutId: Hex, pledgor: Address, owed: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  listCloseOuts(party: Address): Promise<CloseOutRecord[]>;
+  requestSubstitution(substitutionId: Hex, securedParty: Address, original: AssetArg[], substitute: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  decideSubstitution(substitutionId: Hex, consent: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  settleSubstitution(substitutionId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getSubstitution(substitutionId: Hex): Promise<OnChainSubstitution>;
+  getSubstitutionAssets(substitutionId: Hex): Promise<{ original: AssetArg[]; substitute: AssetArg[] }>;
+  listSubstitutions(party: Address): Promise<{ substitutionId: Hex; substitution: OnChainSubstitution }[]>;
+  substitutionSteps(substitutionId: Hex): Promise<SubstitutionStep[]>;
+  escrowAt(pledgor: Address, securedParty: Address, block: bigint): Promise<{ token: Address; qty: bigint; price: bigint | null }[]>;
   setDefault(party: Address, inDefault: boolean): Promise<{ txHash: Hex; block: bigint }>;
   isDefaulted(party: Address): Promise<boolean>;
   publishPrice(token: Address, priceScaled: bigint): Promise<{ txHash: Hex; block: bigint }>;
   priceOf(token: Address): Promise<bigint | null>;
-  settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[] }>;
+  settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<CallStep[]>;
@@ -259,6 +331,121 @@ export class BesuAdapter implements LedgerAdapter {
     return this.send(this.reg.contracts.collateralControl, controlAbi, "enforce", [callId]);
   }
 
+  /** Close out after the pledgor's default (secured party's key, flow-close-out-netting): the control contract applies
+   * the pledged collateral to `owed` and returns the surplus to the pledgor. */
+  closeOut(closeOutId: Hex, pledgor: Address, owed: bigint, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "closeOut", [closeOutId, pledgor, owed, cdmHash]);
+  }
+
+  /** Every close-out a party is in, from the ClosedOut events (securedParty and pledgor are indexed). */
+  async listCloseOuts(party: Address): Promise<CloseOutRecord[]> {
+    const out: CloseOutRecord[] = [];
+    for (const args of [{ securedParty: party }, { pledgor: party }]) {
+      for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "ClosedOut", args)) {
+        const a = l.args as { closeOutId: Hex; securedParty: Address; pledgor: Address; owed: bigint; applied: bigint; cdmHash: Hex };
+        out.push({ ...a, block: l.blockNumber.toString(), txHash: l.transactionHash as Hex });
+      }
+    }
+    return out;
+  }
+
+  /** Substitution steps (flow-substitution): the pledgor requests and settles, the secured party decides. */
+  requestSubstitution(substitutionId: Hex, securedParty: Address, original: AssetArg[], substitute: AssetArg[], cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "requestSubstitution", [substitutionId, securedParty, original, substitute, cdmHash]);
+  }
+
+  decideSubstitution(substitutionId: Hex, consent: boolean, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "decideSubstitution", [substitutionId, consent, cdmHash]);
+  }
+
+  settleSubstitution(substitutionId: Hex, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "settleSubstitution", [substitutionId, cdmHash]);
+  }
+
+  async getSubstitution(substitutionId: Hex): Promise<OnChainSubstitution> {
+    return (await this.pub.readContract({
+      address: this.reg.contracts.collateralControl, abi: controlAbi, functionName: "getSubstitution", args: [substitutionId],
+    })) as OnChainSubstitution;
+  }
+
+  async getSubstitutionAssets(substitutionId: Hex): Promise<{ original: AssetArg[]; substitute: AssetArg[] }> {
+    const [original, substitute] = (await this.pub.readContract({
+      address: this.reg.contracts.collateralControl, abi: controlAbi, functionName: "getSubstitutionAssets", args: [substitutionId],
+    })) as [AssetArg[], AssetArg[]];
+    return { original: [...original], substitute: [...substitute] };
+  }
+
+  /** The substitutions a party is in, from the SubstitutionRequested events (pledgor and securedParty are indexed). */
+  async listSubstitutions(party: Address): Promise<{ substitutionId: Hex; substitution: OnChainSubstitution }[]> {
+    const ids = new Set<Hex>();
+    for (const args of [{ pledgor: party }, { securedParty: party }]) {
+      for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "SubstitutionRequested", args)) {
+        ids.add((l.args as { substitutionId: Hex }).substitutionId);
+      }
+    }
+    const out = [];
+    for (const substitutionId of ids) out.push({ substitutionId, substitution: await this.getSubstitution(substitutionId) });
+    return out;
+  }
+
+  /** The steps of one substitution in chain order, each with its CDM hash: the ordered list the service folds. */
+  async substitutionSteps(substitutionId: Hex): Promise<SubstitutionStep[]> {
+    const specs: { name: string; step: SubstitutionStep["step"] }[] = [
+      { name: "SubstitutionRequested", step: "request" },
+      { name: "SubstitutionDecided", step: "consent" },
+      { name: "SubstitutionSettled", step: "settle" },
+    ];
+    const rows: (SubstitutionStep & { bn: bigint })[] = [];
+    for (const s of specs) {
+      for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, s.name, { substitutionId })) {
+        const a = l.args as { cdmHash: Hex; consent?: boolean };
+        rows.push({
+          step: s.step, event: s.name, cdmHash: a.cdmHash, consent: a.consent, block: l.blockNumber.toString(), timestamp: 0,
+          logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex, bn: l.blockNumber,
+        });
+      }
+    }
+    rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
+    for (const r of rows) r.timestamp = Number((await this.pub.getBlock({ blockNumber: r.bn })).timestamp);
+    return rows.map(({ bn, ...r }) => r);
+  }
+
+  /** The escrow between a pledgor and a secured party and the feed prices, as of the end of `block`. Both parties read
+   * the same block from their own nodes, so the CDM portfolio they build from it is the same (flow-substitution). */
+  async escrowAt(pledgor: Address, securedParty: Address, block: bigint): Promise<{ token: Address; qty: bigint; price: bigint | null }[]> {
+    const control = this.reg.contracts.collateralControl;
+    const feed = this.reg.contracts.oracleFeed;
+    const tokens = (await this.pub.readContract({
+      address: control, abi: controlAbi, functionName: "pledgedTokens", args: [pledgor, securedParty], blockNumber: block,
+    })) as Address[];
+    const out = [];
+    for (const token of tokens) {
+      const qty = (await this.pub.readContract({
+        address: control, abi: controlAbi, functionName: "pledgedBalance", args: [pledgor, securedParty, token], blockNumber: block,
+      })) as bigint;
+      const has = (await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "hasPrice", args: [token], blockNumber: block })) as boolean;
+      const price = has
+        ? ((await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "price", args: [token], blockNumber: block })) as bigint)
+        : null;
+      out.push({ token: getAddress(token), qty, price });
+    }
+    return out;
+  }
+
+  // Logs of one event from the deploy block to the latest, in windows under Besu's eth_getLogs range cap.
+  private async scan(address: Address, abi: readonly any[], name: string, args: Record<string, unknown>): Promise<any[]> {
+    const event = abi.find((x: any) => x.type === "event" && x.name === name) as never;
+    const latest = await this.pub.getBlockNumber();
+    const start = BigInt(this.reg.deployBlock ?? 0);
+    const WINDOW = 4000n;
+    const out: any[] = [];
+    for (let from = start; from <= latest; from += WINDOW) {
+      const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
+      out.push(...(await this.pub.getLogs({ address, event, args: args as never, fromBlock: from, toBlock: to })));
+    }
+    return out;
+  }
+
   /** Write a party's default status to the oracle feed. Only the publisher (the market operator's key) may write, so
    * this succeeds only on the operator's gateway instance; the contract reverts NotPublisher for any other key. */
   async setDefault(party: Address, inDefault: boolean) {
@@ -328,7 +515,7 @@ export class BesuAdapter implements LedgerAdapter {
   // Enforced events for one pledgor/secured-party pair. Enforcement moves the pair's whole escrow to the secured
   // party, so a reader counts only the calls settled after the pair's last enforcement. Scanned in windows like
   // listCalls.
-  async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[] }> {
+  async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }> {
     const settledEvent = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallSettled") as never;
     const enforcedEvent = controlAbi.find((x: any) => x.type === "event" && x.name === "Enforced") as never;
     const latest = await this.pub.getBlockNumber();
@@ -346,7 +533,11 @@ export class BesuAdapter implements LedgerAdapter {
         enforced.push({ callId: (log as any).args.callId as Hex, block: (log as any).blockNumber.toString() });
       }
     }
-    return { settled, enforced };
+    // A close-out empties the pair's escrow like an enforcement (flow-close-out-netting).
+    const closedOut = (await this.scan(this.reg.contracts.collateralControl, controlAbi, "ClosedOut", { securedParty, pledgor })).map((l) => ({
+      closeOutId: (l.args as { closeOutId: Hex }).closeOutId, block: l.blockNumber.toString(),
+    }));
+    return { settled, enforced, closedOut };
   }
 
   // The lifecycle steps of one call, in chain order, each with its CDM hash — the authoritative ordered commitment
@@ -426,10 +617,15 @@ export class BesuAdapter implements LedgerAdapter {
       abi: controlAbi,
       onLogs: (logs) => {
         for (const log of logs) {
-          const name = (log as any).eventName as string;
-          if (name !== "Returned" && name !== "Enforced") continue;
-          const a = ((log as any).args ?? {}) as { callId?: Hex; pledgor?: Address };
-          onEvent({ event: name, callId: a.callId, party: a.pledgor, ...meta(log) });
+          const name = (log as any).eventName as LedgerEvent["event"];
+          const a = ((log as any).args ?? {}) as { callId?: Hex; pledgor?: Address; closeOutId?: Hex; substitutionId?: Hex; cdmHash?: Hex };
+          if (name === "Returned" || name === "Enforced") {
+            onEvent({ event: name, callId: a.callId, party: a.pledgor, ...meta(log) });
+          } else if (name === "ClosedOut") {
+            onEvent({ event: name, closeOutId: a.closeOutId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          } else if (name === "SubstitutionRequested" || name === "SubstitutionDecided" || name === "SubstitutionSettled") {
+            onEvent({ event: name, substitutionId: a.substitutionId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          }
         }
       },
       onError,

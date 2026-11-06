@@ -235,6 +235,17 @@ feed through gateway mkt; B's gateway then calls `enforce`, which moves everythi
 consoles show `in default on the oracle feed` and `enforced ✓`. A stays in default on the persistent chain; only
 `reset` clears it.
 
+Close-out flow (`flow-close-out-netting`): while A has collateral in escrow, B enters a Close-out Amount in the
+"Close-out on default" card and clicks `Declare default & close out A`. B's service sends the default notice if the
+feed does not show it, values the escrow after haircuts, builds the CDM `CloseOutStatement` and calls `closeOut`: the
+contract gives B whole token units up to the Early Termination Amount and returns the rest of A's escrow to A. Both
+consoles list the statement with `statement verified ✓`.
+
+Substitution flow (`flow-substitution`): while A has collateral in escrow, A chooses the token and quantity to get back
+and the substitute in "Substitute pledged collateral" and clicks `Request substitution → B`. B clicks `Consent` (or
+`Refuse`), then A clicks `Settle substitution`; the substitute moves into escrow and the original items back to A. Both
+consoles show `substituted on-chain ✓` and the CDM qualifier `CollateralSubstituted`.
+
 Revaluation flow (`flow-revaluation-top-up`): with IM in escrow, open the market operator console
 (`http://localhost:5173/#/live/operator`), enter a lower tUST price (for example 88.56) and click `Publish tUST`. The
 oracle publishes the price to the feed through gateway mkt. B's console then shows the "Revaluation" card: the
@@ -253,7 +264,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 ```
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
-`flow-default-enforcement`, `flow-oracle-update` and `flow-revaluation-top-up`. The return, default and revaluation
+`flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting` and
+`flow-substitution`. The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and
 serves it on 4173 itself (`console/playwright.config.ts`); it does not use the 5173 dev server, but it needs the

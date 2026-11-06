@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.8
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-03T15:18:20Z
+updatedAt: 2026-11-06T13:19:22Z
 ```
 # Task: implement the ISDA CSA workflows that have no prototype flow yet
 
@@ -57,3 +57,12 @@ Open at pickup:
 3. Update the task map: section A shows `flow-oracle-update` and `flow-revaluation-top-up` as unbuilt with no
    live spec (stale since PR #11), and section B rows 1 and 2 do not show their CDM side.
 4. Still open from before: splitting this task into one task per workflow.
+
+## Progress 2026-11-06T13:19:22Z
+
+- Split into one task per workflow on the project owner's instruction ("yes, a task per flow"):
+  [[task-csa-close-out-netting]], [[task-csa-substitution]], [[task-csa-interest-on-cash]], [[task-csa-amendment]],
+  [[task-csa-call-cancellation]], [[task-csa-settlement-netting]], [[task-csa-allocation]],
+  [[task-csa-reconciliation]] (each `review: proposed`). This task stays open as their parent.
+- PR #24 merged; work continues on branch `P2` from `main` at `d2ad03b`. The owner chose to build rows 1 and 2 first
+  (G15 close-out, G16 substitution), whose CDM side exists, and to update the task map on `P2`.

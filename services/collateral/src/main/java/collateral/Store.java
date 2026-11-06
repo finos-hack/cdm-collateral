@@ -60,6 +60,13 @@ public final class Store implements AutoCloseable {
                       purpose TEXT NOT NULL
                     )""");
                 st.execute("""
+                    CREATE TABLE IF NOT EXISTS substitution_portfolio (
+                      substitution_id TEXT NOT NULL,
+                      block INTEGER NOT NULL,
+                      portfolio_json TEXT NOT NULL,
+                      PRIMARY KEY (substitution_id, block)
+                    )""");
+                st.execute("""
                     CREATE TABLE IF NOT EXISTS margin_call_state (
                       call_id TEXT PRIMARY KEY,
                       state_json TEXT NOT NULL,
@@ -89,13 +96,18 @@ public final class Store implements AutoCloseable {
     }
 
     public void recordMessage(String callId, String msgType, String direction, Cdm cdm) {
+        recordDocument(callId, msgType, direction, cdm.hash, cdm.json);
+    }
+
+    /** Record any CDM document by its keccak-256 hash, keyed by the on-chain id it belongs to (call, close-out, substitution). */
+    public void recordDocument(String id, String msgType, String direction, String hash, String json) {
         try (PreparedStatement ins = conn.prepareStatement(
                 "INSERT INTO messages(call_id, msg_type, direction, cdm_hash, cdm_json, created_at) VALUES(?,?,?,?,?,?)")) {
-            ins.setString(1, callId);
+            ins.setString(1, id);
             ins.setString(2, msgType);
             ins.setString(3, direction);
-            ins.setString(4, cdm.hash);
-            ins.setString(5, cdm.json);
+            ins.setString(4, hash);
+            ins.setString(5, json);
             ins.setString(6, Instant.now().toString());
             ins.executeUpdate();
         } catch (Exception e) {
@@ -124,6 +136,33 @@ public final class Store implements AutoCloseable {
             q.setString(1, callId.toLowerCase());
             ResultSet rs = q.executeQuery();
             return rs.next() ? rs.getString(1) : null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * The CDM portfolio this party read from its node for a substitution step, as of the end of a block
+     * (flow-substitution). Kept because the node answers state queries for recent blocks only, so a later fold reuses it.
+     */
+    public String portfolioAt(String substitutionId, long block) {
+        try (PreparedStatement q = conn.prepareStatement("SELECT portfolio_json FROM substitution_portfolio WHERE substitution_id = ? AND block = ?")) {
+            q.setString(1, substitutionId.toLowerCase());
+            q.setLong(2, block);
+            ResultSet rs = q.executeQuery();
+            return rs.next() ? rs.getString(1) : null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void savePortfolioAt(String substitutionId, long block, String portfolioJson) {
+        try (PreparedStatement up = conn.prepareStatement(
+                "INSERT OR IGNORE INTO substitution_portfolio(substitution_id, block, portfolio_json) VALUES(?,?,?)")) {
+            up.setString(1, substitutionId.toLowerCase());
+            up.setLong(2, block);
+            up.setString(3, portfolioJson);
+            up.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

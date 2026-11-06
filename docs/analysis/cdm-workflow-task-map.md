@@ -10,7 +10,7 @@ Sources: [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md),
 [`findings.md`](findings.md), [`collateral-conceptual-model.md`](collateral-conceptual-model.md),
 [`collateral-flows.md`](collateral-flows.md), [`business-case.md`](business-case.md) and the gap register
 [`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) (gap IDs G1–G39). Implementation status is
-as of `main` at `916f51f` (PR #11, 2026-11-03).
+as of `main` at `d2ad03b` (PR #24, 2026-11-04); the six live specs of section A passed locally on 2026-11-04.
 
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other
 agreement families (section C). Section B starts only after the rest of section A is done: `flow-oracle-update`,
@@ -30,25 +30,26 @@ maintainer and accepted by the project owner (2026-11-03).
 | Variation margin call and title transfer | `flow-vm-margin-call-transfer` | yes | passes | G9 (no VM call amount; 2018 IM CSA only), G10 exposure | `task-cdm-gap-closure` (valuation, G7–G10) |
 | Return of excess initial margin | `flow-return` | yes | passes | none (G6 closed in `cdm-ext`) | `task-e2e-remaining-flows` |
 | Default and enforcement against segregated IM | `flow-default-enforcement` | yes (default notices through `services/oracle`) | passes | G14 enforcement step | `task-e2e-remaining-flows`; G14 in `task-cdm-gap-closure` |
-| Oracle price and rating update | `flow-oracle-update` | `OracleFeed.publishPrice` only | none | input to G7 and G11 | `task-e2e-remaining-flows` |
-| Revaluation and top-up call | `flow-revaluation-top-up` | no | none | revaluation and top-up scores 2 (CSA matrix) | `task-e2e-remaining-flows`; modelling question `task-revaluation-top-up-modelling` |
+| Oracle price update | `flow-oracle-update` | yes (`services/oracle` publishes through the operator's gateway; operator console) | passes | input to G7 and G11; ratings are not published to the feed | `task-e2e-remaining-flows` |
+| Revaluation and top-up call | `flow-revaluation-top-up` | yes (revaluation in `services/collateral`, top-up call from the secured party's console) | passes | revaluation and top-up scores 2 (CSA matrix) | `task-e2e-remaining-flows`; modelling question `task-revaluation-top-up-modelling` |
 | Two-way initial margin (one leg per direction) | variant of the pledge, return and default flows | no (one direction only) | none | not scored | `task-two-way-initial-margin` |
 
 ## B. ISDA CSA workflows with no prototype flow
 
 Rows are in build order (`nw-csa-extension-order`): gap-register priority first, then workflows that
-extend flows the prototype already runs.
+extend flows the prototype already runs. Each row has its own task under `task-csa-workflow-extensions` (split on
+2026-11-06). "CDM status" is CDM 7.7.0's coverage; "`cdm-ext`" is what the local extension adds.
 
-| # | Workflow | CDM status | Task |
-|---|---|---|---|
-| 1 | Close-out netting on default | elections only (0–2): G15, P2 | `task-csa-workflow-extensions` |
-| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | `task-csa-workflow-extensions` |
-| 3 | Interest on cash collateral | types only (2): G17, P2 | `task-csa-workflow-extensions` |
-| 4 | Amendment of agreement terms | modelled for the CSA (4) | `task-csa-workflow-extensions` |
-| 5 | Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings) | `task-csa-workflow-extensions` |
-| 6 | Settlement netting | absent (0–2), no gap ID; "inside the transfer step when built" (CSA matrix) | `task-csa-workflow-extensions` |
-| 7 | Collateral allocation and optimisation | absent (0): G34, P3; the pledgor chooses assets by hand | `task-csa-workflow-extensions` |
-| 8 | Reconciliation | absent (0): G35, classified out of scope; reopened as an open decision (business case §8 item 3) | `task-csa-workflow-extensions` (decision first) |
+| # | Workflow | CDM status | `cdm-ext` | Prototype | Task |
+|---|---|---|---|---|---|
+| 1 | Close-out netting on default | elections only (0–2): G15, P2 | ISDA 2002 MA Section 6(e) for the CSA (`cdmx.collateral.closeout`); GMRA, GMSLA and CCP close-out not covered | `flow-close-out-netting`: built (`CollateralControl.closeOut`, gateway, service, console); live spec passes | `task-csa-close-out-netting` |
+| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | ISDA CSA Paragraph 4(d) with consent (`cdmx.collateral.substitution`) | `flow-substitution`: built (request, consent or refusal, settlement in `CollateralControl`, gateway, service, console); live spec passes | `task-csa-substitution` |
+| 3 | Interest on cash collateral | types only (2): G17, P2 | none | none | `task-csa-interest-on-cash` |
+| 4 | Amendment of agreement terms | modelled for the CSA (4) | none | none | `task-csa-amendment` |
+| 5 | Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings) | none | none | `task-csa-call-cancellation` |
+| 6 | Settlement netting | absent (0–2), no gap ID; "inside the transfer step when built" (CSA matrix) | none | none | `task-csa-settlement-netting` |
+| 7 | Collateral allocation and optimisation | absent (0): G34, P3; the pledgor chooses assets by hand | none | none | `task-csa-allocation` |
+| 8 | Reconciliation | absent (0): G35, classified out of scope; reopened as an open decision (business case §8 item 3) | none | none | `task-csa-reconciliation` (decision first) |
 
 Out of scope per the gap register and business case: ISDA SIMM calculation (G13, input only) and regulatory
 reporting (G36).

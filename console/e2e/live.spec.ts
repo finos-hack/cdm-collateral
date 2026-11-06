@@ -498,3 +498,168 @@ test("flow-revaluation-top-up: operator lowers a price -> secured party revalues
 
   expect(errors).toEqual([]);
 });
+
+// --- flow-close-out-netting ---
+// After the pledgor's default the secured party closes out (ISDA 2002 MA Section 6(e), cdm-ext CloseOutNetting, G15):
+// its service builds the CDM CloseOutStatement from the Close-out Amount entered in the console, and the control
+// contract applies the pledged collateral to the Early Termination Amount and returns the surplus to the pledgor. Both
+// services fetch the statement by its on-chain hash and check it. Like enforcement, this empties A's escrow with B.
+type CloseOut = {
+  closeOutId: string; owedUsd: string; appliedUsd: string; cdmHash: string; verified?: boolean; error?: string;
+  closeOutAmountUsd?: string; earlyTerminationAmountUsd?: string; collateralHeldUsd?: string; collateralAppliedUsd?: string; amountPayableUsd?: string;
+};
+
+test("flow-close-out-netting: secured party closes out -> collateral applied to the Early Termination Amount, surplus returned", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const pledgeUsd = 200_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+  const closeOutUsd = Math.floor(pledgeUsd / 2); // below the collateral held, so a surplus goes back to A
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: initial margin in escrow from A (pledgor) with B (secured party).
+  await pledgeThroughServices(pledgeUsd, pledgeQty);
+  await waitForSettledOnChain("IM", pledgeUsd);
+  const symbols = Object.keys(p.tokens);
+  const pledgedBefore: Record<string, bigint> = {};
+  const aFreeBefore: Record<string, bigint> = {};
+  const bFreeBefore: Record<string, bigint> = {};
+  for (const sym of symbols) {
+    pledgedBefore[sym] = await pledgedOf(GATEWAY.B, p.tokens[sym], p);
+    aFreeBefore[sym] = await balanceOf(GATEWAY.A, p.tokens[sym], p.a);
+    bFreeBefore[sym] = await balanceOf(GATEWAY.B, p.tokens[sym], p.b);
+  }
+  const known = new Set((await call<CloseOut[]>(`${SERVICE.B}/close-outs`)).map((o) => o.closeOutId));
+
+  // 1-7. Secured party (BANK-B) enters the Close-out Amount and closes out in its console.
+  await page.goto("/#/live/B");
+  const card = page.getByTestId("close-out");
+  await card.getByLabel("Close-out Amount (USD)").fill(String(closeOutUsd));
+  await card.getByRole("button", { name: "Declare default & close out A" }).click();
+
+  // 8. Both services list the close-out with the same checked statement.
+  let mine: CloseOut | undefined;
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => {
+        mine = (await call<CloseOut[]>(`${svc}/close-outs`)).find((o) => !known.has(o.closeOutId));
+        return mine?.verified ?? null;
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  const fromB = (await call<CloseOut[]>(`${SERVICE.B}/close-outs`)).find((o) => o.closeOutId === mine!.closeOutId)!;
+  expect(mine!.cdmHash).toBe(fromB.cdmHash);
+  expect(mine!.closeOutAmountUsd).toBe(String(closeOutUsd));
+  expect(mine!.earlyTerminationAmountUsd).toBe(String(closeOutUsd));
+  expect(mine!.collateralAppliedUsd).toBe(String(closeOutUsd)); // the collateral held exceeds the amount owed
+  const held = Number(mine!.collateralHeldUsd);
+  expect(held).toBeGreaterThanOrEqual(Math.floor(pledgeQty * TUST_VALUE) - 1);
+  expect(Number(mine!.amountPayableUsd)).toBe(closeOutUsd - held); // negative: owed back to A
+  // On-chain the contract applied whole units: at least the amount owed, less than one more unit of collateral.
+  expect(mine!.owedUsd).toBe(String(closeOutUsd));
+  expect(Number(mine!.appliedUsd)).toBeGreaterThanOrEqual(closeOutUsd);
+  expect(Number(mine!.appliedUsd) - closeOutUsd).toBeLessThan(PRICE_TUST);
+
+  // On-chain state: A is in default, nothing is left in escrow, and each pledged unit went to B (applied) or back to A.
+  expect((await call<{ inDefault: boolean }>(`${GATEWAY.B}/defaults/${p.a}`)).inDefault).toBe(true);
+  for (const sym of symbols) {
+    expect(await pledgedOf(GATEWAY.A, p.tokens[sym], p)).toBe(0n);
+    const toB = (await balanceOf(GATEWAY.B, p.tokens[sym], p.b)) - bFreeBefore[sym];
+    const toA = (await balanceOf(GATEWAY.A, p.tokens[sym], p.a)) - aFreeBefore[sym];
+    expect(toB + toA).toBe(pledgedBefore[sym]);
+  }
+
+  // Both consoles show the verified statement.
+  const row = page.getByTestId(`close-out-${mine!.closeOutId}`);
+  await expect(row.getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await expect(page.getByTestId(`close-out-${mine!.closeOutId}`).getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+// --- flow-substitution ---
+// The pledgor asks to substitute part of its pledged tUST with tUSD (ISDA CSA Paragraph 4(d), cdm-ext
+// Create_CollateralSubstitution, G16); the secured party consents (the agreement elects consent, Paragraph 13 (f)(ii));
+// the pledgor settles and the control contract moves the substitute into escrow and the tUST back in one transaction.
+// Each service folds the three CDM steps with the same portfolio and reaches the same state.
+type Substitution = {
+  substitutionId: string; state: string;
+  cdm: { status: string; qualifiers?: string[]; stateHash?: string; converged: boolean; totalSteps: number; error?: string };
+};
+
+test("flow-substitution: pledgor requests -> secured party consents -> pledgor settles, substitute in escrow and CDM folded", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens["tUST"];
+  const tUSD = p.tokens["tUSD"];
+  const pledgeUsd = 100_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+  const originalQty = 500; // tUST back to A
+  const substituteQty = Math.ceil(originalQty * TUST_VALUE) + 10; // tUSD at 1.00, no haircut: worth more than the tUST
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  await pledgeThroughServices(pledgeUsd, pledgeQty);
+  await waitForSettledOnChain("IM", pledgeUsd);
+  const pledgedUstBefore = await pledgedOf(GATEWAY.A, tUST, p);
+  const pledgedUsdBefore = await pledgedOf(GATEWAY.A, tUSD, p);
+  const freeUstBefore = await balanceOf(GATEWAY.A, tUST, p.a);
+  const freeUsdBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+  const known = new Set((await call<Substitution[]>(`${SERVICE.A}/substitutions`)).map((s) => s.substitutionId));
+
+  // 1-4. Pledgor (BANK-A) requests the substitution in its console.
+  await page.goto("/#/live/A");
+  const req = page.getByTestId("substitution-request");
+  await req.getByLabel("Original token").selectOption("tUST");
+  await req.getByLabel("Original quantity").fill(String(originalQty));
+  await req.getByLabel("Substitute token").selectOption("tUSD");
+  await req.getByLabel("Substitute quantity").fill(String(substituteQty));
+  await req.getByRole("button", { name: "Request substitution → B" }).click();
+  let id: string | undefined;
+  await expect
+    .poll(async () => (id = (await call<Substitution[]>(`${SERVICE.A}/substitutions`)).find((s) => !known.has(s.substitutionId))?.substitutionId) ?? null, { timeout: 30_000 })
+    .not.toBeNull();
+
+  // 5-8. Secured party (BANK-B) consents.
+  await page.goto("/#/live/B");
+  const rowB = page.getByTestId(`substitution-${id}`);
+  await expect(rowB.getByRole("button", { name: "Consent" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Consent" }).click();
+
+  // 9-12. Pledgor settles: the substitute goes into escrow and the tUST comes back.
+  await page.goto("/#/live/A");
+  const rowA = page.getByTestId(`substitution-${id}`);
+  await expect(rowA.getByRole("button", { name: "Settle substitution" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Settle substitution" }).click();
+  await expect(rowA.getByText("substituted on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 13. Both services fold the request, consent and settlement to the same CDM state.
+  let a: Substitution | undefined, b: Substitution | undefined;
+  await expect
+    .poll(async () => {
+      a = (await call<Substitution[]>(`${SERVICE.A}/substitutions`)).find((s) => s.substitutionId === id);
+      b = (await call<Substitution[]>(`${SERVICE.B}/substitutions`)).find((s) => s.substitutionId === id);
+      return !!a?.cdm.converged && !!b?.cdm.converged && a.cdm.totalSteps === 3 && a.cdm.stateHash === b.cdm.stateHash;
+    }, { timeout: 60_000 })
+    .toBe(true);
+  expect(a!.state).toBe("settled");
+  expect(a!.cdm.error).toBeUndefined();
+  expect(a!.cdm.status.toLowerCase()).toBe("settled");
+  expect(a!.cdm.qualifiers).toEqual(["SubstitutionRequested", "SubstitutionConsented", "CollateralSubstituted"]);
+  expect(a!.cdm.stateHash).toMatch(/^0x[0-9a-f]{64}$/i);
+
+  // On-chain state through each party's gateway.
+  expect(await pledgedOf(GATEWAY.B, tUST, p)).toBe(pledgedUstBefore - BigInt(originalQty));
+  expect(await pledgedOf(GATEWAY.B, tUSD, p)).toBe(pledgedUsdBefore + BigInt(substituteQty));
+  expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(freeUstBefore + BigInt(originalQty));
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(freeUsdBefore - BigInt(substituteQty));
+
+  await page.goto("/#/live/B");
+  await expect(page.getByTestId(`substitution-${id}`).getByText("substituted on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
