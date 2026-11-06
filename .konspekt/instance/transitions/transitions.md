@@ -639,3 +639,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cilivestack-deploydroppedtx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |
 | node:task-ci-deploy-dropped-tx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
 | edge:e-lnk-cilivestack-deploydroppedtx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
+| node:task-csa-call-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| node:task-csa-call-replacement | status |  | open | 2026-11-06T21:44:40Z |  |  |
+| waypoint:wp-adr-replacement-call-link | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-dec-csaext-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-lnk-cancel-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-lnk-replacement-smecancel | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-mrk-replacementlink-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
