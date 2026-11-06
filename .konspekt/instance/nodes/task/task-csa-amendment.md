@@ -2,7 +2,7 @@
 id: task-csa-amendment
 type: task
 title: Build the amendment of agreement terms flow
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.7
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T17:04:10Z
+updatedAt: 2026-11-06T19:18:15Z
 ```
 # Task: build the amendment of agreement terms flow
 
@@ -44,3 +44,9 @@ IM CSA (`CdmAgreement`, 4 tests), the console's "Agreement terms" card, the CALM
 cdm-ext 158/158, service 18/18, console 62/62, live specs 10/10 on a new contract set on the same chain (earlier set
 kept as `besu.pre-amendment.json`). The amendment changes the pledgor's MTA and haircuts; rounding is shown but the
 form does not change it. Design choices are proposed in [[wp-adr-amendment-per-pair-terms]].
+
+## Resolved 2026-11-06T19:18:15Z
+
+Resolved by the project owner (2026-11-06: "2. resolve"), with [[wp-adr-amendment-per-pair-terms]] accepted in the same decision. Not covered:
+amending the rounding from the console, party changes, VM and legacy CSAs, and criteria other than an AssetIdentifier.
+Pushed on branch `csa-amendment` for review.

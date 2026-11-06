@@ -3,7 +3,7 @@ id: wp-adr-amendment-per-pair-terms
 kind: decision
 subtype: adr
 timestamp: 2026-11-06T17:04:10Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 578226982772d99dbb0570851616daaed670e859
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T17:04:10Z
   confidence: 0.6
 createdAt: 2026-11-06T17:04:10Z
-updatedAt: 2026-11-06T17:04:10Z
+updatedAt: 2026-11-06T19:18:15Z
 ```
 # ADR: amended terms chain per pair; the contract holds haircuts, the services hold elections
 

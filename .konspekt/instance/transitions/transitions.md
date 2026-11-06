@@ -619,3 +619,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-csa-interest-on-cash | status | open | resolved | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
 | waypoint:wp-adr-amendment-per-pair-terms | review |  | proposed | 2026-11-06T17:04:10Z |  |  |
 | edge:e-mrk-amendterms-amendment | review |  | proposed | 2026-11-06T17:04:10Z |  |  |
+| waypoint:wp-adr-amendment-per-pair-terms | review | proposed | accepted | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
+| edge:e-mrk-amendterms-amendment | review | proposed | accepted | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
+| node:task-csa-amendment | status | open | resolved | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
