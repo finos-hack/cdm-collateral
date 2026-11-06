@@ -711,3 +711,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-csa-call-replacement | status | open | resolved | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
 | edge:e-drv-callstate-replacelink | review |  | proposed | 2026-11-06T22:58:01Z |  |  |
 | edge:e-drv-cdmdata-replacelink | review |  | proposed | 2026-11-06T22:58:01Z |  |  |
+| edge:e-drv-callstate-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ea0ed4c6ddb1c4da0564b4c86fb9a7ed396a0262 | denisurusov |
+| edge:e-drv-cdmdata-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ea0ed4c6ddb1c4da0564b4c86fb9a7ed396a0262 | denisurusov |

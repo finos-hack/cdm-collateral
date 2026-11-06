@@ -211,5 +211,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-cancel-replacement | links | node:task-csa-call-cancellation | node:task-csa-call-replacement |  | accepted |
 | e-lnk-replacement-smecancel | links | node:task-csa-call-replacement | node:task-sme-call-cancellation-rules |  | accepted |
 | e-mrk-replacementlink-replacement | marks | waypoint:wp-adr-replacement-call-link | node:task-csa-call-replacement |  | accepted |
-| e-drv-callstate-replacelink | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-replacement-call-link |  | proposed |
-| e-drv-cdmdata-replacelink | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-replacement-call-link |  | proposed |
+| e-drv-callstate-replacelink | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-replacement-call-link |  | accepted |
+| e-drv-cdmdata-replacelink | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-replacement-call-link |  | accepted |
