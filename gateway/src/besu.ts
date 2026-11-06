@@ -12,8 +12,8 @@ import type { Registry } from "./registry.ts";
 // Call kinds and response types match CollateralTypes.sol (IM=0, VM=1, Return=2; Full=0, Partial=1, Dispute=2).
 export const CallKind = { IM: 0, VM: 1, Return: 2 } as const;
 export const ResponseType = { Full: 0, Partial: 1, Dispute: 2 } as const;
-export const CallStateName = ["none", "issued", "agreed", "partially agreed", "disputed", "settled", "settled (agreed part)"];
-export const ProposalStateName = ["none", "proposed", "accepted", "rejected"];
+export const CallStateName = ["none", "issued", "agreed", "partially agreed", "disputed", "settled", "settled (agreed part)", "cancelled"];
+export const ProposalStateName = ["none", "proposed", "accepted", "rejected", "cancelled"];
 
 // The MarginCall lifecycle events, in fold order, each with the CDM step it maps to. Shared by the historical scan
 // (callSteps) and the live subscription (watchSteps).
@@ -23,6 +23,9 @@ const STEP_EVENTS: { name: string; step: string }[] = [
   { name: "CollateralProposed", step: "ProposeCollateral" },
   { name: "ProposalDecided", step: "DecideProposal" },
   { name: "CallSettled", step: "SettleCall" },
+  { name: "CallWithdrawn", step: "WithdrawCall" },
+  { name: "CancellationRequested", step: "RequestCancellation" },
+  { name: "CancellationDecided", step: "DecideCancellation" },
 ];
 
 export interface StepEvent {
@@ -156,6 +159,9 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "CollateralProposed(bytes32,uint256,bytes32)",
     "ProposalDecided(bytes32,uint256,bool,bytes32)",
     "CallSettled(bytes32,bool,bytes32)",
+    "CallWithdrawn(bytes32,bytes32)",
+    "CancellationRequested(bytes32,address,bytes32)",
+    "CancellationDecided(bytes32,bool,bytes32)",
     "Pledged(bytes32,address,address,uint256)",
     "Transferred(bytes32,address,address,uint256)",
     "Returned(bytes32,address,address)",
@@ -191,17 +197,22 @@ export interface OnChainCall {
   proposalCount: bigint;
   activeProposal: bigint;
   settleCdmHash: Hex;
+  /** The party whose cancellation request is pending; the zero address when none (task-csa-call-cancellation). */
+  cancellationRequestedBy: Address;
 }
 
 const marginCallAbi = parseAbi([
   "struct Asset { address token; uint256 qty; }",
-  "struct Call { uint8 kind; address from; address to; uint256 amount; uint256 agreed; uint256 disputed; uint64 deadline; uint8 state; bytes32 cdmHash; uint256 proposalCount; uint256 activeProposal; bytes32 settleCdmHash; }",
+  "struct Call { uint8 kind; address from; address to; uint256 amount; uint256 agreed; uint256 disputed; uint64 deadline; uint8 state; bytes32 cdmHash; uint256 proposalCount; uint256 activeProposal; bytes32 settleCdmHash; address cancellationRequestedBy; }",
   "struct Proposal { uint8 state; bytes32 cdmHash; bytes32 decisionCdmHash; }",
   "function issueCall(bytes32 callId, uint8 kind, address to, uint256 amount, uint64 deadline, bytes32 cdmHash)",
   "function respond(bytes32 callId, uint8 response, uint256 agreed, bytes32 cdmHash)",
   "function propose(bytes32 callId, Asset[] assets, bytes32 cdmHash) returns (uint256 proposalId)",
   "function decideProposal(bytes32 callId, uint256 proposalId, bool accept, bytes32 cdmHash)",
   "function getCall(bytes32 callId) view returns (Call)",
+  "function withdrawCall(bytes32 callId, bytes32 cdmHash)",
+  "function requestCancellation(bytes32 callId, bytes32 cdmHash)",
+  "function decideCancellation(bytes32 callId, bool accept, bytes32 cdmHash)",
   "function getProposal(bytes32 callId, uint256 proposalId) view returns (Proposal)",
   "function getProposalAssets(bytes32 callId, uint256 proposalId) view returns (Asset[])",
   "event CallIssued(bytes32 indexed callId, address indexed from, address indexed to, uint8 kind, uint256 amount, bytes32 cdmHash)",
@@ -209,6 +220,9 @@ const marginCallAbi = parseAbi([
   "event CollateralProposed(bytes32 indexed callId, uint256 indexed proposalId, bytes32 cdmHash)",
   "event ProposalDecided(bytes32 indexed callId, uint256 indexed proposalId, bool accepted, bytes32 cdmHash)",
   "event CallSettled(bytes32 indexed callId, bool disputedRemains, bytes32 cdmHash)",
+  "event CallWithdrawn(bytes32 indexed callId, bytes32 cdmHash)",
+  "event CancellationRequested(bytes32 indexed callId, address indexed by, bytes32 cdmHash)",
+  "event CancellationDecided(bytes32 indexed callId, bool accepted, bytes32 cdmHash)",
 ]);
 
 const controlAbi = parseAbi([
@@ -275,6 +289,9 @@ export interface LedgerAdapter {
   respond(callId: Hex, response: number, agreed: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   propose(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint; proposalId: bigint }>;
   decide(callId: Hex, proposalId: bigint, accept: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  withdrawCall(callId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  requestCancellation(callId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  decideCancellation(callId: Hex, accept: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   approve(token: Address, spender: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
   pledge(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   settleByTransfer(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
@@ -376,6 +393,20 @@ export class BesuAdapter implements LedgerAdapter {
 
   decide(callId: Hex, proposalId: bigint, accept: boolean, cdmHash: Hex) {
     return this.send(this.reg.contracts.marginCall, marginCallAbi, "decideProposal", [callId, proposalId, accept, cdmHash]);
+  }
+
+  /** Cancellation (task-csa-call-cancellation): the caller withdraws an unanswered call; after a response either party
+   * requests and the other decides. */
+  withdrawCall(callId: Hex, cdmHash: Hex) {
+    return this.send(this.reg.contracts.marginCall, marginCallAbi, "withdrawCall", [callId, cdmHash]);
+  }
+
+  requestCancellation(callId: Hex, cdmHash: Hex) {
+    return this.send(this.reg.contracts.marginCall, marginCallAbi, "requestCancellation", [callId, cdmHash]);
+  }
+
+  decideCancellation(callId: Hex, accept: boolean, cdmHash: Hex) {
+    return this.send(this.reg.contracts.marginCall, marginCallAbi, "decideCancellation", [callId, accept, cdmHash]);
   }
 
   approve(token: Address, spender: Address, amount: bigint) {

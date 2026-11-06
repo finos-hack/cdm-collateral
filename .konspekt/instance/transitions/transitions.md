@@ -622,3 +622,15 @@ into state history — an instance without it is v1-conformant and records none.
 | waypoint:wp-adr-amendment-per-pair-terms | review | proposed | accepted | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
 | edge:e-mrk-amendterms-amendment | review | proposed | accepted | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
 | node:task-csa-amendment | status | open | resolved | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
+| node:task-sme-call-cancellation-rules | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
+| node:task-sme-call-cancellation-rules | status |  | open | 2026-11-06T20:16:20Z |  |  |
+| edge:e-dec-cdmdev-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
+| edge:e-lnk-cancel-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
+| waypoint:wp-adr-cancellation-blocks-call | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
+| edge:e-mrk-cancelblocks-cancel | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
+| waypoint:wp-adr-cancellation-blocks-call | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| node:task-sme-call-cancellation-rules | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| edge:e-mrk-cancelblocks-cancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| edge:e-dec-cdmdev-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| edge:e-lnk-cancel-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| node:task-csa-call-cancellation | status | open | resolved | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |

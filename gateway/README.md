@@ -33,6 +33,9 @@ NODE=bank-b PORT=8202 npm run serve
 | POST | `/calls/:id/response` | respond (full / partial / dispute) |
 | POST | `/calls/:id/proposals` | propose collateral; returns `proposalId` |
 | POST | `/calls/:id/decision` | accept or reject a proposal |
+| POST | `/calls/:id/withdraw` | `{cdmHash}`: the calling party withdraws an unanswered call (`flow-call-cancellation`) |
+| POST | `/calls/:id/cancellation` | `{cdmHash}`: either party requests the cancellation of an answered call that is not settled |
+| POST | `/calls/:id/cancellation/decision` | `{accept, cdmHash}`: the other party accepts (the call is cancelled and a proposal not delivered is void) or refuses |
 | POST | `/calls/:id/pledge` | approve each proposal asset and pledge (IM settle, multi-asset) |
 | POST | `/calls/:id/transfer` | approve each proposal asset and settle a VM call by title transfer |
 | POST | `/calls/:id/return` | release escrowed IM for an agreed return call |

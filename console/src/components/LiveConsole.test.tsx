@@ -180,3 +180,56 @@ describe("flow-revaluation-top-up", () => {
     expect(screen.queryByTestId("revaluation")).toBeNull();
   });
 });
+
+describe("flow-call-cancellation", () => {
+  const rowOf = async () => (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+
+  it("the calling party withdraws an unanswered call; the called party is not offered the withdrawal", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [call({ state: "issued" })], balances: balances("0") });
+    const row = await rowOf();
+    expect(within(row).queryByRole("button", { name: "Request cancellation" })).toBeNull();
+    await user.type(within(row).getByLabelText("Cancellation reason"), "booked in error");
+    await user.click(within(row).getByRole("button", { name: "Withdraw call" }));
+    await waitFor(() => expect(posts).toEqual([{ path: `/calls/${call({}).callId}/withdraw`, body: { reason: "booked in error" } }]));
+  });
+
+  it("the called party sees no withdrawal on an issued call", async () => {
+    serve("A", { calls: [call({ state: "issued" })], balances: balances("0") });
+    const row = await rowOf();
+    expect(within(row).queryByRole("button", { name: "Withdraw call" })).toBeNull();
+  });
+
+  it("either party requests cancellation of an answered call, wholly disputed ones included", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [call({ state: "disputed", agreedUsd: "0", disputedUsd: "2000000" })], balances: balances("0") });
+    const row = await rowOf();
+    await user.click(within(row).getByRole("button", { name: "Request cancellation" }));
+    await waitFor(() => expect(posts).toEqual([{ path: `/calls/${call({}).callId}/cancellation`, body: { reason: "" } }]));
+  });
+
+  it("while a request is pending the requester waits and the other party accepts or refuses; no other step is offered", async () => {
+    const user = userEvent.setup();
+    const pendingCall = call({ state: "agreed", cancellationRequestedBy: "A", proposals: [{ proposalId: 0, state: "accepted", assets: [{ token: "tUST", qty: "100" }] }] });
+    serve("B", { calls: [pendingCall], balances: balances("0") });
+    const row = await rowOf();
+    expect(within(row).getByText("cancellation requested by A")).toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: "Request cancellation" })).toBeNull();
+    await user.click(within(row).getByRole("button", { name: "Refuse cancellation" }));
+    await waitFor(() => expect(posts).toEqual([{ path: `/calls/${call({}).callId}/cancellation/decision`, body: { accept: false, reason: "" } }]));
+  });
+
+  it("the requester is not offered the decision or the pledge while its request is pending", async () => {
+    serve("A", { calls: [call({ state: "agreed", cancellationRequestedBy: "A", proposals: [{ proposalId: 0, state: "accepted", assets: [{ token: "tUST", qty: "100" }] }] })], balances: balances("0") });
+    const row = await rowOf();
+    expect(within(row).queryByRole("button", { name: "Accept cancellation" })).toBeNull();
+    expect(within(row).queryByRole("button", { name: "Pledge accepted collateral" })).toBeNull();
+  });
+
+  it("a cancelled call shows the cancellation and no further action", async () => {
+    serve("A", { calls: [call({ state: "cancelled" })], balances: balances("0") });
+    const row = await rowOf();
+    expect(within(row).getByText("cancelled on-chain ✓")).toBeInTheDocument();
+    expect(within(row).queryAllByRole("button")).toHaveLength(0);
+  });
+});

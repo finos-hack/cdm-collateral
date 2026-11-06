@@ -31,8 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class App {
     private static final Map<String, Integer> CALL_KIND = Map.of("IM", 0, "VM", 1, "Return", 2);
     private static final Map<String, Integer> RESPONSE = Map.of("full", 0, "partial", 1, "dispute", 2);
-    private static final String[] CALL_STATE = {"none", "issued", "agreed", "partially agreed", "disputed", "settled", "settled (agreed part)"};
-    private static final String[] PROPOSAL_STATE = {"none", "proposed", "accepted", "rejected"};
+    private static final String[] CALL_STATE = {"none", "issued", "agreed", "partially agreed", "disputed", "settled", "settled (agreed part)", "cancelled"};
+    private static final String[] PROPOSAL_STATE = {"none", "proposed", "accepted", "rejected", "cancelled"};
 
     private final Config cfg;
     private final Store store;
@@ -91,6 +91,9 @@ public final class App {
         app.post("/api/v1/calls/{id}/transfer", this::transfer);
         app.post("/api/v1/calls/{id}/return", this::returnCollateral);
         app.post("/api/v1/calls/{id}/enforce", this::enforce);
+        app.post("/api/v1/calls/{id}/withdraw", this::withdrawCall);
+        app.post("/api/v1/calls/{id}/cancellation", this::requestCancellation);
+        app.post("/api/v1/calls/{id}/cancellation/decision", this::decideCancellation);
         app.get("/api/v1/close-outs", this::closeOuts);
         app.post("/api/v1/close-outs", this::closeOut);
         app.get("/api/v1/interest", this::interestStatements);
@@ -588,6 +591,8 @@ public final class App {
             call.put("disputedUsd", usd(c.get("disputed").asText()));
             call.put("state", CALL_STATE[c.get("state").asInt()]);
             call.put("cdmHash", c.get("cdmHash").asText());
+            String requester = c.path("cancellationRequestedBy").asText(ZERO_ADDRESS);
+            call.put("cancellationRequestedBy", requester.equalsIgnoreCase(ZERO_ADDRESS) ? null : partyIdOf(requester));
             long proposalCount = c.get("proposalCount").asLong();
             List<Map<String, Object>> proposals = new ArrayList<>();
             for (long pid = 0; pid < proposalCount; pid++) {
@@ -866,6 +871,51 @@ public final class App {
         record(callId, "DecideProposal", cdm);
         gw.post("/calls/" + callId + "/decision", Map.of("proposalId", proposalId, "accept", accept, "cdmHash", cdm.hash));
         ctx.json(Map.of("ok", true, "decision", accept ? "accepted" : "rejected", "cdmHash", cdm.hash));
+    }
+
+    // --- margin call cancellation (task-csa-call-cancellation; rules to confirm in task-sme-call-cancellation-rules) ---
+
+    private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+    /** This party's role in the CDM documents: Pledgor or SecuredParty. */
+    private String cdmRole() {
+        return cfg.role.equals("Pledgor") ? "Pledgor" : "SecuredParty";
+    }
+
+    /** The calling party withdraws a call the other party has not answered (CDM step WithdrawCall). */
+    private void withdrawCall(Context ctx) {
+        String callId = ctx.pathParam("id");
+        JsonNode c = gw.get("/calls/" + callId);
+        if (!c.get("from").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the calling party withdraws a call");
+        if (c.get("state").asInt() != 1) throw new RuntimeException("only an unanswered call can be withdrawn; request a cancellation instead");
+        Cdm cdm = Cdm.withdraw((String) body(ctx).get("reason"));
+        record(callId, "WithdrawCall", cdm);
+        JsonNode tx = gw.post("/calls/" + callId + "/withdraw", Map.of("cdmHash", cdm.hash));
+        ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "withdrawTx", tx.path("txHash").asText()));
+    }
+
+    /** Either party asks to cancel an answered call that is not settled (CDM step RequestCancellation, colr.005). */
+    private void requestCancellation(Context ctx) {
+        String callId = ctx.pathParam("id");
+        Cdm cdm = Cdm.requestCancellation(cdmRole(), (String) body(ctx).get("reason"));
+        record(callId, "RequestCancellation", cdm);
+        JsonNode tx = gw.post("/calls/" + callId + "/cancellation", Map.of("cdmHash", cdm.hash));
+        ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "requestTx", tx.path("txHash").asText()));
+    }
+
+    /** The other party accepts or refuses the pending cancellation request (CDM step DecideCancellation, colr.006). */
+    private void decideCancellation(Context ctx) {
+        String callId = ctx.pathParam("id");
+        Map<String, Object> b = body(ctx);
+        boolean accept = Boolean.TRUE.equals(b.get("accept"));
+        JsonNode c = gw.get("/calls/" + callId);
+        String requester = c.path("cancellationRequestedBy").asText(ZERO_ADDRESS);
+        if (requester.equalsIgnoreCase(ZERO_ADDRESS)) throw new RuntimeException("no cancellation request is pending");
+        if (requester.equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("the requesting party cannot decide its own request");
+        Cdm cdm = Cdm.decideCancellation(cdmRole(), accept, (String) b.get("reason"));
+        record(callId, "DecideCancellation", cdm);
+        JsonNode tx = gw.post("/calls/" + callId + "/cancellation/decision", Map.of("accept", accept, "cdmHash", cdm.hash));
+        ctx.json(Map.of("callId", callId, "accept", accept, "cdmHash", cdm.hash, "decisionTx", tx.path("txHash").asText()));
     }
 
     private void pledge(Context ctx) {

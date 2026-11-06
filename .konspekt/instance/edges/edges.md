@@ -180,3 +180,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-interest-smeinterest | links | node:task-csa-interest-on-cash | node:task-sme-interest-daily-balances |  | accepted |
 | e-mrk-interestsettle-interest | marks | waypoint:wp-adr-interest-onchain-settlement | node:task-csa-interest-on-cash |  | accepted |
 | e-mrk-amendterms-amendment | marks | waypoint:wp-adr-amendment-per-pair-terms | node:task-csa-amendment |  | accepted |
+| e-dec-cdmdev-smecancel | decomposes | node:goal-cdm-development | node:task-sme-call-cancellation-rules |  | accepted |
+| e-lnk-cancel-smecancel | links | node:task-csa-call-cancellation | node:task-sme-call-cancellation-rules |  | accepted |
+| e-mrk-cancelblocks-cancel | marks | waypoint:wp-adr-cancellation-blocks-call | node:task-csa-call-cancellation |  | accepted |

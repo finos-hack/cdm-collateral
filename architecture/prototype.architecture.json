@@ -1500,6 +1500,53 @@
           "description": "Each gateway pushes AmendmentDecided; both services fold the agreed amendments, read the pair's haircuts from the contract, and value collateral and revalue with the amended MTA and haircuts."
         }
       ]
+    },
+    {
+      "unique-id": "flow-call-cancellation",
+      "name": "Margin call cancellation",
+      "description": "The calling party withdraws a margin call the called party has not answered; once the call is answered and not settled (wholly disputed calls included), either party requests its cancellation and the other accepts or refuses (ISO 20022 colr.005 and colr.006). An accepted cancellation voids any proposal not yet delivered; no collateral has moved, since collateral moves only at settlement. Each step is a cdm-ext MarginCallInstruction (WithdrawCall, RequestCancellation, DecideCancellation) anchored by its hash and folded by both services to the Cancelled status. The rules are the project owner's assumptions, to be confirmed in task-sme-call-cancellation-rules.",
+      "transitions": [
+        {
+          "relationship-unique-id": "secured-party-uses-console",
+          "sequence-number": 1,
+          "description": "The calling party (here the secured party) withdraws an unanswered call, or requests the cancellation of an answered one, with a reason, in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console submits the withdrawal or request to the party's workflow service."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 3,
+          "description": "Service builds the CDM step (WithdrawCall or RequestCancellation) and publishes it to the payload store, readable by both parties."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 4,
+          "description": "Service submits withdrawCall (caller, unanswered call) or requestCancellation (either party, answered call not settled) with the step hash; while a request is pending the contract takes no proposal, decision or settlement on the call."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 5,
+          "description": "Each gateway pushes the CallWithdrawn or CancellationRequested step to its own workflow service; both consoles show the call cancelled, or the pending request."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 6,
+          "description": "The other party (here the pledgor) accepts or refuses the request in its console."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 7,
+          "description": "Its service publishes the DecideCancellation step and submits decideCancellation; on acceptance the contract sets the call Cancelled and voids a proposal not yet delivered, on refusal the call continues where it was."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 8,
+          "description": "Each gateway pushes CancellationDecided; both services fold the call's steps to the same MarginCallState (Cancelled, qualifier MarginCallCancelled) with a complete ledger anchor per step."
+        }
+      ]
     }
   ]
 }

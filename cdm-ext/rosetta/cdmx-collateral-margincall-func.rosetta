@@ -1,6 +1,7 @@
 namespace cdmx.collateral.margincall : <"Local CDM extension: functions of the margin call lifecycle (G1, G3, G4, G6).">
 version "${project.version}"
 
+import cdm.base.staticdata.party.*
 import cdm.event.common.*
 import cdm.observable.asset.*
 import cdmx.collateral.proposal.*
@@ -15,9 +16,12 @@ func StepOf: <"Which lifecycle step an instruction performs.">
         else if instruction -> respond exists then MarginCallStepEnum -> RespondToCall
         else if instruction -> propose exists then MarginCallStepEnum -> ProposeCollateral
         else if instruction -> decide exists then MarginCallStepEnum -> DecideProposal
-        else MarginCallStepEnum -> SettleCall
+        else if instruction -> settle exists then MarginCallStepEnum -> SettleCall
+        else if instruction -> withdraw exists then MarginCallStepEnum -> WithdrawCall
+        else if instruction -> requestCancellation exists then MarginCallStepEnum -> RequestCancellation
+        else MarginCallStepEnum -> DecideCancellation
 
-func NextMarginCallStep: <"The step a margin call waits for; absent when the call is settled or wholly disputed.">
+func NextMarginCallStep: <"The lifecycle step a margin call waits for; absent when the call is settled, cancelled or wholly disputed. While a cancellation request is pending the call waits for its decision. The cancellation steps the call also allows are given by CancellationStepAllowed.">
     inputs:
         state MarginCallState (0..1)
     output:
@@ -25,6 +29,7 @@ func NextMarginCallStep: <"The step a margin call waits for; absent when the cal
     alias open: state -> status = MarginCallStatusEnum -> Agreed or state -> status = MarginCallStatusEnum -> PartiallyAgreed
     set next:
         if state is absent then MarginCallStepEnum -> IssueCall
+        else if CancellationPending(state) then MarginCallStepEnum -> DecideCancellation
         else if state -> status = MarginCallStatusEnum -> Issued then MarginCallStepEnum -> RespondToCall
         else if open and state -> direction = MarginCallActionEnum -> Return then MarginCallStepEnum -> SettleCall
         else if open and (state -> proposal filter status = CollateralProposalStatusEnum -> Proposed then exists)
@@ -34,7 +39,40 @@ func NextMarginCallStep: <"The step a margin call waits for; absent when the cal
         else if open then MarginCallStepEnum -> ProposeCollateral
         else empty
 
-func Create_MarginCallState: <"Applies one step to a margin call and returns the new state. The step must be the one the call waits for (NextMarginCallStep).">
+func CancellationPending: <"A cancellation request waits for the other party's decision.">
+    inputs:
+        state MarginCallState (1..1)
+    output:
+        pending boolean (1..1)
+    set pending:
+        state -> cancellation filter status = CancellationStatusEnum -> Requested then exists
+
+func CancellationStepAllowed: <"Whether a call allows a withdrawal or a cancellation request now: a withdrawal while unanswered, a request once answered (agreed, partly agreed or wholly disputed) and not settled, with no request pending.">
+    inputs:
+        state MarginCallState (0..1)
+        step MarginCallStepEnum (1..1)
+    output:
+        allowed boolean (1..1)
+    set allowed:
+        state exists
+            and CancellationPending(state) = False
+            and (
+                (step = MarginCallStepEnum -> WithdrawCall and state -> status = MarginCallStatusEnum -> Issued)
+                or (step = MarginCallStepEnum -> RequestCancellation
+                    and (state -> status = MarginCallStatusEnum -> Agreed
+                        or state -> status = MarginCallStatusEnum -> PartiallyAgreed
+                        or state -> status = MarginCallStatusEnum -> Disputed))
+            )
+
+func CallingParty: <"The party that issued the call: the secured party calls for a delivery, the pledgor for a return.">
+    inputs:
+        state MarginCallState (1..1)
+    output:
+        role PartyRoleEnum (1..1)
+    set role:
+        if state -> direction = MarginCallActionEnum -> Return then PartyRoleEnum -> Pledgor else PartyRoleEnum -> SecuredParty
+
+func Create_MarginCallState: <"Applies one step to a margin call and returns the new state. The step must be the one the call waits for (NextMarginCallStep) or a cancellation step it allows (CancellationStepAllowed).">
     inputs:
         previous MarginCallState (0..1) <"Absent for the first step (IssueCall).">
         stepIdentifier string (1..1)
@@ -49,15 +87,18 @@ func Create_MarginCallState: <"Applies one step to a margin call and returns the
             step: StepOf(instruction)
         }
 
-    condition ExpectedStep: <"Only the step the call waits for can be applied.">
-        StepOf(instruction) = NextMarginCallStep(previous)
+    condition ExpectedStep: <"Only the step the call waits for, or a cancellation step it allows, can be applied.">
+        StepOf(instruction) = NextMarginCallStep(previous) or CancellationStepAllowed(previous, StepOf(instruction))
 
     set next:
         if instruction -> issue exists then ApplyIssue(instruction -> issue, record)
         else if instruction -> respond exists then ApplyResponse(previous, instruction -> respond, record)
         else if instruction -> propose exists then ApplyProposal(previous, instruction -> propose, record)
         else if instruction -> decide exists then ApplyDecision(previous, instruction -> decide, record)
-        else ApplySettlement(previous, instruction -> settle, record)
+        else if instruction -> settle exists then ApplySettlement(previous, instruction -> settle, record)
+        else if instruction -> withdraw exists then ApplyWithdrawal(previous, instruction -> withdraw, record)
+        else if instruction -> requestCancellation exists then ApplyCancellationRequest(previous, instruction -> requestCancellation, record)
+        else ApplyCancellationDecision(previous, instruction -> decideCancellation, record)
 
 // Generated Python: `set next: state` followed by `set next -> attribute` writes through to the caller's state
 // (D15), so each step below builds a new MarginCallState with a constructor.
@@ -118,6 +159,8 @@ func ApplyResponse: <"Records the response (G1) and the agreed and disputed amou
                 },
             proposal: state -> proposal,
             settlement: state -> settlement,
+            withdrawal: state -> withdrawal,
+            cancellation: state -> cancellation,
             stepRecord: state -> stepRecord
         }
     add next -> stepRecord: record
@@ -151,6 +194,8 @@ func ApplyProposal: <"Adds a collateral proposal (G2) to a delivery call.">
             disputedAmount: state -> disputedAmount,
             proposal: state -> proposal filter item exists,
             settlement: state -> settlement,
+            withdrawal: state -> withdrawal,
+            cancellation: state -> cancellation,
             stepRecord: state -> stepRecord
         }
     add next -> proposal: proposal
@@ -187,6 +232,8 @@ func ApplyDecision: <"Accepts or rejects the pending proposal (G2).">
             disputedAmount: state -> disputedAmount,
             proposal: state -> proposal filter item -> proposalIdentifier -> assignedIdentifier only-element -> identifier <> decision -> proposalId,
             settlement: state -> settlement,
+            withdrawal: state -> withdrawal,
+            cancellation: state -> cancellation,
             stepRecord: state -> stepRecord
         }
     add next -> proposal: decided
@@ -225,6 +272,114 @@ func ApplySettlement: <"Settles the agreed amount: delivery against the accepted
             disputedAmount: state -> disputedAmount,
             proposal: state -> proposal,
             settlement: settle,
+            withdrawal: state -> withdrawal,
+            cancellation: state -> cancellation,
             stepRecord: state -> stepRecord
+        }
+    add next -> stepRecord: record
+
+func VoidProposal: <"A proposal not yet delivered becomes Cancelled when its call is cancelled; a rejected one stays Rejected.">
+    inputs:
+        proposal CollateralProposal (1..1)
+    output:
+        voided CollateralProposal (1..1)
+    set voided:
+        CollateralProposal {
+            proposalIdentifier: proposal -> proposalIdentifier,
+            callIdentifier: proposal -> callIdentifier,
+            proposedCollateral: proposal -> proposedCollateral,
+            valueAfterHaircuts: proposal -> valueAfterHaircuts,
+            status: if proposal -> status = CollateralProposalStatusEnum -> Rejected then CollateralProposalStatusEnum -> Rejected
+                else CollateralProposalStatusEnum -> Cancelled,
+            decision: proposal -> decision
+        }
+
+func ApplyWithdrawal: <"The calling party withdraws an unanswered call.">
+    inputs:
+        state MarginCallState (1..1)
+        withdraw WithdrawCallInstruction (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: MarginCallStatusEnum -> Cancelled,
+            response: state -> response,
+            agreedAmount: state -> agreedAmount,
+            disputedAmount: state -> disputedAmount,
+            proposal: state -> proposal,
+            settlement: state -> settlement,
+            withdrawal: withdraw,
+            cancellation: state -> cancellation,
+            stepRecord: state -> stepRecord
+        }
+    add next -> stepRecord: record
+
+func ApplyCancellationRequest: <"Records one party's request to cancel an answered call.">
+    inputs:
+        state MarginCallState (1..1)
+        request RequestCancellationInstruction (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+    // Generated Python: `add` fails on an absent list, so the list is first set from a filter.
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: state -> status,
+            response: state -> response,
+            agreedAmount: state -> agreedAmount,
+            disputedAmount: state -> disputedAmount,
+            proposal: state -> proposal,
+            settlement: state -> settlement,
+            withdrawal: state -> withdrawal,
+            cancellation: state -> cancellation filter item exists,
+            stepRecord: state -> stepRecord
+        }
+    add next -> cancellation:
+        CancellationRequest {
+            requestedBy: request -> requestedBy,
+            reason: request -> reason,
+            status: CancellationStatusEnum -> Requested,
+            ...
+        }
+    add next -> stepRecord: record
+
+func ApplyCancellationDecision: <"The other party accepts the pending cancellation request, which cancels the call and voids any proposal not delivered, or refuses it, which leaves the call where it was.">
+    inputs:
+        state MarginCallState (1..1)
+        decision DecideCancellationInstruction (1..1)
+        record MarginCallStepRecord (1..1)
+    output:
+        next MarginCallState (1..1)
+    alias pending: state -> cancellation filter status = CancellationStatusEnum -> Requested then only-element
+
+    condition DecidedByTheOtherParty: <"The party that did not request the cancellation decides it.">
+        decision -> decidedBy <> (state -> cancellation filter status = CancellationStatusEnum -> Requested then only-element -> requestedBy)
+            and (decision -> decidedBy = PartyRoleEnum -> Pledgor or decision -> decidedBy = PartyRoleEnum -> SecuredParty)
+
+    set next:
+        MarginCallState {
+            issuance: state -> issuance,
+            direction: state -> direction,
+            status: if decision -> accept = True then MarginCallStatusEnum -> Cancelled else state -> status,
+            response: state -> response,
+            agreedAmount: state -> agreedAmount,
+            disputedAmount: state -> disputedAmount,
+            proposal: if decision -> accept = True then state -> proposal extract VoidProposal(item) else state -> proposal,
+            settlement: state -> settlement,
+            withdrawal: state -> withdrawal,
+            cancellation: state -> cancellation filter status <> CancellationStatusEnum -> Requested,
+            stepRecord: state -> stepRecord
+        }
+    add next -> cancellation:
+        CancellationRequest {
+            requestedBy: pending -> requestedBy,
+            reason: pending -> reason,
+            status: if decision -> accept = True then CancellationStatusEnum -> Accepted else CancellationStatusEnum -> Refused,
+            decisionReason: decision -> reason
         }
     add next -> stepRecord: record

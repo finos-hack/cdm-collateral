@@ -333,6 +333,7 @@ function CallRow(props: {
   const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run } = props;
   const [partialUsd, setPartialUsd] = useState(0);
   const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
+  const [cancelReason, setCancelReason] = useState("");
   const accepted = c.proposals.find((p) => p.state === "accepted");
   const proposed = c.proposals.find((p) => p.state === "proposed");
   const agreedOpen = c.state === "agreed" || c.state === "partially agreed";
@@ -340,10 +341,15 @@ function CallRow(props: {
 
   // Actions follow the call's parties: the called party (c.to) responds and, for a delivery, delivers on settlement;
   // the caller (c.from) decides proposals. A return call is agreed and released by the secured party (c.to).
-  const acts = c.to === party;
+  // Cancellation (task-csa-call-cancellation): while a request is pending the call takes no other step.
+  const pending = c.cancellationRequestedBy ?? null;
+  const acts = c.to === party && !pending;
   const canRespond = acts && c.state === "issued";
   const canPropose = acts && agreedOpen && c.kind !== "Return" && !proposed && !accepted;
-  const canDecide = c.from === party && !!proposed;
+  const canDecide = c.from === party && !!proposed && !pending;
+  const canWithdraw = c.from === party && c.state === "issued";
+  const canRequestCancel = !pending && (agreedOpen || c.state === "disputed");
+  const canDecideCancel = !!pending && pending !== party;
   const canPledge = acts && c.kind === "IM" && accepted && !settled;
   const canTransfer = acts && c.kind === "VM" && accepted && !settled;
   const canReturn = acts && c.kind === "Return" && agreedOpen && !settled;
@@ -428,6 +434,23 @@ function CallRow(props: {
         {canEnforce && (
           <button disabled={busy} onClick={() => run(() => api.enforce(party, c.callId))}>Declare default &amp; enforce</button>
         )}
+        {(canWithdraw || canRequestCancel || canDecideCancel) && (
+          <input aria-label="Cancellation reason" placeholder="reason" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} style={{ width: 160 }} />
+        )}
+        {canWithdraw && (
+          <button disabled={busy} onClick={() => run(() => api.withdrawCall(party, c.callId, cancelReason))}>Withdraw call</button>
+        )}
+        {canRequestCancel && (
+          <button disabled={busy} onClick={() => run(() => api.requestCancellation(party, c.callId, cancelReason))}>Request cancellation</button>
+        )}
+        {pending && <span className="small">cancellation requested by {pending}</span>}
+        {canDecideCancel && (
+          <>
+            <button disabled={busy} onClick={() => run(() => api.decideCancellation(party, c.callId, true, cancelReason))}>Accept cancellation</button>
+            <button disabled={busy} onClick={() => run(() => api.decideCancellation(party, c.callId, false, cancelReason))}>Refuse cancellation</button>
+          </>
+        )}
+        {c.state === "cancelled" && <span className="bad">cancelled on-chain ✓</span>}
         {settled && <span className="ok">settled on-chain ✓</span>}
         {c.enforced && <span className="bad">enforced ✓</span>}
       </div>

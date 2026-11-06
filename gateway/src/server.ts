@@ -63,6 +63,16 @@ route("POST", "/ledger/v1/calls/:id/decision", async (p, b) =>
   J(await adapter.decide(p.id as Hex, BigInt(b.proposalId), Boolean(b.accept), b.cdmHash as Hex)),
 );
 
+// Cancellation (task-csa-call-cancellation): withdraw an unanswered call (caller), request (either party) and decide
+// (the other party).
+route("POST", "/ledger/v1/calls/:id/withdraw", async (p, b) => J(await adapter.withdrawCall(p.id as Hex, b.cdmHash as Hex)));
+
+route("POST", "/ledger/v1/calls/:id/cancellation", async (p, b) => J(await adapter.requestCancellation(p.id as Hex, b.cdmHash as Hex)));
+
+route("POST", "/ledger/v1/calls/:id/cancellation/decision", async (p, b) =>
+  J(await adapter.decideCancellation(p.id as Hex, Boolean(b.accept), b.cdmHash as Hex)),
+);
+
 route("POST", "/ledger/v1/calls/:id/pledge", async (p, b) => {
   // The pledgor's gateway approves the control contract for every asset in the accepted proposal, then pledges. The
   // control contract transfers each asset into escrow, so each needs its own allowance (multi-asset collateral).

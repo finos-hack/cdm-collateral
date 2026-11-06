@@ -92,7 +92,11 @@ the store and the two services, so the full stack needs no manual token setup.
 
 `GET /context`, `GET /state`, `POST /calls`, `POST /calls/{id}/response`, `POST /calls/{id}/proposal`,
 `POST /calls/{id}/decision`, `POST /calls/{id}/pledge` (IM settle), `POST /calls/{id}/transfer` (VM settle),
-`POST /calls/{id}/return` (return settle; body `via` = `release` | `transfer`), `GET /calls/{id}/cdm-state` (the
+`POST /calls/{id}/return` (return settle; body `via` = `release` | `transfer`), `POST /calls/{id}/withdraw` (body
+`reason`; the calling party, unanswered call), `POST /calls/{id}/cancellation` (body `reason`; either party, answered call
+not settled) and `POST /calls/{id}/cancellation/decision` (body `accept`, `reason`; the other party): each builds the
+cdm-ext step (`WithdrawCall`, `RequestCancellation`, `DecideCancellation`) that the fold applies
+(`flow-call-cancellation`), `GET /calls/{id}/cdm-state` (the
 cumulative fold; kept off the hot `/state` poll because the fold scans the chain and the store),
 `GET /close-outs` and `POST /close-outs` (body `closeOutAmountUsd`; secured party: default notice if needed, CDM
 `CloseOutStatement` from cdm-ext `CloseOutNetting`, then `closeOut` on-chain; the listing fetches each statement by its
