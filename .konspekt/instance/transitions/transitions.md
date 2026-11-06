@@ -634,3 +634,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
 | edge:e-lnk-cancel-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
 | node:task-csa-call-cancellation | status | open | resolved | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| node:task-ci-deploy-dropped-tx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |
+| node:task-ci-deploy-dropped-tx | status |  | open | 2026-11-06T21:19:41Z |  |  |
+| edge:e-lnk-cilivestack-deploydroppedtx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |

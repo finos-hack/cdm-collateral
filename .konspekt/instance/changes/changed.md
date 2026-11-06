@@ -727,3 +727,5 @@ excluded.
 | task-csa-call-cancellation | b69747038b84a2eedb85abc0ca765216af747014 | services/collateral/src/main/java/collateral/App.java | 2026-11-06T20:36:29Z |
 | task-csa-call-cancellation | b69747038b84a2eedb85abc0ca765216af747014 | services/collateral/src/main/java/collateral/Cdm.java | 2026-11-06T20:36:29Z |
 | task-csa-call-cancellation | b69747038b84a2eedb85abc0ca765216af747014 | services/collateral/src/test/java/collateral/CdmCancellationTest.java | 2026-11-06T20:36:29Z |
+| task-ci-deploy-dropped-tx | 493672b5c993a93cf79ad72eab88947225725a9c | .github/workflows/e2e-live-stack.yml | 2026-11-06T21:19:42Z |
+| task-ci-deploy-dropped-tx | 493672b5c993a93cf79ad72eab88947225725a9c | contracts/scripts/deploy.ts | 2026-11-06T21:19:42Z |
