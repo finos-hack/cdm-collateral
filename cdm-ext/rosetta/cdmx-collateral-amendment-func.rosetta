@@ -1,0 +1,191 @@
+namespace cdmx.collateral.amendment : <"Local CDM extension: amendment of a collateral agreement's terms.">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.common.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.legaldocumentation.common.*
+import cdm.legaldocumentation.csa.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+
+// Scope: the 2018 ISDA IM CSA. The elections are amended through CDM's own Create_AgreementEvent (the whole
+// CreditSupportAgreementInitialMarginElections block replaced, as CDM does); the eligibility schedule is amended per
+// asset (HaircutChange), keyed by an AssetIdentifier criterion. Party changes, VM and legacy CSAs and criteria other than
+// AssetIdentifier are not covered here.
+
+func AssetIdentifierCriterion: <"The AssetIdentifier of a collateral criterion, when the criterion is an AssetIdentifier.">
+    inputs:
+        criteria CollateralCriteria (0..1)
+    output:
+        asset AssetIdentifier (0..1)
+
+    set asset:
+        criteria switch
+            AssetIdentifier then item,
+            default empty
+
+func InitialMarginElections: <"The IM CSA elections of a legal agreement, when it is an IM CSA.">
+    inputs:
+        agreement LegalAgreement (1..1)
+    output:
+        elections CreditSupportAgreementInitialMarginElections (0..1)
+
+    set elections:
+        agreement -> agreementTerms -> agreement -> creditSupportAgreementElections switch
+            CreditSupportAgreementInitialMarginElections then item,
+            default empty
+
+func Qualify_AgreementTermsChange: <"Qualifies an agreement event as a change of terms: every instruction is a terms change on an existing agreement, none is a party change, and the agreement after differs from the agreement before.">
+    inputs:
+        agreementEvent AgreementEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    set is_event:
+        agreementEvent -> instruction exists
+            and (agreementEvent -> instruction filter primitiveInstruction -> termsChange is absent then count) = 0
+            and agreementEvent -> instruction -> primitiveInstruction -> partyChange is absent
+            and agreementEvent -> instruction -> before exists
+            and agreementEvent -> after <> agreementEvent -> instruction -> before
+
+func QualifiedAgreementEvent: <"The agreement event with its eventQualifier set when Qualify_AgreementTermsChange holds.">
+    inputs:
+        agreementEvent AgreementEvent (1..1)
+    output:
+        qualified AgreementEvent (1..1)
+
+    set qualified: agreementEvent
+    set qualified -> eventQualifier:
+        if Qualify_AgreementTermsChange(agreementEvent) then "AgreementTermsChange"
+
+func ApplyHaircutChanges: <"The eligibility schedule after haircut changes: each changed asset's AssetIdentifier criterion is replaced (keeping its concentration limits) or added, after the unchanged criteria.">
+    inputs:
+        schedule EligibleCollateralSpecification (1..1)
+        changes HaircutChange (0..*)
+    output:
+        after EligibleCollateralSpecification (1..1)
+
+    alias changedAssets: changes extract asset
+
+    alias kept:
+        schedule -> criteria
+            filter c [
+                AssetIdentifierCriterion(c -> collateralCriteria) is absent
+                    or (changedAssets contains AssetIdentifierCriterion(c -> collateralCriteria)) = False
+            ]
+
+    alias changed:
+        changes
+            extract ch [
+                EligibleCollateralCriteria {
+                    collateralCriteria: CollateralCriteria {
+                        AssetIdentifier: ch -> asset,
+                        ...
+                    },
+                    treatment: CollateralTreatment {
+                        valuationTreatment:
+                            if ch -> haircutPercentage exists
+                            then CollateralValuationTreatment {
+                                    haircutPercentage: ch -> haircutPercentage,
+                                    ...
+                                },
+                        concentrationLimit:
+                            schedule -> criteria
+                                filter c [ AssetIdentifierCriterion(c -> collateralCriteria) = ch -> asset ]
+                                then extract treatment -> concentrationLimit
+                                then flatten,
+                        isIncluded: ch -> isIncluded
+                    },
+                    ...
+                }
+            ]
+
+    condition DistinctAssets: <"One change per asset.">
+        // Written out instead of the changedAssets alias: distinct on the alias generates Java that does not compile
+        // (rune-maven-plugin 10.15.1, wildcard element type).
+        (changes extract asset then distinct then count) = changes count
+
+    set after: schedule
+    set after -> criteria: [kept, changed]
+
+func Create_CollateralAgreementAmendment: <"An amendment of an IM CSA and its eligibility schedule. When the elections change, CDM's Create_AgreementEvent applies them to the agreement (intent AmendedTerms) and the event is qualified AgreementTermsChange; the haircut changes are applied to the schedule.">
+    inputs:
+        before LegalAgreement (1..1) <"The agreement as it stands (the baseline, or the agreement after the last amendment).">
+        imElections CreditSupportAgreementInitialMarginElections (0..1) <"The amended election block, whole; absent when the elections do not change.">
+        scheduleBefore EligibleCollateralSpecification (1..1)
+        haircutChanges HaircutChange (0..*)
+        eventDate date (1..1)
+        effectiveDate date (1..1)
+    output:
+        amendment CollateralAgreementAmendment (1..1)
+
+    alias current: InitialMarginElections(before)
+
+    alias event:
+        if imElections exists
+        then QualifiedAgreementEvent(
+                Create_AgreementEvent(
+                    AgreementInstruction {
+                        primitiveInstruction: AgreementPrimitiveInstruction {
+                            termsChange: AgreementTermsChangeInstruction {
+                                imCSATermsChange: imElections,
+                                ...
+                            },
+                            ...
+                        },
+                        before: before
+                    },
+                    AgreementEventIntentEnum -> AmendedTerms,
+                    eventDate,
+                    effectiveDate
+                )
+            )
+
+    condition InitialMarginCSA: <"The agreement is an IM CSA.">
+        current exists
+
+    condition ElectionsChange: <"Amended elections differ from the current ones.">
+        if imElections exists then imElections <> current
+
+    condition SomethingChanges: <"The elections, the schedule or both change.">
+        imElections exists or haircutChanges exists
+
+    condition EffectiveNotBeforeEvent: <"The amendment takes effect on or after its event date.">
+        effectiveDate >= eventDate
+
+    set amendment:
+        CollateralAgreementAmendment {
+            agreementEvent: event,
+            scheduleBefore: scheduleBefore,
+            haircutChange: haircutChanges,
+            scheduleAfter: ApplyHaircutChanges(scheduleBefore, haircutChanges),
+            eventDate: eventDate,
+            effectiveDate: effectiveDate
+        }
+
+func MinimumTransferAmountFor: <"A party's fixed Minimum Transfer Amount under IM CSA elections.">
+    inputs:
+        elections CreditSupportAgreementInitialMarginElections (1..1)
+        party CounterpartyRoleEnum (1..1)
+    output:
+        amount Money (0..1)
+
+    set amount:
+        elections -> creditSupportObligations -> minimumTransferAmount -> partyElection
+            filter item -> party = party
+            then only-element
+            then extract fixedAmount -> amount
+
+func HaircutFor: <"The haircut of a specifically identified asset in an eligibility schedule; absent when the asset is not included.">
+    inputs:
+        schedule EligibleCollateralSpecification (1..1)
+        asset AssetIdentifier (1..1)
+    output:
+        haircutPercentage number (0..1)
+
+    set haircutPercentage:
+        schedule -> criteria
+            filter c [ AssetIdentifierCriterion(c -> collateralCriteria) = asset and c -> treatment -> isIncluded = True ]
+            then only-element
+            then extract treatment -> valuationTreatment -> haircutPercentage

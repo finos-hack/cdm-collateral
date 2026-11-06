@@ -1,0 +1,28 @@
+namespace cdmx.collateral.amendment : <"Local CDM extension: amendment of a collateral agreement's terms, covering the IM CSA elections and the eligibility schedule. CDM 7.7.0's Create_AgreementEvent amends the LegalAgreement only (the election block is replaced whole) and leaves the event unqualified; the eligibility schedule is a separate EligibleCollateralSpecification, which CDM has no function to amend one criterion of.">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.common.*
+import cdm.event.common.*
+import cdm.product.collateral.*
+
+type HaircutChange: <"A change to the treatment of one specifically identified asset in an eligibility schedule: its inclusion and haircut. Concentration limits of the asset's criterion are kept.">
+    asset AssetIdentifier (1..1) <"The asset, as identified in the schedule's AssetIdentifier criterion (for example its ISIN).">
+    isIncluded boolean (1..1) <"False removes the asset from the eligible collateral (an exclusion criterion).">
+    haircutPercentage number (0..1) <"The new haircut as a decimal (2% is 0.02).">
+
+    condition HaircutRange: <"A haircut is at least 0 and less than 1, as CDM's CollateralValuationTreatment requires.">
+        if haircutPercentage exists then haircutPercentage >= 0 and haircutPercentage < 1
+
+    condition IncludedHasHaircut: <"An included asset states its haircut.">
+        if isIncluded = True then haircutPercentage exists
+
+type CollateralAgreementAmendment: <"An amendment of a collateral agreement between two parties: CDM's AgreementEvent when the IM CSA elections change, and the eligibility schedule before and after the haircut changes.">
+    agreementEvent AgreementEvent (0..1) <"CDM's agreement event on the LegalAgreement (intent AmendedTerms, qualifier AgreementTermsChange); absent when only the schedule changes.">
+    scheduleBefore EligibleCollateralSpecification (1..1)
+    haircutChange HaircutChange (0..*)
+    scheduleAfter EligibleCollateralSpecification (1..1) <"The schedule with the haircut changes applied (the schedule before when there are none).">
+    eventDate date (1..1)
+    effectiveDate date (1..1)
+
+    condition SomethingChanges: <"An amendment changes the elections, the schedule or both.">
+        agreementEvent exists or haircutChange exists

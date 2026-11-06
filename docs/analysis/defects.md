@@ -35,6 +35,8 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D15 | Rune Python generator 10.15.1.0 produces Python that differs from the Rune semantics in eleven ways (pre-conditions before aliases, nested `set`, list wrapping and flattening, `add` on absent lists, missing imports, closures inside `extract`, `set` writing through to the caller's object, `empty` as `[]`, `if` without `else` returning `True`, bundle class names in standalone modules) *(added 2026-10-17, extended the same day)* | code generator | github.com/finos/rune-python-generator release 10.15.1.0; list in `cdm-ext/README.md` |
 | D16 | The CDM 7.7.0 Python package and CDM Java write choice-type values (`Asset`, `Instrument`, `Transfer`) differently in Rune JSON; Python reads the Java and documented form as an empty value without an error *(added 2026-10-18)* | Python distribution (serialisation) | `rune.runtime` 2.2.2 (github.com/finos/rune-python-runtime) and the generated choice classes; CDM `docs/serialization.md` and samples for the Java form |
 | D17 | `haircutPercentage` is described as the IM CSA Valuation Percentage (the share of value that counts) but subtracted as a haircut *(added 2026-11-03)* | calculation / docs | CDM 7.7.0 `rosetta/legaldocumentation-csa-type.rosetta` 148; `rosetta/legaldocumentation-csa-func.rosetta` 20, 27 |
+| D18 | `CloneEligibleCollateralWithChangedTreatment` writes the changed criterion and treatment into the first criterion of the schedule, whichever asset it was *(added 2026-11-06)* | function logic | CDM 7.7.0 `rosetta/product-collateral-func.rosetta` 9, 22–24 |
+| D19 | Rune Java generator (rune-maven-plugin 10.15.1): `distinct` on an alias of extracted values generates Java that does not compile *(added 2026-11-06)* | toolchain | `cdm-ext/rosetta/cdmx-collateral-amendment-func.rosetta`, condition `DistinctAssets` |
 
 ## Details
 
@@ -265,3 +267,34 @@ sources in the CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   changes the results of existing callers.
 - **Local extension:** `CorrectedPostedCreditSupportItemAmount` keeps CDM's subtractive formula; its callers pass the
   haircut. Gap G7. Not reported (project owner's instruction).
+
+### D18 — Changing one criterion's treatment overwrites the first criterion *(added 2026-11-06)*
+
+Found while building the amendment of agreement terms (`task-csa-amendment`). Lines refer to the Rune sources in the
+CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
+
+- `rosetta/product-collateral-func.rosetta` line 9: `CloneEligibleCollateralWithChangedTreatment` is described as
+  creating "a new Eligible Collateral Specification based on an input specification but with one changed criteria and
+  with one changed treatment".
+- Lines 22–24: `set outputSpecification: inputSpecification`, then `set outputSpecification -> criteria -> treatment`
+  and `set outputSpecification -> criteria -> collateralCriteria`. Nothing selects which criterion changes.
+- Observed with CDM 7.7.0 Java (`AmendmentTest.cdmsCloneEligibleCollateralWithChangedTreatmentOverwritesTheFirstCriterion`):
+  a schedule of tUST 2%, tMMF 4% and tUSD 0%, asked to change tMMF to 10%, comes back as tMMF 10%, tMMF 4%, tUSD 0%.
+  The first criterion (tUST) is overwritten and tUST is no longer eligible.
+- **Effect:** the function can be used safely only on a schedule with one criterion. An amendment of one haircut in a
+  longer schedule removes another asset from the eligible collateral.
+- **Fix:** select the criterion to change (for example the one whose `collateralCriteria` equals the given criteria) and
+  replace only its treatment, or add the criterion when none matches.
+- **Local extension:** `ApplyHaircutChanges` (`cdmx.collateral.amendment`) replaces the criterion whose
+  `AssetIdentifier` matches and keeps its concentration limits. Not reported (project owner's instruction).
+
+### D19 — `distinct` on an alias generates Java that does not compile *(added 2026-11-06)*
+
+- In `ApplyHaircutChanges` the condition `(changedAssets then distinct then count) = changes count`, where
+  `changedAssets` is the alias `changes extract asset`, generates
+  `MapperC<AssetIdentifier> thenArg1 = distinctIgnoringPrecision(thenArg0)` with `thenArg0` of type
+  `MapperC<? extends AssetIdentifier>`; javac rejects it ("inference variable T has incompatible equality
+  constraints").
+- Writing the expression out (`changes extract asset then distinct then count`) compiles.
+- **Effect:** valid Rune that the validator accepts fails at Java compile time. Not reported (project owner's
+  instruction).
