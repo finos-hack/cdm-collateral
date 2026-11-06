@@ -646,3 +646,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cancel-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
 | edge:e-lnk-replacement-smecancel | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
 | edge:e-mrk-replacementlink-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| node:task-csa-call-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| waypoint:wp-adr-replacement-call-link | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-dec-csaext-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-lnk-cancel-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-lnk-replacement-smecancel | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-mrk-replacementlink-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| node:task-csa-call-replacement | status | open | resolved | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |

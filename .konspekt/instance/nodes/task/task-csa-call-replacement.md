@@ -2,8 +2,8 @@
 id: task-csa-call-replacement
 type: task
 title: Link a corrected margin call to the cancelled call it replaces
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 0ca6129cd3db0942293f5dfb317e913ab0b7eb71
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:44:40Z
   confidence: 0.7
 createdAt: 2026-11-06T21:44:40Z
-updatedAt: 2026-11-06T21:50:38Z
+updatedAt: 2026-11-06T21:53:01Z
 ```
 # Task: link a corrected margin call to the cancelled call it replaces
 
@@ -29,3 +29,9 @@ gateway route and links, the service check (`CdmReplacementTest`, 2 tests), the 
 flow, docs and task map row 5. Contract tests 44/44, cdm-ext 175/175, service 23/23, console 70/70, live specs 12/12
 on a new contract set on the same chain (earlier set kept as `besu.pre-replacement.json`). Design choices are proposed
 in [[wp-adr-replacement-call-link]].
+
+## Resolved 2026-11-06T21:53:01Z
+
+Accepted and resolved by the project owner (2026-11-06: "1. yes 2. yes 3. yes"), with [[wp-adr-replacement-call-link]] accepted in the
+same decision. Pushed on branch `call-replacement` for review. The rules still await
+[[task-sme-call-cancellation-rules]] (question 5).

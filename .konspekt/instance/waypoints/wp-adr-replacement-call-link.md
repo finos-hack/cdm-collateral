@@ -3,7 +3,7 @@ id: wp-adr-replacement-call-link
 kind: decision
 subtype: adr
 timestamp: 2026-11-06T21:44:40Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 0ca6129cd3db0942293f5dfb317e913ab0b7eb71
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:44:40Z
   confidence: 0.6
 createdAt: 2026-11-06T21:44:40Z
-updatedAt: 2026-11-06T21:44:40Z
+updatedAt: 2026-11-06T21:53:01Z
 ```
 # ADR: a replacement call names the cancelled call in CDM and on-chain; one replacement per cancelled call
 

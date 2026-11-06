@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:19:41Z
   confidence: 0.7
 createdAt: 2026-11-06T21:19:41Z
-updatedAt: 2026-11-06T21:21:30Z
+updatedAt: 2026-11-06T21:53:01Z
 ```
 # Task: diagnose a deploy transaction that is never mined in the CI live stack
 
@@ -45,3 +45,8 @@ per node.
 Accepted by the project owner (2026-11-06: "1. yes"). The Besu log level stays at INFO ("2. b"): the
 transaction-pool queries and nonces are expected to show the cause if the failure recurs. The task stays open
 until a CI run shows the diagnostics or the owner closes it. Pushed on branch `deploy-dropped-tx` for review.
+
+## Decision 2026-11-06T21:53:01Z
+
+PR #29 merged. The project owner keeps the task open until a failed CI run shows what happens to the transaction
+(2026-11-06: "5. b").
