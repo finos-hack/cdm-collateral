@@ -2,7 +2,7 @@
 id: task-csa-call-cancellation
 type: task
 title: Build the margin call cancellation flow
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.7
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T20:38:13Z
+updatedAt: 2026-11-06T20:45:24Z
 ```
 # Task: build the margin call cancellation flow
 
@@ -45,3 +45,9 @@ Built on branch `call-cancellation`: cdm-ext cancellation steps in `cdmx.collate
 tests 41/41, cdm-ext 169/169, service 21/21, console 68/68, live specs 11/11 on a new contract set on the same chain
 (earlier set kept as `besu.pre-cancellation.json`). The rules follow the owner's decisions above and await
 [[task-sme-call-cancellation-rules]]. Design choices are proposed in [[wp-adr-cancellation-blocks-call]].
+
+## Resolved 2026-11-06T20:45:24Z
+
+Resolved by the project owner (2026-11-06: "3. yes"), with [[wp-adr-cancellation-blocks-call]] and [[task-sme-call-cancellation-rules]] accepted in the same
+decision. The owner asked why a corrected call has no link to the call it cancels; that is open as a possible
+follow-up (SME question 5). Pushed on branch `call-cancellation` for review.

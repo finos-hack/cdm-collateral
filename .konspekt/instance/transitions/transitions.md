@@ -628,3 +628,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cancel-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
 | waypoint:wp-adr-cancellation-blocks-call | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
 | edge:e-mrk-cancelblocks-cancel | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
+| waypoint:wp-adr-cancellation-blocks-call | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| node:task-sme-call-cancellation-rules | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| edge:e-mrk-cancelblocks-cancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| edge:e-dec-cdmdev-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| edge:e-lnk-cancel-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| node:task-csa-call-cancellation | status | open | resolved | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |

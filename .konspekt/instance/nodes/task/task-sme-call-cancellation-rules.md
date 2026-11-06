@@ -3,7 +3,7 @@ id: task-sme-call-cancellation-rules
 type: task
 title: Confirm with a business SME the rules for cancelling a margin call
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: ff7f6cec9c7bbab4c9cd9ce61785cd5393aee845
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T20:16:20Z
   confidence: 0.75
 createdAt: 2026-11-06T20:16:20Z
-updatedAt: 2026-11-06T20:16:20Z
+updatedAt: 2026-11-06T20:45:24Z
 ```
 # Task: confirm the rules for cancelling a margin call
 

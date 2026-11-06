@@ -3,7 +3,7 @@ id: wp-adr-cancellation-blocks-call
 kind: decision
 subtype: adr
 timestamp: 2026-11-06T20:38:13Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: ff7f6cec9c7bbab4c9cd9ce61785cd5393aee845
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T20:38:13Z
   confidence: 0.6
 createdAt: 2026-11-06T20:38:13Z
-updatedAt: 2026-11-06T20:38:13Z
+updatedAt: 2026-11-06T20:45:24Z
 ```
 # ADR: a pending cancellation request blocks the call; acceptance voids its live proposal on-chain
 
