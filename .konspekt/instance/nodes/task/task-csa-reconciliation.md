@@ -3,7 +3,7 @@ id: task-csa-reconciliation
 type: task
 title: Decide whether reconciliation (G35) is in scope, then build it
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: b569643ca62a533db49fbd5b7b981da14137e9d6
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.65
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T13:19:22Z
+updatedAt: 2026-11-06T15:14:18Z
 ```
 # Task: decide whether reconciliation (G35) is in scope, then build it
 

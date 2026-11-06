@@ -579,3 +579,25 @@ into state history — an instance without it is v1-conformant and records none.
 | waypoint:wp-adr-substitution-fold-portfolio | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
 | edge:e-mrk-closeoutadr-closeout | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
 | edge:e-mrk-subfoldadr-substitution | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
+| waypoint:wp-adr-closeout-contract-applies-collateral | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| waypoint:wp-adr-substitution-fold-portfolio | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-close-out-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-interest-on-cash | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-call-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-settlement-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-interest | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-settlementnetting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-dec-csaext-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-mrk-closeoutadr-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| edge:e-mrk-subfoldadr-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-close-out-netting | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |

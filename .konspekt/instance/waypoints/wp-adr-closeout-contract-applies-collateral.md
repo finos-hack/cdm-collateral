@@ -3,7 +3,7 @@ id: wp-adr-closeout-contract-applies-collateral
 kind: decision
 subtype: adr
 timestamp: 2026-11-06T14:41:19Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 3ed9a6ece72bb47fe574147df6e1dd2aae5fafee
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T14:41:19Z
   confidence: 0.7
 createdAt: 2026-11-06T14:41:19Z
-updatedAt: 2026-11-06T14:41:19Z
+updatedAt: 2026-11-06T15:14:18Z
 ```
 # ADR: at close-out the control contract chooses the collateral applied
 

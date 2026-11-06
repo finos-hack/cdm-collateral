@@ -2,8 +2,8 @@
 id: task-csa-substitution
 type: task
 title: Build the collateral substitution flow (G16)
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: b569643ca62a533db49fbd5b7b981da14137e9d6
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.8
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T14:41:19Z
+updatedAt: 2026-11-06T15:14:18Z
 ```
 # Task: build the collateral substitution flow (G16)
 
@@ -30,3 +30,8 @@ live spec.
   flow `flow-substitution` and a live spec. Design proposed in [[wp-adr-substitution-fold-portfolio]].
 - Verified locally 2026-11-06 with the same runs as [[task-csa-close-out-netting]]: all 8 live specs pass.
 - Not done: not pushed, no PR. A refusal is covered by the contract tests and the console, not by a live spec.
+
+## Resolved 2026-11-06T15:14:18Z
+
+Resolved by the project owner (2026-11-06: "3. yes"), with its design record accepted in the same decision. Pushed on
+branch `P2` for review.

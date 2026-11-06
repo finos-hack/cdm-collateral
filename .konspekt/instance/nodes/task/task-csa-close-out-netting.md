@@ -2,8 +2,8 @@
 id: task-csa-close-out-netting
 type: task
 title: Build the close-out netting flow on default (G15)
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: b569643ca62a533db49fbd5b7b981da14137e9d6
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.8
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T14:41:19Z
+updatedAt: 2026-11-06T15:14:18Z
 ```
 # Task: build the close-out netting flow on default (G15)
 
@@ -30,3 +30,8 @@ the collateral service step that builds the `CloseOutStatement`, the console ste
   deployment file is kept as `contracts/deployments/besu.pre-g15-g16.json`): contract tests 28 of 28, service tests,
   console unit tests 62 of 62, all 8 live specs pass.
 - Not done: not pushed, no PR. GMRA, GMSLA and CCP close-out stay with section C.
+
+## Resolved 2026-11-06T15:14:18Z
+
+Resolved by the project owner (2026-11-06: "3. yes"), with its design record accepted in the same decision. Pushed on
+branch `P2` for review.
