@@ -144,6 +144,27 @@ public final class Cdm {
         return new Cdm("settle", o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd)));
     }
 
+    // ---- cancellation (task-csa-call-cancellation; rules to confirm in task-sme-call-cancellation-rules) ----
+
+    /** The calling party withdraws an unanswered call. */
+    public static Cdm withdraw(String reason) {
+        return new Cdm("withdraw", o("reason", reason == null || reason.isBlank() ? "withdrawn by the calling party" : reason));
+    }
+
+    /** Either party asks to cancel an answered call; role is Pledgor or SecuredParty (colr.005). */
+    public static Cdm requestCancellation(String role, String reason) {
+        Map<String, Object> r = o("requestedBy", role);
+        if (reason != null && !reason.isBlank()) r.put("reason", reason);
+        return new Cdm("requestCancellation", r);
+    }
+
+    /** The other party accepts or refuses the pending cancellation request (colr.006). */
+    public static Cdm decideCancellation(String role, boolean accept, String reason) {
+        Map<String, Object> d = o("decidedBy", role, "accept", accept);
+        if (reason != null && !reason.isBlank()) d.put("reason", reason);
+        return new Cdm("decideCancellation", d);
+    }
+
     /**
      * CDM {@code callIdentifier} derived from the shared on-chain callId, so both parties' services name the same call
      * in their CDM documents without exchanging it (no peer messaging in this cycle).

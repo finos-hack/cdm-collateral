@@ -41,8 +41,10 @@ export interface LiveCall {
   amountUsd: string;
   agreedUsd: string;
   disputedUsd: string;
-  state: "none" | "issued" | "agreed" | "partially agreed" | "disputed" | "settled" | "settled (agreed part)";
+  state: "none" | "issued" | "agreed" | "partially agreed" | "disputed" | "settled" | "settled (agreed part)" | "cancelled";
   cdmHash: string;
+  /** The party whose cancellation request is pending, if any (task-csa-call-cancellation). */
+  cancellationRequestedBy?: LiveParty | null;
   proposals: LiveProposal[];
   messages: { msgType: string; direction: string; cdmHash: string; cdmJson: string; createdAt: string }[];
   /** Settlement and feed events this party's service recorded for the call (Returned, Enforced). */
@@ -90,6 +92,15 @@ export const api = {
   returnSettle: (p: LiveParty, callId: string, via: "release" | "transfer", assets: { token: string; qty: number }[]) =>
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/return`, { via, assets }),
   /** Declare the pledgor's default (published to the oracle feed through the oracle service) and enforce. */
+  /** Calling party: withdraw an unanswered call (task-csa-call-cancellation). */
+  withdrawCall: (p: LiveParty, callId: string, reason: string) =>
+    req<{ cdmHash: string; withdrawTx: string }>(p, "POST", `/calls/${callId}/withdraw`, { reason }),
+  /** Either party: ask to cancel an answered call that is not settled (colr.005). */
+  requestCancellation: (p: LiveParty, callId: string, reason: string) =>
+    req<{ cdmHash: string; requestTx: string }>(p, "POST", `/calls/${callId}/cancellation`, { reason }),
+  /** The other party: accept or refuse the pending cancellation request (colr.006). */
+  decideCancellation: (p: LiveParty, callId: string, accept: boolean, reason: string) =>
+    req<{ cdmHash: string; decisionTx: string }>(p, "POST", `/calls/${callId}/cancellation/decision`, { accept, reason }),
   enforce: (p: LiveParty, callId: string) =>
     req<{ ok: boolean; pledgor: string; defaultTx: string; enforceTx: string }>(p, "POST", `/calls/${callId}/enforce`, {}),
   /** Revaluation of the pledged IM at the oracle feed prices after haircuts (flow-revaluation-top-up). */

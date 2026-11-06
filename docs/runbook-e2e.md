@@ -252,6 +252,13 @@ in "Interest on cash collateral" and clicks `State interest → A`. B's service 
 `stateInterest`; the contract pays the amount from B to A. Both consoles list the statement with `paid on-chain ✓` and
 `statement verified ✓`. For a negative rate the statement waits for A to click `Pay interest`.
 
+Cancellation flow (`flow-call-cancellation`): on an issued call, the calling party's console offers `Withdraw call`
+(with an optional reason); the call shows `cancelled on-chain ✓` in both consoles. On an answered call that is not
+settled (agreed, partly agreed or disputed), either console offers `Request cancellation`; the call then shows
+`cancellation requested by <party>` and takes no other step until the other party clicks `Accept cancellation` or
+`Refuse cancellation`. On acceptance a proposal not yet delivered is shown `cancelled` and no collateral moves. These
+rules are assumptions awaiting a business SME (`task-sme-call-cancellation-rules`).
+
 Amendment flow (`flow-agreement-amendment`): each console shows "Agreement terms": the pledgor's minimum transfer
 amount, the rounding and each token's haircut in the CDM schedule beside the haircut the contract applies, with
 `terms verified against the chain ✓`. B enters a new MTA (for example 400000) and a tMMF haircut in basis points and
@@ -279,7 +286,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
-`flow-substitution`, `flow-interest-on-cash` and `flow-agreement-amendment` (last; it restores the baseline terms).
+`flow-substitution`, `flow-interest-on-cash`, `flow-call-cancellation` and `flow-agreement-amendment` (last; it
+restores the baseline terms).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

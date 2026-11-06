@@ -734,6 +734,67 @@ test("flow-interest-on-cash: secured party states interest on cash collateral ->
   expect(errors).toEqual([]);
 });
 
+// Margin call cancellation (task-csa-call-cancellation). The rules are the project owner's assumptions of 2026-11-06,
+// to be confirmed in task-sme-call-cancellation-rules.
+test("flow-call-cancellation: secured party withdraws an unanswered call; requests cancellation of an agreed call -> pledgor accepts, proposal void, nothing moved", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Fold = { status: string; converged: boolean };
+  const folded = async (callId: string) => {
+    await expectConvergedCdmState(callId);
+    for (const svc of [SERVICE.A, SERVICE.B]) expect((await call<Fold>(`${svc}/calls/${callId}/cdm-state`)).status).toMatch(/^cancelled$/i);
+  };
+
+  // 1-4. Withdrawal: B issues an IM call and withdraws it in its console before A answers.
+  const amountUsd = 300_000 + (Date.now() % 9000) * 10;
+  const { callId: w } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await page.goto("/#/live/B");
+  const rowW = page.locator(".subcard", { hasText: shortId(w) });
+  await expect(rowW.getByRole("button", { name: "Withdraw call" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowW.getByLabel("Cancellation reason").fill("booked in error");
+  await rowW.getByRole("button", { name: "Withdraw call" }).click();
+  await expect(rowW.getByText("cancelled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  expect((await call<{ state: number }>(`${GATEWAY.A}/calls/${w}`)).state).toBe(7);
+  await folded(w);
+
+  // 5-10. Request and acceptance: an agreed IM call with an accepted proposal, set up through the services.
+  const amount2 = amountUsd + 5;
+  const qty = Math.ceil(amount2 / TUST_VALUE);
+  const { callId: c } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd: amount2, deadlineDays: 1 });
+  await call(`${SERVICE.A}/calls/${c}/response`, "POST", { response: "full" });
+  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${c}/proposal`, "POST", { assets: [{ token: "tUST", qty }] });
+  await call(`${SERVICE.B}/calls/${c}/decision`, "POST", { proposalId, accept: true });
+  const tUST = p.tokens["tUST"];
+  const freeBefore = await balanceOf(GATEWAY.A, tUST, p.a);
+  const pledgedBefore = await pledgedOf(GATEWAY.A, tUST, p);
+
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: shortId(c) });
+  await expect(rowB.getByRole("button", { name: "Request cancellation" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByLabel("Cancellation reason").fill("superseded by a corrected call");
+  await rowB.getByRole("button", { name: "Request cancellation" }).click();
+  await expect(rowB.getByText("cancellation requested by B")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: shortId(c) });
+  await expect(rowA.getByRole("button", { name: "Accept cancellation" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowA.getByRole("button", { name: "Pledge accepted collateral" })).toHaveCount(0);
+  await rowA.getByRole("button", { name: "Accept cancellation" }).click();
+  await expect(rowA.getByText("cancelled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // On-chain: the call is cancelled, its proposal void, and no collateral moved.
+  const onChain = await call<{ state: number; cancellationRequestedBy: string }>(`${GATEWAY.B}/calls/${c}`);
+  expect(onChain.state).toBe(7);
+  expect(onChain.cancellationRequestedBy).toBe("0x0000000000000000000000000000000000000000");
+  expect(await call<number>(`${GATEWAY.B}/calls/${c}/proposals/${proposalId}/state`)).toBe(4);
+  expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(freeBefore);
+  expect(await pledgedOf(GATEWAY.A, tUST, p)).toBe(pledgedBefore);
+  await folded(c);
+  expect(errors).toEqual([]);
+});
+
 interface Agreement {
   mtaUsd: string;
   roundingUsd: string;

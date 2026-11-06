@@ -136,6 +136,11 @@ READMEs are the authority. Oracle service: design only.
    `Create_AgreementEvent`; baseline: CDM's sample 2018 NY law IM CSA), chained from the pair's agreement hash; the
    other party consents on-chain, the control contract applies the haircuts to the pair, and both services fold the
    agreed amendments to the same terms.
+10. **Margin call cancellation** (`flow-call-cancellation`) — the calling party withdraws an unanswered call; once the
+    call is answered and not settled, either party requests its cancellation and the other accepts or refuses
+    (ISO 20022 colr.005 and colr.006). An accepted cancellation voids a proposal not yet delivered; both services fold
+    the cdm-ext steps to the `Cancelled` status. The rules are assumptions to be confirmed by a business SME
+    (`task-sme-call-cancellation-rules`).
 
 ## Running N participants
 

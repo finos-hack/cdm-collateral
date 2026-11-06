@@ -24,6 +24,9 @@ contract MarginCall {
     event CollateralProposed(bytes32 indexed callId, uint256 indexed proposalId, bytes32 cdmHash);
     event ProposalDecided(bytes32 indexed callId, uint256 indexed proposalId, bool accepted, bytes32 cdmHash);
     event CallSettled(bytes32 indexed callId, bool disputedRemains, bytes32 cdmHash);
+    event CallWithdrawn(bytes32 indexed callId, bytes32 cdmHash);
+    event CancellationRequested(bytes32 indexed callId, address indexed by, bytes32 cdmHash);
+    event CancellationDecided(bytes32 indexed callId, bool accepted, bytes32 cdmHash);
 
     error NotDeployer();
     error NotControl();
@@ -37,6 +40,8 @@ contract MarginCall {
     error ProposalPending();
     error EmptyProposal();
     error NoSuchProposal();
+    error CancellationPending();
+    error NoCancellationRequest();
 
     constructor() {
         deployer = msg.sender;
@@ -98,6 +103,7 @@ contract MarginCall {
         if (c.kind == CallKind.Return) revert ReturnHasNoProposal();
         if (!(c.state == CallState.Agreed || c.state == CallState.PartiallyAgreed)) revert BadState();
         if (c.activeProposal != 0) revert ProposalPending();
+        if (c.cancellationRequestedBy != address(0)) revert CancellationPending();
         if (assets.length == 0) revert EmptyProposal();
         proposalId = c.proposalCount++;
         _proposals[callId][proposalId] = Proposal({state: ProposalState.Proposed, cdmHash: cdmHash, decisionCdmHash: bytes32(0)});
@@ -111,6 +117,7 @@ contract MarginCall {
     function decideProposal(bytes32 callId, uint256 proposalId, bool accept, bytes32 cdmHash) external {
         Call storage c = _load(callId);
         if (msg.sender != c.from) revert WrongParty();
+        if (c.cancellationRequestedBy != address(0)) revert CancellationPending();
         Proposal storage p = _proposals[callId][proposalId];
         if (p.state != ProposalState.Proposed) revert BadState();
         if (accept) {
@@ -128,9 +135,53 @@ contract MarginCall {
     /// yet CDM-bound (VM / Return).
     function markSettled(bytes32 callId, bool disputedRemains, bytes32 cdmHash) external onlyControl {
         Call storage c = _load(callId);
+        if (c.cancellationRequestedBy != address(0)) revert CancellationPending();
         c.state = disputedRemains ? CallState.SettledAgreedPart : CallState.Settled;
         c.settleCdmHash = cdmHash;
         emit CallSettled(callId, disputedRemains, cdmHash);
+    }
+
+    // --- cancellation (task-csa-call-cancellation; ISO 20022 colr.005 and colr.006) ---
+    // Rules are the project owner's assumptions of 2026-11-06, to be confirmed in task-sme-call-cancellation-rules.
+    // Collateral moves only at settlement, so a call cancelled before settlement has moved nothing.
+
+    /// @notice The calling party withdraws a call the called party has not answered.
+    function withdrawCall(bytes32 callId, bytes32 cdmHash) external {
+        Call storage c = _load(callId);
+        if (msg.sender != c.from) revert WrongParty();
+        if (c.state != CallState.Issued) revert BadState();
+        c.state = CallState.Cancelled;
+        emit CallWithdrawn(callId, cdmHash);
+    }
+
+    /// @notice Either party asks to cancel an answered call that is not settled (agreed, partly agreed or disputed).
+    /// While the request is pending the call takes no proposal, decision or settlement.
+    function requestCancellation(bytes32 callId, bytes32 cdmHash) external {
+        Call storage c = _load(callId);
+        if (msg.sender != c.from && msg.sender != c.to) revert WrongParty();
+        if (!(c.state == CallState.Agreed || c.state == CallState.PartiallyAgreed || c.state == CallState.Disputed)) revert BadState();
+        if (c.cancellationRequestedBy != address(0)) revert CancellationPending();
+        c.cancellationRequestedBy = msg.sender;
+        emit CancellationRequested(callId, msg.sender, cdmHash);
+    }
+
+    /// @notice The other party accepts the pending request, which cancels the call and voids a proposal not yet
+    /// delivered, or refuses it, which leaves the call where it was.
+    function decideCancellation(bytes32 callId, bool accept, bytes32 cdmHash) external {
+        Call storage c = _load(callId);
+        address requester = c.cancellationRequestedBy;
+        if (requester == address(0)) revert NoCancellationRequest();
+        address other = requester == c.from ? c.to : c.from;
+        if (msg.sender != other) revert WrongParty();
+        c.cancellationRequestedBy = address(0);
+        if (accept) {
+            c.state = CallState.Cancelled;
+            if (c.activeProposal != 0) {
+                _proposals[callId][c.activeProposal - 1].state = ProposalState.Cancelled;
+                c.activeProposal = 0;
+            }
+        }
+        emit CancellationDecided(callId, accept, cdmHash);
     }
 
     // --- views for the control contract and services ---

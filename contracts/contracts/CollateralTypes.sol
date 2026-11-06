@@ -17,14 +17,16 @@ enum CallState {
     PartiallyAgreed,
     Disputed,
     Settled,
-    SettledAgreedPart
+    SettledAgreedPart,
+    Cancelled // withdrawn while issued, or cancelled on an accepted request (task-csa-call-cancellation)
 }
 
 enum ProposalState {
     None,
     Proposed,
     Accepted,
-    Rejected
+    Rejected,
+    Cancelled // void: its call was cancelled before delivery
 }
 
 enum ResponseType {
@@ -51,6 +53,7 @@ struct Call {
     uint256 proposalCount;
     uint256 activeProposal; // (proposalId + 1) of the Proposed/Accepted proposal; 0 when none is live
     bytes32 settleCdmHash; // hash of the CDM SettleCallInstruction, 0 until settled (wp-adr-cdm-payload-carrier)
+    address cancellationRequestedBy; // the party whose cancellation request is pending; 0 when none
 }
 
 struct Proposal {

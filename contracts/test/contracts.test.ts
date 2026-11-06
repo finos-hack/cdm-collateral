@@ -120,6 +120,74 @@ describe("CDM collateral contracts", async () => {
     });
   });
 
+  describe("margin call cancellation (task-csa-call-cancellation)", () => {
+    const C = id(40);
+    const amount = 1000n * SCALE;
+    const CANCELLED = 7, PROPOSAL_CANCELLED = 4;
+    const h = (s: string) => keccak256(toHex(s));
+
+    async function issue() {
+      await marginCall.write.issueCall([C, IM, aAddr, amount, 0n, zeroHash], { account: bankB.account });
+    }
+
+    it("lets the calling party withdraw an unanswered call, and nobody else", async () => {
+      await issue();
+      await assert.rejects(marginCall.write.withdrawCall([C, h("w")], { account: bankA.account }));
+      await marginCall.write.withdrawCall([C, h("w")], { account: bankB.account });
+      assert.equal((await marginCall.read.getCall([C])).state, CANCELLED);
+      await assert.rejects(marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account }));
+    });
+
+    it("does not withdraw an answered call or take a request on an unanswered one", async () => {
+      await issue();
+      await assert.rejects(marginCall.write.requestCancellation([C, h("r")], { account: bankB.account }));
+      await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
+      await assert.rejects(marginCall.write.withdrawCall([C, h("w")], { account: bankB.account }));
+    });
+
+    it("cancels an answered call on request and acceptance, voiding the accepted proposal and blocking the pledge", async () => {
+      await issue();
+      await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
+      await marginCall.write.requestCancellation([C, h("r")], { account: bankB.account });
+      assert.equal((await marginCall.read.getCall([C])).cancellationRequestedBy, bAddr);
+      await tUST.write.approve([control.address, 11n], { account: bankA.account });
+      await assert.rejects(control.write.pledge([C, 0n, zeroHash], { account: bankA.account })); // CancellationPending
+      await assert.rejects(marginCall.write.decideCancellation([C, true, h("d")], { account: bankB.account })); // the requester
+      await marginCall.write.decideCancellation([C, true, h("d")], { account: bankA.account });
+      const call = await marginCall.read.getCall([C]);
+      assert.equal(call.state, CANCELLED);
+      assert.equal(call.cancellationRequestedBy, "0x0000000000000000000000000000000000000000");
+      assert.equal((await marginCall.read.getProposal([C, 0n])).state, PROPOSAL_CANCELLED);
+      await assert.rejects(control.write.pledge([C, 0n, zeroHash], { account: bankA.account })); // BadState
+      assert.equal(await tUST.read.balanceOf([aAddr]), 1000n);
+    });
+
+    it("leaves the call where it was on refusal, takes one request at a time, and cancels a wholly disputed call", async () => {
+      await issue();
+      await marginCall.write.respond([C, DISPUTE, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.requestCancellation([C, h("r1")], { account: bankA.account });
+      await assert.rejects(marginCall.write.requestCancellation([C, h("r2")], { account: bankB.account }));
+      await marginCall.write.decideCancellation([C, false, h("d1")], { account: bankB.account });
+      assert.equal((await marginCall.read.getCall([C])).state, 4); // Disputed
+      await assert.rejects(marginCall.write.decideCancellation([C, true, h("d2")], { account: bankB.account })); // no request
+      await marginCall.write.requestCancellation([C, h("r3")], { account: bankA.account });
+      await marginCall.write.decideCancellation([C, true, h("d3")], { account: bankB.account });
+      assert.equal((await marginCall.read.getCall([C])).state, CANCELLED);
+    });
+
+    it("does not cancel a settled call", async () => {
+      await issue();
+      await marginCall.write.respond([C, FULL, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.propose([C, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
+      await marginCall.write.decideProposal([C, 0n, true, zeroHash], { account: bankB.account });
+      await tUST.write.approve([control.address, 11n], { account: bankA.account });
+      await control.write.pledge([C, 0n, zeroHash], { account: bankA.account });
+      await assert.rejects(marginCall.write.requestCancellation([C, h("r")], { account: bankB.account }));
+    });
+  });
+
   describe("return of initial margin", () => {
     const C = id(2), R = id(3);
     const agreed = 1000n * SCALE;
