@@ -795,6 +795,64 @@ test("flow-call-cancellation: secured party withdraws an unanswered call; reques
   expect(errors).toEqual([]);
 });
 
+// Replacement of a cancelled call (task-csa-call-replacement): the corrected call names the call it replaces, on-chain
+// and in its CDM IssueCall step. The details are assumptions awaiting task-sme-call-cancellation-rules (question 5).
+test("flow-call-replacement: secured party withdraws a call -> issues a corrected call that replaces it, linked on-chain and in CDM", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Fold = { status: string; converged: boolean };
+  type Row = { callId: string; state: string; replaces: string | null; replacedBy: string | null };
+
+  // 1-2. Setup through the services: B issues an IM call to A and withdraws it.
+  const amountUsd = 400_000 + (Date.now() % 9000) * 10;
+  const { callId: old } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await call(`${SERVICE.B}/calls/${old}/withdraw`, "POST", { reason: "amount booked in error" });
+
+  // 3-4. B issues the corrected call from the cancelled call's row in its console.
+  const corrected = amountUsd - 50_000;
+  await page.goto("/#/live/B");
+  const rowOld = page.locator(".subcard", { hasText: shortId(old) });
+  await expect(rowOld.getByRole("button", { name: "Issue replacement call" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowOld.getByLabel("Replacement amount (USD)").fill(String(corrected));
+  await rowOld.getByRole("button", { name: "Issue replacement call" }).click();
+  await expect(rowOld.getByText(/replaced by/)).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowOld.getByRole("button", { name: "Issue replacement call" })).toHaveCount(0);
+
+  // 5. On-chain: the link both ways, the new call issued for the corrected amount to the same party.
+  const linked = await call<{ replacementOf: string }>(`${GATEWAY.A}/calls/${old}`);
+  const repl = linked.replacementOf;
+  expect(repl).not.toBe("0x" + "0".repeat(64));
+  const onChain = await call<{ state: number; replaces: string; kind: number; amount: string }>(`${GATEWAY.A}/calls/${repl}`);
+  expect(onChain.state).toBe(1);
+  expect(onChain.replaces).toBe(old);
+  expect(onChain.kind).toBe(0);
+
+  // 6. Both consoles' services show the link, and A sees the corrected call to answer.
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    const link = async () => {
+      const rows = (await call<{ calls: Row[] }>(`${svc}/state`)).calls;
+      return [rows.find((r) => r.callId === repl)?.replaces, rows.find((r) => r.callId === old)?.replacedBy];
+    };
+    await expect.poll(link, { timeout: 60_000 }).toEqual([old, repl]);
+  }
+  await page.goto("/#/live/A");
+  const rowNew = page.locator(".subcard", { hasText: shortId(repl) });
+  await expect(rowNew.getByText(/replaces/)).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowNew.getByRole("button", { name: "Agree in full" })).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 7. Both services fold the replacement's CDM IssueCall step, which names the cancelled call (ReplacementAllowed held).
+  await expectConvergedCdmState(repl);
+  for (const svc of [SERVICE.A, SERVICE.B]) expect((await call<Fold>(`${svc}/calls/${repl}/cdm-state`)).status).toMatch(/^issued$/i);
+
+  // 8. A second replacement of the same call is refused.
+  await expect(call(`${SERVICE.B}/calls`, "POST", { replacesCallId: old, amountUsd: corrected, deadlineDays: 1 })).rejects.toThrow(/replacement/);
+
+  // Cleanup: withdraw the replacement so later specs see no open call from this one.
+  await call(`${SERVICE.B}/calls/${repl}/withdraw`, "POST", { reason: "spec cleanup" });
+  expect(errors).toEqual([]);
+});
+
 interface Agreement {
   mtaUsd: string;
   roundingUsd: string;

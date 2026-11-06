@@ -46,8 +46,11 @@ const J = (v: unknown) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "
 
 route("GET", "/ledger/v1/health", async () => ({ node: NODE, account: adapter.account, ok: true }));
 
+// `replaces` names a cancelled call the new call replaces (task-csa-call-replacement).
 route("POST", "/ledger/v1/calls", async (_p, b) =>
-  J(await adapter.issueCall(b.callId as Hex, b.kind, getAddress(b.to), BigInt(b.amount), BigInt(b.deadline), b.cdmHash as Hex)),
+  J(b.replaces
+    ? await adapter.issueReplacementCall(b.callId as Hex, b.replaces as Hex, b.kind, getAddress(b.to), BigInt(b.amount), BigInt(b.deadline), b.cdmHash as Hex)
+    : await adapter.issueCall(b.callId as Hex, b.kind, getAddress(b.to), BigInt(b.amount), BigInt(b.deadline), b.cdmHash as Hex)),
 );
 
 route("POST", "/ledger/v1/calls/:id/response", async (p, b) =>

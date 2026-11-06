@@ -334,6 +334,7 @@ function CallRow(props: {
   const [partialUsd, setPartialUsd] = useState(0);
   const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
   const [cancelReason, setCancelReason] = useState("");
+  const [replacementUsd, setReplacementUsd] = useState(Number(c.amountUsd));
   const accepted = c.proposals.find((p) => p.state === "accepted");
   const proposed = c.proposals.find((p) => p.state === "proposed");
   const agreedOpen = c.state === "agreed" || c.state === "partially agreed";
@@ -350,6 +351,7 @@ function CallRow(props: {
   const canWithdraw = c.from === party && c.state === "issued";
   const canRequestCancel = !pending && (agreedOpen || c.state === "disputed");
   const canDecideCancel = !!pending && pending !== party;
+  const canReplace = c.from === party && c.state === "cancelled" && !c.replacedBy; // task-csa-call-replacement
   const canPledge = acts && c.kind === "IM" && accepted && !settled;
   const canTransfer = acts && c.kind === "VM" && accepted && !settled;
   const canReturn = acts && c.kind === "Return" && agreedOpen && !settled;
@@ -362,6 +364,8 @@ function CallRow(props: {
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div>
           <span className="mono">{short(c.callId)}</span> · {c.kind} · {c.from} → {c.to} · <strong>{c.state}</strong>
+          {c.replaces && <span className="small"> · replaces <span className="mono">{short(c.replaces)}</span></span>}
+          {c.replacedBy && <span className="small"> · replaced by <span className="mono">{short(c.replacedBy)}</span></span>}
         </div>
         <div className="small">{usd(c.amountUsd)} {Number(c.disputedUsd) > 0 && <span className="bad">· disputed {usd(c.disputedUsd)}</span>}</div>
       </div>
@@ -451,6 +455,12 @@ function CallRow(props: {
           </>
         )}
         {c.state === "cancelled" && <span className="bad">cancelled on-chain ✓</span>}
+        {canReplace && (
+          <>
+            <input aria-label="Replacement amount (USD)" type="number" value={replacementUsd} onChange={(e) => setReplacementUsd(Number(e.target.value))} style={{ width: 120 }} />
+            <button disabled={busy || !(replacementUsd > 0)} onClick={() => run(() => api.replaceCall(party, c.callId, replacementUsd))}>Issue replacement call</button>
+          </>
+        )}
         {settled && <span className="ok">settled on-chain ✓</span>}
         {c.enforced && <span className="bad">enforced ✓</span>}
       </div>

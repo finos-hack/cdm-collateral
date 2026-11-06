@@ -695,3 +695,21 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-feedscope-oracleprices | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
 | edge:e-drv-agreementfidelity-scenariogrid | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
 | node:investigation-adr-asr-traceability | status | active | resolved | 2026-11-06T22:40:11Z | 22aa20e558831db58e7cbd2e41943f4ee16e1f11 | denisurusov |
+| node:task-csa-call-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| node:task-csa-call-replacement | status |  | open | 2026-11-06T21:44:40Z |  |  |
+| waypoint:wp-adr-replacement-call-link | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-dec-csaext-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-lnk-cancel-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-lnk-replacement-smecancel | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| edge:e-mrk-replacementlink-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
+| node:task-csa-call-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| waypoint:wp-adr-replacement-call-link | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-dec-csaext-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-lnk-cancel-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-lnk-replacement-smecancel | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-mrk-replacementlink-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| node:task-csa-call-replacement | status | open | resolved | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| edge:e-drv-callstate-replacelink | review |  | proposed | 2026-11-06T22:58:01Z |  |  |
+| edge:e-drv-cdmdata-replacelink | review |  | proposed | 2026-11-06T22:58:01Z |  |  |
+| edge:e-drv-callstate-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ea0ed4c6ddb1c4da0564b4c86fb9a7ed396a0262 | denisurusov |
+| edge:e-drv-cdmdata-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ea0ed4c6ddb1c4da0564b4c86fb9a7ed396a0262 | denisurusov |

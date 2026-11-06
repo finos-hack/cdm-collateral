@@ -89,9 +89,22 @@ public final class Cdm {
     // ---- lifecycle steps (each a validated MarginCallInstruction) ----
 
     public static Cdm issue(String callId, String issuer, long amountUsd, String direction) {
+        return issue(callId, issuer, amountUsd, direction, null);
+    }
+
+    /** IssueCall; {@code replacesCall} is the CDM identifier of a cancelled call this one replaces, or null (task-csa-call-replacement). */
+    public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall) {
         Map<String, Object> issuance = callBase(callId, issuer);
         issuance.put("callAmountInBaseCurrency", money(amountUsd));
-        return new Cdm("issue", o("issuance", issuance, "direction", direction));
+        Map<String, Object> issue = o("issuance", issuance, "direction", direction);
+        if (replacesCall != null) issue.put("replacesCall", replacesCall);
+        return new Cdm("issue", issue);
+    }
+
+    /** Whether this IssueCall step may replace the folded state of a cancelled call (cdm-ext ReplacementAllowed). */
+    public boolean replaces(cdmx.collateral.margincall.MarginCallState replaced) {
+        return Boolean.TRUE.equals(CdmRuntime.fn(cdmx.collateral.margincall.functions.ReplacementAllowed.class)
+                .evaluate(instruction.getIssue(), replaced));
     }
 
     public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,

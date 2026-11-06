@@ -72,6 +72,22 @@ func CallingParty: <"The party that issued the call: the secured party calls for
     set role:
         if state -> direction = MarginCallActionEnum -> Return then PartyRoleEnum -> Pledgor else PartyRoleEnum -> SecuredParty
 
+func ReplacementAllowed: <"Whether a new call may replace another (task-csa-call-replacement): the replaced call is the one the new call names, it is cancelled, and it has the same direction and the same pledgor and secured party. Whether a cancelled call has a replacement already is outside one call's state; the ledger keeps one replacement per cancelled call. These rules are assumptions awaiting a business SME (task-sme-call-cancellation-rules, question 5).">
+    inputs:
+        issue IssueCallInstruction (1..1)
+        replaced MarginCallState (1..1)
+    output:
+        allowed boolean (1..1)
+    set allowed:
+        issue -> replacesCall exists
+            and (replaced -> issuance -> callIdentifier -> assignedIdentifier -> identifier contains issue -> replacesCall)
+            and replaced -> status = MarginCallStatusEnum -> Cancelled
+            and replaced -> direction = issue -> direction
+            and (replaced -> issuance -> partyRole filter role = PartyRoleEnum -> Pledgor then only-element -> partyReference -> partyId -> identifier)
+                = (issue -> issuance -> partyRole filter role = PartyRoleEnum -> Pledgor then only-element -> partyReference -> partyId -> identifier)
+            and (replaced -> issuance -> partyRole filter role = PartyRoleEnum -> SecuredParty then only-element -> partyReference -> partyId -> identifier)
+                = (issue -> issuance -> partyRole filter role = PartyRoleEnum -> SecuredParty then only-element -> partyReference -> partyId -> identifier)
+
 func Create_MarginCallState: <"Applies one step to a margin call and returns the new state. The step must be the one the call waits for (NextMarginCallStep) or a cancellation step it allows (CancellationStepAllowed).">
     inputs:
         previous MarginCallState (0..1) <"Absent for the first step (IssueCall).">
@@ -114,6 +130,7 @@ func ApplyIssue:
             issuance: issue -> issuance,
             direction: issue -> direction,
             status: MarginCallStatusEnum -> Issued,
+            replacesCall: issue -> replacesCall,
             stepRecord: [record],
             ...
         }
@@ -161,6 +178,7 @@ func ApplyResponse: <"Records the response (G1) and the agreed and disputed amou
             settlement: state -> settlement,
             withdrawal: state -> withdrawal,
             cancellation: state -> cancellation,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> stepRecord: record
@@ -196,6 +214,7 @@ func ApplyProposal: <"Adds a collateral proposal (G2) to a delivery call.">
             settlement: state -> settlement,
             withdrawal: state -> withdrawal,
             cancellation: state -> cancellation,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> proposal: proposal
@@ -234,6 +253,7 @@ func ApplyDecision: <"Accepts or rejects the pending proposal (G2).">
             settlement: state -> settlement,
             withdrawal: state -> withdrawal,
             cancellation: state -> cancellation,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> proposal: decided
@@ -274,6 +294,7 @@ func ApplySettlement: <"Settles the agreed amount: delivery against the accepted
             settlement: settle,
             withdrawal: state -> withdrawal,
             cancellation: state -> cancellation,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> stepRecord: record
@@ -313,6 +334,7 @@ func ApplyWithdrawal: <"The calling party withdraws an unanswered call.">
             settlement: state -> settlement,
             withdrawal: withdraw,
             cancellation: state -> cancellation,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> stepRecord: record
@@ -337,6 +359,7 @@ func ApplyCancellationRequest: <"Records one party's request to cancel an answer
             settlement: state -> settlement,
             withdrawal: state -> withdrawal,
             cancellation: state -> cancellation filter item exists,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> cancellation:
@@ -373,6 +396,7 @@ func ApplyCancellationDecision: <"The other party accepts the pending cancellati
             settlement: state -> settlement,
             withdrawal: state -> withdrawal,
             cancellation: state -> cancellation filter status <> CancellationStatusEnum -> Requested,
+            replacesCall: state -> replacesCall,
             stepRecord: state -> stepRecord
         }
     add next -> cancellation:

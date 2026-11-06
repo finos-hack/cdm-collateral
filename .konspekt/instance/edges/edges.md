@@ -207,3 +207,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-adrtrace-jsonsource | notes | node:investigation-adr-asr-traceability | noteworthy:nw-architecture-json-is-source |  | accepted |
 | e-drv-feedscope-oracleprices | drives | concept:concept-asr-onchain-feed-scope | waypoint:wp-adr-oracle-prices-on-request-ratings-offchain |  | accepted |
 | e-drv-agreementfidelity-scenariogrid | drives | concept:concept-asr-agreement-type-fidelity | waypoint:wp-adr-ux-scenario-grid |  | accepted |
+| e-dec-csaext-replacement | decomposes | node:task-csa-workflow-extensions | node:task-csa-call-replacement |  | accepted |
+| e-lnk-cancel-replacement | links | node:task-csa-call-cancellation | node:task-csa-call-replacement |  | accepted |
+| e-lnk-replacement-smecancel | links | node:task-csa-call-replacement | node:task-sme-call-cancellation-rules |  | accepted |
+| e-mrk-replacementlink-replacement | marks | waypoint:wp-adr-replacement-call-link | node:task-csa-call-replacement |  | accepted |
+| e-drv-callstate-replacelink | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-replacement-call-link |  | accepted |
+| e-drv-cdmdata-replacelink | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-replacement-call-link |  | accepted |

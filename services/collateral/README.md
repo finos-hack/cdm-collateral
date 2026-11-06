@@ -90,7 +90,8 @@ the store and the two services, so the full stack needs no manual token setup.
 
 ## REST API (`/api/v1`)
 
-`GET /context`, `GET /state`, `POST /calls`, `POST /calls/{id}/response`, `POST /calls/{id}/proposal`,
+`GET /context`, `GET /state`, `POST /calls` (body `replacesCallId` names a cancelled call the new call replaces; the
+service checks it on-chain and with cdm-ext `ReplacementAllowed`, `flow-call-replacement`), `POST /calls/{id}/response`, `POST /calls/{id}/proposal`,
 `POST /calls/{id}/decision`, `POST /calls/{id}/pledge` (IM settle), `POST /calls/{id}/transfer` (VM settle),
 `POST /calls/{id}/return` (return settle; body `via` = `release` | `transfer`), `POST /calls/{id}/withdraw` (body
 `reason`; the calling party, unanswered call), `POST /calls/{id}/cancellation` (body `reason`; either party, answered call

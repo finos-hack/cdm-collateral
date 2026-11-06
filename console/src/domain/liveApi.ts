@@ -45,6 +45,9 @@ export interface LiveCall {
   cdmHash: string;
   /** The party whose cancellation request is pending, if any (task-csa-call-cancellation). */
   cancellationRequestedBy?: LiveParty | null;
+  /** The cancelled call this call replaces, and the call that replaces this one (task-csa-call-replacement). */
+  replaces?: string | null;
+  replacedBy?: string | null;
   proposals: LiveProposal[];
   messages: { msgType: string; direction: string; cdmHash: string; cdmJson: string; createdAt: string }[];
   /** Settlement and feed events this party's service recorded for the call (Returned, Enforced). */
@@ -79,6 +82,9 @@ export const api = {
   state: (p: LiveParty) => req<LiveState>(p, "GET", "/state"),
   issueCall: (p: LiveParty, toParty: LiveParty, amountUsd: number, kind = "IM", purpose?: "top-up") =>
     req<{ callId: string }>(p, "POST", "/calls", { kind, toParty, amountUsd, deadlineDays: 1, purpose }),
+  /** Calling party: issue a call that replaces a cancelled one; kind and called party are the cancelled call's. */
+  replaceCall: (p: LiveParty, callId: string, amountUsd: number) =>
+    req<{ callId: string }>(p, "POST", "/calls", { replacesCallId: callId, amountUsd, deadlineDays: 1 }),
   respond: (p: LiveParty, callId: string, response: string, agreedUsd?: number) =>
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/response`, { response, agreedUsd }),
   propose: (p: LiveParty, callId: string, assets: { token: string; qty: number }[]) =>

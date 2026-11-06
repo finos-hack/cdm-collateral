@@ -29,7 +29,7 @@ NODE=bank-b PORT=8202 npm run serve
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | node id and signing account |
-| POST | `/calls` | issue a margin call (margin call contract) |
+| POST | `/calls` | issue a margin call (margin call contract); with `replaces` (a cancelled call's id), `issueReplacementCall` links the new call to it (`flow-call-replacement`). `GET /calls/:id` returns `replaces` and `replacementOf` |
 | POST | `/calls/:id/response` | respond (full / partial / dispute) |
 | POST | `/calls/:id/proposals` | propose collateral; returns `proposalId` |
 | POST | `/calls/:id/decision` | accept or reject a proposal |

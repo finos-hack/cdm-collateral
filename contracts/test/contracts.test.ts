@@ -120,6 +120,43 @@ describe("CDM collateral contracts", async () => {
     });
   });
 
+  describe("replacement of a cancelled call (task-csa-call-replacement)", () => {
+    const OLD = id(50), NEW = id(51), OTHER = id(52);
+    const amount = 1000n * SCALE;
+    const h = (s: string) => keccak256(toHex(s));
+
+    async function cancelled() {
+      await marginCall.write.issueCall([OLD, IM, aAddr, amount, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.withdrawCall([OLD, h("w")], { account: bankB.account });
+    }
+
+    it("links a replacement to the cancelled call, once", async () => {
+      await cancelled();
+      await marginCall.write.issueReplacementCall([NEW, OLD, IM, aAddr, 900n * SCALE, 0n, h("i")], { account: bankB.account });
+      assert.equal((await marginCall.read.getCall([NEW])).state, 1); // Issued
+      assert.equal(await marginCall.read.replacementOf([OLD]), NEW);
+      assert.equal(await marginCall.read.replaces([NEW]), OLD);
+      const events = await marginCall.getEvents.CallReplaced();
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.replacedCallId, OLD);
+      await assert.rejects(marginCall.write.issueReplacementCall([OTHER, OLD, IM, aAddr, amount, 0n, h("i")], { account: bankB.account }));
+    });
+
+    it("does not replace a call that is not cancelled", async () => {
+      await marginCall.write.issueCall([OLD, IM, aAddr, amount, 0n, zeroHash], { account: bankB.account });
+      await assert.rejects(marginCall.write.issueReplacementCall([NEW, OLD, IM, aAddr, amount, 0n, h("i")], { account: bankB.account }));
+      await assert.rejects(marginCall.write.issueReplacementCall([NEW, id(59), IM, aAddr, amount, 0n, h("i")], { account: bankB.account }));
+    });
+
+    it("requires the same caller, called party and kind", async () => {
+      await cancelled();
+      await assert.rejects(marginCall.write.issueReplacementCall([NEW, OLD, IM, bAddr, amount, 0n, h("i")], { account: bankA.account }));
+      await assert.rejects(marginCall.write.issueReplacementCall([NEW, OLD, IM, opAddr, amount, 0n, h("i")], { account: bankB.account }));
+      await assert.rejects(marginCall.write.issueReplacementCall([NEW, OLD, VM, aAddr, amount, 0n, h("i")], { account: bankB.account }));
+      await assert.rejects(marginCall.write.issueReplacementCall([OLD, OLD, IM, aAddr, amount, 0n, h("i")], { account: bankB.account }));
+    });
+  });
+
   describe("margin call cancellation (task-csa-call-cancellation)", () => {
     const C = id(40);
     const amount = 1000n * SCALE;
