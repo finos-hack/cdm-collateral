@@ -64,6 +64,9 @@ func QualifyCollateralEvent: <"The qualifier of a margin call event: the name of
         else if Qualify_CollateralProposalRejected(event) then "CollateralProposalRejected"
         else if Qualify_CollateralDelivered(event) then "CollateralDelivered"
         else if Qualify_CollateralReturned(event) then "CollateralReturned"
+        else if Qualify_MarginCallCancelled(event) then "MarginCallCancelled"
+        else if Qualify_MarginCallCancellationRequested(event) then "MarginCallCancellationRequested"
+        else if Qualify_MarginCallCancellationRefused(event) then "MarginCallCancellationRefused"
 
 func Qualify_MarginCallIssued: <"The calling party issued the call.">
     inputs:
@@ -143,3 +146,29 @@ func Qualify_CollateralReturned: <"Collateral held was released on a return call
     set is_event:
         event -> instruction -> settle exists
             and event -> after -> direction = MarginCallActionEnum -> Return
+
+func Qualify_MarginCallCancelled: <"The call was withdrawn by the calling party, or cancelled on an accepted request.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        (event -> instruction -> withdraw exists or event -> instruction -> decideCancellation exists)
+            and event -> after -> status = MarginCallStatusEnum -> Cancelled
+
+func Qualify_MarginCallCancellationRequested: <"One party asked to cancel an answered call.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> requestCancellation exists
+
+func Qualify_MarginCallCancellationRefused: <"The other party refused the cancellation; the call continues.">
+    inputs:
+        event CollateralEvent (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        event -> instruction -> decideCancellation exists
+            and event -> instruction -> decideCancellation -> accept = False

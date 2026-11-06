@@ -9,6 +9,7 @@ enum CollateralProposalStatusEnum: <"State of a collateral proposal.">
     Proposed <"Proposed by the party delivering collateral; waiting for the receiving party's decision.">
     Accepted <"Accepted by the receiving party; the proposed collateral may be delivered against the call.">
     Rejected <"Rejected by the receiving party; the delivering party may propose again.">
+    Cancelled <"Void because the margin call was cancelled before the proposal was delivered (task-csa-call-cancellation).">
 
 type CollateralProposalDecision: <"The receiving party's decision on a collateral proposal.">
     accepted boolean (1..1) <"True if the proposal is accepted.">
@@ -25,7 +26,8 @@ type CollateralProposal: <"Collateral proposed by the delivering party against a
     status CollateralProposalStatusEnum (1..1) <"Current state of the proposal.">
     decision CollateralProposalDecision (0..1) <"The receiving party's decision, once made.">
 
-    condition DecisionMatchesStatus: <"Accepted and Rejected need a decision that says so; Proposed has none.">
+    condition DecisionMatchesStatus: <"Accepted and Rejected need a decision that says so; Proposed has none. A cancelled proposal keeps the decision it had, if any.">
         if status = CollateralProposalStatusEnum -> Proposed then decision is absent
         else if status = CollateralProposalStatusEnum -> Accepted then decision -> accepted = True
-        else decision -> accepted = False
+        else if status = CollateralProposalStatusEnum -> Rejected then decision -> accepted = False
+        else True
