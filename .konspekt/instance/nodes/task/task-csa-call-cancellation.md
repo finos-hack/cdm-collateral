@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T13:19:22Z
   confidence: 0.7
 createdAt: 2026-11-06T13:19:22Z
-updatedAt: 2026-11-06T20:16:20Z
+updatedAt: 2026-11-06T20:38:13Z
 ```
 # Task: build the margin call cancellation flow
 
@@ -35,3 +35,13 @@ Found 2026-11-06: CDM 7.7.0 has no margin call cancellation. Its only cancellati
 `WorkflowStep` with `action` Cancel and a `previousWorkflowStep` reference (CDM's example cancels a trade booked in
 error). `Qualify_Cancellation` is a repo term event. Collateral moves only at settlement in the prototype, so a call
 cancelled before settlement has moved nothing.
+
+## Progress 2026-11-06T20:38:13Z
+
+Built on branch `call-cancellation`: cdm-ext cancellation steps in `cdmx.collateral.margincall` (commit `9469cd7`,
+`CancellationTest` 11 tests) and `flow-call-cancellation` (commit `b697470`): `MarginCall.withdrawCall`,
+`requestCancellation` and `decideCancellation`, gateway routes and step events, service step builders and endpoints
+(`CdmCancellationTest`, 3 tests), console call actions (6 unit tests), the CALM flow, docs and task map row 5. Contract
+tests 41/41, cdm-ext 169/169, service 21/21, console 68/68, live specs 11/11 on a new contract set on the same chain
+(earlier set kept as `besu.pre-cancellation.json`). The rules follow the owner's decisions above and await
+[[task-sme-call-cancellation-rules]]. Design choices are proposed in [[wp-adr-cancellation-blocks-call]].

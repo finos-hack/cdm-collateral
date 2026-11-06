@@ -182,3 +182,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-amendterms-amendment | marks | waypoint:wp-adr-amendment-per-pair-terms | node:task-csa-amendment |  | accepted |
 | e-dec-cdmdev-smecancel | decomposes | node:goal-cdm-development | node:task-sme-call-cancellation-rules |  | proposed |
 | e-lnk-cancel-smecancel | links | node:task-csa-call-cancellation | node:task-sme-call-cancellation-rules |  | proposed |
+| e-mrk-cancelblocks-cancel | marks | waypoint:wp-adr-cancellation-blocks-call | node:task-csa-call-cancellation |  | proposed |

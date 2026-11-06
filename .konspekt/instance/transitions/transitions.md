@@ -626,3 +626,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-call-cancellation-rules | status |  | open | 2026-11-06T20:16:20Z |  |  |
 | edge:e-dec-cdmdev-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
 | edge:e-lnk-cancel-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
+| waypoint:wp-adr-cancellation-blocks-call | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
+| edge:e-mrk-cancelblocks-cancel | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
