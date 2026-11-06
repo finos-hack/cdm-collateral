@@ -1,4 +1,19 @@
-import json, sys
+import json, re, sys
+from pathlib import Path
+
+# The ADRs are the konspekt instance's waypoints with `subtype: adr`, read from disk so the list follows the graph.
+# A rejected ADR and one that is the `to` of a supersedes edge are left out.
+INSTANCE = Path(__file__).resolve().parent.parent / ".konspekt" / "instance"
+def adr_paths():
+    superseded = set(re.findall(r"^\|[^|]*\|\s*supersedes\s*\|[^|]*\|\s*waypoint:([\w-]+)\s*\|",
+                                (INSTANCE / "edges" / "edges.md").read_text(encoding="utf-8"), re.M))
+    out = []
+    for f in sorted((INSTANCE / "waypoints").glob("*.md")):
+        front = f.read_text(encoding="utf-8").split("```", 2)[1]
+        if re.search(r"^subtype:\s*adr\s*$", front, re.M) and not re.search(r"^review:\s*rejected\s*$", front, re.M) \
+                and f.stem not in superseded:
+            out.append(f.relative_to(INSTANCE.parent.parent).as_posix())
+    return out
 def iface(uid, **kw): return {"unique-id": uid, **kw}
 def node(uid, typ, name, desc, interfaces=None, **kw):
     n = {"unique-id": uid, "node-type": typ, "name": name, "description": desc}
@@ -307,7 +322,7 @@ doc = {
  "metadata": {"status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-return and the VM variants) run live on the contracts, ledger gateway, collateral service, CDM payload store and console (task-e2e-wiring); the oracle service, flow-oracle-update, flow-revaluation-top-up and flow-default-enforcement are design only", "goal": "goal-architecture-design", "task": "task-local-environment-setup",
    "asrs": ["concept-asr-ledger-neutrality", "concept-asr-cdm-data-layer", "concept-asr-onchain-asset-identity", "concept-asr-settlement-finality", "concept-asr-onchain-call-state"],
    "constraint": "nw-prototype-scope", "assumptions": ["nw-assumption-contract-control", "nw-assumption-besu-visibility"]},
- "adrs": [".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md", ".konspekt/instance/waypoints/wp-adr-im-segregation.md", ".konspekt/instance/waypoints/wp-adr-per-participant-services.md", ".konspekt/instance/waypoints/wp-adr-margin-call-state-onchain.md", ".konspekt/instance/waypoints/wp-adr-java-cdm-stack.md", ".konspekt/instance/waypoints/wp-adr-cdm-payload-carrier.md"],
+ "adrs": adr_paths(),
  "nodes": nodes, "relationships": R, "flows": flows,
 }
 json.dump(doc, open(sys.argv[1], "w"), indent=2); open(sys.argv[1], "a").write("\n")

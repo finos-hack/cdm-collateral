@@ -21,12 +21,28 @@
     ]
   },
   "adrs": [
-    ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
+    ".konspekt/instance/waypoints/wp-adr-amendment-per-pair-terms.md",
+    ".konspekt/instance/waypoints/wp-adr-cancellation-blocks-call.md",
+    ".konspekt/instance/waypoints/wp-adr-cdm-collateral-events.md",
+    ".konspekt/instance/waypoints/wp-adr-cdm-extension-rune.md",
+    ".konspekt/instance/waypoints/wp-adr-cdm-local-extensions.md",
+    ".konspekt/instance/waypoints/wp-adr-cdm-payload-carrier.md",
+    ".konspekt/instance/waypoints/wp-adr-ci-runs-live-specs.md",
+    ".konspekt/instance/waypoints/wp-adr-closeout-contract-applies-collateral.md",
+    ".konspekt/instance/waypoints/wp-adr-cloud-dev-environment.md",
+    ".konspekt/instance/waypoints/wp-adr-console-on-extension-rules.md",
+    ".konspekt/instance/waypoints/wp-adr-console-same-origin-proxy.md",
     ".konspekt/instance/waypoints/wp-adr-im-segregation.md",
-    ".konspekt/instance/waypoints/wp-adr-per-participant-services.md",
-    ".konspekt/instance/waypoints/wp-adr-margin-call-state-onchain.md",
+    ".konspekt/instance/waypoints/wp-adr-interest-onchain-settlement.md",
+    ".konspekt/instance/waypoints/wp-adr-interest-rate-rules-and-withholding.md",
     ".konspekt/instance/waypoints/wp-adr-java-cdm-stack.md",
-    ".konspekt/instance/waypoints/wp-adr-cdm-payload-carrier.md"
+    ".konspekt/instance/waypoints/wp-adr-margin-call-state-onchain.md",
+    ".konspekt/instance/waypoints/wp-adr-oracle-prices-on-request-ratings-offchain.md",
+    ".konspekt/instance/waypoints/wp-adr-per-participant-services.md",
+    ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
+    ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
+    ".konspekt/instance/waypoints/wp-adr-substitution-fold-portfolio.md",
+    ".konspekt/instance/waypoints/wp-adr-ux-scenario-grid.md"
   ],
   "nodes": [
     {
