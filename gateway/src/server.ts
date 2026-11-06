@@ -149,6 +149,28 @@ route("GET", "/ledger/v1/substitutions/:id", async (p) => {
 
 route("GET", "/ledger/v1/substitutions/:id/steps", async (p) => J(await adapter.substitutionSteps(p.id as Hex)));
 
+// --- amendment of agreement terms (flow-agreement-amendment) ---
+
+const termsOf = (xs: { token: string; eligible: boolean; haircutBps: number }[]) =>
+  xs.map((t) => ({ token: getAddress(t.token), eligible: Boolean(t.eligible), haircutBps: Number(t.haircutBps) }));
+
+route("POST", "/ledger/v1/amendments", async (_p, b) =>
+  J(await adapter.proposeAmendment(b.amendmentId as Hex, getAddress(b.pledgor), getAddress(b.securedParty), termsOf(b.terms ?? []), b.beforeHash as Hex, b.cdmHash as Hex)),
+);
+
+route("POST", "/ledger/v1/amendments/:id/decision", async (p, b) =>
+  J(await adapter.decideAmendment(p.id as Hex, Boolean(b.consent), b.cdmHash as Hex)),
+);
+
+route("GET", "/ledger/v1/amendments", async (_p, _b, url) => J(await adapter.listAmendments(getAddress(url.searchParams.get("party")!))));
+
+route("GET", "/ledger/v1/amendments/:id", async (p) => J(await adapter.getAmendment(p.id as Hex)));
+
+// The terms between a pledgor and a secured party: agreement hash, pending amendment, eligibility per registry token.
+route("GET", "/ledger/v1/pair-terms", async (_p, _b, url) =>
+  J(await adapter.pairTerms(getAddress(url.searchParams.get("pledgor")!), getAddress(url.searchParams.get("securedParty")!))),
+);
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

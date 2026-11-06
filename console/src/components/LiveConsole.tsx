@@ -16,6 +16,7 @@ import {
   type LiveCloseOut,
   type LiveContext,
   type LiveInterest,
+  type LiveAgreement,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -41,6 +42,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [subs, setSubs] = useState<LiveSubstitution[]>([]);
   const [closeOutUsd, setCloseOutUsd] = useState(1_000_000);
   const [interest, setInterest] = useState<LiveInterest[]>([]);
+  const [agreement, setAgreement] = useState<LiveAgreement | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -54,6 +56,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([]));
       api.substitutions(party).then(setSubs).catch(() => setSubs([]));
       api.interest(party).then(setInterest).catch(() => setInterest([]));
+      api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null));
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
     }
@@ -292,6 +295,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         </div>
       )}
 
+      {agreement && <AgreementTerms party={party} other={other} agreement={agreement} busy={busy} run={run} />}
+
       {!isSecured && <SubstitutionRequest party={party} other={other} busy={busy} hasPledged={hasPledged} run={run} />}
 
       {subs.length > 0 && (
@@ -440,6 +445,97 @@ function CallRow(props: {
 }
 
 const TOKENS = ["tUST", "tMMF", "tUSD"];
+
+const pct = (bps: number) => `${(bps / 100).toFixed(2)}%`;
+
+/** The IM CSA terms in force, the amendment form and the pair's amendments (flow-agreement-amendment). */
+function AgreementTerms(props: { party: LiveParty; other: LiveParty; agreement: LiveAgreement; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, agreement: a, busy, run } = props;
+  const [mta, setMta] = useState<string>("");
+  const [hcToken, setHcToken] = useState("tMMF");
+  const [hcEligible, setHcEligible] = useState(true);
+  const [hcBps, setHcBps] = useState(1000);
+  const haircuts = hcToken ? [{ token: hcToken, eligible: hcEligible, haircutBps: hcEligible ? hcBps : 0 }] : [];
+  return (
+    <div className="card" data-testid="agreement">
+      <h3>Agreement terms</h3>
+      <div className="small">{a.agreement} · secured party {a.securedParty} · pledgor {a.pledgor}</div>
+      <div className="row">
+        <span data-testid="agreement-mta">Minimum Transfer Amount (pledgor) {usd(a.mtaUsd)}</span>
+        <span>Rounding {usd(a.roundingUsd)}</span>
+        <span>{a.agreedAmendments} agreed amendment{a.agreedAmendments === 1 ? "" : "s"}</span>
+        <span data-testid="agreement-verified">
+          {a.verified ? <span className="ok">terms verified against the chain ✓</span> : <span className="bad">{a.problem ?? "terms do not match the chain"}</span>}
+        </span>
+      </div>
+      <table className="tbl">
+        <thead>
+          <tr><th>Token</th><th>ISIN</th><th>Haircut (CDM schedule)</th><th>Haircut (on-chain)</th></tr>
+        </thead>
+        <tbody>
+          {a.haircuts.map((h) => (
+            <tr key={h.token} data-testid={`haircut-${h.token}`}>
+              <td>{h.token}</td>
+              <td className="mono">{h.isin}</td>
+              <td>{h.eligible ? pct(h.haircutBps) : "not eligible"}</td>
+              <td>{h.onChainHaircutBps == null ? "—" : h.onChainHaircutBps >= 10000 ? "not eligible" : pct(h.onChainHaircutBps)} {h.matches ? "" : <span className="bad">mismatch</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="row">
+        <label>
+          New MTA (USD) <input aria-label="New MTA (USD)" type="number" value={mta} placeholder="unchanged" step={50000} onChange={(e) => setMta(e.target.value)} style={{ width: 120 }} />
+        </label>
+        <label>
+          Haircut of{" "}
+          <select aria-label="Amended token" value={hcToken} onChange={(e) => setHcToken(e.target.value)}>
+            <option value="">(none)</option>
+            {a.haircuts.map((h) => <option key={h.token} value={h.token}>{h.token}</option>)}
+          </select>
+        </label>
+        <label>
+          <input aria-label="Eligible" type="checkbox" checked={hcEligible} onChange={(e) => setHcEligible(e.target.checked)} /> eligible
+        </label>
+        <label>
+          bps <input aria-label="Haircut (bps)" type="number" value={hcBps} step={50} onChange={(e) => setHcBps(Number(e.target.value))} style={{ width: 80 }} />
+        </label>
+        <button
+          disabled={busy || !!a.pendingAmendment || !a.verified}
+          onClick={() => run(() => api.proposeAmendment(party, mta === "" ? null : Number(mta), haircuts))}
+        >
+          Propose amendment → {other}
+        </button>
+      </div>
+      {a.amendments.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Amendment</th><th>Proposer</th><th>MTA</th><th>Haircuts</th><th>State</th></tr>
+          </thead>
+          <tbody>
+            {a.amendments.map((m) => (
+              <tr key={m.amendmentId} data-testid={`amendment-${m.amendmentId}`}>
+                <td className="mono">{short(m.amendmentId)}</td>
+                <td>{m.proposer}</td>
+                <td>{m.mtaUsd ? usd(m.mtaUsd) : "unchanged"}</td>
+                <td>{m.haircuts.map((h) => `${h.token} ${h.eligible ? pct(h.haircutBps) : "not eligible"}`).join(", ") || "unchanged"}</td>
+                <td>
+                  {m.state === "agreed" ? <span className="ok">agreed on-chain ✓</span> : m.state}
+                  {m.state === "proposed" && !m.mine && (
+                    <>
+                      <button disabled={busy} onClick={() => run(() => api.decideAmendment(party, m.amendmentId, true))}>Consent</button>
+                      <button disabled={busy} onClick={() => run(() => api.decideAmendment(party, m.amendmentId, false))}>Refuse</button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
 
 function SubstitutionRequest(props: { party: LiveParty; other: LiveParty; busy: boolean; hasPledged: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, other, busy, hasPledged, run } = props;

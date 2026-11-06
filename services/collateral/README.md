@@ -104,7 +104,13 @@ node serves state for recent blocks only), `GET /interest`, `POST /interest` (bo
 `observedRatePct`; secured party: CDM `CollateralInterestStatement` from cdm-ext `Create_CollateralInterestStatement` on
 the pledgor's tUSD in escrow under the agreement's `CollateralInterestParameters` in `CdmInterest`, then `stateInterest`
 on-chain; the listing fetches each statement by its on-chain hash and recomputes it, `verified`),
-`POST /interest/{id}/pay` (pledgor, negative amount), and
+`POST /interest/{id}/pay` (pledgor, negative amount), `GET /agreement` (the IM CSA terms in force: CDM's sample
+2018 NY law IM CSA with BANK-B as Party1 and BANK-A as Party2 and an MTA of USD 500,000, folded in `CdmAgreement` over
+the pair's agreed amendments, each fetched by its on-chain hash and verified; with the contract's agreement hash and
+haircuts beside them, `verified`), `POST /amendments` (body `mtaUsd`, `haircuts` [{`token`, `eligible`,
+`haircutBps`}]; either party: CDM `CollateralAgreementAmendment` from cdm-ext `Create_CollateralAgreementAmendment`,
+then `proposeAmendment` on-chain), `POST /amendments/{id}/decision` (body `consent`; the other party verifies the
+amendment and that the on-chain haircut terms are its changes before consenting), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
