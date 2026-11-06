@@ -690,3 +690,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-adrtrace-jsonsource | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
 | node:investigation-adr-asr-traceability | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
 | noteworthy:nw-architecture-json-is-source | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
+| concept:concept-asr-onchain-feed-scope | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| concept:concept-asr-agreement-type-fidelity | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| edge:e-drv-feedscope-oracleprices | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
+| edge:e-drv-agreementfidelity-scenariogrid | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
