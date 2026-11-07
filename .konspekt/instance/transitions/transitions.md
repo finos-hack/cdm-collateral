@@ -831,3 +831,64 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-konspektadopt-checkpoint | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
 | node:task-konspekt-checkpoint-adoption | review | proposed | accepted | 2026-11-07T22:31:16Z | 22bd8364ab05ce0184ff96fe2006969da7db8dea | denisurusov |
 | edge:e-dec-konspektadopt-checkpoint | review | proposed | accepted | 2026-11-07T22:31:16Z | 22bd8364ab05ce0184ff96fe2006969da7db8dea | denisurusov |
+| waypoint:wp-adr-repo-gmra-scope | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-gmra-terms | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-gmra-terms | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-purchase-repurchase | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-purchase-repurchase | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-margin-maintenance | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-margin-maintenance | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-reprice | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-reprice | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-adjustment | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-adjustment | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-substitution | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-substitution | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-income | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-income | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-roll | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-roll | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-pair-off | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-pair-off | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-buy-sell-back | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| node:task-repo-buy-sell-back | status |  | open | 2026-11-07T22:35:17Z |  |  |
+| edge:e-mrk-repogmrascope-repogmra | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-drv-cdmdata-repogmrascope | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-drv-finality-repogmrascope | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-gmraterms | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-purchaserepurchase | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-marginmaintenance | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-reprice | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-adjustment | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-substitution | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-income | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-roll | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-pairoff | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| edge:e-dec-repogmra-buysellback | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| waypoint:wp-adr-repo-gmra-scope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| edge:e-mrk-repogmrascope-repogmra | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| edge:e-drv-cdmdata-repogmrascope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| edge:e-drv-finality-repogmrascope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| node:task-repo-gmra-terms | review | proposed | accepted | 2026-11-07T23:10:06Z |  | denisurusov |
+| edge:e-dec-repogmra-gmraterms | review | proposed | accepted | 2026-11-07T23:10:06Z |  | denisurusov |
+| node:task-repo-purchase-repurchase | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-purchaserepurchase | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-margin-maintenance | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-marginmaintenance | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-reprice | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-reprice | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-adjustment | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-adjustment | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-substitution | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-substitution | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-income | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-income | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-roll | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-roll | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-pair-off | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-pairoff | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-buy-sell-back | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| edge:e-dec-repogmra-buysellback | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-default-close-out | review |  | proposed | 2026-11-07T23:11:58Z |  |  |
+| node:task-repo-default-close-out | status |  | open | 2026-11-07T23:11:58Z |  |  |
+| edge:e-dec-repogmra-defaultcloseout | review |  | proposed | 2026-11-07T23:11:58Z |  |  |

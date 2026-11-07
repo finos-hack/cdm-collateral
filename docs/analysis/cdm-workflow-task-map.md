@@ -70,14 +70,26 @@ reporting (G36).
 ## C. Other agreement families — after the CSA cycle
 
 Rows are in build order (`nw-agreement-family-order`): repo and securities lending (P2) before triparty
-and CCP (P3). The workflows each family covers in the analysis are listed in the Workflow column.
+and CCP (P3). Repo has one row per workflow, in the build order of `wp-adr-repo-gmra-scope` (proposed, 2026-11-07),
+each with its own task under `task-repo-gmra-workflows`. The other families list the workflows the analysis covers in
+the Workflow column until their scope is decided.
 
 | # | Workflow | CDM status | `cdm-ext` | Prototype | Live spec | Task |
 |---|---|---|---|---|---|---|
-| 1 | Repo (GMRA): terms, margin maintenance, reprice, adjustment, roll, repurchase, pair-off, buy/sell-back, substitution, income | G20 terms, G12 net exposure and inverted margin ratio, G33 buy/sell-back, G19 amendment | none yet | none yet | none | `task-repo-gmra-workflows` |
-| 2 | Securities lending (GMSLA): terms, marking, loan return, recall, substitution, rebate and fees | G21 terms, G12 marking, G18 recall | none yet | none yet | none | `task-securities-lending-gmsla-workflows` |
-| 3 | Triparty: agent valuation, allocation and settlement | G22 | none yet | none yet | none | `task-triparty-workflows` |
-| 4 | CCP: margin call, default management, porting | G23 | none yet | none yet | none | `task-ccp-workflows` |
+| 1 | Repo (GMRA): agreement terms and their amendment | empty `GlobalMasterRepoAgreement` (R1, score 1: G20); no GMRA terms amendment (R2, score 0: G19) | none yet | none yet | none | `task-repo-gmra-terms` |
+| 2 | Repo (GMRA): purchase and repurchase settled delivery versus payment | Purchase Price and Repurchase Price computed (R6, score 3: no sample exercises it); repurchase transfer and term events usable (R10 score 4, R13 score 5) | none yet | none yet | none | `task-repo-purchase-repurchase` |
+| 3 | Repo (GMRA): margin maintenance: Net Exposure and margin transfer | no Transaction or Net Exposure (R6, R7, R21: G12); margin ratio inverted (defect D2) | none yet | none yet | none | `task-repo-margin-maintenance` |
+| 4 | Repo (GMRA): repricing | usable as is (R8, score 5); the new price is an input and no transfer is generated | none yet | none yet | none | `task-repo-reprice` |
+| 5 | Repo (GMRA): adjustment | usable as is (R8, score 5); the new quantity is an input and no transfer is generated | none yet | none yet | none | `task-repo-adjustment` |
+| 6 | Repo (GMRA): substitution of purchased securities | usable as is (R11, score 5) | none yet | none yet | none | `task-repo-substitution` |
+| 7 | Repo (GMRA): interest and manufactured income | repo interest, rate change and interim payment usable as is (R12, score 5); GMRA paragraph 5 income on the purchased securities not covered by a matrix row | none yet | none yet | none | `task-repo-income` |
+| 8 | Repo (GMRA): roll | usable as is (R13, score 5) | none yet | none yet | none | `task-repo-roll` |
+| 9 | Repo (GMRA): pair-off | usable as is (R13, score 5); a trade event, not netting of collateral movements (R22) | none yet | none yet | none | `task-repo-pair-off` |
+| 10 | Repo (GMRA): buy/sell-back | qualification only (R14, score 4: G33) | none yet | none yet | none | `task-repo-buy-sell-back` |
+| 11 | Repo (GMRA): default and close-out (paragraph 10) | absent (R20 default and R23 close-out, score 0) | none yet | none yet | none | `task-repo-default-close-out` |
+| 12 | Securities lending (GMSLA): terms, marking, loan return, recall, substitution, rebate and fees | G21 terms, G12 marking, G18 recall | none yet | none yet | none | `task-securities-lending-gmsla-workflows` |
+| 13 | Triparty: agent valuation, allocation and settlement | G22 | none yet | none yet | none | `task-triparty-workflows` |
+| 14 | CCP: margin call, default management, porting | G23 | none yet | none yet | none | `task-ccp-workflows` |
 
 ## Cross-cutting
 

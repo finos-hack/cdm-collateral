@@ -246,3 +246,17 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smetwowayim | decomposes | node:goal-cdm-development | node:task-sme-two-way-im-rules |  | accepted |
 | e-lnk-twowayim-smetwowayim | links | node:task-two-way-initial-margin | node:task-sme-two-way-im-rules |  | accepted |
 | e-dec-konspektadopt-checkpoint | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-checkpoint-adoption |  | accepted |
+| e-mrk-repogmrascope-repogmra | marks | waypoint:wp-adr-repo-gmra-scope | node:task-repo-gmra-workflows |  | accepted |
+| e-drv-cdmdata-repogmrascope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-scope |  | accepted |
+| e-drv-finality-repogmrascope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-scope |  | accepted |
+| e-dec-repogmra-gmraterms | decomposes | node:task-repo-gmra-workflows | node:task-repo-gmra-terms |  | accepted |
+| e-dec-repogmra-purchaserepurchase | decomposes | node:task-repo-gmra-workflows | node:task-repo-purchase-repurchase |  | accepted |
+| e-dec-repogmra-marginmaintenance | decomposes | node:task-repo-gmra-workflows | node:task-repo-margin-maintenance |  | accepted |
+| e-dec-repogmra-reprice | decomposes | node:task-repo-gmra-workflows | node:task-repo-reprice |  | accepted |
+| e-dec-repogmra-adjustment | decomposes | node:task-repo-gmra-workflows | node:task-repo-adjustment |  | accepted |
+| e-dec-repogmra-substitution | decomposes | node:task-repo-gmra-workflows | node:task-repo-substitution |  | accepted |
+| e-dec-repogmra-income | decomposes | node:task-repo-gmra-workflows | node:task-repo-income |  | accepted |
+| e-dec-repogmra-roll | decomposes | node:task-repo-gmra-workflows | node:task-repo-roll |  | accepted |
+| e-dec-repogmra-pairoff | decomposes | node:task-repo-gmra-workflows | node:task-repo-pair-off |  | accepted |
+| e-dec-repogmra-buysellback | decomposes | node:task-repo-gmra-workflows | node:task-repo-buy-sell-back |  | accepted |
+| e-dec-repogmra-defaultcloseout | decomposes | node:task-repo-gmra-workflows | node:task-repo-default-close-out |  | proposed |
