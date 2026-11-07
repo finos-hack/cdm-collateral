@@ -48,6 +48,16 @@ public final class App {
     private final Gateway peer; // the counterparty's collateral service (flow-reconciliation: trade snapshots)
     // Folds a call after each of its lifecycle steps, off the relay thread, so the stored MarginCallState that the ledger
     // reconciliation compares with the contract is current without delaying the relay to the console.
+    /** Parallel gateway reads within one request (task-live-read-latency): independent per-item lookups, no store access. */
+    private final java.util.concurrent.ExecutorService reads = java.util.concurrent.Executors.newFixedThreadPool(8, r -> {
+        Thread t = new Thread(r, "gateway-reads");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /** Verified interest statement summaries by CDM hash and on-chain amount: a statement is immutable once anchored. */
+    private final Map<String, Map<String, Object>> interestVerified = new ConcurrentHashMap<>();
+
     private final java.util.concurrent.ExecutorService folds = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "step-fold");
         t.setDaemon(true);
@@ -154,10 +164,10 @@ public final class App {
                     resp.body().forEach(line -> {
                         if (line.startsWith("data:")) {
                             String data = line.substring(5).trim();
+                            // Record first (cheap), relay at once, and fold afterwards on the fold executor; a fold that
+                            // changes what the console shows signals it again when done (task-live-read-latency).
                             onLedgerEvent(data);
-                            for (SseClient c : sseClients) {
-                                try { c.sendEvent("step", data); } catch (Exception ignored) { }
-                            }
+                            signalConsoles(data);
                         }
                     });
                 } catch (Exception e) {
@@ -170,10 +180,17 @@ public final class App {
         t.start();
     }
 
+    /** Tell every console to refresh (an SSE "step" signal; the console reads the state it needs). */
+    private void signalConsoles(String data) {
+        for (SseClient c : sseClients) {
+            try { c.sendEvent("step", data); } catch (Exception ignored) { }
+        }
+    }
+
     /**
-     * Act on one pushed chain event before relaying it. Returned, Enforced and DefaultPublished are recorded in this
+     * Act on one pushed chain event before relaying it; slow folds are queued, not run here. Returned, Enforced and DefaultPublished are recorded in this
      * party's store (flow-return transition 14, flow-default-enforcement transition 8: the pledgor's service records the
-     * default and each service records the enforcement). A SettleCall step is folded at once (retried until the fold includes it), so each service holds the
+     * default and each service records the enforcement). A SettleCall step is folded on the fold executor right after the relay (retried until the fold includes it), so each service holds the
      * settled MarginCallState without waiting for a console to ask. A failure here never stops the relay.
      */
     private void onLedgerEvent(String data) {
@@ -198,16 +215,15 @@ public final class App {
                     String id = e.get("substitutionId").asText();
                     if (substitutionInvolvesMe(id)) {
                         store.recordEvent(event, id, party, block, logIndex, data);
-                        if (event.equals("SubstitutionSettled")) substitutionStateFor(id);
+                        if (event.equals("SubstitutionSettled")) folds.submit(() -> { substitutionStateFor(id); signalConsoles(data); });
                     }
                 } else if (event.equals("DefaultPublished") || involvesMe(callId)) {
                     store.recordEvent(event, callId, party, block, logIndex, data);
                 }
             } else if ("SettleCall".equals(e.path("step").asText()) && involvesMe(e.path("callId").asText(null))) {
                 String id = e.get("callId").asText();
-                Map<String, Object> r = cdmStateFor(id);
-                // The pushed step can precede the gateway's log scan; then the fold above is the cached pre-settle state.
-                if (!(r.get("stepRecord") instanceof List<?> l && l.contains("SettleCall"))) folds.submit(() -> foldIncluding(id, "SettleCall"));
+                // Retried until the fold includes the step: the pushed step can precede the gateway's log index.
+                folds.submit(() -> { foldIncluding(id, "SettleCall"); signalConsoles(data); });
             } else if (e.has("step") && involvesMe(e.path("callId").asText(null))) {
                 String id = e.get("callId").asText();
                 String step = e.get("step").asText();
@@ -602,6 +618,15 @@ public final class App {
 
     private void state(Context ctx) {
         JsonNode calls = gw.getQuery("/party-calls", Map.of("party", cfg.myAddress));
+        // Every proposal's state and assets, fetched in parallel (two gateway reads each).
+        Map<String, java.util.concurrent.Future<JsonNode[]>> proposalReads = new HashMap<>();
+        for (JsonNode entry : calls) {
+            String id = entry.get("callId").asText();
+            for (long pid = 0; pid < entry.get("call").get("proposalCount").asLong(); pid++) {
+                String path = "/calls/" + id + "/proposals/" + pid;
+                proposalReads.put(path, reads.submit(() -> new JsonNode[]{gw.get(path + "/state"), gw.get(path + "/assets")}));
+            }
+        }
         String counterparty = cfg.partyId.equals("B") ? "A" : "B";
         List<Map<String, Object>> callList = new ArrayList<>();
         for (JsonNode entry : calls) {
@@ -627,8 +652,14 @@ public final class App {
             long proposalCount = c.get("proposalCount").asLong();
             List<Map<String, Object>> proposals = new ArrayList<>();
             for (long pid = 0; pid < proposalCount; pid++) {
-                int pstate = gw.get("/calls/" + callId + "/proposals/" + pid + "/state").asInt();
-                JsonNode assets = gw.get("/calls/" + callId + "/proposals/" + pid + "/assets");
+                JsonNode[] read;
+                try {
+                    read = proposalReads.get("/calls/" + callId + "/proposals/" + pid).get();
+                } catch (Exception e) {
+                    throw new RuntimeException("proposal read failed: " + e.getMessage(), e);
+                }
+                int pstate = read[0].asInt();
+                JsonNode assets = read[1];
                 List<Map<String, Object>> assetList = new ArrayList<>();
                 for (JsonNode a : assets) {
                     String sym = symbolByAddress.getOrDefault(a.get("token").asText().toLowerCase(), a.get("token").asText());
@@ -1483,18 +1514,27 @@ public final class App {
             m.put("state", INTEREST_STATE[r.get("state").asInt()]);
             m.put("cdmHash", hash);
             m.put("block", r.get("block").asText());
+            Map<String, Object> known = interestVerified.get(hash + "/" + r.get("amount").asText());
+            if (known != null) {
+                m.putAll(known);
+                out.add(m);
+                continue;
+            }
+            Map<String, Object> checked = new LinkedHashMap<>();
             String doc = payloads.get(hash);
             try {
                 if (doc == null) throw new IllegalStateException("statement not readable in the payload store");
                 if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("payload hash mismatch");
                 var st = CdmInterest.verify(doc);
-                m.putAll(interestSummary(st));
-                m.put("verified", String.valueOf(CdmInterest.usd(st.getTransferAmount())).equals(r.get("amount").asText()));
-                if (!(Boolean) m.get("verified")) m.put("error", "the on-chain amount differs from the statement's transfer amount");
+                checked.putAll(interestSummary(st));
+                checked.put("verified", String.valueOf(CdmInterest.usd(st.getTransferAmount())).equals(r.get("amount").asText()));
+                if (!(Boolean) checked.get("verified")) checked.put("error", "the on-chain amount differs from the statement's transfer amount");
+                interestVerified.put(hash + "/" + r.get("amount").asText(), checked); // a fetch failure is retried next time
             } catch (RuntimeException e) {
-                m.put("verified", false);
-                m.put("error", String.valueOf(e.getMessage()));
+                checked.put("verified", false);
+                checked.put("error", String.valueOf(e.getMessage()));
             }
+            m.putAll(checked);
             out.add(m);
         }
         ctx.json(out);

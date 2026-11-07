@@ -7,7 +7,8 @@ import { LiveConsole } from "./LiveConsole";
 import type { LiveCall, LiveParty, LiveRevaluation, LiveState } from "../domain/liveApi";
 
 class StubEventSource {
-  addEventListener() {}
+  static listeners: (() => void)[] = [];
+  addEventListener(_type: string, fn: () => void) { StubEventSource.listeners.push(fn); }
   removeEventListener() {}
   close() {}
 }
@@ -403,5 +404,23 @@ describe("flow-reconciliation", () => {
     const row2 = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
     await within(row2).findByRole("button", { name: "Dispute" });
     expect(within(row2).queryByRole("button", { name: "Dispute citing reconciliation" })).toBeNull();
+  });
+});
+
+describe("task-live-read-latency", () => {
+  it("merges a burst of step events into one more refresh, and the pledgor skips the revaluation panel", async () => {
+    StubEventSource.listeners = [];
+    serve("A", { calls: [], balances: balances("0") });
+    await screen.findByRole("heading", { name: "Call for a return" });
+    await vi.waitFor(() => expect((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0));
+    const gets = () => (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]).replace(/^https?:\/\/[^/]+\/api\/v1/, ""));
+    await vi.waitFor(() => expect(gets().filter((g) => g === "/agreement").length).toBe(1)); // the first refresh is done
+    const before = gets().length;
+    for (let i = 0; i < 5; i++) for (const fn of StubEventSource.listeners) fn();
+    await vi.waitFor(() => expect(gets().filter((g) => g === "/agreement").length).toBe(3));
+    await new Promise((r) => setTimeout(r, 50));
+    const burst = gets().slice(before);
+    expect(burst.filter((g) => g === "/state").length).toBe(2); // one pass in flight plus one merged pass, not five
+    expect(burst).not.toContain("/revaluation");
   });
 });

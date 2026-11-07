@@ -28,6 +28,10 @@ The gateway sends its transactions one at a time and tracks the account's next n
 every 250 ms (`GATEWAY_RECEIPT_POLL_MS`; viem's default is 4 s, twice the block period), and its log scans read the
 chain head uncached, so a read after a write includes it (`task-gateway-receipt-poll`).
 
+Reads go through an in-memory log index per contract, extended on each read by the blocks mined since the last one, so
+a read does not rescan the chain from the deploy block; mined receipts are cached, and concurrent reads reach Besu as
+JSON-RPC batches (`task-live-read-latency`). The index lives in the gateway process and is rebuilt on restart.
+
 ## HTTP API (`/ledger/v1`)
 
 | Method | Path | Purpose |
