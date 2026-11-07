@@ -784,3 +784,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
 | edge:e-drv-callstate-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
 | edge:e-drv-offchaindispute-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| node:task-gateway-receipt-poll | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-gateway-receipt-poll | status |  | open | 2026-11-07T18:54:12Z |  |  |
+| node:task-live-read-latency | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-live-read-latency | status |  | open | 2026-11-07T18:54:12Z |  |  |
+| node:task-test-chain-block-period | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-test-chain-block-period | status |  | open | 2026-11-07T18:54:12Z |  |  |
+| edge:e-dec-specduration-receiptpoll | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| edge:e-dec-specduration-readlatency | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| edge:e-dec-specduration-blockperiod | review |  | proposed | 2026-11-07T18:54:12Z |  |  |

@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:27:28Z
   confidence: 0.7
 createdAt: 2026-11-07T18:27:28Z
-updatedAt: 2026-11-07T18:51:14Z
+updatedAt: 2026-11-07T18:54:12Z
 ```
 # Task: find out why each live spec takes 30 seconds to a minute
 
@@ -31,7 +31,7 @@ update), find where the time goes, and propose changes (for example a shorter bl
 fewer sequential transactions per flow, or waiting on events instead of polling). Record the findings here before
 changing anything.
 
-## Findings, 2026-11-07 (proposed; not yet reviewed)
+## Findings, 2026-11-07 (reviewed by the project owner, source `bd141dbb1d4a0af39adbee338b1c51f72f79914b`)
 
 Three specs, each run once with Playwright `--trace on` plus a log of Besu blocks and SSE events. No code changed. On
 this run, IM pledge took 1.1 min, substitution 2.2 min and revaluation top-up 1.5 min, slower than the baseline
