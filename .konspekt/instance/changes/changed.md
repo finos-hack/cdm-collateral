@@ -864,3 +864,4 @@ excluded.
 | task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | contracts/scripts/test-balances.json | 2026-11-07T21:08:51Z |
 | task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | contracts/scripts/top-up-test-balances.mjs | 2026-11-07T21:08:51Z |
 | task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | scripts/live-e2e.sh | 2026-11-07T21:08:51Z |
+| task-csa-workflow-extensions | dfefd4c904004a3913c273ca3021a1bcd2c60228 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T21:18:31Z |
