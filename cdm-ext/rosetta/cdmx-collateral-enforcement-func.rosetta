@@ -121,3 +121,93 @@ func Qualify_CollateralEnforced: <"The secured party enforced against the segreg
         enforcement -> transfer exists
             and enforcement -> instruction -> notice -> defaultingParty
                 = enforcement -> before -> collateralBalance only-element -> payerReceiver -> payerPartyReference
+
+// Reclaim (two-way initial margin, wp-adr-two-way-im): when the secured party is the Defaulting Party, the pledgor
+// takes its segregated collateral back from the custodian or control contract. The prototype returns the whole
+// portfolio in one step; whether the custodian may hold back part of it is a question for the SME
+// (task-sme-two-way-im-rules).
+
+func Create_CollateralReclaim: <"The pledgor takes back its segregated collateral after an Event of Default with respect to the secured party: every position leaves the portfolio, the balance goes to zero, and each position moves back to the pledgor.">
+    inputs:
+        portfolio CollateralPortfolio (1..1) <"The collateral held, as ApplyCollateralEvent keeps it.">
+        eventIdentifier string (1..1)
+        eventDate date (1..1)
+        timestamp zonedDateTime (1..1)
+        instruction ReclaimInstruction (1..1)
+    output:
+        reclaim CollateralReclaim (1..1)
+
+    alias balance: portfolio -> collateralBalance only-element
+    alias pledgor: balance -> payerReceiver -> payerPartyReference
+    alias securedParty: balance -> payerReceiver -> receiverPartyReference
+    alias held: portfolio -> collateralPosition
+    alias returned: instruction -> reclaimedCollateral
+    alias assets: held extract item -> asset then distinct
+
+    // Conditions spell out the paths: pre-conditions are checked before aliases are assigned.
+    condition OneBalance: <"The portfolio keeps one balance, the settled post-haircut value held.">
+        portfolio -> collateralBalance count = 1
+
+    condition SecuredPartyDefaulted: <"The Defaulting Party is the secured party of the portfolio.">
+        instruction -> notice -> defaultingParty
+            = portfolio -> collateralBalance only-element -> payerReceiver -> receiverPartyReference
+
+    condition PledgorReclaims: <"Only the pledgor of the portfolio reclaims.">
+        instruction -> notice -> nonDefaultingParty
+            = portfolio -> collateralBalance only-element -> payerReceiver -> payerPartyReference
+
+    condition WholePortfolio: <"Every position held is returned in full, and nothing that is not held.">
+        (portfolio -> collateralPosition
+            extract item -> asset
+            then distinct
+            then filter a [ HeldQuantity(portfolio -> collateralPosition, a) <> HeldQuantity(instruction -> reclaimedCollateral, a) ]
+            then count) = 0
+            and (instruction -> reclaimedCollateral
+                extract item -> asset
+                then distinct
+                then filter a [ HeldQuantity(portfolio -> collateralPosition, a) <> HeldQuantity(instruction -> reclaimedCollateral, a) ]
+                then count) = 0
+
+    condition ValueIsTheBalance: <"The value returned is the balance, in its currency.">
+        instruction -> reclaimedValue -> unit -> currency
+                = portfolio -> collateralBalance only-element -> amountBaseCurrency -> unit -> currency
+            and instruction -> reclaimedValue -> value
+                = portfolio -> collateralBalance only-element -> amountBaseCurrency -> value
+
+    set reclaim:
+        CollateralReclaim {
+            eventIdentifier: eventIdentifier,
+            eventDate: eventDate,
+            timestamp: timestamp,
+            instruction: instruction,
+            before: portfolio,
+            after: CollateralPortfolio {
+                portfolioIdentifier: portfolio -> portfolioIdentifier,
+                collateralPosition: assets extract a [ NetCollateralPosition(a, held, empty, returned) ],
+                collateralBalance: CollateralBalance {
+                    collateralBalanceStatus: balance -> collateralBalanceStatus,
+                    haircutIndicator: balance -> haircutIndicator,
+                    amountBaseCurrency: Money {
+                        value: 0,
+                        unit: balance -> amountBaseCurrency -> unit,
+                        ...
+                    },
+                    payerReceiver: balance -> payerReceiver
+                },
+                legalAgreement: portfolio -> legalAgreement
+            },
+            transfer: returned extract Create_CollateralTransfer(item, securedParty, pledgor, eventDate),
+            ...
+        }
+    set reclaim -> eventQualifier:
+        if Qualify_CollateralReclaimed(reclaim) then "CollateralReclaimed"
+
+func Qualify_CollateralReclaimed: <"The pledgor took back its segregated collateral: positions moved from the secured party's control back to the pledgor after an Event of Default with respect to the secured party.">
+    inputs:
+        reclaim CollateralReclaim (1..1)
+    output:
+        is_event boolean (1..1)
+    set is_event:
+        reclaim -> transfer exists
+            and reclaim -> instruction -> notice -> defaultingParty
+                = reclaim -> before -> collateralBalance only-element -> payerReceiver -> receiverPartyReference

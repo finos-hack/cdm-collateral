@@ -15,9 +15,9 @@ enum EventOfDefaultEnum: <"The Events of Default of the ISDA 2002 Master Agreeme
     Bankruptcy <"Section 5(a)(vii).">
     MergerWithoutAssumption <"Section 5(a)(viii).">
 
-type DefaultNotice: <"The Non-defaulting Party's notice of an Event of Default with respect to the pledgor, delivered as ISDA 2002 MA Section 12 requires (off-chain in the prototype), and the Early Termination Date it designates (Section 6(a)).">
-    defaultingParty Party (1..1) <"The pledgor.">
-    nonDefaultingParty Party (1..1) <"The secured party.">
+type DefaultNotice: <"The Non-defaulting Party's notice of an Event of Default with respect to the other party, delivered as ISDA 2002 MA Section 12 requires (off-chain in the prototype), and the Early Termination Date it designates (Section 6(a)).">
+    defaultingParty Party (1..1) <"The pledgor for an enforcement; the secured party for a reclaim.">
+    nonDefaultingParty Party (1..1) <"The secured party for an enforcement; the pledgor for a reclaim.">
     eventOfDefault EventOfDefaultEnum (1..1)
     noticeDate date (1..1) <"When the notice was effective.">
     earlyTerminationDate date (0..1) <"The Early Termination Date designated; absent if none has been designated yet.">
@@ -48,3 +48,19 @@ type CollateralEnforcement: <"One enforcement as an event: the instruction, the 
     after CollateralPortfolio (1..1)
     transfer TransferState (1..*) <"One per position taken, pledgor to secured party.">
     eventQualifier string (0..1) <"CollateralEnforced (Qualify_CollateralEnforced).">
+
+type ReclaimInstruction: <"The pledgor's instruction to take back its segregated collateral after an Event of Default with respect to the secured party (two-way initial margin, wp-adr-two-way-im). The prototype returns the whole portfolio; the clause and the conditions are to be confirmed by a business SME (task-sme-two-way-im-rules).">
+    notice DefaultNotice (1..1) <"The secured party is the Defaulting Party, the pledgor the Non-defaulting Party.">
+    reclaimedCollateral CollateralPosition (1..*) <"The positions returned: all those held.">
+    reclaimedValue Money (1..1) <"Value after haircuts of the positions returned, removed from the portfolio balance.">
+
+type CollateralReclaim: <"One reclaim as an event: the instruction, the portfolio before and after, and the transfers of the positions returned to the pledgor.">
+    [rootType]
+    eventIdentifier string (1..1)
+    eventDate date (1..1) <"The reclaim date, which is also the transfers' settlement date.">
+    timestamp zonedDateTime (1..1) <"When the reclaim took effect, for example the ledger block time.">
+    instruction ReclaimInstruction (1..1)
+    before CollateralPortfolio (1..1)
+    after CollateralPortfolio (1..1)
+    transfer TransferState (1..*) <"One per position returned, secured party to pledgor.">
+    eventQualifier string (0..1) <"CollateralReclaimed (Qualify_CollateralReclaimed).">
