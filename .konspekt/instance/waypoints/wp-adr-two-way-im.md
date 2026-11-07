@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T21:24:29Z
   confidence: 0.7
 createdAt: 2026-11-07T21:24:29Z
-updatedAt: 2026-11-07T21:24:29Z
+updatedAt: 2026-11-07T21:54:28Z
 ```
 # ADR: two-way initial margin runs as two legs, each identified by its calls; a pledgor reclaims its leg when its secured party defaults
 
@@ -30,11 +30,12 @@ and calls carry `from` and `to` (within [[wp-adr-im-segregation]]).
 - **Flows per leg.** Pledge, return, revaluation and top-up, substitution, interest on cash, close-out, allocation and
   the escrow part of the ledger reconciliation, which produces one escrow record per leg. VM, settlement netting and
   portfolio reconciliation stay as they are.
-- **Agreement.** One IM CSA for the pair. Its counterparty roles are fixed by identity: Party1 is BANK-B and Party2 is
-  BANK-A, as the baseline builds them today. A leg's pledgor is looked up by its role. For example, the CSA role of the
-  pledgor in a substitution is Party2 when BANK-A pledges and Party1 when BANK-B pledges. The current fixed
-  `pledgorRole Party1` for BANK-A does not match the agreement. Amendments keep the contract's terms per
-  (pledgor, secured party), so an amendment applies to the leg it names.
+- **Agreement.** The contract keeps agreement terms and amendments per (pledgor, secured party), so each leg has its
+  own view of the pair's IM CSA. That view is the baseline CDM sample with the leg's secured party as Party1 and its
+  pledgor as Party2, the same mapping the one-direction baseline used. An amendment applies to the leg it names. The
+  pledgor's role in a substitution is therefore Party2 on either leg. The fixed `pledgorRole Party1` for BANK-A did not
+  match the agreement and is corrected. Whether one CSA should state the elections per party instead is a question for
+  the SME.
 - **Default recovery (contract change).** `CollateralControl.reclaim(reclaimId, securedParty, cdmHash)` is called
   with the pledgor's key and returns the pledgor's whole escrow on that leg. It requires the oracle feed to record the
   secured party as defaulted, and it reverts when nothing is pledged. It anchors the hash of the CDM record of the
@@ -46,15 +47,18 @@ and calls carry `from` and `to` (within [[wp-adr-im-segregation]]).
   receiver, so they need no change for direction. A reclaim is recorded as a CDM event that moves the leg's positions
   from the secured party back to the pledgor. It follows `cdmx.collateral.enforcement` with the parties reversed and
   the condition that the secured party is the Defaulting Party.
-- **Service and console.** Each party's collateral service serves both legs. The fixed `ROLE` setting goes away. The
-  state endpoint returns the calls and escrow of each leg. The console shows the two legs side by side, each with the
-  panels for the party's role on it.
+- **Service and console.** Each party's collateral service serves both legs, and the fixed `ROLE` setting goes away.
+  Steps that start from a call take the leg from the call. Revaluation and the agreement view take the leg's pledgor
+  as a parameter, defaulting to the leg A pledges on. Close-out and interest act on the leg the counterparty pledges
+  on, and substitution and reclaim on the leg the party pledges on. The state endpoint returns each call's leg and
+  each leg's escrow, and the ledger reconciliation returns one escrow record per leg. The console has a leg selector
+  that starts on the leg A pledges on and gives the role panels of the party's role on the selected leg.
 - **Demo.** A new live spec: A and B each post a different IM amount on the same day, A defaults, B enforces against
   A's leg and reclaims its own. All 15 existing specs still pass. The work runs on a new contract set.
 
 **Consequences.**
-- One new contract function and event, and a new contract set. `CollateralControl` is 20,258 bytes deployed against
-  the 24,576-byte limit, so the function fits.
+- One new contract function and event, and a new contract set. `CollateralControl` grew from 20,258 to 21,007 bytes
+  deployed, under the 24,576-byte limit.
 - The fixed-role code paths in the service (`cfg.role`, `pledgorAndSecuredParty`, `Cdm.callBase`,
   `CdmSubstitution.PLEDGOR_ROLE`) and in the console (`isSecured`) become per leg.
 - Substitution records name the pledgor's real CSA role, so BANK-A's substitutions state Party2 from now on.

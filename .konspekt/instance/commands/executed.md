@@ -355,3 +355,11 @@ at execution time.
 | task-live-read-latency | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
 | task-live-test-balances | 31792aa76ba75c82086975961dc00cf03f6043a0 |
 | task-live-test-balances | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
+| task-two-way-initial-margin | 952c7d96fd9009da2cba5c441b403f35c960ab64 |
+| task-two-way-initial-margin | 6ee86899ff11c6dbff84d4abe9b1b470fe7ad7d2 |
+| task-two-way-initial-margin | fdf04c99764eee971c76dc9c9a0154913b810f83 |
+| task-two-way-initial-margin | 382fce49d26268fc23a9506bdc48b972f5c70236 |
+| task-two-way-initial-margin | 301d9fe74738c520b7877b0a3a8573082f113d43 |
+| task-two-way-initial-margin | 7740c4a53cfec0b0613abef152462d5f29c978a4 |
+| task-two-way-initial-margin | c4f95fb4e2e3bddcdf37890a3f8d4a5b72bf4e39 |
+| task-two-way-initial-margin | 32ef607631cb1a34a378454d6ed82922a444988e |
