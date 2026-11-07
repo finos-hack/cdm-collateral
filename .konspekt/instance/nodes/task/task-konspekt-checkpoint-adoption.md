@@ -3,7 +3,7 @@ id: task-konspekt-checkpoint-adoption
 type: task
 title: Re-seed the konspekt kit from the local standard to adopt checkpoint and resume
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: konspekt-checkpoint
   sourceRef: 230f9e855232d941fc6e7cbd34dfdf92a93163da
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:13:30Z
   confidence: 0.8
 createdAt: 2026-11-07T22:13:30Z
-updatedAt: 2026-11-07T22:13:30Z
+updatedAt: 2026-11-07T22:31:16Z
 ```
 # Task: re-seed the konspekt kit from the local standard to adopt checkpoint and resume
 
@@ -26,3 +26,5 @@ resume feature (konspekt PR #105, `task-session-checkpoint` there).
 `--check` does not cover them: the "Checkpoint and resume" section of `.konspekt/OPERATING.md`, the checkpoint bullet
 of the `AGENTS.md` stanza, and an empty `instance/checkpoints/checkpoints.md`. After the update all 26 installed files
 match their templates and the instance validates.
+
+**Accepted 2026-11-07** under [[goal-test-konspekt-adoption]] by the project owner (source `22bd8364ab05ce0184ff96fe2006969da7db8dea`: "2. accept under goal-test-konspekt-adoption").

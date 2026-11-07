@@ -829,3 +829,5 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-checkpoint-adoption | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
 | node:task-konspekt-checkpoint-adoption | status |  | open | 2026-11-07T22:13:30Z |  |  |
 | edge:e-dec-konspektadopt-checkpoint | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
+| node:task-konspekt-checkpoint-adoption | review | proposed | accepted | 2026-11-07T22:31:16Z | 22bd8364ab05ce0184ff96fe2006969da7db8dea | denisurusov |
+| edge:e-dec-konspektadopt-checkpoint | review | proposed | accepted | 2026-11-07T22:31:16Z | 22bd8364ab05ce0184ff96fe2006969da7db8dea | denisurusov |
