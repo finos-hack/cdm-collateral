@@ -802,3 +802,6 @@ excluded.
 | task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | services/collateral/src/main/java/collateral/App.java | 2026-11-07T16:42:20Z |
 | task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | services/collateral/src/main/java/collateral/CdmAllocation.java | 2026-11-07T16:42:20Z |
 | task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | services/collateral/src/test/java/collateral/CdmAllocationTest.java | 2026-11-07T16:42:20Z |
+| task-csa-reconciliation | b39ad55a7eba419b776073f61eeee31a56eb27d2 | docs/analysis/business-case.md | 2026-11-07T18:38:38Z |
+| task-csa-reconciliation | b39ad55a7eba419b776073f61eeee31a56eb27d2 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T18:38:38Z |
+| task-csa-reconciliation | b39ad55a7eba419b776073f61eeee31a56eb27d2 | docs/cdm-development/gap-register.md | 2026-11-07T18:38:38Z |
