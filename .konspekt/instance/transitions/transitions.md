@@ -745,3 +745,4 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-allocation-ranking | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
 | edge:e-dec-cdmdev-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
 | edge:e-lnk-alloc-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| node:task-csa-allocation | status | open | resolved | 2026-11-07T18:15:45Z | b94ecf05be6e7d479e2ec32ca6f413bdcfb74679 | denisurusov |

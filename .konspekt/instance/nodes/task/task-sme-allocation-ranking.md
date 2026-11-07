@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T13:52:51Z
   confidence: 0.7
 createdAt: 2026-11-07T13:52:51Z
-updatedAt: 2026-11-07T13:52:51Z
+updatedAt: 2026-11-07T18:15:45Z
 ```
 # Task: confirm the ranking and rules for collateral allocation
 
@@ -28,3 +28,6 @@ Under [[goal-cdm-development]], in the SME bucket with [[task-sme-call-cancellat
    schedule's limits against the collateral already held?
 4. **Calls covered.** Suggestions are offered for new IM and VM calls only. Does allocation apply to substitution or to
    returns chosen by the secured party?
+5. **Cash in the default order.** The registry order puts tUSD (cash) last, so a large call uses cash only after tUST
+   and tMMF run out. Should cash come first, last, or be excluded from suggestions unless the pledgor ranks it?
+   (Added on the project owner's instruction, 2026-11-07, source `b94ecf05be6e7d479e2ec32ca6f413bdcfb74679`.)
