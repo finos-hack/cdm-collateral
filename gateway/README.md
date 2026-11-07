@@ -24,6 +24,10 @@ NODE=bank-b PORT=8202 npm run serve
 
 `NODE` is a Besu node id (`bank-a`, `bank-b`, `mkt`, `bank-c`); the key is read from `besu/<NODE>/data/key`.
 
+The gateway sends its transactions one at a time and tracks the account's next nonce itself. It polls for each receipt
+every 250 ms (`GATEWAY_RECEIPT_POLL_MS`; viem's default is 4 s, twice the block period), and its log scans read the
+chain head uncached, so a read after a write includes it (`task-gateway-receipt-poll`).
+
 ## HTTP API (`/ledger/v1`)
 
 | Method | Path | Purpose |

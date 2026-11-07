@@ -410,7 +410,10 @@ export class BesuAdapter implements LedgerAdapter {
     });
     const acct = privateKeyToAccount(loadNodeKey(node));
     this.account = getAddress(acct.address);
-    this.pub = createPublicClient({ chain, transport: http(rpc) });
+    // viem polls for a transaction receipt every 4 s by default, twice the 2 s block period, so each send() waited about
+    // 4 s (task-gateway-receipt-poll). Only the receipt wait polls this client; the live events come over WebSocket.
+    const pollingInterval = Number(process.env.GATEWAY_RECEIPT_POLL_MS ?? 250);
+    this.pub = createPublicClient({ chain, transport: http(rpc), pollingInterval });
     this.wallet = createWalletClient({ account: acct, chain, transport: http(rpc) });
     // Besu exposes a WebSocket JSON-RPC on the http port + 1 (besu/docker-compose.yml --rpc-ws-enabled); the live
     // event subscription (watchSteps -> eth_subscribe) runs over it, the historical scan stays on http.
@@ -426,17 +429,42 @@ export class BesuAdapter implements LedgerAdapter {
     return this.pub.getBlockNumber({ cacheTime: 0 });
   }
 
+  // One key per gateway: sends run one at a time, and the gateway tracks the next nonce itself. Right after a receipt
+  // (now polled every 250 ms) the node's pending nonce can still be the used one, and viem reused it ("Nonce provided
+  // for the transaction is lower than the current nonce", flow-agreement-amendment, task-gateway-receipt-poll).
+  private sendQueue: Promise<unknown> = Promise.resolve();
+  private nextNonce = 0;
+
+  private send(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
+    const run = this.sendQueue.then(() => this.sendNow(address, abi, functionName, args));
+    this.sendQueue = run.catch(() => undefined);
+    return run;
+  }
+
   // gasPrice 0 forces a legacy transaction, which the zero-base-fee Besu chain accepts.
-  private async send(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
-    const txHash = await this.wallet.writeContract({
-      address,
-      abi: abi as never,
-      functionName,
-      args: args as never,
-      account: this.wallet.account!,
-      chain: this.wallet.chain,
-      gasPrice: 0n,
-    });
+  private async sendNow(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
+    let txHash: Hex | undefined;
+    for (let attempt = 0; txHash === undefined; attempt++) {
+      const pending = await this.pub.getTransactionCount({ address: this.account, blockTag: "pending" });
+      const nonce = Math.max(pending, this.nextNonce);
+      try {
+        txHash = await this.wallet.writeContract({
+          address,
+          abi: abi as never,
+          functionName,
+          args: args as never,
+          account: this.wallet.account!,
+          chain: this.wallet.chain,
+          gasPrice: 0n,
+          nonce,
+        });
+        this.nextNonce = nonce + 1;
+      } catch (e) {
+        // A nonce the node has already seen: count past it and send again, once.
+        if (attempt === 0 && /nonce/i.test(String((e as Error).message))) { this.nextNonce = nonce + 1; continue; }
+        throw e;
+      }
+    }
     const receipt = await this.pub.waitForTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") throw new Error(`${functionName} reverted (tx ${txHash})`);
     return { txHash, block: receipt.blockNumber };
