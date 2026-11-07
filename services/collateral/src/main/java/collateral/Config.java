@@ -95,6 +95,11 @@ public final class Config {
         return partyId.equals("B") ? "BANK-B" : "BANK-A";
     }
 
+    /** Console party id for a CDM party name (BANK-B is B, BANK-A is A). */
+    public String partyIdOfBank(String bankName) {
+        return "BANK-B".equals(bankName) ? "B" : "A";
+    }
+
     public String partyAddress(String partyId) {
         return registry.get("parties").get(partyId.equals("B") ? "bank-b" : "bank-a").asText();
     }

@@ -39,6 +39,7 @@
     ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
     ".konspekt/instance/waypoints/wp-adr-replacement-call-link.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
+    ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",
     ".konspekt/instance/waypoints/wp-adr-substitution-fold-portfolio.md",
     ".konspekt/instance/waypoints/wp-adr-ux-scenario-grid.md"
   ],
@@ -1465,6 +1466,43 @@
           "relationship-unique-id": "pledgor-uses-console",
           "sequence-number": 9,
           "description": "Both consoles list the statement as paid and verified; for a negative amount the pledgor pays it from its console (payInterest)."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-settlement-netting",
+      "name": "Settlement netting of collateral movements",
+      "description": "The day's agreed VM calls, VM returns and Interest Amounts held for netting between the two parties settle by one transfer of tUSD from the party that owes the net (task-csa-settlement-netting; the project owner's scope of 2026-11-06). cdm-ext Create_SettlementNetting nets the CDM SettlementObligations under the agreement's netInterestWithMarginCalls election; the SettlementNettingStatement and each call's SettleCall step (naming the netting) are carried off-chain and anchored by their hashes. Initial margin does not net. The rules are assumptions awaiting task-sme-settlement-netting-rules.",
+      "transitions": [
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 1,
+          "description": "The party owing the net (here the pledgor) sees the movements that can net and the net in its console, and settles them."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console asks the party's workflow service to settle every movement that can net now."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 3,
+          "description": "Service reads the agreed VM calls with an accepted tUSD proposal, the agreed return calls and the held Interest Amounts between the two parties."
+        },
+        {
+          "relationship-unique-id": "service-to-payload-store",
+          "sequence-number": 4,
+          "description": "Service builds the CDM SettlementNettingStatement (Create_SettlementNetting) and one SettleCall step per call naming the netting, and publishes them to the payload store."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 5,
+          "description": "Service submits settleNetted with the hashes; the gateway approves the net in tUSD and the contract checks each movement, marks the calls and interest settled, and transfers the net once."
+        },
+        {
+          "relationship-unique-id": "gateway-to-service-events",
+          "sequence-number": 6,
+          "description": "Each gateway pushes SettlementNetted and the CallSettled steps; both services fetch the statement by its hash and verify it against the chain, and both consoles show the netting."
         }
       ]
     },

@@ -259,6 +259,13 @@ settled (agreed, partly agreed or disputed), either console offers `Request canc
 `Refuse cancellation`. On acceptance a proposal not yet delivered is shown `cancelled` and no collateral moves. These
 rules are assumptions awaiting a business SME (`task-sme-call-cancellation-rules`).
 
+Settlement netting flow (`flow-settlement-netting`): B's interest card has `Hold for settlement netting`; a statement
+stated with it stays `stated` until it is netted (or paid alone). The "Settlement netting" card in each console lists
+the agreed VM calls with an accepted tUSD proposal, the agreed return calls and the held Interest Amounts between A and
+B, and the net (`Net: A pays USD … in tUSD`). The party owing the net clicks `Settle netted`; the calls then show
+`settled in netting <id>` and the card lists the netting with `statement verified ✓`. Initial margin calls do not
+appear. The rules are assumptions awaiting a business SME (`task-sme-settlement-netting-rules`).
+
 Replacement flow (`flow-call-replacement`): on a cancelled call it issued, the calling party's console offers a
 `Replacement amount (USD)` field and `Issue replacement call`. The new call keeps the cancelled call's kind and called
 party; the cancelled call then shows `replaced by <call>` and the new call `replaces <call>` in both consoles. A
@@ -291,7 +298,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
-`flow-substitution`, `flow-interest-on-cash`, `flow-call-cancellation`, `flow-call-replacement` and
+`flow-substitution`, `flow-interest-on-cash`, `flow-settlement-netting`, `flow-call-cancellation`,
+`flow-call-replacement` and
 `flow-agreement-amendment` (last; it restores the baseline terms).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive

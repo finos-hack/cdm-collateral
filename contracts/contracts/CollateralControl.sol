@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {MarginCall} from "./MarginCall.sol";
 import {OracleFeed} from "./OracleFeed.sol";
-import {CallKind, CallState, ProposalState, SubstitutionState, InterestState, AmendmentState, Asset, Call, Proposal, Substitution, InterestStatement, Amendment, HaircutTerm} from "./CollateralTypes.sol";
+import {CallKind, CallState, ProposalState, SubstitutionState, InterestState, AmendmentState, Asset, Call, Proposal, Substitution, InterestStatement, Amendment, HaircutTerm, Netting} from "./CollateralTypes.sol";
 
 /// @title Collateral control contract
 /// @notice Performs settlement against the state recorded in the margin call contract (control-to-margin-call) and
@@ -54,6 +54,8 @@ contract CollateralControl is ReentrancyGuard {
     event AmendmentDecided(bytes32 indexed amendmentId, bool consent, bytes32 cdmHash);
     event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash);
     event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount);
+    /// settledBy pays the net amount to counterparty when it is above zero.
+    event SettlementNetted(bytes32 indexed nettingId, address indexed settledBy, address indexed counterparty, address cashToken, uint256 amount, bytes32 cdmHash);
 
     // Close-outs on default, by id: the hash of the CDM CloseOutStatement (cdm-ext cdmx.collateral.closeout, G15).
     mapping(bytes32 => bytes32) public closeOutCdmHash;
@@ -65,6 +67,13 @@ contract CollateralControl is ReentrancyGuard {
 
     // Interest on cash collateral (flow-interest-on-cash, G17).
     mapping(bytes32 => InterestStatement) private _interest;
+
+    // Settlement netting (task-csa-settlement-netting), by id, with the calls and interest statements it settled.
+    mapping(bytes32 => Netting) private _nettings;
+    mapping(bytes32 => bytes32[]) private _nettingCalls;
+    mapping(bytes32 => bytes32[]) private _nettingInterest;
+    /// The netting a call or an interest statement settled in; 0 when none.
+    mapping(bytes32 => bytes32) public nettedIn;
 
     error NotDeployer();
     error WrongKind();
@@ -90,6 +99,10 @@ contract CollateralControl is ReentrancyGuard {
     error NoSuchAmendment();
     error NoSuchInterest();
     error NotCash(address token);
+    error NettingExists();
+    error NothingToNet();
+    error NotNettable(bytes32 id);
+    error NotNetPayer(address payer);
 
     constructor(MarginCall marginCall_, OracleFeed oracle_) {
         deployer = msg.sender;
@@ -378,6 +391,18 @@ contract CollateralControl is ReentrancyGuard {
     /// paid by the pledgor with payInterest. `cashToken` must be eligible with no haircut (cash). `amount` is in units of
     /// the cash token. `cdmHash` is the hash of the CDM CollateralInterestStatement (wp-adr-cdm-payload-carrier).
     function stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash) external nonReentrant {
+        _stateInterest(interestId, pledgor, cashToken, amount, cdmHash, false);
+    }
+
+    /// @notice The secured party (this key) states an Interest Amount and holds it for settlement netting
+    /// (task-csa-settlement-netting, election netInterestWithMarginCalls): nothing moves now; the amount settles in
+    /// settleNetted with the margin movements of the same day, or alone by payInterest.
+    function stateInterestForNetting(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash) external nonReentrant {
+        if (amount == 0) revert NothingToNet();
+        _stateInterest(interestId, pledgor, cashToken, amount, cdmHash, true);
+    }
+
+    function _stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash, bool hold) private {
         address securedParty = msg.sender;
         if (_interest[interestId].state != InterestState.None || cdmHash == bytes32(0)) revert InterestExists();
         if (pledgor == securedParty || pledgor == address(0)) revert WrongParty();
@@ -389,24 +414,128 @@ contract CollateralControl is ReentrancyGuard {
         s.cashToken = cashToken;
         s.amount = amount;
         s.cdmHash = cdmHash;
-        s.state = amount < 0 ? InterestState.Stated : InterestState.Settled;
+        s.state = (hold || amount < 0) ? InterestState.Stated : InterestState.Settled;
         emit InterestStated(interestId, securedParty, pledgor, cashToken, amount, cdmHash);
-        if (amount >= 0) {
+        if (s.state == InterestState.Settled) {
             if (amount > 0) IERC20(cashToken).transferFrom(securedParty, pledgor, uint256(amount));
             emit InterestSettled(interestId, securedParty, pledgor, uint256(amount));
         }
     }
 
-    /// @notice The pledgor (this key) pays a negative Interest Amount stated by the secured party.
+    /// @notice The paying party (this key) pays a stated Interest Amount: the pledgor a negative one, the secured party a
+    /// positive one held for netting.
     function payInterest(bytes32 interestId) external nonReentrant {
         InterestStatement storage s = _interest[interestId];
         if (s.state == InterestState.None) revert NoSuchInterest();
         if (s.state != InterestState.Stated) revert BadState();
-        if (msg.sender != s.pledgor) revert WrongParty();
+        (address payer, address payee) = s.amount < 0 ? (s.pledgor, s.securedParty) : (s.securedParty, s.pledgor);
+        if (msg.sender != payer) revert WrongParty();
         s.state = InterestState.Settled;
-        uint256 amount = uint256(-s.amount);
-        IERC20(s.cashToken).transferFrom(s.pledgor, s.securedParty, amount);
-        emit InterestSettled(interestId, s.pledgor, s.securedParty, amount);
+        uint256 amount = uint256(s.amount < 0 ? -s.amount : s.amount);
+        IERC20(s.cashToken).transferFrom(payer, payee, amount);
+        emit InterestSettled(interestId, payer, payee, amount);
+    }
+
+    // --- settlement netting (task-csa-settlement-netting) ---
+    // Scope is the project owner's choice of 2026-11-06; the rules are assumptions awaiting a business SME
+    // (task-sme-settlement-netting-rules). Initial margin is segregated in escrow and does not net.
+
+    /// @notice Settle agreed VM calls, VM return calls and stated Interest Amounts between this key and one counterparty
+    /// by one transfer of the cash token. A VM call's accepted proposal must be the cash token alone; a return call's
+    /// agreed amount is paid in the cash token at the feed price. The movements are summed per direction and the net is
+    /// paid by this key, which must be the party owing it (nothing moves when they offset). `callCdmHashes` are the CDM
+    /// SettleCallInstruction hashes, one per call; `cdmHash` is the CDM SettlementNettingStatement hash.
+    function settleNetted(
+        bytes32 nettingId,
+        bytes32[] calldata callIds,
+        bytes32[] calldata callCdmHashes,
+        bytes32[] calldata interestIds,
+        address cashToken,
+        bytes32 cdmHash
+    ) external nonReentrant {
+        if (_nettings[nettingId].cdmHash != bytes32(0) || cdmHash == bytes32(0)) revert NettingExists();
+        if (callIds.length == 0 || callIds.length != callCdmHashes.length || callIds.length + interestIds.length < 2) revert NothingToNet();
+        address other = _counterpartyOnCash(callIds[0], cashToken);
+        int256 net = _netCalls(nettingId, callIds, callCdmHashes, cashToken, other)
+            + _netInterest(nettingId, interestIds, cashToken, other);
+        if (net < 0) revert NotNetPayer(other);
+        _nettingCalls[nettingId] = callIds;
+        _nettingInterest[nettingId] = interestIds;
+        _recordNetting(nettingId, cashToken, other, uint256(net), cdmHash);
+    }
+
+    /// The other party to the first call, which must include this key; the cash token must be eligible at no haircut.
+    function _counterpartyOnCash(bytes32 callId, address cashToken) private view returns (address other) {
+        Call memory first = marginCall.getCall(callId);
+        if (first.from != msg.sender && first.to != msg.sender) revert WrongParty();
+        other = first.from == msg.sender ? first.to : first.from;
+        Eligibility memory e = eligibilityFor(first.to, first.from, cashToken);
+        if (!e.eligible || e.haircutBps != 0) revert NotCash(cashToken);
+    }
+
+    function _recordNetting(bytes32 nettingId, address cashToken, address other, uint256 amount, bytes32 cdmHash) private {
+        Netting storage n = _nettings[nettingId];
+        n.cashToken = cashToken;
+        n.amount = amount;
+        n.cdmHash = cdmHash;
+        if (amount > 0) {
+            n.payer = msg.sender;
+            n.receiver = other;
+            IERC20(cashToken).transferFrom(msg.sender, other, amount);
+        }
+        emit SettlementNetted(nettingId, msg.sender, other, cashToken, amount, cdmHash);
+    }
+
+    function getNetting(bytes32 nettingId) external view returns (Netting memory netting, bytes32[] memory callIds, bytes32[] memory interestIds) {
+        return (_nettings[nettingId], _nettingCalls[nettingId], _nettingInterest[nettingId]);
+    }
+
+    /// What `me` owes `other` on the calls, less what `other` owes `me`; each call is marked settled. On a VM call and on
+    /// a return call the called party (`to`) pays the calling party (`from`).
+    function _netCalls(bytes32 nettingId, bytes32[] calldata callIds, bytes32[] calldata callCdmHashes, address cashToken, address other)
+        private returns (int256 net) {
+        address me = msg.sender;
+        for (uint256 i = 0; i < callIds.length; i++) {
+            bytes32 id = callIds[i];
+            Call memory c = marginCall.getCall(id);
+            if (!((c.from == me && c.to == other) || (c.from == other && c.to == me))) revert WrongParty();
+            if (!(c.state == CallState.Agreed || c.state == CallState.PartiallyAgreed)) revert BadState();
+            uint256 qty;
+            if (c.kind == CallKind.VM) {
+                if (c.activeProposal == 0) revert ProposalNotAccepted();
+                uint256 pid = c.activeProposal - 1;
+                if (marginCall.getProposal(id, pid).state != ProposalState.Accepted) revert ProposalNotAccepted();
+                Asset[] memory a = marginCall.getProposalAssets(id, pid);
+                if (a.length != 1 || a[0].token != cashToken) revert NotNettable(id);
+                qty = a[0].qty;
+            } else if (c.kind == CallKind.Return) {
+                uint256 price = oracle.price(cashToken);
+                if (price == 0 || c.agreed % price != 0) revert NotNettable(id);
+                qty = c.agreed / price;
+            } else {
+                revert WrongKind();
+            }
+            net += c.to == me ? int256(qty) : -int256(qty);
+            nettedIn[id] = nettingId;
+            marginCall.markSettled(id, c.kind == CallKind.VM && c.disputed > 0, callCdmHashes[i]);
+        }
+    }
+
+    /// What `me` owes `other` on the stated Interest Amounts, less what `other` owes `me`; each is marked settled.
+    function _netInterest(bytes32 nettingId, bytes32[] calldata interestIds, address cashToken, address other)
+        private returns (int256 net) {
+        address me = msg.sender;
+        for (uint256 i = 0; i < interestIds.length; i++) {
+            InterestStatement storage s = _interest[interestIds[i]];
+            if (s.state != InterestState.Stated) revert BadState();
+            if (s.cashToken != cashToken) revert NotNettable(interestIds[i]);
+            if (!((s.pledgor == me && s.securedParty == other) || (s.pledgor == other && s.securedParty == me))) revert WrongParty();
+            address payer = s.amount < 0 ? s.pledgor : s.securedParty;
+            int256 qty = s.amount < 0 ? -s.amount : s.amount;
+            net += payer == me ? qty : -qty;
+            s.state = InterestState.Settled;
+            nettedIn[interestIds[i]] = nettingId;
+        }
     }
 
     function getInterest(bytes32 interestId) external view returns (InterestStatement memory) {

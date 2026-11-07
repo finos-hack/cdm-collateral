@@ -146,6 +146,12 @@ READMEs are the authority. Oracle service: design only.
     caller, called party and kind), and the cdm-ext IssueCall step carries `replacesCall`, checked by
     `ReplacementAllowed` against the cancelled call's state. The rules are assumptions awaiting the SME (question 5 of
     `task-sme-call-cancellation-rules`).
+12. **Settlement netting** (`flow-settlement-netting`) — the day's agreed VM calls, VM returns and Interest Amounts
+    held for netting between the two parties settle by one transfer of tUSD from the party that owes the net
+    (`CollateralControl.settleNetted`). cdm-ext `Create_SettlementNetting` gives the net in a
+    `SettlementNettingStatement` under the agreement's `netInterestWithMarginCalls` election, and each call's SettleCall
+    step names the netting. Initial margin does not net. The rules are assumptions awaiting a business SME
+    (`task-sme-settlement-netting-rules`).
 
 ## Running N participants
 

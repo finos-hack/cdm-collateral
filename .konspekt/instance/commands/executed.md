@@ -290,3 +290,11 @@ at execution time.
 | task-csa-call-replacement | 35f64e5ad5142638761e3c2b94e86ecb430739b8 |
 | task-csa-call-replacement | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
 | task-csa-call-replacement | 4761603ad9fc3bccf63d6961a27613a35e285bb3 |
+| task-csa-settlement-netting | 2cb7c11b6eb4319373b65614fb5be5f7ed205f04 |
+| task-csa-settlement-netting | 952c7d96fd9009da2cba5c441b403f35c960ab64 |
+| task-csa-settlement-netting | 1239d4a73f38192cea81ffe84ce5333d2dcf65b9 |
+| task-csa-settlement-netting | f92ca6e5b5cefeed3551628cafb0f7614b8bb04e |
+| task-csa-settlement-netting | e6da3c47a7fc06f74225ac9a679328f60313f467 |
+| task-csa-settlement-netting | e04e008451bce666082e4f5b262614bc8daca733 |
+| task-csa-settlement-netting | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
+| task-csa-settlement-netting | c4f95fb4e2e3bddcdf37890a3f8d4a5b72bf4e39 |

@@ -213,3 +213,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-replacementlink-replacement | marks | waypoint:wp-adr-replacement-call-link | node:task-csa-call-replacement |  | accepted |
 | e-drv-callstate-replacelink | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-replacement-call-link |  | accepted |
 | e-drv-cdmdata-replacelink | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-replacement-call-link |  | accepted |
+| e-mrk-nettingscope-netting | marks | waypoint:wp-adr-settlement-netting-scope | node:task-csa-settlement-netting |  | accepted |
+| e-dec-cdmdev-smenetting | decomposes | node:goal-cdm-development | node:task-sme-settlement-netting-rules |  | accepted |
+| e-lnk-netting-smenetting | links | node:task-csa-settlement-netting | node:task-sme-settlement-netting-rules |  | accepted |
+| e-drv-finality-nettingscope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-settlement-netting-scope |  | accepted |
+| e-drv-callstate-nettingscope | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-settlement-netting-scope |  | accepted |
+| e-drv-cdmdata-nettingscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-settlement-netting-scope |  | accepted |

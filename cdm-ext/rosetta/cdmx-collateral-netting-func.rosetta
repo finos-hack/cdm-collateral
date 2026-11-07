@@ -1,0 +1,71 @@
+namespace cdmx.collateral.netting : <"Local CDM extension: settlement netting of collateral movements (task-csa-settlement-netting).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.observable.asset.*
+import cdm.base.staticdata.party.*
+import cdm.product.collateral.*
+
+// Scope (the project owner's choice of 2026-11-06): agreed variation margin calls, variation margin returns and Interest
+// Amounts due between the same two parties on the same day in the same currency settle as one net transfer. An Interest
+// Amount takes part only under the election netInterestWithMarginCalls, and only together with a margin movement
+// (netting Interest Amounts with each other, netPostedAndHeldInterest, is not covered). Initial margin is segregated and
+// has no obligation type here. The rules are assumptions awaiting a business SME (task-sme-settlement-netting-rules).
+
+func Create_SettlementNetting: <"Nets the movements due between two parties on one day in one currency: the amounts each party pays are summed, and the party with the larger sum pays the difference to the other.">
+    [calculation]
+    inputs:
+        nettingIdentifier string (1..1)
+        obligations SettlementObligation (2..*)
+        interestHandling CollateralInterestHandlingParameters (0..1) <"The agreement's interest handling; needed when an Interest Amount is netted.">
+    output:
+        statement SettlementNettingStatement (1..1)
+
+    alias partyA: obligations first -> payer
+    alias partyB: obligations first -> receiver
+    alias idA: partyA -> partyId only-element -> identifier
+    alias idB: partyB -> partyId only-element -> identifier
+    alias paidByA:
+        obligations filter payer -> partyId only-element -> identifier = idA then extract amount -> value then sum
+    alias paidByB:
+        obligations filter payer -> partyId only-element -> identifier = idB then extract amount -> value then sum
+    alias net: paidByA - paidByB
+
+    // Conditions spell out the paths: in generated Python, pre-conditions run before aliases are assigned.
+    condition SameTwoParties: <"Every movement is between the same two parties, in either direction.">
+        (obligations
+            filter (payer -> partyId only-element -> identifier = obligations first -> payer -> partyId only-element -> identifier
+                    and receiver -> partyId only-element -> identifier = obligations first -> receiver -> partyId only-element -> identifier)
+                or (payer -> partyId only-element -> identifier = obligations first -> receiver -> partyId only-element -> identifier
+                    and receiver -> partyId only-element -> identifier = obligations first -> payer -> partyId only-element -> identifier)
+            then count) = obligations count
+
+    condition OneDay: <"Every movement is due on the same settlement date.">
+        (obligations extract settlementDate then distinct then count) = 1
+
+    condition OneCurrency: <"Every movement is in the same currency.">
+        (obligations extract amount -> unit -> currency then distinct then count) = 1
+
+    condition DistinctReferences: <"A call or interest statement is netted once.">
+        (obligations extract reference then distinct then count) = obligations count
+
+    condition MarginMovementIncluded: <"At least one movement is a variation margin delivery or return.">
+        (obligations filter obligationType <> SettlementObligationTypeEnum -> InterestAmount then count) > 0
+
+    condition InterestNettingElected: <"An Interest Amount is netted with margin calls only under the election netInterestWithMarginCalls.">
+        if (obligations filter obligationType = SettlementObligationTypeEnum -> InterestAmount then count) > 0
+        then interestHandling -> netInterestWithMarginCalls = True
+
+    set statement:
+        SettlementNettingStatement {
+            nettingIdentifier: nettingIdentifier,
+            settlementDate: obligations first -> settlementDate,
+            obligations: obligations,
+            netAmount: Money {
+                value: if net < 0 then 0.0 - net else net,
+                unit: obligations first -> amount -> unit,
+                ...
+            },
+            payer: if net > 0 then partyA else if net < 0 then partyB,
+            receiver: if net > 0 then partyB else if net < 0 then partyA
+        }

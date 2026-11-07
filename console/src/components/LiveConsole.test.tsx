@@ -40,7 +40,7 @@ const NO_SHORTFALL: LiveRevaluation = {
   requiredUsd: "0", valueUsd: "0", shortfallUsd: "0", topUpUsd: "0", mtaUsd: "500000", roundingUsd: "10000", tokens: [],
 };
 
-function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">, reval: LiveRevaluation = NO_SHORTFALL) {
+function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">, reval: LiveRevaluation = NO_SHORTFALL, extra: Record<string, unknown> = {}) {
   posts = [];
   vi.stubGlobal("EventSource", StubEventSource);
   vi.stubGlobal(
@@ -52,6 +52,7 @@ function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">, reval
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
       if (path === "/revaluation") return new Response(JSON.stringify(reval), { status: 200 });
+      if (path in extra) return new Response(JSON.stringify(extra[path]), { status: 200 });
       const body = path === "/context" ?{ ...CONTEXT[party], priceScale: "100000000", tokens: [], agreement: "IM CSA" } : { party, role: CONTEXT[party].role, ...state };
       return new Response(JSON.stringify(body), { status: 200 });
     }),
@@ -249,5 +250,53 @@ describe("flow-call-cancellation", () => {
     const row = await rowOf();
     expect(within(row).getByText("cancelled on-chain ✓")).toBeInTheDocument();
     expect(within(row).queryAllByRole("button")).toHaveLength(0);
+  });
+});
+
+describe("flow-settlement-netting", () => {
+  const BAL = [{ token: "tUSD", free: "1000000", pledged: "0" }];
+  const DEFAULTS = { A: false, B: false };
+  const candidates = (payer: LiveParty | null) => ({
+    "/netting/candidates": {
+      movements: [
+        { id: "0xaaaa000000000000000000000000000000000000000000000000000000000001", type: "DeliveryAmount", payer: "A", receiver: "B", amountUsd: "100000" },
+        { id: "0xbbbb000000000000000000000000000000000000000000000000000000000002", type: "ReturnAmount", payer: "B", receiver: "A", amountUsd: "30000" },
+        { id: "0xcccc000000000000000000000000000000000000000000000000000000000003", type: "InterestAmount", payer: "B", receiver: "A", amountUsd: "412" },
+      ],
+      netUsd: "69588",
+      payer,
+    },
+    "/nettings": [],
+  });
+
+  it("the party owing the net sees the movements and the net, and settles them by one transfer", async () => {
+    serve("A", { calls: [], balances: BAL, defaults: DEFAULTS }, NO_SHORTFALL, candidates("A"));
+    const card = await screen.findByTestId("settlement-netting");
+    expect(within(card).getByText("VM delivery")).toBeInTheDocument();
+    expect(within(card).getByText("VM return")).toBeInTheDocument();
+    expect(within(card).getByText("Interest Amount")).toBeInTheDocument();
+    expect(within(card).getByTestId("netting-net")).toHaveTextContent("Net: A pays USD 69,588 in tUSD");
+    await userEvent.click(within(card).getByRole("button", { name: "Settle netted" }));
+    await waitFor(() => expect(posts).toContainEqual({ path: "/nettings", body: {} }));
+  });
+
+  it("the party owed the net is not offered the settlement", async () => {
+    serve("B", { calls: [], balances: BAL, defaults: DEFAULTS }, NO_SHORTFALL, candidates("A"));
+    const card = await screen.findByTestId("settlement-netting");
+    expect(within(card).queryByRole("button", { name: "Settle netted" })).toBeNull();
+    expect(within(card).getByText("A owes the net and settles.")).toBeInTheDocument();
+  });
+
+  it("the secured party may hold an Interest Amount for netting", async () => {
+    serve("B", { calls: [], balances: [{ token: "tUSD", free: "0", pledged: "500000" }], defaults: DEFAULTS });
+    const card = await screen.findByTestId("interest");
+    await userEvent.click(within(card).getByRole("checkbox", { name: /Hold for settlement netting/ }));
+    await userEvent.click(within(card).getByRole("button", { name: /State interest/ }));
+    await waitFor(() => expect(posts.find((p) => p.path === "/interest")?.body).toMatchObject({ holdForNetting: true }));
+  });
+
+  it("a call settled in a netting names it", async () => {
+    serve("A", { calls: [call({ kind: "VM", state: "settled", nettedIn: "0xdddd00000000000000000000000000000000000000000000000000000000eeee" })], balances: BAL, defaults: DEFAULTS });
+    expect(await screen.findByText(/settled in netting/)).toBeInTheDocument();
   });
 });

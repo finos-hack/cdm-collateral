@@ -50,7 +50,8 @@ export interface LedgerEvent {
     | "InterestStated"
     | "InterestSettled"
     | "AmendmentProposed"
-    | "AmendmentDecided";
+    | "AmendmentDecided"
+    | "SettlementNetted";
   callId?: Hex;
   /** ClosedOut (flow-close-out-netting). */
   closeOutId?: Hex;
@@ -58,6 +59,8 @@ export interface LedgerEvent {
   substitutionId?: Hex;
   /** InterestStated, InterestSettled (flow-interest-on-cash). */
   interestId?: Hex;
+  /** SettlementNetted (flow-settlement-netting). */
+  nettingId?: Hex;
   /** AmendmentProposed, AmendmentDecided (flow-agreement-amendment). */
   amendmentId?: Hex;
   consent?: boolean;
@@ -113,6 +116,21 @@ export interface InterestRecord {
   amount: bigint;
   state: number; // InterestState: None, Stated, Settled
   cdmHash: Hex;
+  block: string;
+  txHash: Hex;
+}
+
+/** One settlement netting (flow-settlement-netting): the calls and interest statements settled by one transfer of the
+ * cash token. settledBy pays amount (units of the cash token) to counterparty when it is above zero. */
+export interface NettingRecord {
+  nettingId: Hex;
+  settledBy: Address;
+  counterparty: Address;
+  cashToken: Address;
+  amount: bigint;
+  cdmHash: Hex;
+  callIds: Hex[];
+  interestIds: Hex[];
   block: string;
   txHash: Hex;
 }
@@ -173,6 +191,7 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "SubstitutionSettled(bytes32,bytes32)",
     "InterestStated(bytes32,address,address,address,int256,bytes32)",
     "InterestSettled(bytes32,address,address,uint256)",
+    "SettlementNetted(bytes32,address,address,address,uint256,bytes32)",
     "AmendmentProposed(bytes32,address,address,address,bytes32)",
     "AmendmentDecided(bytes32,bool,bytes32)",
     "Transfer(address,address,uint256)",
@@ -203,6 +222,8 @@ export interface OnChainCall {
   /** The cancelled call this call replaces, and the call that replaces this one; zero when none (task-csa-call-replacement). */
   replaces?: Hex;
   replacementOf?: Hex;
+  /** The settlement netting the call settled in; zero when none (flow-settlement-netting). */
+  nettedIn?: Hex;
 }
 
 const marginCallAbi = parseAbi([
@@ -260,6 +281,12 @@ const controlAbi = parseAbi([
   "function stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
   "function payInterest(bytes32 interestId)",
   "function getInterest(bytes32 interestId) view returns (InterestStatement)",
+  "function stateInterestForNetting(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
+  "struct Netting { address payer; address receiver; address cashToken; uint256 amount; bytes32 cdmHash; }",
+  "function settleNetted(bytes32 nettingId, bytes32[] callIds, bytes32[] callCdmHashes, bytes32[] interestIds, address cashToken, bytes32 cdmHash)",
+  "function getNetting(bytes32 nettingId) view returns (Netting netting, bytes32[] callIds, bytes32[] interestIds)",
+  "function nettedIn(bytes32 id) view returns (bytes32)",
+  "event SettlementNetted(bytes32 indexed nettingId, address indexed settledBy, address indexed counterparty, address cashToken, uint256 amount, bytes32 cdmHash)",
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
   "event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
@@ -325,6 +352,10 @@ export interface LedgerAdapter {
   payInterest(interestId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getInterest(interestId: Hex): Promise<Omit<InterestRecord, "interestId" | "block" | "txHash">>;
   listInterest(party: Address): Promise<InterestRecord[]>;
+  stateInterestForNetting(interestId: Hex, pledgor: Address, cashToken: Address, amount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  settleNetted(nettingId: Hex, callIds: Hex[], callCdmHashes: Hex[], interestIds: Hex[], cashToken: Address, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  nettedIn(id: Hex): Promise<Hex>;
+  listNettings(party: Address): Promise<NettingRecord[]>;
   escrowAt(pledgor: Address, securedParty: Address, block: bigint): Promise<{ token: Address; qty: bigint; price: bigint | null }[]>;
   setDefault(party: Address, inDefault: boolean): Promise<{ txHash: Hex; block: bigint }>;
   isDefaulted(party: Address): Promise<boolean>;
@@ -532,6 +563,35 @@ export class BesuAdapter implements LedgerAdapter {
     return { pledgor: s.pledgor, securedParty: s.securedParty, cashToken: s.cashToken, amount: s.amount, state: Number(s.state), cdmHash: s.cdmHash };
   }
 
+  /** Settlement netting (flow-settlement-netting): the secured party holds an Interest Amount for netting; the party
+   * owing the net settles the day's VM calls, VM returns and held Interest Amounts by one transfer of the cash token. */
+  stateInterestForNetting(interestId: Hex, pledgor: Address, cashToken: Address, amount: bigint, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "stateInterestForNetting", [interestId, pledgor, cashToken, amount, cdmHash]);
+  }
+
+  settleNetted(nettingId: Hex, callIds: Hex[], callCdmHashes: Hex[], interestIds: Hex[], cashToken: Address, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "settleNetted", [nettingId, callIds, callCdmHashes, interestIds, cashToken, cdmHash]);
+  }
+
+  async nettedIn(id: Hex) {
+    return (await this.pub.readContract({ address: this.reg.contracts.collateralControl, abi: controlAbi, functionName: "nettedIn", args: [id] })) as Hex;
+  }
+
+  /** Every netting a party is in, from the SettlementNetted events, with the calls and interest statements it settled. */
+  async listNettings(party: Address): Promise<NettingRecord[]> {
+    const out: NettingRecord[] = [];
+    for (const args of [{ settledBy: party }, { counterparty: party }]) {
+      for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "SettlementNetted", args)) {
+        const a = l.args as { nettingId: Hex; settledBy: Address; counterparty: Address; cashToken: Address; amount: bigint; cdmHash: Hex };
+        const [, callIds, interestIds] = (await this.pub.readContract({
+          address: this.reg.contracts.collateralControl, abi: controlAbi, functionName: "getNetting", args: [a.nettingId],
+        })) as [unknown, Hex[], Hex[]];
+        out.push({ ...a, callIds: [...callIds], interestIds: [...interestIds], block: l.blockNumber.toString(), txHash: l.transactionHash as Hex });
+      }
+    }
+    return out;
+  }
+
   /** Every interest statement a party is in, from the InterestStated events, with the current state. */
   async listInterest(party: Address): Promise<InterestRecord[]> {
     const out: InterestRecord[] = [];
@@ -679,8 +739,8 @@ export class BesuAdapter implements LedgerAdapter {
   async getCall(callId: Hex): Promise<OnChainCall> {
     const read = (functionName: "getCall" | "replaces" | "replacementOf") =>
       this.pub.readContract({ address: this.reg.contracts.marginCall, abi: marginCallAbi, functionName, args: [callId] });
-    const [call, replaces, replacementOf] = await Promise.all([read("getCall"), read("replaces"), read("replacementOf")]);
-    return { ...(call as OnChainCall), replaces: replaces as Hex, replacementOf: replacementOf as Hex };
+    const [call, replaces, replacementOf, nettedIn] = await Promise.all([read("getCall"), read("replaces"), read("replacementOf"), this.nettedIn(callId)]);
+    return { ...(call as OnChainCall), replaces: replaces as Hex, replacementOf: replacementOf as Hex, nettedIn };
   }
 
   // Discover the calls a party is involved in by scanning CallIssued logs (from and to are indexed). Used by each
@@ -827,6 +887,8 @@ export class BesuAdapter implements LedgerAdapter {
             onEvent({ event: name, interestId: a.interestId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "InterestSettled") {
             onEvent({ event: name, interestId: a.interestId, party: a.payer, ...meta(log) });
+          } else if (name === "SettlementNetted") {
+            onEvent({ event: name, nettingId: (a as any).nettingId, cdmHash: a.cdmHash, party: (a as any).settledBy, ...meta(log) });
           }
         }
       },

@@ -1,0 +1,39 @@
+namespace cdmx.collateral.netting : <"Local CDM extension: settlement netting of collateral movements under an ISDA CSA (task-csa-settlement-netting; CSA coverage matrix row 22, no gap ID). CDM 7.7.0 has the election CollateralInterestHandlingParameters.netInterestWithMarginCalls and, for trades only, StandardSettlementStyleEnum.Net, but nothing that nets collateral movements. Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.observable.asset.*
+import cdm.base.staticdata.party.*
+
+enum SettlementObligationTypeEnum: <"The collateral movements that take part in settlement netting. Initial margin is not one of them: it is segregated and is not netted with any other movement.">
+    DeliveryAmount <"Variation margin delivered on an agreed call (Delivery Amount (VM)).">
+    ReturnAmount <"Variation margin returned on an agreed return call (Return Amount (VM)).">
+    InterestAmount <"An Interest Amount on cash collateral, under the election netInterestWithMarginCalls.">
+
+type SettlementObligation: <"One cash movement due between the two parties on the settlement date, before netting.">
+    reference string (1..1) <"The call or interest statement the movement settles.">
+    obligationType SettlementObligationTypeEnum (1..1)
+    payer Party (1..1)
+    receiver Party (1..1)
+    amount Money (1..1) <"The cash due, positive.">
+    settlementDate date (1..1)
+
+    condition Positive: <"An obligation moves a positive amount.">
+        amount -> value > 0
+
+    condition TwoParties: <"The payer and the receiver differ.">
+        payer -> partyId only-element -> identifier <> receiver -> partyId only-element -> identifier
+
+type SettlementNettingStatement: <"The movements due between two parties on one day in one currency, settled as one net transfer.">
+    nettingIdentifier string (1..1)
+    settlementDate date (1..1)
+    obligations SettlementObligation (2..*) <"The movements netted, each settled by the net transfer.">
+    netAmount Money (1..1) <"The amount transferred, not negative; zero when the movements offset exactly.">
+    payer Party (0..1) <"The party that pays the net amount; absent when it is zero.">
+    receiver Party (0..1) <"The party that receives the net amount; absent when it is zero.">
+
+    condition NotNegative:
+        netAmount -> value >= 0
+
+    condition PayerWhenAmountDue: <"A payer and a receiver exactly when an amount is due.">
+        if netAmount -> value > 0 then payer exists and receiver exists else payer is absent and receiver is absent

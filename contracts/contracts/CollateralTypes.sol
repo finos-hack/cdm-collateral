@@ -101,7 +101,7 @@ struct HaircutTerm {
 
 enum InterestState {
     None,
-    Stated, // negative amount, awaiting the pledgor's payment
+    Stated, // awaiting payment: a negative amount from the pledgor, or an amount held for settlement netting
     Settled
 }
 
@@ -114,6 +114,17 @@ struct InterestStatement {
     int256 amount;
     InterestState state;
     bytes32 cdmHash; // hash of the CDM CollateralInterestStatement
+}
+
+/// One settlement netting between two parties (task-csa-settlement-netting): agreed VM calls, VM returns and Interest
+/// Amounts settled together by one transfer of the cash token. amount is the net, in units of the cash token, from payer
+/// to receiver; payer and receiver are 0 when the movements offset exactly.
+struct Netting {
+    address payer;
+    address receiver;
+    address cashToken;
+    uint256 amount;
+    bytes32 cdmHash; // hash of the CDM SettlementNettingStatement
 }
 
 struct Substitution {

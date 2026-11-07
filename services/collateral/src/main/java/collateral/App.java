@@ -101,6 +101,9 @@ public final class App {
         app.get("/api/v1/interest", this::interestStatements);
         app.post("/api/v1/interest", this::stateInterest);
         app.post("/api/v1/interest/{id}/pay", this::payInterest);
+        app.get("/api/v1/netting/candidates", this::nettingCandidates);
+        app.get("/api/v1/nettings", this::nettings);
+        app.post("/api/v1/nettings", this::settleNetting);
         app.get("/api/v1/agreement", this::agreement);
         app.post("/api/v1/amendments", this::proposeAmendment);
         app.post("/api/v1/amendments/{id}/decision", this::decideAmendment);
@@ -598,6 +601,8 @@ public final class App {
             String replacesId = c.path("replaces").asText(ZERO_HASH), replacedBy = c.path("replacementOf").asText(ZERO_HASH);
             call.put("replaces", replacesId.equalsIgnoreCase(ZERO_HASH) ? null : replacesId);
             call.put("replacedBy", replacedBy.equalsIgnoreCase(ZERO_HASH) ? null : replacedBy);
+            String nettedIn = c.path("nettedIn").asText(ZERO_HASH);
+            call.put("nettedIn", nettedIn.equalsIgnoreCase(ZERO_HASH) ? null : nettedIn);
             long proposalCount = c.get("proposalCount").asLong();
             List<Map<String, Object>> proposals = new ArrayList<>();
             for (long pid = 0; pid < proposalCount; pid++) {
@@ -1135,21 +1140,24 @@ public final class App {
         if (balance == 0) throw new RuntimeException(counterparty() + " has no tUSD cash collateral in escrow");
         CdmInterest c = CdmInterest.build(cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), start, end, balance, rate);
         long amount = CdmInterest.usd(c.statement.getTransferAmount());
+        // Held for settlement netting (flow-settlement-netting; election netInterestWithMarginCalls): stated, not paid.
+        boolean hold = Boolean.TRUE.equals(b.get("holdForNetting"));
+        if (hold && amount == 0) throw new RuntimeException("an Interest Amount of zero has nothing to net");
         String interestId = Cdm.onChainId("interest-" + cfg.partyId + "-" + System.nanoTime());
         store.recordDocument(interestId, "CollateralInterestStatement", "out", c.hash, c.json);
         payloads.put(c.hash, c.json, callParties);
         JsonNode tx = gw.post("/interest", Map.of("interestId", interestId, "pledgor", pledgor, "cashToken", cash,
-                "amount", String.valueOf(amount), "cdmHash", c.hash));
+                "amount", String.valueOf(amount), "cdmHash", c.hash, "hold", hold));
         Map<String, Object> out = new LinkedHashMap<>(interestSummary(c.statement));
         out.put("interestId", interestId);
         out.put("cdmHash", c.hash);
         out.put("stateTx", tx.path("stated").path("txHash").asText());
+        out.put("held", hold);
         ctx.json(out);
     }
 
-    /** Pay a negative Interest Amount the secured party stated (pledgor only). */
+    /** Pay a stated Interest Amount: the pledgor a negative one, the secured party a positive one held for netting. */
     private void payInterest(Context ctx) {
-        if (!cfg.role.equals("Pledgor")) throw new RuntimeException("only the pledgor pays negative interest");
         JsonNode tx = gw.post("/interest/" + ctx.pathParam("id") + "/pay", Map.of());
         ctx.json(Map.of("payTx", tx.path("paid").path("txHash").asText()));
     }
@@ -1192,6 +1200,208 @@ public final class App {
                 m.putAll(interestSummary(st));
                 m.put("verified", String.valueOf(CdmInterest.usd(st.getTransferAmount())).equals(r.get("amount").asText()));
                 if (!(Boolean) m.get("verified")) m.put("error", "the on-chain amount differs from the statement's transfer amount");
+            } catch (RuntimeException e) {
+                m.put("verified", false);
+                m.put("error", String.valueOf(e.getMessage()));
+            }
+            out.add(m);
+        }
+        ctx.json(out);
+    }
+
+    // ---- settlement netting (flow-settlement-netting, task-csa-settlement-netting) ----
+    // Scope is the project owner's choice of 2026-11-06; the rules are assumptions awaiting a business SME
+    // (task-sme-settlement-netting-rules). Initial margin is segregated in escrow and does not net.
+
+    /** One movement that can be netted: an agreed VM call or return call, or a held Interest Amount (whole USD, tUSD). */
+    private record Movement(String id, String kind, String type, String payer, String receiver, long usd, Long proposalId) {
+        Map<String, Object> summary() {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", id);
+            m.put("kind", kind);
+            m.put("type", type);
+            m.put("payer", payer);
+            m.put("receiver", receiver);
+            m.put("amountUsd", String.valueOf(usd));
+            return m;
+        }
+    }
+
+    /**
+     * The movements between this party and its counterparty that settlement netting can settle now: VM calls agreed
+     * with an accepted proposal of tUSD alone, return calls agreed for a whole tUSD amount (settled as a VM return by
+     * transfer), and Interest Amounts held for netting. IM calls and calls with a pending cancellation request are left
+     * out. On a VM call and on a return call the called party pays the calling party.
+     */
+    private List<Movement> nettable() {
+        String cash = cfg.tokenAddress("tUSD");
+        BigInteger price = feedPrices().get(cash.toLowerCase());
+        List<Movement> out = new ArrayList<>();
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int kind = c.get("kind").asInt(), st = c.get("state").asInt();
+            if (kind == 0 || !(st == 2 || st == 3)) continue;
+            if (!c.path("cancellationRequestedBy").asText(ZERO_ADDRESS).equalsIgnoreCase(ZERO_ADDRESS)) continue;
+            String callId = entry.get("callId").asText();
+            String payer = partyIdOf(c.get("to").asText()), receiver = partyIdOf(c.get("from").asText());
+            if (kind == 1) {
+                long active = c.get("activeProposal").asLong();
+                if (active == 0) continue;
+                long pid = active - 1;
+                if (gw.get("/calls/" + callId + "/proposals/" + pid + "/state").asInt() != 2) continue;
+                JsonNode assets = gw.get("/calls/" + callId + "/proposals/" + pid + "/assets");
+                if (assets.size() != 1 || !assets.get(0).get("token").asText().equalsIgnoreCase(cash)) continue;
+                out.add(new Movement(callId, "VM", "DeliveryAmount", payer, receiver, assets.get(0).get("qty").asLong(), pid));
+            } else {
+                if (price == null || price.signum() == 0) continue;
+                BigInteger[] qr = new BigInteger(c.get("agreed").asText()).divideAndRemainder(price);
+                if (qr[1].signum() != 0 || qr[0].signum() == 0) continue;
+                out.add(new Movement(callId, "Return", "ReturnAmount", payer, receiver, qr[0].longValueExact(), null));
+            }
+        }
+        for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
+            if (r.get("state").asInt() != 1 || !r.get("cashToken").asText().equalsIgnoreCase(cash)) continue;
+            long amount = Long.parseLong(r.get("amount").asText());
+            String sp = partyIdOf(r.get("securedParty").asText()), pl = partyIdOf(r.get("pledgor").asText());
+            out.add(new Movement(r.get("interestId").asText(), "Interest", "InterestAmount", amount < 0 ? pl : sp,
+                    amount < 0 ? sp : pl, Math.abs(amount), null));
+        }
+        return out;
+    }
+
+    /** What this party owes on the movements less what it is owed: positive when it pays the net. */
+    private long netFor(List<Movement> xs) {
+        long net = 0;
+        for (Movement m : xs) net += m.payer().equals(cfg.partyId) ? m.usd() : -m.usd();
+        return net;
+    }
+
+    private void nettingCandidates(Context ctx) {
+        List<Movement> xs = nettable();
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (Movement m : xs) rows.add(m.summary());
+        long net = netFor(xs);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("movements", rows);
+        out.put("netUsd", String.valueOf(Math.abs(net)));
+        out.put("payer", net > 0 ? cfg.partyId : net < 0 ? counterparty() : null);
+        ctx.json(out);
+    }
+
+    /**
+     * Settle the chosen movements (all nettable ones when none are named) by one transfer of tUSD (transitions 1-6). The
+     * service builds the CDM SettlementNettingStatement (Create_SettlementNetting) and, per call, the SettleCall step
+     * naming the netting; publishes them to the payload store; and submits settleNetted with their hashes. Only the
+     * party that owes the net settles (either party when the movements offset).
+     */
+    @SuppressWarnings("unchecked")
+    private void settleNetting(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        List<String> callIds = (List<String>) b.get("callIds");
+        List<String> interestIds = (List<String>) b.get("interestIds");
+        List<Movement> all = nettable();
+        List<Movement> chosen = new ArrayList<>();
+        if (callIds == null && interestIds == null) {
+            chosen.addAll(all);
+        } else {
+            List<String> wanted = new ArrayList<>();
+            if (callIds != null) wanted.addAll(callIds);
+            if (interestIds != null) wanted.addAll(interestIds);
+            for (String id : wanted) {
+                Movement m = all.stream().filter(x -> x.id().equalsIgnoreCase(id)).findFirst()
+                        .orElseThrow(() -> new RuntimeException("not nettable now: " + id));
+                if (!chosen.contains(m)) chosen.add(m);
+            }
+        }
+        List<Movement> calls = chosen.stream().filter(m -> !m.kind().equals("Interest")).toList();
+        List<Movement> interest = chosen.stream().filter(m -> m.kind().equals("Interest")).toList();
+        if (calls.isEmpty() || chosen.size() < 2)
+            throw new RuntimeException("settlement netting needs at least two movements, one of them a VM call or return");
+        long net = netFor(chosen);
+        if (net < 0) throw new RuntimeException(counterparty() + " owes the net amount (USD " + (-net) + "); its party settles");
+
+        String nettingId = Cdm.onChainId("netting-" + cfg.partyId + "-" + System.nanoTime());
+        List<CdmNetting.Item> items = new ArrayList<>();
+        for (Movement m : chosen)
+            items.add(new CdmNetting.Item(m.id(), m.type(), cfg.bankName(m.payer()), cfg.bankName(m.receiver()), m.usd()));
+        CdmNetting n = CdmNetting.build(nettingId, LocalDate.now(java.time.ZoneOffset.UTC), items);
+
+        List<String> callHashes = new ArrayList<>();
+        for (Movement m : calls) {
+            Cdm settle = m.kind().equals("VM")
+                    ? Cdm.settle("P-" + m.proposalId(), nettingId)
+                    : Cdm.settleReturn(List.of(new LinkedHashMap<>(Map.of("isin", cfg.isin("tUSD"), "units", m.usd()))), m.usd(), nettingId);
+            record(m.id(), "SettleCall", settle);
+            callHashes.add(settle.hash);
+        }
+        store.recordDocument(nettingId, "SettlementNettingStatement", "out", n.hash, n.json);
+        payloads.put(n.hash, n.json, callParties);
+        JsonNode tx = gw.post("/nettings", Map.of("nettingId", nettingId,
+                "callIds", calls.stream().map(Movement::id).toList(), "callCdmHashes", callHashes,
+                "interestIds", interest.stream().map(Movement::id).toList(),
+                "cashToken", cfg.tokenAddress("tUSD"), "cdmHash", n.hash, "amount", String.valueOf(net)));
+        Map<String, Object> out = new LinkedHashMap<>(nettingSummary(n.statement));
+        out.put("nettingId", nettingId);
+        out.put("cdmHash", n.hash);
+        out.put("settleTx", tx.path("settled").path("txHash").asText());
+        ctx.json(out);
+    }
+
+    private Map<String, Object> nettingSummary(cdmx.collateral.netting.SettlementNettingStatement s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("settlementDate", s.getSettlementDate().toString());
+        m.put("netUsd", String.valueOf(CdmInterest.usd(s.getNetAmount())));
+        m.put("payer", s.getPayer() == null ? null : cfg.partyIdOfBank(CdmNetting.partyName(s.getPayer())));
+        m.put("receiver", s.getReceiver() == null ? null : cfg.partyIdOfBank(CdmNetting.partyName(s.getReceiver())));
+        List<Map<String, Object>> obligations = new ArrayList<>();
+        for (var o : s.getObligations()) {
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("id", o.getReference());
+            r.put("type", o.getObligationType().toString());
+            r.put("payer", cfg.partyIdOfBank(CdmNetting.partyName(o.getPayer())));
+            r.put("receiver", cfg.partyIdOfBank(CdmNetting.partyName(o.getReceiver())));
+            r.put("amountUsd", String.valueOf(CdmInterest.usd(o.getAmount())));
+            obligations.add(r);
+        }
+        m.put("movements", obligations);
+        return m;
+    }
+
+    /**
+     * The nettings this party is in, from the SettlementNetted events, each with its CDM SettlementNettingStatement
+     * fetched from the payload store by the on-chain hash and checked: the hash matches, Create_SettlementNetting over
+     * the statement's obligations gives the same statement, the net and its payer match the chain, and the statement's
+     * obligations are the calls and interest statements the contract settled (verified).
+     */
+    private void nettings(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/nettings", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            String hash = r.get("cdmHash").asText();
+            long amount = Long.parseLong(r.get("amount").asText());
+            m.put("nettingId", r.get("nettingId").asText());
+            m.put("settledBy", partyIdOf(r.get("settledBy").asText()));
+            m.put("counterparty", partyIdOf(r.get("counterparty").asText()));
+            m.put("amountUsd", String.valueOf(amount));
+            m.put("cdmHash", hash);
+            m.put("block", r.get("block").asText());
+            String doc = payloads.get(hash);
+            try {
+                if (doc == null) throw new IllegalStateException("statement not readable in the payload store");
+                if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("payload hash mismatch");
+                var st = CdmNetting.verify(doc);
+                m.putAll(nettingSummary(st));
+                Set<String> onChain = new java.util.HashSet<>();
+                for (JsonNode x : r.get("callIds")) onChain.add(x.asText().toLowerCase());
+                for (JsonNode x : r.get("interestIds")) onChain.add(x.asText().toLowerCase());
+                Set<String> inStatement = new java.util.HashSet<>();
+                for (var o : st.getObligations()) inStatement.add(o.getReference().toLowerCase());
+                String problem = null;
+                if (CdmInterest.usd(st.getNetAmount()) != amount) problem = "the on-chain amount differs from the statement's net amount";
+                else if (amount > 0 && !String.valueOf(m.get("payer")).equals(m.get("settledBy"))) problem = "the statement's payer did not settle";
+                else if (!onChain.equals(inStatement)) problem = "the statement's movements differ from those settled on-chain";
+                m.put("verified", problem == null);
+                if (problem != null) m.put("error", problem);
             } catch (RuntimeException e) {
                 m.put("verified", false);
                 m.put("error", String.valueOf(e.getMessage()));

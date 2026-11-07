@@ -109,7 +109,13 @@ node serves state for recent blocks only), `GET /interest`, `POST /interest` (bo
 `observedRatePct`; secured party: CDM `CollateralInterestStatement` from cdm-ext `Create_CollateralInterestStatement` on
 the pledgor's tUSD in escrow under the agreement's `CollateralInterestParameters` in `CdmInterest`, then `stateInterest`
 on-chain; the listing fetches each statement by its on-chain hash and recomputes it, `verified`),
-`POST /interest/{id}/pay` (pledgor, negative amount), `GET /agreement` (the IM CSA terms in force: CDM's sample
+`POST /interest/{id}/pay` (the paying party: the pledgor a negative amount, the secured party a positive one held for
+netting); `POST /interest` takes `holdForNetting` to state the amount with `stateInterestForNetting` and pay nothing
+(`flow-settlement-netting`); `GET /netting/candidates` (the agreed VM calls with an accepted tUSD proposal, agreed
+return calls and held Interest Amounts between the two parties, and the net and its payer), `POST /nettings` (the party
+owing the net: CDM `SettlementNettingStatement` from cdm-ext `Create_SettlementNetting` in `CdmNetting` and a SettleCall
+step per call naming the netting, then `settleNetted` on-chain), `GET /nettings` (each statement fetched by its
+on-chain hash, recomputed and checked against the chain's net, payer, calls and interest statements, `verified`), `GET /agreement` (the IM CSA terms in force: CDM's sample
 2018 NY law IM CSA with BANK-B as Party1 and BANK-A as Party2 and an MTA of USD 500,000, folded in `CdmAgreement` over
 the pair's agreed amendments, each fetched by its on-chain hash and verified; with the contract's agreement hash and
 haircuts beside them, `verified`), `POST /amendments` (body `mtaUsd`, `haircuts` [{`token`, `eligible`,

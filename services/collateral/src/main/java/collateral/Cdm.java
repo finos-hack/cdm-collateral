@@ -144,6 +144,11 @@ public final class Cdm {
         return new Cdm("settle", o("proposalId", proposalId));
     }
 
+    /** Delivery settled in a settlement netting (flow-settlement-netting): the step names the netting. */
+    public static Cdm settle(String proposalId, String nettingId) {
+        return new Cdm("settle", o("proposalId", proposalId, "nettingIdentifier", nettingId));
+    }
+
     /**
      * Return settlement: releases collateral already held (IM return) or transfers equivalent support back (VM return).
      * A return has no proposal; the SettleCallInstruction carries the released collateral and its value after haircuts,
@@ -155,6 +160,16 @@ public final class Cdm {
             positions.add(position(((Number) a.get("units")).longValue(), (String) a.get("isin")));
         }
         return new Cdm("settle", o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd)));
+    }
+
+    /** Return settled in a settlement netting (flow-settlement-netting): the step names the netting. */
+    public static Cdm settleReturn(List<Map<String, Object>> assets, long releasedValueUsd, String nettingId) {
+        List<Object> positions = new ArrayList<>();
+        for (Map<String, Object> a : assets) {
+            positions.add(position(((Number) a.get("units")).longValue(), (String) a.get("isin")));
+        }
+        return new Cdm("settle", o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd),
+                "nettingIdentifier", nettingId));
     }
 
     // ---- cancellation (task-csa-call-cancellation; rules to confirm in task-sme-call-cancellation-rules) ----

@@ -734,6 +734,121 @@ test("flow-interest-on-cash: secured party states interest on cash collateral ->
   expect(errors).toEqual([]);
 });
 
+// Settlement netting (task-csa-settlement-netting): the scope is the project owner's choice of 2026-11-06 (agreed VM
+// calls, VM returns and held Interest Amounts between the two parties on one day); the rules are assumptions awaiting
+// task-sme-settlement-netting-rules.
+test("flow-settlement-netting: VM call, VM return and held interest due the same day -> the party owing the net settles them by one tUSD transfer, statement verified", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Movement = { id: string; type: string; payer: string; receiver: string; amountUsd: string };
+  type Netting = { nettingId: string; settledBy: string; amountUsd: string; cdmHash: string; verified?: boolean; error?: string; movements?: Movement[] };
+  type Fold = { status: string };
+  const p = await parties();
+  const tUSD = p.tokens["tUSD"];
+
+  // Setup: cash collateral in escrow for the Interest Amount (the interest spec leaves some; a run of this spec alone
+  // pledges it).
+  if (Number(await pledgedOf(GATEWAY.B, tUSD, p)) === 0) {
+    await pledgeThroughServices(100_000, 100_000, "tUSD");
+    await waitForSettledOnChain("IM", 100_000);
+  }
+  const vmUsd = 200_000 + (Date.now() % 9000) * 10;
+  const returnUsd = 50_000 + (Date.now() % 900) * 10;
+
+  // 1. B calls VM from A; A agrees and proposes tUSD; B accepts. Not settled: it waits for the netting.
+  const { callId: vm } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "VM", toParty: "A", amountUsd: vmUsd, deadlineDays: 1 });
+  await call(`${SERVICE.A}/calls/${vm}/response`, "POST", { response: "full" });
+  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${vm}/proposal`, "POST", { assets: [{ token: "tUSD", qty: vmUsd }] });
+  await call(`${SERVICE.B}/calls/${vm}/decision`, "POST", { proposalId, accept: true });
+
+  // 2. A calls a VM return from B; B agrees.
+  const { callId: ret } = await call<{ callId: string }>(`${SERVICE.A}/calls`, "POST", { kind: "Return", toParty: "B", amountUsd: returnUsd, deadlineDays: 1 });
+  await call(`${SERVICE.B}/calls/${ret}/response`, "POST", { response: "full" });
+
+  // 3. B states the month's interest in its console and holds it for netting: stated on-chain, nothing paid.
+  const known = new Set((await call<Interest[]>(`${SERVICE.B}/interest`)).map((i) => i.interestId));
+  await page.goto("/#/live/B");
+  const interestCard = page.getByTestId("interest");
+  await interestCard.getByLabel("Period start").fill("2026-11-01");
+  await interestCard.getByLabel("Period end").fill("2026-12-01");
+  await interestCard.getByLabel("Observed rate (%)").fill("4.3");
+  await interestCard.getByRole("checkbox", { name: /Hold for settlement netting/ }).check();
+  await expect(interestCard.getByRole("button", { name: "State interest → A" })).toBeEnabled({ timeout: STEP_TIMEOUT });
+  await interestCard.getByRole("button", { name: "State interest → A" }).click();
+  let held: Interest | undefined;
+  await expect
+    .poll(async () => {
+      held = (await call<Interest[]>(`${SERVICE.B}/interest`)).find((i) => !known.has(i.interestId));
+      return held?.verified && held.state === "stated" ? true : (held?.error ?? held?.state ?? null);
+    }, { timeout: 60_000 })
+    .toBe(true);
+  const interestUsd = Number(held!.amountUsd);
+  expect(interestUsd).toBeGreaterThan(0);
+
+  // 4. A's service lists the three movements and A owes the net.
+  let cand: { movements: Movement[]; netUsd: string; payer: string | null } | undefined;
+  await expect
+    .poll(async () => {
+      cand = await call(`${SERVICE.A}/netting/candidates`);
+      return [vm, ret, held!.interestId].every((id) => cand!.movements.some((m) => m.id === id));
+    }, { timeout: 60_000 })
+    .toBe(true);
+  const byId = (id: string) => cand!.movements.find((m) => m.id === id)!;
+  expect(byId(vm)).toMatchObject({ type: "DeliveryAmount", payer: "A", receiver: "B", amountUsd: String(vmUsd) });
+  expect(byId(ret)).toMatchObject({ type: "ReturnAmount", payer: "B", receiver: "A", amountUsd: String(returnUsd) });
+  expect(byId(held!.interestId)).toMatchObject({ type: "InterestAmount", payer: "B", receiver: "A", amountUsd: String(interestUsd) });
+  expect(cand!.payer).toBe("A");
+  const net = Number(cand!.netUsd); // every movement that can net now, earlier runs' leftovers included
+  const aFree = await balanceOf(GATEWAY.A, tUSD, p.a);
+  const bFree = await balanceOf(GATEWAY.B, tUSD, p.b);
+  const knownNettings = new Set((await call<Netting[]>(`${SERVICE.A}/nettings`)).map((n) => n.nettingId));
+
+  // 5. A settles them in its console by one transfer of tUSD.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("settlement-netting");
+  await expect(card.getByTestId("netting-net")).toHaveText(`Net: A pays USD ${net.toLocaleString("en-US")} in tUSD`, { timeout: STEP_TIMEOUT });
+  await card.getByRole("button", { name: "Settle netted" }).click();
+
+  // 6. Both services list the netting with the same verified CDM statement; the net moved once, A to B.
+  let mine: Netting | undefined;
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        mine = (await call<Netting[]>(`${svc}/nettings`)).find((n) => !knownNettings.has(n.nettingId));
+        return mine?.verified ? true : (mine?.error ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  const fromA = (await call<Netting[]>(`${SERVICE.A}/nettings`)).find((n) => n.nettingId === mine!.nettingId)!;
+  expect(mine!.cdmHash).toBe(fromA.cdmHash);
+  expect(mine!.settledBy).toBe("A");
+  expect(mine!.amountUsd).toBe(String(net));
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aFree - BigInt(net));
+  expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bFree + BigInt(net));
+
+  // On-chain: both calls settled in the netting, the Interest Amount settled.
+  for (const id of [vm, ret]) {
+    const c = await call<{ state: number; nettedIn: string }>(`${GATEWAY.A}/calls/${id}`);
+    expect(c.state).toBe(5);
+    expect(c.nettedIn).toBe(mine!.nettingId);
+  }
+  expect((await call<Interest[]>(`${SERVICE.A}/interest`)).find((i) => i.interestId === held!.interestId)?.state).toBe("settled");
+
+  // Both services fold each call's SettleCall step (naming the netting) to Settled.
+  for (const id of [vm, ret]) {
+    await expectConvergedCdmState(id);
+    for (const svc of [SERVICE.A, SERVICE.B]) expect((await call<Fold>(`${svc}/calls/${id}/cdm-state`)).status).toMatch(/^settled$/i);
+  }
+
+  // Both consoles show the netting as verified and nothing left to net from it.
+  for (const who of ["A", "B"] as const) {
+    await page.goto(`/#/live/${who}`);
+    await expect(page.getByTestId(`netting-${mine!.nettingId}`).getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  }
+  expect(errors).toEqual([]);
+});
+
 // Margin call cancellation (task-csa-call-cancellation). The rules are the project owner's assumptions of 2026-11-06,
 // to be confirmed in task-sme-call-cancellation-rules.
 test("flow-call-cancellation: secured party withdraws an unanswered call; requests cancellation of an agreed call -> pledgor accepts, proposal void, nothing moved", async ({ page }) => {
