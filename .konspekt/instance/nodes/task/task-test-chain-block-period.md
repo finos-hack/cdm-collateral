@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:54:12Z
   confidence: 0.75
 createdAt: 2026-11-07T18:54:12Z
-updatedAt: 2026-11-07T19:57:56Z
+updatedAt: 2026-11-07T21:14:36Z
 ```
 # Task: shorten the Besu block period of the test network to 1 s
 
@@ -23,3 +23,5 @@ The QBFT block period is 2 s (`besu/qbftConfigFile.json`, `besu/networkFiles/gen
 redeploy of the contracts and the live stack, locally, in CI and in the codespace. Do it after the other two.
 
 Accepted by the project owner on 2026-11-07 (source `fe94d24c8393576eafa827a5ced53840580becbe`: "1. accept the speed task").
+
+Deferred by the project owner on 2026-11-07 (source `1f18f384e0b534a4a82dd24e1d9303362296d64e`: "2. later").

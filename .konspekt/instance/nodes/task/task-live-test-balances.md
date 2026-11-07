@@ -2,7 +2,7 @@
 id: task-live-test-balances
 type: task
 title: Keep the live test parties funded across suite runs
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T20:46:35Z
   confidence: 0.6
 createdAt: 2026-11-07T20:46:35Z
-updatedAt: 2026-11-07T21:09:14Z
+updatedAt: 2026-11-07T21:14:36Z
 ```
 # Task: keep the live test parties funded across suite runs
 
@@ -34,3 +34,5 @@ Accepted by the project owner on 2026-11-07 with option (a), the suite tops A up
 `contracts/scripts/test-balances.json`, the same targets `deploy.ts` mints from, signed by the market operator's key;
 escrow is untouched. First run: bank-a tUST +184,978 and tUSD +8,400,872; the next suite run found the balances at
 their targets after 15/15.
+
+The project owner resolved the task on 2026-11-07 (source `1f18f384e0b534a4a82dd24e1d9303362296d64e`: "1. yes").
