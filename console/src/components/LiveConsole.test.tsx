@@ -350,3 +350,57 @@ describe("flow-allocation", () => {
     expect(within(await rowOf()).queryByRole("button", { name: "Suggest allocation" })).toBeNull();
   });
 });
+
+describe("flow-reconciliation", () => {
+  const RUN = {
+    reconciliationId: "0x9999999999999999999999999999999999999999999999999999999999999999",
+    firstSnapshotId: "0x01", secondSnapshotId: "0x02", resultHash: "0x03",
+    firstParty: "BANK-A", secondParty: "BANK-B", reconciled: false, matchedTrades: 1,
+    breaks: [
+      { uti: "56323", type: "MissingFromSecond", terms: [], firstValuationUsd: "75000", secondValuationUsd: null, differenceUsd: null },
+      { uti: "DRTY123456", type: "ValuationDiffers", terms: [], firstValuationUsd: "300000", secondValuationUsd: "-260000", differenceUsd: "40000" },
+    ],
+    firstExposureUsd: "1625000", secondExposureUsd: "-1510000", exposureDifferenceUsd: "115000", toleranceUsd: "10000",
+    onChain: { state: "agreed", firstPartyResult: "0x03", secondPartyResult: "0x03" },
+  };
+  const card = async () => (await screen.findByRole("heading", { name: "Reconciliation" })).closest(".card") as HTMLElement;
+
+  it("either party reconciles the trade portfolios and sees the breaks and the on-chain agreement", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "POST /reconciliation/portfolio": RUN, "/reconciliation/portfolio": [RUN] });
+    await user.click(within(await card()).getByRole("button", { name: "Reconcile portfolios → B" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/reconciliation/portfolio", body: {} }]));
+    const c = await card();
+    expect(await within(c).findByTestId("reconciliation-status")).toHaveTextContent("2 breaks");
+    expect(within(c).getByTestId("reconciliation-onchain")).toHaveTextContent("both results agree on-chain ✓");
+    expect(within(c).getByTestId("break-DRTY123456")).toHaveTextContent("valuations differ");
+    expect(within(c).getByTestId("break-DRTY123456")).toHaveTextContent("USD 40,000");
+    expect(within(c).getByTestId("break-56323")).toHaveTextContent("missing at the second party");
+    expect(within(c).getByTestId("exposure-difference")).toHaveTextContent("USD 115,000");
+  });
+
+  it("reconciles the party's records with the ledger", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "POST /reconciliation/ledger": { party: "BANK-B", counterparty: "BANK-A", reconciled: true, checkedFacts: 9, calls: 3, breaks: [] },
+    });
+    await user.click(within(await card()).getByRole("button", { name: "Reconcile with ledger" }));
+    expect(await within(await card()).findByTestId("ledger-reconciliation")).toHaveTextContent("records match the ledger ✓");
+    expect(within(await card()).getByTestId("ledger-reconciliation")).toHaveTextContent("3 calls, 9 facts checked");
+  });
+
+  it("the called party disputes an issued call citing the latest reconciliation, offered only when it has breaks", async () => {
+    const user = userEvent.setup();
+    const ID = call({}).callId;
+    serve("A", { calls: [call({ state: "issued" })], balances: balances("0") }, NO_SHORTFALL, { "/reconciliation/portfolio": [RUN] });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    await user.click(await within(row).findByRole("button", { name: "Dispute citing reconciliation" }));
+    await waitFor(() => expect(posts).toEqual([{ path: `/calls/${ID}/response`, body: { response: "dispute", reconciliationId: RUN.reconciliationId } }]));
+    vi.unstubAllGlobals();
+    document.body.innerHTML = "";
+    serve("A", { calls: [call({ state: "issued" })], balances: balances("0") }, NO_SHORTFALL, { "/reconciliation/portfolio": [{ ...RUN, reconciled: true, breaks: [] }] });
+    const row2 = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    await within(row2).findByRole("button", { name: "Dispute" });
+    expect(within(row2).queryByRole("button", { name: "Dispute citing reconciliation" })).toBeNull();
+  });
+});

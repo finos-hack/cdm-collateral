@@ -38,6 +38,7 @@
     ".konspekt/instance/waypoints/wp-adr-oracle-prices-on-request-ratings-offchain.md",
     ".konspekt/instance/waypoints/wp-adr-per-participant-services.md",
     ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
+    ".konspekt/instance/waypoints/wp-adr-reconciliation-scope.md",
     ".konspekt/instance/waypoints/wp-adr-replacement-call-link.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",
@@ -124,7 +125,7 @@
       "unique-id": "collateral-service",
       "node-type": "service",
       "name": "Collateral workflow service",
-      "description": "Off-chain margin workflow (ASR concept-asr-onchain-call-state: negotiation and CDM content off-chain, call state on-chain), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute, propose, decide, settle) that CDM 7.7.0 does not provide (finding F2) with the local CDM extension (cdm-ext), and sends its own party's movement instructions to its ledger gateway. Each lifecycle step is one CDM MarginCallInstruction serialised to canonical Rune JSON and hashed with keccak-256; the service writes the document to the CDM payload store and the hash goes on-chain (ADR wp-adr-cdm-payload-carrier). It reads the counterparty's steps from the chain and the store, not from the counterparty's instance, and folds every step in chain order into one cumulative, validated MarginCallState per call (CDM Create_MarginCallState); both parties' folds converge to an identical state. It relays its gateway's event stream to its console over Server-Sent Events.",
+      "description": "Off-chain margin workflow (ASR concept-asr-onchain-call-state: negotiation and CDM content off-chain, call state on-chain), one instance per participant: holds that party's CDM agreements (ISDA IM CSA / CTA-SA elections, eligibility schedule), checks eligibility and haircuts with CDM functions, runs the margin call lifecycle (issue, respond, dispute, propose, decide, settle) that CDM 7.7.0 does not provide (finding F2) with the local CDM extension (cdm-ext), and sends its own party's movement instructions to its ledger gateway. Each lifecycle step is one CDM MarginCallInstruction serialised to canonical Rune JSON and hashed with keccak-256; the service writes the document to the CDM payload store and the hash goes on-chain (ADR wp-adr-cdm-payload-carrier). It reads the counterparty's steps from the chain and the store, not from the counterparty's instance (the one direct link between the two instances is the trade snapshot exchange of flow-reconciliation, service-to-counterparty-service), and folds every step in chain order into one cumulative, validated MarginCallState per call (CDM Create_MarginCallState); both parties' folds converge to an identical state. It relays its gateway's event stream to its console over Server-Sent Events.",
       "interfaces": [
         {
           "unique-id": "collateral-rest-api",
@@ -336,6 +337,15 @@
       "metadata": {
         "language": "Solidity"
       }
+    },
+    {
+      "unique-id": "portfolio-reconciliation-contract",
+      "node-type": "service",
+      "name": "Portfolio reconciliation contract",
+      "description": "On-chain record of portfolio reconciliation (flow-reconciliation, gap G35): the hash of each party's trade snapshot and the hash of the result each party computed from the two snapshots. A run is Agreed when the two result hashes match. No trade data is on-chain. Separate from the collateral control contract, which is close to the EIP-170 size limit (wp-adr-reconciliation-scope).",
+      "metadata": {
+        "language": "Solidity"
+      }
     }
   ],
   "relationships": [
@@ -380,7 +390,8 @@
             "tokenized-collateral",
             "collateral-control-contract",
             "margin-call-contract",
-            "oracle-feed-contract"
+            "oracle-feed-contract",
+            "portfolio-reconciliation-contract"
           ]
         }
       }
@@ -423,7 +434,8 @@
             "tokenized-collateral",
             "collateral-control-contract",
             "margin-call-contract",
-            "oracle-feed-contract"
+            "oracle-feed-contract",
+            "portfolio-reconciliation-contract"
           ]
         }
       }
@@ -636,6 +648,24 @@
             "node": "ledger-gateway",
             "interfaces": [
               "ledger-gateway-api"
+            ]
+          }
+        }
+      },
+      "protocol": "HTTP"
+    },
+    {
+      "unique-id": "service-to-counterparty-service",
+      "description": "Sends this party's trade snapshot (a CDM PortfolioSnapshot as Rune JSON) to the counterparty's workflow service and receives the counterparty's in return (flow-reconciliation). Each side checks the snapshot it receives against the hash the other committed on-chain. No other step crosses between the two instances.",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "collateral-service"
+          },
+          "destination": {
+            "node": "collateral-service",
+            "interfaces": [
+              "collateral-rest-api"
             ]
           }
         }
@@ -1531,6 +1561,58 @@
           "relationship-unique-id": "pledgor-uses-console",
           "sequence-number": 4,
           "description": "The console fills the proposal basket from the service's CDM AllocateCollateral result; the pledgor proposes it as before."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-reconciliation",
+      "name": "Reconciliation (trade portfolios and records against the ledger)",
+      "description": "Either party reconciles (task-csa-reconciliation, gap G35; the project owner's scope of 2026-11-07, wp-adr-reconciliation-scope). Trade portfolios: each party's workflow service holds CDM sample TradeStates and its own valuation of each; the initiating party sends its PortfolioSnapshot to the counterparty's service, each commits its snapshot hash on-chain, and both run cdm-ext ReconcilePortfolios (trades matched by UTI on key economic terms and a valuation tolerance, with each party's exposure) and commit the result hash; the run is Agreed on-chain when the hashes match. The called party can dispute an issued call citing the run's breaks (a CDM Dispute, G3). Records against the ledger: cdm-ext ReconcileWithLedger compares the status, called and agreed amounts in the party's stored MarginCallStates with the contract's. Key terms, tolerance and cadence await task-sme-reconciliation-rules.",
+      "transitions": [
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 1,
+          "description": "The pledgor asks its console to reconcile its trade portfolio with the secured party's."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console asks the party's workflow service to reconcile portfolios."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 3,
+          "description": "Service builds its CDM PortfolioSnapshot and commits its hash to the portfolio reconciliation contract through its own gateway."
+        },
+        {
+          "relationship-unique-id": "service-to-counterparty-service",
+          "sequence-number": 4,
+          "description": "Service sends the snapshot to the counterparty's service, which checks it against the committed hash, commits its own snapshot and result hashes through its own gateway, and answers with its snapshot."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 5,
+          "description": "Service checks the counterparty's snapshot against its committed hash, runs ReconcilePortfolios and commits the result hash; the contract records the run as Agreed when both hashes match."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 6,
+          "description": "The console shows the breaks, the two exposures and the on-chain agreement; on an issued call the pledgor disputes citing the run (respond step, a CDM Dispute recorded with the call)."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 7,
+          "description": "Console asks the party's service to reconcile its records with the ledger."
+        },
+        {
+          "relationship-unique-id": "service-to-store",
+          "sequence-number": 8,
+          "description": "Service reads its stored CDM MarginCallStates of the pair's calls."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 9,
+          "description": "Service reads the pair's calls from the margin call contract and runs ReconcileWithLedger on the two sets of facts."
         }
       ]
     },

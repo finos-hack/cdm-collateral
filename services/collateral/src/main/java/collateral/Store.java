@@ -72,6 +72,22 @@ public final class Store implements AutoCloseable {
                       state_json TEXT NOT NULL,
                       updated_at TEXT NOT NULL
                     )""");
+                // flow-reconciliation: the trade snapshots exchanged with the counterparty (only their hashes are
+                // on-chain) and each run's CDM PortfolioReconciliation.
+                st.execute("""
+                    CREATE TABLE IF NOT EXISTS reconciliation_snapshot (
+                      snapshot_id TEXT PRIMARY KEY,
+                      party TEXT NOT NULL,
+                      snapshot_json TEXT NOT NULL
+                    )""");
+                st.execute("""
+                    CREATE TABLE IF NOT EXISTS reconciliation_run (
+                      reconciliation_id TEXT PRIMARY KEY,
+                      first_snapshot_id TEXT NOT NULL,
+                      second_snapshot_id TEXT NOT NULL,
+                      result_json TEXT NOT NULL,
+                      created_at TEXT NOT NULL
+                    )""");
             }
         } catch (Exception e) {
             throw new RuntimeException("store init failed: " + e.getMessage(), e);
@@ -139,6 +155,66 @@ public final class Store implements AutoCloseable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void saveSnapshot(String snapshotId, String party, String json) {
+        try (PreparedStatement up = conn.prepareStatement("INSERT OR IGNORE INTO reconciliation_snapshot(snapshot_id, party, snapshot_json) VALUES(?,?,?)")) {
+            up.setString(1, snapshotId.toLowerCase());
+            up.setString(2, party);
+            up.setString(3, json);
+            up.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void saveRun(String reconciliationId, String firstSnapshotId, String secondSnapshotId, String resultJson) {
+        try (PreparedStatement up = conn.prepareStatement(
+                "INSERT OR REPLACE INTO reconciliation_run(reconciliation_id, first_snapshot_id, second_snapshot_id, result_json, created_at) VALUES(?,?,?,?,?)")) {
+            up.setString(1, reconciliationId.toLowerCase());
+            up.setString(2, firstSnapshotId.toLowerCase());
+            up.setString(3, secondSnapshotId.toLowerCase());
+            up.setString(4, resultJson);
+            up.setString(5, Instant.now().toString());
+            up.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Reconciliation runs, latest first: reconciliationId, firstSnapshotId, secondSnapshotId, resultJson, createdAt. */
+    public List<Map<String, String>> runs(int limit) {
+        List<Map<String, String>> out = new ArrayList<>();
+        try (PreparedStatement q = conn.prepareStatement(
+                "SELECT reconciliation_id, first_snapshot_id, second_snapshot_id, result_json, created_at FROM reconciliation_run ORDER BY created_at DESC LIMIT ?")) {
+            q.setInt(1, limit);
+            ResultSet rs = q.executeQuery();
+            while (rs.next()) {
+                Map<String, String> m = new LinkedHashMap<>();
+                m.put("reconciliationId", rs.getString(1));
+                m.put("firstSnapshotId", rs.getString(2));
+                m.put("secondSnapshotId", rs.getString(3));
+                m.put("resultJson", rs.getString(4));
+                m.put("createdAt", rs.getString(5));
+                out.add(m);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return out;
+    }
+
+    /** Every stored MarginCallState updated at or after a time (ISO instant): call id to state JSON. */
+    public Map<String, String> statesSince(String isoInstant) {
+        Map<String, String> out = new LinkedHashMap<>();
+        try (PreparedStatement q = conn.prepareStatement("SELECT call_id, state_json FROM margin_call_state WHERE updated_at >= ? ORDER BY call_id")) {
+            q.setString(1, isoInstant);
+            ResultSet rs = q.executeQuery();
+            while (rs.next()) out.put(rs.getString(1), rs.getString(2));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return out;
     }
 
     /**

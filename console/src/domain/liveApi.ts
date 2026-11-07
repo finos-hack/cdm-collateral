@@ -89,6 +89,44 @@ export interface LiveAllocation {
   ranking: string[];
 }
 
+/** One trade that does not reconcile (flow-reconciliation, cdm-ext ReconciliationBreak). */
+export interface LiveReconciliationBreak {
+  uti: string;
+  type: "MissingFromSecond" | "MissingFromFirst" | "EconomicTermsDiffer" | "ValuationDiffers";
+  terms: string[];
+  firstValuationUsd: string | null;
+  secondValuationUsd: string | null;
+  differenceUsd: string | null;
+}
+
+/** A portfolio reconciliation run: the CDM PortfolioReconciliation and its on-chain state. */
+export interface LivePortfolioReconciliation {
+  reconciliationId: string;
+  firstSnapshotId: string;
+  secondSnapshotId: string;
+  resultHash: string;
+  firstParty: string;
+  secondParty: string;
+  reconciled: boolean;
+  matchedTrades: number;
+  breaks: LiveReconciliationBreak[];
+  firstExposureUsd: string;
+  secondExposureUsd: string;
+  exposureDifferenceUsd: string;
+  toleranceUsd: string;
+  onChain: { state: "none" | "one result" | "agreed" | "disagreed"; firstPartyResult: string; secondPartyResult: string };
+}
+
+/** The party's CDM records against the chain (flow-reconciliation, cdm-ext LedgerReconciliation). */
+export interface LiveLedgerReconciliation {
+  party: string;
+  counterparty: string;
+  reconciled: boolean;
+  checkedFacts: number;
+  calls: number;
+  breaks: { record: string; attribute: string; type: string; recorded: string | null; ledger: string | null }[];
+}
+
 export const api = {
   context: (p: LiveParty) => req<LiveContext>(p, "GET", "/context"),
   state: (p: LiveParty) => req<LiveState>(p, "GET", "/state"),
@@ -97,8 +135,9 @@ export const api = {
   /** Calling party: issue a call that replaces a cancelled one; kind and called party are the cancelled call's. */
   replaceCall: (p: LiveParty, callId: string, amountUsd: number) =>
     req<{ callId: string }>(p, "POST", "/calls", { replacesCallId: callId, amountUsd, deadlineDays: 1 }),
-  respond: (p: LiveParty, callId: string, response: string, agreedUsd?: number) =>
-    req<{ ok: boolean }>(p, "POST", `/calls/${callId}/response`, { response, agreedUsd }),
+  /** reconciliationId: a dispute or partial agreement that cites a portfolio reconciliation run (flow-reconciliation). */
+  respond: (p: LiveParty, callId: string, response: string, agreedUsd?: number, reconciliationId?: string) =>
+    req<{ ok: boolean; dispute?: { disputeIdentifier: string; reason: string; cdmHash: string } }>(p, "POST", `/calls/${callId}/response`, { response, agreedUsd, reconciliationId }),
   propose: (p: LiveParty, callId: string, assets: { token: string; qty: number }[]) =>
     req<{ proposalId: number }>(p, "POST", `/calls/${callId}/proposal`, { assets }),
   /** Called party: a suggested basket for an agreed IM or VM call (flow-allocation); nothing is recorded. */
@@ -152,6 +191,10 @@ export const api = {
   /** The party owing the net settles every movement that can net now by one transfer of tUSD. */
   settleNetting: (p: LiveParty) => req<LiveNetting & { settleTx: string }>(p, "POST", "/nettings", {}),
   /** Substitutions of pledged collateral with their CDM fold (flow-substitution). */
+  reconciliations: (p: LiveParty) => req<LivePortfolioReconciliation[]>(p, "GET", "/reconciliation/portfolio"),
+  /** Exchange trade snapshots with the counterparty's service, commit the hashes and the result (flow-reconciliation). */
+  reconcilePortfolio: (p: LiveParty) => req<LivePortfolioReconciliation>(p, "POST", "/reconciliation/portfolio", {}),
+  reconcileWithLedger: (p: LiveParty) => req<LiveLedgerReconciliation>(p, "POST", "/reconciliation/ledger", {}),
   substitutions: (p: LiveParty) => req<LiveSubstitution[]>(p, "GET", "/substitutions"),
   requestSubstitution: (p: LiveParty, original: { token: string; qty: number }[], substitute: { token: string; qty: number }[]) =>
     req<{ substitutionId: string; originalUsd: string; substituteUsd: string }>(p, "POST", "/substitutions", { original, substitute }),

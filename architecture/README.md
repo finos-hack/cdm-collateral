@@ -158,6 +158,14 @@ READMEs are the authority. Oracle service: design only.
     one up to whole units. Nothing is recorded on-chain; the console fills the proposal basket and the party proposes
     it as before. Concentration limits are not applied. The default ranking awaits a business SME
     (`task-sme-allocation-ranking`).
+14. **Reconciliation** (`flow-reconciliation`) — either party reconciles its trade portfolio with the counterparty's:
+    each workflow service holds CDM sample TradeStates and its own valuation of each, the two services exchange their
+    `PortfolioSnapshot`s directly (`service-to-counterparty-service`), and each commits its snapshot hash and the hash
+    of the cdm-ext `ReconcilePortfolios` result to the portfolio reconciliation contract; the run is Agreed when the
+    result hashes match. Breaks are trades missing at one party, differing key economic terms and valuations outside
+    the tolerance. The called party can dispute an issued call citing the run (a CDM Dispute). A party also reconciles
+    its stored MarginCallStates with the chain on request (cdm-ext `ReconcileWithLedger`: status, called and agreed
+    amounts). Key terms, tolerance and cadence await a business SME (`task-sme-reconciliation-rules`).
 
 ## Running N participants
 

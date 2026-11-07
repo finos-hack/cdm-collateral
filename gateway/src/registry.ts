@@ -23,7 +23,13 @@ export interface Registry {
   publisher: `0x${string}`;
   rpc: Record<string, string>;
   parties: Record<string, `0x${string}`>;
-  contracts: { marginCall: `0x${string}`; collateralControl: `0x${string}`; oracleFeed: `0x${string}` };
+  contracts: {
+    marginCall: `0x${string}`;
+    collateralControl: `0x${string}`;
+    oracleFeed: `0x${string}`;
+    /** Absent in a deployment made before flow-reconciliation. */
+    portfolioReconciliation?: `0x${string}`;
+  };
   priceScale: string;
   tokens: Record<string, TokenInfo>;
 }

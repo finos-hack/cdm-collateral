@@ -1140,3 +1140,94 @@ test("flow-allocation: pledgor asks for a suggested basket on an agreed IM call 
   expect(errors).toEqual([]);
 });
 
+
+test("flow-reconciliation: pledgor reconciles trade portfolios with the secured party -> hashes agree on-chain -> disputes a call citing the breaks; both parties' records match the ledger", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Run = {
+    reconciliationId: string; firstSnapshotId: string; secondSnapshotId: string; resultHash: string;
+    firstParty: string; secondParty: string; reconciled: boolean; matchedTrades: number;
+    breaks: { uti: string; type: string; differenceUsd: string | null }[];
+    firstExposureUsd: string; secondExposureUsd: string; exposureDifferenceUsd: string;
+    onChain: { state: string; firstPartyResult: string; secondPartyResult: string };
+  };
+  const p = await parties();
+  const before = (await call<Run[]>(`${SERVICE.A}/reconciliation/portfolio`))[0]?.reconciliationId;
+
+  // 1. The pledgor (BANK-A) reconciles its trades with BANK-B's from its console: the snapshots go service to service,
+  //    each party commits its snapshot hash and its result hash on-chain.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("reconciliation");
+  await card.getByRole("button", { name: "Reconcile portfolios → B" }).click();
+  let a: Run | undefined;
+  await expect
+    .poll(async () => {
+      a = (await call<Run[]>(`${SERVICE.A}/reconciliation/portfolio`))[0];
+      return a?.reconciliationId;
+    }, { timeout: 60_000 })
+    .not.toBe(before);
+  const shown = card.getByTestId(`reconciliation-${a!.reconciliationId}`);
+  await expect(shown.getByTestId("reconciliation-status")).toHaveText("2 breaks", { timeout: STEP_TIMEOUT });
+  await expect(shown.getByTestId("reconciliation-onchain")).toHaveText("both results agree on-chain ✓");
+  await expect(shown.getByTestId("break-DRTY123456")).toContainText("valuations differ");
+  await expect(shown.getByTestId("break-DRTY123456")).toContainText("USD 40,000");
+  await expect(shown.getByTestId("break-56323")).toContainText("missing at the second party");
+  await expect(shown.getByTestId("exposure-difference")).toHaveText("USD 115,000");
+
+  // 2. Both services hold the same CDM result for the run; the chain holds both snapshots and the matching result hashes.
+  a = (await call<Run[]>(`${SERVICE.A}/reconciliation/portfolio`))[0];
+  const b = (await call<Run[]>(`${SERVICE.B}/reconciliation/portfolio`))[0];
+  expect(b.reconciliationId).toBe(a.reconciliationId);
+  expect(b.resultHash).toBe(a.resultHash);
+  expect([a.firstParty, a.secondParty, a.matchedTrades, a.reconciled]).toEqual(["BANK-A", "BANK-B", 1, false]);
+  expect(a.breaks.map((x) => `${x.uti}:${x.type}:${x.differenceUsd}`)).toEqual(["56323:MissingFromSecond:null", "DRTY123456:ValuationDiffers:40000"]);
+  expect([a.firstExposureUsd, a.secondExposureUsd, a.exposureDifferenceUsd]).toEqual(["1625000", "-1510000", "115000"]);
+  const run = await call<{ state: string; firstPartyResult: string; secondPartyResult: string; breakCount: number }>(`${GATEWAY.B}/reconciliation/runs/${a.reconciliationId}`);
+  expect(run).toMatchObject({ state: "agreed", firstPartyResult: a.resultHash, secondPartyResult: a.resultHash, breakCount: 2 });
+  const first = await call<{ party: string; counterparty: string; snapshotHash: string }>(`${GATEWAY.A}/reconciliation/snapshots/${a.firstSnapshotId}`);
+  const second = await call<{ party: string; counterparty: string; snapshotHash: string }>(`${GATEWAY.A}/reconciliation/snapshots/${a.secondSnapshotId}`);
+  expect([first.party.toLowerCase(), first.counterparty.toLowerCase()]).toEqual([p.a.toLowerCase(), p.b.toLowerCase()]);
+  expect([second.party.toLowerCase(), second.counterparty.toLowerCase()]).toEqual([p.b.toLowerCase(), p.a.toLowerCase()]);
+  expect(first.snapshotHash).not.toBe(ZERO_HASH);
+  await page.goto("/#/live/B");
+  await expect(page.getByTestId(`reconciliation-${a.reconciliationId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 3. BANK-B issues an IM call; BANK-A disputes it from its console citing the reconciliation, and records a CDM Dispute
+  //    whose reason names the run and its breaks. Nothing is delivered.
+  const amountUsd = 600_000 + (Date.now() % 9000) * 10;
+  const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await page.goto("/#/live/A");
+  const row = page.locator(".subcard", { hasText: shortId(callId) });
+  await row.getByRole("button", { name: "Dispute citing reconciliation" }).click({ timeout: STEP_TIMEOUT });
+  await expect(row.getByText("disputed", { exact: true })).toBeVisible({ timeout: STEP_TIMEOUT });
+  // The console shows "disputed" once the response is mined; the service records the Dispute right after.
+  type Row = { callId: string; state: string; disputedUsd: string; messages: { msgType: string; cdmJson: string }[] };
+  let disputed: Row | undefined;
+  await expect
+    .poll(async () => {
+      disputed = (await call<{ calls: Row[] }>(`${SERVICE.A}/state`)).calls.find((c) => c.callId === callId);
+      return disputed?.messages.map((m) => m.msgType) ?? [];
+    }, { timeout: STEP_TIMEOUT })
+    .toContain("Dispute");
+  expect([disputed!.state, disputed!.disputedUsd]).toEqual(["disputed", String(amountUsd)]);
+  const dispute = JSON.parse(disputed!.messages.find((m) => m.msgType === "Dispute")!.cdmJson);
+  expect(dispute.reason).toBe(`Portfolio reconciliation ${a.reconciliationId}: 2 breaks; 56323 MissingFromSecond; DRTY123456 ValuationDiffers; exposure difference USD 115000`);
+
+  // 4. Each party's stored CDM records of the pair's calls match the contract (status, called and agreed amounts).
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    let last: unknown;
+    await expect
+      .poll(async () => {
+        const r = await call<{ reconciled: boolean; calls: number; checkedFacts: number; breaks: unknown[] }>(`${svc}/reconciliation/ledger`, "POST", {});
+        last = r.breaks;
+        return r.reconciled && r.calls > 0 && r.checkedFacts >= 2 * r.calls;
+      }, { timeout: 60_000, message: `ledger reconciliation at ${svc}` })
+      .toBe(true);
+    expect(last).toEqual([]);
+  }
+  await page.getByTestId("reconciliation").getByRole("button", { name: "Reconcile with ledger" }).click();
+  await expect(page.getByTestId("ledger-reconciliation")).toContainText("records match the ledger ✓", { timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});

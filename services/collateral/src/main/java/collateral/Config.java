@@ -26,10 +26,12 @@ public final class Config {
     public final JsonNode registry;   // parsed besu.json
     public final BigInteger priceScale;
     public final String myAddress;
+    /** The counterparty's collateral service, for the trade snapshots exchanged service to service (flow-reconciliation). */
+    public final String counterpartyServiceUrl;
 
     public static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private Config(String partyId, String node, String role, int port, String gatewayUrl, String oracleUrl, String storeUrl, String storeToken, String dbPath, JsonNode registry) {
+    private Config(String partyId, String node, String role, int port, String gatewayUrl, String oracleUrl, String storeUrl, String storeToken, String dbPath, JsonNode registry, String counterpartyServiceUrl) {
         this.partyId = partyId;
         this.node = node;
         this.role = role;
@@ -42,6 +44,7 @@ public final class Config {
         this.registry = registry;
         this.priceScale = new BigInteger(registry.get("priceScale").asText());
         this.myAddress = registry.get("parties").get(node).asText();
+        this.counterpartyServiceUrl = counterpartyServiceUrl;
     }
 
     public static Config fromEnv() {
@@ -56,9 +59,10 @@ public final class Config {
         String repoRoot = env("REPO_ROOT", Path.of(System.getProperty("user.dir")).toString());
         Path regPath = findRegistry(Path.of(repoRoot));
         String dbPath = env("DB_PATH", "./data/" + node + ".db");
+        String counterpartyServiceUrl = env("COUNTERPARTY_SERVICE_URL", partyId.equals("B") ? "http://localhost:8001" : "http://localhost:8002");
         try {
             JsonNode registry = MAPPER.readTree(Files.readString(regPath));
-            return new Config(partyId, node, role, port, gatewayUrl, oracleUrl, storeUrl, storeToken, dbPath, registry);
+            return new Config(partyId, node, role, port, gatewayUrl, oracleUrl, storeUrl, storeToken, dbPath, registry, counterpartyServiceUrl);
         } catch (Exception e) {
             throw new RuntimeException("failed to read deployment registry at " + regPath + ": " + e.getMessage(), e);
         }

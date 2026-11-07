@@ -701,4 +701,53 @@ describe("CDM collateral contracts", async () => {
       await control.write.proposeAmendment([id(54), aAddr, bAddr, terms(900), H, H2], { account: bankA.account }); // next one
     });
   });
+
+  describe("portfolio reconciliation record (task-csa-reconciliation)", () => {
+    let rec: any, bankC: any;
+    const H = (s: string) => keccak256(toHex(s));
+    const SA = H("snap-A"), SB = H("snap-B");
+    beforeEach(async () => {
+      rec = await viem.deployContract("PortfolioReconciliation", []);
+      bankC = (await viem.getWalletClients())[3];
+      await rec.write.commitSnapshot([SA, bAddr, H("A trades")], { account: bankA.account });
+      await rec.write.commitSnapshot([SB, aAddr, H("B trades")], { account: bankB.account });
+    });
+    const runId = async () => rec.read.reconciliationIdOf([SA, SB]);
+
+    it("records each snapshot hash once, for its party and counterparty", async () => {
+      const s = await rec.read.getSnapshot([SA]);
+      assert.equal(getAddress(s.party), aAddr);
+      assert.equal(getAddress(s.counterparty), bAddr);
+      assert.equal(s.snapshotHash, H("A trades"));
+      await assert.rejects(rec.write.commitSnapshot([SA, bAddr, H("again")], { account: bankA.account }));
+      await assert.rejects(rec.write.commitSnapshot([H("self"), aAddr, H("x")], { account: bankA.account }));
+    });
+    it("agrees when both parties commit the same result", async () => {
+      const r = await runId();
+      await rec.write.commitResult([r, SA, SB, H("result"), 2], { account: bankA.account });
+      assert.equal((await rec.read.getRun([r])).state, 1); // OneResult
+      await rec.write.commitResult([r, SA, SB, H("result"), 2], { account: bankB.account });
+      const run = await rec.read.getRun([r]);
+      assert.equal(run.state, 2); // Agreed
+      assert.equal(run.breakCount, 2);
+    });
+    it("records a disagreement when the results differ", async () => {
+      const r = await runId();
+      await rec.write.commitResult([r, SA, SB, H("result"), 0], { account: bankB.account });
+      await rec.write.commitResult([r, SA, SB, H("other"), 0], { account: bankA.account });
+      assert.equal((await rec.read.getRun([r])).state, 3); // Disagreed
+    });
+    it("rejects a wrong id, a missing snapshot, an outsider, a second result and snapshots of different pairs", async () => {
+      const r = await runId();
+      await assert.rejects(rec.write.commitResult([H("wrong"), SA, SB, H("result"), 0], { account: bankA.account }));
+      const missing = H("missing");
+      await assert.rejects(rec.write.commitResult([await rec.read.reconciliationIdOf([SA, missing]), SA, missing, H("result"), 0], { account: bankA.account }));
+      await assert.rejects(rec.write.commitResult([r, SA, SB, H("result"), 0], { account: bankC.account }));
+      await rec.write.commitResult([r, SA, SB, H("result"), 0], { account: bankA.account });
+      await assert.rejects(rec.write.commitResult([r, SA, SB, H("result"), 0], { account: bankA.account }));
+      const SC = H("snap-C");
+      await rec.write.commitSnapshot([SC, aAddr, H("C trades")], { account: bankC.account });
+      await assert.rejects(rec.write.commitResult([await rec.read.reconciliationIdOf([SB, SC]), SB, SC, H("result"), 0], { account: bankB.account }));
+    });
+  });
 });
