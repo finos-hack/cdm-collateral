@@ -3,7 +3,7 @@ id: task-live-test-balances
 type: task
 title: Keep the live test parties funded across suite runs
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: ae1744d7ebd05addf2d84102c8c1dd7f4eecb5c2
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T20:46:35Z
   confidence: 0.6
 createdAt: 2026-11-07T20:46:35Z
-updatedAt: 2026-11-07T20:46:35Z
+updatedAt: 2026-11-07T20:52:50Z
 ```
 # Task: keep the live test parties funded across suite runs
 
@@ -25,3 +25,6 @@ Today a fresh contract set (move `contracts/deployments/besu.json` aside, `scrip
 balances. Options: (a) the suite tops A up to a fixed balance before it starts (dev-only `mint` on the tokens), (b)
 each spec that moves value to B moves it back at the end, or (c) keep redeploying. The choice changes how CI and the
 codespace seed the chain.
+
+Accepted by the project owner on 2026-11-07 with option (a), the suite tops A up before it starts (source `cf9a296128848aa5cdf9ffde53124e8bcd1672f4`:
+"4. a").

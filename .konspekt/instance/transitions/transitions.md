@@ -803,3 +803,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-live-test-balances | review |  | proposed | 2026-11-07T20:46:35Z |  |  |
 | node:task-live-test-balances | status |  | open | 2026-11-07T20:46:35Z |  |  |
 | edge:e-lnk-receiptpoll-testbalances | review |  | proposed | 2026-11-07T20:46:35Z |  |  |
+| node:task-gateway-receipt-poll | status | open | resolved | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
+| node:task-live-test-balances | review | proposed | accepted | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
+| edge:e-lnk-receiptpoll-testbalances | review | proposed | accepted | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |

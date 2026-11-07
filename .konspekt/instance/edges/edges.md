@@ -239,4 +239,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-specduration-receiptpoll | decomposes | node:task-live-spec-duration | node:task-gateway-receipt-poll |  | accepted |
 | e-dec-specduration-readlatency | decomposes | node:task-live-spec-duration | node:task-live-read-latency |  | accepted |
 | e-dec-specduration-blockperiod | decomposes | node:task-live-spec-duration | node:task-test-chain-block-period |  | accepted |
-| e-lnk-receiptpoll-testbalances | links | node:task-gateway-receipt-poll | node:task-live-test-balances |  | proposed |
+| e-lnk-receiptpoll-testbalances | links | node:task-gateway-receipt-poll | node:task-live-test-balances |  | accepted |

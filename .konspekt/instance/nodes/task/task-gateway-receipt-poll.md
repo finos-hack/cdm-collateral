@@ -2,7 +2,7 @@
 id: task-gateway-receipt-poll
 type: task
 title: Stop the gateway waiting 4 s for each transaction receipt
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:54:12Z
   confidence: 0.75
 createdAt: 2026-11-07T18:54:12Z
-updatedAt: 2026-11-07T20:46:35Z
+updatedAt: 2026-11-07T20:52:50Z
 ```
 # Task: stop the gateway waiting 4 s for each transaction receipt
 
@@ -39,3 +39,5 @@ Accepted by the project owner on 2026-11-07 (source `fe94d24c8393576eafa827a5ced
   `flow-agreement-amendment` failed once on "Nonce provided for the transaction is lower than the current nonce": the
   node's pending nonce right after a receipt was still the used one (inferred from the error, not reproduced).
 
+The project owner resolved the task on 2026-11-07 (source `cf9a296128848aa5cdf9ffde53124e8bcd1672f4`: "3. yes"). The scan fix alone also went to PR #37
+(commit `cb56fc6`, "1. a").
