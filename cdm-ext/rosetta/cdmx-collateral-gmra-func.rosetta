@@ -1,0 +1,84 @@
+namespace cdmx.collateral.gmra : <"Local CDM extension: GMRA terms and their amendment.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.legaldocumentation.common.*
+import cdm.observable.asset.*
+
+func ChangedGmraElections: <"The elections whose values differ between two sets of GMRA elections, in GmraElectionEnum order.">
+    inputs:
+        before GmraElections (1..1)
+        after GmraElections (1..1)
+    output:
+        changed GmraElectionEnum (0..*)
+
+    add changed:
+        if before -> baseCurrency <> after -> baseCurrency then GmraElectionEnum -> BaseCurrency
+    add changed:
+        if before -> marginRatioBasis <> after -> marginRatioBasis then GmraElectionEnum -> MarginRatioBasis
+    add changed:
+        if before -> defaultMarginRatio <> after -> defaultMarginRatio then GmraElectionEnum -> DefaultMarginRatio
+    add changed:
+        if before -> minimumTransferAmount <> after -> minimumTransferAmount then GmraElectionEnum -> MinimumTransferAmount
+    add changed:
+        if before -> marginTransfer <> after -> marginTransfer then GmraElectionEnum -> MarginTransfer
+    add changed:
+        if before -> netMarginInterest <> after -> netMarginInterest then GmraElectionEnum -> NetMarginInterest
+    add changed:
+        if before -> incomePayment <> after -> incomePayment then GmraElectionEnum -> IncomePayment
+    add changed:
+        if before -> defaultValuation <> after -> defaultValuation then GmraElectionEnum -> DefaultValuation
+
+func Qualify_GmraTermsChange: <"Qualifies a GMRA amendment as a change of terms: the same legal agreement, and at least one election differs.">
+    inputs:
+        amendment GmraTermsAmendment (1..1)
+    output:
+        is_event boolean (1..1)
+
+    set is_event:
+        amendment -> before -> agreement = amendment -> after -> agreement
+            and amendment -> before -> counterparty = amendment -> after -> counterparty
+            and ChangedGmraElections(amendment -> before -> elections, amendment -> after -> elections) exists
+
+func Create_GmraTermsAmendment: <"An amendment of a GMRA's elections: the terms after hold the same legal agreement with the new elections, and the amendment names the elections that change.">
+    inputs:
+        before GmraTerms (1..1) <"The terms in force (the baseline, or the terms after the last agreed amendment).">
+        elections GmraElections (1..1) <"The amended elections, whole.">
+        eventDate date (1..1)
+        effectiveDate date (1..1)
+    output:
+        amendment GmraTermsAmendment (1..1)
+
+    alias changed: ChangedGmraElections(before -> elections, elections)
+
+    condition ElectionsChange: <"At least one election differs from the terms in force.">
+        changed exists
+
+    condition EffectiveNotBeforeEvent: <"The amendment takes effect on or after its event date.">
+        effectiveDate >= eventDate
+
+    set amendment:
+        GmraTermsAmendment {
+            before: before,
+            after: GmraTerms { agreement: before -> agreement, counterparty: before -> counterparty, elections: elections },
+            changedElection: changed,
+            eventDate: eventDate,
+            effectiveDate: effectiveDate,
+            ...
+        }
+
+    set amendment -> eventQualifier:
+        if Qualify_GmraTermsChange(amendment) then "AgreementTermsChange"
+
+func GmraMinimumTransferAmountFor: <"A party's minimum transfer amount under GMRA elections.">
+    inputs:
+        elections GmraElections (1..1)
+        party CounterpartyRoleEnum (1..1)
+    output:
+        amount Money (0..1)
+
+    set amount:
+        elections -> minimumTransferAmount
+            filter item -> party = party
+            then only-element
+            then extract item -> amount

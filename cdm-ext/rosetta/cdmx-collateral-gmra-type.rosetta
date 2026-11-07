@@ -1,0 +1,97 @@
+namespace cdmx.collateral.gmra : <"Local CDM extension: the terms of a GMRA 2011 between two parties and their amendment (gaps G20 and G19, wp-adr-repo-gmra-terms). CDM 7.7.0's GlobalMasterRepoAgreement and its parent MasterAgreementBase have no attributes, and AgreementTermsChangeInstruction carries CSA elections only, so the Annex I elections are held next to CDM's LegalAgreement.">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.rates.*
+import cdm.base.staticdata.party.*
+import cdm.legaldocumentation.common.*
+import cdm.legaldocumentation.master.*
+import cdm.observable.asset.*
+
+enum MarginRatioBasisEnum: <"Which Margin Ratio (GMRA paragraph 2(bb)) a Transaction's Transaction Exposure uses.">
+    PerTransaction <"Each Transaction's own Margin Ratio (its marginPercentage); the agreement default applies to a Transaction that states none.">
+    AgreementDefault <"Every Transaction uses the agreement's default Margin Ratio.">
+
+enum IncomePaymentRuleEnum: <"How Income on Purchased Securities reaches the Seller (GMRA paragraph 5).">
+    PaidToSeller <"On the Income Payment Date the Buyer transfers to the Seller an amount equal to the Income paid.">
+    IncludedInSellBackPrice <"Buy/sell-backs (Annex III): the Income is accounted for in the Sell Back Price instead of being paid.">
+
+enum GmraElectionEnum: <"The elections of GmraElections, to name the ones an amendment changes.">
+    BaseCurrency
+    MarginRatioBasis
+    DefaultMarginRatio
+    MinimumTransferAmount
+    MarginTransfer
+    NetMarginInterest
+    IncomePayment
+    DefaultValuation
+
+type PartyMinimumTransferAmount: <"The minimum transfer amount of one party: a Net Exposure in that party's favour is called only when it exceeds this amount (GMRA paragraph 4(a)).">
+    party CounterpartyRoleEnum (1..1)
+    amount Money (1..1)
+
+    condition NotNegative: <"A minimum transfer amount is zero or more.">
+        amount -> value >= 0
+
+type GmraMarginTransfer: <"How Margin Transfers are made (GMRA paragraph 4): outright title transfer of cash, securities or both.">
+    cashMargin boolean (1..1) <"Cash Margin may be transferred.">
+    securitiesMargin boolean (1..1) <"Margin Securities may be transferred.">
+    transferBusinessDays int (1..1) <"A Margin Transfer is due this many business days after the call.">
+
+    condition SomeMargin: <"At least one kind of margin is allowed.">
+        cashMargin = True or securitiesMargin = True
+
+    condition NotNegative: <"The transfer period is zero or more business days.">
+        transferBusinessDays >= 0
+
+type NetMarginInterest: <"Interest on Cash Margin (GMRA paragraph 4(f)): the rate at which the party holding Cash Margin pays interest on it.">
+    floatingRateIndex FloatingRateIndexEnum (1..1) <"The overnight rate, as published to the parties.">
+    spread number (1..1) <"Added to the observed rate, as a decimal (0.1% is 0.001).">
+
+type GmraDefaultValuation: <"Valuation after an Event of Default (GMRA paragraph 10).">
+    valuationTime time (1..1) <"The Default Valuation Time at which the non-defaulting party determines the Default Market Values.">
+    businessCenter string (1..1) <"The business day calendar of the valuation time, as a CDM business center code (for example GBLO).">
+    automaticEarlyTermination boolean (1..1) <"Whether an Act of Insolvency terminates the Transactions without notice.">
+
+type GmraElections: <"The Annex I elections of a GMRA 2011 that the repo workflows read.">
+    baseCurrency string (1..1) <"The Base Currency, as an ISO 4217 code.">
+    marginRatioBasis MarginRatioBasisEnum (1..1)
+    defaultMarginRatio number (1..1) <"The Margin Ratio for a Transaction that states none, as a ratio (1.02 is a 2% initial margin; 1 is none).">
+    minimumTransferAmount PartyMinimumTransferAmount (2..2) <"One per party.">
+    marginTransfer GmraMarginTransfer (1..1)
+    netMarginInterest NetMarginInterest (1..1)
+    incomePayment IncomePaymentRuleEnum (1..1)
+    defaultValuation GmraDefaultValuation (1..1)
+
+    condition OnePerParty: <"Party1 and Party2 each have one minimum transfer amount.">
+        minimumTransferAmount -> party contains CounterpartyRoleEnum -> Party1
+            and minimumTransferAmount -> party contains CounterpartyRoleEnum -> Party2
+
+    condition InBaseCurrency: <"The minimum transfer amounts are in the Base Currency.">
+        minimumTransferAmount -> amount -> unit -> currency all = baseCurrency
+
+    condition PositiveMarginRatio: <"A Margin Ratio is greater than zero.">
+        defaultMarginRatio > 0
+
+type GmraTerms: <"A GMRA between two parties: CDM's LegalAgreementBase, which identifies the agreement, its date and its parties, the parties' roles, and the Annex I elections. CDM's LegalAgreement is not used: it requires agreementTerms (or an umbrella agreement), and the GMRA election block in AgreementTerms has no attributes, so it can hold nothing and an empty block does not survive serialisation.">
+    agreement LegalAgreementBase (1..1)
+    counterparty Counterparty (2..2) <"Which contractual party is Party1 and which Party2, as in CDM's AgreementTerms.">
+    elections GmraElections (1..1)
+
+    condition IsGmra: <"The legal agreement is a GMRA master agreement.">
+        agreement -> legalAgreementIdentification -> agreementName -> agreementType = LegalAgreementTypeEnum -> MasterAgreement
+            and agreement -> legalAgreementIdentification -> agreementName -> masterAgreementType = MasterAgreementTypeEnum -> GMRA
+
+    condition BothRoles: <"One counterparty is Party1 and the other Party2.">
+        counterparty -> role contains CounterpartyRoleEnum -> Party1
+            and counterparty -> role contains CounterpartyRoleEnum -> Party2
+
+type GmraTermsAmendment: <"An agreed change of a GMRA's elections between its two parties (gap G19). The legal agreement itself is unchanged.">
+    before GmraTerms (1..1)
+    after GmraTerms (1..1)
+    changedElection GmraElectionEnum (1..*) <"The elections whose values differ between before and after.">
+    eventDate date (1..1)
+    effectiveDate date (1..1)
+    eventQualifier string (0..1) <"AgreementTermsChange when Qualify_GmraTermsChange holds.">
+
+    condition SameAgreement: <"An amendment changes the elections of one agreement between the same parties.">
+        before -> agreement = after -> agreement and before -> counterparty = after -> counterparty
