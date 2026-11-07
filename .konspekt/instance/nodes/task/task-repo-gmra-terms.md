@@ -3,7 +3,7 @@ id: task-repo-gmra-terms
 type: task
 title: GMRA agreement terms and their amendment
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-gmra-scope
   sourceRef: 43bd267adffbb70e3a740c20620deed96d966092

@@ -250,6 +250,10 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdata-repogmrascope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-scope |  | proposed |
 | e-drv-finality-repogmrascope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-scope |  | proposed |
 | e-dec-repogmra-gmraterms | decomposes | node:task-repo-gmra-workflows | node:task-repo-gmra-terms |  | proposed |
+| e-mrk-repogmrascope-repogmra | marks | waypoint:wp-adr-repo-gmra-scope | node:task-repo-gmra-workflows |  | accepted |
+| e-drv-cdmdata-repogmrascope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-scope |  | accepted |
+| e-drv-finality-repogmrascope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-scope |  | accepted |
+| e-dec-repogmra-gmraterms | decomposes | node:task-repo-gmra-workflows | node:task-repo-gmra-terms |  | accepted |
 | e-dec-repogmra-purchaserepurchase | decomposes | node:task-repo-gmra-workflows | node:task-repo-purchase-repurchase |  | proposed |
 | e-dec-repogmra-marginmaintenance | decomposes | node:task-repo-gmra-workflows | node:task-repo-margin-maintenance |  | proposed |
 | e-dec-repogmra-reprice | decomposes | node:task-repo-gmra-workflows | node:task-repo-reprice |  | proposed |

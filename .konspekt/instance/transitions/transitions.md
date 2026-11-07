@@ -865,3 +865,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-repogmra-roll | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
 | edge:e-dec-repogmra-pairoff | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
 | edge:e-dec-repogmra-buysellback | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
+| waypoint:wp-adr-repo-gmra-scope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| edge:e-mrk-repogmrascope-repogmra | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| edge:e-drv-cdmdata-repogmrascope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| edge:e-drv-finality-repogmrascope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
+| node:task-repo-gmra-terms | review | proposed | accepted | 2026-11-07T23:10:06Z |  | denisurusov |
+| edge:e-dec-repogmra-gmraterms | review | proposed | accepted | 2026-11-07T23:10:06Z |  | denisurusov |

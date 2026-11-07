@@ -3,7 +3,7 @@ id: wp-adr-repo-gmra-scope
 kind: decision
 subtype: adr
 timestamp: 2026-11-07T22:35:17Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-gmra-scope
   sourceRef: 43bd267adffbb70e3a740c20620deed96d966092
