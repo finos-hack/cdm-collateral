@@ -16,6 +16,8 @@ import {
   type LiveCloseOut,
   type LiveContext,
   type LiveInterest,
+  type LiveNetting,
+  type LiveNettingCandidates,
   type LiveAgreement,
   type LiveParty,
   type LiveRevaluation,
@@ -46,6 +48,9 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
+  const [holdForNetting, setHoldForNetting] = useState(false);
+  const [candidates, setCandidates] = useState<LiveNettingCandidates | null>(null);
+  const [nettings, setNettings] = useState<LiveNetting[]>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -56,6 +61,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([]));
       api.substitutions(party).then(setSubs).catch(() => setSubs([]));
       api.interest(party).then(setInterest).catch(() => setInterest([]));
+      api.nettingCandidates(party).then((c) => setCandidates(Array.isArray(c?.movements) ? c : null)).catch(() => setCandidates(null));
+      api.nettings(party).then((n) => setNettings(Array.isArray(n) ? n : [])).catch(() => setNettings([]));
       api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null));
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
@@ -255,13 +262,17 @@ export function LiveConsole({ party }: { party: LiveParty }) {
             <label>
               Rate (%) <input aria-label="Observed rate (%)" type="number" value={ratePct} step={0.05} onChange={(e) => setRatePct(Number(e.target.value))} />
             </label>
-            <button disabled={busy || cashHeld === 0} onClick={() => run(() => api.stateInterest(party, periodStart, periodEnd, ratePct))}>
+            <label>
+              <input type="checkbox" checked={holdForNetting} onChange={(e) => setHoldForNetting(e.target.checked)} /> Hold for settlement netting
+            </label>
+            <button disabled={busy || cashHeld === 0} onClick={() => run(() => api.stateInterest(party, periodStart, periodEnd, ratePct, holdForNetting))}>
               State interest → {other}
             </button>
           </div>
           <div className="small">
             Interest on the {cashHeld.toLocaleString("en-US")} tUSD {other} has in escrow, every day of the period at the observed
-            rate, ACT/360, rounded to whole USD. A positive amount is paid to {other} at once; {other} pays a negative one.
+            rate, ACT/360, rounded to whole USD. A positive amount is paid to {other} at once; {other} pays a negative one. Held
+            for settlement netting, the amount settles with the day's VM calls and returns.
           </div>
         </div>
       )}
@@ -283,7 +294,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
                   <td>{usd(i.amountUsd)}</td>
                   <td>
                     {i.state === "settled" ? <span className="ok">paid on-chain ✓</span> : i.state}
-                    {i.state === "stated" && !isSecured && (
+                    {i.state === "stated" && (Number(i.amountUsd) < 0 ? !isSecured : isSecured) && (
                       <button disabled={busy} onClick={() => run(() => api.payInterest(party, i.interestId))}>Pay interest</button>
                     )}
                   </td>
@@ -294,6 +305,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
           </table>
         </div>
       )}
+
+      {candidates && <NettingCard party={party} candidates={candidates} nettings={nettings} busy={busy} run={run} />}
 
       {agreement && <AgreementTerms party={party} other={other} agreement={agreement} busy={busy} run={run} />}
 
@@ -366,6 +379,7 @@ function CallRow(props: {
           <span className="mono">{short(c.callId)}</span> · {c.kind} · {c.from} → {c.to} · <strong>{c.state}</strong>
           {c.replaces && <span className="small"> · replaces <span className="mono">{short(c.replaces)}</span></span>}
           {c.replacedBy && <span className="small"> · replaced by <span className="mono">{short(c.replacedBy)}</span></span>}
+          {c.nettedIn && <span className="small"> · settled in netting <span className="mono">{short(c.nettedIn)}</span></span>}
         </div>
         <div className="small">{usd(c.amountUsd)} {Number(c.disputedUsd) > 0 && <span className="bad">· disputed {usd(c.disputedUsd)}</span>}</div>
       </div>
@@ -478,6 +492,57 @@ function CallRow(props: {
 }
 
 const TOKENS = ["tUST", "tMMF", "tUSD"];
+
+// Settlement netting (flow-settlement-netting): the day's agreed VM calls, VM returns and held Interest Amounts
+// between the two parties, settled by one transfer of tUSD by the party that owes the net.
+const MOVEMENT: Record<string, string> = { DeliveryAmount: "VM delivery", ReturnAmount: "VM return", InterestAmount: "Interest Amount" };
+
+function NettingCard(props: { party: LiveParty; candidates: LiveNettingCandidates; nettings: LiveNetting[]; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, candidates: c, nettings, busy, run } = props;
+  const hasCall = c.movements.some((m) => m.type !== "InterestAmount");
+  const canSettle = c.movements.length >= 2 && hasCall && (c.payer === party || c.payer === null);
+  if (c.movements.length === 0 && nettings.length === 0) return null;
+  return (
+    <div className="card" data-testid="settlement-netting">
+      <h3>Settlement netting</h3>
+      {c.movements.length > 0 && (
+        <>
+          <table className="tbl">
+            <thead>
+              <tr><th>Movement</th><th>Call or statement</th><th>Payer → receiver</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              {c.movements.map((m) => (
+                <tr key={m.id}>
+                  <td>{MOVEMENT[m.type] ?? m.type}</td>
+                  <td className="mono">{short(m.id)}</td>
+                  <td>{m.payer} → {m.receiver}</td>
+                  <td>{usd(m.amountUsd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="row">
+            <span data-testid="netting-net">
+              {c.payer ? `Net: ${c.payer} pays ${usd(c.netUsd)} in tUSD` : "Net: the movements offset; nothing moves"}
+            </span>
+            {canSettle && (
+              <button disabled={busy} onClick={() => run(() => api.settleNetting(party))}>Settle netted</button>
+            )}
+          </div>
+          {!canSettle && c.movements.length >= 2 && hasCall && <div className="small">{c.payer} owes the net and settles.</div>}
+        </>
+      )}
+      {nettings.map((n) => (
+        <div key={n.nettingId} className="subcard" data-testid={`netting-${n.nettingId}`}>
+          <span className="mono">{short(n.nettingId)}</span> · {n.settlementDate ?? ""} · {n.movements?.length ?? "?"} movements ·{" "}
+          {Number(n.amountUsd) > 0 ? `${n.settledBy} paid ${usd(n.amountUsd ?? "0")} to ${n.counterparty}` : "offset, nothing moved"} ·{" "}
+          {n.verified ? <span className="ok">statement verified ✓</span> : <span className="bad">{n.error ?? "unverified"}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const pct = (bps: number) => `${(bps / 100).toFixed(2)}%`;
 

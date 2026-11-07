@@ -54,6 +54,7 @@ type SettleCallInstruction: <"Step SettleCall.">
     proposalId string (0..1) <"Delivery call: the accepted proposal delivered.">
     releasedCollateral CollateralPosition (0..*) <"Return call: the collateral released.">
     releasedValue Money (0..1) <"Return call: value after haircuts of the collateral released.">
+    nettingIdentifier string (0..1) <"The settlement netting the call settled in (task-csa-settlement-netting): its movement was paid as part of one net transfer between the two parties (SettlementNettingStatement).">
 
     condition DeliveryOrReturn: <"A settlement names either the proposal delivered or the value released.">
         required choice proposalId, releasedValue

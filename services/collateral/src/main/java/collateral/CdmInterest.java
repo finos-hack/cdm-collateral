@@ -26,7 +26,8 @@ import static collateral.CdmRuntime.o;
  *
  * Prototype elections ({@link #AGREEMENT}): USD, a floating rate with no spread, negative interest passed on, ACT/360,
  * rounded to whole USD at period end (tUSD has no decimals, so the statement's transfer amount is the on-chain amount),
- * Transfer handling. Interim reduction (project owner, 2026-11-06; task-sme-interest-daily-balances): one observed rate
+ * Transfer handling, and an Interest Amount may be netted with margin calls (netInterestWithMarginCalls, for
+ * flow-settlement-netting; held amounts only, task-csa-settlement-netting). Interim reduction (project owner, 2026-11-06; task-sme-interest-daily-balances): one observed rate
  * for the whole period, and every day's balance is the tUSD in escrow when the secured party states the interest.
  */
 public final class CdmInterest {
@@ -41,7 +42,7 @@ public final class CdmInterest {
                     "inBaseCurrency", false, "dayCountFraction", "ACT/360",
                     "rounding", o("roundingDirection", "Nearest", "precision", 0), "roundingFrequency", "PeriodEnd"),
             "interestHandlingParameters", o(
-                    "interestPaymentHandling", "Transfer", "netPostedAndHeldInterest", false, "netInterestWithMarginCalls", false,
+                    "interestPaymentHandling", "Transfer", "netPostedAndHeldInterest", false, "netInterestWithMarginCalls", true,
                     "includeAccrualInMarginCalc", false, "onFullReturn", true, "onPartialReturn", false));
 
     public final CollateralInterestStatement statement;

@@ -535,6 +535,124 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(control.write.payInterest([id(44)], { account: bankA.account }));
     });
   });
+  describe("settlement netting (task-csa-settlement-netting)", () => {
+    // BANK-B calls VM from BANK-A (A pays B), BANK-A calls a VM return from BANK-B (B pays A), and BANK-B states an
+    // Interest Amount held for netting (B pays A when positive). One net transfer of tUSD settles all of them.
+    const V = id(60), R = id(61), I = id(62), N = id(63);
+    const NH = keccak256(toHex("netting"));
+    const hashes = [keccak256(toHex("settle-V")), keccak256(toHex("settle-R"))];
+    let tUSD: any;
+    beforeEach(async () => {
+      tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "", "", ""]);
+      await control.write.setEligibility([tUSD.address, true, 0]);
+      await oracle.write.publishPrice([tUSD.address, 1n * SCALE], { account: operator.account });
+      await tUSD.write.mint([aAddr, 1000n]);
+      await tUSD.write.mint([bAddr, 1000n]);
+    });
+
+    async function vmCall(callId: `0x${string}`, usd: bigint, token = tUSD.address) {
+      await marginCall.write.issueCall([callId, VM, aAddr, usd * SCALE, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.respond([callId, FULL, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.propose([callId, [{ token, qty: usd }], zeroHash], { account: bankA.account });
+      await marginCall.write.decideProposal([callId, 0n, true, zeroHash], { account: bankB.account });
+    }
+    async function returnCall(callId: `0x${string}`, usd: bigint) {
+      await marginCall.write.issueCall([callId, RETURN, bAddr, usd * SCALE, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.respond([callId, FULL, 0n, zeroHash], { account: bankB.account });
+    }
+
+    it("settles a VM call, a VM return and an Interest Amount by one transfer of the net", async () => {
+      await vmCall(V, 100n);
+      await returnCall(R, 30n);
+      await control.write.stateInterestForNetting([I, aAddr, tUSD.address, 5n, H], { account: bankB.account });
+      assert.equal((await control.read.getInterest([I])).state, 1); // Stated: held, nothing paid
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 1000n);
+
+      // A owes 100, B owes 30 + 5: A pays 65.
+      await tUSD.write.approve([control.address, 65n], { account: bankA.account });
+      await control.write.settleNetted([N, [V, R], hashes, [I], tUSD.address, NH], { account: bankA.account });
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 935n);
+      assert.equal(await tUSD.read.balanceOf([bAddr]), 1065n);
+      for (const [c, h] of [[V, hashes[0]], [R, hashes[1]]]) {
+        const call = await marginCall.read.getCall([c]);
+        assert.equal(call.state, 5); // Settled
+        assert.equal(call.settleCdmHash, h);
+        assert.equal(await control.read.nettedIn([c]), N);
+      }
+      assert.equal((await control.read.getInterest([I])).state, 2);
+      assert.equal(await control.read.nettedIn([I]), N);
+      const [n, calls, interest] = await control.read.getNetting([N]);
+      assert.equal(getAddress(n.payer), aAddr);
+      assert.equal(getAddress(n.receiver), bAddr);
+      assert.equal(n.amount, 65n);
+      assert.equal(n.cdmHash, NH);
+      assert.deepEqual(calls, [V, R]);
+      assert.deepEqual(interest, [I]);
+    });
+
+    it("is paid by the party that owes the net, and moves nothing when the movements offset", async () => {
+      await vmCall(V, 30n);
+      await returnCall(R, 30n);
+      await assert.rejects(control.write.settleNetted([N, [V, R], hashes, [], tUSD.address, NH], { account: operator.account })); // WrongParty
+      await control.write.settleNetted([N, [V, R], hashes, [], tUSD.address, NH], { account: bankB.account });
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 1000n);
+      assert.equal(await tUSD.read.balanceOf([bAddr]), 1000n);
+      const [n] = await control.read.getNetting([N]);
+      assert.equal(n.amount, 0n);
+      assert.equal(n.payer, "0x0000000000000000000000000000000000000000");
+    });
+
+    it("rejects the party that is owed the net", async () => {
+      await vmCall(V, 20n);
+      await returnCall(R, 30n);
+      await assert.rejects(control.write.settleNetted([N, [V, R], hashes, [], tUSD.address, NH], { account: bankA.account })); // NotNetPayer
+      await tUSD.write.approve([control.address, 10n], { account: bankB.account });
+      await control.write.settleNetted([N, [V, R], hashes, [], tUSD.address, NH], { account: bankB.account });
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 1010n);
+    });
+
+    it("does not net a call twice, a call not agreed, a non-cash proposal, an IM call, a settled interest or a reused id", async () => {
+      await vmCall(V, 100n);
+      await returnCall(R, 30n);
+      await tUSD.write.approve([control.address, 1000n], { account: bankA.account });
+      await assert.rejects(control.write.settleNetted([N, [V, V], hashes, [], tUSD.address, NH], { account: bankA.account })); // second V is Settled
+      await assert.rejects(control.write.settleNetted([N, [V], [hashes[0]], [], tUSD.address, NH], { account: bankA.account })); // one movement
+      await assert.rejects(control.write.settleNetted([N, [V, R], hashes, [], tUSD.address, zeroHash], { account: bankA.account }));
+
+      const U = id(64); // unanswered
+      await marginCall.write.issueCall([U, VM, aAddr, 10n * SCALE, 0n, zeroHash], { account: bankB.account });
+      await assert.rejects(control.write.settleNetted([N, [V, U], hashes, [], tUSD.address, NH], { account: bankA.account }));
+
+      const S = id(65); // accepted proposal in tUST
+      await vmCall(S, 5n, tUST.address);
+      await assert.rejects(control.write.settleNetted([N, [V, S], hashes, [], tUSD.address, NH], { account: bankA.account }));
+
+      const M = id(66); // initial margin
+      await marginCall.write.issueCall([M, IM, aAddr, 10n * SCALE, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.respond([M, FULL, 0n, zeroHash], { account: bankA.account });
+      await assert.rejects(control.write.settleNetted([N, [V, M], hashes, [], tUSD.address, NH], { account: bankA.account }));
+
+      const P = id(67); // interest paid at once
+      await tUSD.write.approve([control.address, 5n], { account: bankB.account });
+      await control.write.stateInterest([P, aAddr, tUSD.address, 5n, H], { account: bankB.account });
+      await assert.rejects(control.write.settleNetted([N, [V, R], hashes, [P], tUSD.address, NH], { account: bankA.account }));
+
+      await control.write.settleNetted([N, [V, R], hashes, [], tUSD.address, NH], { account: bankA.account });
+      await returnCall(id(68), 1n);
+      await vmCall(id(69), 2n);
+      await assert.rejects(control.write.settleNetted([N, [id(68), id(69)], hashes, [], tUSD.address, NH], { account: bankA.account })); // NettingExists
+    });
+
+    it("lets the secured party pay a held positive Interest Amount alone", async () => {
+      await control.write.stateInterestForNetting([I, aAddr, tUSD.address, 7n, H], { account: bankB.account });
+      await assert.rejects(control.write.payInterest([I], { account: bankA.account })); // the secured party pays
+      await tUSD.write.approve([control.address, 7n], { account: bankB.account });
+      await control.write.payInterest([I], { account: bankB.account });
+      assert.equal(await tUSD.read.balanceOf([aAddr]), 1007n);
+      await assert.rejects(control.write.stateInterestForNetting([id(70), aAddr, tUSD.address, 0n, H], { account: bankB.account }));
+    });
+  });
+
   describe("amendment of agreement terms (task-csa-amendment)", () => {
     const M = id(50);
     const H2 = keccak256(toHex("cdm-2"));

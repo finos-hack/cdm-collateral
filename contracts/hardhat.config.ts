@@ -13,7 +13,7 @@ const config: HardhatUserConfig = {
     version: "0.8.28",
     // The Besu genesis activates Berlin + London only (no Shanghai), so the EVM has no PUSH0. solc defaults to the
     // cancun target and would emit PUSH0/MCOPY, which revert as invalid opcodes on this chain — pin to london.
-    settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: "london" },
+    settings: { optimizer: { enabled: true, runs: 200 }, viaIR: true, evmVersion: "london" },
   },
   networks: {
     // In-memory EDR network for unit and property tests.

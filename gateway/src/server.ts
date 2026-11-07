@@ -190,18 +190,21 @@ route("POST", "/ledger/v1/interest", async (_p, b) => {
   // The secured party's gateway states the Interest Amount; for a positive amount it first approves the control
   // contract for the cash token, which pays the pledgor in the same transaction.
   const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  // With hold (flow-settlement-netting) the amount is stated and held for settlement netting; nothing moves now.
   const amount = BigInt(b.amount);
   const cashToken = getAddress(b.cashToken);
+  if (b.hold) return J({ stated: await adapter.stateInterestForNetting(b.interestId as Hex, getAddress(b.pledgor), cashToken, amount, b.cdmHash as Hex) });
   const approval = amount > 0n ? await adapter.approve(cashToken, control, amount) : undefined;
   const stated = await adapter.stateInterest(b.interestId as Hex, getAddress(b.pledgor), cashToken, amount, b.cdmHash as Hex);
   return J({ approval, stated });
 });
 
 route("POST", "/ledger/v1/interest/:id/pay", async (p) => {
-  // The pledgor's gateway pays a negative Interest Amount: approve the control contract, then pay.
+  // The paying party's gateway pays a stated Interest Amount (the pledgor a negative one, the secured party a positive
+  // one held for netting): approve the control contract, then pay.
   const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
   const s = await adapter.getInterest(p.id as Hex);
-  const approval = await adapter.approve(s.cashToken, control, -s.amount);
+  const approval = await adapter.approve(s.cashToken, control, s.amount < 0n ? -s.amount : s.amount);
   const paid = await adapter.payInterest(p.id as Hex);
   return J({ approval, paid });
 });
@@ -209,6 +212,23 @@ route("POST", "/ledger/v1/interest/:id/pay", async (p) => {
 route("GET", "/ledger/v1/interest", async (_p, _b, url) => J(await adapter.listInterest(getAddress(url.searchParams.get("party")!))));
 
 route("GET", "/ledger/v1/interest/:id", async (p) => J(await adapter.getInterest(p.id as Hex)));
+
+// --- settlement netting (flow-settlement-netting) ---
+
+route("POST", "/ledger/v1/nettings", async (_p, b) => {
+  // The gateway of the party owing the net approves the control contract for the net amount (units of the cash
+  // token), then settles the calls and held Interest Amounts together.
+  const control = (await import("./registry.ts")).loadRegistry().contracts.collateralControl;
+  const cashToken = getAddress(b.cashToken);
+  const amount = BigInt(b.amount ?? 0);
+  const approval = amount > 0n ? await adapter.approve(cashToken, control, amount) : undefined;
+  const settled = await adapter.settleNetted(b.nettingId as Hex, b.callIds as Hex[], b.callCdmHashes as Hex[], (b.interestIds ?? []) as Hex[], cashToken, b.cdmHash as Hex);
+  return J({ approval, settled });
+});
+
+route("GET", "/ledger/v1/nettings", async (_p, _b, url) => J(await adapter.listNettings(getAddress(url.searchParams.get("party")!))));
+
+route("GET", "/ledger/v1/netted-in/:id", async (p) => J({ nettingId: await adapter.nettedIn(p.id as Hex) }));
 
 // The escrow and feed prices between a pledgor and a secured party at the end of a block (flow-substitution).
 route("GET", "/ledger/v1/escrow-at", async (_p, _b, url) =>

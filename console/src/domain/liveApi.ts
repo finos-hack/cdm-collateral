@@ -48,6 +48,8 @@ export interface LiveCall {
   /** The cancelled call this call replaces, and the call that replaces this one (task-csa-call-replacement). */
   replaces?: string | null;
   replacedBy?: string | null;
+  /** The settlement netting the call settled in (flow-settlement-netting). */
+  nettedIn?: string | null;
   proposals: LiveProposal[];
   messages: { msgType: string; direction: string; cdmHash: string; cdmJson: string; createdAt: string }[];
   /** Settlement and feed events this party's service recorded for the call (Returned, Enforced). */
@@ -127,10 +129,15 @@ export const api = {
   /** Interest statements on cash collateral (flow-interest-on-cash). */
   interest: (p: LiveParty) => req<LiveInterest[]>(p, "GET", "/interest"),
   /** Secured party: state the Interest Amount on the pledgor's tUSD for one period at one observed rate (percent). */
-  stateInterest: (p: LiveParty, periodStart: string, periodEnd: string, observedRatePct: number) =>
-    req<LiveInterest & { stateTx: string }>(p, "POST", "/interest", { periodStart, periodEnd, observedRatePct }),
-  /** Pledgor: pay a negative Interest Amount. */
+  stateInterest: (p: LiveParty, periodStart: string, periodEnd: string, observedRatePct: number, holdForNetting = false) =>
+    req<LiveInterest & { stateTx: string }>(p, "POST", "/interest", { periodStart, periodEnd, observedRatePct, holdForNetting }),
+  /** The paying party: the pledgor pays a negative Interest Amount, the secured party a positive one held for netting. */
   payInterest: (p: LiveParty, interestId: string) => req<{ payTx: string }>(p, "POST", `/interest/${interestId}/pay`, {}),
+  /** Settlement netting (flow-settlement-netting): the movements that can net now, and the nettings settled. */
+  nettingCandidates: (p: LiveParty) => req<LiveNettingCandidates>(p, "GET", "/netting/candidates"),
+  nettings: (p: LiveParty) => req<LiveNetting[]>(p, "GET", "/nettings"),
+  /** The party owing the net settles every movement that can net now by one transfer of tUSD. */
+  settleNetting: (p: LiveParty) => req<LiveNetting & { settleTx: string }>(p, "POST", "/nettings", {}),
   /** Substitutions of pledged collateral with their CDM fold (flow-substitution). */
   substitutions: (p: LiveParty) => req<LiveSubstitution[]>(p, "GET", "/substitutions"),
   requestSubstitution: (p: LiveParty, original: { token: string; qty: number }[], substitute: { token: string; qty: number }[]) =>
@@ -216,6 +223,40 @@ export interface LiveInterest {
   ratePct?: string;
   interestAmountUsd?: string;
   transferAmountUsd?: string;
+}
+
+export interface LiveNettingMovement {
+  /** The call or interest statement. */
+  id: string;
+  kind?: "VM" | "Return" | "Interest";
+  type: "DeliveryAmount" | "ReturnAmount" | "InterestAmount";
+  payer: LiveParty;
+  receiver: LiveParty;
+  amountUsd: string;
+}
+
+export interface LiveNettingCandidates {
+  movements: LiveNettingMovement[];
+  netUsd: string;
+  /** The party that owes the net; null when the movements offset. */
+  payer: LiveParty | null;
+}
+
+export interface LiveNetting {
+  nettingId: string;
+  settledBy?: LiveParty;
+  counterparty?: LiveParty;
+  amountUsd?: string;
+  cdmHash: string;
+  block?: string;
+  settlementDate?: string;
+  netUsd?: string;
+  payer?: LiveParty | null;
+  receiver?: LiveParty | null;
+  movements?: LiveNettingMovement[];
+  /** The statement was read from the payload store, matches the on-chain hash, recomputes from its movements, and its net and movements match the chain. */
+  verified?: boolean;
+  error?: string;
 }
 
 export interface LiveSubstitution {

@@ -54,8 +54,11 @@ NODE=bank-b PORT=8202 npm run serve
 | GET | `/amendments?party=0x…` | amendments the party is in (from `AmendmentProposed` logs), in chain order, with state and terms |
 | GET | `/amendments/:id` | on-chain amendment: parties, proposer, state, beforeHash, amendment and decision hashes, haircut terms |
 | GET | `/pair-terms?pledgor&securedParty` | the pair's agreement hash, pending amendment, and each registry token's eligibility and haircut as the contract applies them |
-| POST | `/interest` | `{interestId, pledgor, cashToken, amount, cdmHash}`: state the Interest Amount on cash collateral; for a positive amount approve the cash token first, and the contract pays the pledgor (secured party key, `flow-interest-on-cash`) |
-| POST | `/interest/:id/pay` | approve and pay a negative Interest Amount (pledgor key) |
+| POST | `/interest` | `{interestId, pledgor, cashToken, amount, cdmHash, hold?}`: state the Interest Amount on cash collateral; for a positive amount approve the cash token first, and the contract pays the pledgor (secured party key, `flow-interest-on-cash`). With `hold`, `stateInterestForNetting` states it and nothing moves (`flow-settlement-netting`) |
+| POST | `/nettings` | `{nettingId, callIds, callCdmHashes, interestIds, cashToken, cdmHash, amount}`: approve the net `amount` in the cash token, then `settleNetted` (key of the party owing the net, `flow-settlement-netting`) |
+| GET | `/nettings?party=0x…` | settlement nettings the party is in (from `SettlementNetted` logs), with the calls and interest statements each settled |
+| GET | `/netted-in/:id` | the netting a call or interest statement settled in (zero when none); `GET /calls/:id` also returns `nettedIn` |
+| POST | `/interest/:id/pay` | approve and pay a stated Interest Amount: a negative one (pledgor key) or a positive one held for netting (secured party key) |
 | GET | `/interest?party=0x…` | interest statements the party is in (from `InterestStated` logs), with the current state |
 | GET | `/interest/:id` | on-chain interest statement: parties, cash token, amount, state, statement hash |
 | GET | `/escrow-at?pledgor&securedParty&block` | escrowed tokens and feed prices at the end of a block (the CDM portfolio before a substitution step) |
@@ -71,8 +74,8 @@ NODE=bank-b PORT=8202 npm run serve
 
 Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
 carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned`, `Enforced`,
-`ClosedOut`, `Substitution{Requested,Decided,Settled}`, `Interest{Stated,Settled}` and `Amendment{Proposed,Decided}` events
+`ClosedOut`, `Substitution{Requested,Decided,Settled}`, `Interest{Stated,Settled}`, `SettlementNetted` and `Amendment{Proposed,Decided}` events
 of the collateral control contract and `DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId`,
-`substitutionId`, `interestId` or `amendmentId`, and/or `party`);
+`substitutionId`, `interestId`, `nettingId` or `amendmentId`, and/or `party`);
 the workflow service records the latter and relays everything to the console so state changes push instead of being
 polled.
