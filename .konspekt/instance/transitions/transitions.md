@@ -818,3 +818,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smetwowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
 | edge:e-lnk-twowayim-smetwowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
 | node:task-sme-two-way-im-rules | status |  | open | 2026-11-07T21:24:29Z |  |  |
+| waypoint:wp-adr-two-way-im | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| node:task-sme-two-way-im-rules | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| edge:e-mrk-twowayimadr-twowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| edge:e-drv-callstate-twowayimadr | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| edge:e-drv-finality-twowayimadr | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| edge:e-dec-cdmdev-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| edge:e-lnk-twowayim-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| node:task-two-way-initial-margin | status | open | resolved | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |

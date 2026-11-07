@@ -3,7 +3,7 @@ id: wp-adr-two-way-im
 kind: decision
 subtype: adr
 timestamp: 2026-11-07T21:24:29Z
-review: proposed
+review: accepted
 provenance:
   conversationId: two-way-initial-margin
   sourceRef: 57ae0e7cbeb65ec44ba5e313131802c0d6f53c10
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T21:24:29Z
   confidence: 0.7
 createdAt: 2026-11-07T21:24:29Z
-updatedAt: 2026-11-07T21:54:28Z
+updatedAt: 2026-11-07T21:58:01Z
 ```
 # ADR: two-way initial margin runs as two legs, each identified by its calls; a pledgor reclaims its leg when its secured party defaults
 
@@ -34,7 +34,8 @@ and calls carry `from` and `to` (within [[wp-adr-im-segregation]]).
   own view of the pair's IM CSA. That view is the baseline CDM sample with the leg's secured party as Party1 and its
   pledgor as Party2, the same mapping the one-direction baseline used. An amendment applies to the leg it names. The
   pledgor's role in a substitution is therefore Party2 on either leg. The fixed `pledgorRole Party1` for BANK-A did not
-  match the agreement and is corrected. Whether one CSA should state the elections per party instead is a question for
+  match the agreement and is corrected. The project owner chose this per-leg mapping on 2026-11-07. Whether one CSA
+  should state the elections per party instead stays a question for
   the SME.
 - **Default recovery (contract change).** `CollateralControl.reclaim(reclaimId, securedParty, cdmHash)` is called
   with the pledgor's key and returns the pledgor's whole escrow on that leg. It requires the oracle feed to record the

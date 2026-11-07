@@ -3,7 +3,7 @@ id: task-sme-two-way-im-rules
 type: task
 title: Confirm with a business SME the rules for two-way initial margin and the pledgor's reclaim on default
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: two-way-initial-margin
   sourceRef: 57ae0e7cbeb65ec44ba5e313131802c0d6f53c10
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T21:24:29Z
   confidence: 0.6
 createdAt: 2026-11-07T21:24:29Z
-updatedAt: 2026-11-07T21:24:29Z
+updatedAt: 2026-11-07T21:58:01Z
 ```
 # Task: confirm the rules for two-way initial margin and the pledgor's reclaim on default
 

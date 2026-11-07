@@ -2,7 +2,7 @@
 id: task-two-way-initial-margin
 type: task
 title: Two-way initial margin
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: architecture-design
@@ -10,7 +10,7 @@ provenance:
   contentHash: 030d173b1a7f835b860f9cca1cb4d482d59f360d
   timestamp: 2026-10-16T22:15:03Z
 createdAt: 2026-10-16T22:15:03Z
-updatedAt: 2026-11-07T21:55:23Z
+updatedAt: 2026-11-07T21:58:01Z
 ```
 # Task: Two-way initial margin
 
@@ -29,3 +29,7 @@ Built on branch `two-way-im` (2026-11-07): `CollateralControl.reclaim` and its t
 revaluation and escrow reconciliation, `POST /api/v1/reclaims`, no `ROLE` setting), the gateway reclaim route and
 event, the console leg selector and reclaim card, and the live spec `flow-two-way-im-default`. All 16 live specs pass
 on a new contract set (the previous deployment is kept as `besu.pre-two-way-im.json`).
+
+**Accepted and resolved 2026-11-07** (source `2a303c540e4fec96e3d83b0e45a53afa55defe0f`: "2. done 3. per-leg mapping 4. resolve it"): the project owner
+accepted [[wp-adr-two-way-im]] and [[task-sme-two-way-im-rules]], chose the per-leg view of the agreement terms (each
+leg's pledgor is Party2), and resolved the task.

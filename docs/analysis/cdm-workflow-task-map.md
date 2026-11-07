@@ -32,7 +32,7 @@ maintainer and accepted by the project owner (2026-11-03).
 | Default and enforcement against segregated IM | `flow-default-enforcement` | yes (default notices through `services/oracle`) | passes | G14 enforcement step | `task-e2e-remaining-flows`; G14 in `task-cdm-gap-closure` |
 | Oracle price update | `flow-oracle-update` | yes (`services/oracle` publishes through the operator's gateway; operator console) | passes | input to G7 and G11; ratings are not published to the feed | `task-e2e-remaining-flows` |
 | Revaluation and top-up call | `flow-revaluation-top-up` | yes (revaluation in `services/collateral`, top-up call from the secured party's console) | passes | revaluation and top-up scores 2 (CSA matrix) | `task-e2e-remaining-flows`; modelling question `task-revaluation-top-up-modelling` |
-| Two-way initial margin (one leg per direction) | `flow-two-way-im-default` (each party pledges to the other; on A's default B enforces A's leg and reclaims its own) | yes (legs from the calls; `CollateralControl.reclaim`; console leg selector) | passes | reclaim modelled in `cdm-ext` (`Create_CollateralReclaim`); rules for the SME in `task-sme-two-way-im-rules` | `task-two-way-initial-margin` (`wp-adr-two-way-im`, proposed) |
+| Two-way initial margin (one leg per direction) | `flow-two-way-im-default` (each party pledges to the other; on A's default B enforces A's leg and reclaims its own) | yes (legs from the calls; `CollateralControl.reclaim`; console leg selector) | passes | reclaim modelled in `cdm-ext` (`Create_CollateralReclaim`); rules for the SME in `task-sme-two-way-im-rules` | `task-two-way-initial-margin` (resolved; `wp-adr-two-way-im`) |
 
 ## B. ISDA CSA workflows with no prototype flow
 
