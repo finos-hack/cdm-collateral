@@ -49,7 +49,8 @@ function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">, reval
       const path = url.replace(/^https?:\/\/[^/]+\/api\/v1/, "");
       if (init?.method === "POST") {
         posts.push({ path, body: JSON.parse(String(init.body)) });
-        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+        const reply = extra[`POST ${path}`] ?? { ok: true };
+        return new Response(JSON.stringify(reply), { status: 200 });
       }
       if (path === "/revaluation") return new Response(JSON.stringify(reval), { status: 200 });
       if (path in extra) return new Response(JSON.stringify(extra[path]), { status: 200 });
@@ -298,5 +299,54 @@ describe("flow-settlement-netting", () => {
   it("a call settled in a netting names it", async () => {
     serve("A", { calls: [call({ kind: "VM", state: "settled", nettedIn: "0xdddd00000000000000000000000000000000000000000000000000000000eeee" })], balances: BAL, defaults: DEFAULTS });
     expect(await screen.findByText(/settled in netting/)).toBeInTheDocument();
+  });
+});
+
+describe("flow-allocation", () => {
+  const rowOf = async (label = /IM · B → A/) => (await screen.findByText(label)).closest(".subcard") as HTMLElement;
+  const ID = call({}).callId;
+  const SUGGESTED = {
+    callId: ID, covers: true, valueUsd: "2000038", agreedUsd: "2000000", ranking: ["tUST", "tMMF", "tUSD"],
+    assets: [{ token: "tUST", qty: 15_000 }, { token: "tMMF", qty: 526_356 }],
+  };
+
+  it("the called party fills the basket from the suggestion and proposes it", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [call({ state: "agreed" })], balances: balances("0") }, NO_SHORTFALL, { [`POST /calls/${ID}/allocation`]: SUGGESTED });
+    const row = await rowOf();
+    await user.click(within(row).getByRole("button", { name: "Suggest allocation" }));
+    expect(await within(row).findByText(/suggested: USD 2,000,038 after haircuts/)).toBeInTheDocument();
+    expect(within(row).getByText(/basket: tUST 15,000 \+ tMMF 526,356/)).toBeInTheDocument();
+    await user.click(within(row).getByRole("button", { name: "Propose collateral (2)" }));
+    await waitFor(() =>
+      expect(posts).toEqual([
+        { path: `/calls/${ID}/allocation`, body: {} },
+        { path: `/calls/${ID}/proposal`, body: { assets: SUGGESTED.assets } },
+      ]),
+    );
+  });
+
+  it("says so when the holdings do not cover the agreed amount, and leaves the basket empty", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [call({ state: "agreed" })], balances: balances("0") }, NO_SHORTFALL, {
+      [`POST /calls/${ID}/allocation`]: { ...SUGGESTED, covers: false, assets: [], valueUsd: "0" },
+    });
+    const row = await rowOf();
+    await user.click(within(row).getByRole("button", { name: "Suggest allocation" }));
+    expect(await within(row).findByText("holdings do not cover the agreed amount")).toBeInTheDocument();
+    expect(within(row).queryByText(/basket:/)).toBeNull();
+  });
+
+  it("is offered to the called party on an agreed VM call, and not on a return call or to the calling party", async () => {
+    serve("A", { calls: [call({ kind: "VM", state: "agreed" })], balances: balances("0") });
+    expect(within(await rowOf(/VM · B → A/)).getByRole("button", { name: "Suggest allocation" })).toBeInTheDocument();
+    vi.unstubAllGlobals();
+    document.body.innerHTML = "";
+    serve("A", { calls: [call({ kind: "Return", from: "A", to: "B", state: "agreed" })], balances: balances("0") });
+    expect(within(await rowOf(/Return · A → B/)).queryByRole("button", { name: "Suggest allocation" })).toBeNull();
+    vi.unstubAllGlobals();
+    document.body.innerHTML = "";
+    serve("B", { calls: [call({ state: "agreed" })], balances: balances("0") });
+    expect(within(await rowOf()).queryByRole("button", { name: "Suggest allocation" })).toBeNull();
   });
 });

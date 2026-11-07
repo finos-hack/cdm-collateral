@@ -730,3 +730,19 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
 | edge:e-dec-cdmdev-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
 | edge:e-lnk-netting-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| waypoint:wp-adr-allocation-scope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| node:task-sme-allocation-ranking | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| node:task-sme-allocation-ranking | status |  | open | 2026-11-07T13:52:51Z |  |  |
+| edge:e-mrk-allocscope-alloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-dec-cdmdev-smealloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-lnk-alloc-smealloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-drv-cdmdata-allocscope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-drv-callstate-allocscope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| waypoint:wp-adr-allocation-scope | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| edge:e-mrk-allocscope-alloc | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| edge:e-drv-cdmdata-allocscope | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| edge:e-drv-callstate-allocscope | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| node:task-sme-allocation-ranking | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| edge:e-dec-cdmdev-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| edge:e-lnk-alloc-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
+| node:task-csa-allocation | status | open | resolved | 2026-11-07T18:15:45Z | b94ecf05be6e7d479e2ec32ca6f413bdcfb74679 | denisurusov |

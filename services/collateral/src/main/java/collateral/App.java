@@ -88,6 +88,7 @@ public final class App {
         app.post("/api/v1/calls", this::issueCall);
         app.post("/api/v1/calls/{id}/response", this::respond);
         app.post("/api/v1/calls/{id}/proposal", this::propose);
+        app.post("/api/v1/calls/{id}/allocation", this::allocation);
         app.post("/api/v1/calls/{id}/decision", this::decide);
         app.post("/api/v1/calls/{id}/pledge", this::pledge);
         app.post("/api/v1/calls/{id}/transfer", this::transfer);
@@ -895,6 +896,71 @@ public final class App {
         record(callId, "ProposeCollateral", cdm);
         JsonNode r = gw.post("/calls/" + callId + "/proposals", Map.of("assets", gwAssets, "cdmHash", cdm.hash));
         ctx.json(Map.of("proposalId", r.get("proposalId").asLong(), "cdmHash", cdm.hash));
+    }
+
+    /**
+     * Suggest a basket for an agreed IM or VM call (flow-allocation; wp-adr-allocation-scope). Only the called party,
+     * which delivers, asks. Each registry token is a candidate: this party's balance, the oracle feed price read through
+     * its own gateway, and the eligibility and haircut between the pair as the contract applies them (pledgor = the
+     * called party, secured party = the calling party). The ranking is the body's {@code ranking} (token symbols, first
+     * allocated first), followed by the remaining tokens in registry order; without it, the registry order. Nothing is
+     * recorded: the party proposes the basket through {@link #propose}.
+     */
+    @SuppressWarnings("unchecked")
+    private void allocation(Context ctx) {
+        String callId = ctx.pathParam("id");
+        Map<String, Object> b = ctx.body().isBlank() ? Map.of() : body(ctx);
+        JsonNode c = gw.get("/calls/" + callId);
+        int kind = c.get("kind").asInt(), state = c.get("state").asInt();
+        if (kind == 2) throw new RuntimeException("no allocation for a return call");
+        if (state != 2 && state != 3) throw new RuntimeException("the call is not agreed");
+        if (!c.get("to").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the called party allocates collateral");
+
+        List<String> order = new ArrayList<>();
+        for (Object sym : (List<Object>) b.getOrDefault("ranking", List.of())) {
+            if (!cfg.registry.get("tokens").has(String.valueOf(sym))) throw new RuntimeException("unknown token " + sym);
+            if (!order.contains(String.valueOf(sym))) order.add(String.valueOf(sym));
+        }
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            if (!order.contains(sym)) order.add(sym);
+        }
+
+        JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", c.get("to").asText(), "securedParty", c.get("from").asText()));
+        Map<String, JsonNode> terms = new HashMap<>();
+        for (JsonNode e : pt.get("eligibility")) {
+            String sym = symbolOf(e.get("token").asText());
+            if (sym != null) terms.put(sym, e);
+        }
+        Map<String, BigInteger> priceByToken = new HashMap<>();
+        for (JsonNode pr : gw.get("/prices").get("prices")) {
+            if (!pr.get("price").isNull()) priceByToken.put(pr.get("token").asText().toLowerCase(), new BigInteger(pr.get("price").asText()));
+        }
+        List<CdmAllocation.Candidate> candidates = new ArrayList<>();
+        List<Map<String, Object>> inventory = new ArrayList<>();
+        for (int i = 0; i < order.size(); i++) {
+            String sym = order.get(i), token = cfg.tokenAddress(sym);
+            long held = new BigInteger(gw.getQuery("/balance", Map.of("token", token, "owner", cfg.myAddress)).asText()).longValueExact();
+            JsonNode e = terms.get(sym);
+            boolean eligible = e != null && e.get("eligible").asBoolean();
+            int bps = e != null ? e.get("haircutBps").asInt() : 10_000;
+            BigInteger price = priceByToken.get(token.toLowerCase());
+            candidates.add(new CdmAllocation.Candidate(sym, cfg.isin(sym), i + 1, held, price, eligible, bps));
+            inventory.add(new LinkedHashMap<>(Map.of("token", sym, "rank", i + 1, "held", String.valueOf(held), "eligible", eligible,
+                    "haircutBps", bps, "price", price == null ? "" : price.toString())));
+        }
+        CdmAllocation a = CdmAllocation.allocate(candidates, new BigInteger(c.get("agreed").asText()), cfg.priceScale);
+        List<Map<String, Object>> assets = new ArrayList<>();
+        for (CdmAllocation.Line l : a.lines) assets.add(new LinkedHashMap<>(Map.of("token", l.symbol(), "qty", l.units())));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("callId", callId);
+        out.put("covers", a.covers());
+        out.put("assets", assets);
+        out.put("valueUsd", a.valueUsd());
+        out.put("agreedUsd", usd(c.get("agreed").asText()));
+        out.put("ranking", order);
+        out.put("inventory", inventory);
+        ctx.json(out);
     }
 
     private void decide(Context ctx) {

@@ -1061,3 +1061,82 @@ test("flow-agreement-amendment: secured party proposes new MTA and tMMF haircut 
   }
   expect(errors).toEqual([]);
 });
+
+test("flow-allocation: pledgor asks for a suggested basket on an agreed IM call -> proposes it -> secured party accepts -> pledged as suggested", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  // wp-adr-allocation-scope: eligible tokens in ranking order (registry order by default), the last one rounded up to
+  // whole units; nothing is recorded until the pledgor proposes.
+  type Allocation = {
+    covers: boolean; assets: { token: string; qty: number }[]; valueUsd: string; agreedUsd: string; ranking: string[];
+    inventory: { token: string; rank: number; held: string; eligible: boolean; haircutBps: number; price: string }[];
+  };
+  // Small enough that part of the pledgor's tUST covers it: the chain is persistent and the other flows need the
+  // pledgor's tUSD and tUST, so this flow must not drain them (multi-asset fills are covered by AllocationTest).
+  const amountUsd = 1_000_000 + (Date.now() % 9000) * 100;
+  const label = `USD ${amountUsd.toLocaleString("en-US")}`;
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // 1-2. Secured party issues the IM call; the pledgor agrees in full.
+  await page.goto("/#/live/B");
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await issueCard.getByRole("spinbutton").fill(String(amountUsd));
+  await issueCard.getByRole("button", { name: /Issue IM call/ }).click();
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: label });
+  await expect(rowA).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Agree in full" }).click();
+
+  // 3. The pledgor asks for a suggestion; the console fills the basket.
+  await expect(rowA.getByRole("button", { name: "Suggest allocation" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Suggest allocation" }).click();
+  await expect(rowA.getByText(/suggested: USD [\d,.]+ after haircuts/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // The same suggestion through the service API: it covers the agreed amount, in ranking order, every asset but the
+  // last at its full holding, and overshoots by less than one unit of the last asset after its haircut.
+  const st = await call<{ calls: { callId: string; amountUsd: string }[] }>(`${SERVICE.A}/state`);
+  const callId = st.calls.find((c) => c.amountUsd === String(amountUsd))!.callId;
+  const alloc = await call<Allocation>(`${SERVICE.A}/calls/${callId}/allocation`, "POST", {});
+  expect(alloc.covers).toBe(true);
+  expect(alloc.ranking).toEqual(Object.keys(p.tokens));
+  await expect(rowA.getByText(`basket: ${alloc.assets.map((a) => `${a.token} ${a.qty.toLocaleString("en-US")}`).join(" + ")}`)).toBeVisible();
+  const inv = Object.fromEntries(alloc.inventory.map((i) => [i.token, i]));
+  const ranks = alloc.assets.map((a) => inv[a.token].rank);
+  expect([...ranks].sort((x, y) => x - y)).toEqual(ranks);
+  alloc.assets.forEach((a, i) => {
+    expect(inv[a.token].eligible).toBe(true);
+    if (i < alloc.assets.length - 1) expect(String(a.qty)).toBe(inv[a.token].held);
+    else expect(a.qty).toBeLessThanOrEqual(Number(inv[a.token].held));
+  });
+  const last = inv[alloc.assets[alloc.assets.length - 1].token];
+  const lastUnitValue = (Number(last.price) / 1e8) * (1 - last.haircutBps / 10_000);
+  expect(alloc.assets).toEqual([{ token: "tUST", qty: Math.ceil(amountUsd / lastUnitValue) }]);
+  expect(Number(alloc.valueUsd)).toBeGreaterThanOrEqual(amountUsd);
+  expect(Number(alloc.valueUsd) - amountUsd).toBeLessThan(lastUnitValue);
+  // A ranking from the body goes first; the calling party is not offered an allocation.
+  const reranked = await call<Allocation>(`${SERVICE.A}/calls/${callId}/allocation`, "POST", { ranking: ["tMMF"] });
+  expect(reranked.ranking[0]).toBe("tMMF");
+  if (inv.tMMF.eligible && Number(inv.tMMF.held) > 0) expect(reranked.assets[0].token).toBe("tMMF");
+  await expect(call(`${SERVICE.B}/calls/${callId}/allocation`, "POST", {})).rejects.toThrow(/only the called party/);
+
+  // 4-6. The pledgor proposes the suggested basket; the secured party accepts; the pledgor pledges it.
+  const before = Object.fromEntries(await Promise.all(alloc.assets.map(async (a) => [a.token, await pledgedOf(GATEWAY.A, p.tokens[a.token], p)] as const)));
+  await rowA.getByRole("button", { name: `Propose collateral (${alloc.assets.length})` }).click();
+  await expect(rowA.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: label });
+  await expect(rowB.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Accept proposal" }).click();
+  await page.goto("/#/live/A");
+  const rowA2 = page.locator(".subcard", { hasText: label });
+  await expect(rowA2.getByRole("button", { name: "Pledge accepted collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA2.getByRole("button", { name: "Pledge accepted collateral" }).click();
+  await waitForSettledOnChain("IM", amountUsd);
+  for (const a of alloc.assets) {
+    expect(await pledgedOf(GATEWAY.A, p.tokens[a.token], p) - before[a.token]).toBe(BigInt(a.qty));
+  }
+  await expectConvergedCdmState(callId);
+  expect(errors).toEqual([]);
+});
+

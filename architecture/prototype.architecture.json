@@ -21,6 +21,7 @@
     ]
   },
   "adrs": [
+    ".konspekt/instance/waypoints/wp-adr-allocation-scope.md",
     ".konspekt/instance/waypoints/wp-adr-amendment-per-pair-terms.md",
     ".konspekt/instance/waypoints/wp-adr-cancellation-blocks-call.md",
     ".konspekt/instance/waypoints/wp-adr-cdm-collateral-events.md",
@@ -1503,6 +1504,33 @@
           "relationship-unique-id": "gateway-to-service-events",
           "sequence-number": 6,
           "description": "Each gateway pushes SettlementNetted and the CallSettled steps; both services fetch the statement by its hash and verify it against the chain, and both consoles show the netting."
+        }
+      ]
+    },
+    {
+      "unique-id": "flow-allocation",
+      "name": "Collateral allocation (suggested basket)",
+      "description": "The called party of an agreed IM or VM call asks its workflow service for a basket that covers the agreed amount (task-csa-allocation; the project owner's scope of 2026-11-07, wp-adr-allocation-scope). cdm-ext AllocateCollateral takes the party's eligible holdings in its ranking order (registry order by default) and rounds the last one up to whole units; concentration limits are not applied. Nothing is recorded: the party edits or keeps the basket and proposes it through the existing proposal step (flow-im-margin-call-pledge, flow-vm-margin-call-transfer). The default ranking awaits task-sme-allocation-ranking.",
+      "transitions": [
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 1,
+          "description": "The pledgor asks for a suggested allocation on an agreed call in its console."
+        },
+        {
+          "relationship-unique-id": "console-to-service",
+          "sequence-number": 2,
+          "description": "Console asks the party's workflow service for an allocation of the call, with an optional ranking."
+        },
+        {
+          "relationship-unique-id": "service-to-gateway",
+          "sequence-number": 3,
+          "description": "Service reads the call, the party's token balances, the oracle feed prices and the pair's eligibility and haircuts through its own gateway."
+        },
+        {
+          "relationship-unique-id": "pledgor-uses-console",
+          "sequence-number": 4,
+          "description": "The console fills the proposal basket from the service's CDM AllocateCollateral result; the pledgor proposes it as before."
         }
       ]
     },

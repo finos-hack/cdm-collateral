@@ -1,0 +1,122 @@
+namespace cdmx.collateral.allocation : <"Local CDM extension: collateral allocation (gap G34; wp-adr-allocation-scope).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+// The allocation fills the agreed amount from the eligible candidates in ranking order. Rune has no loop, so each
+// candidate's units are computed from the value after haircuts of the candidates ranked before it: a candidate
+// covers what they leave, up to its holding, rounded up to whole units. Only the last candidate used is rounded, so
+// the basket exceeds the agreed amount by less than one unit of that candidate's value after haircuts. Concentration
+// limits are not applied (wp-adr-allocation-scope).
+
+func CandidateUnitValue: <"Value after haircuts of one unit of a candidate, in the base currency.">
+    inputs:
+        candidate AllocationCandidate (1..1)
+    output:
+        value number (1..1)
+
+    set value:
+        candidate -> unitPrice -> value * (1.0 - candidate -> haircutPercentage)
+
+func CandidateCapacity: <"Value after haircuts of all the units of a candidate the pledgor holds, in the base currency.">
+    inputs:
+        candidate AllocationCandidate (1..1)
+    output:
+        value number (1..1)
+
+    set value:
+        candidate -> holding -> priceQuantity only-element -> quantity -> value * CandidateUnitValue(candidate)
+
+func AllocatedUnits: <"The whole units of one candidate the allocation uses: what the candidates ranked before it leave of the agreed amount, divided by its unit value after haircuts and rounded up, at most its holding; zero when nothing is left.">
+    inputs:
+        candidate AllocationCandidate (1..1)
+        usable AllocationCandidate (0..*) <"The eligible candidates with a positive value after haircuts.">
+        agreedValue number (1..1) <"The agreed amount, in the base currency.">
+    output:
+        units number (1..1)
+
+    alias coveredBefore:
+        usable
+            filter c [ c -> rank < candidate -> rank ]
+            then extract c [ CandidateCapacity(c) ]
+            then sum
+
+    alias remaining: agreedValue - coveredBefore
+
+    set units:
+        if remaining > 0
+        then Min(
+                candidate -> holding -> priceQuantity only-element -> quantity -> value,
+                RoundToNearest(remaining / CandidateUnitValue(candidate), 1.0, RoundingModeEnum -> Up)
+            )
+        else 0.0
+
+func AllocatedPosition: <"A candidate's holding with the allocated units in place of the units held.">
+    inputs:
+        candidate AllocationCandidate (1..1)
+        units number (1..1)
+    output:
+        position CollateralPosition (1..1)
+
+    set position:
+        CollateralPosition {
+            priceQuantity: PriceQuantity {
+                quantity: NonNegativeQuantitySchedule {
+                    value: units,
+                    unit: candidate -> holding -> priceQuantity only-element -> quantity -> unit,
+                    ...
+                },
+                ...
+            },
+            asset: candidate -> holding -> asset,
+            ...
+        }
+
+func AllocateCollateral: <"The collateral, in whole units, that covers an agreed margin call amount from the pledgor's inventory, taking eligible assets in the pledgor's ranking order (gap G34). Nothing is suggested when the eligible inventory cannot cover the amount.">
+    inputs:
+        candidates AllocationCandidate (0..*) <"The pledgor's inventory, ranked.">
+        agreedAmount Money (1..1) <"The agreed amount of the call, in the base currency.">
+    output:
+        allocation CollateralAllocation (1..1)
+
+    alias usable:
+        candidates
+            filter c [
+                c -> eligible = True
+                    and c -> haircutPercentage < 1
+                    and c -> holding -> priceQuantity only-element -> quantity -> value > 0
+            ]
+            then sort [ item -> rank ]
+
+    alias capacity: usable extract c [ CandidateCapacity(c) ] then sum
+
+    alias covers: capacity >= agreedAmount -> value
+
+    alias used: usable filter c [ AllocatedUnits(c, usable, agreedAmount -> value) > 0 ]
+
+    alias usedPositions: used extract c [ AllocatedPosition(c, AllocatedUnits(c, usable, agreedAmount -> value)) ]
+
+    alias usedValue:
+        used extract c [ AllocatedUnits(c, usable, agreedAmount -> value) * CandidateUnitValue(c) ] then sum
+
+    condition PositiveAmount: <"The agreed amount is positive.">
+        agreedAmount -> value > 0
+
+    condition SameCurrency: <"Every unit price is in the currency of the agreed amount.">
+        (candidates filter c [ c -> unitPrice -> unit -> currency <> agreedAmount -> unit -> currency ] then count) = 0
+
+    condition DistinctRanks: <"Each candidate has its own rank.">
+        (candidates extract rank then distinct then count) = candidates count
+
+    set allocation:
+        CollateralAllocation {
+            allocatedCollateral: if covers then usedPositions else empty,
+            valueAfterHaircuts: Money {
+                value: if covers then usedValue else 0.0,
+                unit: agreedAmount -> unit,
+                ...
+            },
+            coversAgreedAmount: covers
+        }
