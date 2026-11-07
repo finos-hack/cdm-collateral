@@ -224,3 +224,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-alloc-smealloc | links | node:task-csa-allocation | node:task-sme-allocation-ranking |  | accepted |
 | e-drv-cdmdata-allocscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-allocation-scope |  | accepted |
 | e-drv-callstate-allocscope | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-allocation-scope |  | accepted |
+| e-dec-cdmdev-smeallocconc | decomposes | node:goal-cdm-development | node:task-sme-allocation-concentration |  | proposed |
+| e-lnk-alloc-smeallocconc | links | node:task-csa-allocation | node:task-sme-allocation-concentration |  | proposed |
+| e-dec-csaext-allocopt | decomposes | node:task-csa-workflow-extensions | node:task-csa-allocation-optimisation |  | proposed |
+| e-lnk-alloc-allocopt | links | node:task-csa-allocation | node:task-csa-allocation-optimisation |  | proposed |
+| e-dec-e2eflow-specduration | decomposes | node:goal-end-to-end-flow | node:task-live-spec-duration |  | proposed |
+| e-lnk-cilivestack-specduration | links | node:task-ci-live-e2e-stack | node:task-live-spec-duration |  | proposed |

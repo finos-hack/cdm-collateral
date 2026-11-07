@@ -746,3 +746,15 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
 | edge:e-lnk-alloc-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
 | node:task-csa-allocation | status | open | resolved | 2026-11-07T18:15:45Z | b94ecf05be6e7d479e2ec32ca6f413bdcfb74679 | denisurusov |
+| node:task-sme-allocation-concentration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-sme-allocation-concentration | status |  | open | 2026-11-07T18:27:28Z |  |  |
+| node:task-csa-allocation-optimisation | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-csa-allocation-optimisation | status |  | open | 2026-11-07T18:27:28Z |  |  |
+| node:task-live-spec-duration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-live-spec-duration | status |  | open | 2026-11-07T18:27:28Z |  |  |
+| edge:e-dec-cdmdev-smeallocconc | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-lnk-alloc-smeallocconc | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-dec-csaext-allocopt | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-lnk-alloc-allocopt | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-dec-e2eflow-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-lnk-cilivestack-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
