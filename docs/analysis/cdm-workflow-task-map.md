@@ -10,7 +10,7 @@ Sources: [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md),
 [`findings.md`](findings.md), [`collateral-conceptual-model.md`](collateral-conceptual-model.md),
 [`collateral-flows.md`](collateral-flows.md), [`business-case.md`](business-case.md) and the gap register
 [`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) (gap IDs G1–G39). Implementation status is
-as of `main` at `d2ad03b` (PR #24, 2026-11-04); the six live specs of section A passed locally on 2026-11-04.
+as of branch `two-way-im` (PR #40, 2026-11-07); the 16 live specs of sections A and B passed locally on 2026-11-07.
 
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other
 agreement families (section C). Section B starts only after the rest of section A is done: `flow-oracle-update`,
@@ -18,21 +18,30 @@ agreement families (section C). Section B starts only after the rest of section 
 rows in section B (`nw-csa-extension-order`) and section C (`nw-agreement-family-order`) was proposed by the
 maintainer and accepted by the project owner (2026-11-03).
 
+Every section uses the same columns:
+
+- **#**: the row's number in its section: the order of the margin cycle in A, the build order in B and C.
+- **Workflow**: the collateral workflow.
+- **CDM status**: what CDM 7.7.0 covers, with the gap IDs of what it lacks (gap register; scores from the coverage
+  matrices where they exist).
+- **`cdm-ext`**: what the local extension adds over CDM 7.7.0.
+- **Prototype**: the prototype flow and what is built (contracts, gateway, services, console).
+- **Live spec**: the Playwright test in `console/e2e/live.spec.ts` that asserts on-chain state through the gateways.
+- **Task**: the task that builds the row or closes what is missing.
+
 ## A. ISDA CSA margin cycle — implemented in the prototype
 
-"Live spec" is a Playwright test in `console/e2e/live.spec.ts` that asserts on-chain state through the gateways.
-
-| Workflow | Prototype flow | Built (contracts, gateway, services, console) | Live spec | Open CDM gaps | Task |
-|---|---|---|---|---|---|
-| Margin call issue and response (agree, partly agree, dispute) | `flow-im-margin-call-pledge` | yes | passes | G3 dispute resolution (partial: the disputed amount is recorded, resolution is not modelled) | `task-cdm-gap-closure` |
-| Collateral proposal, eligibility, accept or reject | `flow-im-margin-call-pledge` | yes | passes | G7 haircut (defect D1), G8 concentration limits, G11 rating check (D8) | `task-cdm-gap-closure` (valuation, G7–G10) |
-| Pledge settlement into escrow | `flow-im-margin-call-pledge` | yes | passes | G5 balances, G37 transfer type, G38 title-transfer party roles | `task-cdm-gap-closure` |
-| Variation margin call and title transfer | `flow-vm-margin-call-transfer` | yes | passes | G9 (no VM call amount; 2018 IM CSA only), G10 exposure | `task-cdm-gap-closure` (valuation, G7–G10) |
-| Return of excess initial margin | `flow-return` | yes | passes | none (G6 closed in `cdm-ext`) | `task-e2e-remaining-flows` |
-| Default and enforcement against segregated IM | `flow-default-enforcement` | yes (default notices through `services/oracle`) | passes | G14 enforcement step | `task-e2e-remaining-flows`; G14 in `task-cdm-gap-closure` |
-| Oracle price update | `flow-oracle-update` | yes (`services/oracle` publishes through the operator's gateway; operator console) | passes | input to G7 and G11; ratings are not published to the feed | `task-e2e-remaining-flows` |
-| Revaluation and top-up call | `flow-revaluation-top-up` | yes (revaluation in `services/collateral`, top-up call from the secured party's console) | passes | revaluation and top-up scores 2 (CSA matrix) | `task-e2e-remaining-flows`; modelling question `task-revaluation-top-up-modelling` |
-| Two-way initial margin (one leg per direction) | `flow-two-way-im-default` (each party pledges to the other; on A's default B enforces A's leg and reclaims its own) | yes (legs from the calls; `CollateralControl.reclaim`; console leg selector) | passes | reclaim modelled in `cdm-ext` (`Create_CollateralReclaim`); rules for the SME in `task-sme-two-way-im-rules` | `task-two-way-initial-margin` (resolved; `wp-adr-two-way-im`) |
+| # | Workflow | CDM status | `cdm-ext` | Prototype | Live spec | Task |
+|---|---|---|---|---|---|---|
+| 1 | Margin call issue and response (agree, partly agree, dispute) | types only: no function, event or dispute record (G1, G3) | lifecycle steps and state (`cdmx.collateral.margincall`), events with qualification (`cdmx.collateral.event`), the dispute record and its resolution (`cdmx.collateral.dispute`) | `flow-im-margin-call-pledge`: built; the disputed amount is recorded, dispute resolution is not run | passes | `task-cdm-gap-closure` |
+| 2 | Collateral proposal, eligibility, accept or reject | no proposal type (G2); additional haircut defect (G7, D1); concentration limits not evaluated (G8); rating check by text (G11, D8, open) | proposal and decision (`cdmx.collateral.proposal`), corrected haircut (`cdmx.collateral.valuation`), concentration limits (`cdmx.collateral.concentration`); G11 not covered | `flow-im-margin-call-pledge`: built | passes | `task-cdm-gap-closure` (valuation, G7–G10) |
+| 3 | Pledge settlement into escrow | no link from an accepted proposal to a transfer (G4); balances not updated (G5); no collateral transfer type (G37, open) | settlement transfers (`cdmx.collateral.transfer`), portfolio kept from settled events (`cdmx.collateral.portfolio`); `transferType` stays absent | `flow-im-margin-call-pledge`: built | passes | `task-cdm-gap-closure` |
+| 4 | Variation margin call and title transfer | Credit Support Amount for the 2018 IM CSA only (G9); no exposure netting (G10); no title-transfer party roles (G38, open) | VM Credit Support, Delivery and Return Amounts (`cdmx.collateral.valuation`, VM functions), netting set and exposure (`cdmx.collateral.exposure`); G38 not covered | `flow-vm-margin-call-transfer`: built | passes | `task-cdm-gap-closure` (valuation, G7–G10) |
+| 5 | Return of excess initial margin | a call direction in the types only (G6) | return calls released without a proposal, within the agreed amount (`cdmx.collateral.margincall`) | `flow-return`: built | passes | `task-e2e-remaining-flows` |
+| 6 | Default and enforcement against segregated IM | custody and segregation terms only, no enforcement step (G14) | enforcement as an event (`cdmx.collateral.enforcement`) | `flow-default-enforcement`: built; default notices through `services/oracle` | passes | `task-e2e-remaining-flows`; G14 in `task-cdm-gap-closure` |
+| 7 | Oracle price update | input to G7 and G11; ratings are not published to the feed | none | `flow-oracle-update`: built; `services/oracle` publishes through the operator's gateway; operator console | passes | `task-e2e-remaining-flows` |
+| 8 | Revaluation and top-up call | revaluation and top-up score 2 (CSA matrix) | none beyond rows 2 and 4 | `flow-revaluation-top-up`: built; revaluation in `services/collateral`, top-up call from the secured party's console | passes | `task-e2e-remaining-flows`; modelling question `task-revaluation-top-up-modelling` |
+| 9 | Two-way initial margin (one leg per direction) | not scored | the pledgor's reclaim on the secured party's default (`Create_CollateralReclaim`, `cdmx.collateral.enforcement`); rules to be confirmed (`task-sme-two-way-im-rules`) | `flow-two-way-im-default`: built; legs from the calls, `CollateralControl.reclaim`, console leg selector; each party pledges to the other, and on A's default B enforces A's leg and reclaims its own | passes | `task-two-way-initial-margin` (resolved; `wp-adr-two-way-im`) |
 
 ## B. ISDA CSA workflows with no prototype flow
 
@@ -42,18 +51,18 @@ parent task `task-csa-workflow-extensions` is resolved. Cost-based optimisation 
 
 Rows are in build order (`nw-csa-extension-order`): gap-register priority first, then workflows that
 extend flows the prototype already runs. Each row has its own task under `task-csa-workflow-extensions` (split on
-2026-11-06). "CDM status" is CDM 7.7.0's coverage; "`cdm-ext`" is what the local extension adds.
+2026-11-06).
 
-| # | Workflow | CDM status | `cdm-ext` | Prototype | Task |
-|---|---|---|---|---|---|
-| 1 | Close-out netting on default | elections only (0–2): G15, P2 | ISDA 2002 MA Section 6(e) for the CSA (`cdmx.collateral.closeout`); GMRA, GMSLA and CCP close-out not covered | `flow-close-out-netting`: built (`CollateralControl.closeOut`, gateway, service, console); live spec passes | `task-csa-close-out-netting` |
-| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | ISDA CSA Paragraph 4(d) with consent (`cdmx.collateral.substitution`) | `flow-substitution`: built (request, consent or refusal, settlement in `CollateralControl`, gateway, service, console); live spec passes | `task-csa-substitution` |
-| 3 | Interest on cash collateral | types only (2): G17, P2 | Interest Amount for one period on CDM's `CollateralInterestParameters`: daily accrual, rate rules, rounding, withholding tax, write-off, transfer or adjustment (`cdmx.collateral.interest`); compounding not covered | `flow-interest-on-cash`: built (`CollateralControl.stateInterest` and `payInterest`, gateway, service, console); one observed rate and the current escrow for every day (interim, `task-sme-interest-daily-balances`); live spec passes | `task-csa-interest-on-cash` |
-| 4 | Amendment of agreement terms | modelled for the CSA (4) | Agreement event qualified, eligibility schedule amended per asset alongside CDM's elections change (`cdmx.collateral.amendment`); D18 | `flow-agreement-amendment`: built (`CollateralControl.proposeAmendment` and `decideAmendment`, per-pair eligibility, gateway, service fold of the agreed amendments from CDM's sample IM CSA, console); MTA and haircut changes only; live spec passes | `task-csa-amendment` |
-| 5 | Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings); CDM's generic `WorkflowStep` cancel only | Withdrawal of an unanswered call; request and acceptance or refusal after a response; `Cancelled` status, proposals voided, qualifiers (`cdmx.collateral.margincall`); a replacement call names the cancelled call (`IssueCallInstruction.replacesCall`, `ReplacementAllowed`); rules to be confirmed (`task-sme-call-cancellation-rules`) | `flow-call-cancellation`: built (`MarginCall.withdrawCall`, `requestCancellation` and `decideCancellation`, gateway, service, console); live spec passes. `flow-call-replacement`: built (`MarginCall.issueReplacementCall`, gateway, service, console); live spec passes | `task-csa-call-cancellation`, `task-csa-call-replacement` |
-| 6 | Settlement netting | absent (0–2), no gap ID; "inside the transfer step when built" (CSA matrix); CDM has the election `netInterestWithMarginCalls` only | VM deliveries, VM returns and Interest Amounts due between two parties on one day in one currency netted to one transfer (`cdmx.collateral.netting`, `Create_SettlementNetting`); initial margin does not net; rules to be confirmed (`task-sme-settlement-netting-rules`) | `flow-settlement-netting`: built (`CollateralControl.settleNetted` and `stateInterestForNetting`, gateway, service, console); live spec passes | `task-csa-settlement-netting` |
-| 7 | Collateral allocation and optimisation | absent (0): G34, P3; the pledgor chooses assets by hand | `AllocateCollateral` fills the agreed amount from eligible inventory in the pledgor's ranking order, last asset rounded up to whole units, no concentration limits (`cdmx.collateral.allocation`, `wp-adr-allocation-scope`); rules to be confirmed (`task-sme-allocation-ranking`) | `flow-allocation`: built (service `POST /api/v1/calls/{id}/allocation`, console "Suggest allocation" fills the proposal basket; no contract change); live spec passes | `task-csa-allocation` |
-| 8 | Reconciliation | absent (0): G35; back in scope 2026-11-07 (business case §8 item 3) | `ReconcilePortfolios` matches the parties' trade snapshots by UTI on key terms and a valuation tolerance, with each party's exposure; `ReconcileWithLedger` compares a party's records with the ledger (`cdmx.collateral.reconciliation`, `wp-adr-reconciliation-scope`); rules to be confirmed (`task-sme-reconciliation-rules`) | `flow-reconciliation`: built (service `POST /api/v1/reconciliation/portfolio` and `/ledger`, snapshots exchanged service to service, snapshot and result hashes on the `PortfolioReconciliation` contract, console "Reconcile portfolios", "Reconcile with ledger" and "Dispute citing reconciliation"; the ledger check covers call status and amounts and the escrow by token); live spec passes | `task-csa-reconciliation` |
+| # | Workflow | CDM status | `cdm-ext` | Prototype | Live spec | Task |
+|---|---|---|---|---|---|---|
+| 1 | Close-out netting on default | elections only (0–2): G15, P2 | ISDA 2002 MA Section 6(e) for the CSA (`cdmx.collateral.closeout`); GMRA, GMSLA and CCP close-out not covered | `flow-close-out-netting`: built (`CollateralControl.closeOut`, gateway, service, console) | passes | `task-csa-close-out-netting` |
+| 2 | Substitution | partial (2): works for repo and lending only, qualified as a renegotiation (G16, P2; D5) | ISDA CSA Paragraph 4(d) with consent (`cdmx.collateral.substitution`) | `flow-substitution`: built (request, consent or refusal, settlement in `CollateralControl`, gateway, service, console) | passes | `task-csa-substitution` |
+| 3 | Interest on cash collateral | types only (2): G17, P2 | Interest Amount for one period on CDM's `CollateralInterestParameters`: daily accrual, rate rules, rounding, withholding tax, write-off, transfer or adjustment (`cdmx.collateral.interest`); compounding not covered | `flow-interest-on-cash`: built (`CollateralControl.stateInterest` and `payInterest`, gateway, service, console); one observed rate and the current escrow for every day (interim, `task-sme-interest-daily-balances`) | passes | `task-csa-interest-on-cash` |
+| 4 | Amendment of agreement terms | modelled for the CSA (4) | Agreement event qualified, eligibility schedule amended per asset alongside CDM's elections change (`cdmx.collateral.amendment`); D18 | `flow-agreement-amendment`: built (`CollateralControl.proposeAmendment` and `decideAmendment`, per-pair eligibility, gateway, service fold of the agreed amendments from CDM's sample IM CSA, console); MTA and haircut changes only | passes | `task-csa-amendment` |
+| 5 | Margin call cancellation | no matrix row; only the ISO 20022 message names (colr.005/006, findings); CDM's generic `WorkflowStep` cancel only | Withdrawal of an unanswered call; request and acceptance or refusal after a response; `Cancelled` status, proposals voided, qualifiers (`cdmx.collateral.margincall`); a replacement call names the cancelled call (`IssueCallInstruction.replacesCall`, `ReplacementAllowed`); rules to be confirmed (`task-sme-call-cancellation-rules`) | `flow-call-cancellation`: built (`MarginCall.withdrawCall`, `requestCancellation` and `decideCancellation`, gateway, service, console). `flow-call-replacement`: built (`MarginCall.issueReplacementCall`, gateway, service, console) | both pass | `task-csa-call-cancellation`, `task-csa-call-replacement` |
+| 6 | Settlement netting | absent (0–2), no gap ID; "inside the transfer step when built" (CSA matrix); CDM has the election `netInterestWithMarginCalls` only | VM deliveries, VM returns and Interest Amounts due between two parties on one day in one currency netted to one transfer (`cdmx.collateral.netting`, `Create_SettlementNetting`); initial margin does not net; rules to be confirmed (`task-sme-settlement-netting-rules`) | `flow-settlement-netting`: built (`CollateralControl.settleNetted` and `stateInterestForNetting`, gateway, service, console) | passes | `task-csa-settlement-netting` |
+| 7 | Collateral allocation and optimisation | absent (0): G34, P3; the pledgor chooses assets by hand | `AllocateCollateral` fills the agreed amount from eligible inventory in the pledgor's ranking order, last asset rounded up to whole units, no concentration limits (`cdmx.collateral.allocation`, `wp-adr-allocation-scope`); rules to be confirmed (`task-sme-allocation-ranking`) | `flow-allocation`: built (service `POST /api/v1/calls/{id}/allocation`, console "Suggest allocation" fills the proposal basket; no contract change) | passes | `task-csa-allocation` |
+| 8 | Reconciliation | absent (0): G35; back in scope 2026-11-07 (business case §8 item 3) | `ReconcilePortfolios` matches the parties' trade snapshots by UTI on key terms and a valuation tolerance, with each party's exposure; `ReconcileWithLedger` compares a party's records with the ledger (`cdmx.collateral.reconciliation`, `wp-adr-reconciliation-scope`); rules to be confirmed (`task-sme-reconciliation-rules`) | `flow-reconciliation`: built (service `POST /api/v1/reconciliation/portfolio` and `/ledger`, snapshots exchanged service to service, snapshot and result hashes on the `PortfolioReconciliation` contract, console "Reconcile portfolios", "Reconcile with ledger" and "Dispute citing reconciliation"; the ledger check covers call status and amounts and the escrow by token, one escrow record per IM leg) | passes | `task-csa-reconciliation` |
 
 Out of scope per the gap register and business case: ISDA SIMM calculation (G13, input only) and regulatory
 reporting (G36).
@@ -61,14 +70,14 @@ reporting (G36).
 ## C. Other agreement families — after the CSA cycle
 
 Rows are in build order (`nw-agreement-family-order`): repo and securities lending (P2) before triparty
-and CCP (P3).
+and CCP (P3). The workflows each family covers in the analysis are listed in the Workflow column.
 
-| Family | Workflows in the analysis | Main gaps | Task |
-|---|---|---|---|
-| Repo (GMRA) | terms, margin maintenance, reprice, adjustment, roll, repurchase, pair-off, buy/sell-back, substitution, income | G20 terms, G12 net exposure and inverted margin ratio, G33 buy/sell-back, G19 amendment | `task-repo-gmra-workflows` |
-| Securities lending (GMSLA) | terms, marking, loan return, recall, substitution, rebate and fees | G21 terms, G12 marking, G18 recall | `task-securities-lending-gmsla-workflows` |
-| Triparty | agent valuation, allocation and settlement | G22 | `task-triparty-workflows` |
-| CCP | margin call, default management, porting | G23 | `task-ccp-workflows` |
+| # | Workflow | CDM status | `cdm-ext` | Prototype | Live spec | Task |
+|---|---|---|---|---|---|---|
+| 1 | Repo (GMRA): terms, margin maintenance, reprice, adjustment, roll, repurchase, pair-off, buy/sell-back, substitution, income | G20 terms, G12 net exposure and inverted margin ratio, G33 buy/sell-back, G19 amendment | none yet | none yet | none | `task-repo-gmra-workflows` |
+| 2 | Securities lending (GMSLA): terms, marking, loan return, recall, substitution, rebate and fees | G21 terms, G12 marking, G18 recall | none yet | none yet | none | `task-securities-lending-gmsla-workflows` |
+| 3 | Triparty: agent valuation, allocation and settlement | G22 | none yet | none yet | none | `task-triparty-workflows` |
+| 4 | CCP: margin call, default management, porting | G23 | none yet | none yet | none | `task-ccp-workflows` |
 
 ## Cross-cutting
 
