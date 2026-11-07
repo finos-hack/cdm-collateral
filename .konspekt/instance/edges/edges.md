@@ -246,10 +246,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smetwowayim | decomposes | node:goal-cdm-development | node:task-sme-two-way-im-rules |  | accepted |
 | e-lnk-twowayim-smetwowayim | links | node:task-two-way-initial-margin | node:task-sme-two-way-im-rules |  | accepted |
 | e-dec-konspektadopt-checkpoint | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-checkpoint-adoption |  | accepted |
-| e-mrk-repogmrascope-repogmra | marks | waypoint:wp-adr-repo-gmra-scope | node:task-repo-gmra-workflows |  | proposed |
-| e-drv-cdmdata-repogmrascope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-scope |  | proposed |
-| e-drv-finality-repogmrascope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-scope |  | proposed |
-| e-dec-repogmra-gmraterms | decomposes | node:task-repo-gmra-workflows | node:task-repo-gmra-terms |  | proposed |
 | e-mrk-repogmrascope-repogmra | marks | waypoint:wp-adr-repo-gmra-scope | node:task-repo-gmra-workflows |  | accepted |
 | e-drv-cdmdata-repogmrascope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-scope |  | accepted |
 | e-drv-finality-repogmrascope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-scope |  | accepted |
