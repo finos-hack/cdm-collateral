@@ -805,3 +805,9 @@ excluded.
 | task-csa-reconciliation | b39ad55a7eba419b776073f61eeee31a56eb27d2 | docs/analysis/business-case.md | 2026-11-07T18:38:38Z |
 | task-csa-reconciliation | b39ad55a7eba419b776073f61eeee31a56eb27d2 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T18:38:38Z |
 | task-csa-reconciliation | b39ad55a7eba419b776073f61eeee31a56eb27d2 | docs/cdm-development/gap-register.md | 2026-11-07T18:38:38Z |
+| task-csa-reconciliation | 64fbc164d223a4d0b9f611469ea9e07bdf6f10dd | cdm-ext/README.md | 2026-11-07T18:50:51Z |
+| task-csa-reconciliation | 64fbc164d223a4d0b9f611469ea9e07bdf6f10dd | cdm-ext/rosetta/cdmx-collateral-reconciliation-func.rosetta | 2026-11-07T18:50:51Z |
+| task-csa-reconciliation | 64fbc164d223a4d0b9f611469ea9e07bdf6f10dd | cdm-ext/rosetta/cdmx-collateral-reconciliation-type.rosetta | 2026-11-07T18:50:51Z |
+| task-csa-reconciliation | 64fbc164d223a4d0b9f611469ea9e07bdf6f10dd | cdm-ext/src/test/java/cdmx/ReconciliationTest.java | 2026-11-07T18:50:51Z |
+| task-csa-reconciliation | 64fbc164d223a4d0b9f611469ea9e07bdf6f10dd | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T18:50:51Z |
+| task-csa-reconciliation | 64fbc164d223a4d0b9f611469ea9e07bdf6f10dd | docs/cdm-development/gap-register.md | 2026-11-07T18:50:51Z |
