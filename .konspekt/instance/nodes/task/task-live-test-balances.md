@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T20:46:35Z
   confidence: 0.6
 createdAt: 2026-11-07T20:46:35Z
-updatedAt: 2026-11-07T20:52:50Z
+updatedAt: 2026-11-07T21:09:14Z
 ```
 # Task: keep the live test parties funded across suite runs
 
@@ -28,3 +28,9 @@ codespace seed the chain.
 
 Accepted by the project owner on 2026-11-07 with option (a), the suite tops A up before it starts (source `cf9a296128848aa5cdf9ffde53124e8bcd1672f4`:
 "4. a").
+
+**Built 2026-11-07** on branch `live-speed` (commit `fca88b7`, option (a)): `scripts/live-e2e.sh check` runs
+`contracts/scripts/top-up-test-balances.mjs` before the specs. It mints each party's shortfall of free balance back to
+`contracts/scripts/test-balances.json`, the same targets `deploy.ts` mints from, signed by the market operator's key;
+escrow is untouched. First run: bank-a tUST +184,978 and tUSD +8,400,872; the next suite run found the balances at
+their targets after 15/15.

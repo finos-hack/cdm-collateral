@@ -854,3 +854,13 @@ excluded.
 | task-gateway-receipt-poll | cb56fc6e0848c4dc26e8cc4c68b5335225fea9df | gateway/src/besu.ts | 2026-11-07T20:51:39Z |
 | task-gateway-receipt-poll | 1413a64a0930c4a957a75bb00f9bf2eb33bb81c5 | gateway/README.md | 2026-11-07T20:52:09Z |
 | task-gateway-receipt-poll | 1413a64a0930c4a957a75bb00f9bf2eb33bb81c5 | gateway/src/besu.ts | 2026-11-07T20:52:09Z |
+| task-live-read-latency | 8a44f914f5c2af025dcf0cd266dddb379c58c27a | console/src/components/LiveConsole.test.tsx | 2026-11-07T21:08:51Z |
+| task-live-read-latency | 8a44f914f5c2af025dcf0cd266dddb379c58c27a | console/src/components/LiveConsole.tsx | 2026-11-07T21:08:51Z |
+| task-live-read-latency | 8a44f914f5c2af025dcf0cd266dddb379c58c27a | gateway/README.md | 2026-11-07T21:08:51Z |
+| task-live-read-latency | 8a44f914f5c2af025dcf0cd266dddb379c58c27a | gateway/src/besu.ts | 2026-11-07T21:08:51Z |
+| task-live-read-latency | 8a44f914f5c2af025dcf0cd266dddb379c58c27a | services/collateral/src/main/java/collateral/App.java | 2026-11-07T21:08:51Z |
+| task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | contracts/README.md | 2026-11-07T21:08:51Z |
+| task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | contracts/scripts/deploy.ts | 2026-11-07T21:08:51Z |
+| task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | contracts/scripts/test-balances.json | 2026-11-07T21:08:51Z |
+| task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | contracts/scripts/top-up-test-balances.mjs | 2026-11-07T21:08:51Z |
+| task-live-test-balances | fca88b7e8a3c39ab0d130588d945eebf4f1a6198 | scripts/live-e2e.sh | 2026-11-07T21:08:51Z |
