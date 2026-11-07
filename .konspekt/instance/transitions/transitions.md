@@ -806,3 +806,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-gateway-receipt-poll | status | open | resolved | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
 | node:task-live-test-balances | review | proposed | accepted | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
 | edge:e-lnk-receiptpoll-testbalances | review | proposed | accepted | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
+| node:task-live-read-latency | status | open | resolved | 2026-11-07T21:14:36Z | 1f18f384e0b534a4a82dd24e1d9303362296d64e | denisurusov |
+| node:task-live-test-balances | status | open | resolved | 2026-11-07T21:14:36Z | 1f18f384e0b534a4a82dd24e1d9303362296d64e | denisurusov |
+| node:task-csa-settlement-netting | status | open | resolved | 2026-11-07T21:16:04Z |  | denisurusov |
+| node:task-csa-workflow-extensions | status | open | resolved | 2026-11-07T21:18:31Z | fd15e5535b198d08fc024585cf53a29c2edc27ec | denisurusov |

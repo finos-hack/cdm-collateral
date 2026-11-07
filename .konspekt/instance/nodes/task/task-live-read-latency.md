@@ -2,7 +2,7 @@
 id: task-live-read-latency
 type: task
 title: Cut the read latency of the live stack: log scans, console refresh and event relay
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:54:12Z
   confidence: 0.75
 createdAt: 2026-11-07T18:54:12Z
-updatedAt: 2026-11-07T21:09:14Z
+updatedAt: 2026-11-07T21:14:36Z
 ```
 # Task: cut the read latency of the live stack
 
@@ -48,3 +48,5 @@ Measured on a fresh contract set (about 1,000 blocks old), median of three idle 
 0.46 s to 0.11 s. The full live suite took 5.2 min (15/15) against 5.0 min after [[task-gateway-receipt-poll]]: at this
 chain age block waits and UI steps dominate the suite. The old reads grew with chain age (3-4 s on an older contract
 set in the timing study); the new ones read only the blocks since the last read.
+
+The project owner resolved the task on 2026-11-07 (source `1f18f384e0b534a4a82dd24e1d9303362296d64e`: "1. yes").

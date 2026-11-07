@@ -2,7 +2,7 @@
 id: task-csa-workflow-extensions
 type: task
 title: Implement the ISDA CSA workflows that have no prototype flow yet
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.8
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-06T13:19:22Z
+updatedAt: 2026-11-07T21:18:31Z
 ```
 # Task: implement the ISDA CSA workflows that have no prototype flow yet
 
@@ -66,3 +66,11 @@ Open at pickup:
   [[task-csa-reconciliation]] (each `review: proposed`). This task stays open as their parent.
 - PR #24 merged; work continues on branch `P2` from `main` at `d2ad03b`. The owner chose to build rows 1 and 2 first
   (G15 close-out, G16 substitution), whose CDM side exists, and to update the task map on `P2`.
+
+## Section B closed 2026-11-07
+
+All eight rows are built, with a live spec each, and merged: close-out netting and substitution (#25), interest on
+cash (#26), amendment (#27), cancellation (#28) and replacement (#32), settlement netting (#35), allocation (#36),
+reconciliation (#37); every row task is resolved. The project owner resolved this task (source `fd15e5535b198d08fc024585cf53a29c2edc27ec`: "Go ahead and
+resolve the parent. Close section B."). Still open on their own: [[task-csa-allocation-optimisation]] (cost-based
+basket, a follow-up to row 7) and the SME confirmations of the rules each row assumed.
