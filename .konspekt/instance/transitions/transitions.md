@@ -810,3 +810,11 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-live-test-balances | status | open | resolved | 2026-11-07T21:14:36Z | 1f18f384e0b534a4a82dd24e1d9303362296d64e | denisurusov |
 | node:task-csa-settlement-netting | status | open | resolved | 2026-11-07T21:16:04Z |  | denisurusov |
 | node:task-csa-workflow-extensions | status | open | resolved | 2026-11-07T21:18:31Z | fd15e5535b198d08fc024585cf53a29c2edc27ec | denisurusov |
+| waypoint:wp-adr-two-way-im | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| node:task-sme-two-way-im-rules | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| edge:e-mrk-twowayimadr-twowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| edge:e-drv-callstate-twowayimadr | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| edge:e-drv-finality-twowayimadr | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| edge:e-dec-cdmdev-smetwowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| edge:e-lnk-twowayim-smetwowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
+| node:task-sme-two-way-im-rules | status |  | open | 2026-11-07T21:24:29Z |  |  |

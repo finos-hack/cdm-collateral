@@ -240,3 +240,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-specduration-readlatency | decomposes | node:task-live-spec-duration | node:task-live-read-latency |  | accepted |
 | e-dec-specduration-blockperiod | decomposes | node:task-live-spec-duration | node:task-test-chain-block-period |  | accepted |
 | e-lnk-receiptpoll-testbalances | links | node:task-gateway-receipt-poll | node:task-live-test-balances |  | accepted |
+| e-mrk-twowayimadr-twowayim | marks | waypoint:wp-adr-two-way-im | node:task-two-way-initial-margin |  | proposed |
+| e-drv-callstate-twowayimadr | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-two-way-im |  | proposed |
+| e-drv-finality-twowayimadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-two-way-im |  | proposed |
+| e-dec-cdmdev-smetwowayim | decomposes | node:goal-cdm-development | node:task-sme-two-way-im-rules |  | proposed |
+| e-lnk-twowayim-smetwowayim | links | node:task-two-way-initial-margin | node:task-sme-two-way-im-rules |  | proposed |
