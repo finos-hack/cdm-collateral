@@ -310,6 +310,63 @@ describe("CDM collateral contracts", async () => {
     });
   });
 
+  describe("two-way initial margin: reclaim on the secured party's default", () => {
+    const H = keccak256(toHex("cdm-reclaim"));
+    const R = id(40);
+
+    // Both legs: A pledges 11 tUST to B, B pledges 4 tMMF to A.
+    async function pledgeBothLegs() {
+      await tMMF.write.mint([bAddr, 100n]);
+      const ca = id(41), cb = id(42);
+      await marginCall.write.issueCall([ca, IM, aAddr, 1n * SCALE, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.respond([ca, FULL, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.propose([ca, [{ token: tUST.address, qty: 11n }], zeroHash], { account: bankA.account });
+      await marginCall.write.decideProposal([ca, 0n, true, zeroHash], { account: bankB.account });
+      await tUST.write.approve([control.address, 11n], { account: bankA.account });
+      await control.write.pledge([ca, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.issueCall([cb, IM, bAddr, 1n * SCALE, 0n, zeroHash], { account: bankA.account });
+      await marginCall.write.respond([cb, FULL, 0n, zeroHash], { account: bankB.account });
+      await marginCall.write.propose([cb, [{ token: tMMF.address, qty: 4n }], zeroHash], { account: bankB.account });
+      await marginCall.write.decideProposal([cb, 0n, true, zeroHash], { account: bankA.account });
+      await tMMF.write.approve([control.address, 4n], { account: bankB.account });
+      await control.write.pledge([cb, 0n, zeroHash], { account: bankB.account });
+      return { ca, cb };
+    }
+
+    it("keeps the two legs apart in escrow", async () => {
+      await pledgeBothLegs();
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 11n);
+      assert.equal(await control.read.pledgedBalance([bAddr, aAddr, tMMF.address]), 4n);
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tMMF.address]), 0n);
+    });
+
+    it("A defaults: B enforces against A's leg and reclaims its own", async () => {
+      const { ca } = await pledgeBothLegs();
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.enforce([ca], { account: bankB.account });
+      await control.write.reclaim([R, aAddr, H], { account: bankB.account });
+      assert.equal(await tUST.read.balanceOf([bAddr]), 11n);
+      assert.equal(await tMMF.read.balanceOf([bAddr]), 100n);
+      assert.equal(await control.read.pledgedBalance([bAddr, aAddr, tMMF.address]), 0n);
+      assert.equal(await control.read.reclaimCdmHash([R]), H);
+      const [ev] = await control.getEvents.Reclaimed();
+      assert.equal(ev.args.pledgor?.toLowerCase(), bAddr.toLowerCase());
+      assert.equal(ev.args.securedParty?.toLowerCase(), aAddr.toLowerCase());
+    });
+
+    it("rejects a reclaim before the secured party's default, by the defaulting party, without a hash, with a reused id, or with nothing pledged", async () => {
+      await pledgeBothLegs();
+      await assert.rejects(control.write.reclaim([R, aAddr, H], { account: bankB.account })); // NoDefault
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await assert.rejects(control.write.reclaim([R, bAddr, H], { account: bankA.account })); // B not in default
+      await assert.rejects(control.write.reclaim([R, aAddr, zeroHash], { account: bankB.account }));
+      await control.write.reclaim([R, aAddr, H], { account: bankB.account });
+      await assert.rejects(control.write.reclaim([R, aAddr, H], { account: bankB.account })); // reused id
+      await assert.rejects(control.write.reclaim([id(43), aAddr, H], { account: bankB.account })); // NothingPledged
+      assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 11n); // A's leg untouched
+    });
+  });
+
   describe("variation margin: title transfer", () => {
     const C = id(5);
     const agreed = 500n * SCALE;
