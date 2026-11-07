@@ -273,6 +273,19 @@ route("GET", "/ledger/v1/party-calls", async (_p, _b, url) =>
   J(await adapter.listCalls(getAddress(url.searchParams.get("party")!))),
 );
 
+// flow-reconciliation (wp-adr-reconciliation-scope): only hashes go on-chain; the snapshots travel service to service.
+route("POST", "/ledger/v1/reconciliation/snapshots", async (_p, b) =>
+  J(await adapter.commitSnapshot(b.snapshotId as Hex, getAddress(b.counterparty as string), b.snapshotHash as Hex)),
+);
+route("POST", "/ledger/v1/reconciliation/results", async (_p, b) =>
+  J(await adapter.commitResult(b.reconciliationId as Hex, b.firstSnapshotId as Hex, b.secondSnapshotId as Hex, b.resultHash as Hex, Number(b.breakCount))),
+);
+route("GET", "/ledger/v1/reconciliation/snapshots/:id", async (p) => J(await adapter.getSnapshot(p.id as Hex)));
+route("GET", "/ledger/v1/reconciliation/runs/:id", async (p) => J(await adapter.getRun(p.id as Hex)));
+route("GET", "/ledger/v1/reconciliation/id", async (_p, _b, url) =>
+  J({ reconciliationId: await adapter.reconciliationIdOf(url.searchParams.get("first") as Hex, url.searchParams.get("second") as Hex) }),
+);
+
 route("GET", "/ledger/v1/calls/:id", async (p) => J(await adapter.getCall(p.id as Hex)));
 
 route("GET", "/ledger/v1/calls/:id/proposals/:pid/assets", async (p) =>

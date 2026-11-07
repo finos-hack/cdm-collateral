@@ -45,6 +45,14 @@ public final class App {
     private final Map<String, String> symbolByAddress; // lowercase address -> symbol
     private final Map<String, FoldCache> foldCache = new ConcurrentHashMap<>();
     private final Set<SseClient> sseClients = ConcurrentHashMap.newKeySet(); // console clients subscribed to live events
+    private final Gateway peer; // the counterparty's collateral service (flow-reconciliation: trade snapshots)
+    // Folds a call after each of its lifecycle steps, off the relay thread, so the stored MarginCallState that the ledger
+    // reconciliation compares with the contract is current without delaying the relay to the console.
+    private final java.util.concurrent.ExecutorService folds = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "step-fold");
+        t.setDaemon(true);
+        return t;
+    });
 
     /** A folded MarginCallState cached against the on-chain step signature, so a steady call is not refolded each poll. */
     private record FoldCache(String sig, Map<String, Object> result) {}
@@ -57,6 +65,7 @@ public final class App {
         this.payloads = new PayloadStore(cfg.storeUrl, cfg.storeToken);
         this.callParties = List.of(cfg.partyAddress("A"), cfg.partyAddress("B"));
         this.symbolByAddress = cfg.tokenSymbols();
+        this.peer = new Gateway(cfg.counterpartyServiceUrl, "/api/v1");
     }
 
     /** Record a produced CDM document in the local store and publish it to the shared payload carrier. */
@@ -113,6 +122,10 @@ public final class App {
         app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
         app.post("/api/v1/substitutions/{id}/settle", this::settleSubstitution);
         app.get("/api/v1/substitutions/{id}/cdm-state", ctx -> ctx.json(substitutionStateFor(ctx.pathParam("id"))));
+        app.get("/api/v1/reconciliation/portfolio", this::reconciliations);
+        app.post("/api/v1/reconciliation/portfolio", this::reconcilePortfolio);
+        app.post("/api/v1/reconciliation/exchange", this::exchangeSnapshot);
+        app.post("/api/v1/reconciliation/ledger", this::reconcileWithLedger);
         app.sse("/api/v1/events", client -> { // the console subscribes here (EventSource sends Accept: text/event-stream)
             client.keepAlive();
             client.sendComment("connected");
@@ -160,7 +173,7 @@ public final class App {
     /**
      * Act on one pushed chain event before relaying it. Returned, Enforced and DefaultPublished are recorded in this
      * party's store (flow-return transition 14, flow-default-enforcement transition 8: the pledgor's service records the
-     * default and each service records the enforcement). A SettleCall step is folded at once, so each service holds the
+     * default and each service records the enforcement). A SettleCall step is folded at once (retried until the fold includes it), so each service holds the
      * settled MarginCallState without waiting for a console to ask. A failure here never stops the relay.
      */
     private void onLedgerEvent(String data) {
@@ -191,7 +204,14 @@ public final class App {
                     store.recordEvent(event, callId, party, block, logIndex, data);
                 }
             } else if ("SettleCall".equals(e.path("step").asText()) && involvesMe(e.path("callId").asText(null))) {
-                cdmStateFor(e.get("callId").asText());
+                String id = e.get("callId").asText();
+                Map<String, Object> r = cdmStateFor(id);
+                // The pushed step can precede the gateway's log scan; then the fold above is the cached pre-settle state.
+                if (!(r.get("stepRecord") instanceof List<?> l && l.contains("SettleCall"))) folds.submit(() -> foldIncluding(id, "SettleCall"));
+            } else if (e.has("step") && involvesMe(e.path("callId").asText(null))) {
+                String id = e.get("callId").asText();
+                String step = e.get("step").asText();
+                folds.submit(() -> foldIncluding(id, step));
             }
         } catch (Exception ex) {
             System.err.println("event relay: could not process " + data + ": " + ex.getMessage());
@@ -810,6 +830,206 @@ public final class App {
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * Fold a call after one of its steps was pushed, retrying until the fold includes that step: the pushed event can
+     * arrive before the gateway's log scan returns it, and the fold of the steps before it is cached.
+     */
+    private void foldIncluding(String callId, String step) {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            try {
+                Map<String, Object> r = cdmStateFor(callId);
+                Object folded = r.get("stepRecord");
+                if (Boolean.TRUE.equals(r.get("converged")) && folded instanceof List<?> l && l.contains(step)) return;
+            } catch (Exception ex) {
+                System.err.println("step fold of " + callId + ": " + ex.getMessage());
+            }
+            try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+        }
+    }
+
+    // --- reconciliation (flow-reconciliation, task-csa-reconciliation, wp-adr-reconciliation-scope) ---
+
+    private String myBank() {
+        return cfg.bankName(cfg.partyId);
+    }
+
+    private String counterpartyBank() {
+        return cfg.bankName(counterparty());
+    }
+
+    /** This party's snapshot of its seeded trades with the counterparty, committed on-chain by hash. */
+    private Map<String, String> commitOwnSnapshot() {
+        String json = CdmReconciliation.snapshotJson(myBank(), counterpartyBank(), CdmReconciliation.seed(cfg.node), java.time.Instant.now());
+        String snapshotId = Cdm.keccakHex(myBank() + "|" + java.util.UUID.randomUUID());
+        gw.post("/reconciliation/snapshots", Map.of("snapshotId", snapshotId, "counterparty", cfg.partyAddress(counterparty()), "snapshotHash", Cdm.keccakHex(json)));
+        store.saveSnapshot(snapshotId, myBank(), json);
+        return Map.of("snapshotId", snapshotId, "snapshot", json);
+    }
+
+    /** Check a snapshot received off-chain against the hash the counterparty committed on-chain. */
+    private void verifyCounterpartySnapshot(String snapshotId, String json) {
+        JsonNode s = gw.get("/reconciliation/snapshots/" + snapshotId);
+        if (!s.path("party").asText().equalsIgnoreCase(cfg.partyAddress(counterparty())) || !s.path("counterparty").asText().equalsIgnoreCase(cfg.myAddress))
+            throw new IllegalArgumentException("snapshot " + snapshotId + " is not the counterparty's snapshot with this party");
+        if (!s.path("snapshotHash").asText().equalsIgnoreCase(Cdm.keccakHex(json)))
+            throw new IllegalArgumentException("snapshot " + snapshotId + " does not match the hash committed on-chain");
+        store.saveSnapshot(snapshotId, counterpartyBank(), json);
+    }
+
+    /** Compute the result from the two snapshots (first the initiator's), commit its hash, store it. */
+    private Map<String, Object> reconcileAndCommit(String firstId, String firstJson, String secondId, String secondJson) {
+        var r = CdmReconciliation.reconcile(firstJson, secondJson, CdmReconciliation.seed(cfg.node).toleranceUsd());
+        String resultJson = CdmRuntime.toJson(r);
+        String runId = gw.getQuery("/reconciliation/id", Map.of("first", firstId, "second", secondId)).get("reconciliationId").asText();
+        gw.post("/reconciliation/results", Map.of("reconciliationId", runId, "firstSnapshotId", firstId, "secondSnapshotId", secondId,
+                "resultHash", Cdm.keccakHex(resultJson), "breakCount", CdmReconciliation.breakCount(r)));
+        store.saveRun(runId, firstId, secondId, resultJson);
+        return runView(runId, firstId, secondId, resultJson);
+    }
+
+    private Map<String, Object> runView(String runId, String firstId, String secondId, String resultJson) {
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("reconciliationId", runId);
+        v.put("firstSnapshotId", firstId);
+        v.put("secondSnapshotId", secondId);
+        v.put("resultHash", Cdm.keccakHex(resultJson));
+        try {
+            v.putAll(CdmReconciliation.view(CdmRuntime.JSON.readValue(resultJson, cdmx.collateral.reconciliation.PortfolioReconciliation.class)));
+        } catch (Exception e) {
+            throw new IllegalStateException("stored reconciliation unreadable: " + e.getMessage(), e);
+        }
+        JsonNode run = gw.get("/reconciliation/runs/" + runId);
+        v.put("onChain", Map.of("state", run.path("state").asText(), "firstPartyResult", run.path("firstPartyResult").asText(),
+                "secondPartyResult", run.path("secondPartyResult").asText()));
+        return v;
+    }
+
+    /** Initiate a portfolio reconciliation with the counterparty: exchange snapshots, compute and commit the result. */
+    private void reconcilePortfolio(Context ctx) {
+        Map<String, String> mine = commitOwnSnapshot();
+        JsonNode theirs = peer.post("/reconciliation/exchange", Map.of("snapshotId", mine.get("snapshotId"), "snapshot", mine.get("snapshot")));
+        String theirId = theirs.get("snapshotId").asText();
+        String theirJson = theirs.get("snapshot").asText();
+        verifyCounterpartySnapshot(theirId, theirJson);
+        ctx.json(reconcileAndCommit(mine.get("snapshotId"), mine.get("snapshot"), theirId, theirJson));
+    }
+
+    /** The counterparty side of an exchange: check the initiator's snapshot, answer with this party's, commit a result. */
+    private void exchangeSnapshot(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        String theirId = (String) b.get("snapshotId");
+        String theirJson = (String) b.get("snapshot");
+        verifyCounterpartySnapshot(theirId, theirJson);
+        Map<String, String> mine = commitOwnSnapshot();
+        reconcileAndCommit(theirId, theirJson, mine.get("snapshotId"), mine.get("snapshot"));
+        ctx.json(Map.of("snapshotId", mine.get("snapshotId"), "snapshot", mine.get("snapshot")));
+    }
+
+    /** This party's reconciliation runs, latest first, with their on-chain state. */
+    private void reconciliations(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<String, String> r : store.runs(20))
+            out.add(runView(r.get("reconciliationId"), r.get("firstSnapshotId"), r.get("secondSnapshotId"), r.get("resultJson")));
+        ctx.json(out);
+    }
+
+    /**
+     * Records against the chain: the status, called and agreed amounts of each call between the pair, as this party's
+     * stored CDM MarginCallStates state them and as the contract states them, and the pledgor's escrow with the secured
+     * party by token, as this party's settled CDM records build it (CdmReconciliation.recordedEscrow) and as the control
+     * contract holds it. Records stored before the current deployment are left out.
+     */
+    private void reconcileWithLedger(Context ctx) {
+        String me = cfg.myAddress, other = cfg.partyAddress(counterparty());
+        List<cdmx.collateral.reconciliation.LedgerFact> onLedger = new ArrayList<>();
+        Set<String> pairCalls = new java.util.HashSet<>();
+        for (JsonNode c : gw.getQuery("/party-calls", Map.of("party", me))) {
+            JsonNode call = c.get("call");
+            String from = call.get("from").asText(), to = call.get("to").asText();
+            boolean pair = (from.equalsIgnoreCase(me) && to.equalsIgnoreCase(other)) || (from.equalsIgnoreCase(other) && to.equalsIgnoreCase(me));
+            if (!pair) continue;
+            String id = c.get("callId").asText().toLowerCase();
+            pairCalls.add(id);
+            onLedger.addAll(CdmReconciliation.ledgerFacts(id, call, cfg.priceScale));
+        }
+        String since = cfg.registry.path("deployedAt").asText("1970-01-01T00:00:00Z");
+        List<cdmx.collateral.reconciliation.LedgerFact> recorded = new ArrayList<>();
+        Map<String, String> states = store.statesSince(since);
+        for (Map.Entry<String, String> e : states.entrySet()) {
+            // The same table holds folded substitutions (CollateralSubstitution, keyed by substitution id): not call records.
+            try {
+                String type = Config.MAPPER.readTree(e.getValue()).path("@type").asText("");
+                if (!type.isEmpty() && !type.equals(MarginCallState.class.getName())) continue;
+                MarginCallState st = CdmRuntime.JSON.readValue(e.getValue(), MarginCallState.class);
+                recorded.addAll(CdmReconciliation.recordedFacts(e.getKey().toLowerCase(), st));
+            } catch (Exception ex) {
+                throw new IllegalStateException("stored state of " + e.getKey() + " unreadable: " + ex.getMessage(), ex);
+            }
+        }
+
+        // Escrow positions: the pledgor's collateral the control contract holds for the secured party.
+        boolean iPledge = cfg.role.equals("Pledgor");
+        String pledgor = iPledge ? me : other, securedParty = iPledge ? other : me;
+        String escrow = CdmReconciliation.escrowRecord(iPledge ? myBank() : counterpartyBank(), iPledge ? counterpartyBank() : myBank());
+        JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
+        long emptiedAt = -1;
+        for (JsonNode e : hist.path("enforced")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+        for (JsonNode e : hist.path("closedOut")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+        Map<String, Long> settledAt = new HashMap<>();
+        for (JsonNode e : hist.path("settled")) settledAt.merge(e.get("callId").asText().toLowerCase(), e.get("block").asLong(), Math::max);
+        Map<String, Long> substitutedAt = store.eventBlocks("SubstitutionSettled");
+        List<CdmReconciliation.EscrowMovement> callMoves = new ArrayList<>(), substitutionMoves = new ArrayList<>();
+        for (Map.Entry<String, String> e : states.entrySet()) {
+            String id = e.getKey().toLowerCase();
+            if (settledAt.containsKey(id) && pairCalls.contains(id)) callMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), settledAt.get(id)));
+            else if (substitutedAt.containsKey(id)) substitutionMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), substitutedAt.get(id)));
+        }
+        Map<String, String> symbolByIsin = new HashMap<>();
+        Map<String, Long> onChainEscrow = new java.util.TreeMap<>();
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            symbolByIsin.put(cfg.isin(sym), sym);
+            long qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", cfg.tokenAddress(sym), "pledgor", pledgor, "securedParty", securedParty)).asText()).longValueExact();
+            if (qty != 0) onChainEscrow.put(sym, qty);
+        }
+        Map<String, Long> recordedEscrow = CdmReconciliation.recordedEscrow(callMoves, substitutionMoves, emptiedAt, symbolByIsin);
+        recorded.addAll(CdmReconciliation.escrowFacts(escrow, recordedEscrow));
+        onLedger.addAll(CdmReconciliation.escrowFacts(escrow, onChainEscrow));
+
+        Map<String, Object> v = CdmReconciliation.view(CdmReconciliation.withLedger(myBank(), counterpartyBank(), recorded, onLedger));
+        v.put("calls", pairCalls.size());
+        v.put("escrow", Map.of("record", escrow, "recorded", recordedEscrow, "ledger", onChainEscrow));
+        ctx.json(v);
+    }
+
+    /**
+     * The CDM Dispute of a call the called party has just partially agreed or disputed, its reason citing a portfolio
+     * reconciliation run and its breaks (cdm-ext Create_Dispute, G3). Recorded with the call's documents.
+     */
+    private Map<String, Object> disputeCitingReconciliation(String callId, String reconciliationId) {
+        Map<String, String> run = null;
+        for (Map<String, String> r : store.runs(100)) if (r.get("reconciliationId").equalsIgnoreCase(reconciliationId)) run = r;
+        if (run == null) throw new IllegalArgumentException("no reconciliation " + reconciliationId + " at this party");
+        Map<String, Object> view = runView(run.get("reconciliationId"), run.get("firstSnapshotId"), run.get("secondSnapshotId"), run.get("resultJson"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> breaks = (List<Map<String, Object>>) view.get("breaks");
+        StringBuilder reason = new StringBuilder("Portfolio reconciliation " + reconciliationId + ": ");
+        reason.append(breaks.size()).append(breaks.size() == 1 ? " break" : " breaks");
+        for (Map<String, Object> x : breaks) reason.append("; ").append(x.get("uti")).append(" ").append(x.get("type"));
+        reason.append("; exposure difference USD ").append(view.get("exposureDifferenceUsd"));
+        MarginCallState st = foldedCall(callId);
+        cdmx.collateral.dispute.Dispute d = CdmRuntime.fn(cdmx.collateral.dispute.functions.Create_Dispute.class).evaluate(
+                st, "D-" + callId, CdmRuntime.load(cdm.base.staticdata.party.Party.class, CdmReconciliation.party(myBank())),
+                cdmx.collateral.dispute.DisputeSubjectEnum.AMOUNT, reason.toString(),
+                java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).truncatedTo(java.time.temporal.ChronoUnit.SECONDS), null);
+        CdmRuntime.validate(d);
+        String json = CdmRuntime.toJson(d);
+        String hash = Cdm.keccakHex(json);
+        store.recordDocument(callId, "Dispute", "out", hash, json);
+        payloads.put(hash, json, callParties);
+        return Map.of("disputeIdentifier", d.getDisputeIdentifier(), "reason", d.getReason(), "cdmHash", hash, "reconciliationId", reconciliationId);
+    }
+
     private Map<String, Object> body(Context ctx) {
         return ctx.bodyAsClass(Map.class);
     }
@@ -834,7 +1054,7 @@ public final class App {
         String callId = Cdm.onChainId(cfg.partyId + "-" + n + "-" + System.nanoTime());
         String direction = kind.equals("Return") ? "Return" : "Delivery";
         Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, direction,
-                replaces == null ? null : Cdm.cdmCallId(replaces));
+                replaces == null ? null : Cdm.cdmCallId(replaces), Cdm.regMarginType(kind));
         if (replaces != null && !cdm.replaces(foldedCall(replaces)))
             throw new RuntimeException("the CDM state of call " + replaces + " does not allow this replacement (ReplacementAllowed)");
         record(callId, "IssueCall", cdm);
@@ -868,10 +1088,15 @@ public final class App {
         String action = c.get("kind").asInt() == 2 ? "Return" : "Delivery"; // a return call is agreed and then released
         // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
         long units = Math.max(1, agreedUsd);
-        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()));
+        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()),
+                Cdm.regMarginType(CALL_KIND_NAME[c.get("kind").asInt()]));
         record(callId, "RespondToCall", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
-        ctx.json(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
+        Map<String, Object> out = new LinkedHashMap<>(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
+        String reconciliationId = (String) b.get("reconciliationId");
+        if (reconciliationId != null && !reconciliationId.isBlank() && !"full".equals(response))
+            out.put("dispute", disputeCitingReconciliation(callId, reconciliationId));
+        ctx.json(out);
     }
 
     @SuppressWarnings("unchecked")
@@ -1066,7 +1291,7 @@ public final class App {
             gwAssets.add(Map.of("token", cfg.tokenAddress(sym), "qty", String.valueOf(qty)));
             cdmAssets.add(new LinkedHashMap<>(Map.of("isin", cfg.isin(sym), "units", qty)));
         }
-        Cdm cdm = Cdm.settleReturn(cdmAssets, agreedUsd);
+        Cdm cdm = Cdm.settleReturn(cdmAssets, agreedUsd, null, via.equals("transfer") ? "VM" : "RegIM");
         record(callId, "SettleCall", cdm);
         String path = via.equals("transfer") ? "/return-transfer" : "/return";
         gw.post("/calls/" + callId + path, Map.of("assets", gwAssets, "cdmHash", cdm.hash));

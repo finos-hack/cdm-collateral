@@ -311,6 +311,20 @@ const oracleAbi = parseAbi([
   "event DefaultPublished(address indexed party, bool inDefault)",
 ]);
 
+// flow-reconciliation (wp-adr-reconciliation-scope): hashes of the parties' trade snapshots and of their results.
+const reconciliationAbi = parseAbi([
+  "function commitSnapshot(bytes32 snapshotId, address counterparty, bytes32 snapshotHash)",
+  "function commitResult(bytes32 reconciliationId, bytes32 firstSnapshotId, bytes32 secondSnapshotId, bytes32 resultHash, uint32 breakCount)",
+  "function reconciliationIdOf(bytes32 firstSnapshotId, bytes32 secondSnapshotId) pure returns (bytes32)",
+  "function getSnapshot(bytes32 snapshotId) view returns ((address party, address counterparty, bytes32 snapshotHash, uint64 committedAt))",
+  "function getRun(bytes32 reconciliationId) view returns ((bytes32 firstSnapshotId, bytes32 secondSnapshotId, bytes32 firstPartyResult, bytes32 secondPartyResult, uint32 breakCount, uint8 state))",
+  "event SnapshotCommitted(bytes32 indexed snapshotId, address indexed party, address indexed counterparty, bytes32 snapshotHash)",
+  "event ResultCommitted(bytes32 indexed reconciliationId, address indexed party, bytes32 resultHash, uint32 breakCount)",
+  "event ReconciliationDecided(bytes32 indexed reconciliationId, address indexed firstParty, address indexed secondParty, bool agreed)",
+]);
+
+export const RunStateName = ["none", "one result", "agreed", "disagreed"];
+
 const erc20Abi = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
@@ -365,6 +379,11 @@ export interface LedgerAdapter {
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<CallStep[]>;
+  commitSnapshot(snapshotId: Hex, counterparty: Address, snapshotHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  commitResult(reconciliationId: Hex, firstSnapshotId: Hex, secondSnapshotId: Hex, resultHash: Hex, breakCount: number): Promise<{ txHash: Hex; block: bigint }>;
+  reconciliationIdOf(firstSnapshotId: Hex, secondSnapshotId: Hex): Promise<Hex>;
+  getSnapshot(snapshotId: Hex): Promise<{ party: Address; counterparty: Address; snapshotHash: Hex; committedAt: bigint }>;
+  getRun(reconciliationId: Hex): Promise<{ firstSnapshotId: Hex; secondSnapshotId: Hex; firstPartyResult: Hex; secondPartyResult: Hex; breakCount: number; state: string }>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -398,6 +417,13 @@ export class BesuAdapter implements LedgerAdapter {
     const wsRpc = (reg as { wsRpc?: Record<string, string> }).wsRpc?.[node]
       ?? rpc.replace(/^http/, "ws").replace(/:(\d+)(?=\/|$)/, (_m, p) => ":" + (Number(p) + 1));
     this.ws = createPublicClient({ chain, transport: webSocket(wsRpc) });
+  }
+
+  // The head of the chain for a log scan, never cached: viem caches getBlockNumber for the polling interval, so a scan
+  // could stop short of a step mined moments ago while getCall (eth_call at latest) already shows its effect. That gave
+  // folds one step behind the contract (flow-call-cancellation folded "Agreed" for a call cancelled on-chain).
+  private latestBlock(): Promise<bigint> {
+    return this.pub.getBlockNumber({ cacheTime: 0 });
   }
 
   // gasPrice 0 forces a legacy transaction, which the zero-base-fee Besu chain accepts.
@@ -691,7 +717,7 @@ export class BesuAdapter implements LedgerAdapter {
   // Logs of one event from the deploy block to the latest, in windows under Besu's eth_getLogs range cap.
   private async scan(address: Address, abi: readonly any[], name: string, args: Record<string, unknown>): Promise<any[]> {
     const event = abi.find((x: any) => x.type === "event" && x.name === name) as never;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const out: any[] = [];
@@ -736,6 +762,39 @@ export class BesuAdapter implements LedgerAdapter {
     })) as boolean;
   }
 
+  private reconciliationAddress(): Address {
+    const a = this.reg.contracts.portfolioReconciliation;
+    if (!a) throw new Error("no PortfolioReconciliation in the deployment registry; redeploy the contracts");
+    return a;
+  }
+
+  /** flow-reconciliation: record the hash of this party's trade snapshot with a counterparty. */
+  commitSnapshot(snapshotId: Hex, counterparty: Address, snapshotHash: Hex) {
+    return this.send(this.reconciliationAddress(), reconciliationAbi, "commitSnapshot", [snapshotId, counterparty, snapshotHash]);
+  }
+
+  /** flow-reconciliation: record the hash of the result this party computed from two snapshots. */
+  commitResult(reconciliationId: Hex, firstSnapshotId: Hex, secondSnapshotId: Hex, resultHash: Hex, breakCount: number) {
+    return this.send(this.reconciliationAddress(), reconciliationAbi, "commitResult", [reconciliationId, firstSnapshotId, secondSnapshotId, resultHash, breakCount]);
+  }
+
+  async reconciliationIdOf(firstSnapshotId: Hex, secondSnapshotId: Hex): Promise<Hex> {
+    return (await this.pub.readContract({ address: this.reconciliationAddress(), abi: reconciliationAbi, functionName: "reconciliationIdOf", args: [firstSnapshotId, secondSnapshotId] })) as Hex;
+  }
+
+  async getSnapshot(snapshotId: Hex) {
+    return (await this.pub.readContract({ address: this.reconciliationAddress(), abi: reconciliationAbi, functionName: "getSnapshot", args: [snapshotId] })) as {
+      party: Address; counterparty: Address; snapshotHash: Hex; committedAt: bigint;
+    };
+  }
+
+  async getRun(reconciliationId: Hex) {
+    const r = (await this.pub.readContract({ address: this.reconciliationAddress(), abi: reconciliationAbi, functionName: "getRun", args: [reconciliationId] })) as {
+      firstSnapshotId: Hex; secondSnapshotId: Hex; firstPartyResult: Hex; secondPartyResult: Hex; breakCount: number; state: number;
+    };
+    return { ...r, breakCount: Number(r.breakCount), state: RunStateName[Number(r.state)] ?? String(r.state) };
+  }
+
   async getCall(callId: Hex): Promise<OnChainCall> {
     const read = (functionName: "getCall" | "replaces" | "replacementOf") =>
       this.pub.readContract({ address: this.reg.contracts.marginCall, abi: marginCallAbi, functionName, args: [callId] });
@@ -748,7 +807,7 @@ export class BesuAdapter implements LedgerAdapter {
   async listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]> {
     // Besu caps the eth_getLogs block range, so scan from the deploy block in windows under that cap.
     const event = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallIssued") as never;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const ids = new Set<Hex>();
@@ -772,7 +831,7 @@ export class BesuAdapter implements LedgerAdapter {
   async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }> {
     const settledEvent = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallSettled") as never;
     const enforcedEvent = controlAbi.find((x: any) => x.type === "event" && x.name === "Enforced") as never;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const settled: { callId: Hex; block: string }[] = [];
@@ -802,7 +861,7 @@ export class BesuAdapter implements LedgerAdapter {
   // (concept-asr-settlement-finality), so a mined, successful transaction is Final.
   async callSteps(callId: Hex): Promise<CallStep[]> {
     const specs = STEP_EVENTS;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const rows: (Omit<CallStep, "status" | "txLogs" | "network"> & { bn: bigint })[] = [];

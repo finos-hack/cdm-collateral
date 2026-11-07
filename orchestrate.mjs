@@ -65,8 +65,8 @@ run("gw-mkt", "node", ["src/server.ts"], gw, { NODE: "mkt", PORT: "8200" });
 // Give the gateways a moment before the services connect to them.
 setTimeout(() => {
   run("oracle", "java", ["-jar", oracleJar], root, { PORT: "8100", GATEWAY_URL: "http://localhost:8200" });
-  run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", ROLE: "Pledgor", PORT: "8001", GATEWAY_URL: "http://localhost:8201", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-a"] });
-  run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-b"] });
+  run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", ROLE: "Pledgor", PORT: "8001", GATEWAY_URL: "http://localhost:8201", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-a"], COUNTERPARTY_SERVICE_URL: "http://localhost:8002" });
+  run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", ROLE: "Secured Party", PORT: "8002", GATEWAY_URL: "http://localhost:8202", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-b"], COUNTERPARTY_SERVICE_URL: "http://localhost:8001" });
 }, 2000);
 
 // CONSOLE_HOST: the interface the console dev server listens on. Unset, Vite listens on localhost only. The dev

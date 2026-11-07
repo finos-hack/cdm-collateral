@@ -75,13 +75,17 @@ public final class Cdm {
         return o("partyId", l(o("identifier", o("@data", name))));
     }
 
-    /** The call's common header. In the IM flow BANK-A pledges to BANK-B whichever party issues the call. */
-    private static Map<String, Object> callBase(String callId, String issuer) {
+    /**
+     * The call's common header. In the IM flow BANK-A pledges to BANK-B whichever party issues the call.
+     * {@code regMarginType} is the CDM RegMarginTypeEnum name: "VM" for a variation margin call, "RegIM" otherwise
+     * (a return's own margin type is stated when it settles, SettleCallInstruction returnedMarginType).
+     */
+    private static Map<String, Object> callBase(String callId, String issuer, String regMarginType) {
         return o("instructionType", o("callType", "MarginCall"),
                 "callIdentifier", ident(callId, issuer),
                 "callAgreementType", o("agreementType", "CreditSupportAgreement",
                         "creditSupportAgreementType", o("@data", "CreditSupportAnnex")),
-                "regMarginType", "RegIM",
+                "regMarginType", regMarginType,
                 "partyRole", l(o("partyReference", party("BANK-A"), "role", "Pledgor"),
                         o("partyReference", party("BANK-B"), "role", "SecuredParty")));
     }
@@ -89,12 +93,21 @@ public final class Cdm {
     // ---- lifecycle steps (each a validated MarginCallInstruction) ----
 
     public static Cdm issue(String callId, String issuer, long amountUsd, String direction) {
-        return issue(callId, issuer, amountUsd, direction, null);
+        return issue(callId, issuer, amountUsd, direction, null, "RegIM");
+    }
+
+    public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall) {
+        return issue(callId, issuer, amountUsd, direction, replacesCall, "RegIM");
+    }
+
+    /** The CDM RegMarginTypeEnum name of an on-chain call kind (IM, VM, Return). */
+    public static String regMarginType(String kind) {
+        return kind.equals("VM") ? "VM" : "RegIM";
     }
 
     /** IssueCall; {@code replacesCall} is the CDM identifier of a cancelled call this one replaces, or null (task-csa-call-replacement). */
-    public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall) {
-        Map<String, Object> issuance = callBase(callId, issuer);
+    public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall, String regMarginType) {
+        Map<String, Object> issuance = callBase(callId, issuer, regMarginType);
         issuance.put("callAmountInBaseCurrency", money(amountUsd));
         Map<String, Object> issue = o("issuance", issuance, "direction", direction);
         if (replacesCall != null) issue.put("replacesCall", replacesCall);
@@ -109,7 +122,12 @@ public final class Cdm {
 
     public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
                               String action, long units, String collateralIsin) {
-        Map<String, Object> resp = callBase(callId, issuer);
+        return respond(callId, issuer, kind, agreedUsd, action, units, collateralIsin, "RegIM");
+    }
+
+    public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
+                              String action, long units, String collateralIsin, String regMarginType) {
+        Map<String, Object> resp = callBase(callId, issuer, regMarginType);
         resp.put("marginResponseType", kind); // AgreeinFull | PartiallyAgree | Dispute
         resp.put("agreedAmountBaseCurrency", money(agreedUsd));
         resp.put("marginCallResponseAction",
@@ -155,21 +173,27 @@ public final class Cdm {
      * which the CDM fold checks against the agreed return amount (SettleCallInstruction DeliveryOrReturn choice).
      */
     public static Cdm settleReturn(List<Map<String, Object>> assets, long releasedValueUsd) {
+        return settleReturn(assets, releasedValueUsd, null, null);
+    }
+
+    /**
+     * Return settlement stating the margin returned: "RegIM" when escrowed initial margin was released, "VM" when
+     * variation margin was paid back by transfer (cdm-ext returnedMarginType; flow-reconciliation reads it).
+     */
+    public static Cdm settleReturn(List<Map<String, Object>> assets, long releasedValueUsd, String nettingId, String returnedMarginType) {
         List<Object> positions = new ArrayList<>();
         for (Map<String, Object> a : assets) {
             positions.add(position(((Number) a.get("units")).longValue(), (String) a.get("isin")));
         }
-        return new Cdm("settle", o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd)));
+        Map<String, Object> s = o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd));
+        if (nettingId != null) s.put("nettingIdentifier", nettingId);
+        if (returnedMarginType != null) s.put("returnedMarginType", returnedMarginType);
+        return new Cdm("settle", s);
     }
 
     /** Return settled in a settlement netting (flow-settlement-netting): the step names the netting. */
     public static Cdm settleReturn(List<Map<String, Object>> assets, long releasedValueUsd, String nettingId) {
-        List<Object> positions = new ArrayList<>();
-        for (Map<String, Object> a : assets) {
-            positions.add(position(((Number) a.get("units")).longValue(), (String) a.get("isin")));
-        }
-        return new Cdm("settle", o("releasedCollateral", positions, "releasedValue", money(releasedValueUsd),
-                "nettingIdentifier", nettingId));
+        return settleReturn(assets, releasedValueUsd, nettingId, "VM"); // netting settles variation margin only
     }
 
     // ---- cancellation (task-csa-call-cancellation; rules to confirm in task-sme-call-cancellation-rules) ----

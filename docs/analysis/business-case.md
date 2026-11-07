@@ -122,14 +122,14 @@ in [`collateral-flows.md`](collateral-flows.md) runs through CDM objects built b
 | Triparty | collateral giver, collateral receiver, triparty agent | [Triparty](collateral-flows.md#triparty) | G22, G34 |
 | CCP margin | clearing member (and clients), CCP | [CCP margin](collateral-flows.md#ccp-margin) | G23, G15 |
 
-Gaps not listed against a family apply across families: G11, G16, G24–G29, G31, G32, G37 and G39 (closed). G13,
-G35 and G36 are the register's out-of-scope gaps, discussed below.
+Gaps not listed against a family apply across families: G11, G16, G24–G29, G31, G32, G37 and G39 (closed). G13
+and G36 are the register's out-of-scope gaps, and G35 was until 2026-11-07; all three are discussed below.
 
-**Gaps outside C1.** The three gaps the register classifies out of scope — G13 (ISDA SIMM: the IM amount comes from a
-risk engine), G35 (reconciliation) and G36 (regulatory reporting of margin) — are project non-goals (§6). The
+**Gaps outside C1.** The three gaps the register classified out of scope — G13 (ISDA SIMM: the IM amount comes from a
+risk engine), G35 (reconciliation) and G36 (regulatory reporting of margin) — were project non-goals (§6). The
 register's reason for G35 ("the shared ledger replaces reconciliation in the prototype") conflicts with V6, which the
-sources support: a shared ledger reduces reconciliation but does not remove it. The register's G35 classification is
-to be revisited.
+sources support: a shared ledger reduces reconciliation but does not remove it. G35 moved back into
+scope on 2026-11-07 (§8 item 3).
 
 ## 5. Collateral asset coverage
 
@@ -184,8 +184,8 @@ of one family in C2:
 
 - Merging `cdm-ext` into the FINOS CDM model: the extension is maintained in this repository
   (`wp-adr-cdm-local-extensions`; see §8 item 1).
-- ISDA SIMM calculation (G13), reconciliation (G35) and regulatory reporting of margin (G36), classified out of scope
-  in the gap register.
+- ISDA SIMM calculation (G13) and regulatory reporting of margin (G36), classified out of scope in the gap register.
+  Reconciliation (G35) was a non-goal until 2026-11-07 (§8 item 3).
 
 ## 7. Success criteria
 
@@ -214,7 +214,9 @@ measure the completion goals; S8 follows G26.
 2. **Order of the families after the first milestone — decided 2026-11-03.** C2 covers all five families. After the
    ISDA CSA cycle, repo is built first, then securities lending, triparty and CCP margin (O1–O3, O9, O10), as recorded
    in `nw-agreement-family-order` and `docs/analysis/cdm-workflow-task-map.md`.
-3. **G35 classification.** Whether reconciliation (G35) moves back into scope, given V6 (§4, Gaps outside C1).
+3. **G35 classification — decided 2026-11-07.** Reconciliation (G35) moves back into scope, given V6 (§4, Gaps outside
+   C1): each party's CDM records against the chain, and the trade portfolios between the parties
+   (`wp-adr-reconciliation-scope`).
 4. **Assets outside the regulatory classes.** Whether real estate, credit claims, letters of credit and other assets
    no taxonomy in the mapping classifies are in scope for C1 and C2. If they are, a new gap is needed in the
    register, because CDM's `AssetType` hierarchy was mapped only for the 17 categories.

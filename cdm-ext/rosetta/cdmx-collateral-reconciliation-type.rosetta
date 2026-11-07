@@ -1,0 +1,106 @@
+namespace cdmx.collateral.reconciliation : <"Local CDM extension: reconciliation (gap G35 in docs/cdm-development/gap-register.md; wp-adr-reconciliation-scope). Two parts: a party's CDM records against the ledger, and the two parties' trade portfolios against each other. CDM 7.7.0 has trade, portfolio and exposure types but no reconciliation type or function. Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdmx.collateral.exposure.*
+
+// ---- Trade portfolios between the parties ----------------------------------------------------------------------
+
+type PortfolioSnapshot: <"One party's view of the trades it has with a counterparty, at one time: the trades and the party's valuation of each. The party sends it to the counterparty off-chain; only its hash is recorded on the ledger.">
+    nettingSet NettingSet (1..1) <"The party (valuationParty), the counterparty, and the party's mark-to-market of each trade, identified by its UTI.">
+    trade TradeState (0..*) <"The trades, as the party records them.">
+    asOf zonedDateTime (1..1) <"When the snapshot was taken.">
+
+    condition ValuationForEachTrade: <"Each trade has one valuation, and each valuation is for one of the trades.">
+        (nettingSet -> tradeExposure count) = (trade count)
+            and (trade extract t [ TradeUti(t) ] then distinct then count) = (trade count)
+            and (trade filter t [ (nettingSet -> tradeExposure filter x [ TradeExposureUti(x) = TradeUti(t) ] then count) <> 1 ] then count) = 0
+
+type TradeKeyTerms: <"The economic terms of a trade that two parties compare (wp-adr-reconciliation-scope; the list awaits task-sme-reconciliation-rules, question 1). Absent when the trade does not carry the term.">
+    uti string (1..1) <"The Unique Transaction Identifier.">
+    product string (0..1) <"The ISDA taxonomy name of the product, for example InterestRate_IRSwap_FixedFloat.">
+    notional Money (0..1) <"The first quantity of the trade that is stated in a currency.">
+    effectiveDate date (0..1) <"Unadjusted effective date of the first interest rate payout.">
+    terminationDate date (0..1) <"Unadjusted termination date of the first interest rate payout.">
+    fixedRate number (0..1) <"The fixed rate, as a decimal (0.06 for 6%).">
+    floatingRateIndex string (0..1) <"The floating rate index, for example EUR-LIBOR-BBA.">
+    fixedRatePayer string (0..1) <"The party identifier (LEI) of the payer of the fixed rate leg; both parties state the same party, so the direction compares.">
+
+enum ReconciliationBreakTypeEnum: <"Why a trade does not reconcile.">
+    MissingFromSecond <"The first party has the trade; the second party does not.">
+    MissingFromFirst <"The second party has the trade; the first party does not.">
+    EconomicTermsDiffer <"Both parties have the trade, with different key economic terms.">
+    ValuationDiffers <"The two valuations do not offset within the tolerance.">
+
+type ReconciliationBreak: <"One trade that does not reconcile, and why. A trade with different terms and valuations has two breaks.">
+    uti string (1..1) <"The trade's UTI.">
+    breakType ReconciliationBreakTypeEnum (1..1)
+    differingTerm string (0..*) <"The names of the key terms that differ (TradeKeyTerms attributes).">
+    firstValuation Money (0..1) <"The first party's mark-to-market of the trade, from its own side.">
+    secondValuation Money (0..1) <"The second party's mark-to-market of the trade, from its own side.">
+    valuationDifference Money (0..1) <"firstValuation + secondValuation: zero when the two valuations offset exactly.">
+
+    condition TermsOnlyForTermsBreak: <"Differing terms are stated for an economic terms break, and only for it.">
+        if breakType = ReconciliationBreakTypeEnum -> EconomicTermsDiffer
+        then differingTerm exists
+        else differingTerm is absent
+
+    condition DifferenceOnlyForValuationBreak: <"The valuation difference is stated for a valuation break, and only for it.">
+        if breakType = ReconciliationBreakTypeEnum -> ValuationDiffers
+        then valuationDifference exists and firstValuation exists and secondValuation exists
+        else valuationDifference is absent
+
+type PortfolioReconciliation: <"The result of matching two parties' snapshots of the trades between them. Both parties compute it from the same two snapshots, so both get the same result; each records its hash on the ledger.">
+    firstParty Party (1..1) <"The party of the first snapshot.">
+    secondParty Party (1..1) <"The party of the second snapshot.">
+    firstAsOf zonedDateTime (1..1)
+    secondAsOf zonedDateTime (1..1)
+    valuationTolerance Money (1..1) <"The largest valuation difference that is not a break (placeholder until task-sme-reconciliation-rules, question 2).">
+    matchedTradeCount int (1..1) <"Trades both parties have with the same key terms and offsetting valuations.">
+    reconciliationBreak ReconciliationBreak (0..*)
+    firstExposure Money (1..1) <"The first party's exposure: the sum of its valuations, from its own side.">
+    secondExposure Money (1..1) <"The second party's exposure: the sum of its valuations, from its own side.">
+    exposureDifference Money (1..1) <"firstExposure + secondExposure: zero when the parties agree on the exposure.">
+    reconciled boolean (1..1) <"True when there is no break.">
+
+    condition ReconciledWithoutBreaks: <"Reconciled exactly when there is no break.">
+        reconciled = (reconciliationBreak is absent)
+
+    condition TwoParties: <"The two parties differ.">
+        firstParty <> secondParty
+
+// ---- A party's CDM records against the ledger ------------------------------------------------------------------
+
+type LedgerFact: <"One fact about a collateral record that both the party's CDM records and the ledger state: for example a call's state, its agreed amount, or the units of a token held in escrow for the pair. The service states the facts of both sides in the same form.">
+    recordIdentifier string (1..1) <"The record, for example a call identifier, or escrow/<token>.">
+    attribute string (1..1) <"The fact, for example state, agreedAmount or pledgedUnits.">
+    factValue string (1..1) <"The value, in the same canonical form on both sides (an enum name, an integer in token units).">
+
+enum LedgerBreakTypeEnum: <"Why a fact does not reconcile with the ledger.">
+    MissingOnLedger <"The party's records state the fact; the ledger does not.">
+    MissingFromRecords <"The ledger states the fact; the party's records do not.">
+    ValueDiffers <"Both state the fact, with different values.">
+
+type LedgerBreak: <"One fact on which the party's records and the ledger disagree.">
+    recordIdentifier string (1..1)
+    attribute string (1..1)
+    breakType LedgerBreakTypeEnum (1..1)
+    recordedValue string (0..1) <"The value in the party's CDM records.">
+    ledgerValue string (0..1) <"The value on the ledger.">
+
+    condition ValuesForBreakType: <"The values present match the break type.">
+        if breakType = LedgerBreakTypeEnum -> MissingOnLedger then recordedValue exists and ledgerValue is absent
+        else if breakType = LedgerBreakTypeEnum -> MissingFromRecords then ledgerValue exists and recordedValue is absent
+        else recordedValue exists and ledgerValue exists
+
+type LedgerReconciliation: <"The result of comparing a party's CDM records with the ledger, for the records of one pair of parties. Not recorded on the ledger.">
+    party Party (1..1) <"The party whose records were compared.">
+    counterparty Party (1..1)
+    checkedFactCount int (1..1) <"Facts stated by either side.">
+    ledgerBreak LedgerBreak (0..*)
+    reconciled boolean (1..1) <"True when there is no break.">
+
+    condition ReconciledWithoutBreaks: <"Reconciled exactly when there is no break.">
+        reconciled = (ledgerBreak is absent)

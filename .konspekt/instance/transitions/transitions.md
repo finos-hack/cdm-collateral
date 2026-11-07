@@ -746,3 +746,57 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
 | edge:e-lnk-alloc-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
 | node:task-csa-allocation | status | open | resolved | 2026-11-07T18:15:45Z | b94ecf05be6e7d479e2ec32ca6f413bdcfb74679 | denisurusov |
+| node:task-sme-allocation-concentration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-sme-allocation-concentration | status |  | open | 2026-11-07T18:27:28Z |  |  |
+| node:task-csa-allocation-optimisation | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-csa-allocation-optimisation | status |  | open | 2026-11-07T18:27:28Z |  |  |
+| node:task-live-spec-duration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-live-spec-duration | status |  | open | 2026-11-07T18:27:28Z |  |  |
+| edge:e-dec-cdmdev-smeallocconc | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-lnk-alloc-smeallocconc | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-dec-csaext-allocopt | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-lnk-alloc-allocopt | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-dec-e2eflow-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| edge:e-lnk-cilivestack-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-sme-allocation-concentration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| node:task-csa-allocation-optimisation | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| node:task-live-spec-duration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-dec-cdmdev-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-lnk-alloc-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-dec-csaext-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-lnk-alloc-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-dec-e2eflow-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-lnk-cilivestack-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| waypoint:wp-adr-reconciliation-scope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| node:task-sme-reconciliation-rules | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| node:task-sme-reconciliation-rules | status |  | open | 2026-11-07T18:37:24Z |  |  |
+| edge:e-mrk-reconscope-recon | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-dec-cdmdev-smerecon | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-lnk-recon-smerecon | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-drv-cdmdata-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-drv-callstate-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-drv-offchaindispute-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| waypoint:wp-adr-reconciliation-scope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| node:task-sme-reconciliation-rules | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-mrk-reconscope-recon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-dec-cdmdev-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-lnk-recon-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-drv-cdmdata-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-drv-callstate-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-drv-offchaindispute-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| node:task-gateway-receipt-poll | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-gateway-receipt-poll | status |  | open | 2026-11-07T18:54:12Z |  |  |
+| node:task-live-read-latency | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-live-read-latency | status |  | open | 2026-11-07T18:54:12Z |  |  |
+| node:task-test-chain-block-period | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-test-chain-block-period | status |  | open | 2026-11-07T18:54:12Z |  |  |
+| edge:e-dec-specduration-receiptpoll | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| edge:e-dec-specduration-readlatency | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| edge:e-dec-specduration-blockperiod | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
+| node:task-gateway-receipt-poll | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| node:task-live-read-latency | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| node:task-test-chain-block-period | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| edge:e-dec-specduration-receiptpoll | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| edge:e-dec-specduration-readlatency | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| edge:e-dec-specduration-blockperiod | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| node:task-csa-reconciliation | status | open | resolved | 2026-11-07T20:11:29Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |

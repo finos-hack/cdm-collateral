@@ -1,0 +1,319 @@
+namespace cdmx.collateral.reconciliation : <"Local CDM extension: reconciliation (gap G35; wp-adr-reconciliation-scope).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.identifier.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdm.product.asset.*
+import cdmx.collateral.exposure.*
+
+// Trades are matched by UTI. For each UTI in either snapshot, TradeBreaks states what does not reconcile: a trade
+// missing on one side, key terms that differ, or valuations that do not offset within the tolerance. Each party values
+// a trade from its own side, so two agreeing valuations sum to zero. The key terms and the tolerance are placeholders
+// until task-sme-reconciliation-rules. The counterparty party references inside a TradeState must be resolved
+// before the call.
+
+func TradeUti: <"The Unique Transaction Identifier of a trade.">
+    inputs:
+        trade TradeState (1..1)
+    output:
+        uti string (0..1)
+
+    set uti:
+        trade -> trade -> tradeIdentifier
+            filter i [ i -> identifierType = TradeIdentifierTypeEnum -> UniqueTransactionIdentifier ]
+            then first
+            then extract i [ i -> assignedIdentifier first -> identifier ]
+
+func TradeExposureUti: <"The UTI a valuation in a snapshot is for.">
+    inputs:
+        exposure TradeExposure (1..1)
+    output:
+        uti string (0..1)
+
+    set uti:
+        exposure -> tradeIdentifier -> assignedIdentifier first -> identifier
+
+func ExtractTradeKeyTerms: <"The key economic terms of a trade that two parties compare.">
+    inputs:
+        trade TradeState (1..1)
+    output:
+        terms TradeKeyTerms (1..1)
+
+    alias payouts: trade -> trade -> product -> economicTerms -> payout as InterestRatePayout
+
+    alias fixedLeg: payouts filter p [ p -> rateSpecification as FixedRateSpecification exists ] then first
+
+    alias priceQuantities: trade -> trade -> tradeLot -> priceQuantity
+
+    alias notional:
+        priceQuantities -> quantity filter q [ q -> unit -> currency exists ] then first
+
+    alias payerRole: fixedLeg -> payerReceiver -> payer
+
+    set terms:
+        TradeKeyTerms {
+            uti: TradeUti(trade),
+            product: trade -> trade -> product -> taxonomy -> value -> name first,
+            notional: if notional exists
+                then Money {
+                    value: notional -> value,
+                    unit: notional -> unit,
+                    ...
+                },
+            effectiveDate: payouts first -> calculationPeriodDates -> effectiveDate -> adjustableDate -> unadjustedDate,
+            terminationDate: payouts first -> calculationPeriodDates -> terminationDate -> adjustableDate -> unadjustedDate,
+            fixedRate: priceQuantities -> price filter p [ p -> priceType = PriceTypeEnum -> InterestRate ] then first then extract p [ p -> value ],
+            floatingRateIndex: priceQuantities -> observable as Index as InterestRateIndex as FloatingRateIndex -> floatingRateIndex first to-string,
+            fixedRatePayer: trade -> trade -> counterparty
+                filter c [ c -> role = payerRole ]
+                then first
+                then extract c [ c -> partyReference -> partyId first -> identifier ]
+        }
+
+func TradeTermsDifferences: <"The names of the key terms on which two views of a trade differ; empty when they agree. A term present on one side only differs.">
+    inputs:
+        firstTerms TradeKeyTerms (1..1)
+        secondTerms TradeKeyTerms (1..1)
+    output:
+        differingTerm string (0..*)
+
+    add differingTerm:
+        if (firstTerms -> product exists or secondTerms -> product exists)
+            and (firstTerms -> product <> secondTerms -> product or firstTerms -> product is absent or secondTerms -> product is absent)
+        then "product"
+    add differingTerm:
+        if (firstTerms -> notional exists or secondTerms -> notional exists)
+            and (firstTerms -> notional -> value <> secondTerms -> notional -> value
+                or firstTerms -> notional -> unit -> currency <> secondTerms -> notional -> unit -> currency
+                or firstTerms -> notional is absent or secondTerms -> notional is absent)
+        then "notional"
+    add differingTerm:
+        if (firstTerms -> effectiveDate exists or secondTerms -> effectiveDate exists)
+            and (firstTerms -> effectiveDate <> secondTerms -> effectiveDate or firstTerms -> effectiveDate is absent or secondTerms -> effectiveDate is absent)
+        then "effectiveDate"
+    add differingTerm:
+        if (firstTerms -> terminationDate exists or secondTerms -> terminationDate exists)
+            and (firstTerms -> terminationDate <> secondTerms -> terminationDate or firstTerms -> terminationDate is absent or secondTerms -> terminationDate is absent)
+        then "terminationDate"
+    add differingTerm:
+        if (firstTerms -> fixedRate exists or secondTerms -> fixedRate exists)
+            and (firstTerms -> fixedRate <> secondTerms -> fixedRate or firstTerms -> fixedRate is absent or secondTerms -> fixedRate is absent)
+        then "fixedRate"
+    add differingTerm:
+        if (firstTerms -> floatingRateIndex exists or secondTerms -> floatingRateIndex exists)
+            and (firstTerms -> floatingRateIndex <> secondTerms -> floatingRateIndex or firstTerms -> floatingRateIndex is absent or secondTerms -> floatingRateIndex is absent)
+        then "floatingRateIndex"
+    add differingTerm:
+        if (firstTerms -> fixedRatePayer exists or secondTerms -> fixedRatePayer exists)
+            and (firstTerms -> fixedRatePayer <> secondTerms -> fixedRatePayer or firstTerms -> fixedRatePayer is absent or secondTerms -> fixedRatePayer is absent)
+        then "fixedRatePayer"
+
+func SnapshotTrade: <"The trade with a UTI in a snapshot, if any.">
+    inputs:
+        snapshot PortfolioSnapshot (1..1)
+        uti string (1..1)
+    output:
+        trade TradeState (0..1)
+
+    set trade:
+        snapshot -> trade filter t [ TradeUti(t) = uti ] then first
+
+func SnapshotValuation: <"The snapshot party's valuation of the trade with a UTI, if any.">
+    inputs:
+        snapshot PortfolioSnapshot (1..1)
+        uti string (1..1)
+    output:
+        valuation Money (0..1)
+
+    set valuation:
+        snapshot -> nettingSet -> tradeExposure filter x [ TradeExposureUti(x) = uti ] then first then extract x [ x -> markToMarket ]
+
+func TradeBreaks: <"What does not reconcile for one UTI between two snapshots; empty when the trade reconciles.">
+    inputs:
+        uti string (1..1)
+        firstSnapshot PortfolioSnapshot (1..1)
+        secondSnapshot PortfolioSnapshot (1..1)
+        valuationTolerance Money (1..1)
+    output:
+        reconciliationBreak ReconciliationBreak (0..*)
+
+    alias firstTrade: SnapshotTrade(firstSnapshot, uti)
+    alias secondTrade: SnapshotTrade(secondSnapshot, uti)
+    alias firstValuation: SnapshotValuation(firstSnapshot, uti)
+    alias secondValuation: SnapshotValuation(secondSnapshot, uti)
+    alias bothSides: firstTrade exists and secondTrade exists
+
+    alias differingTerms:
+        if bothSides then TradeTermsDifferences(ExtractTradeKeyTerms(firstTrade), ExtractTradeKeyTerms(secondTrade))
+
+    alias difference: firstValuation -> value + secondValuation -> value
+
+    alias absoluteDifference: if difference < 0 then 0.0 - difference else difference
+
+    add reconciliationBreak:
+        if secondTrade is absent
+        then ReconciliationBreak {
+            uti: uti,
+            breakType: ReconciliationBreakTypeEnum -> MissingFromSecond,
+            firstValuation: firstValuation,
+            ...
+        }
+    add reconciliationBreak:
+        if firstTrade is absent
+        then ReconciliationBreak {
+            uti: uti,
+            breakType: ReconciliationBreakTypeEnum -> MissingFromFirst,
+            secondValuation: secondValuation,
+            ...
+        }
+    add reconciliationBreak:
+        if bothSides and differingTerms exists
+        then ReconciliationBreak {
+            uti: uti,
+            breakType: ReconciliationBreakTypeEnum -> EconomicTermsDiffer,
+            differingTerm: differingTerms,
+            firstValuation: firstValuation,
+            secondValuation: secondValuation,
+            ...
+        }
+    add reconciliationBreak:
+        if bothSides and absoluteDifference > valuationTolerance -> value
+        then ReconciliationBreak {
+            uti: uti,
+            breakType: ReconciliationBreakTypeEnum -> ValuationDiffers,
+            firstValuation: firstValuation,
+            secondValuation: secondValuation,
+            valuationDifference: Money {
+                value: difference,
+                unit: valuationTolerance -> unit,
+                ...
+            },
+            ...
+        }
+
+func ReconcilePortfolios: <"Matches two parties' snapshots of the trades between them by UTI and states the breaks and the two exposures (gap G35). Deterministic: both parties compute the same result from the same two snapshots.">
+    inputs:
+        firstSnapshot PortfolioSnapshot (1..1)
+        secondSnapshot PortfolioSnapshot (1..1)
+        valuationTolerance Money (1..1) <"In the base currency of the credit support annex.">
+    output:
+        reconciliation PortfolioReconciliation (1..1)
+
+    alias baseCurrency: valuationTolerance -> unit -> currency
+
+    alias utis:
+        [firstSnapshot -> trade extract t [ TradeUti(t) ], secondSnapshot -> trade extract t [ TradeUti(t) ]]
+            then distinct
+            then sort
+
+    alias breaks: utis extract u [ TradeBreaks(u, firstSnapshot, secondSnapshot, valuationTolerance) ] then flatten
+
+    alias matched: utis filter u [ TradeBreaks(u, firstSnapshot, secondSnapshot, valuationTolerance) is absent ]
+
+    alias firstExposure: NettedExposure(firstSnapshot -> nettingSet, firstSnapshot -> nettingSet -> valuationParty, baseCurrency)
+    alias secondExposure: NettedExposure(secondSnapshot -> nettingSet, secondSnapshot -> nettingSet -> valuationParty, baseCurrency)
+
+    condition SamePair: <"The two snapshots are the two sides of one pair of parties.">
+        firstSnapshot -> nettingSet -> valuationParty = secondSnapshot -> nettingSet -> counterparty
+            and firstSnapshot -> nettingSet -> counterparty = secondSnapshot -> nettingSet -> valuationParty
+
+    condition NonNegativeTolerance: <"The valuation tolerance is not negative.">
+        valuationTolerance -> value >= 0
+
+    set reconciliation:
+        PortfolioReconciliation {
+            firstParty: firstSnapshot -> nettingSet -> valuationParty,
+            secondParty: secondSnapshot -> nettingSet -> valuationParty,
+            firstAsOf: firstSnapshot -> asOf,
+            secondAsOf: secondSnapshot -> asOf,
+            valuationTolerance: valuationTolerance,
+            matchedTradeCount: matched count,
+            reconciliationBreak: breaks,
+            firstExposure: firstExposure,
+            secondExposure: secondExposure,
+            exposureDifference: Money {
+                value: firstExposure -> value + secondExposure -> value,
+                unit: valuationTolerance -> unit,
+                ...
+            },
+            reconciled: breaks is absent
+        }
+
+// ---- A party's CDM records against the ledger ------------------------------------------------------------------
+
+func FactKey: <"The key a fact is compared on: its record and attribute.">
+    inputs:
+        fact LedgerFact (1..1)
+    output:
+        key string (1..1)
+
+    set key:
+        fact -> recordIdentifier + "|" + fact -> attribute
+
+func FactBreak: <"The break for one fact key between the party's records and the ledger, if they disagree.">
+    inputs:
+        key string (1..1)
+        recorded LedgerFact (0..*)
+        onLedger LedgerFact (0..*)
+    output:
+        ledgerBreak LedgerBreak (0..1)
+
+    alias recordedFact: recorded filter f [ FactKey(f) = key ] then first
+    alias ledgerFact: onLedger filter f [ FactKey(f) = key ] then first
+    alias anyFact: if recordedFact exists then recordedFact else ledgerFact
+
+    set ledgerBreak:
+        if ledgerFact is absent
+        then LedgerBreak {
+            recordIdentifier: anyFact -> recordIdentifier,
+            attribute: anyFact -> attribute,
+            breakType: LedgerBreakTypeEnum -> MissingOnLedger,
+            recordedValue: recordedFact -> factValue,
+            ...
+        }
+        else if recordedFact is absent
+        then LedgerBreak {
+            recordIdentifier: anyFact -> recordIdentifier,
+            attribute: anyFact -> attribute,
+            breakType: LedgerBreakTypeEnum -> MissingFromRecords,
+            ledgerValue: ledgerFact -> factValue,
+            ...
+        }
+        else if recordedFact -> factValue <> ledgerFact -> factValue
+        then LedgerBreak {
+            recordIdentifier: anyFact -> recordIdentifier,
+            attribute: anyFact -> attribute,
+            breakType: LedgerBreakTypeEnum -> ValueDiffers,
+            recordedValue: recordedFact -> factValue,
+            ledgerValue: ledgerFact -> factValue
+        }
+
+func ReconcileWithLedger: <"Compares the facts a party's CDM records state about the pair's collateral records with the facts the ledger states, and lists each disagreement (gap G35, records against the chain).">
+    inputs:
+        party Party (1..1)
+        counterparty Party (1..1)
+        recorded LedgerFact (0..*) <"From the party's CDM records.">
+        onLedger LedgerFact (0..*) <"From the contract state and events, read through the party's own node.">
+    output:
+        reconciliation LedgerReconciliation (1..1)
+
+    alias keys:
+        [recorded extract f [ FactKey(f) ], onLedger extract f [ FactKey(f) ]] then distinct then sort
+
+    alias breaks: keys extract k [ FactBreak(k, recorded, onLedger) ]
+
+    condition OneValuePerFact: <"Each side states each fact once.">
+        (recorded extract f [ FactKey(f) ] then distinct then count) = recorded count
+            and (onLedger extract f [ FactKey(f) ] then distinct then count) = onLedger count
+
+    set reconciliation:
+        LedgerReconciliation {
+            party: party,
+            counterparty: counterparty,
+            checkedFactCount: keys count,
+            ledgerBreak: breaks,
+            reconciled: breaks is absent
+        }

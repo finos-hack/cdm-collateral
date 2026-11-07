@@ -55,9 +55,13 @@ type SettleCallInstruction: <"Step SettleCall.">
     releasedCollateral CollateralPosition (0..*) <"Return call: the collateral released.">
     releasedValue Money (0..1) <"Return call: value after haircuts of the collateral released.">
     nettingIdentifier string (0..1) <"The settlement netting the call settled in (task-csa-settlement-netting): its movement was paid as part of one net transfer between the two parties (SettlementNettingStatement).">
+    returnedMarginType RegMarginTypeEnum (0..1) <"Return call: the margin returned. RegIM when escrowed initial margin was released to the pledgor, VM when variation margin was paid back by transfer. A party reconciling its escrow positions with the ledger reads it (task-csa-reconciliation).">
 
     condition DeliveryOrReturn: <"A settlement names either the proposal delivered or the value released.">
         required choice proposalId, releasedValue
+
+    condition ReturnedMarginTypeOnReturn: <"Only a return states the margin it returned.">
+        if returnedMarginType exists then releasedValue exists
 
 // Cancellation rules (task-csa-call-cancellation, the project owner's choice of 2026-11-06, to be confirmed by a
 // business SME in task-sme-call-cancellation-rules): the calling party withdraws an unanswered call alone; an answered

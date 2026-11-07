@@ -7,7 +7,9 @@
 // close out the netting set and apply the pledged collateral to the Early Termination Amount (flow-close-out-netting).
 // The pledgor can ask to substitute pledged collateral, which the secured party consents to or refuses
 // (flow-substitution). The secured party states the interest it owes on the pledgor's cash collateral
-// (flow-interest-on-cash); the pledgor pays a negative amount.
+// (flow-interest-on-cash); the pledgor pays a negative amount. Either party reconciles its trade portfolio with the
+// counterparty's and its CDM records with the chain, and can dispute an issued call citing the portfolio breaks
+// (flow-reconciliation).
 import { useCallback, useEffect, useState } from "react";
 import {
   api,
@@ -16,6 +18,8 @@ import {
   type LiveCloseOut,
   type LiveContext,
   type LiveInterest,
+  type LiveLedgerReconciliation,
+  type LivePortfolioReconciliation,
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
@@ -51,6 +55,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [holdForNetting, setHoldForNetting] = useState(false);
   const [candidates, setCandidates] = useState<LiveNettingCandidates | null>(null);
   const [nettings, setNettings] = useState<LiveNetting[]>([]);
+  const [recons, setRecons] = useState<LivePortfolioReconciliation[]>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -63,6 +68,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       api.interest(party).then(setInterest).catch(() => setInterest([]));
       api.nettingCandidates(party).then((c) => setCandidates(Array.isArray(c?.movements) ? c : null)).catch(() => setCandidates(null));
       api.nettings(party).then((n) => setNettings(Array.isArray(n) ? n : [])).catch(() => setNettings([]));
+      api.reconciliations(party).then((r) => setRecons(Array.isArray(r) ? r : [])).catch(() => setRecons([]));
       api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null));
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
@@ -310,6 +316,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 
       {agreement && <AgreementTerms party={party} other={other} agreement={agreement} busy={busy} run={run} />}
 
+      <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />
+
       {!isSecured && <SubstitutionRequest party={party} other={other} busy={busy} hasPledged={hasPledged} run={run} />}
 
       {subs.length > 0 && (
@@ -325,7 +333,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         <h3>Margin calls</h3>
         {!state?.calls.length && <div className="small">No calls yet.</div>}
         {state?.calls.map((c) => (
-          <CallRow key={c.callId} call={c} party={party} hasPledged={hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} />
+          <CallRow key={c.callId} call={c} party={party} hasPledged={hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} reconciliation={recons[0] ?? null} />
         ))}
       </div>
     </div>
@@ -342,8 +350,10 @@ function CallRow(props: {
   setToken: (s: string) => void;
   setQty: (n: number) => void;
   run: (fn: () => Promise<unknown>) => void;
+  /** The latest portfolio reconciliation; a dispute can cite it when it has breaks (flow-reconciliation). */
+  reconciliation?: LivePortfolioReconciliation | null;
 }) {
-  const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run } = props;
+  const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run, reconciliation } = props;
   const [partialUsd, setPartialUsd] = useState(0);
   const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
   const [allocNote, setAllocNote] = useState<string | null>(null); // result of "Suggest allocation" (flow-allocation)
@@ -404,6 +414,15 @@ function CallRow(props: {
                 <input type="number" value={partialUsd} step={250000} onChange={(e) => setPartialUsd(Number(e.target.value))} style={{ width: 120 }} title="Partial agreed amount (USD)" />
                 <button disabled={busy || !(partialUsd > 0 && partialUsd < Number(c.amountUsd))} onClick={() => run(() => api.respond(party, c.callId, "partial", partialUsd))}>Agree part</button>
                 <button disabled={busy} onClick={() => run(() => api.respond(party, c.callId, "dispute"))}>Dispute</button>
+                {reconciliation && reconciliation.breaks.length > 0 && (
+                  <button
+                    disabled={busy}
+                    title={`Dispute the call, citing reconciliation ${reconciliation.reconciliationId} and its ${reconciliation.breaks.length} breaks`}
+                    onClick={() => run(() => api.respond(party, c.callId, "dispute", undefined, reconciliation.reconciliationId))}
+                  >
+                    Dispute citing reconciliation
+                  </button>
+                )}
               </>
             )}
           </>
@@ -714,6 +733,88 @@ function SubstitutionRow(props: { s: LiveSubstitution; party: LiveParty; busy: b
         )}
         {s.cdm.error && <span className="bad small">{s.cdm.error}</span>}
       </div>
+    </div>
+  );
+}
+
+const BREAK: Record<string, string> = {
+  MissingFromSecond: "missing at the second party",
+  MissingFromFirst: "missing at the first party",
+  EconomicTermsDiffer: "economic terms differ",
+  ValuationDiffers: "valuations differ",
+};
+
+/** Reconciliation (flow-reconciliation): trade portfolios with the counterparty, and this party's records with the chain. */
+function ReconciliationCard(props: { party: LiveParty; other: LiveParty; latest: LivePortfolioReconciliation | null; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, latest: r, busy, run } = props;
+  const [ledger, setLedger] = useState<LiveLedgerReconciliation | null>(null);
+  return (
+    <div className="card" data-testid="reconciliation">
+      <h3>Reconciliation</h3>
+      <div className="row">
+        <button disabled={busy} onClick={() => run(() => api.reconcilePortfolio(party))}>Reconcile portfolios → {other}</button>
+        <button disabled={busy} onClick={() => run(() => api.reconcileWithLedger(party).then(setLedger))}>Reconcile with ledger</button>
+      </div>
+      <div className="small">
+        The trade snapshots go service to service; only their hashes and each party's result hash are recorded on-chain.
+      </div>
+      {r && (
+        <div className="subcard" data-testid={`reconciliation-${r.reconciliationId}`}>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div>
+              <span className="mono">{short(r.reconciliationId)}</span> · {r.firstParty} with {r.secondParty} ·{" "}
+              <strong data-testid="reconciliation-status">{r.reconciled ? "reconciled" : `${r.breaks.length} break${r.breaks.length === 1 ? "" : "s"}`}</strong> ·{" "}
+              {r.matchedTrades} matched
+            </div>
+            <div className="small" data-testid="reconciliation-onchain">
+              {r.onChain.state === "agreed" ? <span className="ok">both results agree on-chain ✓</span> : r.onChain.state === "disagreed" ? <span className="bad">results differ on-chain</span> : r.onChain.state}
+            </div>
+          </div>
+          <div className="small">
+            exposure {r.firstParty} {usd(r.firstExposureUsd)} · {r.secondParty} {usd(r.secondExposureUsd)} · difference{" "}
+            <span data-testid="exposure-difference">{usd(r.exposureDifferenceUsd)}</span> · tolerance {usd(r.toleranceUsd)} a trade
+          </div>
+          {r.breaks.length > 0 && (
+            <table className="tbl">
+              <thead>
+                <tr><th>UTI</th><th>Break</th><th>{r.firstParty} value</th><th>{r.secondParty} value</th><th>Difference</th></tr>
+              </thead>
+              <tbody>
+                {r.breaks.map((b) => (
+                  <tr key={`${b.uti}-${b.type}`} data-testid={`break-${b.uti}`}>
+                    <td className="mono">{b.uti}</td>
+                    <td>{BREAK[b.type] ?? b.type}{b.terms.length > 0 ? `: ${b.terms.join(", ")}` : ""}</td>
+                    <td>{b.firstValuationUsd ? usd(b.firstValuationUsd) : "—"}</td>
+                    <td>{b.secondValuationUsd ? usd(b.secondValuationUsd) : "—"}</td>
+                    <td>{b.differenceUsd ? usd(b.differenceUsd) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+      {ledger && (
+        <div className="subcard" data-testid="ledger-reconciliation">
+          <strong>{ledger.reconciled ? <span className="ok">records match the ledger ✓</span> : <span className="bad">{ledger.breaks.length} differences from the ledger</span>}</strong>{" "}
+          <span className="small">· {ledger.calls} calls, {ledger.checkedFacts} facts checked</span>
+          {ledger.escrow && (
+            <div className="small" data-testid="ledger-escrow">
+              escrow ({ledger.escrow.record.replace(/^escrow /, "")}):{" "}
+              {Object.keys(ledger.escrow.ledger).length === 0 ? "none" : Object.entries(ledger.escrow.ledger).map(([t, q]) => `${t} ${q.toLocaleString("en-US")}`).join(", ")}
+            </div>
+          )}
+          {ledger.breaks.length > 0 && (
+            <ul className="small">
+              {ledger.breaks.map((b) => (
+                <li key={`${b.record}-${b.attribute}`}>
+                  <span className="mono">{short(b.record)}</span> {b.attribute}: {b.type} (records {b.recorded ?? "—"}, ledger {b.ledger ?? "—"})
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
