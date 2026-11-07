@@ -41,10 +41,12 @@ const TOKENS = [
 ];
 
 // Opening balances (whole units) — union of the IM and VM starting positions in scenarios.ts.
-const BALANCES: Record<string, Record<string, bigint>> = {
-  "bank-a": { tUST: 400000n, tMMF: 20000000n, tUSD: 15000000n },
-  "bank-b": { tUST: 0n, tMMF: 0n, tUSD: 7000000n },
-};
+// Free test balances minted at deploy; scripts/top-up-test-balances.mjs restores them before each live suite run
+// (task-live-test-balances).
+const BALANCES: Record<string, Record<string, bigint>> = Object.fromEntries(
+  Object.entries(JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "test-balances.json"), "utf8")) as Record<string, Record<string, number>>)
+    .map(([node, bals]) => [node, Object.fromEntries(Object.entries(bals).map(([sym, n]) => [sym, BigInt(n)]))]),
+);
 
 async function main() {
   const parties = {
