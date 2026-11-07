@@ -419,6 +419,13 @@ export class BesuAdapter implements LedgerAdapter {
     this.ws = createPublicClient({ chain, transport: webSocket(wsRpc) });
   }
 
+  // The head of the chain for a log scan, never cached: viem caches getBlockNumber for the polling interval, so a scan
+  // could stop short of a step mined moments ago while getCall (eth_call at latest) already shows its effect. That gave
+  // folds one step behind the contract (flow-call-cancellation folded "Agreed" for a call cancelled on-chain).
+  private latestBlock(): Promise<bigint> {
+    return this.pub.getBlockNumber({ cacheTime: 0 });
+  }
+
   // gasPrice 0 forces a legacy transaction, which the zero-base-fee Besu chain accepts.
   private async send(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
     const txHash = await this.wallet.writeContract({
@@ -710,7 +717,7 @@ export class BesuAdapter implements LedgerAdapter {
   // Logs of one event from the deploy block to the latest, in windows under Besu's eth_getLogs range cap.
   private async scan(address: Address, abi: readonly any[], name: string, args: Record<string, unknown>): Promise<any[]> {
     const event = abi.find((x: any) => x.type === "event" && x.name === name) as never;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const out: any[] = [];
@@ -800,7 +807,7 @@ export class BesuAdapter implements LedgerAdapter {
   async listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]> {
     // Besu caps the eth_getLogs block range, so scan from the deploy block in windows under that cap.
     const event = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallIssued") as never;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const ids = new Set<Hex>();
@@ -824,7 +831,7 @@ export class BesuAdapter implements LedgerAdapter {
   async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }> {
     const settledEvent = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallSettled") as never;
     const enforcedEvent = controlAbi.find((x: any) => x.type === "event" && x.name === "Enforced") as never;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const settled: { callId: Hex; block: string }[] = [];
@@ -854,7 +861,7 @@ export class BesuAdapter implements LedgerAdapter {
   // (concept-asr-settlement-finality), so a mined, successful transaction is Final.
   async callSteps(callId: Hex): Promise<CallStep[]> {
     const specs = STEP_EVENTS;
-    const latest = await this.pub.getBlockNumber();
+    const latest = await this.latestBlock();
     const start = BigInt(this.reg.deployBlock ?? 0);
     const WINDOW = 4000n;
     const rows: (Omit<CallStep, "status" | "txLogs" | "network"> & { bn: bigint })[] = [];
