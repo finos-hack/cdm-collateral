@@ -3,7 +3,7 @@ id: task-repo-margin-maintenance
 type: task
 title: Repo margin maintenance: Net Exposure and margin transfer
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-gmra-scope
   sourceRef: 43bd267adffbb70e3a740c20620deed96d966092
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-07T22:35:17Z
+updatedAt: 2026-11-07T23:11:58Z
 ```
 # Task: repo margin maintenance: Net Exposure and margin transfer
 

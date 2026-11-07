@@ -54,4 +54,5 @@ For [[task-repo-gmra-workflows]] (section C, row 1 of the workflow map), followi
   behind a call only as reconciliation snapshots.
 - New on-chain settlement: delivery versus payment in one transaction.
 - Default and close-out under GMRA paragraph 10 (R20, R23, score 0) is not one of the ten workflows.
+  On 2026-11-07 the project owner added it as an eleventh task, [[task-repo-default-close-out]], built after the ten (source `098fab36b2d91ff22a659917fbb8c77ca7aa4108`).
 - The details of each workflow (which elections, which CDM samples, the contract changes) are decided in its own task.

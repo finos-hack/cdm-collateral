@@ -35,3 +35,4 @@ per workflow in build order:
 8. [[task-repo-roll]]: Repo roll.
 9. [[task-repo-pair-off]]: Repo pair-off.
 10. [[task-repo-buy-sell-back]]: Buy/sell-back.
+11. [[task-repo-default-close-out]]: repo default and close-out under GMRA paragraph 10 (added 2026-11-07, source `098fab36b2d91ff22a659917fbb8c77ca7aa4108`).

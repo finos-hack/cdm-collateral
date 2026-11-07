@@ -86,9 +86,10 @@ the Workflow column until their scope is decided.
 | 8 | Repo (GMRA): roll | usable as is (R13, score 5) | none yet | none yet | none | `task-repo-roll` |
 | 9 | Repo (GMRA): pair-off | usable as is (R13, score 5); a trade event, not netting of collateral movements (R22) | none yet | none yet | none | `task-repo-pair-off` |
 | 10 | Repo (GMRA): buy/sell-back | qualification only (R14, score 4: G33) | none yet | none yet | none | `task-repo-buy-sell-back` |
-| 11 | Securities lending (GMSLA): terms, marking, loan return, recall, substitution, rebate and fees | G21 terms, G12 marking, G18 recall | none yet | none yet | none | `task-securities-lending-gmsla-workflows` |
-| 12 | Triparty: agent valuation, allocation and settlement | G22 | none yet | none yet | none | `task-triparty-workflows` |
-| 13 | CCP: margin call, default management, porting | G23 | none yet | none yet | none | `task-ccp-workflows` |
+| 11 | Repo (GMRA): default and close-out (paragraph 10) | absent (R20 default and R23 close-out, score 0) | none yet | none yet | none | `task-repo-default-close-out` |
+| 12 | Securities lending (GMSLA): terms, marking, loan return, recall, substitution, rebate and fees | G21 terms, G12 marking, G18 recall | none yet | none yet | none | `task-securities-lending-gmsla-workflows` |
+| 13 | Triparty: agent valuation, allocation and settlement | G22 | none yet | none yet | none | `task-triparty-workflows` |
+| 14 | CCP: margin call, default management, porting | G23 | none yet | none yet | none | `task-ccp-workflows` |
 
 ## Cross-cutting
 
