@@ -730,3 +730,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
 | edge:e-dec-cdmdev-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
 | edge:e-lnk-netting-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| waypoint:wp-adr-allocation-scope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| node:task-sme-allocation-ranking | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| node:task-sme-allocation-ranking | status |  | open | 2026-11-07T13:52:51Z |  |  |
+| edge:e-mrk-allocscope-alloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-dec-cdmdev-smealloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-lnk-alloc-smealloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-drv-cdmdata-allocscope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
+| edge:e-drv-callstate-allocscope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |

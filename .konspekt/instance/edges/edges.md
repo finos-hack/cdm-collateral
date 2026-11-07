@@ -219,3 +219,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-nettingscope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-settlement-netting-scope |  | accepted |
 | e-drv-callstate-nettingscope | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-settlement-netting-scope |  | accepted |
 | e-drv-cdmdata-nettingscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-settlement-netting-scope |  | accepted |
+| e-mrk-allocscope-alloc | marks | waypoint:wp-adr-allocation-scope | node:task-csa-allocation |  | proposed |
+| e-dec-cdmdev-smealloc | decomposes | node:goal-cdm-development | node:task-sme-allocation-ranking |  | proposed |
+| e-lnk-alloc-smealloc | links | node:task-csa-allocation | node:task-sme-allocation-ranking |  | proposed |
+| e-drv-cdmdata-allocscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-allocation-scope |  | proposed |
+| e-drv-callstate-allocscope | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-allocation-scope |  | proposed |
