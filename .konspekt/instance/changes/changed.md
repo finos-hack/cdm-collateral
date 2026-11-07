@@ -785,3 +785,4 @@ excluded.
 | task-csa-settlement-netting | 5dedd5336f99cab07baf47f4976508e28b06332b | services/collateral/src/main/java/collateral/CdmNetting.java | 2026-11-07T04:33:52Z |
 | task-csa-settlement-netting | 5dedd5336f99cab07baf47f4976508e28b06332b | services/collateral/src/main/java/collateral/Config.java | 2026-11-07T04:33:52Z |
 | task-csa-settlement-netting | 5dedd5336f99cab07baf47f4976508e28b06332b | services/collateral/src/test/java/collateral/CdmNettingTest.java | 2026-11-07T04:33:52Z |
+| task-csa-allocation | 2b60bbeacabbeba6def81fe32ecc5a31d51dd308 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T13:53:52Z |
