@@ -236,6 +236,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdata-reconscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-reconciliation-scope |  | accepted |
 | e-drv-callstate-reconscope | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-reconciliation-scope |  | accepted |
 | e-drv-offchaindispute-reconscope | drives | concept:concept-asr-offchain-dispute | waypoint:wp-adr-reconciliation-scope |  | accepted |
-| e-dec-specduration-receiptpoll | decomposes | node:task-live-spec-duration | node:task-gateway-receipt-poll |  | proposed |
-| e-dec-specduration-readlatency | decomposes | node:task-live-spec-duration | node:task-live-read-latency |  | proposed |
-| e-dec-specduration-blockperiod | decomposes | node:task-live-spec-duration | node:task-test-chain-block-period |  | proposed |
+| e-dec-specduration-receiptpoll | decomposes | node:task-live-spec-duration | node:task-gateway-receipt-poll |  | accepted |
+| e-dec-specduration-readlatency | decomposes | node:task-live-spec-duration | node:task-live-read-latency |  | accepted |
+| e-dec-specduration-blockperiod | decomposes | node:task-live-spec-duration | node:task-test-chain-block-period |  | accepted |

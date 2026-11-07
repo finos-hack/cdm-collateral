@@ -3,7 +3,7 @@ id: task-live-read-latency
 type: task
 title: Cut the read latency of the live stack: log scans, console refresh and event relay
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: bd141dbb1d4a0af39adbee338b1c51f72f79914b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:54:12Z
   confidence: 0.75
 createdAt: 2026-11-07T18:54:12Z
-updatedAt: 2026-11-07T18:54:12Z
+updatedAt: 2026-11-07T19:57:56Z
 ```
 # Task: cut the read latency of the live stack
 
@@ -28,3 +28,5 @@ Three changes, measured before and after:
    refresh in flight, drop stale results, and fetch only the panels shown.
 3. **Event relay.** The service folds a settlement into CDM before relaying the event (`App.java:134-150`). Relay first,
    then fold, so the console sees settlements 3–8 s sooner.
+
+Accepted by the project owner on 2026-11-07 (source `fe94d24c8393576eafa827a5ced53840580becbe`: "1. accept the speed task").
