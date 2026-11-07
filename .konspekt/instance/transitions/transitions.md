@@ -767,3 +767,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-alloc-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
 | edge:e-dec-e2eflow-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
 | edge:e-lnk-cilivestack-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| waypoint:wp-adr-reconciliation-scope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| node:task-sme-reconciliation-rules | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| node:task-sme-reconciliation-rules | status |  | open | 2026-11-07T18:37:24Z |  |  |
+| edge:e-mrk-reconscope-recon | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-dec-cdmdev-smerecon | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-lnk-recon-smerecon | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-drv-cdmdata-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-drv-callstate-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| edge:e-drv-offchaindispute-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |

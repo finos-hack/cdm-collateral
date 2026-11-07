@@ -230,3 +230,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-alloc-allocopt | links | node:task-csa-allocation | node:task-csa-allocation-optimisation |  | accepted |
 | e-dec-e2eflow-specduration | decomposes | node:goal-end-to-end-flow | node:task-live-spec-duration |  | accepted |
 | e-lnk-cilivestack-specduration | links | node:task-ci-live-e2e-stack | node:task-live-spec-duration |  | accepted |
+| e-mrk-reconscope-recon | marks | waypoint:wp-adr-reconciliation-scope | node:task-csa-reconciliation |  | proposed |
+| e-dec-cdmdev-smerecon | decomposes | node:goal-cdm-development | node:task-sme-reconciliation-rules |  | proposed |
+| e-lnk-recon-smerecon | links | node:task-csa-reconciliation | node:task-sme-reconciliation-rules |  | proposed |
+| e-drv-cdmdata-reconscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-reconciliation-scope |  | proposed |
+| e-drv-callstate-reconscope | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-reconciliation-scope |  | proposed |
+| e-drv-offchaindispute-reconscope | drives | concept:concept-asr-offchain-dispute | waypoint:wp-adr-reconciliation-scope |  | proposed |

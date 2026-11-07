@@ -105,7 +105,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | G33 | Securities-lending settlement workflows are hand-written Java; buy/sell-back is qualification only | O11, O12 | – | none | P3 | none for now |
 | G39 | The Python toolchain does not run CDM reliably: the package keeps placeholder types in nested types, `rune.runtime` fails on references, copies and dates, the generator emits Python that differs from Rune in eleven ways, and one CDM condition (`PriceQuantityTriangulation`) fails in CDM's own generated code. Worked around in the extension's runtime and Rune (2026-10-17); Java not yet evaluated | D14, D15, D16, X1 (context) | – | every extension and every scenario run through it | P1 | runtime workarounds, or another target language (decision open) |
 | G34 | Collateral allocation and optimisation absent | row 18, R18, S16, T7 | 0 | proposal step (pledgor chooses assets by hand today) | P3 | functions |
-| G35 | Reconciliation absent | row 19, R19, S22, T12, C13 | 0 | none: the shared ledger replaces reconciliation in the prototype | Out | none |
+| G35 | Reconciliation absent | row 19, R19, S22, T12, C13 | 0 | none today; a shared ledger reduces but does not remove reconciliation (business case V6). Back in scope 2026-11-07: records against the chain and trade portfolios between the parties (`wp-adr-reconciliation-scope`, proposed) | P3 | types, functions |
 | G36 | Regulatory reporting of margin not in this repository | row 20 | n/a | none | Out | none |
 
 ## P1 summary: what the built scenarios need
@@ -177,4 +177,4 @@ defect (for example row 1 agreement terms 5, row 3 eligibility 5, R11 repo subst
 
 ## Totals
 
-39 gaps: 15 P1 (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G14, G24, G25, G29, G39), 12 P2, 9 P3, 3 out of scope. G37–G39 added 2026-10-17 during gap closure (proposed, for review).
+39 gaps: 15 P1 (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G14, G24, G25, G29, G39), 12 P2, 10 P3, 2 out of scope (G35 moved from out of scope to P3 on 2026-11-07). G37–G39 added 2026-10-17 during gap closure (proposed, for review).
