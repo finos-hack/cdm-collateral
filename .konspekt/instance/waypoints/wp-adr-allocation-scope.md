@@ -3,7 +3,7 @@ id: wp-adr-allocation-scope
 kind: decision
 subtype: adr
 timestamp: 2026-11-07T13:52:51Z
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: b276b4a7ca75f9adc407b9c513b5477ad0418f4c

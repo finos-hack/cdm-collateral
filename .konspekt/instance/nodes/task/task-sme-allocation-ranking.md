@@ -3,7 +3,7 @@ id: task-sme-allocation-ranking
 type: task
 title: Confirm with a business SME the ranking and rules for collateral allocation
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: b276b4a7ca75f9adc407b9c513b5477ad0418f4c
