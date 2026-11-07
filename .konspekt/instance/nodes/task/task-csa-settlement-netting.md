@@ -2,7 +2,7 @@
 id: task-csa-settlement-netting
 type: task
 title: Build the settlement netting flow
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
