@@ -152,6 +152,12 @@ READMEs are the authority. Oracle service: design only.
     `SettlementNettingStatement` under the agreement's `netInterestWithMarginCalls` election, and each call's SettleCall
     step names the netting. Initial margin does not net. The rules are assumptions awaiting a business SME
     (`task-sme-settlement-netting-rules`).
+13. **Collateral allocation** (`flow-allocation`) — on an agreed IM or VM call, the called party's service suggests a
+    basket that covers the agreed amount: cdm-ext `AllocateCollateral` takes the party's eligible holdings in its
+    ranking order (registry order by default), at the oracle feed prices and the pair's haircuts, and rounds the last
+    one up to whole units. Nothing is recorded on-chain; the console fills the proposal basket and the party proposes
+    it as before. Concentration limits are not applied. The default ranking awaits a business SME
+    (`task-sme-allocation-ranking`).
 
 ## Running N participants
 

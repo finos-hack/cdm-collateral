@@ -346,6 +346,7 @@ function CallRow(props: {
   const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run } = props;
   const [partialUsd, setPartialUsd] = useState(0);
   const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
+  const [allocNote, setAllocNote] = useState<string | null>(null); // result of "Suggest allocation" (flow-allocation)
   const [cancelReason, setCancelReason] = useState("");
   const [replacementUsd, setReplacementUsd] = useState(Number(c.amountUsd));
   const accepted = c.proposals.find((p) => p.state === "accepted");
@@ -416,10 +417,25 @@ function CallRow(props: {
             </select>
             <input type="number" value={qty} step={1000} onChange={(e) => setQty(Number(e.target.value))} style={{ width: 110 }} />
             <button disabled={busy} onClick={() => setStaged([...staged, { token, qty }])}>Add asset</button>
+            <button
+              disabled={busy}
+              title="Fill the basket from your holdings, eligible tokens in registry order, the last one rounded up to whole units"
+              onClick={() =>
+                run(() =>
+                  api.allocate(party, c.callId).then((r) => {
+                    setStaged(r.assets);
+                    setAllocNote(r.covers ? `suggested: ${usd(r.valueUsd)} after haircuts` : "holdings do not cover the agreed amount");
+                  }),
+                )
+              }
+            >
+              Suggest allocation
+            </button>
+            {allocNote && <span className="small">{allocNote}</span>}
             {staged.length > 0 && <span className="small">basket: {staged.map((a) => `${a.token} ${a.qty.toLocaleString("en-US")}`).join(" + ")}</span>}
             <button
               disabled={busy}
-              onClick={() => run(() => api.propose(party, c.callId, staged.length ? staged : [{ token, qty }]).then(() => setStaged([])))}
+              onClick={() => run(() => api.propose(party, c.callId, staged.length ? staged : [{ token, qty }]).then(() => { setStaged([]); setAllocNote(null); }))}
             >
               Propose collateral{staged.length ? ` (${staged.length})` : ""}
             </button>

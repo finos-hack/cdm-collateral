@@ -79,6 +79,16 @@ async function req<T>(party: LiveParty, method: string, path: string, body?: unk
   return json as T;
 }
 
+/** A suggested basket (flow-allocation): whole units in ranking order; empty when the inventory cannot cover the call. */
+export interface LiveAllocation {
+  callId: string;
+  covers: boolean;
+  assets: { token: string; qty: number }[];
+  valueUsd: string;
+  agreedUsd: string;
+  ranking: string[];
+}
+
 export const api = {
   context: (p: LiveParty) => req<LiveContext>(p, "GET", "/context"),
   state: (p: LiveParty) => req<LiveState>(p, "GET", "/state"),
@@ -91,6 +101,9 @@ export const api = {
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/response`, { response, agreedUsd }),
   propose: (p: LiveParty, callId: string, assets: { token: string; qty: number }[]) =>
     req<{ proposalId: number }>(p, "POST", `/calls/${callId}/proposal`, { assets }),
+  /** Called party: a suggested basket for an agreed IM or VM call (flow-allocation); nothing is recorded. */
+  allocate: (p: LiveParty, callId: string, ranking?: string[]) =>
+    req<LiveAllocation>(p, "POST", `/calls/${callId}/allocation`, ranking ? { ranking } : {}),
   decide: (p: LiveParty, callId: string, proposalId: number, accept: boolean) =>
     req<{ ok: boolean }>(p, "POST", `/calls/${callId}/decision`, { proposalId, accept }),
   pledge: (p: LiveParty, callId: string, proposalId: number) =>
