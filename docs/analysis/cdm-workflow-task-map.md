@@ -36,6 +36,10 @@ maintainer and accepted by the project owner (2026-11-03).
 
 ## B. ISDA CSA workflows with no prototype flow
 
+**Complete 2026-11-07:** every row below is built in the prototype with a live spec and merged (#25 to #37); the
+parent task `task-csa-workflow-extensions` is resolved. Cost-based optimisation of the allocation basket
+(`task-csa-allocation-optimisation`) and the SME confirmation of each row's rules remain open as their own tasks.
+
 Rows are in build order (`nw-csa-extension-order`): gap-register priority first, then workflows that
 extend flows the prototype already runs. Each row has its own task under `task-csa-workflow-extensions` (split on
 2026-11-06). "CDM status" is CDM 7.7.0's coverage; "`cdm-ext`" is what the local extension adds.
