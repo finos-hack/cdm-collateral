@@ -3,7 +3,7 @@ id: task-sme-settlement-netting-rules
 type: task
 title: Confirm with a business SME the rules for settlement netting of collateral movements
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 4152e4ee345e631416a4e46366cf621cd0cbb40c
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T04:24:56Z
   confidence: 0.6
 createdAt: 2026-11-07T04:24:56Z
-updatedAt: 2026-11-07T04:24:56Z
+updatedAt: 2026-11-07T04:38:11Z
 ```
 # Task: confirm the rules for settlement netting of collateral movements
 

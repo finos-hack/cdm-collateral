@@ -722,3 +722,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-nettingscope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
 | edge:e-drv-callstate-nettingscope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
 | edge:e-drv-cdmdata-nettingscope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
+| waypoint:wp-adr-settlement-netting-scope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| node:task-sme-settlement-netting-rules | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| edge:e-mrk-nettingscope-netting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| edge:e-drv-finality-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| edge:e-drv-callstate-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| edge:e-drv-cdmdata-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| edge:e-dec-cdmdev-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| edge:e-lnk-netting-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
