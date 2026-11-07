@@ -242,6 +242,14 @@ proposes tUSD and pledges it. After `Declare default & enforce` on A's leg, B se
 `Reclaim my IM from A`: B's service builds the CDM `CollateralReclaim` and B's gateway calls `reclaim`, which returns
 B's whole escrow on that leg once the feed records A in default. The balances card shows both legs' escrow.
 
+GMRA terms (`flow-repo-gmra-terms`): the "GMRA terms" card in each console shows the pair's GMRA 2011 elections
+(cdm-ext `GmraTerms`, Party1 BANK-A, Party2 BANK-B), the terms hash and whether the terms verify against the chain. A
+picks "MTA of B", enters a new amount and clicks `Propose GMRA amendment → B`: A's service builds the CDM
+`GmraTermsAmendment` and A's gateway calls `proposeTermsAmendment` (kind GMRA). B clicks `Consent to GMRA amendment`;
+B's service verifies the document against the terms in force and B's gateway calls `decideTermsAmendment`. The pair's
+GMRA terms hash moves on-chain and both services fold the amendment. The CSA terms are a separate chain and do not
+change.
+
 Close-out flow (`flow-close-out-netting`): while A has collateral in escrow, B enters a Close-out Amount in the
 "Close-out on default" card and clicks `Declare default & close out A`. B's service sends the default notice if the
 feed does not show it, values the escrow after haircuts, builds the CDM `CloseOutStatement` and calls `closeOut`: the
@@ -307,7 +315,7 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
 `flow-substitution`, `flow-interest-on-cash`, `flow-settlement-netting`, `flow-call-cancellation`,
 `flow-call-replacement`, `flow-agreement-amendment` (it restores the baseline terms), `flow-allocation`,
-`flow-reconciliation` and `flow-two-way-im-default`.
+`flow-reconciliation`, `flow-two-way-im-default` and `flow-repo-gmra-terms` (it restores the baseline MTA).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

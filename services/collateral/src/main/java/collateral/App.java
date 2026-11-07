@@ -128,6 +128,9 @@ public final class App {
         app.get("/api/v1/agreement", this::agreement);
         app.post("/api/v1/amendments", this::proposeAmendment);
         app.post("/api/v1/amendments/{id}/decision", this::decideAmendment);
+        app.get("/api/v1/gmra/terms", this::gmraTerms);
+        app.post("/api/v1/gmra/amendments", this::proposeGmraAmendment);
+        app.post("/api/v1/gmra/amendments/{id}/decision", this::decideGmraAmendment);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
         app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
@@ -215,6 +218,8 @@ public final class App {
                     if (party != null && (party.equalsIgnoreCase(cfg.myAddress) || party.equalsIgnoreCase(cfg.partyAddress(counterparty())))) store.recordEvent(event, id, party, block, logIndex, data);
                 } else if (event.equals("AmendmentProposed") || event.equals("AmendmentDecided")) {
                     onAmendmentEvent(event, e, block, logIndex, data);
+                } else if (event.equals("TermsAmendmentProposed") || event.equals("TermsAmendmentDecided")) {
+                    onGmraAmendmentEvent(event, e, block, logIndex, data);
                 } else if (event.startsWith("Substitution")) {
                     String id = e.get("substitutionId").asText();
                     if (substitutionInvolvesMe(id)) {
@@ -544,6 +549,171 @@ public final class App {
         if (legOfPair(a.get("pledgor").asText(), a.get("securedParty").asText()) == null) return;
         store.recordEvent(event, id, a.get("proposer").asText(), block, logIndex, data);
         if (event.equals("AmendmentDecided")) invalidateTerms();
+    }
+
+    // --- GMRA terms and their amendment (task-repo-gmra-terms, wp-adr-repo-gmra-terms) ---
+    // One GMRA per pair, Party1 BANK-A and Party2 BANK-B on both services. The contract keeps one terms hash chain per
+    // agreement kind and unordered pair; the elections travel in the GmraTermsAmendment documents.
+
+    private CdmGmra.Terms gmraBaseline;
+    private String gmraFoldKey;
+    private GmraFold gmraFold;
+
+    private record GmraFold(CdmGmra.Terms terms, boolean verified, String problem, List<JsonNode> amendments) {}
+
+    private synchronized CdmGmra.Terms gmraBaseline() {
+        if (gmraBaseline == null) gmraBaseline = CdmGmra.baseline(cfg.bankName("A"), cfg.bankName("B"));
+        return gmraBaseline;
+    }
+
+    /** The GMRA amendments between this party and its counterparty, in chain order. */
+    private List<JsonNode> gmraAmendments() {
+        JsonNode all = gw.getQuery("/terms-amendments", Map.of("kind", CdmGmra.KIND, "party", cfg.myAddress));
+        String other = cfg.partyAddress(counterparty());
+        List<JsonNode> out = new ArrayList<>();
+        for (JsonNode r : all) {
+            JsonNode a = r.get("amendment");
+            String x = a.get("pledgor").asText(), y = a.get("securedParty").asText();
+            if ((x.equalsIgnoreCase(cfg.myAddress) && y.equalsIgnoreCase(other)) || (x.equalsIgnoreCase(other) && y.equalsIgnoreCase(cfg.myAddress))) out.add(r);
+        }
+        return out;
+    }
+
+    /** Fold the agreed GMRA amendments from the baseline, as for the CSA (fold): each document fetched by its on-chain
+     *  hash, chained from the terms before, and verified against them. Cached on the list of agreed amendment ids. */
+    private synchronized GmraFold gmraFold() {
+        List<JsonNode> pair = gmraAmendments();
+        StringBuilder key = new StringBuilder();
+        for (JsonNode r : pair) if (r.get("amendment").get("state").asInt() == 2) key.append(r.get("amendmentId").asText()).append(',');
+        if (gmraFold != null && key.toString().equals(gmraFoldKey)) return new GmraFold(gmraFold.terms(), gmraFold.verified(), gmraFold.problem(), pair);
+        CdmGmra.Terms t = gmraBaseline();
+        boolean ok = true;
+        String problem = null;
+        for (JsonNode r : pair) {
+            JsonNode a = r.get("amendment");
+            if (a.get("state").asInt() != 2) continue;
+            try {
+                if (!a.get("beforeHash").asText().equalsIgnoreCase(t.hash())) throw new IllegalStateException("does not chain from the terms before");
+                String hash = a.get("proposeCdmHash").asText();
+                String doc = payloads.get(hash);
+                if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("document not in the payload store or hash mismatch");
+                t = CdmGmra.apply(t, CdmGmra.verify(doc, t), hash);
+            } catch (Exception ex) {
+                ok = false;
+                problem = "amendment " + r.get("amendmentId").asText() + ": " + ex.getMessage();
+                break;
+            }
+        }
+        gmraFold = new GmraFold(t, ok, problem, pair);
+        gmraFoldKey = key.toString();
+        return gmraFold;
+    }
+
+    private JsonNode gmraOnChain() {
+        return gw.getQuery("/master-terms", Map.of("kind", CdmGmra.KIND, "a", cfg.partyAddress("A"), "b", cfg.partyAddress("B")));
+    }
+
+    /** The GMRA terms in force, the on-chain terms hash beside them, and the pair's amendments. */
+    private void gmraTerms(Context ctx) {
+        GmraFold f = gmraFold();
+        JsonNode chain = gmraOnChain();
+        List<Map<String, Object>> amendments = new ArrayList<>();
+        for (JsonNode r : f.amendments()) {
+            JsonNode a = r.get("amendment");
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("amendmentId", r.get("amendmentId").asText());
+            m.put("block", r.get("block").asText());
+            m.put("proposer", partyIdOf(a.get("proposer").asText()));
+            m.put("mine", a.get("proposer").asText().equalsIgnoreCase(cfg.myAddress));
+            m.put("state", AMENDMENT_STATE[a.get("state").asInt()]);
+            m.put("cdmHash", a.get("proposeCdmHash").asText());
+            String doc = payloads.get(a.get("proposeCdmHash").asText());
+            if (doc != null) {
+                try {
+                    var am = CdmRuntime.JSON.readValue(doc, cdmx.collateral.gmra.GmraTermsAmendment.class);
+                    m.put("changed", CdmGmra.changed(am));
+                    m.put("after", CdmGmra.view(am.getAfter().getElections()));
+                    m.put("effectiveDate", am.getEffectiveDate().toString());
+                } catch (Exception ignored) {
+                    // shown without the document's fields
+                }
+            }
+            amendments.add(m);
+        }
+        String chainHash = chain.get("termsHash").asText();
+        String pending = chain.get("pendingAmendment").asText();
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("agreement", "ICMA GMRA 2011 (English law), cdm-ext GmraTerms");
+        out.put("party1", cfg.bankName("A"));
+        out.put("party2", cfg.bankName("B"));
+        out.put("elections", CdmGmra.view(f.terms().terms().getElections()));
+        out.put("termsHash", f.terms().hash());
+        out.put("onChainTermsHash", chainHash);
+        out.put("agreedAmendments", f.terms().amendments());
+        out.put("verified", f.verified() && chainHash.equalsIgnoreCase(f.terms().hash()));
+        out.put("problem", f.problem());
+        out.put("pendingAmendment", pending.equals(CdmAgreement.NO_HASH) ? null : pending);
+        out.put("amendments", amendments);
+        ctx.json(out);
+    }
+
+    /** Propose a change of the GMRA elections: one party's MTA (party "A" or "B", mtaUsd) and/or the default Margin
+     *  Ratio. The GmraTermsAmendment is published and recorded on-chain chained from the pair's terms hash. */
+    private void proposeGmraAmendment(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        GmraFold f = gmraFold();
+        if (!f.verified()) throw new RuntimeException("the agreed GMRA amendments do not verify: " + f.problem());
+        JsonNode chain = gmraOnChain();
+        if (!chain.get("pendingAmendment").asText().equals(CdmAgreement.NO_HASH)) throw new RuntimeException("a GMRA amendment is already pending");
+        if (!chain.get("termsHash").asText().equalsIgnoreCase(f.terms().hash())) throw new RuntimeException("the on-chain terms hash does not match the folded terms");
+        String party = String.valueOf(b.getOrDefault("party", "A"));
+        var role = party.equals("B") ? cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_2 : cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_1;
+        Long mta = b.get("mtaUsd") == null || String.valueOf(b.get("mtaUsd")).isBlank() ? null : Long.parseLong(String.valueOf(b.get("mtaUsd")));
+        BigDecimal ratio = b.get("defaultMarginRatio") == null || String.valueOf(b.get("defaultMarginRatio")).isBlank() ? null : new BigDecimal(String.valueOf(b.get("defaultMarginRatio")));
+        CdmGmra.Proposal p = CdmGmra.propose(f.terms(), role, mta, ratio, LocalDate.now());
+        String amendmentId = Cdm.onChainId("gmra-amendment-" + cfg.partyId + "-" + System.nanoTime());
+        store.recordDocument(amendmentId, "GmraTermsAmendment", "out", p.hash(), p.json());
+        payloads.put(p.hash(), p.json(), callParties);
+        JsonNode tx = gw.post("/terms-amendments", Map.of("amendmentId", amendmentId, "kind", CdmGmra.KIND,
+                "counterparty", cfg.partyAddress(counterparty()), "beforeHash", f.terms().hash(), "cdmHash", p.hash()));
+        ctx.json(Map.of("amendmentId", amendmentId, "cdmHash", p.hash(), "changed", CdmGmra.changed(p.amendment()), "proposeTx", tx.path("txHash").asText()));
+    }
+
+    /** Consent to or refuse a proposed GMRA amendment (the counterparty only). Before consenting the service checks
+     *  the document against the terms in force. The decision is a small JSON document anchored by its hash. */
+    private void decideGmraAmendment(Context ctx) {
+        String id = ctx.pathParam("id");
+        boolean consent = Boolean.TRUE.equals(body(ctx).get("consent"));
+        JsonNode a = gw.get("/amendments/" + id);
+        if (a.get("state").asInt() != 1) throw new RuntimeException("amendment " + id + " is not pending");
+        if (!a.get("securedParty").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the counterparty decides a GMRA amendment");
+        if (consent) {
+            GmraFold f = gmraFold();
+            if (!f.verified()) throw new RuntimeException("the agreed GMRA amendments do not verify: " + f.problem());
+            if (!a.get("beforeHash").asText().equalsIgnoreCase(f.terms().hash())) throw new RuntimeException("the amendment does not chain from the terms in force");
+            String hash = a.get("proposeCdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new RuntimeException("amendment document not in the payload store or hash mismatch");
+            CdmGmra.verify(doc, f.terms());
+            store.recordDocument(id, "GmraTermsAmendment", "in", hash, doc);
+        }
+        String decision = CdmRuntime.toJson(new LinkedHashMap<>(Map.of("amendmentId", id, "proposeCdmHash", a.get("proposeCdmHash").asText(),
+                "consent", consent, "party", cfg.bankName(cfg.partyId), "date", LocalDate.now().toString())));
+        String dHash = Cdm.keccakHex(decision);
+        store.recordDocument(id, "AmendmentDecision", "out", dHash, decision);
+        payloads.put(dHash, decision, callParties);
+        JsonNode tx = gw.post("/terms-amendments/" + id + "/decision", Map.of("consent", consent, "cdmHash", dHash));
+        ctx.json(Map.of("amendmentId", id, "consent", consent, "decisionHash", dHash, "decisionTx", tx.path("txHash").asText()));
+    }
+
+    /** TermsAmendmentProposed and TermsAmendmentDecided between this party and its counterparty are recorded. */
+    private void onGmraAmendmentEvent(String event, JsonNode e, String block, long logIndex, String data) {
+        String id = e.get("amendmentId").asText();
+        JsonNode a = gw.get("/amendments/" + id);
+        String other = cfg.partyAddress(counterparty());
+        String x = a.get("pledgor").asText(), y = a.get("securedParty").asText();
+        boolean ours = (x.equalsIgnoreCase(cfg.myAddress) && y.equalsIgnoreCase(other)) || (x.equalsIgnoreCase(other) && y.equalsIgnoreCase(cfg.myAddress));
+        if (ours) store.recordEvent(event, id, a.get("proposer").asText(), block, logIndex, data);
     }
 
     // ---- legs of the initial margin (two-way initial margin, wp-adr-two-way-im) ----

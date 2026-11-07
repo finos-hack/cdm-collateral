@@ -3,7 +3,7 @@
 // QBFT gives immediate per-block finality, so a mined receipt is final (concept-asr-settlement-finality): each write
 // waits for its receipt before returning. The chain charges no gas (genesis zeroBaseFee, --min-gas-price=0), so every
 // write is a legacy transaction with gasPrice 0.
-import { createPublicClient, createWalletClient, decodeEventLog, defineChain, http, webSocket, getAddress, parseAbi, toEventSelector } from "viem";
+import { createPublicClient, createWalletClient, decodeEventLog, defineChain, http, webSocket, getAddress, keccak256, parseAbi, toEventSelector, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { loadNodeKey, loadRegistry } from "./registry.ts";
@@ -52,6 +52,8 @@ export interface LedgerEvent {
     | "InterestSettled"
     | "AmendmentProposed"
     | "AmendmentDecided"
+    | "TermsAmendmentProposed"
+    | "TermsAmendmentDecided"
     | "SettlementNetted";
   callId?: Hex;
   /** ClosedOut (flow-close-out-netting). */
@@ -198,10 +200,15 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "SettlementNetted(bytes32,address,address,address,uint256,bytes32)",
     "AmendmentProposed(bytes32,address,address,address,bytes32)",
     "AmendmentDecided(bytes32,bool,bytes32)",
+    "TermsAmendmentProposed(bytes32,bytes32,address,address,bytes32)",
+    "TermsAmendmentDecided(bytes32,bytes32,bool,bytes32)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
 );
+
+/** The on-chain key of a master agreement kind (wp-adr-repo-gmra-terms): keccak256 of its name, for example "GMRA". */
+export const kindOf = (kind: string): Hex => keccak256(toHex(kind));
 
 export interface AssetArg {
   token: Address;
@@ -282,6 +289,12 @@ const controlAbi = parseAbi([
   "function eligibilityFor(address pledgor, address securedParty, address token) view returns (Eligibility)",
   "function agreementHash(address pledgor, address securedParty) view returns (bytes32)",
   "function pendingAmendment(address pledgor, address securedParty) view returns (bytes32)",
+  "function proposeTermsAmendment(bytes32 amendmentId, bytes32 kind, address counterparty, bytes32 beforeHash, bytes32 cdmHash)",
+  "function decideTermsAmendment(bytes32 amendmentId, bool consent, bytes32 cdmHash)",
+  "function pairKey(address x, address y) view returns (bytes32)",
+  "function termsHash(bytes32 kind, bytes32 pair) view returns (bytes32)",
+  "function pendingTermsAmendment(bytes32 kind, bytes32 pair) view returns (bytes32)",
+  "function amendmentKind(bytes32 amendmentId) view returns (bytes32)",
   "struct InterestStatement { address pledgor; address securedParty; address cashToken; int256 amount; uint8 state; bytes32 cdmHash; }",
   "function stateInterest(bytes32 interestId, address pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
   "function payInterest(bytes32 interestId)",
@@ -303,6 +316,8 @@ const controlAbi = parseAbi([
   "event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash)",
   "event AmendmentProposed(bytes32 indexed amendmentId, address indexed pledgor, address indexed securedParty, address proposer, bytes32 cdmHash)",
   "event AmendmentDecided(bytes32 indexed amendmentId, bool consent, bytes32 cdmHash)",
+  "event TermsAmendmentProposed(bytes32 indexed amendmentId, bytes32 indexed kind, address indexed proposer, address counterparty, bytes32 cdmHash)",
+  "event TermsAmendmentDecided(bytes32 indexed amendmentId, bytes32 indexed kind, bool consent, bytes32 cdmHash)",
   "event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash)",
   "event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount)",
 ]);
@@ -369,6 +384,11 @@ export interface LedgerAdapter {
   getAmendment(amendmentId: Hex): Promise<OnChainAmendment>;
   listAmendments(party: Address): Promise<{ amendmentId: Hex; block: string; amendment: OnChainAmendment }[]>;
   pairTerms(pledgor: Address, securedParty: Address): Promise<{ agreementHash: Hex; pendingAmendment: Hex; eligibility: HaircutTermArg[] }>;
+  /** Master agreement terms (wp-adr-repo-gmra-terms): kind is the agreement's name, for example "GMRA". */
+  proposeTermsAmendment(amendmentId: Hex, kind: string, counterparty: Address, beforeHash: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  decideTermsAmendment(amendmentId: Hex, consent: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  masterTerms(kind: string, x: Address, y: Address): Promise<{ termsHash: Hex; pendingAmendment: Hex }>;
+  listTermsAmendments(kind: string, party: Address): Promise<{ amendmentId: Hex; block: string; amendment: OnChainAmendment }[]>;
   stateInterest(interestId: Hex, pledgor: Address, cashToken: Address, amount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   payInterest(interestId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getInterest(interestId: Hex): Promise<Omit<InterestRecord, "interestId" | "block" | "txHash">>;
@@ -612,6 +632,38 @@ export class BesuAdapter implements LedgerAdapter {
       pendingAmendment: (await read("pendingAmendment", [pledgor, securedParty])) as Hex,
       eligibility,
     };
+  }
+
+  /** Master agreement terms (wp-adr-repo-gmra-terms): either party proposes a terms amendment to the other, who
+   * decides; the pair's terms hash for the kind moves on consent. On-chain the proposer is stored as `pledgor` and the
+   * counterparty as `securedParty`. */
+  proposeTermsAmendment(amendmentId: Hex, kind: string, counterparty: Address, beforeHash: Hex, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "proposeTermsAmendment", [amendmentId, kindOf(kind), counterparty, beforeHash, cdmHash]);
+  }
+
+  decideTermsAmendment(amendmentId: Hex, consent: boolean, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "decideTermsAmendment", [amendmentId, consent, cdmHash]);
+  }
+
+  async masterTerms(kind: string, x: Address, y: Address) {
+    const read = (functionName: string, args: unknown[]) =>
+      this.pub.readContract({ address: this.reg.contracts.collateralControl, abi: controlAbi, functionName, args } as never);
+    const pair = (await read("pairKey", [x, y])) as Hex;
+    return {
+      termsHash: (await read("termsHash", [kindOf(kind), pair])) as Hex,
+      pendingAmendment: (await read("pendingTermsAmendment", [kindOf(kind), pair])) as Hex,
+    };
+  }
+
+  /** Every terms amendment of a kind that a party proposed or received, in chain order. */
+  async listTermsAmendments(kind: string, party: Address) {
+    const out = [];
+    for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "TermsAmendmentProposed", { kind: kindOf(kind) })) {
+      const a = l.args as { amendmentId: Hex; proposer: Address; counterparty: Address };
+      if (getAddress(a.proposer) !== getAddress(party) && getAddress(a.counterparty) !== getAddress(party)) continue;
+      out.push({ amendmentId: a.amendmentId, block: l.blockNumber.toString(), amendment: await this.getAmendment(a.amendmentId) });
+    }
+    return out;
   }
 
   /** Interest on cash collateral (flow-interest-on-cash): the secured party states the amount (and pays it when
@@ -999,6 +1051,10 @@ export class BesuAdapter implements LedgerAdapter {
           } else if (name === "AmendmentProposed") {
             onEvent({ event: name, amendmentId: (a as any).amendmentId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "AmendmentDecided") {
+            onEvent({ event: name, amendmentId: (a as any).amendmentId, consent: (a as any).consent, cdmHash: a.cdmHash, ...meta(log) });
+          } else if (name === "TermsAmendmentProposed") {
+            onEvent({ event: name, amendmentId: (a as any).amendmentId, cdmHash: a.cdmHash, party: (a as any).proposer, ...meta(log) });
+          } else if (name === "TermsAmendmentDecided") {
             onEvent({ event: name, amendmentId: (a as any).amendmentId, consent: (a as any).consent, cdmHash: a.cdmHash, ...meta(log) });
           } else if (name === "InterestStated") {
             onEvent({ event: name, interestId: a.interestId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });

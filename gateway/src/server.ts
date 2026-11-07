@@ -191,6 +191,25 @@ route("GET", "/ledger/v1/pair-terms", async (_p, _b, url) =>
   J(await adapter.pairTerms(getAddress(url.searchParams.get("pledgor")!), getAddress(url.searchParams.get("securedParty")!))),
 );
 
+// --- master agreement terms (wp-adr-repo-gmra-terms): kind is the agreement's name, "GMRA" ---
+
+route("POST", "/ledger/v1/terms-amendments", async (_p, b) =>
+  J(await adapter.proposeTermsAmendment(b.amendmentId as Hex, String(b.kind), getAddress(b.counterparty), b.beforeHash as Hex, b.cdmHash as Hex)),
+);
+
+route("POST", "/ledger/v1/terms-amendments/:id/decision", async (p, b) =>
+  J(await adapter.decideTermsAmendment(p.id as Hex, Boolean(b.consent), b.cdmHash as Hex)),
+);
+
+route("GET", "/ledger/v1/terms-amendments", async (_p, _b, url) =>
+  J(await adapter.listTermsAmendments(url.searchParams.get("kind")!, getAddress(url.searchParams.get("party")!))),
+);
+
+// The terms hash in force between two parties for a kind, and the pending amendment.
+route("GET", "/ledger/v1/master-terms", async (_p, _b, url) =>
+  J(await adapter.masterTerms(url.searchParams.get("kind")!, getAddress(url.searchParams.get("a")!), getAddress(url.searchParams.get("b")!))),
+);
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

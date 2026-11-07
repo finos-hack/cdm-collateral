@@ -1341,3 +1341,88 @@ test("flow-two-way-im-default: A and B each post IM to the other -> A defaults -
 
   expect(errors).toEqual([]);
 });
+
+type GmraTerms = {
+  elections: { mtaUsd: { A: string; B: string }; defaultMarginRatio: string };
+  termsHash: string;
+  onChainTermsHash: string;
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: { amendmentId: string; proposer: "A" | "B"; state: string; changed?: string[] }[];
+};
+
+test("flow-repo-gmra-terms: both parties hold the same GMRA terms -> A proposes a new MTA for B -> B consents -> terms hash moves on-chain, both services fold it", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+
+  // Setup: refuse a GMRA amendment a failed earlier run left pending; both parties start on the same terms.
+  const start = await call<GmraTerms>(`${SERVICE.B}/gmra/terms`);
+  const left = start.amendments.find((m) => m.state === "proposed");
+  if (left) await call(`${left.proposer === "A" ? SERVICE.B : SERVICE.A}/gmra/amendments/${left.amendmentId}/decision`, "POST", { consent: false });
+  const before = [await call<GmraTerms>(`${SERVICE.A}/gmra/terms`), await call<GmraTerms>(`${SERVICE.B}/gmra/terms`)];
+  for (const t of before) expect(t.verified, t.problem ?? "").toBe(true);
+  expect(before[0].termsHash).toBe(before[1].termsHash);
+  expect(before[0].elections).toEqual(before[1].elections);
+  const baselineMta = before[0].elections.mtaUsd.B;
+  const known = new Set(before[0].amendments.map((m) => m.amendmentId));
+  const mta = baselineMta === "400000" ? 450_000 : 400_000;
+
+  // A proposes a new minimum transfer amount for B in its console.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("gmra-terms");
+  await expect(card.getByText("GMRA terms verified against the chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await card.getByLabel("GMRA MTA party").selectOption("B");
+  await card.getByLabel("New GMRA MTA (USD)").fill(String(mta));
+  await card.getByRole("button", { name: "Propose GMRA amendment → B" }).click();
+
+  let id = "";
+  await expect
+    .poll(async () => {
+      const m = (await call<GmraTerms>(`${SERVICE.B}/gmra/terms`)).amendments.find((x) => !known.has(x.amendmentId));
+      id = m?.amendmentId ?? "";
+      return m?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("proposed");
+
+  // B checks the CDM GmraTermsAmendment and consents in its console.
+  await page.goto("/#/live/B");
+  const row = page.getByTestId(`gmra-amendment-${id}`);
+  await expect(row.getByText("MinimumTransferAmount")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await row.getByRole("button", { name: "Consent to GMRA amendment" }).click();
+  await expect(row.getByText("agreed on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // Both services fold the amendment to the same terms, matching the on-chain terms hash.
+  const folded: GmraTerms[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const t = await call<GmraTerms>(`${svc}/gmra/terms`);
+        return t.verified && t.elections.mtaUsd.B === String(mta) ? true : (t.problem ?? t.elections.mtaUsd.B);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    folded.push(await call<GmraTerms>(`${svc}/gmra/terms`));
+  }
+  expect(folded[0].termsHash).toBe(folded[1].termsHash);
+  expect(folded[0].termsHash).not.toBe(before[0].termsHash);
+  const onChain = await call<{ termsHash: string; pendingAmendment: string }>(`${GATEWAY.A}/master-terms?kind=GMRA&a=${p.a}&b=${p.b}`);
+  expect(onChain).toEqual({ termsHash: folded[0].termsHash, pendingAmendment: ZERO_HASH });
+  // The CSA chain between the parties did not move.
+  const csa = await call<{ agreementHash: string }>(`${GATEWAY.A}/pair-terms?pledgor=${p.a}&securedParty=${p.b}`);
+  expect(csa.agreementHash).toBe((await call<{ agreementHash: string }>(`${SERVICE.A}/agreement`)).agreementHash);
+
+  // Restore the baseline MTA through the services: B proposes, A consents.
+  const { amendmentId } = await call<{ amendmentId: string }>(`${SERVICE.B}/gmra/amendments`, "POST", { party: "B", mtaUsd: Number(baselineMta) });
+  await expect
+    .poll(async () => (await call<GmraTerms>(`${SERVICE.A}/gmra/terms`)).amendments.find((m) => m.amendmentId === amendmentId)?.state ?? null, { timeout: 60_000 })
+    .toBe("proposed");
+  await call(`${SERVICE.A}/gmra/amendments/${amendmentId}/decision`, "POST", { consent: true });
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const t = await call<GmraTerms>(`${svc}/gmra/terms`);
+        return t.verified && t.elections.mtaUsd.B === baselineMta;
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+});
