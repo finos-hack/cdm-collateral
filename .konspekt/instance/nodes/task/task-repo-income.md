@@ -1,0 +1,26 @@
+```yaml
+id: task-repo-income
+type: task
+title: Repo interest and manufactured income
+status: open
+review: proposed
+provenance:
+  conversationId: repo-gmra-scope
+  sourceRef: 43bd267adffbb70e3a740c20620deed96d966092
+  contentHash: 43bd267adffbb70e3a740c20620deed96d966092
+  timestamp: 2026-11-07T22:35:17Z
+  confidence: 0.65
+createdAt: 2026-11-07T22:35:17Z
+updatedAt: 2026-11-07T22:35:17Z
+```
+# Task: repo interest and manufactured income
+
+Row 7 of the repo workflows (section C of the workflow map), split from [[task-repo-gmra-workflows]] within
+[[wp-adr-repo-gmra-scope]] (the project owner's choices of 2026-11-07).
+
+- **CDM status:** repo interest, rate change and interim payment usable as is (R12, score 5); GMRA paragraph 5 income on the purchased securities not covered by a matrix row.
+- **Scope:** GMRA paragraph 5: income paid on purchased securities passes from the buyer to the seller; repo interest (the price differential) and an on-demand interim interest payment.
+- **`cdm-ext`:** the manufactured income payment, if CDM has no function for it.
+- **Prototype:** income and interim interest paid on-chain in tUSD; a live spec.
+
+The details are decided when the task starts.
