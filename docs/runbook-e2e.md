@@ -235,6 +235,13 @@ feed through gateway mkt; B's gateway then calls `enforce`, which moves everythi
 consoles show `in default on the oracle feed` and `enforced ✓`. A stays in default on the persistent chain; only
 `reset` clears it.
 
+Two-way initial margin (`flow-two-way-im-default`): each party pledges on one leg and secures the other. The leg
+selector at the top of each console ("A pledges to B", "B pledges to A") picks the leg the role panels act on; it starts
+on the leg A pledges on. With A's leg in escrow, A selects "B pledges to A", issues an IM call to B, and B agrees,
+proposes tUSD and pledges it. After `Declare default & enforce` on A's leg, B selects "B pledges to A" and clicks
+`Reclaim my IM from A`: B's service builds the CDM `CollateralReclaim` and B's gateway calls `reclaim`, which returns
+B's whole escrow on that leg once the feed records A in default. The balances card shows both legs' escrow.
+
 Close-out flow (`flow-close-out-netting`): while A has collateral in escrow, B enters a Close-out Amount in the
 "Close-out on default" card and clicks `Declare default & close out A`. B's service sends the default notice if the
 feed does not show it, values the escrow after haircuts, builds the CDM `CloseOutStatement` and calls `closeOut`: the
@@ -299,8 +306,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
 `flow-substitution`, `flow-interest-on-cash`, `flow-settlement-netting`, `flow-call-cancellation`,
-`flow-call-replacement` and
-`flow-agreement-amendment` (last; it restores the baseline terms).
+`flow-call-replacement`, `flow-agreement-amendment` (it restores the baseline terms), `flow-allocation`,
+`flow-reconciliation` and `flow-two-way-im-default`.
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

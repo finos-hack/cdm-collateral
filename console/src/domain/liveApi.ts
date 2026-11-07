@@ -25,6 +25,8 @@ export interface LiveContext {
   priceScale: string;
   tokens: { symbol: string; address: string; isin: string; cusip: string; dti: string; haircutBps: number }[];
   agreement: string;
+  /** Both legs of the initial margin (wp-adr-two-way-im): this party pledges on the first, secures the second. */
+  legs?: { pledgor: LiveParty; securedParty: LiveParty }[];
 }
 
 export interface LiveProposal {
@@ -56,13 +58,16 @@ export interface LiveCall {
   events?: string[];
   /** The secured party enforced against the pledged initial margin under this call (flow-default-enforcement). */
   enforced?: boolean;
+  /** The leg of an IM or return call, by its pledgor (wp-adr-two-way-im); none for VM. */
+  leg?: LiveParty | null;
 }
 
 export interface LiveState {
   party: LiveParty;
   role: string;
   calls: LiveCall[];
-  balances: { token: string; free: string; pledged: string }[];
+  /** pledged: the default leg's escrow (A pledges); pledgedByLeg: each leg's, keyed by its pledgor (wp-adr-two-way-im). */
+  balances: { token: string; free: string; pledged: string; pledgedByLeg?: Partial<Record<LiveParty, string>> }[];
   /** Default status of each counterparty on the oracle feed, read through this party's gateway. */
   defaults?: Partial<Record<LiveParty, boolean>>;
 }
@@ -166,7 +171,10 @@ export const api = {
   enforce: (p: LiveParty, callId: string) =>
     req<{ ok: boolean; pledgor: string; defaultTx: string; enforceTx: string }>(p, "POST", `/calls/${callId}/enforce`, {}),
   /** Revaluation of the pledged IM at the oracle feed prices after haircuts (flow-revaluation-top-up). */
-  revaluation: (p: LiveParty) => req<LiveRevaluation>(p, "GET", "/revaluation"),
+  revaluation: (p: LiveParty, legPledgor: LiveParty = "A") => req<LiveRevaluation>(p, "GET", `/revaluation?pledgor=${legPledgor}`),
+  /** Pledgor: take back its whole escrow on its leg once the feed records the secured party's default (wp-adr-two-way-im). */
+  reclaim: (p: LiveParty) =>
+    req<{ reclaimId: string; cdmHash: string; reclaimedUsd: string; eventQualifier: string; reclaimTx: string }>(p, "POST", "/reclaims", {}),
   /** Close-outs on default with their checked CDM CloseOutStatement (flow-close-out-netting). */
   closeOuts: (p: LiveParty) => req<LiveCloseOut[]>(p, "GET", "/close-outs"),
   /** Secured party: declare the pledgor's default if the feed does not show it, then close out against the escrow. */

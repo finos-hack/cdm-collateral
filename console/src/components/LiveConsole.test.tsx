@@ -53,7 +53,7 @@ function serve(party: LiveParty, state: Omit<LiveState, "party" | "role">, reval
         const reply = extra[`POST ${path}`] ?? { ok: true };
         return new Response(JSON.stringify(reply), { status: 200 });
       }
-      if (path === "/revaluation") return new Response(JSON.stringify(reval), { status: 200 });
+      if (path.split("?")[0] === "/revaluation") return new Response(JSON.stringify(reval), { status: 200 });
       if (path in extra) return new Response(JSON.stringify(extra[path]), { status: 200 });
       const body = path === "/context" ?{ ...CONTEXT[party], priceScale: "100000000", tokens: [], agreement: "IM CSA" } : { party, role: CONTEXT[party].role, ...state };
       return new Response(JSON.stringify(body), { status: 200 });
@@ -181,6 +181,40 @@ describe("flow-revaluation-top-up", () => {
     serve("A", { calls: [], balances: balances("83000") }, SHORTFALL);
     await screen.findByRole("heading", { name: "Call for a return" });
     expect(screen.queryByTestId("revaluation")).toBeNull();
+  });
+});
+
+describe("two-way initial margin (wp-adr-two-way-im)", () => {
+  // B pledges 40,000 tUSD to A on its own leg; A's leg is empty.
+  const twoWay = (pledgedB: string) => [{ token: "tUSD", free: "1000", pledged: "0", pledgedByLeg: { A: "0", B: pledgedB } }];
+
+  it("selecting the leg the party pledges on gives it the pledgor's panels", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: twoWay("40000") });
+    await screen.findByRole("heading", { name: "Issue margin call" });
+    await user.click(screen.getByRole("button", { name: /B pledges to A/ }));
+    expect(await screen.findByRole("heading", { name: "Call for a return" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Issue margin call" })).toBeNull();
+    expect(screen.getByTestId("escrow-b-to-a-tUSD")).toHaveTextContent("40,000");
+  });
+
+  it("the pledgor reclaims its leg once its secured party is in default on the feed", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: twoWay("40000"), defaults: { A: true, B: false } });
+    await screen.findByRole("heading", { name: "Issue margin call" });
+    expect(screen.queryByTestId("reclaim")).toBeNull(); // not on the leg B secures
+    await user.click(screen.getByRole("button", { name: /B pledges to A/ }));
+    const card = await screen.findByTestId("reclaim");
+    await user.click(within(card).getByRole("button", { name: "Reclaim my IM from A" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/reclaims", body: {} }]));
+  });
+
+  it("no reclaim is offered while the secured party is not in default", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: twoWay("40000"), defaults: { A: false, B: false } });
+    await user.click(await screen.findByRole("button", { name: /B pledges to A/ }));
+    await screen.findByRole("heading", { name: "Call for a return" });
+    expect(screen.queryByTestId("reclaim")).toBeNull();
   });
 });
 

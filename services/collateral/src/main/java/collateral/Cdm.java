@@ -76,18 +76,31 @@ public final class Cdm {
     }
 
     /**
-     * The call's common header. In the IM flow BANK-A pledges to BANK-B whichever party issues the call.
+     * The call's common header. Its roles come from the call (two-way initial margin, wp-adr-two-way-im): the called
+     * party of a delivery call is the pledgor, and the calling party of a return call is the pledgor. {@code issuer}
+     * is the calling party and {@code direction} the CDM MarginCallActionEnum name (Delivery or Return).
      * {@code regMarginType} is the CDM RegMarginTypeEnum name: "VM" for a variation margin call, "RegIM" otherwise
      * (a return's own margin type is stated when it settles, SettleCallInstruction returnedMarginType).
      */
-    private static Map<String, Object> callBase(String callId, String issuer, String regMarginType) {
+    private static Map<String, Object> callBase(String callId, String issuer, String direction, String regMarginType) {
+        String pledgor = pledgorOf(issuer, direction), securedParty = otherBank(pledgor);
         return o("instructionType", o("callType", "MarginCall"),
                 "callIdentifier", ident(callId, issuer),
                 "callAgreementType", o("agreementType", "CreditSupportAgreement",
                         "creditSupportAgreementType", o("@data", "CreditSupportAnnex")),
                 "regMarginType", regMarginType,
-                "partyRole", l(o("partyReference", party("BANK-A"), "role", "Pledgor"),
-                        o("partyReference", party("BANK-B"), "role", "SecuredParty")));
+                "partyRole", l(o("partyReference", party(pledgor), "role", "Pledgor"),
+                        o("partyReference", party(securedParty), "role", "SecuredParty")));
+    }
+
+    /** The other of the prototype's two parties. */
+    public static String otherBank(String bank) {
+        return bank.equals("BANK-A") ? "BANK-B" : "BANK-A";
+    }
+
+    /** The pledgor of a call: the called party of a delivery, the calling party of a return. */
+    public static String pledgorOf(String issuer, String direction) {
+        return direction.equals("Return") ? issuer : otherBank(issuer);
     }
 
     // ---- lifecycle steps (each a validated MarginCallInstruction) ----
@@ -107,7 +120,7 @@ public final class Cdm {
 
     /** IssueCall; {@code replacesCall} is the CDM identifier of a cancelled call this one replaces, or null (task-csa-call-replacement). */
     public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall, String regMarginType) {
-        Map<String, Object> issuance = callBase(callId, issuer, regMarginType);
+        Map<String, Object> issuance = callBase(callId, issuer, direction, regMarginType);
         issuance.put("callAmountInBaseCurrency", money(amountUsd));
         Map<String, Object> issue = o("issuance", issuance, "direction", direction);
         if (replacesCall != null) issue.put("replacesCall", replacesCall);
@@ -127,7 +140,7 @@ public final class Cdm {
 
     public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
                               String action, long units, String collateralIsin, String regMarginType) {
-        Map<String, Object> resp = callBase(callId, issuer, regMarginType);
+        Map<String, Object> resp = callBase(callId, issuer, action, regMarginType);
         resp.put("marginResponseType", kind); // AgreeinFull | PartiallyAgree | Dispute
         resp.put("agreedAmountBaseCurrency", money(agreedUsd));
         resp.put("marginCallResponseAction",

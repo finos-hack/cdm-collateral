@@ -31,11 +31,12 @@ import static collateral.CdmRuntime.o;
  *   block, read by each party from its own node. Its balance is the escrow's value after haircuts, in whole USD.</li>
  *   <li>The event date and timestamp are the step's block time.</li>
  *   <li>The CSA's Substitution election needs consent for the pledgor (Paragraph 13 (f)(ii)), as the control contract
- *   requires consent for every substitution. The pledgor (BANK-A) is Party1.</li>
+ *   requires consent for every substitution. The pledgor is Party2, as each leg's agreement terms state it
+ *   (CdmAgreement.baseline: Party1 the secured party, Party2 the pledgor; wp-adr-two-way-im).</li>
  * </ul>
  */
 public final class CdmSubstitution {
-    public static final String PLEDGOR_ROLE = "Party1";
+    public static final String PLEDGOR_ROLE = "Party2";
 
     public final SubstitutionInstruction instruction;
     public final String json;

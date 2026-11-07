@@ -128,6 +128,13 @@ route("POST", "/ledger/v1/close-outs", async (_p, b) =>
   J(await adapter.closeOut(b.closeOutId as Hex, getAddress(b.pledgor), BigInt(b.owed), b.cdmHash as Hex)),
 );
 
+// --- reclaim after the secured party's default (two-way initial margin, wp-adr-two-way-im) ---
+
+route("POST", "/ledger/v1/reclaims", async (_p, b) =>
+  // The pledgor's gateway submits the reclaim: the control contract returns the pledgor's escrow on the leg.
+  J(await adapter.reclaim(b.reclaimId as Hex, getAddress(b.securedParty), b.cdmHash as Hex)),
+);
+
 route("GET", "/ledger/v1/close-outs", async (_p, _b, url) => J(await adapter.listCloseOuts(getAddress(url.searchParams.get("party")!))));
 
 // --- substitution of pledged initial margin (flow-substitution, G16) ---

@@ -46,6 +46,7 @@ contract CollateralControl is ReentrancyGuard {
     event Transferred(bytes32 indexed callId, address indexed from, address indexed to, uint256 value);
     event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor);
     event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor);
+    event Reclaimed(bytes32 indexed reclaimId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash);
     event ClosedOut(bytes32 indexed closeOutId, address indexed securedParty, address indexed pledgor, uint256 owed, uint256 applied, bytes32 cdmHash);
     event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash);
     event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash);
@@ -59,6 +60,8 @@ contract CollateralControl is ReentrancyGuard {
 
     // Close-outs on default, by id: the hash of the CDM CloseOutStatement (cdm-ext cdmx.collateral.closeout, G15).
     mapping(bytes32 => bytes32) public closeOutCdmHash;
+    // Reclaims by a pledgor after its secured party's default, by id: the hash of the CDM record of the return.
+    mapping(bytes32 => bytes32) public reclaimCdmHash;
 
     // Substitutions of pledged initial margin, by id, with the original items to return and the substitute offered.
     mapping(bytes32 => Substitution) private _subs;
@@ -324,6 +327,29 @@ contract CollateralControl is ReentrancyGuard {
         }
         if (held == 0) revert NothingPledged();
         emit ClosedOut(closeOutId, securedParty, pledgor, owed, applied, cdmHash);
+    }
+
+    /// @notice The pledgor (this key) takes back its whole escrow on the leg it pledged to `securedParty` after the
+    /// oracle feed records the secured party's default (two-way initial margin, wp-adr-two-way-im): segregated initial
+    /// margin comes back to the pledgor from the custodian, here the control contract. `cdmHash` is the hash of the CDM
+    /// record of the return (wp-adr-cdm-payload-carrier).
+    function reclaim(bytes32 reclaimId, address securedParty, bytes32 cdmHash) external nonReentrant {
+        address pledgor = msg.sender;
+        if (reclaimCdmHash[reclaimId] != bytes32(0) || cdmHash == bytes32(0)) revert CloseOutExists();
+        if (!oracle.isDefaulted(securedParty)) revert NoDefault(securedParty);
+        reclaimCdmHash[reclaimId] = cdmHash;
+
+        address[] memory tokens = _pledgedTokens[pledgor][securedParty];
+        uint256 moved;
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 held = _pledged[pledgor][securedParty][tokens[i]];
+            if (held == 0) continue;
+            _pledged[pledgor][securedParty][tokens[i]] = 0;
+            moved += held;
+            IERC20(tokens[i]).transfer(pledgor, held);
+        }
+        if (moved == 0) revert NothingPledged();
+        emit Reclaimed(reclaimId, pledgor, securedParty, cdmHash);
     }
 
     /// @notice The pledgor (this key) gives notice of a substitution (ISDA CSA Paragraph 4(d)(i)): the pledged items it
