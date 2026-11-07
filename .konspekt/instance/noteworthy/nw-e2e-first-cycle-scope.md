@@ -1,7 +1,7 @@
 ```yaml
 id: nw-e2e-first-cycle-scope
 kind: constraint
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-wiring
   sourceRef: 24bd077f551581c621a2d292b02f359e99aa3f75
