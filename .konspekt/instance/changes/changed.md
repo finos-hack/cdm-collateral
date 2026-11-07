@@ -889,3 +889,7 @@ excluded.
 | task-two-way-initial-margin | f0d0d4cdb518f6e25ff2e358b029de7fd99a4ea8 | services/collateral/src/test/java/collateral/CdmTwoWayTest.java | 2026-11-07T21:55:04Z |
 | task-two-way-initial-margin | 2674038e0c54ccbb8c2d34497d37c9270d015886 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T21:58:18Z |
 | investigation-cdm-workflow-task-map | 8ce4f5b5b4b0f3442ed6b588efa0ae3e6ec02762 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T22:00:47Z |
+| task-konspekt-checkpoint-adoption | fa15b602f6ac15e2d997d2447dbe796a7bed54e1 | .claude/hooks/load-mandatory-skills.sh | 2026-11-07T22:13:39Z |
+| task-konspekt-checkpoint-adoption | fa15b602f6ac15e2d997d2447dbe796a7bed54e1 | .konspekt/OPERATING.md | 2026-11-07T22:13:39Z |
+| task-konspekt-checkpoint-adoption | fa15b602f6ac15e2d997d2447dbe796a7bed54e1 | .konspekt/lib/conformance.mjs | 2026-11-07T22:13:39Z |
+| task-konspekt-checkpoint-adoption | fa15b602f6ac15e2d997d2447dbe796a7bed54e1 | AGENTS.md | 2026-11-07T22:13:39Z |

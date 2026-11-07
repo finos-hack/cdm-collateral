@@ -245,3 +245,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-twowayimadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-two-way-im |  | accepted |
 | e-dec-cdmdev-smetwowayim | decomposes | node:goal-cdm-development | node:task-sme-two-way-im-rules |  | accepted |
 | e-lnk-twowayim-smetwowayim | links | node:task-two-way-initial-margin | node:task-sme-two-way-im-rules |  | accepted |
+| e-dec-konspektadopt-checkpoint | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-checkpoint-adoption |  | accepted |
