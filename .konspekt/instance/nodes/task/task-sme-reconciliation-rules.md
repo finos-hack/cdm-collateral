@@ -3,7 +3,7 @@ id: task-sme-reconciliation-rules
 type: task
 title: Confirm with a business SME the matching rules, tolerances and cadence for portfolio reconciliation
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 9a57e2d1cdefdaf5914d764b3e69381646e0560d
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:37:24Z
   confidence: 0.65
 createdAt: 2026-11-07T18:37:24Z
-updatedAt: 2026-11-07T18:37:24Z
+updatedAt: 2026-11-07T18:41:40Z
 ```
 # Task: confirm the matching rules, tolerances and cadence for portfolio reconciliation
 

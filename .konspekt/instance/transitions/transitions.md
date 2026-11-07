@@ -776,3 +776,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
 | edge:e-drv-callstate-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
 | edge:e-drv-offchaindispute-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
+| waypoint:wp-adr-reconciliation-scope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| node:task-sme-reconciliation-rules | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-mrk-reconscope-recon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-dec-cdmdev-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-lnk-recon-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-drv-cdmdata-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-drv-callstate-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| edge:e-drv-offchaindispute-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
