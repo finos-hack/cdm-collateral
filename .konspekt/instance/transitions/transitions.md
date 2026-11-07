@@ -800,3 +800,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-specduration-readlatency | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
 | edge:e-dec-specduration-blockperiod | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
 | node:task-csa-reconciliation | status | open | resolved | 2026-11-07T20:11:29Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| node:task-live-test-balances | review |  | proposed | 2026-11-07T20:46:35Z |  |  |
+| node:task-live-test-balances | status |  | open | 2026-11-07T20:46:35Z |  |  |
+| edge:e-lnk-receiptpoll-testbalances | review |  | proposed | 2026-11-07T20:46:35Z |  |  |

@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:54:12Z
   confidence: 0.75
 createdAt: 2026-11-07T18:54:12Z
-updatedAt: 2026-11-07T19:57:56Z
+updatedAt: 2026-11-07T20:46:35Z
 ```
 # Task: stop the gateway waiting 4 s for each transaction receipt
 
@@ -24,3 +24,18 @@ period. Set a short polling interval (for example 250 ms) or wait for receipts o
 chain reset. Expected: about 2.5 s less per transaction, 2–3 min of the live suite. Measure the suite before and after.
 
 Accepted by the project owner on 2026-11-07 (source `fe94d24c8393576eafa827a5ced53840580becbe`: "1. accept the speed task").
+
+**Built 2026-11-07** on branch `live-speed` (commit `1413a64`; source `ae1744d7ebd05addf2d84102c8c1dd7f4eecb5c2`: "start the speed tasks"):
+
+- A 250 ms receipt poll (`GATEWAY_RECEIPT_POLL_MS`). One transaction through gateway A took 4.03-4.04 s (five
+  samples) before and 0.9-2.1 s after; the 2 s block period is now the floor.
+- The full live suite on a fresh contract set took 8.4 min before (first run on the `csa-reconciliation` set) and
+  5.0 min after, 15/15. A first run after only the poll change took 4.3 min with one failure, below.
+- The log scans read the chain head with `cacheTime: 0`. viem had cached the block number for one polling interval,
+  so a fold could miss a step the contract already showed: the intermittent `flow-call-cancellation` CI failure
+  ("Agreed" for a call cancelled on-chain) on main and on PRs since 2026-11-06, which the project owner reported on
+  PR #37.
+- Sends run one at a time per gateway with the next nonce tracked locally. With the short poll,
+  `flow-agreement-amendment` failed once on "Nonce provided for the transaction is lower than the current nonce": the
+  node's pending nonce right after a receipt was still the used one (inferred from the error, not reproduced).
+

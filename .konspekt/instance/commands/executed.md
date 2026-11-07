@@ -340,3 +340,9 @@ at execution time.
 | task-csa-reconciliation | 9cd758ebea849be571ffe78504b66ff8539b9a42 |
 | task-csa-reconciliation | 9a1383811c0e7968293e470de5ee32e5756bd69e |
 | task-gateway-receipt-poll | a118f48568fa1e16a3e04f5995d5affede9e3048 |
+| task-gateway-receipt-poll | 966e2340cdc3ce39c2c0250ea81c54d477164f68 |
+| task-gateway-receipt-poll | f68abb7c6d2c31fb7dce6f9ce20b9f40d71eb4fe |
+| task-gateway-receipt-poll | b0d3c0ce3edf773ec17d09fd90a0988071aa3295 |
+| task-gateway-receipt-poll | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
+| task-gateway-receipt-poll | 26139f434b4e6baaf35c41fe6b01eff5c77db792 |
+| task-gateway-receipt-poll | 531e7e935665f1dbe27fb347cac5e231b15f2a9a |

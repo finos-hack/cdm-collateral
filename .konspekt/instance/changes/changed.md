@@ -852,3 +852,5 @@ excluded.
 | task-csa-reconciliation | bbfcec4b2076ecad24e2b46f63eb0a2e95580a02 | services/collateral/src/main/java/collateral/Store.java | 2026-11-07T20:11:17Z |
 | task-csa-reconciliation | bbfcec4b2076ecad24e2b46f63eb0a2e95580a02 | services/collateral/src/test/java/collateral/CdmReconciliationTest.java | 2026-11-07T20:11:17Z |
 | task-gateway-receipt-poll | cb56fc6e0848c4dc26e8cc4c68b5335225fea9df | gateway/src/besu.ts | 2026-11-07T20:51:39Z |
+| task-gateway-receipt-poll | 1413a64a0930c4a957a75bb00f9bf2eb33bb81c5 | gateway/README.md | 2026-11-07T20:52:09Z |
+| task-gateway-receipt-poll | 1413a64a0930c4a957a75bb00f9bf2eb33bb81c5 | gateway/src/besu.ts | 2026-11-07T20:52:09Z |
