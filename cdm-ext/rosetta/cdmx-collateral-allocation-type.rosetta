@@ -1,0 +1,34 @@
+namespace cdmx.collateral.allocation : <"Local CDM extension: collateral allocation, a suggested basket that covers an agreed margin call amount from the pledgor's inventory (gap G34 in docs/cdm-development/gap-register.md; wp-adr-allocation-scope). CDM 7.7.0 has no allocation or optimisation function. Not part of FINOS CDM.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+type AllocationCandidate: <"One asset the pledgor holds, with the ranking, price and eligibility terms the allocation needs.">
+    rank int (1..1) <"Position in the pledgor's ranking: a lower rank is allocated first. The pledgor supplies the ranking; the default is the registry order (to be confirmed in task-sme-allocation-ranking).">
+    holding CollateralPosition (1..1) <"The asset and the units the pledgor holds and can deliver.">
+    unitPrice Money (1..1) <"Price of one unit, in the base currency.">
+    eligible boolean (1..1) <"True if the agreement between the two parties makes the asset eligible.">
+    haircutPercentage number (1..1) <"The haircut as CDM subtracts it (1 - Valuation Percentage, defect D17), for example 0.02.">
+
+    condition SingleQuantity: <"The holding is one quantity of one asset.">
+        holding -> asset exists
+            and holding -> priceQuantity count = 1
+            and holding -> priceQuantity only-element -> quantity -> value exists
+
+    condition NonNegativeHolding: <"The pledgor holds zero or more units.">
+        holding -> priceQuantity only-element -> quantity -> value >= 0
+
+    condition PositivePrice: <"A unit has a positive price.">
+        unitPrice -> value > 0
+
+    condition HaircutRange: <"The haircut is between 0 and 1.">
+        haircutPercentage >= 0 and haircutPercentage <= 1
+
+type CollateralAllocation: <"The collateral suggested to cover an agreed amount. The pledgor may change it before proposing it; the suggestion has no status of its own.">
+    allocatedCollateral CollateralPosition (0..*) <"The assets and whole units suggested, in ranking order. Absent when the inventory cannot cover the agreed amount.">
+    valueAfterHaircuts Money (1..1) <"Value of the suggested collateral after haircuts, in the base currency; zero when nothing is suggested.">
+    coversAgreedAmount boolean (1..1) <"True if the eligible inventory covers the agreed amount.">
+
+    condition NothingWhenUncovered: <"No collateral is suggested when the inventory cannot cover the agreed amount.">
+        if coversAgreedAmount = False then allocatedCollateral is absent
