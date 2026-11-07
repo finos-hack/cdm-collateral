@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T23:26:59Z
   confidence: 0.7
 createdAt: 2026-11-07T23:26:59Z
-updatedAt: 2026-11-07T23:26:59Z
+updatedAt: 2026-11-07T23:46:22Z
 ```
 
 # ADR: GMRA terms are a cdm-ext wrapper over CDM's LegalAgreement; amendments form a second hash chain per pair in CollateralControl
@@ -19,11 +19,13 @@ updatedAt: 2026-11-07T23:26:59Z
 For [[task-repo-gmra-terms]] (section C, row 1 of the workflow map), within [[wp-adr-repo-gmra-scope]], following the
 project owner's choices of 2026-11-07 (source `9146674da13957a4cd21ae92f51ab6ebc712c90c`: "1. a 2. a 3. a 4. a 5. a"):
 
-- **Representation (G20).** `cdmx.collateral.gmra.GmraTerms` holds a CDM `LegalAgreement` (agreement type
-  `MasterAgreement`, master agreement type `GMRA`, publisher ICMA, vintage 2011, English law,
-  `masterAgreementElections.icmaGmra` present and empty, the two parties as Party1 and Party2) and a
-  `GmraElections` record. CDM 7.7.0's `GlobalMasterRepoAgreement` has no attributes, so the elections sit next to the
-  agreement and the document stays valid CDM JSON.
+- **Representation (G20).** `cdmx.collateral.gmra.GmraTerms` holds a CDM `LegalAgreementBase` (agreement type
+  `MasterAgreement`, master agreement type `GMRA`, publisher ICMA, vintage 2011, English law, the two contractual
+  parties), the Party1 and Party2 roles as CDM `Counterparty` records, and a `GmraElections` record. CDM 7.7.0's
+  `GlobalMasterRepoAgreement` has no attributes; CDM's `LegalAgreement` requires `agreementTerms`, and an empty GMRA
+  election block does not survive serialisation, so the agreement is the base type and the elections sit next to it.
+  The document stays valid CDM JSON. (Amended during the build, 2026-11-07: the option chose `LegalAgreement` with the
+  empty block.)
 - **Elections and the baseline.** Base Currency USD; the Margin Ratio is per trade (the trade's `marginPercentage`),
   with an agreement default for trades that state none; a minimum transfer amount of USD 250,000 for each party;
   margin transferred as cash or securities by title transfer, due one business day after the call; Net Margin interest
