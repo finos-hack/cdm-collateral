@@ -826,3 +826,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
 | edge:e-lnk-twowayim-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
 | node:task-two-way-initial-margin | status | open | resolved | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| node:task-konspekt-checkpoint-adoption | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
+| node:task-konspekt-checkpoint-adoption | status |  | open | 2026-11-07T22:13:30Z |  |  |
+| edge:e-dec-konspektadopt-checkpoint | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
