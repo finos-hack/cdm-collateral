@@ -43,6 +43,7 @@
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",
     ".konspekt/instance/waypoints/wp-adr-substitution-fold-portfolio.md",
+    ".konspekt/instance/waypoints/wp-adr-two-way-im.md",
     ".konspekt/instance/waypoints/wp-adr-ux-scenario-grid.md"
   ],
   "nodes": [
@@ -74,7 +75,7 @@
       "metadata": {
         "language": "TypeScript",
         "framework": "React with Vite (assumption)",
-        "instances": "N, one per participant; configured by PARTY_ID, ROLE and WALLET"
+        "instances": "N, one per participant; configured by PARTY_ID and WALLET (each party is the pledgor on one IM leg and the secured party on the other)"
       }
     },
     {

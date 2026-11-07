@@ -10,6 +10,8 @@
 // (flow-interest-on-cash); the pledgor pays a negative amount. Either party reconciles its trade portfolio with the
 // counterparty's and its CDM records with the chain, and can dispute an issued call citing the portfolio breaks
 // (flow-reconciliation).
+// Two-way initial margin (wp-adr-two-way-im): each party pledges on one leg and secures the other. The leg selector
+// picks the leg the role-specific panels act on; it starts on the leg A pledges on.
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
@@ -56,6 +58,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [candidates, setCandidates] = useState<LiveNettingCandidates | null>(null);
   const [nettings, setNettings] = useState<LiveNetting[]>([]);
   const [recons, setRecons] = useState<LivePortfolioReconciliation[]>([]);
+  const [legPledgor, setLegPledgor] = useState<LiveParty>("A");
 
   // One refresh in flight at a time (task-live-read-latency): a refresh asked for while one runs (an SSE step, the
   // fallback poll, an action) is merged into one more pass after it, so requests do not pile up behind the browser's
@@ -63,12 +66,13 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const inFlight = useRef<Promise<void> | null>(null);
   const again = useRef(false);
   const securedRef = useRef<boolean | null>(null);
+  const legRef = useRef<LiveParty>("A");
 
   const refreshOnce = useCallback(async () => {
     try {
       const panels: Promise<unknown>[] = [];
       // Shown to the secured party only (render below); a failure here must not hide the call state.
-      if (securedRef.current !== false) panels.push(api.revaluation(party).then(setReval).catch(() => setReval(null)));
+      if (securedRef.current !== false) panels.push(api.revaluation(party, legRef.current).then(setReval).catch(() => setReval(null)));
       panels.push(
         api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([])),
         api.substitutions(party).then(setSubs).catch(() => setSubs([])),
@@ -105,7 +109,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   useEffect(() => {
     let live = true;
     api.context(party).then((c) => {
-      securedRef.current = c.role === "Secured Party";
+      securedRef.current = legRef.current !== c.party;
       setCtx(c);
     }).catch((e) => setError((e as Error).message));
     refresh();
@@ -138,24 +142,48 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 
   if (!ctx) return <div className="card">Connecting to the {party} workflow service… {error && <span className="bad">{error}</span>}</div>;
 
-  const isSecured = ctx.role === "Secured Party";
+  // This party's role on the selected leg (wp-adr-two-way-im).
+  const isSecured = legPledgor !== ctx.party;
+  const role = isSecured ? "Secured Party" : "Pledgor";
   const other = ctx.counterparty;
-  const hasPledged = !!state?.balances.some((b) => Number(b.pledged) > 0);
-  const cashHeld = Number(state?.balances.find((b) => b.token === "tUSD")?.pledged ?? 0);
+  const pledgedOn = (b: { pledged: string; pledgedByLeg?: Partial<Record<LiveParty, string>> }, leg: LiveParty) =>
+    Number(b.pledgedByLeg?.[leg] ?? (leg === "A" ? b.pledged : 0));
+  const legHasPledged = (leg: LiveParty) => !!state?.balances.some((b) => pledgedOn(b, leg) > 0);
+  const hasPledged = legHasPledged(legPledgor);
+  const tusd = state?.balances.find((b) => b.token === "tUSD");
+  const cashHeld = tusd ? pledgedOn(tusd, legPledgor) : 0;
   const inDefault = (["A", "B"] as LiveParty[]).filter((p) => state?.defaults?.[p]);
+  const selectLeg = (leg: LiveParty) => {
+    legRef.current = leg;
+    securedRef.current = leg !== ctx.party;
+    setReval(null);
+    setLegPledgor(leg);
+    refresh();
+  };
 
   return (
     <div>
       <div className="card" style={{ borderLeft: `4px solid ${isSecured ? "#2563eb" : "#059669"}` }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
-            <strong>{ctx.role}</strong> · party {ctx.party} · node {ctx.node}
+            <strong>{role}</strong> · party {ctx.party} · node {ctx.node}
             <div className="mono small">{ctx.address}</div>
           </div>
           <div className="small">
             counterparty {other} · live stack
             <div className="mono small">{ctx.agreement}</div>
           </div>
+        </div>
+      </div>
+
+      <div className="card" data-testid="im-legs">
+        <div className="row">
+          <span className="small">Initial margin leg</span>
+          {(["A", "B"] as LiveParty[]).map((pl) => (
+            <button key={pl} aria-pressed={legPledgor === pl} className={legPledgor === pl ? "primary" : undefined} onClick={() => selectLeg(pl)}>
+              {pl} pledges to {pl === "A" ? "B" : "A"}{pl === ctx.party ? " (you pledge)" : " (you secure)"}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -171,14 +199,15 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         <h3>Collateral balances (on-chain)</h3>
         <table className="tbl">
           <thead>
-            <tr><th>Token</th><th>Free</th><th>Pledged (escrow)</th></tr>
+            <tr><th>Token</th><th>Free</th><th>Escrow: A pledged to B</th><th>Escrow: B pledged to A</th></tr>
           </thead>
           <tbody>
             {state?.balances.map((b) => (
               <tr key={b.token}>
                 <td className="mono">{b.token}</td>
                 <td>{Number(b.free).toLocaleString("en-US")}</td>
-                <td>{Number(b.pledged).toLocaleString("en-US")}</td>
+                <td>{pledgedOn(b, "A").toLocaleString("en-US")}</td>
+                <td data-testid={`escrow-b-to-a-${b.token}`}>{pledgedOn(b, "B").toLocaleString("en-US")}</td>
               </tr>
             ))}
           </tbody>
@@ -257,6 +286,19 @@ export function LiveConsole({ party }: { party: LiveParty }) {
           <div className="small">
             ISDA 2002 MA Section 6(e): the Early Termination Amount is netted, the pledged collateral is applied to it and the
             surplus is returned to {other}.
+          </div>
+        </div>
+      )}
+
+      {!isSecured && inDefault.includes(other) && hasPledged && (
+        <div className="card" data-testid="reclaim">
+          <h3>Reclaim on the secured party's default</h3>
+          <div className="row">
+            <button disabled={busy} onClick={() => run(() => api.reclaim(party))}>Reclaim my IM from {other}</button>
+          </div>
+          <div className="small">
+            {other} is in default on the oracle feed. Your initial margin is segregated, so the control contract returns
+            your whole escrow on this leg.
           </div>
         </div>
       )}
@@ -363,7 +405,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         <h3>Margin calls</h3>
         {!state?.calls.length && <div className="small">No calls yet.</div>}
         {state?.calls.map((c) => (
-          <CallRow key={c.callId} call={c} party={party} hasPledged={hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} reconciliation={recons[0] ?? null} />
+          <CallRow key={c.callId} call={c} party={party} hasPledged={c.leg ? legHasPledged(c.leg) : hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} reconciliation={recons[0] ?? null} />
         ))}
       </div>
     </div>

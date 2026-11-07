@@ -16,7 +16,7 @@ import java.util.Map;
 public final class Config {
     public final String partyId;      // console party id: "A" or "B"
     public final String node;         // besu node id: "bank-a" or "bank-b"
-    public final String role;         // "Pledgor" or "Secured Party"
+    public final String role;         // the role on the default leg (A pledges): "Pledgor" for A, "Secured Party" for B (wp-adr-two-way-im)
     public final int port;
     public final String gatewayUrl;
     public final String oracleUrl;     // the shared oracle service, run by the market operator (service-to-oracle)
@@ -50,7 +50,8 @@ public final class Config {
     public static Config fromEnv() {
         String partyId = env("PARTY_ID", "A");
         String node = env("NODE", partyId.equals("B") ? "bank-b" : "bank-a");
-        String role = env("ROLE", partyId.equals("B") ? "Secured Party" : "Pledgor");
+        // No ROLE setting: each party is the pledgor on one leg and the secured party on the other (wp-adr-two-way-im).
+        String role = partyId.equals("B") ? "Secured Party" : "Pledgor";
         int port = Integer.parseInt(env("PORT", partyId.equals("B") ? "8002" : "8001"));
         String gatewayUrl = env("GATEWAY_URL", partyId.equals("B") ? "http://localhost:8202" : "http://localhost:8201");
         String oracleUrl = env("ORACLE_URL", "http://localhost:8100");

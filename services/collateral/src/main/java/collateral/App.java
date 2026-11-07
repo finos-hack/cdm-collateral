@@ -116,6 +116,7 @@ public final class App {
         app.post("/api/v1/calls/{id}/withdraw", this::withdrawCall);
         app.post("/api/v1/calls/{id}/cancellation", this::requestCancellation);
         app.post("/api/v1/calls/{id}/cancellation/decision", this::decideCancellation);
+        app.post("/api/v1/reclaims", this::reclaim);
         app.get("/api/v1/close-outs", this::closeOuts);
         app.post("/api/v1/close-outs", this::closeOut);
         app.get("/api/v1/interest", this::interestStatements);
@@ -204,6 +205,9 @@ public final class App {
                 String party = e.hasNonNull("party") ? e.get("party").asText() : null;
                 if (event.equals("ClosedOut")) {
                     onClosedOut(e, party, block, logIndex, data);
+                } else if (event.equals("Reclaimed")) {
+                    String id = e.get("reclaimId").asText();
+                    if (party != null && (party.equalsIgnoreCase(cfg.myAddress) || party.equalsIgnoreCase(cfg.partyAddress(counterparty())))) store.recordEvent(event, id, party, block, logIndex, data);
                 } else if (event.equals("InterestStated")) {
                     onInterestStated(e, party, block, logIndex, data);
                 } else if (event.equals("InterestSettled")) {
@@ -281,31 +285,29 @@ public final class App {
     // --- amendment of agreement terms (flow-agreement-amendment, task-csa-amendment) ---
 
     private static final String[] AMENDMENT_STATE = {"none", "proposed", "agreed", "refused"};
-    private CdmAgreement.Terms baselineTerms;
-    private String termsFoldKey;
-    private Fold termsFold;
-    private Map<String, Integer> pairHaircuts;
-    private long pairHaircutsAt;
+    // Per leg, keyed by legKey (wp-adr-two-way-im): the contract keeps agreement terms per (pledgor, secured party).
+    private final Map<String, CdmAgreement.Terms> baselineTerms = new HashMap<>();
+    private final Map<String, String> termsFoldKey = new HashMap<>();
+    private final Map<String, Fold> termsFold = new HashMap<>();
+    private final Map<String, Map<String, Integer>> pairHaircuts = new HashMap<>();
+    private final Map<String, Long> pairHaircutsAt = new HashMap<>();
 
     /** The terms after folding the pair's agreed amendments, whether every step verified, and the first problem. */
     private record Fold(CdmAgreement.Terms terms, boolean verified, String problem, JsonNode amendments) {}
 
-    /** The baseline IM CSA between the two parties: the CDM sample with Party1 the secured party, Party2 the pledgor,
-     *  and the registry's haircuts (the deployed global schedule). */
-    private synchronized CdmAgreement.Terms baselineTerms() {
-        if (baselineTerms == null) {
+    /** The baseline IM CSA of a leg: the CDM sample with Party1 the leg's secured party, Party2 its pledgor, and the
+     *  registry's haircuts (the deployed global schedule). */
+    private synchronized CdmAgreement.Terms baselineTerms(String[] ps) {
+        return baselineTerms.computeIfAbsent(legKey(ps), k -> {
             Map<String, Integer> h = new LinkedHashMap<>();
             cfg.registry.get("tokens").fieldNames().forEachRemaining(sym ->
                     h.put(cfg.isin(sym), cfg.registry.get("tokens").get(sym).get("haircutBps").asInt()));
-            String[] ps = pledgorAndSecuredParty();
-            baselineTerms = CdmAgreement.baselineTerms(cfg.bankName(partyIdOf(ps[1])), cfg.bankName(partyIdOf(ps[0])), h);
-        }
-        return baselineTerms;
+            return CdmAgreement.baselineTerms(cfg.bankName(partyIdOf(ps[1])), cfg.bankName(partyIdOf(ps[0])), h);
+        });
     }
 
-    /** The amendments between this party and its counterparty, in chain order. */
-    private List<JsonNode> pairAmendments(JsonNode all) {
-        String[] ps = pledgorAndSecuredParty();
+    /** The amendments of one leg, in chain order. */
+    private List<JsonNode> pairAmendments(JsonNode all, String[] ps) {
         List<JsonNode> out = new ArrayList<>();
         for (JsonNode r : all) {
             JsonNode a = r.get("amendment");
@@ -320,13 +322,15 @@ public final class App {
      * the terms before (beforeHash), and that it verifies against them (CdmAgreement.verify), then apply it. Both
      * services fold the same documents to the same terms. Cached on the list of agreed amendment ids.
      */
-    private synchronized Fold fold() {
+    private synchronized Fold fold(String[] leg) {
         JsonNode all = gw.getQuery("/amendments", Map.of("party", cfg.myAddress));
-        List<JsonNode> pair = pairAmendments(all);
+        List<JsonNode> pair = pairAmendments(all, leg);
+        String lk = legKey(leg);
+        Fold cached = termsFold.get(lk);
         StringBuilder key = new StringBuilder();
         for (JsonNode r : pair) if (r.get("amendment").get("state").asInt() == 2) key.append(r.get("amendmentId").asText()).append(',');
-        if (termsFold != null && key.toString().equals(termsFoldKey)) return new Fold(termsFold.terms(), termsFold.verified(), termsFold.problem(), all);
-        CdmAgreement.Terms t = baselineTerms();
+        if (cached != null && key.toString().equals(termsFoldKey.get(lk))) return new Fold(cached.terms(), cached.verified(), cached.problem(), all);
+        CdmAgreement.Terms t = baselineTerms(leg);
         boolean ok = true;
         String problem = null;
         for (JsonNode r : pair) {
@@ -345,28 +349,29 @@ public final class App {
                 break;
             }
         }
-        termsFoldKey = key.toString();
-        termsFold = new Fold(t, ok, problem, all);
-        return termsFold;
+        Fold f = new Fold(t, ok, problem, all);
+        termsFoldKey.put(lk, key.toString());
+        termsFold.put(lk, f);
+        return f;
     }
 
     /** Each registry token's haircut between the pair as the contract applies it (10000 when ineligible). */
-    private synchronized Map<String, Integer> pairHaircuts() {
-        if (pairHaircuts != null && System.currentTimeMillis() - pairHaircutsAt < 3000) return pairHaircuts;
-        String[] ps = pledgorAndSecuredParty();
+    private synchronized Map<String, Integer> pairHaircuts(String[] ps) {
+        String lk = legKey(ps);
+        if (pairHaircuts.containsKey(lk) && System.currentTimeMillis() - pairHaircutsAt.get(lk) < 3000) return pairHaircuts.get(lk);
         JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", ps[0], "securedParty", ps[1]));
         Map<String, Integer> out = new HashMap<>();
         for (JsonNode e : pt.get("eligibility")) {
             String sym = symbolOf(e.get("token").asText());
             if (sym != null) out.put(sym, e.get("eligible").asBoolean() ? e.get("haircutBps").asInt() : 10_000);
         }
-        pairHaircuts = out;
-        pairHaircutsAt = System.currentTimeMillis();
+        pairHaircuts.put(lk, out);
+        pairHaircutsAt.put(lk, System.currentTimeMillis());
         return out;
     }
 
     private synchronized void invalidateTerms() {
-        pairHaircuts = null;
+        pairHaircuts.clear();
     }
 
     private String symbolOf(String tokenAddress) {
@@ -387,10 +392,10 @@ public final class App {
 
     /** The agreement terms in force, the on-chain agreement hash and haircuts beside them, and the pair's amendments. */
     private void agreement(Context ctx) {
-        Fold f = fold();
-        String[] ps = pledgorAndSecuredParty();
+        String[] ps = legParam(ctx.queryParam("pledgor"));
+        Fold f = fold(ps);
         JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", ps[0], "securedParty", ps[1]));
-        Map<String, Integer> onChain = pairHaircuts();
+        Map<String, Integer> onChain = pairHaircuts(ps);
         List<Map<String, Object>> haircuts = new ArrayList<>();
         cfg.registry.get("tokens").fieldNames().forEachRemaining(sym -> {
             Integer cdm = CdmAgreement.haircutBps(f.terms().schedule(), cfg.isin(sym));
@@ -405,7 +410,7 @@ public final class App {
             haircuts.add(h);
         });
         List<Map<String, Object>> amendments = new ArrayList<>();
-        for (JsonNode r : pairAmendments(f.amendments())) amendments.add(amendmentSummary(r));
+        for (JsonNode r : pairAmendments(f.amendments(), ps)) amendments.add(amendmentSummary(r));
         String chainHash = pt.get("agreementHash").asText();
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("agreement", "2018 ISDA IM Credit Support Annex (Security Interest, New York law), CDM sample 01-2018-NY-Law-IM-CSA");
@@ -462,9 +467,9 @@ public final class App {
     @SuppressWarnings("unchecked")
     private void proposeAmendment(Context ctx) {
         Map<String, Object> b = body(ctx);
-        Fold f = fold();
+        String[] ps = legParam((String) b.get("pledgor"));
+        Fold f = fold(ps);
         if (!f.verified()) throw new RuntimeException("the agreed amendments do not verify: " + f.problem());
-        String[] ps = pledgorAndSecuredParty();
         JsonNode pt = gw.getQuery("/pair-terms", Map.of("pledgor", ps[0], "securedParty", ps[1]));
         if (!pt.get("pendingAmendment").asText().equals(CdmAgreement.NO_HASH)) throw new RuntimeException("an amendment is already pending");
         if (!pt.get("agreementHash").asText().equalsIgnoreCase(f.terms().hash())) throw new RuntimeException("the on-chain agreement hash does not match the folded terms");
@@ -500,7 +505,7 @@ public final class App {
         if (a.get("state").asInt() != 1) throw new RuntimeException("amendment " + id + " is not pending");
         if (a.get("proposer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("the proposer cannot decide its own amendment");
         if (consent) {
-            Fold f = fold();
+            Fold f = fold(new String[]{a.get("pledgor").asText(), a.get("securedParty").asText()});
             if (!f.verified()) throw new RuntimeException("the agreed amendments do not verify: " + f.problem());
             if (!a.get("beforeHash").asText().equalsIgnoreCase(f.terms().hash())) throw new RuntimeException("the amendment does not chain from the terms in force");
             String hash = a.get("proposeCdmHash").asText();
@@ -536,16 +541,52 @@ public final class App {
     private void onAmendmentEvent(String event, JsonNode e, String block, long logIndex, String data) {
         String id = e.get("amendmentId").asText();
         JsonNode a = gw.get("/amendments/" + id);
-        String[] ps = pledgorAndSecuredParty();
-        if (!a.get("pledgor").asText().equalsIgnoreCase(ps[0]) || !a.get("securedParty").asText().equalsIgnoreCase(ps[1])) return;
+        if (legOfPair(a.get("pledgor").asText(), a.get("securedParty").asText()) == null) return;
         store.recordEvent(event, id, a.get("proposer").asText(), block, logIndex, data);
         if (event.equals("AmendmentDecided")) invalidateTerms();
     }
 
-    /** {pledgor, secured party} addresses between this party and its counterparty. */
-    private String[] pledgorAndSecuredParty() {
-        String cpAddr = cfg.partyAddress(counterparty());
-        return cfg.role.equals("Pledgor") ? new String[]{cfg.myAddress, cpAddr} : new String[]{cpAddr, cfg.myAddress};
+    // ---- legs of the initial margin (two-way initial margin, wp-adr-two-way-im) ----
+    // A leg is {pledgor, secured party} addresses. Each party is the pledgor on one leg and the secured party on the
+    // other. The default leg is the one BANK-A pledges on, so a request that names no leg acts as before.
+
+    /** The leg on which party {@code pledgorId} (A or B) pledges to the other. */
+    private String[] leg(String pledgorId) {
+        String other = pledgorId.equals("A") ? "B" : "A";
+        return new String[]{cfg.partyAddress(pledgorId), cfg.partyAddress(other)};
+    }
+
+    /** The leg a request names by its pledgor's party id; the default leg (A pledges) when it names none. */
+    private String[] legParam(String pledgorId) {
+        return leg(pledgorId == null || pledgorId.isBlank() ? "A" : pledgorId);
+    }
+
+    /** The leg on which this party pledges, or on which it is the secured party. */
+    private String[] myLeg(boolean iPledge) {
+        return leg(iPledge ? cfg.partyId : counterparty());
+    }
+
+    /** The leg of an initial margin call: the called party of a delivery pledges, the calling party of a return. */
+    private String[] legOfCall(JsonNode c) {
+        String from = c.get("from").asText(), to = c.get("to").asText();
+        return c.get("kind").asInt() == 2 ? new String[]{from, to} : new String[]{to, from};
+    }
+
+    /** The leg between this party and its counterparty with this pledgor and secured party, or null. */
+    private String[] legOfPair(String pledgor, String securedParty) {
+        String me = cfg.myAddress, other = cfg.partyAddress(counterparty());
+        boolean ours = (pledgor.equalsIgnoreCase(me) && securedParty.equalsIgnoreCase(other))
+                || (pledgor.equalsIgnoreCase(other) && securedParty.equalsIgnoreCase(me));
+        return ours ? new String[]{pledgor, securedParty} : null;
+    }
+
+    private static String legKey(String[] leg) {
+        return leg[0].toLowerCase() + ">" + leg[1].toLowerCase();
+    }
+
+    /** Party ids of a leg's pledgor and secured party, for the console. */
+    private Map<String, Object> legView(String[] leg) {
+        return new LinkedHashMap<>(Map.of("pledgor", partyIdOf(leg[0]), "securedParty", partyIdOf(leg[1])));
     }
 
     /** The feed price of every registry token that has one, by lowercase address (scaled by priceScale). */
@@ -558,8 +599,8 @@ public final class App {
     }
 
     /** The haircut between the pair as the contract applies it (flow-agreement-amendment: per-pair once amended). */
-    private int haircutBps(String symbol) {
-        Integer h = pairHaircuts().get(symbol);
+    private int haircutBps(String[] leg, String symbol) {
+        Integer h = pairHaircuts(leg).get(symbol);
         return h != null ? h : cfg.registry.get("tokens").get(symbol).get("haircutBps").asInt();
     }
 
@@ -569,14 +610,14 @@ public final class App {
     }
 
     /** Value after haircuts of a list of {token symbol, qty} at the current feed prices, scaled by priceScale. */
-    private BigInteger valueOf(List<Map<String, Object>> assets) {
+    private BigInteger valueOf(String[] leg, List<Map<String, Object>> assets) {
         Map<String, BigInteger> prices = feedPrices();
         BigInteger v = BigInteger.ZERO;
         for (Map<String, Object> a : assets) {
             String sym = (String) a.get("token");
             BigInteger price = prices.get(cfg.tokenAddress(sym).toLowerCase());
             if (price == null) throw new RuntimeException("no feed price for " + sym);
-            v = v.add(valueAfterHaircut(BigInteger.valueOf(((Number) a.get("qty")).longValue()), price, haircutBps(sym)));
+            v = v.add(valueAfterHaircut(BigInteger.valueOf(((Number) a.get("qty")).longValue()), price, haircutBps(leg, sym)));
         }
         return v;
     }
@@ -596,13 +637,15 @@ public final class App {
             tokens.add(new LinkedHashMap<>(Map.of(
                     "symbol", sym, "address", t.get("address").asText(),
                     "isin", t.get("isin").asText(), "cusip", t.get("cusip").asText(),
-                    "dti", t.get("dti").asText(), "haircutBps", haircutBps(sym))));
+                    "dti", t.get("dti").asText(), "haircutBps", haircutBps(legParam(null), sym))));
         });
         ctx.json(new LinkedHashMap<>(Map.of(
                 "party", cfg.partyId, "role", cfg.role, "node", cfg.node, "address", cfg.myAddress,
                 "counterparty", counterparty, "counterpartyAddress", cfg.partyAddress(counterparty),
                 "priceScale", cfg.priceScale.toString(), "tokens", tokens,
-                "agreement", "2018 ISDA IM Credit Support Annex (Security Interest, New York law)")));
+                "agreement", "2018 ISDA IM Credit Support Annex (Security Interest, New York law)",
+                // Both legs of the initial margin (wp-adr-two-way-im): this party pledges on the first.
+                "legs", List.of(legView(myLeg(true)), legView(myLeg(false))))));
     }
 
     private String partyIdOf(String address) {
@@ -672,19 +715,23 @@ public final class App {
             List<String> events = store.eventsFor(callId);
             call.put("events", events);
             call.put("enforced", events.contains("Enforced"));
+            // The leg of an IM or return call, by its pledgor's party id (wp-adr-two-way-im); VM moves title and has none.
+            call.put("leg", c.get("kind").asInt() == 1 ? null : partyIdOf(legOfCall(c)[0]));
             callList.add(call);
         }
 
-        // Balances: free token balance, and escrowed (pledged) balance between this party and its counterparty.
+        // Balances: free token balance, and the escrowed (pledged) balance on each leg, keyed by the leg's pledgor;
+        // "pledged" is the default leg's (A pledges), as before two-way initial margin.
         List<Map<String, Object>> balances = new ArrayList<>();
-        String cpAddr = cfg.partyAddress(counterparty);
         cfg.registry.get("tokens").fieldNames().forEachRemaining(sym -> {
             String token = cfg.tokenAddress(sym);
             String free = gw.getQuery("/balance", Map.of("token", token, "owner", cfg.myAddress)).asText();
-            String pledgor = cfg.role.equals("Pledgor") ? cfg.myAddress : cpAddr;
-            String securedParty = cfg.role.equals("Pledgor") ? cpAddr : cfg.myAddress;
-            String pledged = gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", securedParty)).asText();
-            balances.add(new LinkedHashMap<>(Map.of("token", sym, "free", free, "pledged", pledged)));
+            Map<String, Object> byLeg = new LinkedHashMap<>();
+            for (String pl : List.of("A", "B")) {
+                String[] lg = leg(pl);
+                byLeg.put(pl, gw.getQuery("/pledged", Map.of("token", token, "pledgor", lg[0], "securedParty", lg[1])).asText());
+            }
+            balances.add(new LinkedHashMap<>(Map.of("token", sym, "free", free, "pledged", byLeg.get("A"), "pledgedByLeg", byLeg)));
         });
 
         // Default status of both counterparties, read from the oracle feed through this party's own gateway.
@@ -709,17 +756,16 @@ public final class App {
      * transfer amount (the pledgor's) and the rounding come from the agreement terms in force (flow-agreement-amendment).
      */
     private void revaluation(Context ctx) {
-        String counterparty = cfg.partyId.equals("B") ? "A" : "B";
-        String cpAddr = cfg.partyAddress(counterparty);
-        String pledgor = cfg.role.equals("Pledgor") ? cfg.myAddress : cpAddr;
-        String securedParty = cfg.role.equals("Pledgor") ? cpAddr : cfg.myAddress;
+        String[] leg = legParam(ctx.queryParam("pledgor"));
+        String pledgor = leg[0], securedParty = leg[1];
         BigInteger scale = cfg.priceScale;
 
         JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
         long lastEnforcement = -1;
         for (JsonNode e : hist.get("enforced")) lastEnforcement = Math.max(lastEnforcement, e.get("block").asLong());
-        // A close-out also empties the pair's escrow (flow-close-out-netting).
+        // A close-out also empties the pair's escrow (flow-close-out-netting), and so does a reclaim (wp-adr-two-way-im).
         for (JsonNode e : hist.path("closedOut")) lastEnforcement = Math.max(lastEnforcement, e.get("block").asLong());
+        for (JsonNode e : hist.path("reclaimed")) lastEnforcement = Math.max(lastEnforcement, e.get("block").asLong());
         Map<String, Long> settledAt = new HashMap<>();
         for (JsonNode s : hist.get("settled")) settledAt.merge(s.get("callId").asText().toLowerCase(), s.get("block").asLong(), Math::max);
 
@@ -730,8 +776,9 @@ public final class App {
             JsonNode c = entry.get("call");
             int kind = c.get("kind").asInt(), state = c.get("state").asInt();
             if (state != 5 && state != 6) continue; // settled, or settled for the agreed part
-            String from = c.get("from").asText().toLowerCase(), to = c.get("to").asText().toLowerCase();
-            boolean pair = (from.equals(p) && to.equals(sp)) || (from.equals(sp) && to.equals(p));
+            if (kind == 1) continue; // variation margin moves title, not escrow
+            String[] callLeg = legOfCall(c);
+            boolean pair = callLeg[0].equalsIgnoreCase(p) && callLeg[1].equalsIgnoreCase(sp); // this leg only
             Long block = settledAt.get(entry.get("callId").asText().toLowerCase());
             if (!pair || block == null || block <= lastEnforcement) continue;
             BigInteger agreed = new BigInteger(c.get("agreed").asText());
@@ -754,7 +801,7 @@ public final class App {
             BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", securedParty)).asText());
             if (qty.signum() == 0) continue;
             BigInteger price = priceByToken.getOrDefault(token.toLowerCase(), BigInteger.ZERO);
-            int haircutBps = haircutBps(sym);
+            int haircutBps = haircutBps(leg, sym);
             BigInteger v = qty.multiply(price).multiply(BigInteger.valueOf(10_000L - haircutBps)).divide(BigInteger.valueOf(10_000));
             value = value.add(v);
             tokens.add(new LinkedHashMap<>(Map.of("token", sym, "pledged", qty.toString(), "price", price.toString(),
@@ -764,7 +811,7 @@ public final class App {
         BigInteger shortfall = required.subtract(value).max(BigInteger.ZERO);
         BigInteger[] qr = shortfall.divideAndRemainder(scale);
         long shortfallUsd = qr[0].longValueExact() + (qr[1].signum() > 0 ? 1 : 0);
-        CdmAgreement.Terms terms = fold().terms();
+        CdmAgreement.Terms terms = fold(leg).terms();
         long mtaUsd = CdmAgreement.pledgorMtaUsd(terms.agreement()), roundingUsd = CdmAgreement.roundingUsd(terms.agreement());
         long topUpUsd = shortfallUsd >= mtaUsd ? ((shortfallUsd + roundingUsd - 1) / roundingUsd) * roundingUsd : 0;
 
@@ -974,6 +1021,7 @@ public final class App {
         String me = cfg.myAddress, other = cfg.partyAddress(counterparty());
         List<cdmx.collateral.reconciliation.LedgerFact> onLedger = new ArrayList<>();
         Set<String> pairCalls = new java.util.HashSet<>();
+        Map<String, String> callPledgor = new HashMap<>(); // IM and return calls: the leg's pledgor
         for (JsonNode c : gw.getQuery("/party-calls", Map.of("party", me))) {
             JsonNode call = c.get("call");
             String from = call.get("from").asText(), to = call.get("to").asText();
@@ -981,6 +1029,7 @@ public final class App {
             if (!pair) continue;
             String id = c.get("callId").asText().toLowerCase();
             pairCalls.add(id);
+            if (call.get("kind").asInt() != 1) callPledgor.put(id, legOfCall(call)[0]);
             onLedger.addAll(CdmReconciliation.ledgerFacts(id, call, cfg.priceScale));
         }
         String since = cfg.registry.path("deployedAt").asText("1970-01-01T00:00:00Z");
@@ -998,38 +1047,50 @@ public final class App {
             }
         }
 
-        // Escrow positions: the pledgor's collateral the control contract holds for the secured party.
-        boolean iPledge = cfg.role.equals("Pledgor");
-        String pledgor = iPledge ? me : other, securedParty = iPledge ? other : me;
-        String escrow = CdmReconciliation.escrowRecord(iPledge ? myBank() : counterpartyBank(), iPledge ? counterpartyBank() : myBank());
-        JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
-        long emptiedAt = -1;
-        for (JsonNode e : hist.path("enforced")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
-        for (JsonNode e : hist.path("closedOut")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
-        Map<String, Long> settledAt = new HashMap<>();
-        for (JsonNode e : hist.path("settled")) settledAt.merge(e.get("callId").asText().toLowerCase(), e.get("block").asLong(), Math::max);
+        // Escrow positions on each leg (wp-adr-two-way-im): the pledgor's collateral the control contract holds for the
+        // secured party, one escrow record per leg.
         Map<String, Long> substitutedAt = store.eventBlocks("SubstitutionSettled");
-        List<CdmReconciliation.EscrowMovement> callMoves = new ArrayList<>(), substitutionMoves = new ArrayList<>();
-        for (Map.Entry<String, String> e : states.entrySet()) {
-            String id = e.getKey().toLowerCase();
-            if (settledAt.containsKey(id) && pairCalls.contains(id)) callMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), settledAt.get(id)));
-            else if (substitutedAt.containsKey(id)) substitutionMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), substitutedAt.get(id)));
-        }
         Map<String, String> symbolByIsin = new HashMap<>();
-        Map<String, Long> onChainEscrow = new java.util.TreeMap<>();
         for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
             String sym = it.next();
             symbolByIsin.put(cfg.isin(sym), sym);
-            long qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", cfg.tokenAddress(sym), "pledgor", pledgor, "securedParty", securedParty)).asText()).longValueExact();
-            if (qty != 0) onChainEscrow.put(sym, qty);
         }
-        Map<String, Long> recordedEscrow = CdmReconciliation.recordedEscrow(callMoves, substitutionMoves, emptiedAt, symbolByIsin);
-        recorded.addAll(CdmReconciliation.escrowFacts(escrow, recordedEscrow));
-        onLedger.addAll(CdmReconciliation.escrowFacts(escrow, onChainEscrow));
+        List<Map<String, Object>> escrows = new ArrayList<>();
+        for (boolean iPledge : new boolean[]{true, false}) {
+            String[] lg = myLeg(iPledge);
+            String pledgor = lg[0], securedParty = lg[1];
+            String escrow = CdmReconciliation.escrowRecord(iPledge ? myBank() : counterpartyBank(), iPledge ? counterpartyBank() : myBank());
+            JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
+            long emptiedAt = -1;
+            for (JsonNode e : hist.path("enforced")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+            for (JsonNode e : hist.path("closedOut")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+            for (JsonNode e : hist.path("reclaimed")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+            Map<String, Long> settledAt = new HashMap<>();
+            for (JsonNode e : hist.path("settled")) settledAt.merge(e.get("callId").asText().toLowerCase(), e.get("block").asLong(), Math::max);
+            List<CdmReconciliation.EscrowMovement> callMoves = new ArrayList<>(), substitutionMoves = new ArrayList<>();
+            for (Map.Entry<String, String> e : states.entrySet()) {
+                String id = e.getKey().toLowerCase();
+                if (settledAt.containsKey(id) && pledgor.equalsIgnoreCase(callPledgor.get(id)))
+                    callMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), settledAt.get(id)));
+                else if (substitutedAt.containsKey(id) && pledgor.equalsIgnoreCase(gw.get("/substitutions/" + id).path("substitution").path("pledgor").asText()))
+                    substitutionMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), substitutedAt.get(id)));
+            }
+            Map<String, Long> onChainEscrow = new java.util.TreeMap<>();
+            for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+                String sym = it.next();
+                long qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", cfg.tokenAddress(sym), "pledgor", pledgor, "securedParty", securedParty)).asText()).longValueExact();
+                if (qty != 0) onChainEscrow.put(sym, qty);
+            }
+            Map<String, Long> recordedEscrow = CdmReconciliation.recordedEscrow(callMoves, substitutionMoves, emptiedAt, symbolByIsin);
+            recorded.addAll(CdmReconciliation.escrowFacts(escrow, recordedEscrow));
+            onLedger.addAll(CdmReconciliation.escrowFacts(escrow, onChainEscrow));
+            escrows.add(new LinkedHashMap<>(Map.of("record", escrow, "pledgor", partyIdOf(pledgor), "recorded", recordedEscrow, "ledger", onChainEscrow)));
+        }
 
         Map<String, Object> v = CdmReconciliation.view(CdmReconciliation.withLedger(myBank(), counterpartyBank(), recorded, onLedger));
         v.put("calls", pairCalls.size());
-        v.put("escrow", Map.of("record", escrow, "recorded", recordedEscrow, "ledger", onChainEscrow));
+        v.put("escrow", escrows.get(cfg.partyId.equals("A") ? 0 : 1)); // the default leg (A pledges)
+        v.put("escrows", escrows);
         ctx.json(v);
     }
 
@@ -1235,9 +1296,9 @@ public final class App {
 
     private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-    /** This party's role in the CDM documents: Pledgor or SecuredParty. */
-    private String cdmRole() {
-        return cfg.role.equals("Pledgor") ? "Pledgor" : "SecuredParty";
+    /** This party's role on a call, as the CDM header states it (Cdm.callBase): Pledgor or SecuredParty. */
+    private String cdmRole(String callId) {
+        return legOfCall(gw.get("/calls/" + callId))[0].equalsIgnoreCase(cfg.myAddress) ? "Pledgor" : "SecuredParty";
     }
 
     /** The calling party withdraws a call the other party has not answered (CDM step WithdrawCall). */
@@ -1255,7 +1316,7 @@ public final class App {
     /** Either party asks to cancel an answered call that is not settled (CDM step RequestCancellation, colr.005). */
     private void requestCancellation(Context ctx) {
         String callId = ctx.pathParam("id");
-        Cdm cdm = Cdm.requestCancellation(cdmRole(), (String) body(ctx).get("reason"));
+        Cdm cdm = Cdm.requestCancellation(cdmRole(callId), (String) body(ctx).get("reason"));
         record(callId, "RequestCancellation", cdm);
         JsonNode tx = gw.post("/calls/" + callId + "/cancellation", Map.of("cdmHash", cdm.hash));
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "requestTx", tx.path("txHash").asText()));
@@ -1270,7 +1331,7 @@ public final class App {
         String requester = c.path("cancellationRequestedBy").asText(ZERO_ADDRESS);
         if (requester.equalsIgnoreCase(ZERO_ADDRESS)) throw new RuntimeException("no cancellation request is pending");
         if (requester.equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("the requesting party cannot decide its own request");
-        Cdm cdm = Cdm.decideCancellation(cdmRole(), accept, (String) b.get("reason"));
+        Cdm cdm = Cdm.decideCancellation(cdmRole(callId), accept, (String) b.get("reason"));
         record(callId, "DecideCancellation", cdm);
         JsonNode tx = gw.post("/calls/" + callId + "/cancellation/decision", Map.of("accept", accept, "cdmHash", cdm.hash));
         ctx.json(Map.of("callId", callId, "accept", accept, "cdmHash", cdm.hash, "decisionTx", tx.path("txHash").asText()));
@@ -1349,6 +1410,45 @@ public final class App {
                 "defaultTx", notice.path("tx").path("txHash").asText(), "enforceTx", enforced.path("txHash").asText())));
     }
 
+    // ---- reclaim after the secured party's default (two-way initial margin, wp-adr-two-way-im) ----
+
+    /**
+     * The pledgor takes back its whole escrow on the leg it pledges on once the oracle feed records its secured
+     * party's default (the counterparty). The service values the escrow at the feed prices after the leg's haircuts,
+     * builds the CDM CollateralReclaim (cdm-ext Create_CollateralReclaim), publishes it to the payload store, and
+     * submits reclaim with its hash; the control contract checks the feed and returns every pledged token.
+     */
+    private void reclaim(Context ctx) {
+        String[] lg = myLeg(true);
+        String securedParty = lg[1];
+        if (!gw.get("/defaults/" + securedParty).get("inDefault").asBoolean())
+            throw new RuntimeException("the oracle feed does not record " + counterparty() + "'s default");
+        Map<String, BigInteger> prices = feedPrices();
+        List<Map<String, Object>> positions = new ArrayList<>();
+        BigInteger value = BigInteger.ZERO;
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            String token = cfg.tokenAddress(sym);
+            BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", lg[0], "securedParty", securedParty)).asText());
+            if (qty.signum() == 0) continue;
+            positions.add(Map.of("isin", cfg.isin(sym), "units", qty.longValueExact()));
+            value = value.add(valueAfterHaircut(qty, prices.getOrDefault(token.toLowerCase(), BigInteger.ZERO), haircutBps(lg, sym)));
+        }
+        if (positions.isEmpty()) throw new RuntimeException("nothing is pledged by " + cfg.partyId + " to " + counterparty() + " to reclaim");
+        String reclaimId = Cdm.onChainId("reclaim-" + cfg.partyId + "-" + System.nanoTime());
+        CdmReclaim r = CdmReclaim.build(reclaimId, myBank(), counterpartyBank(), positions, value.divide(cfg.priceScale).longValueExact());
+        store.recordDocument(reclaimId, "CollateralReclaim", "out", r.hash, r.json);
+        payloads.put(r.hash, r.json, callParties);
+        JsonNode tx = gw.post("/reclaims", Map.of("reclaimId", reclaimId, "securedParty", securedParty, "cdmHash", r.hash));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("reclaimId", reclaimId);
+        out.put("cdmHash", r.hash);
+        out.put("reclaimedUsd", String.valueOf(value.divide(cfg.priceScale)));
+        out.put("eventQualifier", r.reclaim.getEventQualifier());
+        out.put("reclaimTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
     // ---- close-out netting on default (flow-close-out-netting, G15) ----
 
     /**
@@ -1360,7 +1460,7 @@ public final class App {
      * (transition 7).
      */
     private void closeOut(Context ctx) {
-        if (!cfg.role.equals("Secured Party")) throw new RuntimeException("only the secured party closes out");
+        // On the leg the counterparty pledges on: this party is its secured party (wp-adr-two-way-im).
         Map<String, Object> b = body(ctx);
         long closeOutAmountUsd = ((Number) b.get("closeOutAmountUsd")).longValue();
         String pledgor = cfg.partyAddress(counterparty());
@@ -1375,7 +1475,7 @@ public final class App {
             String sym = it.next();
             String token = cfg.tokenAddress(sym);
             BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", cfg.myAddress)).asText());
-            if (qty.signum() > 0) held = held.add(valueAfterHaircut(qty, prices.getOrDefault(token.toLowerCase(), BigInteger.ZERO), haircutBps(sym)));
+            if (qty.signum() > 0) held = held.add(valueAfterHaircut(qty, prices.getOrDefault(token.toLowerCase(), BigInteger.ZERO), haircutBps(myLeg(false), sym)));
         }
         if (held.signum() == 0) throw new RuntimeException("nothing is pledged by " + counterparty() + " to close out against");
         long heldUsd = held.divide(cfg.priceScale).longValueExact();
@@ -1451,7 +1551,7 @@ public final class App {
      * paid to the pledgor in the same transaction (transitions 3-7).
      */
     private void stateInterest(Context ctx) {
-        if (!cfg.role.equals("Secured Party")) throw new RuntimeException("only the secured party states interest");
+        // On the leg the counterparty pledges on: this party holds its cash collateral (wp-adr-two-way-im).
         Map<String, Object> b = body(ctx);
         LocalDate start = LocalDate.parse(String.valueOf(b.get("periodStart")));
         LocalDate end = LocalDate.parse(String.valueOf(b.get("periodEnd")));
@@ -1777,12 +1877,12 @@ public final class App {
      * store and its hash on-chain with the request.
      */
     private void requestSubstitution(Context ctx) {
-        if (!cfg.role.equals("Pledgor")) throw new RuntimeException("only the pledgor requests a substitution");
+        // On the leg this party pledges on (wp-adr-two-way-im).
         Map<String, Object> b = body(ctx);
         List<Map<String, Object>> original = assetsIn(b, "original");
         List<Map<String, Object>> substitute = assetsIn(b, "substitute");
-        long originalUsd = valueOf(original).divide(cfg.priceScale).longValueExact();
-        long substituteUsd = valueOf(substitute).divide(cfg.priceScale).longValueExact();
+        long originalUsd = valueOf(myLeg(true), original).divide(cfg.priceScale).longValueExact();
+        long substituteUsd = valueOf(myLeg(true), substitute).divide(cfg.priceScale).longValueExact();
         String id = Cdm.onChainId("substitution-" + cfg.partyId + "-" + System.nanoTime());
         CdmSubstitution req = CdmSubstitution.request(id, cdmAssets(original), originalUsd, cdmAssets(substitute), substituteUsd);
         store.recordDocument(id, "SubstitutionRequest", "out", req.hash, req.json);
@@ -1920,7 +2020,7 @@ public final class App {
             String sym = symbolByAddress.get(t.get("token").asText().toLowerCase());
             if (sym == null) throw new RuntimeException("token " + t.get("token").asText() + " is not in the registry");
             positions.add(Map.of("isin", cfg.isin(sym), "units", qty.longValueExact()));
-            if (!t.get("price").isNull()) value = value.add(valueAfterHaircut(qty, new BigInteger(t.get("price").asText()), haircutBps(sym)));
+            if (!t.get("price").isNull()) value = value.add(valueAfterHaircut(qty, new BigInteger(t.get("price").asText()), haircutBps(new String[]{pledgor, securedParty}, sym)));
         }
         return CdmSubstitution.portfolio(positions, value.divide(cfg.priceScale).longValueExact(),
                 cfg.bankName(partyIdOf(pledgor)), cfg.bankName(partyIdOf(securedParty)));

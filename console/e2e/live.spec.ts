@@ -1238,3 +1238,106 @@ test("flow-reconciliation: pledgor reconciles trade portfolios with the secured 
 
   expect(errors).toEqual([]);
 });
+
+// --- two-way initial margin (task-two-way-initial-margin, wp-adr-two-way-im) ---
+// Each party pledges initial margin to the other on the same day, in different amounts; the legs are not netted. A
+// defaults: B enforces against A's leg and takes its own leg back from the control contract (the pledgor's reclaim on
+// the secured party's default). B posts tUSD cash, the asset it holds from the test-balance top-up.
+test("flow-two-way-im-default: A and B each post IM to the other -> A defaults -> B enforces A's leg and reclaims its own", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const symbols = Object.keys(p.tokens);
+  const legOf = async (token: string, pledgor: string, securedParty: string) =>
+    BigInt(await call<string>(`${GATEWAY.B}/pledged?token=${token}&pledgor=${pledgor}&securedParty=${securedParty}`));
+  // Small and unique per run: enforcement and reclaim empty both legs for good on the persistent chain.
+  const aLegUsd = 100_000 + (Date.now() % 9000) * 10;
+  const bLegUsd = 60_000 + (Date.now() % 9000) * 10; // a different amount on the other leg
+  const aQty = Math.ceil(aLegUsd / TUST_VALUE) + 100;
+  const bQty = bLegUsd + 1_000; // tUSD at 1.00, no haircut
+  const bLabel = `USD ${bLegUsd.toLocaleString("en-US")}`;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // A's leg: B calls, A pledges tUST (through the services; the UI path is the flow-im-margin-call-pledge spec).
+  const aCallId = await pledgeThroughServices(aLegUsd, aQty);
+  await waitForSettledOnChain("IM", aLegUsd);
+
+  // B's leg, through the consoles: A selects the leg B pledges on, where A is the secured party, and calls B.
+  await page.goto("/#/live/A");
+  await page.getByRole("button", { name: /B pledges to A/ }).click();
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await expect(issueCard).toBeVisible({ timeout: STEP_TIMEOUT }); // shown to the secured party of the selected leg
+  await issueCard.getByRole("spinbutton").fill(String(bLegUsd));
+  await issueCard.getByRole("button", { name: "Issue IM call → B" }).click();
+
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: bLabel }).filter({ hasText: "A → B" });
+  await expect(rowB.getByRole("button", { name: "Agree in full" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Agree in full" }).click();
+  await expect(rowB.getByRole("button", { name: "Propose collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("combobox").selectOption("tUSD");
+  await rowB.getByRole("spinbutton").fill(String(bQty));
+  await rowB.getByRole("button", { name: "Propose collateral" }).click();
+  await expect(rowB.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: bLabel }).filter({ hasText: "A → B" });
+  await expect(rowA.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Accept proposal" }).click();
+
+  await page.goto("/#/live/B");
+  await expect(rowB.getByRole("button", { name: "Pledge accepted collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Pledge accepted collateral" }).click();
+  await waitForSettledOnChain("IM", bLegUsd);
+
+  // Both legs are in escrow, apart: each service shows the other leg too.
+  expect(await legOf(p.tokens["tUST"], p.a, p.b) >= BigInt(aQty)).toBe(true);
+  expect(await legOf(p.tokens["tUSD"], p.b, p.a) >= BigInt(bQty)).toBe(true);
+  const st = await call<{ balances: { token: string; pledgedByLeg: Record<string, string> }[] }>(`${SERVICE.A}/state`);
+  expect(BigInt(st.balances.find((b) => b.token === "tUSD")!.pledgedByLeg.B) >= BigInt(bQty)).toBe(true);
+  // The CDM call headers name the leg's pledgor: B on the call A issued.
+  const issued = await call<{ calls: { callId: string; amountUsd: string; leg: string; from: string }[] }>(`${SERVICE.B}/state`);
+  expect(issued.calls.find((c) => c.amountUsd === String(bLegUsd) && c.from === "A")?.leg).toBe("B");
+
+  const freeBefore: Record<string, bigint> = {};
+  const legsBefore: Record<string, bigint> = {};
+  for (const sym of symbols) {
+    freeBefore[sym] = await balanceOf(GATEWAY.B, p.tokens[sym], p.b);
+    legsBefore[sym] = (await legOf(p.tokens[sym], p.a, p.b)) + (await legOf(p.tokens[sym], p.b, p.a));
+  }
+
+  // A defaults. B, the secured party on A's leg, declares the default and enforces against A's leg.
+  await page.goto("/#/live/B");
+  const enforceRow = page.locator(".subcard", { hasText: shortId(aCallId) });
+  await expect(enforceRow.getByRole("button", { name: "Declare default & enforce" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await enforceRow.getByRole("button", { name: "Declare default & enforce" }).click();
+  await expect(enforceRow.getByText("enforced ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // B, the pledgor on its own leg, takes its IM back: the feed records its secured party (A) in default.
+  await page.getByRole("button", { name: /B pledges to A/ }).click();
+  const reclaimCard = page.getByTestId("reclaim");
+  await expect(reclaimCard).toBeVisible({ timeout: STEP_TIMEOUT });
+  await reclaimCard.getByRole("button", { name: "Reclaim my IM from A" }).click();
+  await expect(reclaimCard).toBeHidden({ timeout: STEP_TIMEOUT });
+
+  // On-chain: both legs are empty, and B holds what was in either leg (A's leg seized, B's own returned).
+  for (const sym of symbols) {
+    expect(await legOf(p.tokens[sym], p.a, p.b)).toBe(0n);
+    expect(await legOf(p.tokens[sym], p.b, p.a)).toBe(0n);
+    expect(await balanceOf(GATEWAY.B, p.tokens[sym], p.b)).toBe(freeBefore[sym] + legsBefore[sym]);
+  }
+
+  // Each party's records match the chain on both legs: two escrow records, nothing left in either.
+  type Escrow = { record: string; pledgor: string; recorded: Record<string, number>; ledger: Record<string, number> };
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => {
+        const r = await call<{ reconciled: boolean; breaks: unknown[]; escrows: Escrow[] }>(`${svc}/reconciliation/ledger`, "POST", {});
+        return r.escrows.map((e) => [e.pledgor, Object.keys(e.recorded).length, Object.keys(e.ledger).length]).sort();
+      }, { timeout: 60_000 })
+      .toEqual([["A", 0, 0], ["B", 0, 0]]);
+  }
+
+  expect(errors).toEqual([]);
+});

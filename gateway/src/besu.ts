@@ -44,6 +44,7 @@ export interface LedgerEvent {
     | "Enforced"
     | "DefaultPublished"
     | "ClosedOut"
+    | "Reclaimed"
     | "SubstitutionRequested"
     | "SubstitutionDecided"
     | "SubstitutionSettled"
@@ -55,6 +56,8 @@ export interface LedgerEvent {
   callId?: Hex;
   /** ClosedOut (flow-close-out-netting). */
   closeOutId?: Hex;
+  /** Reclaimed (two-way initial margin, wp-adr-two-way-im). */
+  reclaimId?: Hex;
   /** SubstitutionRequested, SubstitutionDecided, SubstitutionSettled (flow-substitution). */
   substitutionId?: Hex;
   /** InterestStated, InterestSettled (flow-interest-on-cash). */
@@ -186,6 +189,7 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "Returned(bytes32,address,address)",
     "Enforced(bytes32,address,address)",
     "ClosedOut(bytes32,address,address,uint256,uint256,bytes32)",
+    "Reclaimed(bytes32,address,address,bytes32)",
     "SubstitutionRequested(bytes32,address,address,bytes32)",
     "SubstitutionDecided(bytes32,bool,bytes32)",
     "SubstitutionSettled(bytes32,bytes32)",
@@ -263,6 +267,7 @@ const controlAbi = parseAbi([
   "struct Substitution { address pledgor; address securedParty; uint8 state; bytes32 requestCdmHash; bytes32 decisionCdmHash; bytes32 settleCdmHash; }",
   "function enforce(bytes32 callId)",
   "function closeOut(bytes32 closeOutId, address pledgor, uint256 owed, bytes32 cdmHash)",
+  "function reclaim(bytes32 reclaimId, address securedParty, bytes32 cdmHash)",
   "function requestSubstitution(bytes32 substitutionId, address securedParty, Asset[] original, Asset[] substitute, bytes32 cdmHash)",
   "function decideSubstitution(bytes32 substitutionId, bool consent, bytes32 cdmHash)",
   "function settleSubstitution(bytes32 substitutionId, bytes32 cdmHash)",
@@ -292,6 +297,7 @@ const controlAbi = parseAbi([
   "event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
   "event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
   "event ClosedOut(bytes32 indexed closeOutId, address indexed securedParty, address indexed pledgor, uint256 owed, uint256 applied, bytes32 cdmHash)",
+  "event Reclaimed(bytes32 indexed reclaimId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
   "event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
   "event SubstitutionDecided(bytes32 indexed substitutionId, bool consent, bytes32 cdmHash)",
   "event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash)",
@@ -349,6 +355,7 @@ export interface LedgerAdapter {
   returnByTransfer(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   enforce(callId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   closeOut(closeOutId: Hex, pledgor: Address, owed: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  reclaim(reclaimId: Hex, securedParty: Address, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   listCloseOuts(party: Address): Promise<CloseOutRecord[]>;
   requestSubstitution(substitutionId: Hex, securedParty: Address, original: AssetArg[], substitute: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   decideSubstitution(substitutionId: Hex, consent: boolean, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
@@ -375,7 +382,7 @@ export interface LedgerAdapter {
   isDefaulted(party: Address): Promise<boolean>;
   publishPrice(token: Address, priceScaled: bigint): Promise<{ txHash: Hex; block: bigint }>;
   priceOf(token: Address): Promise<bigint | null>;
-  settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }>;
+  settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[]; reclaimed: { reclaimId: Hex; block: string }[] }>;
   getCall(callId: Hex): Promise<OnChainCall>;
   listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]>;
   callSteps(callId: Hex): Promise<CallStep[]>;
@@ -538,6 +545,12 @@ export class BesuAdapter implements LedgerAdapter {
    * the pledged collateral to `owed` and returns the surplus to the pledgor. */
   closeOut(closeOutId: Hex, pledgor: Address, owed: bigint, cdmHash: Hex) {
     return this.send(this.reg.contracts.collateralControl, controlAbi, "closeOut", [closeOutId, pledgor, owed, cdmHash]);
+  }
+
+  /** Reclaim after the secured party's default (pledgor's key, wp-adr-two-way-im): the control contract returns the
+   * pledgor's whole escrow on the leg once the oracle feed records the secured party's default. */
+  reclaim(reclaimId: Hex, securedParty: Address, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "reclaim", [reclaimId, securedParty, cdmHash]);
   }
 
   /** Every close-out a party is in, from the ClosedOut events (securedParty and pledgor are indexed). */
@@ -888,7 +901,7 @@ export class BesuAdapter implements LedgerAdapter {
   // Enforced events for one pledgor/secured-party pair. Enforcement moves the pair's whole escrow to the secured
   // party, so a reader counts only the calls settled after the pair's last enforcement. Scanned in windows like
   // listCalls.
-  async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }> {
+  async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[]; reclaimed: { reclaimId: Hex; block: string }[] }> {
     const settled = (await this.scan(this.reg.contracts.marginCall, marginCallAbi, "CallSettled")).map((l) => ({
       callId: (l.args as { callId: Hex }).callId, block: l.blockNumber.toString(),
     }));
@@ -899,7 +912,11 @@ export class BesuAdapter implements LedgerAdapter {
     const closedOut = (await this.scan(this.reg.contracts.collateralControl, controlAbi, "ClosedOut", { securedParty, pledgor })).map((l) => ({
       closeOutId: (l.args as { closeOutId: Hex }).closeOutId, block: l.blockNumber.toString(),
     }));
-    return { settled, enforced, closedOut };
+    // A reclaim empties the leg's escrow too (wp-adr-two-way-im).
+    const reclaimed = (await this.scan(this.reg.contracts.collateralControl, controlAbi, "Reclaimed", { pledgor, securedParty })).map((l) => ({
+      reclaimId: (l.args as { reclaimId: Hex }).reclaimId, block: l.blockNumber.toString(),
+    }));
+    return { settled, enforced, closedOut, reclaimed };
   }
 
   // The lifecycle steps of one call, in chain order, each with its CDM hash — the authoritative ordered commitment
@@ -975,6 +992,8 @@ export class BesuAdapter implements LedgerAdapter {
             onEvent({ event: name, callId: a.callId, party: a.pledgor, ...meta(log) });
           } else if (name === "ClosedOut") {
             onEvent({ event: name, closeOutId: a.closeOutId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
+          } else if (name === "Reclaimed") {
+            onEvent({ event: name, reclaimId: (a as any).reclaimId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "SubstitutionRequested" || name === "SubstitutionDecided" || name === "SubstitutionSettled") {
             onEvent({ event: name, substitutionId: a.substitutionId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "AmendmentProposed") {

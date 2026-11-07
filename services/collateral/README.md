@@ -77,9 +77,9 @@ time). Deferred, and tracked as open items:
 
 ```
 mvn -DskipTests package                      # builds target/collateral-service.jar (shaded)
-PARTY_ID=A NODE=bank-a ROLE=Pledgor PORT=8001 GATEWAY_URL=http://localhost:8201 STORE_TOKEN=<token-a> \
+PARTY_ID=A NODE=bank-a PORT=8001 GATEWAY_URL=http://localhost:8201 STORE_TOKEN=<token-a> \
   java -jar target/collateral-service.jar
-PARTY_ID=B NODE=bank-b ROLE="Secured Party" PORT=8002 GATEWAY_URL=http://localhost:8202 STORE_TOKEN=<token-b> \
+PARTY_ID=B NODE=bank-b PORT=8002 GATEWAY_URL=http://localhost:8202 STORE_TOKEN=<token-b> \
   java -jar target/collateral-service.jar
 ```
 
