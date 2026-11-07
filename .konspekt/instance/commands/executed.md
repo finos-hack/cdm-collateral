@@ -302,3 +302,16 @@ at execution time.
 | task-csa-allocation | 28f7edbc3c88d24849691639402bbcfbc3c4987b |
 | task-csa-allocation | 28f7edbc3c88d24849691639402bbcfbc3c4987b |
 | task-csa-allocation | 77579a1ff8034f225ce33765e818924d4e54c868 |
+| task-csa-allocation | 45257f8782597fc02c4f74a64429dce054d8e2aa |
+| task-csa-allocation | d3443701afbcd5f492526b2d52c36bde293af5a1 |
+| task-csa-allocation | e6da3c47a7fc06f74225ac9a679328f60313f467 |
+| task-csa-allocation | 10954550d20c2e70bbd4c360a4c5f4744ff805e9 |
+| task-csa-allocation | 10954550d20c2e70bbd4c360a4c5f4744ff805e9 |
+| task-csa-allocation | b384b5b52514ff472cda1f0cf1877ceb46d5a1d2 |
+| task-csa-allocation | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
+| task-csa-allocation | 23fd2d14dc5ae2b3a6d232509a03a91ef9dba720 |
+| task-csa-allocation | 1496d6e7458e5e4023c1e6c43cf6bb434b9c1624 |
+| task-csa-allocation | 9c11a4f2a5205ce29af245f06b493d3b13d54796 |
+| task-csa-allocation | 067ced05febaedcdaaf1f1ff0b25c901b2915015 |
+| task-csa-allocation | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
+| task-csa-allocation | c4f95fb4e2e3bddcdf37890a3f8d4a5b72bf4e39 |

@@ -791,3 +791,14 @@ excluded.
 | task-csa-allocation | 04499c653ec6cdaa506047b022d05c02336aea9a | cdm-ext/rosetta/cdmx-collateral-allocation-type.rosetta | 2026-11-07T16:05:00Z |
 | task-csa-allocation | 04499c653ec6cdaa506047b022d05c02336aea9a | cdm-ext/src/test/java/cdmx/AllocationTest.java | 2026-11-07T16:05:00Z |
 | task-csa-allocation | 04499c653ec6cdaa506047b022d05c02336aea9a | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T16:05:00Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | architecture/README.md | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | architecture/prototype.architecture.json | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | console/e2e/live.spec.ts | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | console/src/components/LiveConsole.test.tsx | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | console/src/components/LiveConsole.tsx | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | console/src/domain/liveApi.ts | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | docs/cdm-development/gap-register.md | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | services/collateral/src/main/java/collateral/App.java | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | services/collateral/src/main/java/collateral/CdmAllocation.java | 2026-11-07T16:42:20Z |
+| task-csa-allocation | 8d2617e7f5bbd65724d0644fdddc2d4359866e08 | services/collateral/src/test/java/collateral/CdmAllocationTest.java | 2026-11-07T16:42:20Z |
