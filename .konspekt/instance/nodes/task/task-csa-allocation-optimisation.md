@@ -3,7 +3,7 @@ id: task-csa-allocation-optimisation
 type: task
 title: Optimise the suggested collateral basket by cost instead of a fixed ranking order
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 844ed07f9135d9e47306d591ccfec3e236390623
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:27:28Z
   confidence: 0.7
 createdAt: 2026-11-07T18:27:28Z
-updatedAt: 2026-11-07T18:27:28Z
+updatedAt: 2026-11-07T18:32:00Z
 ```
 # Task: optimise the suggested collateral basket by cost
 

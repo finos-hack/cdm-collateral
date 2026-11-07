@@ -3,7 +3,7 @@ id: task-live-spec-duration
 type: task
 title: Find out why each live spec takes 30 seconds to a minute
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: csa-section-b
   sourceRef: 844ed07f9135d9e47306d591ccfec3e236390623
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:27:28Z
   confidence: 0.7
 createdAt: 2026-11-07T18:27:28Z
-updatedAt: 2026-11-07T18:27:28Z
+updatedAt: 2026-11-07T18:32:00Z
 ```
 # Task: find out why each live spec takes 30 seconds to a minute
 

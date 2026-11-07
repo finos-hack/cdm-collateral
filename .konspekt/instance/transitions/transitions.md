@@ -758,3 +758,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-alloc-allocopt | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
 | edge:e-dec-e2eflow-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
 | edge:e-lnk-cilivestack-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
+| node:task-sme-allocation-concentration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| node:task-csa-allocation-optimisation | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| node:task-live-spec-duration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-dec-cdmdev-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-lnk-alloc-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-dec-csaext-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-lnk-alloc-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-dec-e2eflow-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| edge:e-lnk-cilivestack-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
