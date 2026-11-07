@@ -173,7 +173,7 @@ public final class App {
     /**
      * Act on one pushed chain event before relaying it. Returned, Enforced and DefaultPublished are recorded in this
      * party's store (flow-return transition 14, flow-default-enforcement transition 8: the pledgor's service records the
-     * default and each service records the enforcement). A SettleCall step is folded at once, so each service holds the
+     * default and each service records the enforcement). A SettleCall step is folded at once (retried until the fold includes it), so each service holds the
      * settled MarginCallState without waiting for a console to ask. A failure here never stops the relay.
      */
     private void onLedgerEvent(String data) {
@@ -204,7 +204,10 @@ public final class App {
                     store.recordEvent(event, callId, party, block, logIndex, data);
                 }
             } else if ("SettleCall".equals(e.path("step").asText()) && involvesMe(e.path("callId").asText(null))) {
-                cdmStateFor(e.get("callId").asText());
+                String id = e.get("callId").asText();
+                Map<String, Object> r = cdmStateFor(id);
+                // The pushed step can precede the gateway's log scan; then the fold above is the cached pre-settle state.
+                if (!(r.get("stepRecord") instanceof List<?> l && l.contains("SettleCall"))) folds.submit(() -> foldIncluding(id, "SettleCall"));
             } else if (e.has("step") && involvesMe(e.path("callId").asText(null))) {
                 String id = e.get("callId").asText();
                 String step = e.get("step").asText();
@@ -951,7 +954,10 @@ public final class App {
         String since = cfg.registry.path("deployedAt").asText("1970-01-01T00:00:00Z");
         List<cdmx.collateral.reconciliation.LedgerFact> recorded = new ArrayList<>();
         for (Map.Entry<String, String> e : store.statesSince(since).entrySet()) {
+            // The same table holds folded substitutions (CollateralSubstitution, keyed by substitution id): not call records.
             try {
+                String type = Config.MAPPER.readTree(e.getValue()).path("@type").asText("");
+                if (!type.isEmpty() && !type.equals(MarginCallState.class.getName())) continue;
                 MarginCallState st = CdmRuntime.JSON.readValue(e.getValue(), MarginCallState.class);
                 recorded.addAll(CdmReconciliation.recordedFacts(e.getKey().toLowerCase(), st));
             } catch (Exception ex) {
