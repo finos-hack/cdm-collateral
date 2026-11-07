@@ -106,6 +106,20 @@ class MarginCallTest {
     }
 
     @Test
+    void returnStatesTheMarginItReturned() {  // flow-reconciliation: the escrow positions are rebuilt from the records
+        Call c = returnCall();
+        c.apply("settle", o("releasedValue", money(4_299_999), "returnedMarginType", "RegIM"));
+        assertEquals(cdm.event.common.RegMarginTypeEnum.REG_IM, c.state.getSettlement().getReturnedMarginType());
+    }
+
+    @Test
+    void onlyAReturnStatesTheMarginReturned() {
+        var s = cdmx.collateral.margincall.SettleCallInstruction.builder().setProposalId("P-1")
+                .setReturnedMarginType(cdm.event.common.RegMarginTypeEnum.VM).build();
+        assertTrue(failedText(s).contains("ReturnedMarginTypeOnReturn"), failedText(s));
+    }
+
+    @Test
     void returnCannotReleaseMoreThanAgreed() {
         Call c = returnCall();
         assertTrue(rejected(() -> c.apply("settle", o("releasedValue", money(4_400_000)))).contains("no more than the agreed amount"));

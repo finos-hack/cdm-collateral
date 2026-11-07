@@ -798,6 +798,12 @@ function ReconciliationCard(props: { party: LiveParty; other: LiveParty; latest:
         <div className="subcard" data-testid="ledger-reconciliation">
           <strong>{ledger.reconciled ? <span className="ok">records match the ledger ✓</span> : <span className="bad">{ledger.breaks.length} differences from the ledger</span>}</strong>{" "}
           <span className="small">· {ledger.calls} calls, {ledger.checkedFacts} facts checked</span>
+          {ledger.escrow && (
+            <div className="small" data-testid="ledger-escrow">
+              escrow ({ledger.escrow.record.replace(/^escrow /, "")}):{" "}
+              {Object.keys(ledger.escrow.ledger).length === 0 ? "none" : Object.entries(ledger.escrow.ledger).map(([t, q]) => `${t} ${q.toLocaleString("en-US")}`).join(", ")}
+            </div>
+          )}
           {ledger.breaks.length > 0 && (
             <ul className="small">
               {ledger.breaks.map((b) => (

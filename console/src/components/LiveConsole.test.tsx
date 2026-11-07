@@ -382,11 +382,12 @@ describe("flow-reconciliation", () => {
   it("reconciles the party's records with the ledger", async () => {
     const user = userEvent.setup();
     serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
-      "POST /reconciliation/ledger": { party: "BANK-B", counterparty: "BANK-A", reconciled: true, checkedFacts: 9, calls: 3, breaks: [] },
+      "POST /reconciliation/ledger": { party: "BANK-B", counterparty: "BANK-A", reconciled: true, checkedFacts: 9, calls: 3, breaks: [], escrow: { record: "escrow BANK-A to BANK-B", recorded: { tUST: 1200 }, ledger: { tUST: 1200 } } },
     });
     await user.click(within(await card()).getByRole("button", { name: "Reconcile with ledger" }));
     expect(await within(await card()).findByTestId("ledger-reconciliation")).toHaveTextContent("records match the ledger ✓");
     expect(within(await card()).getByTestId("ledger-reconciliation")).toHaveTextContent("3 calls, 9 facts checked");
+    expect(within(await card()).getByTestId("ledger-escrow")).toHaveTextContent("escrow (BANK-A to BANK-B): tUST 1,200");
   });
 
   it("the called party disputes an issued call citing the latest reconciliation, offered only when it has breaks", async () => {

@@ -278,6 +278,19 @@ public final class Store implements AutoCloseable {
         }
     }
 
+    /** The latest block of each recorded event of one kind, by call or other identifier (e.g. SubstitutionSettled). */
+    public Map<String, Long> eventBlocks(String event) {
+        Map<String, Long> out = new LinkedHashMap<>();
+        try (PreparedStatement q = conn.prepareStatement("SELECT call_id, block FROM ledger_events WHERE event = ? ORDER BY id")) {
+            q.setString(1, event);
+            ResultSet rs = q.executeQuery();
+            while (rs.next()) if (rs.getString(1) != null) out.merge(rs.getString(1).toLowerCase(), Long.parseLong(rs.getString(2)), Math::max);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return out;
+    }
+
     /** The names of the events recorded for a call, oldest first (e.g. whether a call was enforced). */
     public List<String> eventsFor(String callId) {
         List<String> out = new ArrayList<>();

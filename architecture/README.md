@@ -165,7 +165,7 @@ READMEs are the authority. Oracle service: design only.
     result hashes match. Breaks are trades missing at one party, differing key economic terms and valuations outside
     the tolerance. The called party can dispute an issued call citing the run (a CDM Dispute). A party also reconciles
     its stored MarginCallStates with the chain on request (cdm-ext `ReconcileWithLedger`: status, called and agreed
-    amounts). Key terms, tolerance and cadence await a business SME (`task-sme-reconciliation-rules`).
+    amounts, and the pledgor's escrow by token as its settled records build it against the control contract's). Key terms, tolerance and cadence await a business SME (`task-sme-reconciliation-rules`).
 
 ## Running N participants
 

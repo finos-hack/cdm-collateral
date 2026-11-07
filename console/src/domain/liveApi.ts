@@ -125,6 +125,8 @@ export interface LiveLedgerReconciliation {
   checkedFacts: number;
   calls: number;
   breaks: { record: string; attribute: string; type: string; recorded: string | null; ledger: string | null }[];
+  /** The pledgor's escrow by token: as the party's CDM records build it and as the control contract holds it. */
+  escrow?: { record: string; recorded: Record<string, number>; ledger: Record<string, number> };
 }
 
 export const api = {

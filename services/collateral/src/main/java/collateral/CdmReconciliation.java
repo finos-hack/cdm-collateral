@@ -227,6 +227,70 @@ public final class CdmReconciliation {
         return out;
     }
 
+    /** A settled CDM record that moves escrow (a MarginCallState or a CollateralSubstitution), with its settlement block. */
+    public record EscrowMovement(String recordJson, long block) {}
+
+    /** The escrow record's identifier in the ledger reconciliation: one record per pledgor and secured party. */
+    public static String escrowRecord(String pledgorBank, String securedPartyBank) {
+        return "escrow " + pledgorBank + " to " + securedPartyBank;
+    }
+
+    /**
+     * The pledgor's escrow with the secured party, by token, as the party's own CDM records state it: since the pair's
+     * escrow was last emptied (enforcement or close-out, block {@code emptiedAt}), each settled initial margin delivery
+     * adds its accepted proposal's positions, each return that released initial margin (returnedMarginType RegIM)
+     * removes its released collateral, and each settled substitution swaps the original for the substitute collateral.
+     * Variation margin moves title directly and never enters escrow. Records written before the margin types were
+     * recorded (VM calls stated as RegIM, returns without returnedMarginType) are read as they state.
+     */
+    public static Map<String, Long> recordedEscrow(List<EscrowMovement> calls, List<EscrowMovement> substitutions,
+                                                   long emptiedAt, Map<String, String> symbolByIsin) {
+        Map<String, Long> held = new java.util.TreeMap<>();
+        try {
+            for (EscrowMovement m : calls) {
+                if (m.block() <= emptiedAt) continue;
+                JsonNode d = Config.MAPPER.readTree(m.recordJson());
+                if (!"Settled".equals(d.path("status").asText())) continue;
+                JsonNode settle = d.path("settlement");
+                boolean im = "RegIM".equals(d.path("issuance").path("regMarginType").asText());
+                if ("Delivery".equals(d.path("direction").asText()) && im) {
+                    String proposalId = settle.path("proposalId").asText();
+                    for (JsonNode p : d.path("proposal"))
+                        if (proposalId.equals(p.path("proposalIdentifier").path("assignedIdentifier").path(0).path("identifier").path("@data").asText()))
+                            move(held, p.path("proposedCollateral"), 1, symbolByIsin);
+                } else if ("Return".equals(d.path("direction").asText()) && "RegIM".equals(settle.path("returnedMarginType").asText())) {
+                    move(held, settle.path("releasedCollateral"), -1, symbolByIsin);
+                }
+            }
+            for (EscrowMovement m : substitutions) {
+                if (m.block() <= emptiedAt) continue;
+                JsonNode after = Config.MAPPER.readTree(m.recordJson()).path("after");
+                if (!"Settled".equals(after.path("status").asText())) continue;
+                move(held, after.path("request").path("originalCollateral"), -1, symbolByIsin);
+                move(held, after.path("request").path("substituteCollateral"), 1, symbolByIsin);
+            }
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("stored record unreadable: " + e.getMessage(), e);
+        }
+        held.values().removeIf(q -> q == 0);
+        return held;
+    }
+
+    private static void move(Map<String, Long> held, JsonNode positions, int sign, Map<String, String> symbolByIsin) {
+        for (JsonNode p : positions) {
+            String isin = p.path("asset").path("identifier").path(0).path("identifier").path("@data").asText();
+            long units = p.path("priceQuantity").path(0).path("quantity").path("value").decimalValue().longValueExact();
+            held.merge(symbolByIsin.getOrDefault(isin, isin), sign * units, Long::sum);
+        }
+    }
+
+    /** Escrow positions as ledger facts: one per token held, the attribute the token and the value its whole units. */
+    public static List<LedgerFact> escrowFacts(String record, Map<String, Long> held) {
+        List<LedgerFact> out = new ArrayList<>();
+        for (Map.Entry<String, Long> e : held.entrySet()) if (e.getValue() != 0) out.add(fact(record, e.getKey(), String.valueOf(e.getValue())));
+        return out;
+    }
+
     /** Java enum constant (e.g. PARTIALLY_AGREED) to the Rune enum name (PartiallyAgreed). */
     static String toStatusName(String javaName) {
         StringBuilder b = new StringBuilder();

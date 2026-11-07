@@ -935,8 +935,9 @@ public final class App {
 
     /**
      * Records against the chain: the status, called and agreed amounts of each call between the pair, as this party's
-     * stored CDM MarginCallStates state them and as the contract states them. Records stored before the current
-     * deployment are left out.
+     * stored CDM MarginCallStates state them and as the contract states them, and the pledgor's escrow with the secured
+     * party by token, as this party's settled CDM records build it (CdmReconciliation.recordedEscrow) and as the control
+     * contract holds it. Records stored before the current deployment are left out.
      */
     private void reconcileWithLedger(Context ctx) {
         String me = cfg.myAddress, other = cfg.partyAddress(counterparty());
@@ -953,7 +954,8 @@ public final class App {
         }
         String since = cfg.registry.path("deployedAt").asText("1970-01-01T00:00:00Z");
         List<cdmx.collateral.reconciliation.LedgerFact> recorded = new ArrayList<>();
-        for (Map.Entry<String, String> e : store.statesSince(since).entrySet()) {
+        Map<String, String> states = store.statesSince(since);
+        for (Map.Entry<String, String> e : states.entrySet()) {
             // The same table holds folded substitutions (CollateralSubstitution, keyed by substitution id): not call records.
             try {
                 String type = Config.MAPPER.readTree(e.getValue()).path("@type").asText("");
@@ -964,8 +966,39 @@ public final class App {
                 throw new IllegalStateException("stored state of " + e.getKey() + " unreadable: " + ex.getMessage(), ex);
             }
         }
+
+        // Escrow positions: the pledgor's collateral the control contract holds for the secured party.
+        boolean iPledge = cfg.role.equals("Pledgor");
+        String pledgor = iPledge ? me : other, securedParty = iPledge ? other : me;
+        String escrow = CdmReconciliation.escrowRecord(iPledge ? myBank() : counterpartyBank(), iPledge ? counterpartyBank() : myBank());
+        JsonNode hist = gw.getQuery("/settlement-history", Map.of("pledgor", pledgor, "securedParty", securedParty));
+        long emptiedAt = -1;
+        for (JsonNode e : hist.path("enforced")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+        for (JsonNode e : hist.path("closedOut")) emptiedAt = Math.max(emptiedAt, e.get("block").asLong());
+        Map<String, Long> settledAt = new HashMap<>();
+        for (JsonNode e : hist.path("settled")) settledAt.merge(e.get("callId").asText().toLowerCase(), e.get("block").asLong(), Math::max);
+        Map<String, Long> substitutedAt = store.eventBlocks("SubstitutionSettled");
+        List<CdmReconciliation.EscrowMovement> callMoves = new ArrayList<>(), substitutionMoves = new ArrayList<>();
+        for (Map.Entry<String, String> e : states.entrySet()) {
+            String id = e.getKey().toLowerCase();
+            if (settledAt.containsKey(id) && pairCalls.contains(id)) callMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), settledAt.get(id)));
+            else if (substitutedAt.containsKey(id)) substitutionMoves.add(new CdmReconciliation.EscrowMovement(e.getValue(), substitutedAt.get(id)));
+        }
+        Map<String, String> symbolByIsin = new HashMap<>();
+        Map<String, Long> onChainEscrow = new java.util.TreeMap<>();
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            symbolByIsin.put(cfg.isin(sym), sym);
+            long qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", cfg.tokenAddress(sym), "pledgor", pledgor, "securedParty", securedParty)).asText()).longValueExact();
+            if (qty != 0) onChainEscrow.put(sym, qty);
+        }
+        Map<String, Long> recordedEscrow = CdmReconciliation.recordedEscrow(callMoves, substitutionMoves, emptiedAt, symbolByIsin);
+        recorded.addAll(CdmReconciliation.escrowFacts(escrow, recordedEscrow));
+        onLedger.addAll(CdmReconciliation.escrowFacts(escrow, onChainEscrow));
+
         Map<String, Object> v = CdmReconciliation.view(CdmReconciliation.withLedger(myBank(), counterpartyBank(), recorded, onLedger));
         v.put("calls", pairCalls.size());
+        v.put("escrow", Map.of("record", escrow, "recorded", recordedEscrow, "ledger", onChainEscrow));
         ctx.json(v);
     }
 
@@ -1021,7 +1054,7 @@ public final class App {
         String callId = Cdm.onChainId(cfg.partyId + "-" + n + "-" + System.nanoTime());
         String direction = kind.equals("Return") ? "Return" : "Delivery";
         Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, direction,
-                replaces == null ? null : Cdm.cdmCallId(replaces));
+                replaces == null ? null : Cdm.cdmCallId(replaces), Cdm.regMarginType(kind));
         if (replaces != null && !cdm.replaces(foldedCall(replaces)))
             throw new RuntimeException("the CDM state of call " + replaces + " does not allow this replacement (ReplacementAllowed)");
         record(callId, "IssueCall", cdm);
@@ -1055,7 +1088,8 @@ public final class App {
         String action = c.get("kind").asInt() == 2 ? "Return" : "Delivery"; // a return call is agreed and then released
         // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
         long units = Math.max(1, agreedUsd);
-        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()));
+        Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()),
+                Cdm.regMarginType(CALL_KIND_NAME[c.get("kind").asInt()]));
         record(callId, "RespondToCall", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
         Map<String, Object> out = new LinkedHashMap<>(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
@@ -1257,7 +1291,7 @@ public final class App {
             gwAssets.add(Map.of("token", cfg.tokenAddress(sym), "qty", String.valueOf(qty)));
             cdmAssets.add(new LinkedHashMap<>(Map.of("isin", cfg.isin(sym), "units", qty)));
         }
-        Cdm cdm = Cdm.settleReturn(cdmAssets, agreedUsd);
+        Cdm cdm = Cdm.settleReturn(cdmAssets, agreedUsd, null, via.equals("transfer") ? "VM" : "RegIM");
         record(callId, "SettleCall", cdm);
         String path = via.equals("transfer") ? "/return-transfer" : "/return";
         gw.post("/calls/" + callId + path, Map.of("assets", gwAssets, "cdmHash", cdm.hash));

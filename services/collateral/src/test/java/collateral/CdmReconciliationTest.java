@@ -70,4 +70,48 @@ class CdmReconciliationTest {
         assertEquals(3, r.getCheckedFactCount());
         assertEquals(2, r.getLedgerBreak().size());
     }
+
+    private static String pos(String isin, long units) {
+        return "{\"priceQuantity\":[{\"quantity\":{\"value\":" + units + "}}],\"asset\":{\"identifier\":[{\"identifier\":{\"@data\":\"" + isin + "\"}}]}}";
+    }
+
+    private static CdmReconciliation.EscrowMovement delivery(String margin, String isin, long units, long block) {
+        return new CdmReconciliation.EscrowMovement("{\"issuance\":{\"regMarginType\":\"" + margin + "\"},\"direction\":\"Delivery\",\"status\":\"Settled\","
+                + "\"settlement\":{\"proposalId\":\"P-1\"},\"proposal\":[{\"proposalIdentifier\":{\"assignedIdentifier\":[{\"identifier\":{\"@data\":\"P-0\"}}]},\"proposedCollateral\":[" + pos(isin, 999) + "]},"
+                + "{\"proposalIdentifier\":{\"assignedIdentifier\":[{\"identifier\":{\"@data\":\"P-1\"}}]},\"proposedCollateral\":[" + pos(isin, units) + "]}]}", block);
+    }
+
+    private static CdmReconciliation.EscrowMovement ret(String returned, String isin, long units, long block) {
+        String type = returned == null ? "" : ",\"returnedMarginType\":\"" + returned + "\"";
+        return new CdmReconciliation.EscrowMovement("{\"issuance\":{\"regMarginType\":\"RegIM\"},\"direction\":\"Return\",\"status\":\"Settled\","
+                + "\"settlement\":{\"releasedCollateral\":[" + pos(isin, units) + "]" + type + "}}", block);
+    }
+
+    @Test
+    void escrowFromTheRecordsCountsInitialMarginOnlySinceTheEscrowWasEmptied() {
+        Map<String, String> sym = Map.of("UST", "tUST", "USD", "tUSD", "MMF", "tMMF");
+        var calls = List.of(
+                delivery("RegIM", "UST", 500, 5),   // before the enforcement at block 10: left out
+                delivery("RegIM", "UST", 1_000, 11),
+                delivery("VM", "USD", 70_000, 12),  // VM passes title directly
+                ret("RegIM", "UST", 300, 13),
+                ret("VM", "USD", 20_000, 14),
+                ret(null, "UST", 100, 15));         // a return recorded before returnedMarginType: not read as a release
+        var subs = List.of(new CdmReconciliation.EscrowMovement("{\"after\":{\"status\":\"Settled\",\"request\":{\"originalCollateral\":["
+                + pos("UST", 200) + "],\"substituteCollateral\":[" + pos("MMF", 40) + "]}}}", 16));
+        assertEquals(Map.of("tUST", 500L, "tMMF", 40L), CdmReconciliation.recordedEscrow(calls, subs, 10, sym));
+    }
+
+    @Test
+    void anEscrowDifferenceIsABreak() {
+        String rec = CdmReconciliation.escrowRecord("BANK-A", "BANK-B");
+        LedgerReconciliation r = CdmReconciliation.withLedger("BANK-A", "BANK-B",
+                CdmReconciliation.escrowFacts(rec, Map.of("tUST", 500L)),
+                CdmReconciliation.escrowFacts(rec, Map.of("tUST", 450L, "tMMF", 40L)));
+        assertFalse(r.getReconciled());
+        List<String> got = new ArrayList<>();
+        for (var b : r.getLedgerBreak()) got.add(b.getAttribute() + ":" + b.getBreakType());
+        got.sort(null);
+        assertEquals(List.of("tMMF:MissingFromRecords", "tUST:ValueDiffers"), got);
+    }
 }

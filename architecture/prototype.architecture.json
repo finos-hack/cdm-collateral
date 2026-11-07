@@ -1567,7 +1567,7 @@
     {
       "unique-id": "flow-reconciliation",
       "name": "Reconciliation (trade portfolios and records against the ledger)",
-      "description": "Either party reconciles (task-csa-reconciliation, gap G35; the project owner's scope of 2026-11-07, wp-adr-reconciliation-scope). Trade portfolios: each party's workflow service holds CDM sample TradeStates and its own valuation of each; the initiating party sends its PortfolioSnapshot to the counterparty's service, each commits its snapshot hash on-chain, and both run cdm-ext ReconcilePortfolios (trades matched by UTI on key economic terms and a valuation tolerance, with each party's exposure) and commit the result hash; the run is Agreed on-chain when the hashes match. The called party can dispute an issued call citing the run's breaks (a CDM Dispute, G3). Records against the ledger: cdm-ext ReconcileWithLedger compares the status, called and agreed amounts in the party's stored MarginCallStates with the contract's. Key terms, tolerance and cadence await task-sme-reconciliation-rules.",
+      "description": "Either party reconciles (task-csa-reconciliation, gap G35; the project owner's scope of 2026-11-07, wp-adr-reconciliation-scope). Trade portfolios: each party's workflow service holds CDM sample TradeStates and its own valuation of each; the initiating party sends its PortfolioSnapshot to the counterparty's service, each commits its snapshot hash on-chain, and both run cdm-ext ReconcilePortfolios (trades matched by UTI on key economic terms and a valuation tolerance, with each party's exposure) and commit the result hash; the run is Agreed on-chain when the hashes match. The called party can dispute an issued call citing the run's breaks (a CDM Dispute, G3). Records against the ledger: cdm-ext ReconcileWithLedger compares the status, called and agreed amounts in the party's stored MarginCallStates with the contract's, and the pledgor's escrow by token as the party's settled records build it (initial margin deliveries, returns that released initial margin, substitutions, since the pair's last enforcement or close-out) with the control contract's escrow. Key terms, tolerance and cadence await task-sme-reconciliation-rules.",
       "transitions": [
         {
           "relationship-unique-id": "pledgor-uses-console",
@@ -1607,12 +1607,12 @@
         {
           "relationship-unique-id": "service-to-store",
           "sequence-number": 8,
-          "description": "Service reads its stored CDM MarginCallStates of the pair's calls."
+          "description": "Service reads its stored CDM MarginCallStates of the pair's calls and its settled substitutions, and builds the pledgor's escrow by token from them."
         },
         {
           "relationship-unique-id": "service-to-gateway",
           "sequence-number": 9,
-          "description": "Service reads the pair's calls from the margin call contract and runs ReconcileWithLedger on the two sets of facts."
+          "description": "Service reads the pair's calls from the margin call contract, the escrow from the control contract and the last enforcement or close-out from the settlement history, and runs ReconcileWithLedger on the two sets of facts."
         }
       ]
     },

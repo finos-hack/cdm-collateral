@@ -1214,18 +1214,25 @@ test("flow-reconciliation: pledgor reconciles trade portfolios with the secured 
   const dispute = JSON.parse(disputed!.messages.find((m) => m.msgType === "Dispute")!.cdmJson);
   expect(dispute.reason).toBe(`Portfolio reconciliation ${a.reconciliationId}: 2 breaks; 56323 MissingFromSecond; DRTY123456 ValuationDiffers; exposure difference USD 115000`);
 
-  // 4. Each party's stored CDM records of the pair's calls match the contract (status, called and agreed amounts).
+  // 4. Each party's stored CDM records of the pair's calls match the contract (status, called and agreed amounts), and
+  //    the escrow its settled records build matches the control contract's, token by token.
+  type Escrow = { record: string; recorded: Record<string, number>; ledger: Record<string, number> };
+  const escrows: Escrow[] = [];
   for (const svc of [SERVICE.A, SERVICE.B]) {
-    let last: unknown;
+    let last: { breaks: unknown[]; escrow: Escrow } | undefined;
     await expect
       .poll(async () => {
-        const r = await call<{ reconciled: boolean; calls: number; checkedFacts: number; breaks: unknown[] }>(`${svc}/reconciliation/ledger`, "POST", {});
-        last = r.breaks;
+        const r = await call<{ reconciled: boolean; calls: number; checkedFacts: number; breaks: unknown[]; escrow: Escrow }>(`${svc}/reconciliation/ledger`, "POST", {});
+        last = r;
         return r.reconciled && r.calls > 0 && r.checkedFacts >= 2 * r.calls;
       }, { timeout: 60_000, message: `ledger reconciliation at ${svc}` })
       .toBe(true);
-    expect(last).toEqual([]);
+    expect(last!.breaks).toEqual([]);
+    expect(last!.escrow.recorded).toEqual(last!.escrow.ledger);
+    escrows.push(last!.escrow);
   }
+  expect(escrows[0]).toEqual(escrows[1]); // both parties' records give the same escrow
+  expect(escrows[0].record).toBe("escrow BANK-A to BANK-B");
   await page.getByTestId("reconciliation").getByRole("button", { name: "Reconcile with ledger" }).click();
   await expect(page.getByTestId("ledger-reconciliation")).toContainText("records match the ledger ✓", { timeout: STEP_TIMEOUT });
 
