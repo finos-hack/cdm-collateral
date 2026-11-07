@@ -894,3 +894,4 @@ excluded.
 | task-konspekt-checkpoint-adoption | fa15b602f6ac15e2d997d2447dbe796a7bed54e1 | .konspekt/lib/conformance.mjs | 2026-11-07T22:13:39Z |
 | task-konspekt-checkpoint-adoption | fa15b602f6ac15e2d997d2447dbe796a7bed54e1 | AGENTS.md | 2026-11-07T22:13:39Z |
 | task-repo-gmra-workflows | 2dc51c3fc7b660c365904196989d70267b2c2933 | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T22:36:28Z |
+| task-repo-default-close-out | 07e75cb5f8c8775a4197d6aba796a8d5e3f4a1aa | docs/analysis/cdm-workflow-task-map.md | 2026-11-07T23:12:05Z |
