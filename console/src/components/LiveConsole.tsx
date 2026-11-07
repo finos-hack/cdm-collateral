@@ -10,7 +10,7 @@
 // (flow-interest-on-cash); the pledgor pays a negative amount. Either party reconciles its trade portfolio with the
 // counterparty's and its CDM records with the chain, and can dispute an issued call citing the portfolio breaks
 // (flow-reconciliation).
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
   serviceUrl,
@@ -57,27 +57,57 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [nettings, setNettings] = useState<LiveNetting[]>([]);
   const [recons, setRecons] = useState<LivePortfolioReconciliation[]>([]);
 
-  const refresh = useCallback(async () => {
+  // One refresh in flight at a time (task-live-read-latency): a refresh asked for while one runs (an SSE step, the
+  // fallback poll, an action) is merged into one more pass after it, so requests do not pile up behind the browser's
+  // per-host connection limit and an older pass cannot overwrite a newer one.
+  const inFlight = useRef<Promise<void> | null>(null);
+  const again = useRef(false);
+  const securedRef = useRef<boolean | null>(null);
+
+  const refreshOnce = useCallback(async () => {
     try {
+      const panels: Promise<unknown>[] = [];
+      // Shown to the secured party only (render below); a failure here must not hide the call state.
+      if (securedRef.current !== false) panels.push(api.revaluation(party).then(setReval).catch(() => setReval(null)));
+      panels.push(
+        api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([])),
+        api.substitutions(party).then(setSubs).catch(() => setSubs([])),
+        api.interest(party).then(setInterest).catch(() => setInterest([])),
+        api.nettingCandidates(party).then((c) => setCandidates(Array.isArray(c?.movements) ? c : null)).catch(() => setCandidates(null)),
+        api.nettings(party).then((n) => setNettings(Array.isArray(n) ? n : [])).catch(() => setNettings([])),
+        api.reconciliations(party).then((r) => setRecons(Array.isArray(r) ? r : [])).catch(() => setRecons([])),
+        api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null)),
+      );
       setState(await api.state(party));
       setError(null);
-      // Shown to the secured party only (render below); a failure here must not hide the call state.
-      api.revaluation(party).then(setReval).catch(() => setReval(null));
-      api.closeOuts(party).then(setCloseOuts).catch(() => setCloseOuts([]));
-      api.substitutions(party).then(setSubs).catch(() => setSubs([]));
-      api.interest(party).then(setInterest).catch(() => setInterest([]));
-      api.nettingCandidates(party).then((c) => setCandidates(Array.isArray(c?.movements) ? c : null)).catch(() => setCandidates(null));
-      api.nettings(party).then((n) => setNettings(Array.isArray(n) ? n : [])).catch(() => setNettings([]));
-      api.reconciliations(party).then((r) => setRecons(Array.isArray(r) ? r : [])).catch(() => setRecons([]));
-      api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null));
+      await Promise.all(panels);
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
     }
   }, [party]);
 
+  const refresh = useCallback((): Promise<void> => {
+    if (inFlight.current) {
+      again.current = true;
+      return inFlight.current;
+    }
+    const loop = (async () => {
+      do {
+        again.current = false;
+        await refreshOnce();
+      } while (again.current);
+    })().finally(() => { inFlight.current = null; });
+    inFlight.current = loop;
+    return loop;
+  }, [refreshOnce]);
+
+
   useEffect(() => {
     let live = true;
-    api.context(party).then(setCtx).catch((e) => setError((e as Error).message));
+    api.context(party).then((c) => {
+      securedRef.current = c.role === "Secured Party";
+      setCtx(c);
+    }).catch((e) => setError((e as Error).message));
     refresh();
     // Push: subscribe to the service's live event stream (Besu ws -> gateway -> service -> here) and refresh on each
     // change signal, instead of a tight poll. A slow fallback poll covers any gap if the stream is unavailable.

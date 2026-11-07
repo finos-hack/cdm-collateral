@@ -15,6 +15,13 @@ control contract, the tokenized collateral tokens and the oracle feed. Part of `
 | `PortfolioReconciliation.sol` | Portfolio reconciliation between two parties (`flow-reconciliation`, `wp-adr-reconciliation-scope`). `commitSnapshot` records the hash of a party's trade snapshot; the snapshots themselves go service to service. `commitResult` records, once per party and run, the hash of the reconciliation result and its break count; the run (`reconciliationIdOf` the two snapshot ids) becomes `Agreed` when both result hashes match and `Disagreed` otherwise. No trade data is on-chain. Kept separate from `CollateralControl.sol`, which is close to the EIP-170 size limit. |
 | `CollateralTypes.sol` | Shared enums and structs, mirroring the CDM lifecycle in `../cdm-ext`. |
 
+## Test balances
+
+`scripts/deploy.ts` mints the parties' free balances from `scripts/test-balances.json`. The live specs move value from
+the pledgor to the secured party, so `scripts/live-e2e.sh check` first runs `scripts/top-up-test-balances.mjs`, which
+mints each party's shortfall back to those targets with the tokens' dev-only `mint` (`task-live-test-balances`).
+Escrowed collateral is left as it is.
+
 ## EVM target
 
 The Besu genesis activates **Berlin + London only** (no Shanghai), so the EVM has no `PUSH0`. `hardhat.config.ts` pins

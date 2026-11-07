@@ -3,7 +3,7 @@
 // QBFT gives immediate per-block finality, so a mined receipt is final (concept-asr-settlement-finality): each write
 // waits for its receipt before returning. The chain charges no gas (genesis zeroBaseFee, --min-gas-price=0), so every
 // write is a legacy transaction with gasPrice 0.
-import { createPublicClient, createWalletClient, defineChain, http, webSocket, getAddress, parseAbi, toEventSelector } from "viem";
+import { createPublicClient, createWalletClient, decodeEventLog, defineChain, http, webSocket, getAddress, parseAbi, toEventSelector } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { loadNodeKey, loadRegistry } from "./registry.ts";
@@ -410,7 +410,11 @@ export class BesuAdapter implements LedgerAdapter {
     });
     const acct = privateKeyToAccount(loadNodeKey(node));
     this.account = getAddress(acct.address);
-    this.pub = createPublicClient({ chain, transport: http(rpc) });
+    // viem polls for a transaction receipt every 4 s by default, twice the 2 s block period, so each send() waited about
+    // 4 s (task-gateway-receipt-poll). Only the receipt wait polls this client; the live events come over WebSocket.
+    const pollingInterval = Number(process.env.GATEWAY_RECEIPT_POLL_MS ?? 250);
+    // Concurrent reads (listCalls reads four values per call) go to Besu as JSON-RPC batches (task-live-read-latency).
+    this.pub = createPublicClient({ chain, transport: http(rpc, { batch: { batchSize: 200 } }), pollingInterval });
     this.wallet = createWalletClient({ account: acct, chain, transport: http(rpc) });
     // Besu exposes a WebSocket JSON-RPC on the http port + 1 (besu/docker-compose.yml --rpc-ws-enabled); the live
     // event subscription (watchSteps -> eth_subscribe) runs over it, the historical scan stays on http.
@@ -426,17 +430,42 @@ export class BesuAdapter implements LedgerAdapter {
     return this.pub.getBlockNumber({ cacheTime: 0 });
   }
 
+  // One key per gateway: sends run one at a time, and the gateway tracks the next nonce itself. Right after a receipt
+  // (now polled every 250 ms) the node's pending nonce can still be the used one, and viem reused it ("Nonce provided
+  // for the transaction is lower than the current nonce", flow-agreement-amendment, task-gateway-receipt-poll).
+  private sendQueue: Promise<unknown> = Promise.resolve();
+  private nextNonce = 0;
+
+  private send(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
+    const run = this.sendQueue.then(() => this.sendNow(address, abi, functionName, args));
+    this.sendQueue = run.catch(() => undefined);
+    return run;
+  }
+
   // gasPrice 0 forces a legacy transaction, which the zero-base-fee Besu chain accepts.
-  private async send(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
-    const txHash = await this.wallet.writeContract({
-      address,
-      abi: abi as never,
-      functionName,
-      args: args as never,
-      account: this.wallet.account!,
-      chain: this.wallet.chain,
-      gasPrice: 0n,
-    });
+  private async sendNow(address: Address, abi: readonly unknown[], functionName: string, args: unknown[]): Promise<{ txHash: Hex; block: bigint }> {
+    let txHash: Hex | undefined;
+    for (let attempt = 0; txHash === undefined; attempt++) {
+      const pending = await this.pub.getTransactionCount({ address: this.account, blockTag: "pending" });
+      const nonce = Math.max(pending, this.nextNonce);
+      try {
+        txHash = await this.wallet.writeContract({
+          address,
+          abi: abi as never,
+          functionName,
+          args: args as never,
+          account: this.wallet.account!,
+          chain: this.wallet.chain,
+          gasPrice: 0n,
+          nonce,
+        });
+        this.nextNonce = nonce + 1;
+      } catch (e) {
+        // A nonce the node has already seen: count past it and send again, once.
+        if (attempt === 0 && /nonce/i.test(String((e as Error).message))) { this.nextNonce = nonce + 1; continue; }
+        throw e;
+      }
+    }
     const receipt = await this.pub.waitForTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") throw new Error(`${functionName} reverted (tx ${txHash})`);
     return { txHash, block: receipt.blockNumber };
@@ -714,18 +743,60 @@ export class BesuAdapter implements LedgerAdapter {
     return out;
   }
 
-  // Logs of one event from the deploy block to the latest, in windows under Besu's eth_getLogs range cap.
-  private async scan(address: Address, abi: readonly any[], name: string, args: Record<string, unknown>): Promise<any[]> {
-    const event = abi.find((x: any) => x.type === "event" && x.name === name) as never;
-    const latest = await this.latestBlock();
-    const start = BigInt(this.reg.deployBlock ?? 0);
-    const WINDOW = 4000n;
+  // The log index (task-live-read-latency): every log of each contract the gateway reads, from the deploy block,
+  // extended on each read by the blocks mined since the last one, in windows under Besu's eth_getLogs range cap. A
+  // read no longer rescans the chain from the deploy block, so its cost stops growing with chain age. QBFT finalises
+  // at mining (concept-asr-settlement-finality), so indexed logs never change.
+  private readonly logIndex = new Map<string, { to: bigint; logs: any[]; busy: Promise<unknown> }>();
+
+  private async contractLogs(address: Address): Promise<any[]> {
+    const key = address.toLowerCase();
+    let entry = this.logIndex.get(key);
+    if (!entry) {
+      entry = { to: BigInt(this.reg.deployBlock ?? 0) - 1n, logs: [], busy: Promise.resolve() };
+      this.logIndex.set(key, entry);
+    }
+    const e = entry;
+    const run = e.busy.then(async () => {
+      const latest = await this.latestBlock();
+      const WINDOW = 4000n;
+      for (let from = e.to + 1n; from <= latest; from += WINDOW) {
+        const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
+        e.logs.push(...(await this.pub.getLogs({ address, fromBlock: from, toBlock: to })));
+        e.to = to;
+      }
+    });
+    e.busy = run.catch(() => undefined);
+    await run;
+    return e.logs;
+  }
+
+  // Logs of one event, decoded, whose arguments equal every value in args (the indexed-topic filter of eth_getLogs).
+  private async scan(address: Address, abi: readonly any[], name: string, args: Record<string, unknown> = {}): Promise<any[]> {
+    const event = abi.find((x: any) => x.type === "event" && x.name === name);
+    if (!event) throw new Error(`no event ${name} in the ABI`);
+    const selector = toEventSelector(event).toLowerCase();
+    const same = (x: unknown, y: unknown) => String(x).toLowerCase() === String(y).toLowerCase();
     const out: any[] = [];
-    for (let from = start; from <= latest; from += WINDOW) {
-      const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
-      out.push(...(await this.pub.getLogs({ address, event, args: args as never, fromBlock: from, toBlock: to })));
+    for (const log of await this.contractLogs(address)) {
+      if ((log.topics[0] ?? "").toLowerCase() !== selector) continue;
+      const decoded = decodeEventLog({ abi: [event], data: log.data, topics: log.topics }) as { args: Record<string, unknown> };
+      if (!Object.entries(args).every(([k, v]) => same(decoded.args[k], v))) continue;
+      out.push({ ...log, args: decoded.args, eventName: name });
     }
     return out;
+  }
+
+  // Mined receipts never change, so each is read once.
+  private readonly receiptCache = new Map<Hex, Awaited<ReturnType<PublicClient["getTransactionReceipt"]>>>();
+
+  private async receipt(hash: Hex) {
+    let r = this.receiptCache.get(hash);
+    if (!r) {
+      r = await this.pub.getTransactionReceipt({ hash });
+      this.receiptCache.set(hash, r);
+    }
+    return r;
   }
 
   /** Write a party's default status to the oracle feed. Only the publisher (the market operator's key) may write, so
@@ -805,23 +876,12 @@ export class BesuAdapter implements LedgerAdapter {
   // Discover the calls a party is involved in by scanning CallIssued logs (from and to are indexed). Used by each
 // participant's workflow service to learn of calls it did not itself issue, with the chain as the shared source.
   async listCalls(party: Address): Promise<{ callId: Hex; call: OnChainCall }[]> {
-    // Besu caps the eth_getLogs block range, so scan from the deploy block in windows under that cap.
-    const event = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallIssued") as never;
-    const latest = await this.latestBlock();
-    const start = BigInt(this.reg.deployBlock ?? 0);
-    const WINDOW = 4000n;
     const ids = new Set<Hex>();
-    for (let from = start; from <= latest; from += WINDOW) {
-      const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
-      const logs = await this.pub.getLogs({ address: this.reg.contracts.marginCall, event, fromBlock: from, toBlock: to });
-      for (const log of logs) {
-        const a = (log as any).args as { callId: Hex; from: Address; to: Address };
-        if (getAddress(a.from) === party || getAddress(a.to) === party) ids.add(a.callId);
-      }
+    for (const log of await this.scan(this.reg.contracts.marginCall, marginCallAbi, "CallIssued")) {
+      const a = log.args as { callId: Hex; from: Address; to: Address };
+      if (getAddress(a.from) === party || getAddress(a.to) === party) ids.add(a.callId);
     }
-    const out: { callId: Hex; call: OnChainCall }[] = [];
-    for (const callId of ids) out.push({ callId, call: await this.getCall(callId) });
-    return out;
+    return Promise.all([...ids].map(async (callId) => ({ callId, call: await this.getCall(callId) })));
   }
 
   // Settlement history for revaluation (flow-revaluation-top-up): the block of every CallSettled event, and the
@@ -829,23 +889,12 @@ export class BesuAdapter implements LedgerAdapter {
   // party, so a reader counts only the calls settled after the pair's last enforcement. Scanned in windows like
   // listCalls.
   async settlementHistory(pledgor: Address, securedParty: Address): Promise<{ settled: { callId: Hex; block: string }[]; enforced: { callId: Hex; block: string }[]; closedOut: { closeOutId: Hex; block: string }[] }> {
-    const settledEvent = marginCallAbi.find((x: any) => x.type === "event" && x.name === "CallSettled") as never;
-    const enforcedEvent = controlAbi.find((x: any) => x.type === "event" && x.name === "Enforced") as never;
-    const latest = await this.latestBlock();
-    const start = BigInt(this.reg.deployBlock ?? 0);
-    const WINDOW = 4000n;
-    const settled: { callId: Hex; block: string }[] = [];
-    const enforced: { callId: Hex; block: string }[] = [];
-    for (let from = start; from <= latest; from += WINDOW) {
-      const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
-      for (const log of await this.pub.getLogs({ address: this.reg.contracts.marginCall, event: settledEvent, fromBlock: from, toBlock: to })) {
-        settled.push({ callId: (log as any).args.callId as Hex, block: (log as any).blockNumber.toString() });
-      }
-      const pair = { securedParty, pledgor } as never;
-      for (const log of await this.pub.getLogs({ address: this.reg.contracts.collateralControl, event: enforcedEvent, args: pair, fromBlock: from, toBlock: to })) {
-        enforced.push({ callId: (log as any).args.callId as Hex, block: (log as any).blockNumber.toString() });
-      }
-    }
+    const settled = (await this.scan(this.reg.contracts.marginCall, marginCallAbi, "CallSettled")).map((l) => ({
+      callId: (l.args as { callId: Hex }).callId, block: l.blockNumber.toString(),
+    }));
+    const enforced = (await this.scan(this.reg.contracts.collateralControl, controlAbi, "Enforced", { securedParty, pledgor })).map((l) => ({
+      callId: (l.args as { callId: Hex }).callId, block: l.blockNumber.toString(),
+    }));
     // A close-out empties the pair's escrow like an enforcement (flow-close-out-netting).
     const closedOut = (await this.scan(this.reg.contracts.collateralControl, controlAbi, "ClosedOut", { securedParty, pledgor })).map((l) => ({
       closeOutId: (l.args as { closeOutId: Hex }).closeOutId, block: l.blockNumber.toString(),
@@ -860,30 +909,20 @@ export class BesuAdapter implements LedgerAdapter {
   // transaction (for a settlement, the token Transfer and Pledged or Transferred logs). QBFT finalises at mining
   // (concept-asr-settlement-finality), so a mined, successful transaction is Final.
   async callSteps(callId: Hex): Promise<CallStep[]> {
-    const specs = STEP_EVENTS;
-    const latest = await this.latestBlock();
-    const start = BigInt(this.reg.deployBlock ?? 0);
-    const WINDOW = 4000n;
     const rows: (Omit<CallStep, "status" | "txLogs" | "network"> & { bn: bigint })[] = [];
-    for (const s of specs) {
-      const event = marginCallAbi.find((x: any) => x.type === "event" && x.name === s.name) as never;
-      for (let from = start; from <= latest; from += WINDOW) {
-        const to = from + WINDOW - 1n > latest ? latest : from + WINDOW - 1n;
-        const logs = await this.pub.getLogs({ address: this.reg.contracts.marginCall, event, args: { callId } as never, fromBlock: from, toBlock: to });
-        for (const log of logs) {
-          const l = log as any;
-          rows.push({
-            step: s.step, event: s.name, cdmHash: (l.args as { cdmHash?: Hex }).cdmHash as Hex,
-            block: l.blockNumber.toString(), logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex,
-            contract: (l.address as string).toLowerCase(), bn: l.blockNumber,
-          });
-        }
+    for (const s of STEP_EVENTS) {
+      for (const l of await this.scan(this.reg.contracts.marginCall, marginCallAbi, s.name, { callId })) {
+        rows.push({
+          step: s.step, event: s.name, cdmHash: (l.args as { cdmHash?: Hex }).cdmHash as Hex,
+          block: l.blockNumber.toString(), logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex,
+          contract: (l.address as string).toLowerCase(), bn: l.blockNumber,
+        });
       }
     }
     rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
     const network = { name: "besu-prototype", platform: "Hyperledger Besu", chainId: this.reg.chainId };
     const receipts = new Map<Hex, Awaited<ReturnType<PublicClient["getTransactionReceipt"]>>>();
-    for (const r of rows) if (!receipts.has(r.txHash)) receipts.set(r.txHash, await this.pub.getTransactionReceipt({ hash: r.txHash }));
+    for (const r of rows) if (!receipts.has(r.txHash)) receipts.set(r.txHash, await this.receipt(r.txHash));
     return rows.map(({ bn, ...r }) => {
       const receipt = receipts.get(r.txHash)!;
       const txLogs = receipt.logs

@@ -235,6 +235,8 @@ cmd_check() {
     say "ensuring the Playwright Chromium browser is installed"
     ( cd console && npx playwright install chromium )
   fi
+  say "restoring the test parties' free balances (contracts/scripts/top-up-test-balances.mjs)"
+  ( cd contracts && node scripts/top-up-test-balances.mjs ) || die "could not top up the test balances"
   say "running the live flows (console/e2e/live.spec.ts) against ${E2E_BASE_URL:-http://localhost:5173}"
   cd console
   E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:5173}" E2E_REQUIRE_STACK=1 \
