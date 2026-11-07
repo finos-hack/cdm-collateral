@@ -298,3 +298,7 @@ at execution time.
 | task-csa-settlement-netting | e04e008451bce666082e4f5b262614bc8daca733 |
 | task-csa-settlement-netting | a0739d988608c8978cad0578bcbd5dca4579c2b6 |
 | task-csa-settlement-netting | c4f95fb4e2e3bddcdf37890a3f8d4a5b72bf4e39 |
+| task-csa-allocation | 28f7edbc3c88d24849691639402bbcfbc3c4987b |
+| task-csa-allocation | 28f7edbc3c88d24849691639402bbcfbc3c4987b |
+| task-csa-allocation | 28f7edbc3c88d24849691639402bbcfbc3c4987b |
+| task-csa-allocation | 77579a1ff8034f225ce33765e818924d4e54c868 |
