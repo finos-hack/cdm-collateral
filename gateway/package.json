@@ -7,12 +7,14 @@
   "scripts": {
     "serve": "node src/server.ts",
     "cycle": "node src/run-cycle.ts",
-    "test:gateway": "node src/run-cycle.ts"
+    "test:gateway": "node src/run-cycle.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "viem": "^2.21.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5"
+    "@types/node": "^26.6.5",
+    "typescript": "^5.6.3"
   }
 }
