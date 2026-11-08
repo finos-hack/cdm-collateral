@@ -3,7 +3,7 @@ id: task-sme-repo-reprice-rules
 type: task
 title: Confirm with a business SME the rules for repricing a repo under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-reprice
   sourceRef: 729ada99275ed710b1515fb8acc6de27fa1df799
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T15:59:51Z
   confidence: 0.6
 createdAt: 2026-11-08T15:59:51Z
-updatedAt: 2026-11-08T15:59:51Z
+updatedAt: 2026-11-08T16:33:21Z
 ```
 # Task: confirm the rules for repricing a repo under the GMRA
 

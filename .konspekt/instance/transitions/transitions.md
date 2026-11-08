@@ -946,3 +946,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-repricadr | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
 | edge:e-dec-cdmdev-smereprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
 | edge:e-lnk-reprice-smereprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| waypoint:wp-adr-repo-reprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| node:task-sme-repo-reprice-rules | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| edge:e-mrk-repricadr-reprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| edge:e-drv-cdmdata-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| edge:e-drv-finality-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| edge:e-dec-cdmdev-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| edge:e-lnk-reprice-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |

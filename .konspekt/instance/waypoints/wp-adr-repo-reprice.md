@@ -3,7 +3,7 @@ id: wp-adr-repo-reprice
 kind: decision
 subtype: adr
 timestamp: 2026-11-08T15:59:51Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-reprice
   sourceRef: 729ada99275ed710b1515fb8acc6de27fa1df799
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T15:59:51Z
   confidence: 0.7
 createdAt: 2026-11-08T15:59:51Z
-updatedAt: 2026-11-08T15:59:51Z
+updatedAt: 2026-11-08T16:33:21Z
 ```
 
 # ADR: a reprice is an alternative to a margin call, one CDM reprice event per open repo, settled by a new phase of RepoSettlement

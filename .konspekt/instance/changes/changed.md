@@ -975,3 +975,4 @@ excluded.
 | task-repo-reprice | 8ef6cb8383da0554a2235d7df03d9be09a032d92 | services/collateral/src/main/java/collateral/CdmRepo.java | 2026-11-08T16:19:23Z |
 | task-repo-reprice | 8ef6cb8383da0554a2235d7df03d9be09a032d92 | services/collateral/src/main/java/collateral/CdmRepoMargin.java | 2026-11-08T16:19:23Z |
 | task-repo-reprice | 8ef6cb8383da0554a2235d7df03d9be09a032d92 | services/collateral/src/test/java/collateral/CdmRepoTest.java | 2026-11-08T16:19:23Z |
+| task-repo-reprice | b0f242e5875fd217710f2a8043a9e2cc0407c5d6 | console/e2e/live.spec.ts | 2026-11-08T16:33:21Z |
