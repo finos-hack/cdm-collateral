@@ -978,3 +978,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-subadr | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
 | edge:e-dec-cdmdev-smesubst | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
 | edge:e-lnk-subst-smesubst | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
+| waypoint:wp-adr-repo-substitution | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| node:task-sme-repo-substitution-rules | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| edge:e-mrk-subadr-substitution | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| edge:e-drv-cdmdata-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| edge:e-drv-finality-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| edge:e-dec-cdmdev-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| edge:e-lnk-subst-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |

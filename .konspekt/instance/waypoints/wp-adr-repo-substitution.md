@@ -3,7 +3,7 @@ id: wp-adr-repo-substitution
 kind: decision
 subtype: adr
 timestamp: 2026-11-08T19:59:37Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-substitution
   sourceRef: 1f591034dc560e55251b72785553d524701abbf3
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T19:59:37Z
   confidence: 0.7
 createdAt: 2026-11-08T19:59:37Z
-updatedAt: 2026-11-08T19:59:37Z
+updatedAt: 2026-11-08T20:23:50Z
 ```
 
 # ADR: a repo substitution replaces all the securities of one repo at equal value, settled by a new phase of RepoSettlement

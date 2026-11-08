@@ -3,7 +3,7 @@ id: task-sme-repo-substitution-rules
 type: task
 title: Confirm with a business SME the rules for substituting repo securities under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-substitution
   sourceRef: 1f591034dc560e55251b72785553d524701abbf3
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T19:59:37Z
   confidence: 0.6
 createdAt: 2026-11-08T19:59:37Z
-updatedAt: 2026-11-08T19:59:37Z
+updatedAt: 2026-11-08T20:23:50Z
 ```
 # Task: confirm the rules for substituting repo securities under the GMRA
 
