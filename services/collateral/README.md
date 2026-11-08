@@ -137,7 +137,13 @@ trade this service rebuilt from the booked document and checked against it, `ver
 this party's leg and instructs; the repurchase only on or after the Repurchase Date by the business date),
 `GET /repos/{id}/trade` (the hashes of the TradeState this service holds and, once repurchased, of the closed
 TradeState from CDM's Repurchase event), `GET|POST /business-date` (body `businessDate`; the prototype's business
-date, today at start), and
+date, today at start),
+`GET /repo-margin` (this party's Net Exposure across the purchased repos, the Net Margin held from settled GMRA calls at the
+feed prices, the callable amount and the Net Margin interest statements; wp-adr-repo-margin-maintenance),
+`POST /repo-margin/calls` (a `VM` call for the Net Exposure above this party's minimum transfer amount, its CDM issuance
+naming the GMRA; the called party recomputes it before agreeing in full, and proposals must cover it at the feed prices),
+`POST /repo-margin/interest` (body `periodStart`, `periodEnd`, `observedRatePct`; the holder of Cash Margin states and
+pays the interest), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

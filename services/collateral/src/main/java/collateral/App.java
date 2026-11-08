@@ -950,14 +950,24 @@ public final class App {
     private boolean isGmraCall(String callId) {
         Boolean known = gmraCalls.get(callId.toLowerCase());
         if (known != null) return known;
-        JsonNode steps = gw.get("/calls/" + callId + "/steps");
-        if (steps.isEmpty()) return false;
-        String hash = steps.get(0).get("cdmHash").asText();
-        String doc = payloads.get(hash);
-        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return false;
-        boolean gmra = CdmRepoMargin.isGmraIssue(doc);
-        gmraCalls.put(callId.toLowerCase(), gmra);
-        return gmra;
+        // The gateway's log scan and the payload store can lag the mined issuance by a moment.
+        for (int attempt = 0; attempt < 5; attempt++) {
+            JsonNode steps = gw.get("/calls/" + callId + "/steps");
+            String hash = steps.isEmpty() ? null : steps.get(0).get("cdmHash").asText();
+            String doc = hash == null ? null : payloads.get(hash);
+            if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
+                boolean gmra = CdmRepoMargin.isGmraIssue(doc);
+                gmraCalls.put(callId.toLowerCase(), gmra);
+                return gmra;
+            }
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return false;
     }
 
     private record RepoMarginState(List<Map<String, Object>> rows, BigDecimal held, long cashHeld, BigDecimal net) {}
