@@ -40,6 +40,8 @@
     ".konspekt/instance/waypoints/wp-adr-prototype-ledgers.md",
     ".konspekt/instance/waypoints/wp-adr-reconciliation-scope.md",
     ".konspekt/instance/waypoints/wp-adr-replacement-call-link.md",
+    ".konspekt/instance/waypoints/wp-adr-repo-gmra-scope.md",
+    ".konspekt/instance/waypoints/wp-adr-repo-gmra-terms.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",
     ".konspekt/instance/waypoints/wp-adr-substitution-fold-portfolio.md",

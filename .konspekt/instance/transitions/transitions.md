@@ -892,3 +892,15 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-repo-default-close-out | review |  | proposed | 2026-11-07T23:11:58Z |  |  |
 | node:task-repo-default-close-out | status |  | open | 2026-11-07T23:11:58Z |  |  |
 | edge:e-dec-repogmra-defaultcloseout | review |  | proposed | 2026-11-07T23:11:58Z |  |  |
+| node:task-repo-default-close-out | review | proposed | accepted | 2026-11-07T23:13:00Z |  | denisurusov |
+| edge:e-dec-repogmra-defaultcloseout | review | proposed | accepted | 2026-11-07T23:13:00Z |  | denisurusov |
+| noteworthy:nw-e2e-first-cycle-scope | review | proposed | accepted | 2026-11-07T23:13:17Z |  | denisurusov |
+| waypoint:wp-adr-repo-gmra-terms | review |  | proposed | 2026-11-07T23:26:59Z |  |  |
+| edge:e-mrk-gmratermsadr-gmraterms | review |  | proposed | 2026-11-07T23:26:59Z |  |  |
+| edge:e-drv-cdmdata-gmratermsadr | review |  | proposed | 2026-11-07T23:26:59Z |  |  |
+| edge:e-drv-finality-gmratermsadr | review |  | proposed | 2026-11-07T23:26:59Z |  |  |
+| waypoint:wp-adr-repo-gmra-terms | review | proposed | accepted | 2026-11-08T00:01:49Z |  | denisurusov |
+| edge:e-mrk-gmratermsadr-gmraterms | review | proposed | accepted | 2026-11-08T00:01:49Z |  | denisurusov |
+| edge:e-drv-cdmdata-gmratermsadr | review | proposed | accepted | 2026-11-08T00:01:49Z |  | denisurusov |
+| edge:e-drv-finality-gmratermsadr | review | proposed | accepted | 2026-11-08T00:01:49Z |  | denisurusov |
+| node:task-repo-gmra-terms | status | open | resolved | 2026-11-08T00:02:30Z |  | denisurusov |

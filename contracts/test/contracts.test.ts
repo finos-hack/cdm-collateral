@@ -759,6 +759,51 @@ describe("CDM collateral contracts", async () => {
     });
   });
 
+  describe("master agreement terms: GMRA chain per pair (task-repo-gmra-terms)", () => {
+    const GMRA = keccak256(toHex("GMRA"));
+    const G = id(60);
+    const H2 = keccak256(toHex("cdm-2"));
+
+    it("moves the pair's GMRA terms hash on consent, either party proposing, and leaves the CSA chain alone", async () => {
+      await control.write.proposeTermsAmendment([G, GMRA, bAddr, zeroHash, H], { account: bankA.account });
+      const pair = await control.read.pairKey([aAddr, bAddr]);
+      assert.equal(pair, await control.read.pairKey([bAddr, aAddr]));
+      assert.equal(await control.read.pendingTermsAmendment([GMRA, pair]), G);
+      await control.write.decideTermsAmendment([G, true, H2], { account: bankB.account });
+      assert.equal(await control.read.termsHash([GMRA, pair]), H);
+      assert.equal(await control.read.pendingTermsAmendment([GMRA, pair]), zeroHash);
+      assert.equal(await control.read.amendmentKind([G]), GMRA);
+      const [a] = await control.read.getAmendment([G]);
+      assert.equal(a.state, 2); // Agreed
+      assert.equal(getAddress(a.proposer), aAddr);
+      assert.equal(await control.read.agreementHash([aAddr, bAddr]), zeroHash); // CSA chain
+      await control.write.proposeTermsAmendment([id(61), GMRA, aAddr, H, H2], { account: bankB.account }); // B proposes next
+      await control.write.decideTermsAmendment([id(61), true, H], { account: bankA.account });
+      assert.equal(await control.read.termsHash([GMRA, pair]), H2);
+    });
+
+    it("leaves the terms hash unchanged on refusal", async () => {
+      await control.write.proposeTermsAmendment([G, GMRA, bAddr, zeroHash, H], { account: bankA.account });
+      await control.write.decideTermsAmendment([G, false, H2], { account: bankB.account });
+      assert.equal((await control.read.getAmendment([G]))[0].state, 3); // Refused
+      assert.equal(await control.read.termsHash([GMRA, await control.read.pairKey([aAddr, bAddr])]), zeroHash);
+    });
+
+    it("rejects no kind, oneself, a stale hash, a second pending amendment, the proposer or an outsider deciding, and crossing chains", async () => {
+      const [, , , outsider] = await viem.getWalletClients();
+      await assert.rejects(control.write.proposeTermsAmendment([G, zeroHash, bAddr, zeroHash, H], { account: bankA.account }));
+      await assert.rejects(control.write.proposeTermsAmendment([G, GMRA, aAddr, zeroHash, H], { account: bankA.account }));
+      await assert.rejects(control.write.proposeTermsAmendment([G, GMRA, bAddr, H, H], { account: bankA.account })); // stale
+      await control.write.proposeTermsAmendment([G, GMRA, bAddr, zeroHash, H], { account: bankA.account });
+      await assert.rejects(control.write.proposeTermsAmendment([id(62), GMRA, aAddr, zeroHash, H], { account: bankB.account })); // pending
+      await assert.rejects(control.write.decideTermsAmendment([G, true, H2], { account: bankA.account })); // proposer
+      await assert.rejects(control.write.decideTermsAmendment([G, true, H2], { account: outsider.account }));
+      await assert.rejects(control.write.decideAmendment([G, true, H2], { account: bankB.account })); // CSA path
+      await control.write.proposeAmendment([id(63), aAddr, bAddr, [], zeroHash, H], { account: bankA.account });
+      await assert.rejects(control.write.decideTermsAmendment([id(63), true, H2], { account: bankB.account })); // GMRA path
+    });
+  });
+
   describe("portfolio reconciliation record (task-csa-reconciliation)", () => {
     let rec: any, bankC: any;
     const H = (s: string) => keccak256(toHex(s));

@@ -185,6 +185,14 @@ export const api = {
   /** Either party: propose an amendment (a new pledgor MTA, haircut changes) to the counterparty. */
   proposeAmendment: (p: LiveParty, mtaUsd: number | null, haircuts: LiveHaircutTerm[]) =>
     req<{ amendmentId: string; cdmHash: string; proposeTx: string }>(p, "POST", "/amendments", { mtaUsd, haircuts }),
+  /** The GMRA terms in force and the pair's GMRA amendments (wp-adr-repo-gmra-terms). */
+  gmraTerms: (p: LiveParty) => req<LiveGmraTerms>(p, "GET", "/gmra/terms"),
+  /** Either party: propose a GMRA amendment, one party's MTA and/or the default Margin Ratio. */
+  proposeGmraAmendment: (p: LiveParty, change: { party?: LiveParty; mtaUsd?: number | null; defaultMarginRatio?: string | null }) =>
+    req<{ amendmentId: string; cdmHash: string; changed: string[]; proposeTx: string }>(p, "POST", "/gmra/amendments", change),
+  /** The counterparty: consent to or refuse a proposed GMRA amendment. */
+  decideGmraAmendment: (p: LiveParty, amendmentId: string, consent: boolean) =>
+    req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/gmra/amendments/${amendmentId}/decision`, { consent }),
   /** The other party: consent to or refuse a proposed amendment. */
   decideAmendment: (p: LiveParty, amendmentId: string, consent: boolean) =>
     req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/amendments/${amendmentId}/decision`, { consent }),
@@ -250,6 +258,45 @@ export interface LiveAmendment {
   /** The pledgor's new Minimum Transfer Amount, when the amendment changes the elections. */
   mtaUsd: string | null;
   effectiveDate?: string;
+}
+
+/** The GMRA elections as the service shows them (cdm-ext GmraElections). */
+export interface LiveGmraElections {
+  baseCurrency: string;
+  marginRatioBasis: string;
+  defaultMarginRatio: string;
+  mtaUsd: Record<LiveParty, string>;
+  marginTransfer: string;
+  netMarginInterest: string;
+  incomePayment: string;
+  defaultValuation: string;
+}
+
+export interface LiveGmraAmendment {
+  amendmentId: string;
+  block: string;
+  proposer: LiveParty;
+  mine: boolean;
+  state: "none" | "proposed" | "agreed" | "refused";
+  cdmHash: string;
+  changed?: string[];
+  after?: LiveGmraElections;
+  effectiveDate?: string;
+}
+
+export interface LiveGmraTerms {
+  agreement: string;
+  party1: string;
+  party2: string;
+  elections: LiveGmraElections;
+  /** Hash of the last agreed amendment as this service folded it, and as the contract records it. */
+  termsHash: string;
+  onChainTermsHash: string;
+  agreedAmendments: number;
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: LiveGmraAmendment[];
 }
 
 export interface LiveAgreement {

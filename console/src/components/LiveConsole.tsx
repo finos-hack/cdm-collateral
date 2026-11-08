@@ -25,6 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
+  type LiveGmraTerms,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -51,6 +52,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [closeOutUsd, setCloseOutUsd] = useState(1_000_000);
   const [interest, setInterest] = useState<LiveInterest[]>([]);
   const [agreement, setAgreement] = useState<LiveAgreement | null>(null);
+  const [gmra, setGmra] = useState<LiveGmraTerms | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -81,6 +83,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.nettings(party).then((n) => setNettings(Array.isArray(n) ? n : [])).catch(() => setNettings([])),
         api.reconciliations(party).then((r) => setRecons(Array.isArray(r) ? r : [])).catch(() => setRecons([])),
         api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null)),
+        api.gmraTerms(party).then((g) => setGmra(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmra(null)),
       );
       setState(await api.state(party));
       setError(null);
@@ -387,6 +390,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {candidates && <NettingCard party={party} candidates={candidates} nettings={nettings} busy={busy} run={run} />}
 
       {agreement && <AgreementTerms party={party} other={other} agreement={agreement} busy={busy} run={run} />}
+
+      {gmra && <GmraTermsCard party={party} other={other} gmra={gmra} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />
 
@@ -730,6 +735,86 @@ function AgreementTerms(props: { party: LiveParty; other: LiveParty; agreement: 
                     <>
                       <button disabled={busy} onClick={() => run(() => api.decideAmendment(party, m.amendmentId, true))}>Consent</button>
                       <button disabled={busy} onClick={() => run(() => api.decideAmendment(party, m.amendmentId, false))}>Refuse</button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/** The GMRA terms in force, the amendment form and the pair's GMRA amendments (wp-adr-repo-gmra-terms). */
+function GmraTermsCard(props: { party: LiveParty; other: LiveParty; gmra: LiveGmraTerms; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, gmra: g, busy, run } = props;
+  const [mtaParty, setMtaParty] = useState<LiveParty>("B");
+  const [mta, setMta] = useState<string>("");
+  const [ratio, setRatio] = useState<string>("");
+  const e = g.elections;
+  return (
+    <div className="card" data-testid="gmra-terms">
+      <h3>GMRA terms</h3>
+      <div className="small">{g.agreement} · Party1 {g.party1} · Party2 {g.party2}</div>
+      <div className="row">
+        <span>{g.agreedAmendments} agreed amendment{g.agreedAmendments === 1 ? "" : "s"}</span>
+        <span className="mono small" data-testid="gmra-hash">terms hash {short(g.termsHash)}</span>
+        <span data-testid="gmra-verified">
+          {g.verified ? <span className="ok">GMRA terms verified against the chain ✓</span> : <span className="bad">{g.problem ?? "GMRA terms do not match the chain"}</span>}
+        </span>
+      </div>
+      <table className="tbl">
+        <tbody>
+          <tr><th>Base Currency</th><td>{e.baseCurrency}</td></tr>
+          <tr><th>Margin Ratio</th><td>{e.marginRatioBasis}; default {e.defaultMarginRatio}</td></tr>
+          <tr data-testid="gmra-mta"><th>Minimum transfer amount</th><td>A {usd(e.mtaUsd.A)} · B {usd(e.mtaUsd.B)}</td></tr>
+          <tr><th>Margin transfer</th><td>{e.marginTransfer}</td></tr>
+          <tr><th>Net Margin interest</th><td>{e.netMarginInterest}</td></tr>
+          <tr><th>Income (paragraph 5)</th><td>{e.incomePayment}</td></tr>
+          <tr><th>Default valuation (paragraph 10)</th><td>{e.defaultValuation}</td></tr>
+        </tbody>
+      </table>
+      <div className="row">
+        <label>
+          MTA of{" "}
+          <select aria-label="GMRA MTA party" value={mtaParty} onChange={(ev) => setMtaParty(ev.target.value as LiveParty)}>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </label>
+        <label>
+          New MTA (USD) <input aria-label="New GMRA MTA (USD)" type="number" value={mta} placeholder="unchanged" step={50000} onChange={(ev) => setMta(ev.target.value)} style={{ width: 120 }} />
+        </label>
+        <label>
+          Default Margin Ratio <input aria-label="New default Margin Ratio" value={ratio} placeholder="unchanged" onChange={(ev) => setRatio(ev.target.value)} style={{ width: 80 }} />
+        </label>
+        <button
+          disabled={busy || !!g.pendingAmendment || !g.verified || (mta === "" && ratio === "")}
+          onClick={() => run(() => api.proposeGmraAmendment(party, { party: mtaParty, mtaUsd: mta === "" ? null : Number(mta), defaultMarginRatio: ratio === "" ? null : ratio }))}
+        >
+          Propose GMRA amendment → {other}
+        </button>
+      </div>
+      {g.amendments.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Amendment</th><th>Proposer</th><th>Changes</th><th>MTA after</th><th>State</th></tr>
+          </thead>
+          <tbody>
+            {g.amendments.map((m) => (
+              <tr key={m.amendmentId} data-testid={`gmra-amendment-${m.amendmentId}`}>
+                <td className="mono">{short(m.amendmentId)}</td>
+                <td>{m.proposer}</td>
+                <td>{m.changed?.join(", ") ?? "—"}</td>
+                <td>{m.after ? `A ${usd(m.after.mtaUsd.A)} · B ${usd(m.after.mtaUsd.B)}` : "—"}</td>
+                <td>
+                  {m.state === "agreed" ? <span className="ok">agreed on-chain ✓</span> : m.state}
+                  {m.state === "proposed" && !m.mine && (
+                    <>
+                      <button disabled={busy} onClick={() => run(() => api.decideGmraAmendment(party, m.amendmentId, true))}>Consent to GMRA amendment</button>
+                      <button disabled={busy} onClick={() => run(() => api.decideGmraAmendment(party, m.amendmentId, false))}>Refuse GMRA amendment</button>
                     </>
                   )}
                 </td>

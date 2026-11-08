@@ -36,6 +36,13 @@ contract CollateralControl is ReentrancyGuard {
     mapping(address => mapping(address => bytes32)) public pendingAmendment;
     mapping(bytes32 => Amendment) private _amendments;
     mapping(bytes32 => HaircutTerm[]) private _amendmentTerms;
+    // Master agreement terms (wp-adr-repo-gmra-terms): one hash chain per agreement kind and unordered pair, 0 for the
+    // baseline, then the hash of the CDM document of the last agreed amendment (GmraTermsAmendment for the GMRA). The
+    // elections themselves stay in that document. The CSA chain above is separate.
+    mapping(bytes32 => mapping(bytes32 => bytes32)) public termsHash;
+    mapping(bytes32 => mapping(bytes32 => bytes32)) public pendingTermsAmendment;
+    /// The agreement kind of a terms amendment (for example keccak256("GMRA")); 0 for a CSA amendment.
+    mapping(bytes32 => bytes32) public amendmentKind;
 
     // Pledged collateral held in escrow for initial margin, pooled per (pledgor, secured party).
     mapping(address => mapping(address => mapping(address => uint256))) private _pledged;
@@ -53,6 +60,8 @@ contract CollateralControl is ReentrancyGuard {
     event SubstitutionSettled(bytes32 indexed substitutionId, bytes32 cdmHash);
     event AmendmentProposed(bytes32 indexed amendmentId, address indexed pledgor, address indexed securedParty, address proposer, bytes32 cdmHash);
     event AmendmentDecided(bytes32 indexed amendmentId, bool consent, bytes32 cdmHash);
+    event TermsAmendmentProposed(bytes32 indexed amendmentId, bytes32 indexed kind, address indexed proposer, address counterparty, bytes32 cdmHash);
+    event TermsAmendmentDecided(bytes32 indexed amendmentId, bytes32 indexed kind, bool consent, bytes32 cdmHash);
     event InterestStated(bytes32 indexed interestId, address indexed securedParty, address indexed pledgor, address cashToken, int256 amount, bytes32 cdmHash);
     event InterestSettled(bytes32 indexed interestId, address indexed payer, address indexed payee, uint256 amount);
     /// settledBy pays the net amount to counterparty when it is above zero.
@@ -159,7 +168,7 @@ contract CollateralControl is ReentrancyGuard {
     function decideAmendment(bytes32 amendmentId, bool consent, bytes32 cdmHash) external {
         Amendment storage a = _amendments[amendmentId];
         if (a.state == AmendmentState.None) revert NoSuchAmendment();
-        if (a.state != AmendmentState.Proposed) revert BadState();
+        if (a.state != AmendmentState.Proposed || amendmentKind[amendmentId] != bytes32(0)) revert BadState();
         address other = a.proposer == a.pledgor ? a.securedParty : a.pledgor;
         if (msg.sender != other) revert WrongParty();
         if (cdmHash == bytes32(0)) revert BadState();
@@ -178,6 +187,49 @@ contract CollateralControl is ReentrancyGuard {
             agreementHash[a.pledgor][a.securedParty] = a.proposeCdmHash;
         }
         emit AmendmentDecided(amendmentId, consent, cdmHash);
+    }
+
+    /// The key of an unordered pair of parties.
+    function pairKey(address x, address y) public pure returns (bytes32) {
+        return x < y ? keccak256(abi.encode(x, y)) : keccak256(abi.encode(y, x));
+    }
+
+    /// @notice Propose an amendment of a master agreement's terms with `counterparty` (wp-adr-repo-gmra-terms).
+    /// `kind` names the agreement (keccak256("GMRA")); `beforeHash` must be the pair's current termsHash for it, and
+    /// only one amendment per kind and pair is pending. `cdmHash` is the hash of the CDM amendment document. The
+    /// amendment is stored with pledgor = the proposer and securedParty = the counterparty (no haircut terms).
+    function proposeTermsAmendment(bytes32 amendmentId, bytes32 kind, address counterparty, bytes32 beforeHash, bytes32 cdmHash) external {
+        if (kind == bytes32(0) || counterparty == msg.sender || counterparty == address(0)) revert WrongParty();
+        if (_amendments[amendmentId].state != AmendmentState.None || cdmHash == bytes32(0)) revert AmendmentExists();
+        bytes32 p = pairKey(msg.sender, counterparty);
+        if (pendingTermsAmendment[kind][p] != bytes32(0)) revert AmendmentPending();
+        if (termsHash[kind][p] != beforeHash) revert StaleAgreement(termsHash[kind][p], beforeHash);
+        Amendment storage a = _amendments[amendmentId];
+        a.pledgor = msg.sender;
+        a.securedParty = counterparty;
+        a.proposer = msg.sender;
+        a.state = AmendmentState.Proposed;
+        a.beforeHash = beforeHash;
+        a.proposeCdmHash = cdmHash;
+        amendmentKind[amendmentId] = kind;
+        pendingTermsAmendment[kind][p] = amendmentId;
+        emit TermsAmendmentProposed(amendmentId, kind, msg.sender, counterparty, cdmHash);
+    }
+
+    /// @notice The counterparty (this key) consents to or refuses a proposed terms amendment; on consent the pair's
+    /// termsHash for the kind becomes the amendment's hash.
+    function decideTermsAmendment(bytes32 amendmentId, bool consent, bytes32 cdmHash) external {
+        Amendment storage a = _amendments[amendmentId];
+        bytes32 kind = amendmentKind[amendmentId];
+        if (a.state == AmendmentState.None) revert NoSuchAmendment();
+        if (a.state != AmendmentState.Proposed || kind == bytes32(0) || cdmHash == bytes32(0)) revert BadState();
+        if (msg.sender != a.securedParty) revert WrongParty();
+        a.state = consent ? AmendmentState.Agreed : AmendmentState.Refused;
+        a.decisionCdmHash = cdmHash;
+        bytes32 p = pairKey(a.pledgor, a.securedParty);
+        pendingTermsAmendment[kind][p] = bytes32(0);
+        if (consent) termsHash[kind][p] = a.proposeCdmHash;
+        emit TermsAmendmentDecided(amendmentId, kind, consent, cdmHash);
     }
 
     function getAmendment(bytes32 amendmentId) external view returns (Amendment memory amendment, HaircutTerm[] memory terms) {

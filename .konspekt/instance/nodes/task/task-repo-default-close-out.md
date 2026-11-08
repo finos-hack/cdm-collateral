@@ -3,7 +3,7 @@ id: task-repo-default-close-out
 type: task
 title: Repo default and close-out under GMRA paragraph 10
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-gmra-scope
   sourceRef: 098fab36b2d91ff22a659917fbb8c77ca7aa4108

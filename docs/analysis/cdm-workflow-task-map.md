@@ -10,7 +10,7 @@ Sources: [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md),
 [`findings.md`](findings.md), [`collateral-conceptual-model.md`](collateral-conceptual-model.md),
 [`collateral-flows.md`](collateral-flows.md), [`business-case.md`](business-case.md) and the gap register
 [`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) (gap IDs G1–G39). Implementation status is
-as of branch `two-way-im` (PR #40, 2026-11-07); the 16 live specs of sections A and B passed locally on 2026-11-07.
+as of branch `repo-gmra-terms` (2026-11-07); the 16 live specs of sections A and B and the first of section C passed locally on 2026-11-07.
 
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other
 agreement families (section C). Section B starts only after the rest of section A is done: `flow-oracle-update`,
@@ -76,7 +76,7 @@ the Workflow column until their scope is decided.
 
 | # | Workflow | CDM status | `cdm-ext` | Prototype | Live spec | Task |
 |---|---|---|---|---|---|---|
-| 1 | Repo (GMRA): agreement terms and their amendment | empty `GlobalMasterRepoAgreement` (R1, score 1: G20); no GMRA terms amendment (R2, score 0: G19) | none yet | none yet | none | `task-repo-gmra-terms` |
+| 1 | Repo (GMRA): agreement terms and their amendment | empty `GlobalMasterRepoAgreement` (R1, score 1: G20); no GMRA terms amendment (R2, score 0: G19) | `GmraTerms` (CDM `LegalAgreementBase`, Party1 and Party2, the Annex I elections) and `GmraTermsAmendment` with the changed elections, qualified `AgreementTermsChange` (`cdmx.collateral.gmra`, `wp-adr-repo-gmra-terms`) | `flow-repo-gmra-terms`: built (`CollateralControl.proposeTermsAmendment` and `decideTermsAmendment`, one terms hash chain per agreement kind and pair; gateway, service fold in `CdmGmra`, console "GMRA terms" card); MTA and default Margin Ratio changes only | passes | `task-repo-gmra-terms` |
 | 2 | Repo (GMRA): purchase and repurchase settled delivery versus payment | Purchase Price and Repurchase Price computed (R6, score 3: no sample exercises it); repurchase transfer and term events usable (R10 score 4, R13 score 5) | none yet | none yet | none | `task-repo-purchase-repurchase` |
 | 3 | Repo (GMRA): margin maintenance: Net Exposure and margin transfer | no Transaction or Net Exposure (R6, R7, R21: G12); margin ratio inverted (defect D2) | none yet | none yet | none | `task-repo-margin-maintenance` |
 | 4 | Repo (GMRA): repricing | usable as is (R8, score 5); the new price is an input and no transfer is generated | none yet | none yet | none | `task-repo-reprice` |

@@ -458,3 +458,39 @@ describe("task-live-read-latency", () => {
     expect(burst).not.toContain("/revaluation");
   });
 });
+
+describe("flow-repo-gmra-terms", () => {
+  const elections = (mtaB: string) => ({
+    baseCurrency: "USD", marginRatioBasis: "PerTransaction", defaultMarginRatio: "1.02", mtaUsd: { A: "250000", B: mtaB },
+    marginTransfer: "cash or securities by title transfer, due 1 business day(s) after the call", netMarginInterest: "USD-SOFR",
+    incomePayment: "PaidToSeller", defaultValuation: "by the non-defaulting party at 17:00 GBLO; automatic early termination off",
+  });
+  const terms = (amendments: unknown[], pending: string | null = null) => ({
+    agreement: "ICMA GMRA 2011 (English law), cdm-ext GmraTerms", party1: "BANK-A", party2: "BANK-B", elections: elections("250000"),
+    termsHash: "0x" + "0".repeat(64), onChainTermsHash: "0x" + "0".repeat(64), agreedAmendments: 0, verified: true, problem: null,
+    pendingAmendment: pending, amendments,
+  });
+
+  it("either party proposes a new minimum transfer amount for one party", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmra/terms": terms([]) });
+    const card = await screen.findByTestId("gmra-terms");
+    expect(within(card).getByTestId("gmra-mta").textContent).toContain("250,000");
+    expect(within(card).getByText("GMRA terms verified against the chain ✓")).toBeTruthy();
+    await user.type(within(card).getByLabelText("New GMRA MTA (USD)"), "400000");
+    await user.click(within(card).getByRole("button", { name: "Propose GMRA amendment → B" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/gmra/amendments", body: { party: "B", mtaUsd: 400000, defaultMarginRatio: null } }]));
+  });
+
+  it("the counterparty consents to a pending amendment; the proposer cannot", async () => {
+    const user = userEvent.setup();
+    const pending = { amendmentId: "0xabc", block: "9", proposer: "A", mine: false, state: "proposed", cdmHash: "0x01",
+      changed: ["MinimumTransferAmount"], after: elections("400000") };
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmra/terms": terms([pending], "0xabc") });
+    const row = await screen.findByTestId("gmra-amendment-0xabc");
+    expect(row.textContent).toContain("MinimumTransferAmount");
+    expect(within(await screen.findByTestId("gmra-terms")).getByRole("button", { name: "Propose GMRA amendment → A" })).toHaveProperty("disabled", true);
+    await user.click(within(row).getByRole("button", { name: "Consent to GMRA amendment" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/gmra/amendments/0xabc/decision", body: { consent: true } }]));
+  });
+});

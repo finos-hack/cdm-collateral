@@ -121,7 +121,12 @@ the pair's agreed amendments, each fetched by its on-chain hash and verified; wi
 haircuts beside them, `verified`), `POST /amendments` (body `mtaUsd`, `haircuts` [{`token`, `eligible`,
 `haircutBps`}]; either party: CDM `CollateralAgreementAmendment` from cdm-ext `Create_CollateralAgreementAmendment`,
 then `proposeAmendment` on-chain), `POST /amendments/{id}/decision` (body `consent`; the other party verifies the
-amendment and that the on-chain haircut terms are its changes before consenting), and
+amendment and that the on-chain haircut terms are its changes before consenting), `GET /gmra/terms` (the GMRA 2011
+terms in force, cdm-ext `GmraTerms` with BANK-A as Party1 and BANK-B as Party2, folded in `CdmGmra` over the pair's
+agreed GMRA amendments; with the contract's terms hash beside them, `verified`; wp-adr-repo-gmra-terms),
+`POST /gmra/amendments` (body `party` A or B with `mtaUsd`, and/or `defaultMarginRatio`; either party: CDM
+`GmraTermsAmendment` from cdm-ext `Create_GmraTermsAmendment`, then `proposeTermsAmendment` on-chain),
+`POST /gmra/amendments/{id}/decision` (body `consent`; the counterparty verifies the amendment first), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
