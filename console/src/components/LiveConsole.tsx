@@ -939,9 +939,22 @@ function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: Liv
         {m.callOpen ? (
           <span>a margin call is open</span>
         ) : (
-          <button disabled={busy || m.callableUsd === "0"} onClick={() => run(() => api.callRepoMargin(party))}>
+          <button disabled={busy || m.callableUsd === "0" || m.repriceOffered + m.repriceToAgree > 0} onClick={() => run(() => api.callRepoMargin(party))}>
             {m.callableUsd === "0" ? "Nothing to call" : `Call margin from ${other}: USD ${m.callableUsd}`}
           </button>
+        )}
+        {m.repriceToAgree > 0 ? (
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoReprice(party))}>
+            Agree reprice with {other}: {m.repriceToAgree} repo(s)
+          </button>
+        ) : m.repriceOffered > 0 ? (
+          <span data-testid="repo-reprice-offered">reprice offered to {other}</span>
+        ) : (
+          !m.callOpen && m.callableUsd !== "0" && (
+            <button disabled={busy} onClick={() => run(() => api.proposeRepoReprice(party))}>
+              Reprice open repos with {other}
+            </button>
+          )
         )}
       </div>
       {m.exposures.length > 0 && (

@@ -274,3 +274,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-repomargin-smerepomargin | links | node:task-repo-margin-maintenance | node:task-sme-repo-margin-exposure |  | accepted |
 | e-dec-cdmdev-smerepolivespec | decomposes | node:goal-cdm-development | node:task-sme-repo-live-spec-returns |  | accepted |
 | e-lnk-repopr-smerepolivespec | links | node:task-repo-purchase-repurchase | node:task-sme-repo-live-spec-returns |  | accepted |
+| e-mrk-repricadr-reprice | marks | waypoint:wp-adr-repo-reprice | node:task-repo-reprice |  | accepted |
+| e-drv-cdmdata-repricadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-reprice |  | accepted |
+| e-drv-finality-repricadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-reprice |  | accepted |
+| e-dec-cdmdev-smereprice | decomposes | node:goal-cdm-development | node:task-sme-repo-reprice-rules |  | accepted |
+| e-lnk-reprice-smereprice | links | node:task-repo-reprice | node:task-sme-repo-reprice-rules |  | accepted |

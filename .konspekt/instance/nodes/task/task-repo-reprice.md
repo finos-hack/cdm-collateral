@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-07T23:11:58Z
+updatedAt: 2026-11-08T15:59:51Z
 ```
 # Task: repo repricing
 
@@ -24,3 +24,5 @@ Row 4 of the repo workflows (section C of the workflow map), split from [[task-r
 - **Prototype:** reprice as a way to settle a margin call; the cash difference settled on-chain; a live spec.
 
 The details are decided when the task starts.
+
+**Design chosen 2026-11-08** (source `729ada99275ed710b1515fb8acc6de27fa1df799`), recorded in [[wp-adr-repo-reprice]] (proposed).

@@ -227,6 +227,13 @@ route("POST", "/ledger/v1/repos/:id/instruct", async (p, b) => {
   return J({ approvalTx: approval.txHash, ...tx });
 });
 
+// A reprice (wp-adr-repo-reprice): the party that pays approves the allowance it needs; the other approves nothing.
+route("POST", "/ledger/v1/repos/:id/reprice", async (p, b) => {
+  const amount = BigInt(b.amount);
+  if (amount > 0n) await adapter.approve(getAddress(b.token), adapter.repoContract(), amount);
+  return J(await adapter.instructRepoReprice(p.id as Hex, b.cdmHash as Hex, BigInt(b.newPurchasePrice), BigInt(b.newRepurchasePrice), BigInt(b.cashFromSeller)));
+});
+
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
 
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));

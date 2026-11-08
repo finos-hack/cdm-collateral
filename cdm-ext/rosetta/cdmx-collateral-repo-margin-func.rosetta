@@ -3,6 +3,7 @@ version "${project.version}"
 
 import cdm.event.common.*
 import cdm.base.math.*
+import cdm.observable.asset.*
 import cdmx.collateral.gmra.*
 
 func RepoMarginRatio: <"The Margin Ratio a Transaction's Transaction Exposure uses: by the marginRatioBasis election, the Transaction's own marginPercentage or the agreement's default Margin Ratio; the default also applies to a Transaction that states none.">
@@ -53,6 +54,66 @@ func RepoTransactionExposure: <"A Transaction's Transaction Exposure on a date: 
 
     set exposure:
         (RepoPurchasePrice(tradeState) -> value + RepoPriceDifferential(tradeState, date)) * marginRatio - quantity * price
+
+func RepoRepricedPurchasePrice: <"The new Purchase Price of a repriced Transaction (GMRA paragraph 4(i)(i), wp-adr-repo-reprice): the market value of its securities at the price divided by the Margin Ratio, so its Transaction Exposure is eliminated; rounded to the nearest at the given number of decimals.">
+    inputs:
+        quantity number (1..1) <"The number of securities purchased.">
+        price number (1..1) <"The price of one unit of the security on the reprice date.">
+        marginRatio number (1..1)
+        precision int (1..1) <"The decimals of the cash amount.">
+    output:
+        purchasePrice number (1..1)
+
+    set purchasePrice:
+        RoundToPrecision(
+                RepoPurchasePriceForMarketValue(quantity * price, marginRatio),
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )
+
+func RepoRepriceCashDifference: <"The cash that settles a reprice (wp-adr-repo-reprice): the old Purchase Price plus the Price Differential accrued to the reprice date, less the new Purchase Price, rounded to the nearest at the given number of decimals. Positive when the Seller pays the Buyer, negative when the Buyer pays the Seller.">
+    inputs:
+        tradeState TradeState (1..1) <"The Transaction before the reprice.">
+        date date (1..1) <"The reprice date.">
+        newPurchasePrice number (1..1)
+        precision int (1..1) <"The decimals of the cash amount.">
+    output:
+        cashDifference number (1..1)
+
+    condition PositiveNewPurchasePrice:
+        newPurchasePrice > 0
+
+    set cashDifference:
+        RoundToPrecision(
+                RepoPurchasePrice(tradeState) -> value + RepoPriceDifferential(tradeState, date) - newPurchasePrice,
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )
+
+func RepoIsReprice: <"Whether a BusinessEvent reprices a repo (wp-adr-repo-reprice, defect D20): one open and one closed trade state after it, a changed cash quantity, an unchanged security quantity and an unchanged Repurchase Date. CDM's Qualify_Reprice cannot be true for a repo whose lot holds both the cash and the security, because ExtractTradePurchasePrice and ExtractTradeCollateralQuantity read the same list of all quantities and it requires that list both to differ and to match.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias priorLot: ExtractBeforeTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias newLot: ExtractAfterTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias priorCash: priorLot filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then extract item -> quantity then extract item -> value
+    alias newCash: newLot filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then extract item -> quantity then extract item -> value
+    alias priorSecurity: priorLot filter item -> price -> priceType any = PriceTypeEnum -> AssetPrice then extract item -> quantity then extract item -> value
+    alias newSecurity: newLot filter item -> price -> priceType any = PriceTypeEnum -> AssetPrice then extract item -> quantity then extract item -> value
+
+    set is_event:
+        FilterOpenTradeStates(businessEvent -> after) count = 1
+            and FilterClosedTradeStates(businessEvent -> after) count = 1
+            and priorCash exists
+            and newCash exists
+            and priorCash <> newCash
+            and priorSecurity exists
+            and priorSecurity = newSecurity
+            and ExtractOpenEconomicTerms(businessEvent) -> terminationDate = ExtractBeforeEconomicTerms(businessEvent) -> terminationDate
 
 func RepoNetExposure: <"A party's Net Exposure to the other: the sum of the Transaction Exposures across the pair's repos, each stated from this party's side (positive when this party is exposed), less the net margin this party holds. Positive when this party may call margin.">
     inputs:

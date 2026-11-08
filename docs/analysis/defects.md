@@ -37,6 +37,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D17 | `haircutPercentage` is described as the IM CSA Valuation Percentage (the share of value that counts) but subtracted as a haircut *(added 2026-11-03)* | calculation / docs | CDM 7.7.0 `rosetta/legaldocumentation-csa-type.rosetta` 148; `rosetta/legaldocumentation-csa-func.rosetta` 20, 27 |
 | D18 | `CloneEligibleCollateralWithChangedTreatment` writes the changed criterion and treatment into the first criterion of the schedule, whichever asset it was *(added 2026-11-06)* | function logic | CDM 7.7.0 `rosetta/product-collateral-func.rosetta` 9, 22–24 |
 | D19 | Rune Java generator (rune-maven-plugin 10.15.1): `distinct` on an alias of extracted values generates Java that does not compile *(added 2026-11-06)* | toolchain | `cdm-ext/rosetta/cdmx-collateral-amendment-func.rosetta`, condition `DistinctAssets` |
+| D20 | `Qualify_Reprice` cannot be true for a repo whose lot holds both the cash and the security: `ExtractTradePurchasePrice` and `ExtractTradeCollateralQuantity` read the same list of all quantities, and the qualifier requires that list both to differ and to match *(added 2026-11-08)* | qualification | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 592; `rosetta/event-common-func.rosetta` |
 
 ## Details
 
@@ -298,3 +299,17 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
 - Writing the expression out (`changes extract asset then distinct then count`) compiles.
 - **Effect:** valid Rune that the validator accepts fails at Java compile time. Not reported (project owner's
   instruction).
+
+### D20 — `Qualify_Reprice` cannot be true for a repo *(added 2026-11-08)*
+
+- `Qualify_Reprice` requires `afterTradePurchasePrice <> beforeTradePurchasePrice` and
+  `beforeTradeCollateralQuantity = afterTradeCollateralQuantity`.
+- `ExtractTradePurchasePrice` and `ExtractTradeCollateralQuantity` have the same body: every `quantity` of the trade
+  lot's `priceQuantity`, cash and security together. The two conditions therefore compare one list and contradict
+  each other when the cash quantity changes.
+- Observed: the event from `Create_RepricePrimitiveInstruction` over the prototype's repo, with a changed cash quantity
+  and an unchanged security quantity, gives `Qualify_Reprice` = false.
+- **Effect:** a reprice built with CDM's own instruction function is not qualified as a reprice. `cdm-ext`
+  `RepoIsReprice` separates the cash and security quantities by price type (`wp-adr-repo-reprice`). It leaves out the
+  check that the security price changed, because a repo repriced at its booking price can still change Purchase Price
+  through the rounding up of the quantity. Not reported (project owner's instruction).

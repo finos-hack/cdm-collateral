@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 51 questions in 12 tasks, all open.
+Status of the ledger: 57 questions in 13 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -124,3 +124,14 @@ Status of the ledger: 51 questions in 12 tasks, all open.
 | ID | Question | Status | Answer |
 |----|----------|--------|--------|
 | RLS-1 | The live spec `flow-repo-purchase-repurchase` leaves the 875 tUSD Price Differential with the buyer on every run. Should a live spec also return such amounts itself? | open | |
+
+### `task-sme-repo-reprice-rules`: repricing a repo under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| RPR-1 | The prototype settles the Price Differential accrued to the reprice date in the cash difference. Is it settled then, or carried to the final Repurchase Price? | open | |
+| RPR-2 | Is the new Purchase Price the market value of the securities divided by the Margin Ratio? | open | |
+| RPR-3 | The prototype reprices every open repo of the pair, one settlement each. Does paragraph 4(i)(i) require all repos, and must they settle together? | open | |
+| RPR-4 | The prototype offers a reprice under the same minimum transfer amount as a margin call. Does the minimum apply to a reprice? | open | |
+| RPR-5 | Is a reprice agreed in place of a margin call, or is it a way of satisfying a call already made? | open | |
+| RPR-6 | The prototype sets each repriced Transaction Exposure to about zero and leaves Net Margin already held unchanged, so after a reprice the other party can call that margin back. Should a reprice take the margin held into account? | open | |
