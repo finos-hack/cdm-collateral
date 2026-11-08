@@ -4,6 +4,8 @@ version "${project.version}"
 import cdm.event.common.*
 import cdm.base.math.*
 import cdm.observable.asset.*
+import cdm.base.datetime.*
+import cdm.product.common.settlement.*
 import cdmx.collateral.gmra.*
 
 func RepoMarginRatio: <"The Margin Ratio a Transaction's Transaction Exposure uses: by the marginRatioBasis election, the Transaction's own marginPercentage or the agreement's default Margin Ratio; the default also applies to a Transaction that states none.">
@@ -114,6 +116,119 @@ func RepoIsReprice: <"Whether a BusinessEvent reprices a repo (wp-adr-repo-repri
             and priorSecurity exists
             and priorSecurity = newSecurity
             and ExtractOpenEconomicTerms(businessEvent) -> terminationDate = ExtractBeforeEconomicTerms(businessEvent) -> terminationDate
+
+func RepoIsAdjustment: <"Whether a BusinessEvent adjusts a repo (wp-adr-repo-adjustment, defect D20): one open and one closed trade state after it, an unchanged cash quantity, a changed security quantity and an unchanged Repurchase Date. CDM's Qualify_Adjustment cannot be true for a repo whose lot holds both the cash and the security, for the same reason as Qualify_Reprice.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias priorLot: ExtractBeforeTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias newLot: ExtractAfterTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias priorCash: priorLot filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then extract item -> quantity then extract item -> value
+    alias newCash: newLot filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then extract item -> quantity then extract item -> value
+    alias priorSecurity: priorLot filter item -> price -> priceType any = PriceTypeEnum -> AssetPrice then extract item -> quantity then extract item -> value
+    alias newSecurity: newLot filter item -> price -> priceType any = PriceTypeEnum -> AssetPrice then extract item -> quantity then extract item -> value
+
+    set is_event:
+        FilterOpenTradeStates(businessEvent -> after) count = 1
+            and FilterClosedTradeStates(businessEvent -> after) count = 1
+            and priorCash exists
+            and priorCash = newCash
+            and priorSecurity exists
+            and newSecurity exists
+            and priorSecurity <> newSecurity
+            and ExtractOpenEconomicTerms(businessEvent) -> terminationDate = ExtractBeforeEconomicTerms(businessEvent) -> terminationDate
+
+func RepoAccruedPriceDifferential: <"The Price Differential accrued to a date, rounded to the nearest at the given number of decimals: the cash the Seller pays the Buyer at an adjustment (wp-adr-repo-adjustment).">
+    inputs:
+        tradeState TradeState (1..1) <"The Transaction before the adjustment.">
+        date date (1..1) <"The adjustment date.">
+        precision int (1..1) <"The decimals of the cash amount.">
+    output:
+        accrued number (1..1)
+
+    set accrued:
+        RoundToPrecision(
+                RoundToPrecision(RepoPriceDifferential(tradeState, date), 10, RoundingDirectionEnum -> Nearest, True),
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )
+
+func RepoAdjustmentInstruction: <"Defect D21: the primitive instruction of a repo adjustment (wp-adr-repo-adjustment). CDM's Create_AdjustmentPrimitiveInstruction writes the new quantity into every quantity of the lot, so it also sets the cash quantity to the number of securities. This has the same shape, with the change limited to the securities' price quantity, as CDM's Create_RepricePrimitiveInstruction limits its change to the cash.">
+    inputs:
+        tradeState TradeState (1..1)
+        newAllinPrice number (1..1) <"The new price of one unit of the security.">
+        newAssetQuantity number (1..1) <"The new number of securities.">
+        effectiveDate AdjustableOrRelativeDate (1..1) <"The adjustment date.">
+    output:
+        instruction PrimitiveInstruction (1..1)
+
+    alias lot: tradeState -> trade -> tradeLot only-element -> priceQuantity
+
+    alias currentAssetPrice:
+        lot
+            extract price
+            then flatten
+            then filter priceType = PriceTypeEnum -> AssetPrice
+            then only-element
+
+    alias newPrice:
+        Price {
+            value: newAllinPrice,
+            unit: currentAssetPrice -> unit,
+            perUnitOf: currentAssetPrice -> perUnitOf,
+            priceType: currentAssetPrice -> priceType,
+            priceSubType: currentAssetPrice -> priceSubType,
+            priceExpression: currentAssetPrice -> priceExpression,
+            composite: currentAssetPrice -> composite,
+            arithmeticOperator: currentAssetPrice -> arithmeticOperator,
+            premiumType: currentAssetPrice -> premiumType,
+            datedValue: empty,
+            ...
+        }
+
+    alias changeSecurityQuantity:
+        lot
+            filter price -> priceType any = PriceTypeEnum -> AssetPrice
+            then extract
+                NonNegativeQuantitySchedule {
+                    value: newAssetQuantity,
+                    unit: quantity -> unit,
+                    ...
+                }
+            then distinct
+
+    alias newPriceQuantity:
+        changeSecurityQuantity
+            extract
+                PriceQuantity {
+                    price: [newPrice],
+                    quantity: item,
+                    ...
+                }
+
+    set instruction -> split -> breakdown:
+        [Create_TerminationInstruction(tradeState, effectiveDate)]
+
+    add instruction -> split -> breakdown:
+        [
+            PrimitiveInstruction {
+                quantityChange:
+                    QuantityChangeInstruction {
+                        change: [newPriceQuantity],
+                        direction: QuantityChangeDirectionEnum -> Replace,
+                        lotIdentifier: empty
+                    },
+                termsChange: Create_EffectiveOrTerminationDateTermChangeInstruction(
+                            tradeState -> trade -> product,
+                            effectiveDate,
+                            empty
+                        ),
+                ...
+            }
+        ]
 
 func RepoNetExposure: <"A party's Net Exposure to the other: the sum of the Transaction Exposures across the pair's repos, each stated from this party's side (positive when this party is exposed), less the net margin this party holds. Positive when this party may call margin.">
     inputs:

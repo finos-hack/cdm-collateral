@@ -999,5 +999,77 @@ describe("CDM collateral contracts", async () => {
         assert.equal(s, ZERO_BYTES32);
       });
     });
+
+    describe("adjustment (task-repo-adjustment)", () => {
+      const ADJUSTMENT = 3, REPRICE_PHASE = 2;
+      const purchased = async () => {
+        await repo.write.affirm([R, H("trade")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+      };
+
+      it("settles in the second instruction: the seller delivers more securities and pays the accrued cash", async () => {
+        await purchased();
+        await tUST.write.approve([repo.address, 7n], { account: bankA.account });
+        await tUSD.write.approve([repo.address, 3n], { account: bankA.account });
+        const heldB = await bal(tUST, bAddr), cashA = await bal(tUSD, aAddr);
+        await repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 3n], { account: bankB.account });
+        assert.equal(await bal(tUST, bAddr), heldB);
+        await repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 3n], { account: bankA.account });
+        assert.equal(await bal(tUST, bAddr), heldB + 7n);
+        assert.equal(await bal(tUSD, aAddr), cashA - 3n);
+        const r = await repo.read.getRepo([R]);
+        assert.equal(r.quantity, 110n);
+        assert.equal(r.purchasePrice, 10000n);
+        assert.equal(r.repurchasePrice, 10006n);
+        assert.equal(r.tradeHash, H("adj"));
+        assert.equal(r.state, 3);
+      });
+
+      it("the buyer returns securities when the quantity falls", async () => {
+        await purchased();
+        await tUST.write.approve([repo.address, 3n], { account: bankB.account });
+        const heldA = await bal(tUST, aAddr);
+        await repo.write.instructAdjustment([R, H("adj"), 100n, 10006n, 0n], { account: bankA.account });
+        await repo.write.instructAdjustment([R, H("adj"), 100n, 10006n, 0n], { account: bankB.account });
+        assert.equal(await bal(tUST, aAddr), heldA + 3n);
+      });
+
+      it("the second party must state the same hash and amounts", async () => {
+        await purchased();
+        await repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 3n], { account: bankB.account });
+        await assert.rejects(repo.write.instructAdjustment([R, H("x"), 110n, 10006n, 3n], { account: bankA.account }));
+        await assert.rejects(repo.write.instructAdjustment([R, H("adj"), 111n, 10006n, 3n], { account: bankA.account }));
+      });
+
+      it("needs a purchased repo, a party and valid amounts, cannot go through instruct, and excludes a pending reprice", async () => {
+        await assert.rejects(repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 3n], { account: bankA.account })); // booked
+        await purchased();
+        await assert.rejects(repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 3n], { account: bankC.account }));
+        await assert.rejects(repo.write.instructAdjustment([R, H("adj"), 0n, 10006n, 3n], { account: bankA.account }));
+        await assert.rejects(repo.write.instructAdjustment([R, H("adj"), 110n, 9999n, 3n], { account: bankA.account }));
+        await assert.rejects(repo.write.instruct([R, ADJUSTMENT, H("adj")], { account: bankA.account }));
+        await repo.write.instructReprice([R, H("rp"), 9500n, 9506n, 500n], { account: bankB.account });
+        await assert.rejects(repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 3n], { account: bankA.account }));
+        await assert.rejects(repo.write.instructReprice([R, H("rp"), 9500n, 9506n, 500n], { account: bankC.account }));
+        assert.ok((await repo.read.getInstructions([R, REPRICE_PHASE]))[1] !== ZERO_BYTES32);
+      });
+
+      it("the repurchase clears a pending adjustment and returns the adjusted quantity", async () => {
+        await purchased();
+        await tUST.write.approve([repo.address, 7n], { account: bankA.account });
+        await repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 0n], { account: bankB.account });
+        await repo.write.instructAdjustment([R, H("adj"), 110n, 10006n, 0n], { account: bankA.account });
+        await repo.write.instructAdjustment([R, H("stale"), 112n, 10006n, 0n], { account: bankB.account });
+        await tUSD.write.approve([repo.address, 10006n], { account: bankA.account });
+        await tUST.write.approve([repo.address, 110n], { account: bankB.account });
+        const heldB = await bal(tUST, bAddr);
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account });
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankB.account });
+        assert.equal(await bal(tUST, bAddr), heldB - 110n);
+        assert.equal((await repo.read.getInstructions([R, ADJUSTMENT]))[1], ZERO_BYTES32);
+      });
+    });
   });
 });

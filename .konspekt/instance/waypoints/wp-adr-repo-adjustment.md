@@ -28,7 +28,9 @@ For [[task-repo-adjustment]] (section C, row 5 of the workflow map), within [[wp
   by the feed price, rounded up to whole units. The Seller delivers the difference when the quantity rises and the Buyer
   returns it when the quantity falls. The Seller pays the Buyer the Price Differential accrued to the adjustment date in
   cash, in the same transaction. The replacement trade accrues from the adjustment date to the original Repurchase Date.
-- **CDM.** The event is built with CDM's `Create_AdjustmentPrimitiveInstruction` and `Create_BusinessEvent`.
+- **CDM.** The event is built with `cdm-ext` `RepoAdjustmentInstruction` (CDM's `Create_AdjustmentPrimitiveInstruction` overwrites the
+  cash quantity, defect D21) and CDM's `Create_BusinessEvent`, and checked with
+  `cdm-ext` `RepoIsAdjustment`, because CDM's `Qualify_Adjustment` cannot be true for a repo (defect D20).
 - **Settlement.** `RepoSettlement` gains an adjustment phase. Both parties instruct with the same CDM hash and amounts; the
   second instruction moves the securities difference and the cash and updates the stored quantity, Repurchase Price and
   trade hash in one transaction. A party may replace its own instruction until the other has instructed.

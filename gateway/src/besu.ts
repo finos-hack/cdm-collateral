@@ -363,6 +363,7 @@ const repoAbi = parseAbi([
   "function affirm(bytes32 repoId, bytes32 tradeHash)",
   "function instruct(bytes32 repoId, uint8 phase, bytes32 cdmHash)",
   "function instructReprice(bytes32 repoId, bytes32 cdmHash, uint256 newPurchasePrice, uint256 newRepurchasePrice, int256 cashFromSeller)",
+  "function instructAdjustment(bytes32 repoId, bytes32 cdmHash, uint256 newQuantity, uint256 newRepurchasePrice, uint256 accruedFromSeller)",
   "function getRepo(bytes32 repoId) view returns ((address seller, address buyer, address security, uint256 quantity, address cash, uint256 purchasePrice, uint256 repurchasePrice, bytes32 tradeHash, uint8 state, bytes32 purchaseHash, bytes32 repurchaseHash))",
   "function getInstructions(bytes32 repoId, uint8 phase) view returns (bytes32 seller, bytes32 buyer)",
   "function reposOf(address party) view returns (bytes32[])",
@@ -373,7 +374,7 @@ const repoAbi = parseAbi([
 ]);
 
 export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased"];
-export const RepoPhase: Record<string, number> = { purchase: 0, repurchase: 1, reprice: 2 };
+export const RepoPhase: Record<string, number> = { purchase: 0, repurchase: 1, reprice: 2, adjustment: 3 };
 
 export interface OnChainRepo {
   repoId: Hex;
@@ -392,6 +393,8 @@ export interface OnChainRepo {
   instructed: { seller: Hex; buyer: Hex };
   /** The hashes each party has instructed for a pending reprice (zero hash: not yet). */
   reprice: { seller: Hex; buyer: Hex };
+  /** The same for a pending adjustment. */
+  adjustment: { seller: Hex; buyer: Hex };
 }
 
 const erc20Abi = parseAbi([
@@ -465,6 +468,8 @@ export interface LedgerAdapter {
   instructRepo(repoId: Hex, phase: "purchase" | "repurchase", cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** Reprice (wp-adr-repo-reprice): each party instructs the same reprice; the second instruction settles it. */
   instructRepoReprice(repoId: Hex, cdmHash: Hex, newPurchasePrice: bigint, newRepurchasePrice: bigint, cashFromSeller: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  /** Adjustment (wp-adr-repo-adjustment): each party instructs the same adjustment; the second instruction settles it. */
+  instructRepoAdjustment(repoId: Hex, cdmHash: Hex, newQuantity: bigint, newRepurchasePrice: bigint, accruedFromSeller: bigint): Promise<{ txHash: Hex; block: bigint }>;
   getRepo(repoId: Hex): Promise<OnChainRepo>;
   listRepos(party: Address): Promise<OnChainRepo[]>;
   repoContract(): Address;
@@ -979,6 +984,10 @@ export class BesuAdapter implements LedgerAdapter {
     return this.send(this.repoContract(), repoAbi, "instructReprice", [repoId, cdmHash, newPurchasePrice, newRepurchasePrice, cashFromSeller]);
   }
 
+  instructRepoAdjustment(repoId: Hex, cdmHash: Hex, newQuantity: bigint, newRepurchasePrice: bigint, accruedFromSeller: bigint) {
+    return this.send(this.repoContract(), repoAbi, "instructAdjustment", [repoId, cdmHash, newQuantity, newRepurchasePrice, accruedFromSeller]);
+  }
+
   async getRepo(repoId: Hex): Promise<OnChainRepo> {
     const address = this.repoContract();
     const r = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getRepo", args: [repoId] })) as Omit<OnChainRepo, "repoId" | "state" | "instructed"> & { state: number };
@@ -986,7 +995,8 @@ export class BesuAdapter implements LedgerAdapter {
     // The phase in progress: the purchase until it settles, then the repurchase.
     const [seller, buyer] = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getInstructions", args: [repoId, state >= 3 ? 1 : 0] })) as readonly [Hex, Hex];
     const [repriceSeller, repriceBuyer] = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getInstructions", args: [repoId, RepoPhase.reprice] })) as readonly [Hex, Hex];
-    return { ...r, repoId, state: RepoStateName[state] ?? String(state), instructed: { seller, buyer }, reprice: { seller: repriceSeller, buyer: repriceBuyer } };
+    const [adjustSeller, adjustBuyer] = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getInstructions", args: [repoId, RepoPhase.adjustment] })) as readonly [Hex, Hex];
+    return { ...r, repoId, state: RepoStateName[state] ?? String(state), instructed: { seller, buyer }, reprice: { seller: repriceSeller, buyer: repriceBuyer }, adjustment: { seller: adjustSeller, buyer: adjustBuyer } };
   }
 
   async listRepos(party: Address) {

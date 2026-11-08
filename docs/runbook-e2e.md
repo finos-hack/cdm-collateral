@@ -265,6 +265,12 @@ are. No margin call is created. Both parties' business dates and the feed price 
 agreement is refused and the proposer can offer again. The rules are the assumptions listed in
 `docs/analysis/sme-question-ledger.md` (RPR-1 to RPR-6).
 
+Repo adjustment (`flow-repo-adjustment`): the same card also offers `Adjust open repos`. The Purchase Price stays the same
+and the quantity becomes the Purchase Price times the Margin Ratio divided by the feed price, rounded up. On agreement the
+seller delivers the extra securities, or the buyer returns the surplus, and the seller pays the Price Differential accrued
+to that date, in one transaction per repo. No margin call is created, and the same-inputs rule of a reprice applies. The
+rules are the assumptions listed in `docs/analysis/sme-question-ledger.md` (RAD-1 to RAD-6).
+
 Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
 Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
 from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
@@ -345,7 +351,8 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 `flow-repo-purchase-repurchase` (it sets both business dates back to today; the seller pays the Price Differential,
 which the top-up before each run restores), `flow-repo-margin-maintenance` (it restores the tUST price and both
 business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
-price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores).
+price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
+and `flow-repo-adjustment` (the same).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

@@ -1802,8 +1802,8 @@ test("flow-repo-reprice: every open repo in both directions is repriced -> the p
     await call(`${SERVICE.B}/repo-margin/reprice`, "POST", {});
     await expect.poll(async () => (await margin(SERVICE.A)).repriceToAgree, { timeout: 30_000 }).toBe(3);
     expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd);
-    const { repriced } = await call<{ repriced: unknown[] }>(`${SERVICE.A}/repo-margin/reprice/agree`, "POST", {});
-    expect(repriced.length).toBe(3);
+    const { repos: agreed } = await call<{ repos: unknown[] }>(`${SERVICE.A}/repo-margin/reprice/agree`, "POST", {});
+    expect(agreed.length).toBe(3);
 
     for (const [i, r] of repos.entries()) {
       for (const svc of [SERVICE.A, SERVICE.B]) {
@@ -1825,7 +1825,8 @@ test("flow-repo-reprice: every open repo in both directions is repriced -> the p
     await feedIs(PRICE_TUST);
     const due = new Date(Date.now() + 7 * 86_400_000).toLocaleDateString("en-CA");
     for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: due });
-    for (const r of repos) {
+    // The repos B sold come back first: on a fresh deployment B holds only the tUST it bought and has delivered part of it.
+    for (const r of [...repos].reverse()) {
       await call(`${r.seller}/repos/${r.repoId}/settle`, "POST", { phase: "repurchase" });
       await call(`${r.buyer}/repos/${r.repoId}/settle`, "POST", { phase: "repurchase" });
       await expect.poll(async () => (await repo(r.seller, r.repoId))?.state, { timeout: 30_000 }).toBe("repurchased");
@@ -1833,5 +1834,145 @@ test("flow-repo-reprice: every open repo in both directions is repriced -> the p
     }
     for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
     expect(repurchased).toBe(3);
+  }
+});
+
+// --- flow-repo-adjustment ---
+// An adjustment instead of a margin call (wp-adr-repo-adjustment): two days into the repo the securities fall, B offers an
+// adjustment in its console and A agrees in its console. A delivers more securities and pays the accrued Price Differential.
+const repoAdjustFixture = async () => {
+  const p = await parties();
+  const tUST = p.tokens.tUST, tUSD = p.tokens.tUSD;
+  const today = new Date().toLocaleDateString("en-CA");
+  const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toLocaleDateString("en-CA");
+  type MarginView = RepoMargin & { adjustOffered: number; adjustToAgree: number };
+  type RepoRow = { repoId: string; state: string; purchasePrice: string; repurchasePrice: string; quantity: string; verified: boolean };
+  const margin = (svc: string) => call<MarginView>(`${svc}/repo-margin`);
+  const repo = async (svc: string, id: string) => (await call<{ repos: RepoRow[] }>(`${svc}/repos`)).repos.find((r) => r.repoId === id);
+  const setDate = async (d: string) => { for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: d }); };
+  const setPrice = async (price: number) => {
+    await call(`${ORACLE}/market-data/tUST`, "PUT", { price: String(price) });
+    for (const gw of [GATEWAY.A, GATEWAY.B]) {
+      await expect.poll(async () => (await call<{ price: string | null }>(`${gw}/prices/${tUST}`)).price, { timeout: 30_000 })
+        .toBe(String(BigInt(Math.round(price * 100)) * 1_000_000n));
+    }
+  };
+  const open = async (seller: string, buyer: string, purchasePrice: number) => {
+    const { repoId } = await call<{ repoId: string }>(`${seller}/repos`, "POST", { security: "tUST", purchasePrice, ratePercent: "4.5", termDays: 7, marginRatio: null });
+    await expect.poll(async () => (await repo(buyer, repoId))?.state, { timeout: 30_000 }).toBe("booked");
+    await call(`${buyer}/repos/${repoId}/affirm`, "POST", {});
+    await expect.poll(async () => (await repo(seller, repoId))?.state, { timeout: 30_000 }).toBe("affirmed");
+    await call(`${buyer}/repos/${repoId}/settle`, "POST", { phase: "purchase" });
+    await call(`${seller}/repos/${repoId}/settle`, "POST", { phase: "purchase" });
+    await expect.poll(async () => (await repo(buyer, repoId))?.state, { timeout: 30_000 }).toBe("purchased");
+    return { repoId, seller, buyer, purchasePrice, qty: Math.ceil((purchasePrice * 1.02) / PRICE_TUST) };
+  };
+  const close = async (repos: { repoId: string; seller: string; buyer: string }[]) => {
+    await setPrice(PRICE_TUST);
+    await setDate(inDays(7));
+    let done = 0;
+    // The repos B sold come back first: on a fresh deployment B holds only the tUST it bought and has delivered part of it.
+    for (const r of [...repos].reverse()) {
+      await call(`${r.seller}/repos/${r.repoId}/settle`, "POST", { phase: "repurchase" });
+      await call(`${r.buyer}/repos/${r.repoId}/settle`, "POST", { phase: "repurchase" });
+      await expect.poll(async () => (await repo(r.seller, r.repoId))?.state, { timeout: 30_000 }).toBe("repurchased");
+      done++;
+    }
+    await setDate(today);
+    return done;
+  };
+  return { p, tUST, tUSD, today, inDays, margin, repo, setDate, setPrice, open, close };
+};
+
+test("flow-repo-adjustment: the securities fall -> the buyer offers an adjustment -> the seller agrees, delivers more securities and pays the accrued amount -> no exposure remains -> repurchase of the new quantity", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUST, tUSD, today, inDays, margin, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  expect((await margin(SERVICE.B)).exposures).toEqual([]);
+  const r = await open(SERVICE.A, SERVICE.B, 3_000_000);
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    const fallen = 88.4;
+    await setPrice(fallen);
+    await expect.poll(async () => Number((await margin(SERVICE.B)).callableUsd), { timeout: 30_000 }).toBeGreaterThan(0);
+    const newQty = Math.ceil(3_060_000 / fallen);
+    const accrued = Math.round((3_000_000 * 0.045 * 2) / 360);
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b), bUst = await balanceOf(GATEWAY.B, tUST, p.b), aUst = await balanceOf(GATEWAY.A, tUST, p.a);
+
+    await page.goto("/#/live/B");
+    const cardB = page.getByTestId("repo-margin");
+    await cardB.getByRole("button", { name: "Adjust open repos with A" }).click({ timeout: STEP_TIMEOUT });
+    await expect(cardB.getByTestId("repo-adjust-offered")).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await margin(SERVICE.A)).adjustToAgree, { timeout: 30_000 }).toBe(1);
+    await expect(call(`${SERVICE.B}/repo-margin/calls`, "POST", {})).rejects.toThrow("still pending");
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bUst);
+
+    await page.goto("/#/live/A");
+    const cardA = page.getByTestId("repo-margin");
+    await cardA.getByRole("button", { name: "Agree adjustment with B: 1 repo(s)" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await repo(SERVICE.A, r.repoId))?.quantity, { timeout: 30_000 }).toBe(String(newQty));
+
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bUst + BigInt(newQty - r.qty));
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aUst - BigInt(newQty - r.qty));
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd - BigInt(accrued));
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd + BigInt(accrued));
+    // 4.5% on the unchanged Purchase Price for the 5 days from the adjustment date to the Repurchase Date.
+    const newRepurchasePrice = Math.round(3_000_000 + (3_000_000 * 0.045 * 5) / 360);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await repo(svc, r.repoId))?.verified, { timeout: 30_000 }).toBe(true);
+      const row = (await repo(svc, r.repoId))!;
+      expect(row.purchasePrice).toBe("3000000");
+      expect(row.repurchasePrice).toBe(String(newRepurchasePrice));
+      const m = await margin(svc);
+      expect(m.adjustOffered + m.adjustToAgree).toBe(0);
+      expect(m.callableUsd).toBe("0");
+      expect(Math.abs(Number(m.netExposureUsd))).toBeLessThan(fallen);
+    }
+  } finally {
+    const aUsdBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+    done = await close([r]);
+    const paid = aUsdBefore - await balanceOf(GATEWAY.A, tUSD, p.a);
+    expect(paid).toBe(BigInt(Math.round(3_000_000 + (3_000_000 * 0.045 * 5) / 360)));
+    expect(done).toBe(1);
+  }
+});
+
+// Every open repo in both directions: B, the proposer, delivers securities on two repos, so its one allowance must cover both.
+test("flow-repo-adjustment: every open repo in both directions is adjusted -> the proposer's two deliveries and the agreeing party's one settle -> the Net Exposure is gone", async () => {
+  test.setTimeout(TEST_TIMEOUT * 3);
+  const { p, tUST, tUSD, today, inDays, margin, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  expect((await margin(SERVICE.B)).exposures).toEqual([]);
+  const repos = [await open(SERVICE.A, SERVICE.B, 5_000_000), await open(SERVICE.B, SERVICE.A, 1_000_000), await open(SERVICE.B, SERVICE.A, 500_000)];
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    const fallen = 88.4;
+    await setPrice(fallen);
+    await expect.poll(async () => Number((await margin(SERVICE.B)).callableUsd), { timeout: 30_000 }).toBeGreaterThan(0);
+    const next = repos.map((r) => Math.ceil((r.purchasePrice * 1.02) / fallen));
+    const delta = repos.map((r, i) => next[i] - r.qty);
+    const accrued = repos.map((r) => Math.round((r.purchasePrice * 0.045 * 2) / 360));
+    const aUst = await balanceOf(GATEWAY.A, tUST, p.a), aUsd = await balanceOf(GATEWAY.A, tUSD, p.a);
+    await call(`${SERVICE.B}/repo-margin/adjust`, "POST", {});
+    await expect.poll(async () => (await margin(SERVICE.A)).adjustToAgree, { timeout: 30_000 }).toBe(3);
+    const { repos: settled } = await call<{ repos: unknown[] }>(`${SERVICE.A}/repo-margin/adjust/agree`, "POST", {});
+    expect(settled.length).toBe(3);
+    for (const [i, r] of repos.entries()) {
+      for (const svc of [SERVICE.A, SERVICE.B]) {
+        await expect.poll(async () => (await repo(svc, r.repoId))?.quantity, { timeout: 30_000 }).toBe(String(next[i]));
+        await expect.poll(async () => (await repo(svc, r.repoId))?.verified, { timeout: 30_000 }).toBe(true);
+      }
+    }
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aUst + BigInt(delta[1] + delta[2] - delta[0]));
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd + BigInt(accrued[1] + accrued[2] - accrued[0]));
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => { const m = await margin(svc); return m.adjustOffered + m.adjustToAgree; }, { timeout: 30_000 }).toBe(0);
+      expect((await margin(svc)).callableUsd).toBe("0");
+    }
+  } finally {
+    done = await close(repos);
+    expect(done).toBe(3);
   }
 });
