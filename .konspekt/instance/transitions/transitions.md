@@ -969,3 +969,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
 | edge:e-dec-cdmdev-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
 | edge:e-lnk-adjust-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| node:task-repo-adjustment | status | open | resolved | 2026-11-08T19:31:43Z | 2d9ab942b69f6d8dfb9396efd4f943f1e23aad61 | denisurusov |
