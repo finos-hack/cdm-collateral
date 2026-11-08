@@ -418,3 +418,6 @@ at execution time.
 | task-repo-income | f2e919eb8bf7bb3eeab35152a76b91499c3b11f5 |
 | task-repo-income | 38ea0a5468e1a0272e4d8e3e9510f82e90cc6a10 |
 | task-repo-income | 4acc9e289a234646c4bcf01c101412444c639d4b |
+| task-gateway-type-check | 276072cdc0ce5ac445feb321b3364564444712bd |
+| task-gateway-type-check | 695422b398b646bfbc12733fd53c2f6382f306d3 |
+| task-gateway-type-check | f10197fbe6f8527e307590772cf3a2921e69c62a |

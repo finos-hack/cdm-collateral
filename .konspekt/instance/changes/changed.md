@@ -1038,3 +1038,6 @@ excluded.
 | task-repo-income | 2132990d57a936fb1ef31aec0544ab38b401476d | docs/runbook-e2e.md | 2026-11-08T21:15:29Z |
 | task-repo-income | 2132990d57a936fb1ef31aec0544ab38b401476d | architecture/prototype.architecture.json | 2026-11-08T21:15:29Z |
 | task-repo-income | cfd1a6d799c85860aa6f39f9840185c2d590a2d4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T21:19:58Z |
+| task-gateway-type-check | 218e98d3162e08e3429d0beb543b59eb46b9e630 | gateway/package.json | 2026-11-08T21:56:19Z |
+| task-gateway-type-check | 218e98d3162e08e3429d0beb543b59eb46b9e630 | gateway/package-lock.json | 2026-11-08T21:56:19Z |
+| task-gateway-type-check | 218e98d3162e08e3429d0beb543b59eb46b9e630 | .github/workflows/gateway.yml | 2026-11-08T21:56:19Z |
