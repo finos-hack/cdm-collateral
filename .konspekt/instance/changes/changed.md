@@ -997,3 +997,4 @@ excluded.
 | task-repo-adjustment | b19ffe9728d950aa158a78c0897e291af81e8d42 | services/collateral/src/main/java/collateral/CdmRepo.java | 2026-11-08T17:46:58Z |
 | task-repo-adjustment | b19ffe9728d950aa158a78c0897e291af81e8d42 | services/collateral/src/test/java/collateral/CdmRepoTest.java | 2026-11-08T17:46:58Z |
 | task-repo-adjustment | 8ef9eea8bee3f5bb64241819f04b255b99570d36 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T19:12:20Z |
+| task-repo-substitution | 1be0b267e3a27c5ce8d5aac5839eeaec9d538d04 | docs/analysis/sme-question-ledger.md | 2026-11-08T19:59:38Z |
