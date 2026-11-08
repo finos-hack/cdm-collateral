@@ -858,6 +858,21 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
       </button>
     );
   };
+  const substitution = (p: LiveRepo) => {
+    if (!p.verified || p.state !== "purchased") return null;
+    const offer = p.substituteSecurity ? `${Number(p.substituteQuantity).toLocaleString("en-US")} ${p.substituteSecurity}` : "another security";
+    if (p.substitutionPending === "requested") return <span data-testid={`repo-substitution-${p.repoId}`}>substitution by {offer} requested</span>;
+    if (p.substitutionPending === "toDecide")
+      return (
+        <>
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoSubstitution(party, p.repoId))}>Agree substitution by {offer}</button>
+          <button disabled={busy} onClick={() => run(() => api.refuseRepoSubstitution(party, p.repoId))}>Refuse substitution</button>
+        </>
+      );
+    if (p.role !== "seller" || p.repurchaseDue || p.instructedByMe) return null;
+    const substitute = p.security === "tUST" ? "tMMF" : "tUST";
+    return <button disabled={busy} onClick={() => run(() => api.requestRepoSubstitution(party, p.repoId, substitute))}>Substitute {substitute}</button>;
+  };
   return (
     <div className="card" data-testid="repos">
       <h3>Repos</h3>
@@ -912,7 +927,7 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
                 <td data-testid={`repo-state-${p.repoId}`}>
                   {p.verified ? <span className="ok">{p.state} ✓</span> : <span className="bad">{p.problem ?? "not verified"}</span>}
                 </td>
-                <td>{action(p)}</td>
+                <td>{action(p)} {substitution(p)}</td>
               </tr>
             ))}
           </tbody>
@@ -926,7 +941,7 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
  *  it allows, settled by title transfer in the calls list, and the interest on Cash Margin. */
 function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: LiveRepoMargin; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, other, margin: m, busy, run } = props;
-  const pending = m.repriceOffered + m.repriceToAgree + m.adjustOffered + m.adjustToAgree;
+  const pending = m.repriceOffered + m.repriceToAgree + m.adjustOffered + m.adjustToAgree + m.substitutionsPending;
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [ratePct, setRatePct] = useState("");

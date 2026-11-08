@@ -271,6 +271,12 @@ seller delivers the extra securities, or the buyer returns the surplus, and the 
 to that date, in one transaction per repo. No margin call is created, and the same-inputs rule of a reprice applies. The
 rules are the assumptions listed in `docs/analysis/sme-question-ledger.md` (RAD-1 to RAD-6).
 
+Repo substitution (`flow-repo-substitution`): in the "Repos" card the Seller of a purchased repo clicks `Substitute tMMF`
+(or `Substitute tUST`). All the repo's securities are replaced by a quantity with at least their Market Value at the feed
+prices, rounded up. The Buyer clicks `Agree substitution` or `Refuse substitution`. On agreement both securities move in one
+transaction, no cash moves, and the Purchase Price and Repurchase Price do not change. The rules are the assumptions listed
+in `docs/analysis/sme-question-ledger.md` (SUB-1 to SUB-6).
+
 Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
 Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
 from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
@@ -352,7 +358,7 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 which the top-up before each run restores), `flow-repo-margin-maintenance` (it restores the tUST price and both
 business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
 price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
-and `flow-repo-adjustment` (the same).
+and `flow-repo-adjustment` and `flow-repo-substitution` (the same).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

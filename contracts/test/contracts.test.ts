@@ -1071,5 +1071,87 @@ describe("CDM collateral contracts", async () => {
         assert.equal((await repo.read.getInstructions([R, ADJUSTMENT]))[1], ZERO_BYTES32);
       });
     });
+
+    describe("substitution (task-repo-substitution)", () => {
+      const SUBSTITUTION = 4, REPRICE_PHASE = 2;
+      const purchased = async () => {
+        await repo.write.affirm([R, H("trade")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+      };
+      const approveSwap = async () => {
+        await tMMF.write.approve([repo.address, 206n], { account: bankA.account });
+        await tUST.write.approve([repo.address, 103n], { account: bankB.account });
+      };
+
+      it("settles in the buyer's instruction: both securities move, the repo changes and no cash moves", async () => {
+        await purchased();
+        await approveSwap();
+        const ustA = await bal(tUST, aAddr), ustB = await bal(tUST, bAddr), mmfA = await bal(tMMF, aAddr), mmfB = await bal(tMMF, bAddr), cashA = await bal(tUSD, aAddr);
+        await repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankA.account });
+        assert.equal(await bal(tUST, aAddr), ustA);
+        await repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankB.account });
+        assert.equal(await bal(tUST, aAddr), ustA + 103n);
+        assert.equal(await bal(tUST, bAddr), ustB - 103n);
+        assert.equal(await bal(tMMF, aAddr), mmfA - 206n);
+        assert.equal(await bal(tMMF, bAddr), mmfB + 206n);
+        assert.equal(await bal(tUSD, aAddr), cashA);
+        const r = await repo.read.getRepo([R]);
+        assert.equal(getAddress(r.security), getAddress(tMMF.address));
+        assert.equal(r.quantity, 206n);
+        assert.equal(r.tradeHash, H("sub"));
+        assert.equal(r.purchasePrice, 10000n);
+        assert.equal((await repo.read.getInstructions([R, SUBSTITUTION]))[0], ZERO_BYTES32);
+      });
+
+      it("the buyer cannot request, and the agreement must state the same terms", async () => {
+        await purchased();
+        await assert.rejects(repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankB.account }));
+        await repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankA.account });
+        await assert.rejects(repo.write.instructSubstitution([R, H("x"), tMMF.address, 206n], { account: bankB.account }));
+        await assert.rejects(repo.write.instructSubstitution([R, H("sub"), tMMF.address, 207n], { account: bankB.account }));
+      });
+
+      it("refuses the current security, a zero quantity and a repo not purchased", async () => {
+        await assert.rejects(repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankA.account }));
+        await purchased();
+        await assert.rejects(repo.write.instructSubstitution([R, H("sub"), tUST.address, 206n], { account: bankA.account }));
+        await assert.rejects(repo.write.instructSubstitution([R, H("sub"), tMMF.address, 0n], { account: bankA.account }));
+      });
+
+      it("the buyer's refusal clears the request, and only the buyer can refuse", async () => {
+        await purchased();
+        await assert.rejects(repo.write.refuseSubstitution([R], { account: bankB.account }));
+        await repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankA.account });
+        await assert.rejects(repo.write.refuseSubstitution([R], { account: bankA.account }));
+        await repo.write.refuseSubstitution([R], { account: bankB.account });
+        assert.equal((await repo.read.getInstructions([R, SUBSTITUTION]))[0], ZERO_BYTES32);
+        const r = await repo.read.getRepo([R]);
+        assert.equal(getAddress(r.security), getAddress(tUST.address));
+        assert.equal(r.quantity, 103n);
+      });
+
+      it("the seller can replace its request, and a pending substitution blocks a reprice", async () => {
+        await purchased();
+        await approveSwap();
+        await repo.write.instructSubstitution([R, H("first"), tMMF.address, 300n], { account: bankA.account });
+        await repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankA.account });
+        await assert.rejects(repo.write.instructReprice([R, H("rp"), 9500n, 9506n, 500n], { account: bankB.account }));
+        assert.equal((await repo.read.getInstructions([R, REPRICE_PHASE]))[1], ZERO_BYTES32);
+        await repo.write.instructSubstitution([R, H("sub"), tMMF.address, 206n], { account: bankB.account });
+        assert.equal((await repo.read.getRepo([R])).quantity, 206n);
+      });
+
+      it("the repurchase clears a pending substitution and returns the current securities", async () => {
+        await purchased();
+        await repo.write.instructSubstitution([R, H("stale"), tMMF.address, 206n], { account: bankA.account });
+        await tUSD.write.approve([repo.address, 10009n], { account: bankA.account });
+        await tUST.write.approve([repo.address, 103n], { account: bankB.account });
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account });
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankB.account });
+        assert.equal((await repo.read.getInstructions([R, SUBSTITUTION]))[0], ZERO_BYTES32);
+      });
+    });
   });
 });

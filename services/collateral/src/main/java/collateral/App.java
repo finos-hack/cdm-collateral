@@ -144,6 +144,9 @@ public final class App {
         app.post("/api/v1/repo-margin/reprice/agree", ctx -> agreeReplacement(ctx, "reprice", this::repriceLeg));
         app.post("/api/v1/repo-margin/adjust", ctx -> proposeReplacement(ctx, this::adjustmentLeg));
         app.post("/api/v1/repo-margin/adjust/agree", ctx -> agreeReplacement(ctx, "adjustment", this::adjustmentLeg));
+        app.post("/api/v1/repos/{id}/substitute", this::requestRepoSubstitution);
+        app.post("/api/v1/repos/{id}/substitute/agree", this::agreeRepoSubstitution);
+        app.post("/api/v1/repos/{id}/substitute/refuse", this::refuseRepoSubstitution);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
@@ -799,6 +802,17 @@ public final class App {
         JsonNode ins = r.get("instructed");
         m.put("instructedByMe", !ins.get(seller ? "seller" : "buyer").asText().equals(ZERO_HASH));
         m.put("instructedByCounterparty", !ins.get(seller ? "buyer" : "seller").asText().equals(ZERO_HASH));
+        String substitution = r.get("substitution").get("seller").asText();
+        if (!substitution.equals(ZERO_HASH) && state.equals("purchased")) {
+            m.put("substitutionPending", seller ? "requested" : "toDecide");
+            try {
+                CdmRepo.Terms offered = CdmRepo.terms(CdmRepo.verify(payloads.get(substitution)).trade());
+                m.put("substituteSecurity", symbolOfIsin(offered.isin()));
+                m.put("substituteQuantity", String.valueOf(offered.quantity()));
+            } catch (RuntimeException ex) {
+                m.put("substituteProblem", String.valueOf(ex.getMessage()));
+            }
+        }
         try {
             CdmRepo.Booking b = repoBooking(r);
             if (b == null) {
@@ -1051,6 +1065,7 @@ public final class App {
         m.put("repriceToAgree", replacementPending("reprice", false));
         m.put("adjustOffered", replacementPending("adjustment", true));
         m.put("adjustToAgree", replacementPending("adjustment", false));
+        m.put("substitutionsPending", substitutionsPending());
         List<Map<String, Object>> interest = new ArrayList<>();
         var elections = gmraFold().terms().terms().getElections();
         for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
@@ -1078,7 +1093,7 @@ public final class App {
     /** The party with the Net Exposure calls it, when it exceeds this party's minimum transfer amount. */
     private void issueRepoMarginCall(Context ctx) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
-        if (replacementsPending() > 0) throw new RuntimeException("a reprice or adjustment between the parties is still pending");
+        if (replacementsPending() > 0) throw new RuntimeException("a reprice, adjustment or substitution between the parties is still pending");
         RepoMarginState s = repoMarginState();
         long amountUsd = CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId));
         if (amountUsd == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
@@ -1125,7 +1140,12 @@ public final class App {
 
     private int replacementsPending() {
         return replacementPending("reprice", true) + replacementPending("reprice", false)
-                + replacementPending("adjustment", true) + replacementPending("adjustment", false);
+                + replacementPending("adjustment", true) + replacementPending("adjustment", false)
+                + substitutionsPending();
+    }
+
+    private int substitutionsPending() {
+        return replacementPending("substitution", true) + replacementPending("substitution", false);
     }
 
     /** The checked booking of a purchased repo; null when it is due for repurchase and cannot be replaced. */
@@ -1196,6 +1216,7 @@ public final class App {
     private void proposeReplacement(Context ctx, ReplacementBuilder builder) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
         if (replacementPending("reprice", false) + replacementPending("adjustment", false) > 0) throw new RuntimeException("the counterparty has made an offer: agree to it");
+        if (substitutionsPending() > 0) throw new RuntimeException("a substitution between the parties is still pending");
         RepoMarginState s = repoMarginState();
         if (CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId)) == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
         var elections = gmraFold().terms().terms().getElections();
@@ -1210,6 +1231,59 @@ public final class App {
         List<Map<String, Object>> out = new ArrayList<>();
         for (Replacement leg : legs) out.add(replacementRow(leg, instructReplacement(leg, total)));
         ctx.json(Map.of("repos", out));
+    }
+
+    // ---- repo substitution (wp-adr-repo-substitution) ----
+    // The Seller replaces all the securities of one purchased repo; the Buyer agrees or refuses. No cash moves. Rules to
+    // confirm in task-sme-repo-substitution-rules.
+
+    /** The substitution of one purchased repo at the feed prices and business date. */
+    private Replacement substitutionLeg(JsonNode r, String symbol) {
+        CdmRepo.Booking b = replaceable(r);
+        if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
+        String newSecurity = cfg.tokenAddress(symbol);
+        CdmRepo.Substituted next = CdmRepo.substitute(b.trade(), cfg.isin(symbol), feedPrice(r.get("security").asText()), feedPrice(newSecurity), businessDate);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        Map<String, Long> pays = seller ? Map.of(newSecurity, next.newQuantity()) : Map.of(r.get("security").asText(), r.get("quantity").asLong());
+        Map<String, Object> amounts = new LinkedHashMap<>(Map.of("newSecurity", newSecurity, "newQuantity", String.valueOf(next.newQuantity())));
+        return new Replacement(r, next.booking(), "substitute", amounts, pays);
+    }
+
+    private JsonNode purchasedRepo(Context ctx) {
+        JsonNode r = gw.get("/repos/" + ctx.pathParam("id"));
+        if (!r.get("state").asText().equals("purchased")) throw new RuntimeException("the repo is not purchased");
+        return r;
+    }
+
+    /** The Seller requests the substitution of a purchased repo by another security on the feed. */
+    private void requestRepoSubstitution(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        if (!r.get("seller").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the Seller can request a substitution");
+        Replacement leg = substitutionLeg(r, String.valueOf(body(ctx).get("security")));
+        Map<String, Object> row = replacementRow(leg, instructReplacement(leg, totalPayments(List.of(leg))));
+        row.put("newQuantity", leg.amounts().get("newQuantity"));
+        ctx.json(row);
+    }
+
+    /** The Buyer agrees only if this service builds the same event from the offered security, the feed and its business date. */
+    private void agreeRepoSubstitution(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        if (!r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the Buyer can agree a substitution");
+        String offered = r.get("substitution").get("seller").asText();
+        if (offered.equals(ZERO_HASH)) throw new RuntimeException("no substitution is requested");
+        String doc = payloads.get(offered);
+        if (doc == null) throw new RuntimeException("the requested substitution is not in the payload store");
+        Replacement leg = substitutionLeg(r, symbolOfIsin(CdmRepo.terms(CdmRepo.verify(doc).trade()).isin()));
+        if (!leg.next().hash().equalsIgnoreCase(offered))
+            throw new RuntimeException("the substitution requested for repo " + leg.id() + " is not the one this service builds at the feed prices and business date " + businessDate);
+        ctx.json(replacementRow(leg, instructReplacement(leg, totalPayments(List.of(leg)))));
+    }
+
+    /** The Buyer refuses the Seller's request. */
+    private void refuseRepoSubstitution(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        if (!r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the Buyer can refuse a substitution");
+        ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/substitute/refuse", Map.of()).path("txHash").asText()));
     }
 
     /** The counterparty's offer is agreed only if this service builds the same event for every repo in it. */

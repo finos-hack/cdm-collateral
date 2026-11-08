@@ -12,6 +12,7 @@ import cdmx.collateral.repo.functions.RepoNetMarginInterest;
 import cdmx.collateral.repo.functions.RepoPurchasePriceForMarketValue;
 import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
 import cdmx.collateral.repo.functions.RepoRepricedPurchasePrice;
+import cdmx.collateral.repo.functions.RepoSubstitutionQuantity;
 import cdmx.collateral.repo.functions.RepoTransactionExposure;
 import com.rosetta.model.lib.records.Date;
 import org.junit.jupiter.api.Test;
@@ -93,6 +94,14 @@ class RepoMarginTest {
     void accruedPriceDifferentialIsRoundedToTheCashPrecision() {
         // 1,000,000 x 4.5% x 2 / 360 = 250
         same("250", fn(RepoAccruedPriceDifferential.class).evaluate(trade(), Date.of(2026, 11, 11), 0));
+    }
+
+    @Test
+    void substitutionQuantityHasAtLeastTheMarketValueRoundedUp() {
+        // 10,737 x 95 / 100 = 10,200.15, up to 10,201
+        same("10201", fn(RepoSubstitutionQuantity.class).evaluate(new BigDecimal("10737"), new BigDecimal("95"), new BigDecimal("100")));
+        // exact: 100 x 50 / 25 = 200
+        same("200", fn(RepoSubstitutionQuantity.class).evaluate(new BigDecimal("100"), new BigDecimal("50"), new BigDecimal("25")));
     }
 
     @Test

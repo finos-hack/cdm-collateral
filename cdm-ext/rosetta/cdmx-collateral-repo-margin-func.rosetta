@@ -230,6 +230,43 @@ func RepoAdjustmentInstruction: <"Defect D21: the primitive instruction of a rep
             }
         ]
 
+func RepoSubstitutionQuantity: <"The quantity of the substitute security with at least the Market Value of the securities it replaces, rounded up to whole units (wp-adr-repo-substitution).">
+    inputs:
+        quantity number (1..1) <"The number of securities replaced.">
+        price number (1..1) <"The price of one unit of the securities replaced.">
+        substitutePrice number (1..1) <"The price of one unit of the substitute security.">
+    output:
+        substituteQuantity number (1..1)
+
+    condition PositiveQuantity:
+        quantity > 0
+    condition PositivePrices:
+        price > 0 and substitutePrice > 0
+
+    set substituteQuantity: RoundToNearest(quantity * price / substitutePrice, 1, RoundingModeEnum -> Up)
+
+func RepoIsSubstitution: <"Whether a BusinessEvent substitutes the securities of a repo (wp-adr-repo-substitution, defect D22): one open trade state after it and none closed, an unchanged cash quantity, a changed collateral portfolio and unchanged effective and termination dates. CDM's Qualify_Substitution requires the new effective date to equal the old termination date and a changed payout, so it cannot be true during the term of a repo.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias priorTerms: ExtractBeforeEconomicTerms(businessEvent)
+    alias newTerms: ExtractOpenEconomicTerms(businessEvent)
+    alias priorLot: ExtractBeforeTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias newLot: ExtractAfterTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias priorCash: priorLot filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then extract item -> quantity then extract item -> value
+    alias newCash: newLot filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then extract item -> quantity then extract item -> value
+
+    set is_event:
+        FilterOpenTradeStates(businessEvent -> after) count = 1
+            and FilterClosedTradeStates(businessEvent -> after) count = 0
+            and priorCash exists
+            and priorCash = newCash
+            and newTerms -> collateral -> collateralPortfolio <> priorTerms -> collateral -> collateralPortfolio
+            and newTerms -> effectiveDate = priorTerms -> effectiveDate
+            and newTerms -> terminationDate = priorTerms -> terminationDate
+
 func RepoNetExposure: <"A party's Net Exposure to the other: the sum of the Transaction Exposures across the pair's repos, each stated from this party's side (positive when this party is exposed), less the net margin this party holds. Positive when this party may call margin.">
     inputs:
         exposures number (0..*) <"The Transaction Exposures, from this party's side, in both directions.">

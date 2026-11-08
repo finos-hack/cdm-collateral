@@ -26,7 +26,11 @@ project owner's choices of 2026-11-08 (source `1f591034dc560e55251b72785553d5247
   feed price, rounded up to whole units. The Buyer's agreement is the eligibility check. The agreeing service rebuilds the
   event from the feed and its business date, and refuses a difference.
 - **Cash.** No cash moves. The Purchase Price and the stored Repurchase Price do not change.
-- **CDM.** The event is built with CDM's `Create_SubstitutionPrimitiveInstruction` and `Create_BusinessEvent`.
+- **CDM.** The event is built with CDM's `Create_SubstitutionPrimitiveInstruction` and `Create_BusinessEvent`, and checked
+  with `cdm-ext` `RepoIsSubstitution` (CDM's `Qualify_Substitution` cannot be true during the term, defect D22). The
+  replacement trade keeps the original effective date, so the accrual does not restart and the Repurchase Price stays the
+  one `RepoRepurchasePrice` computes; the substitution date is the event date. The current security is read from the
+  collateral portfolio, because CDM's quantity change keeps the lot's old observable (D22).
 - **Settlement.** `RepoSettlement` gains a substitution phase. The Seller's instruction is the request and the Buyer's
   matching instruction is the agreement; the second moves both securities and updates the stored security, quantity and
   trade hash in one transaction. The Buyer can refuse, which clears the request.

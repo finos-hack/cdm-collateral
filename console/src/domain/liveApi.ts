@@ -205,6 +205,10 @@ export const api = {
   /** Adjust the securities of every purchased repo instead of calling margin (wp-adr-repo-adjustment). */
   proposeRepoAdjustment: (p: LiveParty) => req<{ repos: unknown[] }>(p, "POST", "/repo-margin/adjust", {}),
   agreeRepoAdjustment: (p: LiveParty) => req<{ repos: unknown[] }>(p, "POST", "/repo-margin/adjust/agree", {}),
+  /** The Seller of a purchased repo requests a substitution of its securities (wp-adr-repo-substitution); the Buyer agrees or refuses. */
+  requestRepoSubstitution: (p: LiveParty, id: string, security: string) => req<{ repoId: string; newQuantity: string }>(p, "POST", `/repos/${id}/substitute`, { security }),
+  agreeRepoSubstitution: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/substitute/agree`, {}),
+  refuseRepoSubstitution: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/substitute/refuse`, {}),
   /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
   payRepoMarginInterest: (p: LiveParty, period: { periodStart: string; periodEnd: string; observedRatePct: string }) =>
     req<{ interestId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/interest", period),
@@ -310,6 +314,10 @@ export interface LiveRepo {
   tradeStateHash?: string;
   /** The business date is on or after the Repurchase Date. */
   repurchaseDue?: boolean;
+  /** A pending substitution: requested by this party (the Seller), or for this party (the Buyer) to decide. */
+  substitutionPending?: "requested" | "toDecide";
+  substituteSecurity?: string;
+  substituteQuantity?: string;
 }
 
 export interface LiveRepos {
@@ -332,6 +340,8 @@ export interface LiveRepoMargin {
   /** The same for an adjustment. */
   adjustOffered: number;
   adjustToAgree: number;
+  /** Pending substitutions of the pair's repos. */
+  substitutionsPending: number;
   interest: { interestId: string; cdmHash: string; amountUsd: string; verified: boolean; payer?: string; receiver?: string; days?: number; error?: string }[];
 }
 

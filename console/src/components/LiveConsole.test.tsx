@@ -511,7 +511,7 @@ describe("flow-repo-margin-maintenance", () => {
   const margin = (over: Record<string, unknown>) => ({
     businessDate: "2026-11-09", exposures: [{ repoId: "0xr1", role: "buyer", price: "88.4", exposureUsd: "310936.80" }],
     netMarginHeldUsd: "0.00", cashMarginHeldUsd: "0", netExposureUsd: "310936.80", minimumTransferAmountUsd: "250000",
-    callableUsd: "310936", callOpen: false, repriceOffered: 0, repriceToAgree: 0, adjustOffered: 0, adjustToAgree: 0, interest: [], ...over,
+    callableUsd: "310936", callOpen: false, repriceOffered: 0, repriceToAgree: 0, adjustOffered: 0, adjustToAgree: 0, substitutionsPending: 0, interest: [], ...over,
   });
 
   it("the party with the Net Exposure calls the amount the service computes", async () => {
@@ -546,6 +546,40 @@ describe("flow-repo-margin-maintenance", () => {
     const card = await screen.findByTestId("repo-margin");
     await user.click(within(card).getByRole("button", { name: "Adjust open repos with A" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/repo-margin/adjust", body: {} }]));
+  });
+
+  const substitutionRepo = (over: Record<string, unknown>) => ({
+    repoId: "0xr1", role: "seller", counterparty: "B", state: "purchased", security: "tUST", quantity: "10366", purchasePrice: "1000000",
+    repurchasePrice: "1000875", tradeHash: "0x01", purchaseHash: "0x03", repurchaseHash: null, instructedByMe: false,
+    instructedByCounterparty: false, verified: true, problem: null, price: "98.4", ratePercent: "4.5", marginRatio: "1.02",
+    purchaseDate: "2026-11-09", repurchaseDate: "2026-11-16", tradeStateHash: "0x02", repurchaseDue: false, ...over,
+  });
+
+  it("the Seller requests a substitution from the repo row", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-09", repos: [substitutionRepo({})] } });
+    const card = await screen.findByTestId("repos");
+    await user.click(within(card).getByRole("button", { name: "Substitute tMMF" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/substitute", body: { security: "tMMF" } }]));
+  });
+
+  it("the Buyer agrees or refuses a requested substitution", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-09", repos: [
+      substitutionRepo({ role: "buyer", counterparty: "A", substitutionPending: "toDecide", substituteSecurity: "tMMF", substituteQuantity: "12000" }),
+    ] } });
+    const card = await screen.findByTestId("repos");
+    expect(within(card).queryByRole("button", { name: "Substitute tMMF" })).toBeNull();
+    await user.click(within(card).getByRole("button", { name: "Agree substitution by 12,000 tMMF" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/substitute/agree", body: {} }]));
+    await user.click(within(card).getByRole("button", { name: "Refuse substitution" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/substitute/agree", body: {} }, { path: "/repos/0xr1/substitute/refuse", body: {} }]));
+  });
+
+  it("no margin action is available while a substitution is pending", async () => {
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ substitutionsPending: 1 }) });
+    const card = await screen.findByTestId("repo-margin");
+    expect(within(card).queryByRole("button", { name: "Adjust open repos with B" })).toBeNull();
   });
 
   it("the other party agrees an offered adjustment, and no new offer is available while it is pending", async () => {

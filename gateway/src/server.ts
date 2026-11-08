@@ -241,6 +241,13 @@ route("POST", "/ledger/v1/repos/:id/adjust", async (p, b) => {
   return J(await adapter.instructRepoAdjustment(p.id as Hex, b.cdmHash as Hex, BigInt(b.newQuantity), BigInt(b.newRepurchasePrice), BigInt(b.accruedFromSeller)));
 });
 
+// A substitution (wp-adr-repo-substitution): the seller's instruction is the request, the buyer's the agreement.
+route("POST", "/ledger/v1/repos/:id/substitute", async (p, b) => {
+  await approveAll(b.approvals);
+  return J(await adapter.instructRepoSubstitution(p.id as Hex, b.cdmHash as Hex, getAddress(b.newSecurity), BigInt(b.newQuantity)));
+});
+route("POST", "/ledger/v1/repos/:id/substitute/refuse", async (p) => J(await adapter.refuseRepoSubstitution(p.id as Hex)));
+
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
 
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));
