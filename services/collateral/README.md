@@ -126,7 +126,18 @@ terms in force, cdm-ext `GmraTerms` with BANK-A as Party1 and BANK-B as Party2, 
 agreed GMRA amendments; with the contract's terms hash beside them, `verified`; wp-adr-repo-gmra-terms),
 `POST /gmra/amendments` (body `party` A or B with `mtaUsd`, and/or `defaultMarginRatio`; either party: CDM
 `GmraTermsAmendment` from cdm-ext `Create_GmraTermsAmendment`, then `proposeTermsAmendment` on-chain),
-`POST /gmra/amendments/{id}/decision` (body `consent`; the counterparty verifies the amendment first), and
+`POST /gmra/amendments/{id}/decision` (body `consent`; the counterparty verifies the amendment first),
+`GET /repos` (this party's term repos with the business date: the on-chain record from `RepoSettlement` and the CDM
+trade this service rebuilt from the booked document and checked against it, `verified`; wp-adr-repo-purchase-repurchase),
+`POST /repos` (body `security` tUST or tMMF, `purchasePrice` whole tUSD, `ratePercent`, `termDays`, optional
+`marginRatio`; the seller: quantity from cdm-ext `RepoPurchaseQuantity` at the feed price, CDM `TradeState` from
+`Create_BusinessEvent` in `CdmRepo`, Repurchase Price from cdm-ext `RepoRepurchasePrice`, then `book` on-chain),
+`POST /repos/{id}/affirm` (the buyer, after its checks and that the trade's price is the feed price),
+`POST /repos/{id}/settle` (body `phase` purchase or repurchase; builds the cdm-ext `RepoSettlement` document, approves
+this party's leg and instructs; the repurchase only on or after the Repurchase Date by the business date),
+`GET /repos/{id}/trade` (the hashes of the TradeState this service holds and, once repurchased, of the closed
+TradeState from CDM's Repurchase event), `GET|POST /business-date` (body `businessDate`; the prototype's business
+date, today at start), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

@@ -210,6 +210,27 @@ route("GET", "/ledger/v1/master-terms", async (_p, _b, url) =>
   J(await adapter.masterTerms(url.searchParams.get("kind")!, getAddress(url.searchParams.get("a")!), getAddress(url.searchParams.get("b")!))),
 );
 
+// --- repo purchase and repurchase (flow-repo-purchase-repurchase, wp-adr-repo-purchase-repurchase) ---
+// The seller books, the buyer affirms with the same trade hash. For each phase a party's gateway approves the repo
+// contract for that party's leg (the token and amount the service names), then instructs; the second instruction
+// moves both legs.
+route("POST", "/ledger/v1/repos", async (_p, b) =>
+  J(await adapter.bookRepo(b.repoId as Hex, getAddress(b.buyer), getAddress(b.security), BigInt(b.quantity), getAddress(b.cash),
+    BigInt(b.purchasePrice), BigInt(b.repurchasePrice), b.tradeHash as Hex)),
+);
+
+route("POST", "/ledger/v1/repos/:id/affirm", async (p, b) => J(await adapter.affirmRepo(p.id as Hex, b.tradeHash as Hex)));
+
+route("POST", "/ledger/v1/repos/:id/instruct", async (p, b) => {
+  const approval = await adapter.approve(getAddress(b.token), adapter.repoContract(), BigInt(b.amount));
+  const tx = await adapter.instructRepo(p.id as Hex, b.phase, b.cdmHash as Hex);
+  return J({ approvalTx: approval.txHash, ...tx });
+});
+
+route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
+
+route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

@@ -263,3 +263,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-gmratermsadr-gmraterms | marks | waypoint:wp-adr-repo-gmra-terms | node:task-repo-gmra-terms |  | accepted |
 | e-drv-cdmdata-gmratermsadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-terms |  | accepted |
 | e-drv-finality-gmratermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-terms |  | accepted |
+| e-mrk-repopradr-purchaserepurchase | marks | waypoint:wp-adr-repo-purchase-repurchase | node:task-repo-purchase-repurchase |  | accepted |
+| e-drv-cdmdata-repopradr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-purchase-repurchase |  | accepted |
+| e-drv-finality-repopradr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-purchase-repurchase |  | accepted |

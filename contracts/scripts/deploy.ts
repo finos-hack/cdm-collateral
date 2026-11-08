@@ -1,4 +1,4 @@
-// Deploy the five contracts to the running Besu network and write an address registry the services and console read.
+// Deploy the six contracts to the running Besu network and write an address registry the services and console read.
 // Run through scripts/deploy-besu.mjs, which sets DEPLOYER_KEY to the market operator's node key so the deployer and
 // the oracle publisher are the mkt account (besu/mkt/data/key). Opening balances, prices and haircuts mirror the
 // console reference data (console/src/domain/reference.ts, scenarios.ts) so the live stack starts where the mock did.
@@ -110,7 +110,7 @@ async function main() {
 
   // Deploy with an explicit nonce; the address follows from the deployer and the nonce, so no lookup of the transaction
   // is needed before the receipt.
-  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation">(name: N, args: readonly unknown[]) {
+  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement">(name: N, args: readonly unknown[]) {
     const { abi, bytecode } = await hre.artifacts.readArtifact(name);
     let address: `0x${string}` | undefined;
     await send(`deploy ${name}`, (nonce) => {
@@ -129,6 +129,8 @@ async function main() {
   await send("MarginCall.setControl", (nonce) => marginCall.write.setControl([control.address], { nonce }));
   const reconciliation = await deploy("PortfolioReconciliation", []);
   console.log("PortfolioReconciliation", reconciliation.address);
+  const repoSettlement = await deploy("RepoSettlement", []);
+  console.log("RepoSettlement       ", repoSettlement.address);
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string }> = {};
   for (const t of TOKENS) {
@@ -157,6 +159,7 @@ async function main() {
       collateralControl: control.address,
       oracleFeed: oracle.address,
       portfolioReconciliation: reconciliation.address,
+      repoSettlement: repoSettlement.address,
     },
     priceScale: SCALE.toString(),
     tokens: tokenRegistry,

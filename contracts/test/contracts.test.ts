@@ -852,4 +852,77 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(rec.write.commitResult([await rec.read.reconciliationIdOf([SB, SC]), SB, SC, H("result"), 0], { account: bankB.account }));
     });
   });
+
+  describe("repo purchase and repurchase, delivery versus payment (task-repo-purchase-repurchase)", () => {
+    let repo: any, tUSD: any, bankC: any;
+    const H = (s: string) => keccak256(toHex(s));
+    const R = H("REPO-1");
+    const PURCHASE = 0, REPURCHASE = 1;
+    beforeEach(async () => {
+      repo = await viem.deployContract("RepoSettlement", []);
+      tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "US0000000USD", "000000USD", "QUSD00000"]);
+      bankC = (await viem.getWalletClients())[3];
+      await tUSD.write.mint([aAddr, 1000n]); // the seller pays the Price Differential out of its own cash
+      await tUSD.write.mint([bAddr, 10000n]);
+      // A sells 103 tUST to B for 10,000 tUSD; Repurchase Price 10,009.
+      await repo.write.book([R, bAddr, tUST.address, 103n, tUSD.address, 10000n, 10009n, H("trade")], { account: bankA.account });
+    });
+    const bal = async (t: any, a: `0x${string}`) => t.read.balanceOf([a]);
+    const approveLegs = async (sec: any, secFrom: any, secQty: bigint, cashFrom: any, cashAmt: bigint) => {
+      await sec.write.approve([repo.address, secQty], { account: secFrom.account });
+      await tUSD.write.approve([repo.address, cashAmt], { account: cashFrom.account });
+    };
+
+    it("books, affirms with the same hash, and settles the purchase in the second instruction", async () => {
+      await assert.rejects(repo.write.affirm([R, H("other")], { account: bankB.account }));
+      await assert.rejects(repo.write.affirm([R, H("trade")], { account: bankA.account }));
+      await assert.rejects(repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account })); // not affirmed
+      await repo.write.affirm([R, H("trade")], { account: bankB.account });
+      assert.equal((await repo.read.getRepo([R])).state, 2); // Affirmed
+      await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+      await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+      assert.equal(await bal(tUST, bAddr), 0n); // one instruction moves nothing
+      await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+      const r = await repo.read.getRepo([R]);
+      assert.equal(r.state, 3); // Purchased
+      assert.equal(r.purchaseHash, H("p"));
+      assert.equal(await bal(tUST, bAddr), 103n);
+      assert.equal(await bal(tUST, aAddr), 897n);
+      assert.equal(await bal(tUSD, aAddr), 11000n);
+      assert.equal(await bal(tUSD, bAddr), 0n);
+    });
+
+    it("settles the repurchase at the Repurchase Price, reversing both legs", async () => {
+      await repo.write.affirm([R, H("trade")], { account: bankB.account });
+      await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+      await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+      await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+      await approveLegs(tUST, bankB, 103n, bankA, 10009n);
+      await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account });
+      await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankB.account });
+      const r = await repo.read.getRepo([R]);
+      assert.equal(r.state, 4); // Repurchased
+      assert.equal(r.repurchaseHash, H("r"));
+      assert.equal(await bal(tUST, aAddr), 1000n);
+      assert.equal(await bal(tUSD, aAddr), 991n); // paid 9 of Price Differential
+      assert.equal(await bal(tUSD, bAddr), 10009n);
+      await assert.rejects(repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account }));
+    });
+
+    it("rejects a different hash, a second instruction, an outsider, a missing allowance and a bad booking", async () => {
+      await repo.write.affirm([R, H("trade")], { account: bankB.account });
+      await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+      await assert.rejects(repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account }));
+      await assert.rejects(repo.write.instruct([R, PURCHASE, H("p")], { account: bankC.account }));
+      await assert.rejects(repo.write.instruct([R, PURCHASE, H("q")], { account: bankB.account }));
+      await assert.rejects(repo.write.instruct([R, REPURCHASE, H("r")], { account: bankB.account })); // not purchased
+      await assert.rejects(repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account })); // no allowances: both legs or neither
+      assert.equal(await bal(tUST, bAddr), 0n);
+      assert.equal((await repo.read.getInstructions([R, PURCHASE]))[0], H("p"));
+      await assert.rejects(repo.write.book([R, bAddr, tUST.address, 1n, tUSD.address, 1n, 1n, H("t")], { account: bankA.account }));
+      await assert.rejects(repo.write.book([H("R2"), aAddr, tUST.address, 1n, tUSD.address, 1n, 1n, H("t")], { account: bankA.account }));
+      await assert.rejects(repo.write.book([H("R3"), bAddr, tUST.address, 1n, tUSD.address, 10n, 9n, H("t")], { account: bankA.account }));
+      assert.deepEqual(await repo.read.reposOf([bAddr]), [R]);
+    });
+  });
 });

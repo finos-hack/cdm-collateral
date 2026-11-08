@@ -29,6 +29,8 @@ export interface Registry {
     oracleFeed: `0x${string}`;
     /** Absent in a deployment made before flow-reconciliation. */
     portfolioReconciliation?: `0x${string}`;
+    /** Absent in a deployment made before flow-repo-purchase-repurchase. */
+    repoSettlement?: `0x${string}`;
   };
   priceScale: string;
   tokens: Record<string, TokenInfo>;

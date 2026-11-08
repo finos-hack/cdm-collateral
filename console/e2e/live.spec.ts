@@ -1426,3 +1426,98 @@ test("flow-repo-gmra-terms: both parties hold the same GMRA terms -> A proposes 
       .toBe(true);
   }
 });
+
+type Repo = {
+  repoId: string; role: "seller" | "buyer"; state: string; security: string; quantity: string; purchasePrice: string;
+  repurchasePrice: string; tradeHash: string; verified: boolean; problem: string | null; instructedByMe: boolean;
+  purchaseDate?: string; repurchaseDate?: string; tradeStateHash?: string;
+};
+type RepoTrade = { tradeHash: string; tradeStateHash: string; closedTradeStateHash?: string; closedState?: string };
+
+test("flow-repo-purchase-repurchase: A books a repo selling tUST to B -> B affirms -> purchase settles DvP -> business date to the Repurchase Date -> repurchase settles DvP", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tUSD = p.tokens.tUSD;
+  const today = new Date().toLocaleDateString("en-CA");
+  // Setup: both business dates on today (a failed earlier run may have moved them).
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  const known = new Set((await call<{ repos: Repo[] }>(`${SERVICE.B}/repos`)).repos.map((r) => r.repoId));
+  const bal = async () => ({
+    aUST: await balanceOf(GATEWAY.A, tUST, p.a), bUST: await balanceOf(GATEWAY.A, tUST, p.b),
+    aUSD: await balanceOf(GATEWAY.A, tUSD, p.a), bUSD: await balanceOf(GATEWAY.A, tUSD, p.b),
+  });
+  const before = await bal();
+  const repoOf = async (svc: string, id: string) => (await call<{ repos: Repo[] }>(`${svc}/repos`)).repos.find((r) => r.repoId === id);
+
+  try {
+    // A books the repo in its console: 1,000,000 tUSD at 4.5% for 7 days, the GMRA's default Margin Ratio.
+    await page.goto("/#/live/A");
+    const cardA = page.getByTestId("repos");
+    await expect(cardA.getByTestId("business-date")).toContainText(today, { timeout: STEP_TIMEOUT });
+    await cardA.getByLabel("Repo security").selectOption("tUST");
+    await cardA.getByLabel("Purchase Price (tUSD)").fill("1000000");
+    await cardA.getByLabel("Repo rate (% p.a.)").fill("4.5");
+    await cardA.getByLabel("Term (days)").fill("7");
+    await cardA.getByRole("button", { name: "Book repo: sell to B" }).click();
+
+    // B's service finds the booked trade in the payload store, rebuilds it with CDM and checks the on-chain amounts.
+    let repo: Repo | undefined;
+    await expect
+      .poll(async () => {
+        repo = (await call<{ repos: Repo[] }>(`${SERVICE.B}/repos`)).repos.find((r) => !known.has(r.repoId));
+        return repo ? (repo.verified ? repo.state : repo.problem) : null;
+      }, { timeout: 60_000 })
+      .toBe("booked");
+    const id = repo!.repoId;
+    const qty = BigInt(repo!.quantity), pp = BigInt(repo!.purchasePrice), rp = BigInt(repo!.repurchasePrice);
+    // 1,000,000 x 1.02 / 98.4 rounded up; 1,000,000 x 4.5% x 7 / 360 = 875.
+    expect(qty).toBe(BigInt(Math.ceil((1_000_000 * 1.02) / PRICE_TUST)));
+    expect(pp).toBe(1_000_000n);
+    expect(rp - pp).toBe(875n);
+
+    // B affirms in its console.
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`repo-${id}`);
+    await rowB.getByRole("button", { name: "Affirm repo" }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`repo-state-${id}`)).toContainText("affirmed ✓", { timeout: STEP_TIMEOUT });
+
+    // The purchase: B instructs first; nothing moves until A's instruction, which moves both legs.
+    await rowB.getByRole("button", { name: "Settle purchase" }).click({ timeout: STEP_TIMEOUT });
+    await expect(rowB).toContainText("purchase instructed, awaiting A", { timeout: STEP_TIMEOUT });
+    expect(await bal()).toEqual(before);
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`repo-${id}`);
+    await rowA.getByRole("button", { name: "Settle purchase" }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`repo-state-${id}`)).toContainText("purchased ✓", { timeout: STEP_TIMEOUT });
+    expect(await bal()).toEqual({ aUST: before.aUST - qty, bUST: before.bUST + qty, aUSD: before.aUSD + pp, bUSD: before.bUSD - pp });
+
+    // Before the Repurchase Date the console offers no repurchase; the operator moves both business dates to it.
+    const due = (await repoOf(SERVICE.A, id))!.repurchaseDate!;
+    await expect(rowA).toContainText(`repurchase from ${due}`);
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: due });
+
+    // The repurchase: A instructs, then B; the second instruction reverses both legs at the Repurchase Price.
+    await page.reload();
+    await page.getByTestId(`repo-${id}`).getByRole("button", { name: "Settle repurchase" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await repoOf(SERVICE.A, id))?.instructedByMe, { timeout: 60_000 }).toBe(true);
+    await page.goto("/#/live/B");
+    await page.getByTestId(`repo-${id}`).getByRole("button", { name: "Settle repurchase" }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`repo-state-${id}`)).toContainText("repurchased ✓", { timeout: STEP_TIMEOUT });
+    expect(await bal()).toEqual({ aUST: before.aUST, bUST: before.bUST, aUSD: before.aUSD - (rp - pp), bUSD: before.bUSD + (rp - pp) });
+
+    // Both services hold the same TradeState, booked under the on-chain trade hash, and the same closed trade from
+    // CDM's Repurchase event, anchored on-chain.
+    const trades = [await call<RepoTrade>(`${SERVICE.A}/repos/${id}/trade`), await call<RepoTrade>(`${SERVICE.B}/repos/${id}/trade`)];
+    const onChain = await call<{ tradeHash: string; purchaseHash: string; repurchaseHash: string; state: string }>(`${GATEWAY.B}/repos/${id}`);
+    expect(onChain.state).toBe("repurchased");
+    expect(trades[0].tradeHash).toBe(onChain.tradeHash);
+    expect(trades[1].tradeHash).toBe(onChain.tradeHash);
+    expect(trades[0].tradeStateHash).toBe(trades[1].tradeStateHash);
+    expect(trades[0].closedTradeStateHash).toBe(trades[1].closedTradeStateHash);
+    expect(trades[0].closedState).toBe("Terminated");
+    expect(onChain.purchaseHash).not.toBe(ZERO_HASH);
+    expect(onChain.repurchaseHash).not.toBe(ZERO_HASH);
+  } finally {
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  }
+});
