@@ -153,6 +153,9 @@ public final class App {
         app.post("/api/v1/repos/{id}/income", this::payIncome);
         app.post("/api/v1/repos/{id}/income/agree", this::agreeIncome);
         app.post("/api/v1/repos/{id}/income/refuse", ctx -> refuseRepoPayment(ctx, "income", "seller"));
+        app.post("/api/v1/repos/{id}/roll", this::proposeRoll);
+        app.post("/api/v1/repos/{id}/roll/agree", this::agreeRoll);
+        app.post("/api/v1/repos/{id}/roll/refuse", this::refuseRoll);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
@@ -820,6 +823,7 @@ public final class App {
             }
         }
         addPendingPayments(m, r, seller, state);
+        addPendingRoll(m, r, seller, state);
         try {
             CdmRepo.Booking b = repoBooking(r);
             if (b == null) {
@@ -1154,7 +1158,8 @@ public final class App {
 
     private int paymentsPending() {
         return replacementPending("interimInterest", true) + replacementPending("interimInterest", false)
-                + replacementPending("income", true) + replacementPending("income", false);
+                + replacementPending("income", true) + replacementPending("income", false)
+                + replacementPending("roll", true) + replacementPending("roll", false);
     }
 
     private int substitutionsPending() {
@@ -1403,6 +1408,70 @@ public final class App {
         JsonNode r = purchasedRepo(ctx);
         requireRole(r, role, "refuse this payment");
         ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/refuse-payment", Map.of("phase", phase)).path("txHash").asText()));
+    }
+
+    // ---- repo roll (wp-adr-repo-roll) ----
+    // Either party proposes on the Repurchase Date and the other agrees or refuses. Rules to confirm in task-sme-repo-roll-rules.
+
+    private void addPendingRoll(Map<String, Object> m, JsonNode r, boolean seller, String state) {
+        if (!state.equals("purchased")) return;
+        String mine = pendingHash(r, "roll", seller), theirs = pendingHash(r, "roll", !seller);
+        if (mine.equals(ZERO_HASH) && theirs.equals(ZERO_HASH)) return;
+        m.put("rollPending", mine.equals(ZERO_HASH) ? "toDecide" : "requested");
+        try {
+            CdmRepo.Terms offered = CdmRepo.terms(CdmRepo.verify(payloads.get(mine.equals(ZERO_HASH) ? theirs : mine)).trade());
+            m.put("rollToDate", offered.repurchaseDate().toString());
+            m.put("rollRatePercent", offered.rate().movePointRight(2).stripTrailingZeros().toPlainString());
+            m.put("rollInterest", new BigInteger(r.get("repurchasePrice").asText()).subtract(new BigInteger(r.get("purchasePrice").asText())).toString());
+        } catch (RuntimeException ex) {
+            m.put("rollProblem", String.valueOf(ex.getMessage()));
+        }
+    }
+
+    /** The roll of one purchased repo to the date and rate, built at this service's business date; a null rate keeps the current one. */
+    private Replacement rollLeg(JsonNode r, LocalDate newRepurchaseDate, BigDecimal rate) {
+        CdmRepo.Booking b = repoBooking(r);
+        if (b == null) throw new RuntimeException("the booked document of repo " + r.get("repoId").asText() + " is not in the payload store");
+        String problem = repoProblem(r, b);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmRepo.Terms t = CdmRepo.terms(b.trade());
+        if (!businessDate.equals(t.repurchaseDate())) throw new RuntimeException("a repo rolls only on its Repurchase Date " + t.repurchaseDate() + "; the business date is " + businessDate);
+        CdmRepo.Rolled next = CdmRepo.roll(b.trade(), newRepurchaseDate, rate == null ? t.rate() : rate);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        Map<String, Object> amounts = new LinkedHashMap<>(Map.of("newRepurchasePrice", String.valueOf(next.booking().repurchasePrice())));
+        return new Replacement(r, next.booking(), "roll", amounts, Map.of(r.get("cash").asText(), seller ? next.interest() : 0L));
+    }
+
+    /** A party proposes the roll of a purchased repo to a new Repurchase Date, at a repo rate in percent (default: the current rate). */
+    private void proposeRoll(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!pendingHash(r, "roll", !seller).equals(ZERO_HASH)) throw new RuntimeException("the counterparty has proposed a roll: agree or refuse it");
+        Map<String, Object> in = body(ctx);
+        BigDecimal rate = in.get("ratePercent") == null ? null : new BigDecimal(String.valueOf(in.get("ratePercent"))).movePointLeft(2);
+        Replacement leg = rollLeg(r, LocalDate.parse(String.valueOf(in.get("newRepurchaseDate"))), rate);
+        ctx.json(replacementRow(leg, instructReplacement(leg, totalPayments(List.of(leg)))));
+    }
+
+    /** The other party agrees only if this service builds the same event from the proposed date and rate. */
+    private void agreeRoll(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        String offered = pendingHash(r, "roll", !seller);
+        if (offered.equals(ZERO_HASH)) throw new RuntimeException("no roll is proposed");
+        String doc = payloads.get(offered);
+        if (doc == null) throw new RuntimeException("the proposed roll is not in the payload store");
+        CdmRepo.Terms terms = CdmRepo.terms(CdmRepo.verify(doc).trade());
+        Replacement leg = rollLeg(r, terms.repurchaseDate(), terms.rate());
+        if (!leg.next().hash().equalsIgnoreCase(offered))
+            throw new RuntimeException("the roll proposed for repo " + leg.id() + " is not the one this service builds at the business date " + businessDate);
+        ctx.json(replacementRow(leg, instructReplacement(leg, totalPayments(List.of(leg)))));
+    }
+
+    /** The party that did not propose the roll refuses it; the contract checks which party that is. */
+    private void refuseRoll(Context ctx) {
+        purchasedRepo(ctx);
+        ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/roll/refuse", Map.of()).path("txHash").asText()));
     }
 
     /** The counterparty's offer is agreed only if this service builds the same event for every repo in it. */

@@ -234,6 +234,64 @@ class CdmRepoTest {
     }
 
     @Test
+    void aRollKeepsThePurchasePriceAndStartsANewTermOnTheRepurchaseDate() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        // 1,000,000 x 4.5% x 7 / 360 = 875
+        CdmRepo.Rolled r = CdmRepo.roll(b.trade(), DAY.plusDays(14), new BigDecimal("0.05"));
+        assertEquals(875, r.interest());
+        CdmRepo.Terms t = CdmRepo.terms(r.booking().trade());
+        assertEquals("0xabc", t.tradeId());
+        assertEquals(1_000_000, t.purchasePrice());
+        assertEquals(10_366, t.quantity());
+        assertEquals(0, new BigDecimal("0.05").compareTo(t.rate()));
+        assertEquals(DAY.plusDays(7), t.purchaseDate());
+        assertEquals(DAY.plusDays(14), t.repurchaseDate());
+        // 1,000,000 x 5% x 7 / 360 = 972.22
+        assertEquals(1_000_972, r.booking().repurchasePrice());
+        assertTrue(CdmRepo.isReplacement(r.booking()));
+    }
+
+    @Test
+    void theRollDocumentRebuildsFromItsOwnTermsAndATamperedOneIsRejected() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Rolled r = CdmRepo.roll(b.trade(), DAY.plusDays(14), new BigDecimal("0.0500"));
+        CdmRepo.Booking again = CdmRepo.verify(r.booking().json());
+        assertEquals(r.booking().hash(), again.hash());
+        CdmRepo.Terms offered = CdmRepo.terms(again.trade());
+        assertEquals(r.booking().hash(), CdmRepo.roll(b.trade(), offered.repurchaseDate(), offered.rate()).booking().hash());
+        String tampered = r.booking().json().replaceFirst("\"value\":0.05", "\"value\":0.06");
+        assertNotEquals(r.booking().json(), tampered);
+        assertThrows(IllegalStateException.class, () -> CdmRepo.verify(tampered));
+    }
+
+    @Test
+    void aRollRequiresALaterDateAndAPositiveRate() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        assertThrows(IllegalArgumentException.class, () -> CdmRepo.roll(b.trade(), DAY.plusDays(7), new BigDecimal("0.05")));
+        assertThrows(IllegalArgumentException.class, () -> CdmRepo.roll(b.trade(), DAY.plusDays(14), BigDecimal.ZERO));
+    }
+
+    @Test
+    void aRollAfterInterimInterestChargesOnlyTheRestAndTheNewTermStartsClean() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.InterimPaid paid = CdmRepo.interimInterest(b.trade(), DAY.plusDays(2));
+        assertEquals(250, paid.amount());
+        CdmRepo.Rolled r = CdmRepo.roll(paid.booking().trade(), DAY.plusDays(14), new BigDecimal("0.045"));
+        assertEquals(625, r.interest());
+        assertEquals(1_000_875, r.booking().repurchasePrice());
+    }
+
+    @Test
+    void cdmClosingLegCarriesTheNewTerminationDateDefectD23() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Rolled r = CdmRepo.roll(b.trade(), DAY.plusDays(14), new BigDecimal("0.05"));
+        var closing = CdmRuntime.JSON.valueToTree(r.booking().event()).path("instruction").path(0).path("primitiveInstruction")
+                .path("split").path("breakdown").path(0).path("quantityChange").path("change").path(0);
+        assertEquals("2026-11-23", closing.path("effectiveDate").path("adjustableDate").path("unadjustedDate").asText());
+        assertEquals(java.time.LocalDate.of(2026, 11, 16), r.booking().event().getEventDate().toLocalDate());
+    }
+
+    @Test
     void bothPartiesBuildTheSamePurchaseAndRepurchase() {
         CdmRepo.Booking seller = CdmRepo.book(terms(1_000_000));
         CdmRepo.Booking buyer = CdmRepo.verify(seller.json());

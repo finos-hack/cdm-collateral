@@ -283,6 +283,12 @@ interim payments, and the Repurchase Price falls by that amount. The Buyer enter
 and clicks `Pay income`; the Seller agrees or refuses, and the Buyer pays income per unit times the quantity in tUSD. The
 rules are the assumptions listed in `docs/analysis/sme-question-ledger.md` (INC-1 to INC-6).
 
+Repo roll (`flow-repo-roll`): when the business date is the Repurchase Date of a purchased repo, either party enters the new
+Repurchase Date and the repo rate in the "Repos" card and clicks `Roll repo`. The other party agrees or refuses. On agreement
+the Seller pays the Price Differential to the old Repurchase Date in tUSD, the securities stay with the Buyer, and the repo
+accrues at the new rate to the new date. The rules are the assumptions listed in `docs/analysis/sme-question-ledger.md`
+(ROL-1 to ROL-7).
+
 Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
 Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
 from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
@@ -364,7 +370,7 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 which the top-up before each run restores), `flow-repo-margin-maintenance` (it restores the tUST price and both
 business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
 price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
-and `flow-repo-adjustment`, `flow-repo-substitution` and `flow-repo-income` (the same).
+and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income` and `flow-repo-roll` (the same).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

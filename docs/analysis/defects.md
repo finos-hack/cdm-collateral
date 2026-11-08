@@ -341,3 +341,14 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
 - **Effect:** `cdm-ext` `RepoIsSubstitution` qualifies the event, and the prototype reads the current security from the
   collateral portfolio (`wp-adr-repo-substitution`). `Create_SubstitutionPrimitiveInstruction` itself is used unchanged.
   Not reported (project owner's instruction).
+
+### D23 — Repo roll: the closing leg carries the new termination date *(added 2026-11-08)*
+
+- `Create_RollPrimitiveInstruction` passes its `terminationDate` input, the new termination date, to
+  `Create_TerminationInstruction` as the date of the termination of the existing trade. The existing trade closes on the
+  effective roll date.
+- Observed: CDM's sample `functions/repo-and-bond/roll-output.json` has `effectiveDate` 2021-03-25 on the closing leg of an
+  event dated 2021-03-22. Over the prototype's repo the closing leg carries the new Repurchase Date
+  (`CdmRepoTest.cdmClosingLegCarriesTheNewTerminationDateDefectD23`).
+- **Effect:** none on the resulting trade states: changing that date in a document leaves the rebuilt trades unchanged. The
+  prototype uses the function unchanged (`wp-adr-repo-roll`). Not reported (project owner's instruction).

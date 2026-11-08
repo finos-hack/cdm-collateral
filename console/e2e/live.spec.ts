@@ -2155,3 +2155,93 @@ test("flow-repo-income: the buyer enters income -> the seller agrees and is paid
     expect(done).toBe(1);
   }
 });
+
+// --- flow-repo-roll ---
+// A roll on the Repurchase Date (wp-adr-repo-roll). The proposer enters the new Repurchase Date and rate, the other party
+// agrees, the Seller pays the Price Differential and the securities stay with the Buyer.
+type RollRow = { rollPending?: string; repurchasePrice: string; repurchaseDate: string; state: string; verified: boolean };
+
+test("flow-repo-roll: the seller proposes a roll on the Repurchase Date -> the buyer agrees -> the seller pays the interest, the securities stay -> the repo repurchases on the new date at the new rate", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUST, tUSD, today, inDays, repo, setDate, setPrice, open } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r = await open(SERVICE.A, SERVICE.B, 1_000_000);
+  const row = async (svc: string) => (await repo(svc, r.repoId)) as unknown as RollRow;
+  const settleRepurchase = async () => {
+    const cur = await row(SERVICE.A);
+    if (cur.state === "repurchased") return;
+    await setDate(cur.repurchaseDate);
+    await call(`${SERVICE.A}/repos/${r.repoId}/settle`, "POST", { phase: "repurchase" });
+    await call(`${SERVICE.B}/repos/${r.repoId}/settle`, "POST", { phase: "repurchase" });
+    await expect.poll(async () => (await row(SERVICE.A)).state, { timeout: 30_000 }).toBe("repurchased");
+  };
+  try {
+    await setDate(inDays(7));
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+    const aSec = await balanceOf(GATEWAY.A, tUST, p.a), bSec = await balanceOf(GATEWAY.B, tUST, p.b);
+
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`repo-${r.repoId}`);
+    await rowA.getByLabel("New Repurchase Date").fill(inDays(14));
+    await rowA.getByLabel("Roll rate (%)").fill("5");
+    await rowA.getByRole("button", { name: "Roll repo" }).click({ timeout: STEP_TIMEOUT });
+    await expect(rowA.getByTestId(`repo-roll-${r.repoId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`repo-${r.repoId}`);
+    await rowB.getByRole("button", { name: `Agree roll to ${inDays(14)} at 5%` }).click({ timeout: STEP_TIMEOUT });
+    // 1,000,000 x 5% x 7 / 360 = 972.22
+    await expect.poll(async () => (await row(SERVICE.A)).repurchasePrice, { timeout: 30_000 }).toBe("1000972");
+
+    // 1,000,000 x 4.5% x 7 / 360 = 875
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd - 875n);
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd + 875n);
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aSec);
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bSec);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await row(svc)).verified, { timeout: 30_000 }).toBe(true);
+      expect((await row(svc)).repurchaseDate).toBe(inDays(14));
+      expect((await row(svc)).rollPending).toBeUndefined();
+    }
+
+    const before = await balanceOf(GATEWAY.A, tUSD, p.a);
+    await settleRepurchase();
+    expect(before - await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(1_000_972n);
+  } finally {
+    await settleRepurchase();
+    await setDate(today);
+  }
+});
+
+test("flow-repo-roll: a roll needs the Repurchase Date -> the buyer proposes -> the seller refuses and nothing moves -> the repo repurchases at the original price", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r = await open(SERVICE.A, SERVICE.B, 1_000_000);
+  const row = async (svc: string) => (await repo(svc, r.repoId)) as unknown as RollRow;
+  const roll = { newRepurchaseDate: inDays(14), ratePercent: "4.5" };
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    await expect(call(`${SERVICE.B}/repos/${r.repoId}/roll`, "POST", roll)).rejects.toThrow("only on its Repurchase Date");
+
+    await setDate(inDays(7));
+    await expect(call(`${SERVICE.B}/repos/${r.repoId}/roll`, "POST", { ...roll, newRepurchaseDate: inDays(7) })).rejects.toThrow("not after");
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a);
+    await call(`${SERVICE.B}/repos/${r.repoId}/roll`, "POST", roll);
+    await expect.poll(async () => (await row(SERVICE.A)).rollPending, { timeout: 30_000 }).toBe("toDecide");
+    await expect(call(`${SERVICE.A}/repos/${r.repoId}/roll`, "POST", roll)).rejects.toThrow("agree or refuse");
+
+    await page.goto("/#/live/A");
+    await page.getByTestId(`repo-${r.repoId}`).getByRole("button", { name: "Refuse roll" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await row(SERVICE.B)).rollPending, { timeout: 30_000 }).toBeUndefined();
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+    expect((await row(SERVICE.A)).repurchasePrice).toBe("1000875");
+  } finally {
+    done = await close([r]);
+    expect(done).toBe(1);
+  }
+});

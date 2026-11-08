@@ -1227,5 +1227,76 @@ describe("CDM collateral contracts", async () => {
         assert.equal((await repo.read.getInstructions([R, INCOME]))[1], ZERO_BYTES32);
       });
     });
+
+    describe("roll (task-repo-roll)", () => {
+      const ROLL = 7;
+      const purchased = async () => {
+        await repo.write.affirm([R, H("trade")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+      };
+
+      for (const [first, second, name] of [[0, 1, "the seller proposes"], [1, 0, "the buyer proposes"]] as const) {
+        it(`${name}: the second instruction moves the interest and updates the repo, and the securities stay`, async () => {
+          await purchased();
+          const before = await repo.read.getRepo([R]);
+          const interest = before.repurchasePrice - before.purchasePrice;
+          assert.ok(interest > 0n);
+          await tUSD.write.approve([repo.address, interest], { account: bankA.account });
+          const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr), secA = await bal(tUST, aAddr), secB = await bal(tUST, bAddr);
+          const parties = [bankA, bankB];
+          await repo.write.instructRoll([R, H("roll"), before.repurchasePrice + 7n], { account: parties[first].account });
+          assert.equal(await bal(tUSD, aAddr), cashA);
+          await repo.write.instructRoll([R, H("roll"), before.repurchasePrice + 7n], { account: parties[second].account });
+          assert.equal(await bal(tUSD, aAddr), cashA - interest);
+          assert.equal(await bal(tUSD, bAddr), cashB + interest);
+          assert.equal(await bal(tUST, aAddr), secA);
+          assert.equal(await bal(tUST, bAddr), secB);
+          const r = await repo.read.getRepo([R]);
+          assert.equal(r.repurchasePrice, before.repurchasePrice + 7n);
+          assert.equal(r.purchasePrice, before.purchasePrice);
+          assert.equal(r.tradeHash, H("roll"));
+        });
+      }
+
+      it("the agreement must state the same terms, and a roll below the Purchase Price is rejected", async () => {
+        await purchased();
+        const rp = (await repo.read.getRepo([R])).repurchasePrice;
+        await assert.rejects(repo.write.instructRoll([R, H("roll"), 9999n], { account: bankA.account }));
+        await repo.write.instructRoll([R, H("roll"), rp], { account: bankA.account });
+        await assert.rejects(repo.write.instructRoll([R, H("other"), rp], { account: bankB.account }));
+        await assert.rejects(repo.write.instructRoll([R, H("roll"), rp + 1n], { account: bankB.account }));
+      });
+
+      it("only the other party refuses, and a refusal clears the roll and moves nothing", async () => {
+        await purchased();
+        const rp = (await repo.read.getRepo([R])).repurchasePrice;
+        await assert.rejects(repo.write.refuseRoll([R], { account: bankB.account }));
+        await repo.write.instructRoll([R, H("roll"), rp], { account: bankA.account });
+        await assert.rejects(repo.write.refuseRoll([R], { account: bankA.account }));
+        const cashA = await bal(tUSD, aAddr);
+        await repo.write.refuseRoll([R], { account: bankB.account });
+        assert.equal((await repo.read.getInstructions([R, ROLL]))[0], ZERO_BYTES32);
+        assert.equal(await bal(tUSD, aAddr), cashA);
+        assert.equal((await repo.read.getRepo([R])).tradeHash, H("trade"));
+      });
+
+      it("a roll cannot be pending with another phase, a repurchase instruction stops it, and the repurchase clears it", async () => {
+        await purchased();
+        const rp = (await repo.read.getRepo([R])).repurchasePrice;
+        await repo.write.instructIncome([R, H("inc"), 9n], { account: bankB.account });
+        await assert.rejects(repo.write.instructRoll([R, H("roll"), rp], { account: bankA.account }));
+        await repo.write.refusePayment([R, 6], { account: bankA.account });
+
+        await repo.write.instructRoll([R, H("roll"), rp], { account: bankA.account });
+        await tUSD.write.approve([repo.address, rp], { account: bankA.account });
+        await tUST.write.approve([repo.address, 103n], { account: bankB.account });
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account });
+        await assert.rejects(repo.write.instructRoll([R, H("roll"), rp], { account: bankB.account }));
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankB.account });
+        assert.equal((await repo.read.getInstructions([R, ROLL]))[0], ZERO_BYTES32);
+      });
+    });
   });
 });
