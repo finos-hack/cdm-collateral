@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-07T23:11:58Z
+updatedAt: 2026-11-08T17:19:27Z
 ```
 # Task: repo adjustment
 
@@ -24,3 +24,5 @@ Row 5 of the repo workflows (section C of the workflow map), split from [[task-r
 - **Prototype:** adjustment as a way to settle a margin call; the securities difference settled on-chain; a live spec.
 
 The details are decided when the task starts.
+
+**Design chosen 2026-11-08** (source `0dd1cef601500b689fcd3ce949a69d1c02f9647d`), recorded in [[wp-adr-repo-adjustment]] (proposed).

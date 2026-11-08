@@ -227,11 +227,18 @@ route("POST", "/ledger/v1/repos/:id/instruct", async (p, b) => {
   return J({ approvalTx: approval.txHash, ...tx });
 });
 
-// A reprice (wp-adr-repo-reprice): the party that pays approves the allowance it needs; the other approves nothing.
+// A reprice or adjustment (wp-adr-repo-reprice, wp-adr-repo-adjustment): the party approves the allowances it needs, by
+// token; a party that delivers nothing sends none.
+const approveAll = async (approvals: { token: string; amount: string }[]) => {
+  for (const a of approvals) await adapter.approve(getAddress(a.token), adapter.repoContract(), BigInt(a.amount));
+};
 route("POST", "/ledger/v1/repos/:id/reprice", async (p, b) => {
-  const amount = BigInt(b.amount);
-  if (amount > 0n) await adapter.approve(getAddress(b.token), adapter.repoContract(), amount);
+  await approveAll(b.approvals);
   return J(await adapter.instructRepoReprice(p.id as Hex, b.cdmHash as Hex, BigInt(b.newPurchasePrice), BigInt(b.newRepurchasePrice), BigInt(b.cashFromSeller)));
+});
+route("POST", "/ledger/v1/repos/:id/adjust", async (p, b) => {
+  await approveAll(b.approvals);
+  return J(await adapter.instructRepoAdjustment(p.id as Hex, b.cdmHash as Hex, BigInt(b.newQuantity), BigInt(b.newRepurchasePrice), BigInt(b.accruedFromSeller)));
 });
 
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));

@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 57 questions in 13 tasks, all open.
+Status of the ledger: 63 questions in 14 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -135,3 +135,14 @@ Status of the ledger: 57 questions in 13 tasks, all open.
 | RPR-4 | The prototype offers a reprice under the same minimum transfer amount as a margin call. Does the minimum apply to a reprice? | open | |
 | RPR-5 | Is a reprice agreed in place of a margin call, or is it a way of satisfying a call already made? | open | |
 | RPR-6 | The prototype sets each repriced Transaction Exposure to about zero and leaves Net Margin already held unchanged, so after a reprice the other party can call that margin back. Should a reprice take the margin held into account? | open | |
+
+### `task-sme-repo-adjustment-rules`: adjusting a repo under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| RAD-1 | The prototype has the Seller pay the Price Differential accrued to the adjustment date in cash. Is it settled then, carried to the final Repurchase Price, or added to the new Purchase Price? | open | |
+| RAD-2 | Is the new quantity the Purchase Price times the Margin Ratio divided by the price, rounded up to whole units? | open | |
+| RAD-3 | The prototype adjusts every open repo of the pair, one settlement each. Does paragraph 4(i)(ii) require all repos, and must they settle together? | open | |
+| RAD-4 | The prototype offers an adjustment under the same minimum transfer amount as a margin call. Does the minimum apply to an adjustment? | open | |
+| RAD-5 | Is an adjustment agreed in place of a margin call, or is it a way of satisfying a call already made? | open | |
+| RAD-6 | The prototype leaves Net Margin held unchanged, so after an adjustment the other party can call that margin back. Should an adjustment take the margin held into account? | open | |

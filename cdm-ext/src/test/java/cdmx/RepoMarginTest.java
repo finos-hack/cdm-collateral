@@ -4,6 +4,7 @@ import cdm.event.common.TradeState;
 import cdmx.collateral.gmra.GmraElections;
 import cdmx.collateral.gmra.MarginRatioBasisEnum;
 import cdmx.collateral.gmra.NetMarginInterest;
+import cdmx.collateral.repo.functions.RepoAccruedPriceDifferential;
 import cdmx.collateral.repo.functions.RepoMarginCallAmount;
 import cdmx.collateral.repo.functions.RepoMarginRatio;
 import cdmx.collateral.repo.functions.RepoNetExposure;
@@ -86,6 +87,12 @@ class RepoMarginTest {
     void repricedPurchasePriceIsMarketValueOverTheRatioRounded() {
         // 10,366 x 95 / 1.02 = 965,460.78
         same("965461", fn(RepoRepricedPurchasePrice.class).evaluate(new BigDecimal(10_366), new BigDecimal(95), new BigDecimal("1.02"), 0));
+    }
+
+    @Test
+    void accruedPriceDifferentialIsRoundedToTheCashPrecision() {
+        // 1,000,000 x 4.5% x 2 / 360 = 250
+        same("250", fn(RepoAccruedPriceDifferential.class).evaluate(trade(), Date.of(2026, 11, 11), 0));
     }
 
     @Test

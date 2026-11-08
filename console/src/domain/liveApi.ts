@@ -200,8 +200,11 @@ export const api = {
   /** The party with the Net Exposure calls it; the service computes the amount. */
   callRepoMargin: (p: LiveParty) => req<{ callId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/calls", {}),
   /** Reprice every purchased repo instead of calling margin (wp-adr-repo-reprice); the other party agrees. */
-  proposeRepoReprice: (p: LiveParty) => req<{ repriced: unknown[] }>(p, "POST", "/repo-margin/reprice", {}),
-  agreeRepoReprice: (p: LiveParty) => req<{ repriced: unknown[] }>(p, "POST", "/repo-margin/reprice/agree", {}),
+  proposeRepoReprice: (p: LiveParty) => req<{ repos: unknown[] }>(p, "POST", "/repo-margin/reprice", {}),
+  agreeRepoReprice: (p: LiveParty) => req<{ repos: unknown[] }>(p, "POST", "/repo-margin/reprice/agree", {}),
+  /** Adjust the securities of every purchased repo instead of calling margin (wp-adr-repo-adjustment). */
+  proposeRepoAdjustment: (p: LiveParty) => req<{ repos: unknown[] }>(p, "POST", "/repo-margin/adjust", {}),
+  agreeRepoAdjustment: (p: LiveParty) => req<{ repos: unknown[] }>(p, "POST", "/repo-margin/adjust/agree", {}),
   /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
   payRepoMarginInterest: (p: LiveParty, period: { periodStart: string; periodEnd: string; observedRatePct: string }) =>
     req<{ interestId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/interest", period),
@@ -326,6 +329,9 @@ export interface LiveRepoMargin {
   /** Purchased repos with a reprice this party has offered, and with one the counterparty has offered. */
   repriceOffered: number;
   repriceToAgree: number;
+  /** The same for an adjustment. */
+  adjustOffered: number;
+  adjustToAgree: number;
   interest: { interestId: string; cdmHash: string; amountUsd: string; verified: boolean; payer?: string; receiver?: string; days?: number; error?: string }[];
 }
 

@@ -37,7 +37,8 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D17 | `haircutPercentage` is described as the IM CSA Valuation Percentage (the share of value that counts) but subtracted as a haircut *(added 2026-11-03)* | calculation / docs | CDM 7.7.0 `rosetta/legaldocumentation-csa-type.rosetta` 148; `rosetta/legaldocumentation-csa-func.rosetta` 20, 27 |
 | D18 | `CloneEligibleCollateralWithChangedTreatment` writes the changed criterion and treatment into the first criterion of the schedule, whichever asset it was *(added 2026-11-06)* | function logic | CDM 7.7.0 `rosetta/product-collateral-func.rosetta` 9, 22–24 |
 | D19 | Rune Java generator (rune-maven-plugin 10.15.1): `distinct` on an alias of extracted values generates Java that does not compile *(added 2026-11-06)* | toolchain | `cdm-ext/rosetta/cdmx-collateral-amendment-func.rosetta`, condition `DistinctAssets` |
-| D20 | `Qualify_Reprice` cannot be true for a repo whose lot holds both the cash and the security: `ExtractTradePurchasePrice` and `ExtractTradeCollateralQuantity` read the same list of all quantities, and the qualifier requires that list both to differ and to match *(added 2026-11-08)* | qualification | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 592; `rosetta/event-common-func.rosetta` |
+| D20 | `Qualify_Reprice` cannot be true for a repo whose lot holds both the cash and the security: `ExtractTradePurchasePrice` and `ExtractTradeCollateralQuantity` read the same list of all quantities, and the qualifier requires that list both to differ and to match (`Qualify_Adjustment` has the same contradiction in the opposite direction) *(added 2026-11-08)* | qualification | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 592; `rosetta/event-common-func.rosetta` |
+| D21 | `Create_AdjustmentPrimitiveInstruction` writes the new securities quantity into every quantity of the lot, so a repo's cash quantity becomes the number of securities *(added 2026-11-08)* | function logic | CDM 7.7.0 `rosetta/event-common-func.rosetta` 1843 |
 
 ## Details
 
@@ -313,3 +314,16 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   `RepoIsReprice` separates the cash and security quantities by price type (`wp-adr-repo-reprice`). It leaves out the
   check that the security price changed, because a repo repriced at its booking price can still change Purchase Price
   through the rounding up of the quantity. Not reported (project owner's instruction).
+- `Qualify_Adjustment` requires `afterTradePurchasePrice = beforeTradePurchasePrice` and
+  `beforeTradeCollateralQuantity <> afterTradeCollateralQuantity` over the same two extracts, so it has the same
+  contradiction when the security quantity changes. `cdm-ext` `RepoIsAdjustment` is used instead (`wp-adr-repo-adjustment`).
+
+### D21 — `Create_AdjustmentPrimitiveInstruction` overwrites the cash quantity *(added 2026-11-08)*
+
+- The alias `changeQuantity` is every `quantity` of the lot's `priceQuantity`, with its value set to `newAssetQuantity`.
+  `Create_RepricePrimitiveInstruction` filters to the interest-rate price quantity; this function has no filter.
+- Observed: over the prototype's repo with Purchase Price 1,000,000, the function's replacement trade has Purchase Price
+  10,737, the new number of securities.
+- **Effect:** the function cannot adjust a repo whose lot holds both the cash and the security. `cdm-ext`
+  `RepoAdjustmentInstruction` has the same shape, limited to the securities' price quantity (`wp-adr-repo-adjustment`).
+  Not reported (project owner's instruction).

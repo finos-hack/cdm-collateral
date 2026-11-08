@@ -40,8 +40,8 @@ class CdmRepoTest {
         assertEquals(DAY.plusDays(7), t.repurchaseDate());
         // 965,461 x 4.5% x 5 / 360 = 603.41
         assertEquals(966_064, r.booking().repurchasePrice());
-        assertTrue(CdmRepo.isReprice(r.booking()));
-        assertFalse(CdmRepo.isReprice(b));
+        assertTrue(CdmRepo.isReplacement(r.booking()));
+        assertFalse(CdmRepo.isReplacement(b));
     }
 
     @Test
@@ -63,6 +63,48 @@ class CdmRepoTest {
         CdmRepo.Settlement s = CdmRepo.repurchase(r.booking().trade());
         assertEquals(966_064, s.settlement().getCashTransfer().getQuantity().getValue().longValueExact());
         assertEquals(10_366, s.settlement().getSecurityTransfer().getQuantity().getValue().longValueExact());
+    }
+
+    @Test
+    void anAdjustmentChangesTheQuantityAndKeepsThePurchasePrice() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        BigDecimal ratio = new BigDecimal("1.02");
+        LocalDate day = DAY.plusDays(2);
+        // 1,020,000 / 95 = 10,736.84, up to 10,737; accrued 1,000,000 x 4.5% x 2 / 360 = 250
+        CdmRepo.Adjusted a = CdmRepo.adjust(b.trade(), new BigDecimal("95"), ratio, day);
+        assertEquals(10_737, a.newQuantity());
+        assertEquals(250, a.accruedFromSeller());
+        CdmRepo.Terms t = CdmRepo.terms(a.booking().trade());
+        assertEquals("0xabc", t.tradeId());
+        assertEquals(1_000_000, t.purchasePrice());
+        assertEquals(10_737, t.quantity());
+        assertEquals(0, new BigDecimal("0.045").compareTo(t.rate()));
+        assertEquals(0, new BigDecimal("95").compareTo(t.price()));
+        assertEquals(day, t.purchaseDate());
+        assertEquals(DAY.plusDays(7), t.repurchaseDate());
+        // 1,000,000 x 4.5% x 5 / 360 = 625
+        assertEquals(1_000_625, a.booking().repurchasePrice());
+        assertTrue(CdmRepo.isReplacement(a.booking()));
+    }
+
+    @Test
+    void theAdjustmentDocumentRebuildsAndATamperedOneIsRejected() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Adjusted a = CdmRepo.adjust(b.trade(), new BigDecimal("95"), new BigDecimal("1.02"), DAY.plusDays(2));
+        assertEquals(a.booking().hash(), CdmRepo.verify(a.booking().json()).hash());
+        String tampered = a.booking().json().replaceFirst("\"value\":10737", "\"value\":10000");
+        assertNotEquals(a.booking().json(), tampered);
+        assertThrows(IllegalStateException.class, () -> CdmRepo.verify(tampered));
+    }
+
+    @Test
+    void aRisingPriceLowersTheQuantityAndAnAdjustedTradeRepurchases() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Adjusted a = CdmRepo.adjust(b.trade(), new BigDecimal("102"), new BigDecimal("1.02"), DAY.plusDays(2));
+        assertEquals(10_000, a.newQuantity());
+        CdmRepo.Settlement s = CdmRepo.repurchase(a.booking().trade());
+        assertEquals(1_000_625, s.settlement().getCashTransfer().getQuantity().getValue().longValueExact());
+        assertEquals(10_000, s.settlement().getSecurityTransfer().getQuantity().getValue().longValueExact());
     }
 
     @Test

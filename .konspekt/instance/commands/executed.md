@@ -397,3 +397,10 @@ at execution time.
 | task-repo-reprice | 2c270331c2143b38b48040d541eba24da08385e6 |
 | task-repo-reprice | 32ef607631cb1a34a378454d6ed82922a444988e |
 | task-repo-reprice | fb7f2448d0d6bbabb4f0ad6e3adc38ed360d699f |
+| task-repo-adjustment | fdecdb4b5832720d3f8396536a1e3824efd1ed13 |
+| task-repo-adjustment | 73b92618d64eaa9e631d0d8b6426925db8dfc2bc |
+| task-repo-adjustment | fc270c0dab6799219b673b5fc606614e6d6dcbbc |
+| task-repo-adjustment | c3993f681cfecf19894f681411ef3c3f1436b7c3 |
+| task-repo-adjustment | e375192cf3ccefd4364665392082e508b847167d |
+| task-repo-adjustment | 46ad307801fdfd6de783f145fb6587c4ce421883 |
+| task-repo-adjustment | 32ef607631cb1a34a378454d6ed82922a444988e |

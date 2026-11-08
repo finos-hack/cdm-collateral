@@ -953,3 +953,19 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
 | edge:e-dec-cdmdev-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
 | edge:e-lnk-reprice-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
+| node:task-repo-reprice | status | open | resolved | 2026-11-08T17:11:10Z | 9d4effea727b889d053d25974d6f494bb561a795 | denisurusov |
+| waypoint:wp-adr-repo-adjustment | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| node:task-sme-repo-adjustment-rules | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| node:task-sme-repo-adjustment-rules | status |  | open | 2026-11-08T17:19:27Z |  |  |
+| edge:e-mrk-adjadr-adjustment | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| edge:e-drv-cdmdata-adjadr | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| edge:e-drv-finality-adjadr | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| edge:e-dec-cdmdev-smeadjust | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| edge:e-lnk-adjust-smeadjust | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| waypoint:wp-adr-repo-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| node:task-sme-repo-adjustment-rules | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-mrk-adjadr-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-drv-cdmdata-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-drv-finality-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-dec-cdmdev-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-lnk-adjust-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |

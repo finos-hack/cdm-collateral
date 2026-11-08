@@ -926,6 +926,7 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
  *  it allows, settled by title transfer in the calls list, and the interest on Cash Margin. */
 function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: LiveRepoMargin; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, other, margin: m, busy, run } = props;
+  const pending = m.repriceOffered + m.repriceToAgree + m.adjustOffered + m.adjustToAgree;
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [ratePct, setRatePct] = useState("");
@@ -939,22 +940,31 @@ function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: Liv
         {m.callOpen ? (
           <span>a margin call is open</span>
         ) : (
-          <button disabled={busy || m.callableUsd === "0" || m.repriceOffered + m.repriceToAgree > 0} onClick={() => run(() => api.callRepoMargin(party))}>
+          <button disabled={busy || m.callableUsd === "0" || pending > 0} onClick={() => run(() => api.callRepoMargin(party))}>
             {m.callableUsd === "0" ? "Nothing to call" : `Call margin from ${other}: USD ${m.callableUsd}`}
           </button>
         )}
-        {m.repriceToAgree > 0 ? (
+        {m.repriceToAgree > 0 && (
           <button disabled={busy} onClick={() => run(() => api.agreeRepoReprice(party))}>
             Agree reprice with {other}: {m.repriceToAgree} repo(s)
           </button>
-        ) : m.repriceOffered > 0 ? (
-          <span data-testid="repo-reprice-offered">reprice offered to {other}</span>
-        ) : (
-          !m.callOpen && m.callableUsd !== "0" && (
+        )}
+        {m.adjustToAgree > 0 && (
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoAdjustment(party))}>
+            Agree adjustment with {other}: {m.adjustToAgree} repo(s)
+          </button>
+        )}
+        {m.repriceOffered > 0 && <span data-testid="repo-reprice-offered">reprice offered to {other}</span>}
+        {m.adjustOffered > 0 && <span data-testid="repo-adjust-offered">adjustment offered to {other}</span>}
+        {pending === 0 && !m.callOpen && m.callableUsd !== "0" && (
+          <>
             <button disabled={busy} onClick={() => run(() => api.proposeRepoReprice(party))}>
               Reprice open repos with {other}
             </button>
-          )
+            <button disabled={busy} onClick={() => run(() => api.proposeRepoAdjustment(party))}>
+              Adjust open repos with {other}
+            </button>
+          </>
         )}
       </div>
       {m.exposures.length > 0 && (

@@ -7,6 +7,9 @@ import cdm.event.common.TradeState;
 import cdm.event.common.functions.Create_BusinessEvent;
 import cdm.event.common.functions.ResolveRepurchaseTransferInstruction;
 import cdmx.collateral.repo.RepoSettlement;
+import cdmx.collateral.repo.functions.RepoAccruedPriceDifferential;
+import cdmx.collateral.repo.functions.RepoAdjustmentInstruction;
+import cdmx.collateral.repo.functions.RepoIsAdjustment;
 import cdmx.collateral.repo.functions.RepoIsReprice;
 import cdmx.collateral.repo.functions.RepoPurchasePrice;
 import cdmx.collateral.repo.functions.RepoPurchaseQuantity;
@@ -50,6 +53,9 @@ public final class CdmRepo {
 
     /** A repriced Transaction and the cash that settles the reprice, positive when the Seller pays the Buyer. */
     public record Repriced(Booking booking, long cashFromSeller) {}
+
+    /** An adjusted Transaction, its new quantity and the accrued Price Differential the Seller pays the Buyer. */
+    public record Adjusted(Booking booking, long newQuantity, long accruedFromSeller) {}
 
     /** A purchase or repurchase settlement document and its hash. */
     public record Settlement(RepoSettlement settlement, String json, String hash) {}
@@ -171,14 +177,15 @@ public final class CdmRepo {
             throw new IllegalStateException("not a BusinessEvent: " + e.getMessage(), e);
         }
         if (ev.getInstruction() == null || ev.getInstruction().size() != 1 || ev.getInstruction().get(0).getPrimitiveInstruction() == null)
-            throw new IllegalStateException("the booked document is not one execution or reprice");
+            throw new IllegalStateException("the booked document is not one execution or replacement");
         var primitive = ev.getInstruction().get(0).getPrimitiveInstruction();
         if (primitive.getExecution() == null && primitive.getSplit() == null)
-            throw new IllegalStateException("the booked document is not one execution or reprice");
+            throw new IllegalStateException("the booked document is not one execution or replacement");
         BusinessEvent rebuilt = create(new ArrayList<>(ev.getInstruction()), ev.getEventDate());
         if (primitive.getSplit() != null) {
             rebuilt = withActivityDate(rebuilt);
-            if (!CdmRuntime.fn(RepoIsReprice.class).evaluate(rebuilt)) throw new IllegalStateException("the document is not a reprice of the repo");
+            if (!CdmRuntime.fn(RepoIsReprice.class).evaluate(rebuilt) && !CdmRuntime.fn(RepoIsAdjustment.class).evaluate(rebuilt))
+                throw new IllegalStateException("the document is neither a reprice nor an adjustment of the repo");
         }
         Booking again = booking(rebuilt);
         if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json)))
@@ -278,13 +285,16 @@ public final class CdmRepo {
         return b.build();
     }
 
+    private static cdm.base.datetime.AdjustableOrRelativeDate effective(LocalDate date) {
+        return cdm.base.datetime.AdjustableOrRelativeDate.builder()
+                .setAdjustableDate(cdm.base.datetime.AdjustableDate.builder().setUnadjustedDate(Date.of(date))
+                        .setDateAdjustments(cdm.base.datetime.BusinessDayAdjustments.builder().setBusinessDayConvention(cdm.base.datetime.BusinessDayConventionEnum.NONE))).build();
+    }
+
     /** CDM's reprice event: the trade is terminated and replaced by one with the new cash amount and security price,
      *  starting on the reprice date, with the same Repurchase Date and securities. */
     static BusinessEvent repriceEvent(TradeState ts, BigDecimal newPrice, long newPurchasePrice, LocalDate date) {
-        var when = cdm.base.datetime.AdjustableOrRelativeDate.builder()
-                .setAdjustableDate(cdm.base.datetime.AdjustableDate.builder().setUnadjustedDate(Date.of(date))
-                        .setDateAdjustments(cdm.base.datetime.BusinessDayAdjustments.builder().setBusinessDayConvention(cdm.base.datetime.BusinessDayConventionEnum.NONE))).build();
-        var pi = CdmRuntime.fn(cdm.event.common.functions.Create_RepricePrimitiveInstruction.class).evaluate(ts, newPrice, BigDecimal.valueOf(newPurchasePrice), when);
+        var pi = CdmRuntime.fn(cdm.event.common.functions.Create_RepricePrimitiveInstruction.class).evaluate(ts, newPrice, BigDecimal.valueOf(newPurchasePrice), effective(date));
         Instruction i = Instruction.builder().setBeforeValue(ts).setPrimitiveInstruction(pi).build();
         return withActivityDate(create(List.of(i), Date.of(date)));
     }
@@ -300,8 +310,25 @@ public final class CdmRepo {
         return new Repriced(booking(repriceEvent(ts, price, newPurchasePrice, date)), cash);
     }
 
-    /** Whether a booking's document is a reprice event, which replaced the trade first booked. */
-    public static boolean isReprice(Booking b) {
+    /** The adjustment event, from cdm-ext RepoAdjustmentInstruction (defect D21): the trade is terminated and replaced by one with the new security quantity and price,
+     *  starting on the adjustment date, with the same Purchase Price and Repurchase Date. */
+    static BusinessEvent adjustmentEvent(TradeState ts, BigDecimal newPrice, long newQuantity, LocalDate date) {
+        var pi = CdmRuntime.fn(RepoAdjustmentInstruction.class).evaluate(ts, newPrice, BigDecimal.valueOf(newQuantity), effective(date));
+        Instruction i = Instruction.builder().setBeforeValue(ts).setPrimitiveInstruction(pi).build();
+        return withActivityDate(create(List.of(i), Date.of(date)));
+    }
+
+    /** The adjustment of a Transaction at a security price (wp-adr-repo-adjustment): the new trade as a Booking whose
+     *  document is CDM's adjustment event, the new quantity, and the accrued Price Differential the Seller pays the Buyer. */
+    public static Adjusted adjust(TradeState ts, BigDecimal price, BigDecimal marginRatio, LocalDate date) {
+        Terms t = terms(ts);
+        long newQuantity = quantity(t.purchasePrice(), marginRatio, price);
+        long accrued = CdmRuntime.fn(RepoAccruedPriceDifferential.class).evaluate(ts, Date.of(date), CASH_PRECISION).longValueExact();
+        return new Adjusted(booking(adjustmentEvent(ts, price, newQuantity, date)), newQuantity, accrued);
+    }
+
+    /** Whether a booking's document replaced the trade first booked: a reprice or an adjustment. */
+    public static boolean isReplacement(Booking b) {
         return b.event().getInstruction().get(0).getPrimitiveInstruction().getSplit() != null;
     }
 
