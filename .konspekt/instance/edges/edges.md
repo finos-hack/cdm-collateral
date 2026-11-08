@@ -284,3 +284,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-adjadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-adjustment |  | accepted |
 | e-dec-cdmdev-smeadjust | decomposes | node:goal-cdm-development | node:task-sme-repo-adjustment-rules |  | accepted |
 | e-lnk-adjust-smeadjust | links | node:task-repo-adjustment | node:task-sme-repo-adjustment-rules |  | accepted |
+| e-mrk-subadr-substitution | marks | waypoint:wp-adr-repo-substitution | node:task-repo-substitution |  | proposed |
+| e-drv-cdmdata-subadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-substitution |  | proposed |
+| e-drv-finality-subadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-substitution |  | proposed |
+| e-dec-cdmdev-smesubst | decomposes | node:goal-cdm-development | node:task-sme-repo-substitution-rules |  | proposed |
+| e-lnk-subst-smesubst | links | node:task-repo-substitution | node:task-sme-repo-substitution-rules |  | proposed |
