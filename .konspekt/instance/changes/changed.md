@@ -934,3 +934,6 @@ excluded.
 | task-repo-purchase-repurchase | 920d9b8152c5a26c1bdebb35c3503235d0b11645 | services/collateral/src/main/java/collateral/App.java | 2026-11-08T01:49:40Z |
 | task-repo-purchase-repurchase | 920d9b8152c5a26c1bdebb35c3503235d0b11645 | services/collateral/src/main/java/collateral/CdmRepo.java | 2026-11-08T01:49:40Z |
 | task-repo-purchase-repurchase | 920d9b8152c5a26c1bdebb35c3503235d0b11645 | services/collateral/src/test/java/collateral/CdmRepoTest.java | 2026-11-08T01:49:40Z |
+| task-repo-margin-maintenance | 41567e7ba4656ce8011931f5641228abe236d010 | cdm-ext/rosetta/cdmx-collateral-repo-margin-func.rosetta | 2026-11-08T14:38:31Z |
+| task-repo-margin-maintenance | 41567e7ba4656ce8011931f5641228abe236d010 | cdm-ext/src/test/java/cdmx/RepoMarginTest.java | 2026-11-08T14:38:31Z |
+| task-repo-margin-maintenance | 41567e7ba4656ce8011931f5641228abe236d010 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T14:38:31Z |

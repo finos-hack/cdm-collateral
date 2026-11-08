@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T14:35:55Z
+updatedAt: 2026-11-08T14:38:31Z
 ```
 # Task: repo margin maintenance: Net Exposure and margin transfer
 
@@ -31,3 +31,8 @@ oracle does not publish it.
 
 **Design chosen 2026-11-08** (source `ae0dea272a7d57577b0c8d0625863feb6ded3a8c`), recorded in
 [[wp-adr-repo-margin-maintenance]] (proposed).
+
+Built so far on branch `repo-margin-maintenance` (2026-11-08): the `cdm-ext` functions of
+[[wp-adr-repo-margin-maintenance]] (`RepoMarginRatio`, `RepoPurchasePriceForMarketValue`, `RepoTransactionExposure`,
+`RepoNetExposure`, `RepoMarginCallAmount`, `RepoNetMarginInterest`; 7 tests). The service, the console and the live spec
+are not built.
