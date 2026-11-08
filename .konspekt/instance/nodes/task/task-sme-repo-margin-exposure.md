@@ -3,7 +3,7 @@ id: task-sme-repo-margin-exposure
 type: task
 title: Confirm with a business SME the GMRA exposure and Net Margin rules of repo margin maintenance
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-margin-maintenance
   sourceRef: d7075ebf2ed8b09469e486de0a8c51320ad977a7

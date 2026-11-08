@@ -931,3 +931,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-repomargin-smerepomargin | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
 | edge:e-dec-cdmdev-smerepolivespec | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
 | edge:e-lnk-repopr-smerepolivespec | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| node:task-sme-repo-margin-exposure | review | proposed | accepted | 2026-11-08T15:00:04Z |  | denisurusov |
+| edge:e-dec-cdmdev-smerepomargin | review | proposed | accepted | 2026-11-08T15:00:04Z |  | denisurusov |
+| edge:e-lnk-repomargin-smerepomargin | review | proposed | accepted | 2026-11-08T15:00:04Z |  | denisurusov |
+| node:task-sme-repo-live-spec-returns | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
+| edge:e-dec-cdmdev-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
+| edge:e-lnk-repopr-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |

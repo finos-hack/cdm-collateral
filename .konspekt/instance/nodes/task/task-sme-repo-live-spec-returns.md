@@ -3,7 +3,7 @@ id: task-sme-repo-live-spec-returns
 type: task
 title: Confirm with a business SME whether a live spec should return amounts such as the Price Differential
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-margin-maintenance
   sourceRef: d7075ebf2ed8b09469e486de0a8c51320ad977a7
