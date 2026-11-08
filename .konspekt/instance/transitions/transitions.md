@@ -1007,3 +1007,4 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-repo-income | status | open | resolved | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
 | node:task-gateway-type-check | review | proposed | accepted | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
 | edge:e-dec-cdmdev-gatewaytypecheck | review | proposed | accepted | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
+| node:task-gateway-type-check | status | open | resolved | 2026-11-08T23:13:16Z | 20ee39c124ef4fb13de2cb2e6fcb83679a97d22c | denisurusov |
