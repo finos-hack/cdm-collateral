@@ -3,7 +3,7 @@ id: wp-adr-repo-adjustment
 kind: decision
 subtype: adr
 timestamp: 2026-11-08T17:19:27Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-adjustment
   sourceRef: 0dd1cef601500b689fcd3ce949a69d1c02f9647d
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T17:19:27Z
   confidence: 0.7
 createdAt: 2026-11-08T17:19:27Z
-updatedAt: 2026-11-08T17:19:27Z
+updatedAt: 2026-11-08T19:12:04Z
 ```
 
 # ADR: an adjustment is an alternative to a margin call, one CDM adjustment event per open repo, settled by a new phase of RepoSettlement

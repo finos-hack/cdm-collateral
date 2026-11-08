@@ -3,7 +3,7 @@ id: task-sme-repo-adjustment-rules
 type: task
 title: Confirm with a business SME the rules for adjusting a repo under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-adjustment
   sourceRef: 0dd1cef601500b689fcd3ce949a69d1c02f9647d
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T17:19:27Z
   confidence: 0.6
 createdAt: 2026-11-08T17:19:27Z
-updatedAt: 2026-11-08T17:19:27Z
+updatedAt: 2026-11-08T19:12:04Z
 ```
 # Task: confirm the rules for adjusting a repo under the GMRA
 

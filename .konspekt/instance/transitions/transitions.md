@@ -962,3 +962,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-adjadr | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
 | edge:e-dec-cdmdev-smeadjust | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
 | edge:e-lnk-adjust-smeadjust | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
+| waypoint:wp-adr-repo-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| node:task-sme-repo-adjustment-rules | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-mrk-adjadr-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-drv-cdmdata-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-drv-finality-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-dec-cdmdev-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
+| edge:e-lnk-adjust-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
