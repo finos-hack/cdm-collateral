@@ -1037,3 +1037,4 @@ excluded.
 | task-repo-income | 2132990d57a936fb1ef31aec0544ab38b401476d | services/collateral/README.md | 2026-11-08T21:15:29Z |
 | task-repo-income | 2132990d57a936fb1ef31aec0544ab38b401476d | docs/runbook-e2e.md | 2026-11-08T21:15:29Z |
 | task-repo-income | 2132990d57a936fb1ef31aec0544ab38b401476d | architecture/prototype.architecture.json | 2026-11-08T21:15:29Z |
+| task-repo-income | cfd1a6d799c85860aa6f39f9840185c2d590a2d4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T21:19:58Z |
