@@ -954,3 +954,4 @@ excluded.
 | task-repo-margin-maintenance | 29ffbd54da0bdaa999a940e89aedc269c7687a78 | architecture/prototype.architecture.json | 2026-11-08T15:44:59Z |
 | task-repo-margin-maintenance | 29ffbd54da0bdaa999a940e89aedc269c7687a78 | docs/runbook-e2e.md | 2026-11-08T15:44:59Z |
 | task-repo-margin-maintenance | a9fbf27604ad655e42b6bbaa8513cbc29c744f67 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T15:56:48Z |
+| task-repo-reprice | 9bfa180713717647fb593561db8477a17efe6431 | docs/analysis/sme-question-ledger.md | 2026-11-08T15:59:51Z |
