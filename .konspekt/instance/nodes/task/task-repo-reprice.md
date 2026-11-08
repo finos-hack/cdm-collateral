@@ -2,7 +2,7 @@
 id: task-repo-reprice
 type: task
 title: Repo repricing
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T15:59:51Z
+updatedAt: 2026-11-08T17:11:10Z
 ```
 # Task: repo repricing
 
