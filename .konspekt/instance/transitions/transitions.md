@@ -937,3 +937,4 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-repo-live-spec-returns | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
 | edge:e-dec-cdmdev-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
 | edge:e-lnk-repopr-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
+| node:task-repo-margin-maintenance | status | open | resolved | 2026-11-08T15:44:59Z | c773fad4a30b82770c93c68a8eb759651dfa8c91 | denisurusov |

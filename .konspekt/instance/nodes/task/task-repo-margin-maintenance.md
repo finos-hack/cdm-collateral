@@ -2,7 +2,7 @@
 id: task-repo-margin-maintenance
 type: task
 title: Repo margin maintenance: Net Exposure and margin transfer
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T15:41:39Z
+updatedAt: 2026-11-08T15:44:59Z
 ```
 # Task: repo margin maintenance: Net Exposure and margin transfer
 
@@ -38,3 +38,6 @@ Built so far on branch `repo-margin-maintenance` (2026-11-08): the `cdm-ext` fun
 and `/repo-margin/interest` with `CdmRepoMargin` (5 tests), the console "Repo margin (GMRA)" card (3 tests) and the live spec `flow-repo-margin-maintenance`.
 All 19 live specs pass on the local stack (2026-11-08), with no contract change or redeployment. The spec settles one call
 in cash and one in securities, pays Net Margin interest, repurchases the repo, and the seller calls the margin back.
+
+Resolved by the project owner on 2026-11-08 (source `c773fad4a30b82770c93c68a8eb759651dfa8c91`: "3 resolve"). The exposure and interest rules remain open with
+subject-matter experts in [[task-sme-repo-margin-exposure]].
