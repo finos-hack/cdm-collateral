@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T00:04:52Z
+updatedAt: 2026-11-08T20:48:34Z
 ```
 # Task: repo interest and manufactured income
 
@@ -28,3 +28,5 @@ The details are decided when the task starts.
 **Rate input (2026-11-07,** source `84f74941a221fc7241c20cf18a88a87067400bc1`: "4. by hand for the prototype"**):** in the prototype the overnight rate for
 Net Margin interest (the `netMarginInterest` election, USD-SOFR) is entered by hand, as the CSA interest rate is; the
 oracle does not publish it.
+
+**Design chosen 2026-11-08** (source `6add904ae373a15afccd62650872d36b5f15a134`), recorded in [[wp-adr-repo-income]] (proposed).
