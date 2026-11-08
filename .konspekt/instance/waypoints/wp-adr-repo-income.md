@@ -3,7 +3,7 @@ id: wp-adr-repo-income
 kind: decision
 subtype: adr
 timestamp: 2026-11-08T20:48:34Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-income
   sourceRef: 6add904ae373a15afccd62650872d36b5f15a134
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T20:48:34Z
   confidence: 0.7
 createdAt: 2026-11-08T20:48:34Z
-updatedAt: 2026-11-08T20:48:34Z
+updatedAt: 2026-11-08T21:19:44Z
 ```
 
 # ADR: interim interest reduces the Repurchase Price, manufactured income is entered by hand, and both settle by agreed phases of RepoSettlement

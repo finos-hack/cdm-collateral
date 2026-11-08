@@ -3,7 +3,7 @@ id: task-sme-repo-income-rules
 type: task
 title: Confirm with a business SME the rules for interim interest and manufactured income under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-income
   sourceRef: 6add904ae373a15afccd62650872d36b5f15a134
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T20:48:34Z
   confidence: 0.6
 createdAt: 2026-11-08T20:48:34Z
-updatedAt: 2026-11-08T20:48:34Z
+updatedAt: 2026-11-08T21:19:44Z
 ```
 # Task: confirm the rules for interim interest and manufactured income under the GMRA
 
