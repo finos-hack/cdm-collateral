@@ -29,9 +29,10 @@ phase", "Every open repo", "Instead of a call", "Settled at the reprice"):
   Price Differential accrued to the reprice date, less the new Purchase Price. The replacement trade accrues from the
   reprice date to the original Repurchase Date on the new Purchase Price.
 - **CDM.** The event is built with CDM's `Create_RepricePrimitiveInstruction` and `Create_BusinessEvent`, and checked with
-  `Qualify_Reprice`.
-- **Settlement.** `RepoSettlement` gains a reprice phase. Both parties instruct with the same CDM hash; the second
-  instruction moves the cash difference and updates the stored prices and trade hash in one transaction.
+  `cdm-ext` `RepoIsReprice`, because CDM's `Qualify_Reprice` cannot be true for a repo (defect D20).
+- **Settlement.** `RepoSettlement` gains a reprice phase. Both parties instruct with the same CDM hash and amounts; the
+  second instruction moves the cash difference and updates the stored prices and trade hash in one transaction. A party
+  may replace its own instruction until the other has instructed, so a moved feed price does not strand an offer.
 - **Prototype.** A Reprice action in the Repo margin card and a live spec.
 
 **Consequences.**

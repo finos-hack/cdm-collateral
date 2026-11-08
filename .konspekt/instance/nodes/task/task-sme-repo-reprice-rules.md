@@ -27,3 +27,5 @@ for the SME:
 4. **Minimum transfer amount.** The prototype offers a reprice under the same minimum transfer amount as a margin call.
    Does the minimum apply to a reprice?
 5. **Instead of a call.** Is a reprice agreed in place of a margin call, or is it a way of satisfying a call already made?
+6. **Margin already held.** The prototype sets each repriced Transaction Exposure to about zero and leaves Net Margin held
+   unchanged, so after a reprice the other party can call that margin back. Should a reprice take the margin held into account?

@@ -257,6 +257,14 @@ service recomputes the amount before agreeing in full; the call then settles by 
 or securities valued at the feed price with no haircut. The holder of Cash Margin pays interest on it from the same card,
 at a rate entered by hand. The rules are the assumptions listed in `docs/analysis/sme-question-ledger.md` (RPM-1 to RPM-3).
 
+Repo reprice (`flow-repo-reprice`): when the Net Exposure exceeds the party's minimum transfer amount, the same card offers
+`Reprice open repos` as an alternative to the call. The offer instructs one CDM reprice event per purchased repo; the other
+party's `Agree reprice` builds the same events from the feed price and its business date and settles each one in
+`RepoSettlement`: the cash difference moves and the stored prices and trade hash change, and the securities stay where they
+are. No margin call is created. Both parties' business dates and the feed price must be the same when agreeing; otherwise the
+agreement is refused and the proposer can offer again. The rules are the assumptions listed in
+`docs/analysis/sme-question-ledger.md` (RPR-1 to RPR-6).
+
 Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
 Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
 from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
@@ -335,8 +343,9 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 `flow-call-replacement`, `flow-agreement-amendment` (it restores the baseline terms), `flow-allocation`,
 `flow-reconciliation`, `flow-two-way-im-default`, `flow-repo-gmra-terms` (it restores the baseline MTA) and
 `flow-repo-purchase-repurchase` (it sets both business dates back to today; the seller pays the Price Differential,
-which the top-up before each run restores) and `flow-repo-margin-maintenance` (it restores the tUST price and both
-business dates, and the seller calls the margin back after the repurchase).
+which the top-up before each run restores), `flow-repo-margin-maintenance` (it restores the tUST price and both
+business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
+price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

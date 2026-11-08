@@ -143,7 +143,10 @@ feed prices, the callable amount and the Net Margin interest statements; wp-adr-
 `POST /repo-margin/calls` (a `VM` call for the Net Exposure above this party's minimum transfer amount, its CDM issuance
 naming the GMRA; the called party recomputes it before agreeing in full, and proposals must cover it at the feed prices),
 `POST /repo-margin/interest` (body `periodStart`, `periodEnd`, `observedRatePct`; the holder of Cash Margin states and
-pays the interest), and
+pays the interest),
+`POST /repo-margin/reprice` (the party with the Net Exposure above its minimum transfer amount offers to reprice every purchased
+repo instead of calling margin; wp-adr-repo-reprice), `POST /repo-margin/reprice/agree` (the other party agrees, only if its service
+builds the same CDM reprice event for each repo at the feed price and business date; the second instruction moves the cash), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

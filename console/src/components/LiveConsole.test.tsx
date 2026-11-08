@@ -511,7 +511,7 @@ describe("flow-repo-margin-maintenance", () => {
   const margin = (over: Record<string, unknown>) => ({
     businessDate: "2026-11-09", exposures: [{ repoId: "0xr1", role: "buyer", price: "88.4", exposureUsd: "310936.80" }],
     netMarginHeldUsd: "0.00", cashMarginHeldUsd: "0", netExposureUsd: "310936.80", minimumTransferAmountUsd: "250000",
-    callableUsd: "310936", callOpen: false, interest: [], ...over,
+    callableUsd: "310936", callOpen: false, repriceOffered: 0, repriceToAgree: 0, interest: [], ...over,
   });
 
   it("the party with the Net Exposure calls the amount the service computes", async () => {
@@ -521,6 +521,29 @@ describe("flow-repo-margin-maintenance", () => {
     expect(card.textContent).toContain("Net Exposure USD 310936.80");
     await user.click(within(card).getByRole("button", { name: "Call margin from A: USD 310936" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/repo-margin/calls", body: {} }]));
+  });
+
+  it("the party with the Net Exposure offers a reprice instead of a call", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({}) });
+    const card = await screen.findByTestId("repo-margin");
+    await user.click(within(card).getByRole("button", { name: "Reprice open repos with A" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repo-margin/reprice", body: {} }]));
+  });
+
+  it("the other party agrees an offered reprice, and neither can call margin while it is pending", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ repriceToAgree: 2 }) });
+    const card = await screen.findByTestId("repo-margin");
+    expect((within(card).getByRole("button", { name: "Call margin from B: USD 310936" }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(within(card).getByRole("button", { name: "Agree reprice with B: 2 repo(s)" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repo-margin/reprice/agree", body: {} }]));
+  });
+
+  it("shows an offered reprice to the party that offered it", async () => {
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ repriceOffered: 1 }) });
+    const card = await screen.findByTestId("repo-margin");
+    expect(within(card).getByTestId("repo-reprice-offered").textContent).toContain("reprice offered to A");
   });
 
   it("offers no call below the minimum or while a call is open", async () => {

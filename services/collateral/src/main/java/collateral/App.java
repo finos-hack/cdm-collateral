@@ -140,6 +140,8 @@ public final class App {
         app.get("/api/v1/repo-margin", this::repoMargin);
         app.post("/api/v1/repo-margin/calls", this::issueRepoMarginCall);
         app.post("/api/v1/repo-margin/interest", this::stateRepoMarginInterest);
+        app.post("/api/v1/repo-margin/reprice", this::proposeRepoReprice);
+        app.post("/api/v1/repo-margin/reprice/agree", this::agreeRepoReprice);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
@@ -770,7 +772,8 @@ public final class App {
         if (sym == null || !cfg.isin(sym).equals(t.isin())) return "the security token is not the trade's security";
         if (!"tUSD".equals(symbolByAddress.get(r.get("cash").asText().toLowerCase()))) return "the cash token is not tUSD";
         if (r.get("quantity").asLong() != t.quantity()) return "the on-chain quantity is not the trade's";
-        if (CdmRepo.quantity(t.purchasePrice(), t.marginRatio(), t.price()) != t.quantity()) return "the quantity does not follow from the Purchase Price, Margin Ratio and price";
+        // A reprice changes the Purchase Price and leaves the quantity, so only a first booking derives one from the other.
+        if (!CdmRepo.isReprice(b) && CdmRepo.quantity(t.purchasePrice(), t.marginRatio(), t.price()) != t.quantity()) return "the quantity does not follow from the Purchase Price, Margin Ratio and price";
         if (r.get("purchasePrice").asLong() != t.purchasePrice()) return "the on-chain Purchase Price is not the trade's";
         if (r.get("repurchasePrice").asLong() != b.repurchasePrice()) return "the on-chain Repurchase Price is not RepoRepurchasePrice over the trade";
         return null;
@@ -1042,6 +1045,8 @@ public final class App {
         m.put("minimumTransferAmountUsd", String.valueOf(mta));
         m.put("callableUsd", String.valueOf(CdmRepoMargin.callAmount(s.net(), mta)));
         m.put("callOpen", gmraCallOpen());
+        m.put("repriceOffered", repricePending(true));
+        m.put("repriceToAgree", repricePending(false));
         List<Map<String, Object>> interest = new ArrayList<>();
         var elections = gmraFold().terms().terms().getElections();
         for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
@@ -1069,6 +1074,7 @@ public final class App {
     /** The party with the Net Exposure calls it, when it exceeds this party's minimum transfer amount. */
     private void issueRepoMarginCall(Context ctx) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
+        if (repricePending(true) + repricePending(false) > 0) throw new RuntimeException("a reprice between the parties is still pending");
         RepoMarginState s = repoMarginState();
         long amountUsd = CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId));
         if (amountUsd == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
@@ -1080,6 +1086,108 @@ public final class App {
         gw.post("/calls", new LinkedHashMap<>(Map.of("callId", callId, "kind", CALL_KIND.get("VM"), "to", cfg.partyAddress(counterparty()),
                 "amount", BigInteger.valueOf(amountUsd).multiply(cfg.priceScale).toString(), "deadline", deadline, "cdmHash", cdm.hash)));
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "amountUsd", amountUsd, "settlementMethod", "TitleTransfer"));
+    }
+
+    // ---- repo reprice (task-repo-reprice, wp-adr-repo-reprice) ----
+    // An alternative to a GMRA call. One CDM reprice event and one on-chain settlement per purchased repo. Both parties
+    // build the same event, so the agreeing party's hash matches only for the same feed prices and business date. Rules to
+    // confirm in task-sme-repo-reprice-rules.
+
+    /** One purchased repo's reprice, with what this party pays to settle it. */
+    private record RepriceLeg(JsonNode repo, CdmRepo.Repriced repriced, long myPayment) {
+        String id() { return repo.get("repoId").asText(); }
+    }
+
+    private String repriceHash(JsonNode r, boolean seller) {
+        return r.get("reprice").get(seller ? "seller" : "buyer").asText();
+    }
+
+    /** The purchased repos with a reprice instruction pending from this party (mine) or only from the counterparty. */
+    private int repricePending(boolean mine) {
+        int n = 0;
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            if (!r.get("state").asText().equals("purchased")) continue;
+            boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+            if (!repriceHash(r, mine ? seller : !seller).equals(ZERO_HASH)) n++;
+        }
+        return n;
+    }
+
+    /** The reprice of one purchased repo at the feed price and this service's business date; null when the repo is due
+     *  for repurchase or its Purchase Price would not change. */
+    private RepriceLeg repriceLeg(JsonNode r, cdmx.collateral.gmra.GmraElections elections) {
+        CdmRepo.Booking b = repoBooking(r);
+        if (b == null) throw new RuntimeException("the booked document of repo " + r.get("repoId").asText() + " is not in the payload store");
+        String problem = repoProblem(r, b);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmRepo.Terms t = CdmRepo.terms(b.trade());
+        if (!businessDate.isBefore(t.repurchaseDate())) return null;
+        CdmRepo.Repriced next = CdmRepo.reprice(b.trade(), feedPrice(r.get("security").asText()), CdmRepoMargin.marginRatio(b.trade(), elections), businessDate);
+        if (CdmRepo.terms(next.booking().trade()).purchasePrice() == t.purchasePrice()) return null;
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        long fromSeller = next.cashFromSeller();
+        return new RepriceLeg(r, next, Math.max(0, seller ? fromSeller : -fromSeller));
+    }
+
+    /** Instructs one reprice. The allowance covers every payment of this party still to settle, because each approval
+     *  replaces the last one and a proposer's payments are collected only when the other party agrees. */
+    private String instructReprice(RepriceLeg leg, long allowance) {
+        CdmRepo.Booking next = leg.repriced().booking();
+        store.recordDocument(leg.id(), "BusinessEvent", "out", next.hash(), next.json());
+        payloads.put(next.hash(), next.json(), callParties);
+        repoBookings.put(next.hash(), next);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("cdmHash", next.hash());
+        m.put("newPurchasePrice", String.valueOf(CdmRepo.terms(next.trade()).purchasePrice()));
+        m.put("newRepurchasePrice", String.valueOf(next.repurchasePrice()));
+        m.put("cashFromSeller", String.valueOf(leg.repriced().cashFromSeller()));
+        m.put("token", leg.repo().get("cash").asText());
+        m.put("amount", String.valueOf(allowance));
+        return gw.post("/repos/" + leg.id() + "/reprice", m).path("txHash").asText();
+    }
+
+    /** The party with the Net Exposure above its minimum transfer amount offers to reprice every purchased repo. */
+    private void proposeRepoReprice(Context ctx) {
+        if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
+        if (repricePending(false) > 0) throw new RuntimeException("the counterparty has offered a reprice: agree to it");
+        RepoMarginState s = repoMarginState();
+        if (CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId)) == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
+        var elections = gmraFold().terms().terms().getElections();
+        List<RepriceLeg> legs = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            if (!r.get("state").asText().equals("purchased")) continue;
+            RepriceLeg leg = repriceLeg(r, elections);
+            if (leg != null) legs.add(leg);
+        }
+        if (legs.isEmpty()) throw new RuntimeException("no purchased repo can be repriced");
+        long total = legs.stream().mapToLong(RepriceLeg::myPayment).sum();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (RepriceLeg leg : legs) out.add(new LinkedHashMap<>(Map.of("repoId", leg.id(), "cashFromSeller", leg.repriced().cashFromSeller(), "cdmHash", leg.repriced().booking().hash(), "instructTx", instructReprice(leg, total))));
+        ctx.json(Map.of("repriced", out));
+    }
+
+    /** The counterparty's offer is agreed only if this service builds the same reprice for every repo in it. */
+    private void agreeRepoReprice(Context ctx) {
+        var elections = gmraFold().terms().terms().getElections();
+        List<RepriceLeg> legs = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            if (!r.get("state").asText().equals("purchased")) continue;
+            boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+            String offered = repriceHash(r, !seller);
+            if (offered.equals(ZERO_HASH)) continue;
+            RepriceLeg leg = repriceLeg(r, elections);
+            if (leg == null || !leg.repriced().booking().hash().equalsIgnoreCase(offered))
+                throw new RuntimeException("the reprice offered for repo " + r.get("repoId").asText() + " is not the one this service builds at the feed price and business date " + businessDate);
+            legs.add(leg);
+        }
+        if (legs.isEmpty()) throw new RuntimeException("no reprice is offered");
+        long remaining = legs.stream().mapToLong(RepriceLeg::myPayment).sum();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (RepriceLeg leg : legs) {
+            out.add(new LinkedHashMap<>(Map.of("repoId", leg.id(), "cashFromSeller", leg.repriced().cashFromSeller(), "cdmHash", leg.repriced().booking().hash(), "instructTx", instructReprice(leg, remaining))));
+            remaining -= leg.myPayment();
+        }
+        ctx.json(Map.of("repriced", out));
     }
 
     /** The called party agrees a GMRA call in full only for the amount this service computes for the caller. */

@@ -7,8 +7,11 @@ import cdm.event.common.TradeState;
 import cdm.event.common.functions.Create_BusinessEvent;
 import cdm.event.common.functions.ResolveRepurchaseTransferInstruction;
 import cdmx.collateral.repo.RepoSettlement;
+import cdmx.collateral.repo.functions.RepoIsReprice;
 import cdmx.collateral.repo.functions.RepoPurchasePrice;
 import cdmx.collateral.repo.functions.RepoPurchaseQuantity;
+import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
+import cdmx.collateral.repo.functions.RepoRepricedPurchasePrice;
 import cdmx.collateral.repo.functions.RepoRepurchasePrice;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.regnosys.rosetta.common.hashing.ReferenceConfig;
@@ -44,6 +47,9 @@ public final class CdmRepo {
 
     /** The booked trade: CDM's execution BusinessEvent, its trade, its Rune JSON and hash, and the Repurchase Price. */
     public record Booking(BusinessEvent event, TradeState trade, String json, String hash, long repurchasePrice) {}
+
+    /** A repriced Transaction and the cash that settles the reprice, positive when the Seller pays the Buyer. */
+    public record Repriced(Booking booking, long cashFromSeller) {}
 
     /** A purchase or repurchase settlement document and its hash. */
     public record Settlement(RepoSettlement settlement, String json, String hash) {}
@@ -142,7 +148,8 @@ public final class CdmRepo {
 
     private static Booking booking(BusinessEvent ev) {
         CdmRuntime.validate(ev);
-        TradeState ts = ev.getAfter().get(0);
+        TradeState ts = ev.getAfter().stream().filter(s -> s.getState() == null || s.getState().getClosedState() == null).findFirst()
+                .orElseThrow(() -> new IllegalStateException("the event leaves no open trade"));
         String json = CdmRuntime.toJson(ev);
         long rp = CdmRuntime.fn(RepoRepurchasePrice.class).evaluate(ts, CASH_PRECISION).getValue().longValueExact();
         return new Booking(ev, ts, json, Cdm.keccakHex(json), rp);
@@ -163,10 +170,17 @@ public final class CdmRepo {
         } catch (Exception e) {
             throw new IllegalStateException("not a BusinessEvent: " + e.getMessage(), e);
         }
-        if (ev.getInstruction() == null || ev.getInstruction().size() != 1 || ev.getInstruction().get(0).getPrimitiveInstruction() == null
-                || ev.getInstruction().get(0).getPrimitiveInstruction().getExecution() == null)
-            throw new IllegalStateException("the booked document is not one execution");
-        Booking again = booking(create(new ArrayList<>(ev.getInstruction()), ev.getEventDate()));
+        if (ev.getInstruction() == null || ev.getInstruction().size() != 1 || ev.getInstruction().get(0).getPrimitiveInstruction() == null)
+            throw new IllegalStateException("the booked document is not one execution or reprice");
+        var primitive = ev.getInstruction().get(0).getPrimitiveInstruction();
+        if (primitive.getExecution() == null && primitive.getSplit() == null)
+            throw new IllegalStateException("the booked document is not one execution or reprice");
+        BusinessEvent rebuilt = create(new ArrayList<>(ev.getInstruction()), ev.getEventDate());
+        if (primitive.getSplit() != null) {
+            rebuilt = withActivityDate(rebuilt);
+            if (!CdmRuntime.fn(RepoIsReprice.class).evaluate(rebuilt)) throw new IllegalStateException("the document is not a reprice of the repo");
+        }
+        Booking again = booking(rebuilt);
         if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json)))
             throw new IllegalStateException("Create_BusinessEvent over the document's instruction gives a different trade");
         return again;
@@ -253,6 +267,42 @@ public final class CdmRepo {
                 "securityTransfer", transfer(t.quantity(), o("financialUnit", "Share"), security(t.isin()), t.buyer(), t.seller(), t.repurchaseDate()),
                 "cashTransfer", transfer(rp, usd(), cash(), t.seller(), t.buyer(), t.repurchaseDate()),
                 "repurchase", tree(repurchaseEvent(ts, t.repurchaseDate()))));
+    }
+
+    /** CDM's Create_BusinessEvent leaves the closed state's activityDate empty, which CDM's validation requires; it is
+     *  set to the event date. */
+    private static BusinessEvent withActivityDate(BusinessEvent ev) {
+        var b = ev.toBuilder();
+        for (var after : b.getAfter())
+            if (after.getState() != null && after.getState().getClosedState() != null) after.getState().getClosedState().setActivityDate(ev.getEventDate());
+        return b.build();
+    }
+
+    /** CDM's reprice event: the trade is terminated and replaced by one with the new cash amount and security price,
+     *  starting on the reprice date, with the same Repurchase Date and securities. */
+    static BusinessEvent repriceEvent(TradeState ts, BigDecimal newPrice, long newPurchasePrice, LocalDate date) {
+        var when = cdm.base.datetime.AdjustableOrRelativeDate.builder()
+                .setAdjustableDate(cdm.base.datetime.AdjustableDate.builder().setUnadjustedDate(Date.of(date))
+                        .setDateAdjustments(cdm.base.datetime.BusinessDayAdjustments.builder().setBusinessDayConvention(cdm.base.datetime.BusinessDayConventionEnum.NONE))).build();
+        var pi = CdmRuntime.fn(cdm.event.common.functions.Create_RepricePrimitiveInstruction.class).evaluate(ts, newPrice, BigDecimal.valueOf(newPurchasePrice), when);
+        Instruction i = Instruction.builder().setBeforeValue(ts).setPrimitiveInstruction(pi).build();
+        return withActivityDate(create(List.of(i), Date.of(date)));
+    }
+
+    /** The reprice of a Transaction at a security price (wp-adr-repo-reprice): the new trade as a Booking whose document
+     *  is CDM's reprice event, and the cash that settles it, positive when the Seller pays the Buyer. */
+    public static Repriced reprice(TradeState ts, BigDecimal price, BigDecimal marginRatio, LocalDate date) {
+        Terms t = terms(ts);
+        long newPurchasePrice = CdmRuntime.fn(RepoRepricedPurchasePrice.class)
+                .evaluate(BigDecimal.valueOf(t.quantity()), price, marginRatio, CASH_PRECISION).longValueExact();
+        long cash = CdmRuntime.fn(RepoRepriceCashDifference.class)
+                .evaluate(ts, Date.of(date), BigDecimal.valueOf(newPurchasePrice), CASH_PRECISION).longValueExact();
+        return new Repriced(booking(repriceEvent(ts, price, newPurchasePrice, date)), cash);
+    }
+
+    /** Whether a booking's document is a reprice event, which replaced the trade first booked. */
+    public static boolean isReprice(Booking b) {
+        return b.event().getInstruction().get(0).getPrimitiveInstruction().getSplit() != null;
     }
 
     /** The hash of the trade alone, so the two services can compare the TradeState they hold. */

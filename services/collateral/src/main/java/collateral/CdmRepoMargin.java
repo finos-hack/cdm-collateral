@@ -34,6 +34,11 @@ public final class CdmRepoMargin {
 
     private CdmRepoMargin() {}
 
+    /** The Margin Ratio a Transaction's exposure uses, by the GMRA's marginRatioBasis election. */
+    public static BigDecimal marginRatio(TradeState ts, GmraElections e) {
+        return CdmRuntime.fn(RepoMarginRatio.class).evaluate(ts, e);
+    }
+
     /** A Transaction's exposure from one party's side: positive when that party is exposed. The Buyer is exposed when
      *  RepoTransactionExposure is positive, so the Seller's side is its negative. */
     public static BigDecimal exposure(TradeState ts, GmraElections e, LocalDate date, long quantity, BigDecimal price, boolean mySideIsSeller) {

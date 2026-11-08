@@ -9,6 +9,8 @@ import cdmx.collateral.repo.functions.RepoMarginRatio;
 import cdmx.collateral.repo.functions.RepoNetExposure;
 import cdmx.collateral.repo.functions.RepoNetMarginInterest;
 import cdmx.collateral.repo.functions.RepoPurchasePriceForMarketValue;
+import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
+import cdmx.collateral.repo.functions.RepoRepricedPurchasePrice;
 import cdmx.collateral.repo.functions.RepoTransactionExposure;
 import com.rosetta.model.lib.records.Date;
 import org.junit.jupiter.api.Test;
@@ -78,6 +80,20 @@ class RepoMarginTest {
         BigDecimal pp = f.evaluate(new BigDecimal(1_020_000), new BigDecimal("1.02"));
         same("1000000", pp);
         assertTrue(pp.compareTo(new BigDecimal(1_020_000)) < 0, "the cash is below the market value");
+    }
+
+    @Test
+    void repricedPurchasePriceIsMarketValueOverTheRatioRounded() {
+        // 10,366 x 95 / 1.02 = 965,460.78
+        same("965461", fn(RepoRepricedPurchasePrice.class).evaluate(new BigDecimal(10_366), new BigDecimal(95), new BigDecimal("1.02"), 0));
+    }
+
+    @Test
+    void repriceCashDifferenceIsPurchasePricePlusAccruedLessNewPurchasePrice() {
+        // 1,000,000 + 250 - 965,461: the securities fell, so the Seller pays the Buyer
+        same("34789", fn(RepoRepriceCashDifference.class).evaluate(trade(), Date.of(2026, 11, 11), new BigDecimal(965_461), 0));
+        // 1,000,250 - 1,016,275: the securities rose, so the Buyer pays the Seller
+        same("-16025", fn(RepoRepriceCashDifference.class).evaluate(trade(), Date.of(2026, 11, 11), new BigDecimal(1_016_275), 0));
     }
 
     @Test
