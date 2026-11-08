@@ -913,3 +913,28 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
 | edge:e-drv-finality-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
 | node:task-repo-purchase-repurchase | status | open | resolved | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
+| waypoint:wp-adr-repo-margin-maintenance | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-mrk-repomarginadr-marginmaint | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-drv-cdmdata-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-drv-finality-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-drv-callstate-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| waypoint:wp-adr-repo-margin-maintenance | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
+| edge:e-mrk-repomarginadr-marginmaint | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
+| edge:e-drv-cdmdata-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
+| edge:e-drv-finality-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
+| edge:e-drv-callstate-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
+| node:task-sme-repo-margin-exposure | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| node:task-sme-repo-margin-exposure | status |  | open | 2026-11-08T14:58:07Z |  |  |
+| node:task-sme-repo-live-spec-returns | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| node:task-sme-repo-live-spec-returns | status |  | open | 2026-11-08T14:58:07Z |  |  |
+| edge:e-dec-cdmdev-smerepomargin | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| edge:e-lnk-repomargin-smerepomargin | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| edge:e-dec-cdmdev-smerepolivespec | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| edge:e-lnk-repopr-smerepolivespec | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
+| node:task-sme-repo-margin-exposure | review | proposed | accepted | 2026-11-08T15:00:04Z |  | denisurusov |
+| edge:e-dec-cdmdev-smerepomargin | review | proposed | accepted | 2026-11-08T15:00:04Z |  | denisurusov |
+| edge:e-lnk-repomargin-smerepomargin | review | proposed | accepted | 2026-11-08T15:00:04Z |  | denisurusov |
+| node:task-sme-repo-live-spec-returns | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
+| edge:e-dec-cdmdev-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
+| edge:e-lnk-repopr-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
+| node:task-repo-margin-maintenance | status | open | resolved | 2026-11-08T15:44:59Z | c773fad4a30b82770c93c68a8eb759651dfa8c91 | denisurusov |

@@ -1,7 +1,7 @@
 // Unit tests for the live console's flow-return and flow-default-enforcement actions. The workflow service is replaced
 // by a fetch stub that serves /context and /state and records every POST, so each test checks which actions a party
 // is offered for a given on-chain call state and what the console sends to its own service.
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LiveConsole } from "./LiveConsole";
 import type { LiveCall, LiveParty, LiveRevaluation, LiveState } from "../domain/liveApi";
@@ -504,6 +504,41 @@ describe("flow-repo-purchase-repurchase", () => {
     expect(within(bad).queryByRole("button")).toBeNull();
     await user.click(within(await screen.findByTestId("repo-0xr1")).getByRole("button", { name: "Settle purchase" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/settle", body: { phase: "purchase" } }]));
+  });
+});
+
+describe("flow-repo-margin-maintenance", () => {
+  const margin = (over: Record<string, unknown>) => ({
+    businessDate: "2026-11-09", exposures: [{ repoId: "0xr1", role: "buyer", price: "88.4", exposureUsd: "310936.80" }],
+    netMarginHeldUsd: "0.00", cashMarginHeldUsd: "0", netExposureUsd: "310936.80", minimumTransferAmountUsd: "250000",
+    callableUsd: "310936", callOpen: false, interest: [], ...over,
+  });
+
+  it("the party with the Net Exposure calls the amount the service computes", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({}) });
+    const card = await screen.findByTestId("repo-margin");
+    expect(card.textContent).toContain("Net Exposure USD 310936.80");
+    await user.click(within(card).getByRole("button", { name: "Call margin from A: USD 310936" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repo-margin/calls", body: {} }]));
+  });
+
+  it("offers no call below the minimum or while a call is open", async () => {
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ callOpen: true }) });
+    const card = await screen.findByTestId("repo-margin");
+    expect(card.textContent).toContain("a margin call is open");
+    expect(within(card).queryByRole("button")).toBeNull();
+  });
+
+  it("the holder of Cash Margin pays the interest at the rate entered", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ cashMarginHeldUsd: "310936", callableUsd: "0" }) });
+    const card = await screen.findByTestId("repo-margin");
+    fireEvent.change(within(card).getByLabelText("Net Margin period start"), { target: { value: "2026-11-09" } });
+    fireEvent.change(within(card).getByLabelText("Net Margin period end"), { target: { value: "2026-11-16" } });
+    await user.type(within(card).getByLabelText("Net Margin rate"), "4.4");
+    await user.click(within(card).getByRole("button", { name: "Pay Net Margin interest to A" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repo-margin/interest", body: { periodStart: "2026-11-09", periodEnd: "2026-11-16", observedRatePct: "4.4" } }]));
   });
 });
 

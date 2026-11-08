@@ -83,11 +83,17 @@ public final class Cdm {
      * (a return's own margin type is stated when it settles, SettleCallInstruction returnedMarginType).
      */
     private static Map<String, Object> callBase(String callId, String issuer, String direction, String regMarginType) {
+        return callBase(callId, issuer, direction, regMarginType, false);
+    }
+
+    /** {@code gmra}: the call is under the GMRA (wp-adr-repo-margin-maintenance), so its agreement type names it. */
+    private static Map<String, Object> callBase(String callId, String issuer, String direction, String regMarginType, boolean gmra) {
         String pledgor = pledgorOf(issuer, direction), securedParty = otherBank(pledgor);
         return o("instructionType", o("callType", "MarginCall"),
                 "callIdentifier", ident(callId, issuer),
-                "callAgreementType", o("agreementType", "CreditSupportAgreement",
-                        "creditSupportAgreementType", o("@data", "CreditSupportAnnex")),
+                "callAgreementType", gmra
+                        ? o("agreementType", "MasterAgreement", "masterAgreementType", o("@data", "GMRA"))
+                        : o("agreementType", "CreditSupportAgreement", "creditSupportAgreementType", o("@data", "CreditSupportAnnex")),
                 "regMarginType", regMarginType,
                 "partyRole", l(o("partyReference", party(pledgor), "role", "Pledgor"),
                         o("partyReference", party(securedParty), "role", "SecuredParty")));
@@ -120,7 +126,11 @@ public final class Cdm {
 
     /** IssueCall; {@code replacesCall} is the CDM identifier of a cancelled call this one replaces, or null (task-csa-call-replacement). */
     public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall, String regMarginType) {
-        Map<String, Object> issuance = callBase(callId, issuer, direction, regMarginType);
+        return issue(callId, issuer, amountUsd, direction, replacesCall, regMarginType, false);
+    }
+
+    public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall, String regMarginType, boolean gmra) {
+        Map<String, Object> issuance = callBase(callId, issuer, direction, regMarginType, gmra);
         issuance.put("callAmountInBaseCurrency", money(amountUsd));
         Map<String, Object> issue = o("issuance", issuance, "direction", direction);
         if (replacesCall != null) issue.put("replacesCall", replacesCall);
@@ -140,7 +150,12 @@ public final class Cdm {
 
     public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
                               String action, long units, String collateralIsin, String regMarginType) {
-        Map<String, Object> resp = callBase(callId, issuer, action, regMarginType);
+        return respond(callId, issuer, kind, agreedUsd, action, units, collateralIsin, regMarginType, false);
+    }
+
+    public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
+                              String action, long units, String collateralIsin, String regMarginType, boolean gmra) {
+        Map<String, Object> resp = callBase(callId, issuer, action, regMarginType, gmra);
         resp.put("marginResponseType", kind); // AgreeinFull | PartiallyAgree | Dispute
         resp.put("agreedAmountBaseCurrency", money(agreedUsd));
         resp.put("marginCallResponseAction",

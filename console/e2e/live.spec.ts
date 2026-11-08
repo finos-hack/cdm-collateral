@@ -1521,3 +1521,145 @@ test("flow-repo-purchase-repurchase: A books a repo selling tUST to B -> B affir
     for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
   }
 });
+
+// --- flow-repo-margin-maintenance ---
+// Margin on the pair's Net Exposure under the GMRA (wp-adr-repo-margin-maintenance): B, the buyer of a repo, calls margin
+// when the securities fall; A settles one call in cash and one in securities by title transfer. B pays interest on the
+// Cash Margin. After the repurchase the exposure reverses and A calls the margin back, so the spec leaves no margin held.
+type RepoMargin = {
+  exposures: { repoId: string; role: string; exposureUsd: string }[]; netMarginHeldUsd: string; cashMarginHeldUsd: string;
+  netExposureUsd: string; minimumTransferAmountUsd: string; callableUsd: string; callOpen: boolean;
+  interest: { interestId: string; amountUsd: string; verified: boolean; payer?: string; error?: string }[];
+};
+
+test("flow-repo-margin-maintenance: the securities fall -> the buyer calls Net Exposure -> settled in cash, then in securities -> interest on Cash Margin -> repurchase -> the seller calls the margin back", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tUSD = p.tokens.tUSD;
+  const today = new Date().toLocaleDateString("en-CA");
+  const margin = (svc: string) => call<RepoMargin>(`${svc}/repo-margin`);
+  const feedIs = async (price: number) => {
+    for (const gw of [GATEWAY.A, GATEWAY.B]) {
+      await expect.poll(async () => (await call<{ price: string | null }>(`${gw}/prices/${tUST}`)).price, { timeout: 30_000 })
+        .toBe(String(BigInt(Math.round(price * 100)) * 1_000_000n));
+    }
+  };
+  const setPrice = async (price: number) => {
+    await call(`${ORACLE}/market-data/tUST`, "PUT", { price: String(price) });
+    await feedIs(price);
+  };
+  // The called party responds and delivers by title transfer; the caller accepts the proposal.
+  const settle = async (caller: string, called: string, callId: string, assets: { token: string; qty: number }[]) => {
+    await call(`${called}/calls/${callId}/response`, "POST", { response: "full" });
+    const { proposalId } = await call<{ proposalId: number }>(`${called}/calls/${callId}/proposal`, "POST", { assets });
+    await call(`${caller}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
+    await call(`${called}/calls/${callId}/transfer`, "POST", { proposalId });
+  };
+  const settled = async (svc: string, callId: string) =>
+    expect.poll(async () => (await call<{ calls: { callId: string; state: string }[] }>(`${svc}/state`)).calls.find((c) => c.callId === callId)?.state, { timeout: 60_000 }).toBe("settled");
+  const noCallOpen = async () => {
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await margin(svc)).callOpen, { timeout: 30_000 }).toBe(false);
+  };
+
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  const start = await margin(SERVICE.B);
+  expect(start.exposures).toEqual([]);
+  expect(Number(start.netMarginHeldUsd)).toBe(0);
+
+  // Setup through the services (the UI path is flow-repo-purchase-repurchase): A sells tUST to B for 3,000,000 tUSD.
+  const purchasePrice = 3_000_000;
+  const qty = Math.ceil((purchasePrice * 1.02) / PRICE_TUST);
+  const { repoId } = await call<{ repoId: string }>(`${SERVICE.A}/repos`, "POST", { security: "tUST", purchasePrice, ratePercent: "4.5", termDays: 7, marginRatio: null });
+  await call(`${SERVICE.B}/repos/${repoId}/affirm`, "POST", {});
+  await expect.poll(async () => (await call<{ repos: { repoId: string; state: string }[] }>(`${SERVICE.A}/repos`)).repos.find((r) => r.repoId === repoId)?.state, { timeout: 30_000 }).toBe("affirmed");
+  await call(`${SERVICE.B}/repos/${repoId}/settle`, "POST", { phase: "purchase" });
+  await call(`${SERVICE.A}/repos/${repoId}/settle`, "POST", { phase: "purchase" });
+  await expect.poll(async () => (await call<{ repos: { repoId: string; state: string }[] }>(`${SERVICE.B}/repos`)).repos.find((r) => r.repoId === repoId)?.state, { timeout: 30_000 }).toBe("purchased");
+
+  let repurchased = false;
+  try {
+    // At the booking price the securities cover the Margin Ratio, so the buyer has nothing to call.
+    await expect.poll(async () => (await margin(SERVICE.B)).callableUsd, { timeout: 30_000 }).toBe("0");
+
+    // The price falls 10: B's Transaction Exposure is 3,060,000 - qty x 88.4, A's the opposite.
+    const firstPrice = 88.4;
+    await setPrice(firstPrice);
+    const firstExposure = 3_060_000 - qty * firstPrice;
+    const firstCall = Math.floor(firstExposure);
+    await expect.poll(async () => (await margin(SERVICE.B)).callableUsd, { timeout: 30_000 }).toBe(String(firstCall));
+    expect(Number((await margin(SERVICE.B)).exposures[0].exposureUsd)).toBeCloseTo(firstExposure, 2);
+    expect(Number((await margin(SERVICE.A)).exposures[0].exposureUsd)).toBeCloseTo(-firstExposure, 2);
+    expect((await margin(SERVICE.A)).callableUsd).toBe("0");
+
+    // B calls in its console; a second call is refused while the first is open.
+    await page.goto("/#/live/B");
+    const card = page.getByTestId("repo-margin");
+    await card.getByRole("button", { name: `Call margin from A: USD ${firstCall}` }).click({ timeout: STEP_TIMEOUT });
+    let callId: string | undefined;
+    await expect.poll(async () => {
+      callId = (await call<{ calls: { callId: string; kind: string; amountUsd: string; state: string }[] }>(`${SERVICE.A}/state`)).calls
+        .find((c) => c.kind === "VM" && c.amountUsd === String(firstCall) && c.state === "issued")?.callId;
+      return callId ?? null;
+    }, { timeout: 30_000 }).not.toBeNull();
+    await expect(call(`${SERVICE.B}/repo-margin/calls`, "POST", {})).rejects.toThrow("still open");
+
+    // An under-covering proposal is refused off-chain, then A delivers the amount in cash.
+    await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
+    await expect(call(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tUSD", qty: firstCall - 1 }] })).rejects.toThrow("does not cover");
+    const aUsdBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+    const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tUSD", qty: firstCall }] });
+    await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
+    await call(`${SERVICE.A}/calls/${callId}/transfer`, "POST", { proposalId });
+    await settled(SERVICE.B, callId!);
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsdBefore - BigInt(firstCall));
+    await noCallOpen();
+    expect((await margin(SERVICE.B)).cashMarginHeldUsd).toBe(String(firstCall));
+    expect((await margin(SERVICE.A)).cashMarginHeldUsd).toBe(String(-firstCall));
+
+    // The price falls again: the second call is the exposure less the margin held, delivered in tUST at the feed price.
+    const secondPrice = 78.4;
+    await setPrice(secondPrice);
+    const secondCall = Math.floor(3_060_000 - qty * secondPrice - firstCall);
+    await expect.poll(async () => (await margin(SERVICE.B)).callableUsd, { timeout: 30_000 }).toBe(String(secondCall));
+    const second = await call<{ callId: string; amountUsd: number }>(`${SERVICE.B}/repo-margin/calls`, "POST", {});
+    expect(second.amountUsd).toBe(secondCall);
+    const marginQty = Math.ceil(secondCall / secondPrice);
+    await settle(SERVICE.B, SERVICE.A, second.callId, [{ token: "tUST", qty: marginQty }]);
+    await settled(SERVICE.B, second.callId);
+    await noCallOpen();
+    expect((await margin(SERVICE.B)).callableUsd).toBe("0");
+
+    // B holds the Cash Margin and pays interest on it for 7 days at a rate entered by hand; the on-chain amount verifies.
+    const aBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+    const interest = Math.round((firstCall * 0.044 * 7) / 360);
+    const paid = await call<{ interestId: string; amountUsd: number }>(`${SERVICE.B}/repo-margin/interest`, "POST", { periodStart: today, periodEnd: new Date(Date.now() + 7 * 86_400_000).toLocaleDateString("en-CA"), observedRatePct: "4.4" });
+    expect(paid.amountUsd).toBe(interest);
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aBefore + BigInt(interest));
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await margin(svc)).interest.find((i) => i.interestId === paid.interestId)?.verified, { timeout: 60_000 }).toBe(true);
+    }
+    expect((await call<{ interestId: string }[]>(`${SERVICE.A}/interest`)).some((i) => i.interestId === paid.interestId)).toBe(false);
+
+    // The repurchase ends the exposure; B then holds margin it no longer needs, so A calls it back.
+    await setPrice(PRICE_TUST);
+    const due = new Date(Date.now() + 7 * 86_400_000).toLocaleDateString("en-CA");
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: due });
+    await call(`${SERVICE.A}/repos/${repoId}/settle`, "POST", { phase: "repurchase" });
+    await call(`${SERVICE.B}/repos/${repoId}/settle`, "POST", { phase: "repurchase" });
+    await expect.poll(async () => (await margin(SERVICE.A)).exposures.length, { timeout: 30_000 }).toBe(0);
+    repurchased = true;
+    const heldValue = firstCall + marginQty * PRICE_TUST;
+    await expect.poll(async () => (await margin(SERVICE.A)).callableUsd, { timeout: 30_000 }).toBe(String(Math.floor(heldValue)));
+    const back = await call<{ callId: string }>(`${SERVICE.A}/repo-margin/calls`, "POST", {});
+    await settle(SERVICE.A, SERVICE.B, back.callId, [{ token: "tUSD", qty: firstCall }, { token: "tUST", qty: marginQty }]);
+    await settled(SERVICE.A, back.callId);
+    await noCallOpen();
+    expect(Number((await margin(SERVICE.A)).netMarginHeldUsd)).toBe(0);
+    expect((await margin(SERVICE.A)).cashMarginHeldUsd).toBe("0");
+  } finally {
+    await call(`${ORACLE}/market-data/tUST`, "PUT", { price: String(PRICE_TUST) });
+    await feedIs(PRICE_TUST);
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+    expect(repurchased).toBe(true);
+  }
+});

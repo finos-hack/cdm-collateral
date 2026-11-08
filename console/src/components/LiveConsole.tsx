@@ -25,7 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms, type LiveRepo, type LiveRepos,
+  type LiveGmraTerms, type LiveRepo, type LiveRepoMargin, type LiveRepos,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -54,6 +54,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [agreement, setAgreement] = useState<LiveAgreement | null>(null);
   const [gmra, setGmra] = useState<LiveGmraTerms | null>(null);
   const [repos, setRepos] = useState<LiveRepos | null>(null);
+  const [repoMargin, setRepoMargin] = useState<LiveRepoMargin | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -86,6 +87,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null)),
         api.gmraTerms(party).then((g) => setGmra(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmra(null)),
         api.repos(party).then((r) => setRepos(r?.businessDate && Array.isArray(r?.repos) ? r : null)).catch(() => setRepos(null)),
+        api.repoMargin(party).then((m) => setRepoMargin(m?.businessDate && Array.isArray(m?.exposures) ? m : null)).catch(() => setRepoMargin(null)),
       );
       setState(await api.state(party));
       setError(null);
@@ -396,6 +398,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {gmra && <GmraTermsCard party={party} other={other} gmra={gmra} busy={busy} run={run} />}
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
+      {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />
 
@@ -915,6 +918,73 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+/** Repo margin under the GMRA (wp-adr-repo-margin-maintenance): Net Exposure across the pair's repos, the margin call
+ *  it allows, settled by title transfer in the calls list, and the interest on Cash Margin. */
+function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: LiveRepoMargin; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, margin: m, busy, run } = props;
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
+  const [ratePct, setRatePct] = useState("");
+  return (
+    <div className="card" data-testid="repo-margin">
+      <h3>Repo margin (GMRA)</h3>
+      <div className="row">
+        <span data-testid="repo-net-exposure">Net Exposure USD {m.netExposureUsd}</span>
+        <span>Net Margin held USD {m.netMarginHeldUsd} (cash {m.cashMarginHeldUsd})</span>
+        <span>minimum transfer USD {m.minimumTransferAmountUsd}</span>
+        {m.callOpen ? (
+          <span>a margin call is open</span>
+        ) : (
+          <button disabled={busy || m.callableUsd === "0"} onClick={() => run(() => api.callRepoMargin(party))}>
+            {m.callableUsd === "0" ? "Nothing to call" : `Call margin from ${other}: USD ${m.callableUsd}`}
+          </button>
+        )}
+      </div>
+      {m.exposures.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Repo</th><th>Role</th><th>Price</th><th>Exposure</th></tr>
+          </thead>
+          <tbody>
+            {m.exposures.map((e) => (
+              <tr key={e.repoId} data-testid={`repo-exposure-${e.repoId}`}>
+                <td className="mono">{short(e.repoId)}</td>
+                <td>{e.role}</td>
+                <td>{e.price}</td>
+                <td>{e.exposureUsd}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {Number(m.cashMarginHeldUsd) > 0 && (
+        <div className="row">
+          <label>
+            Interest from <input aria-label="Net Margin period start" type="date" value={periodStart} onChange={(ev) => setPeriodStart(ev.target.value)} />
+          </label>
+          <label>
+            to <input aria-label="Net Margin period end" type="date" value={periodEnd} onChange={(ev) => setPeriodEnd(ev.target.value)} />
+          </label>
+          <label>
+            Overnight rate (%) <input aria-label="Net Margin rate" value={ratePct} onChange={(ev) => setRatePct(ev.target.value)} style={{ width: 60 }} />
+          </label>
+          <button
+            disabled={busy || periodStart === "" || periodEnd === "" || ratePct === ""}
+            onClick={() => run(() => api.payRepoMarginInterest(party, { periodStart, periodEnd, observedRatePct: ratePct }))}
+          >
+            Pay Net Margin interest to {other}
+          </button>
+        </div>
+      )}
+      {m.interest.map((i) => (
+        <div key={i.interestId} data-testid={`repo-margin-interest-${i.interestId}`}>
+          {i.verified ? <span className="ok">USD {i.amountUsd} paid by {i.payer} ✓</span> : <span className="bad">{i.error ?? "not verified"}</span>}
+        </div>
+      ))}
     </div>
   );
 }

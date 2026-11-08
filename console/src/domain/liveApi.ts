@@ -195,6 +195,13 @@ export const api = {
   settleRepo: (p: LiveParty, repoId: string, phase: "purchase" | "repurchase") =>
     req<{ repoId: string; phase: string; cdmHash: string; instructTx: string }>(p, "POST", `/repos/${repoId}/settle`, { phase }),
   repoTrade: (p: LiveParty, repoId: string) => req<LiveRepoTrade>(p, "GET", `/repos/${repoId}/trade`),
+  /** Net Exposure across the pair's repos and the Net Margin held (wp-adr-repo-margin-maintenance). */
+  repoMargin: (p: LiveParty) => req<LiveRepoMargin>(p, "GET", "/repo-margin"),
+  /** The party with the Net Exposure calls it; the service computes the amount. */
+  callRepoMargin: (p: LiveParty) => req<{ callId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/calls", {}),
+  /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
+  payRepoMarginInterest: (p: LiveParty, period: { periodStart: string; periodEnd: string; observedRatePct: string }) =>
+    req<{ interestId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/interest", period),
   businessDate: (p: LiveParty) => req<{ businessDate: string }>(p, "GET", "/business-date"),
   setBusinessDate: (p: LiveParty, businessDate: string) => req<{ businessDate: string }>(p, "POST", "/business-date", { businessDate }),
   /** The GMRA terms in force and the pair's GMRA amendments (wp-adr-repo-gmra-terms). */
@@ -302,6 +309,18 @@ export interface LiveRepo {
 export interface LiveRepos {
   businessDate: string;
   repos: LiveRepo[];
+}
+
+export interface LiveRepoMargin {
+  businessDate: string;
+  exposures: { repoId: string; role: string; price: string; exposureUsd: string }[];
+  netMarginHeldUsd: string;
+  cashMarginHeldUsd: string;
+  netExposureUsd: string;
+  minimumTransferAmountUsd: string;
+  callableUsd: string;
+  callOpen: boolean;
+  interest: { interestId: string; cdmHash: string; amountUsd: string; verified: boolean; payer?: string; receiver?: string; days?: number; error?: string }[];
 }
 
 export interface LiveRepoTrade {

@@ -1,0 +1,100 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: margin maintenance on repos under a GMRA (gap G12, defect D2, wp-adr-repo-margin-maintenance).">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.base.math.*
+import cdmx.collateral.gmra.*
+
+func RepoMarginRatio: <"The Margin Ratio a Transaction's Transaction Exposure uses: by the marginRatioBasis election, the Transaction's own marginPercentage or the agreement's default Margin Ratio; the default also applies to a Transaction that states none.">
+    inputs:
+        tradeState TradeState (1..1)
+        elections GmraElections (1..1)
+    output:
+        marginRatio number (1..1)
+
+    alias stated:
+        tradeState -> trade -> product -> economicTerms -> collateral -> collateralProvisions -> eligibleCollateral -> treatment -> valuationTreatment -> marginPercentage only-element
+
+    set marginRatio:
+        if elections -> marginRatioBasis = MarginRatioBasisEnum -> PerTransaction and stated exists
+        then stated
+        else elections -> defaultMarginRatio
+
+func RepoPurchasePriceForMarketValue: <"Defect D2: the Purchase Price that a market value of securities supports at a Margin Ratio, market value / Margin Ratio. CDM's SecurityFinanceCashSettlementAmount multiplies by the ratio, which gives cash above the market value, although CDM defines marginPercentage as market value over Purchase Price.">
+    inputs:
+        marketValue number (1..1)
+        marginRatio number (1..1) <"Market value over Purchase Price.">
+    output:
+        purchasePrice number (1..1)
+
+    condition NotNegativeMarketValue:
+        marketValue >= 0
+    condition PositiveMarginRatio:
+        marginRatio > 0
+
+    set purchasePrice: marketValue / marginRatio
+
+func RepoTransactionExposure: <"A Transaction's Transaction Exposure on a date: the Repurchase Price accrued to the date times the Margin Ratio, less the market value of the securities at the price. Positive when the Buyer is exposed to the Seller.">
+    inputs:
+        tradeState TradeState (1..1)
+        date date (1..1) <"The day the Price Differential is accrued to.">
+        quantity number (1..1) <"The number of securities purchased.">
+        price number (1..1) <"The price of one unit of the security on the date.">
+        marginRatio number (1..1)
+    output:
+        exposure number (1..1)
+
+    condition NotNegativeQuantity:
+        quantity >= 0
+    condition NotNegativePrice:
+        price >= 0
+    condition PositiveMarginRatio:
+        marginRatio > 0
+
+    set exposure:
+        (RepoPurchasePrice(tradeState) -> value + RepoPriceDifferential(tradeState, date)) * marginRatio - quantity * price
+
+func RepoNetExposure: <"A party's Net Exposure to the other: the sum of the Transaction Exposures across the pair's repos, each stated from this party's side (positive when this party is exposed), less the net margin this party holds. Positive when this party may call margin.">
+    inputs:
+        exposures number (0..*) <"The Transaction Exposures, from this party's side, in both directions.">
+        netMarginHeld number (1..1) <"The margin value this party holds net; negative when it has transferred margin net.">
+    output:
+        netExposure number (1..1)
+
+    set netExposure: (exposures sum) - netMarginHeld
+
+func RepoMarginCallAmount: <"The amount a party may call: its Net Exposure when that exceeds its minimum transfer amount, otherwise zero.">
+    inputs:
+        netExposure number (1..1)
+        minimumTransferAmount number (1..1)
+    output:
+        amount number (1..1)
+
+    condition NotNegativeMinimum:
+        minimumTransferAmount >= 0
+
+    set amount:
+        if netExposure > minimumTransferAmount then netExposure else 0.0
+
+func RepoNetMarginInterest: <"Interest on Cash Margin for a period (GMRA paragraph 4(f)): balance x (the observed overnight rate + the election's spread) x days / 360, rounded to the nearest at the given number of decimals. One rate for the whole period, entered by hand in the prototype.">
+    inputs:
+        balance number (1..1) <"The Cash Margin held throughout the period.">
+        observedRate number (1..1) <"As a decimal (4.5% is 0.045).">
+        days int (1..1)
+        netMarginInterest NetMarginInterest (1..1)
+        precision int (1..1)
+    output:
+        interest number (1..1)
+
+    condition NotNegativeBalance:
+        balance >= 0
+    condition NotNegativeDays:
+        days >= 0
+
+    set interest:
+        RoundToPrecision(
+                balance * (observedRate + netMarginInterest -> spread) * days / 360,
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )

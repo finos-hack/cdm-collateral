@@ -137,6 +137,9 @@ public final class App {
         app.post("/api/v1/repos", this::bookRepo);
         app.post("/api/v1/repos/{id}/affirm", this::affirmRepo);
         app.post("/api/v1/repos/{id}/settle", this::settleRepo);
+        app.get("/api/v1/repo-margin", this::repoMargin);
+        app.post("/api/v1/repo-margin/calls", this::issueRepoMarginCall);
+        app.post("/api/v1/repo-margin/interest", this::stateRepoMarginInterest);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
@@ -288,7 +291,7 @@ public final class App {
         if (iAmPledgor) {
             String hash = e.get("cdmHash").asText();
             String doc = payloads.get(hash);
-            if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
+            if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash) && !CdmRepoMargin.isStatement(doc)) {
                 CdmInterest.verify(doc);
                 store.recordDocument(id, "CollateralInterestStatement", "in", hash, doc);
             }
@@ -937,6 +940,187 @@ public final class App {
         ctx.json(out);
     }
 
+    // ---- repo margin maintenance (task-repo-margin-maintenance, wp-adr-repo-margin-maintenance) ----
+    // A GMRA call is a CallKind.VM call settled by title transfer whose CDM issuance names the GMRA. Rules to confirm in
+    // task-sme-repo-margin-exposure.
+
+    private final Map<String, Boolean> gmraCalls = new ConcurrentHashMap<>();
+
+    /** Whether a call's anchored issuance names the GMRA (a known answer is kept: a call's issuance never changes). */
+    private boolean isGmraCall(String callId) {
+        Boolean known = gmraCalls.get(callId.toLowerCase());
+        if (known != null) return known;
+        // The gateway's log scan and the payload store can lag the mined issuance by a moment.
+        for (int attempt = 0; attempt < 5; attempt++) {
+            JsonNode steps = gw.get("/calls/" + callId + "/steps");
+            String hash = steps.isEmpty() ? null : steps.get(0).get("cdmHash").asText();
+            String doc = hash == null ? null : payloads.get(hash);
+            if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
+                boolean gmra = CdmRepoMargin.isGmraIssue(doc);
+                gmraCalls.put(callId.toLowerCase(), gmra);
+                return gmra;
+            }
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return false;
+    }
+
+    private record RepoMarginState(List<Map<String, Object>> rows, BigDecimal held, long cashHeld, BigDecimal net) {}
+
+    private BigDecimal feedPrice(String tokenAddress) {
+        BigInteger scaled = feedPrices().get(tokenAddress.toLowerCase());
+        if (scaled == null) throw new RuntimeException("no feed price for " + tokenAddress);
+        return new BigDecimal(scaled).divide(new BigDecimal(cfg.priceScale));
+    }
+
+    /** Net Exposure at this service's business date: every purchased repo's exposure from this party's side, less the
+     *  margin this party holds net, from the settled GMRA calls' accepted proposals at the current feed prices. */
+    private RepoMarginState repoMarginState() {
+        var elections = gmraFold().terms().terms().getElections();
+        List<Map<String, Object>> rows = new ArrayList<>();
+        List<BigDecimal> exposures = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            if (!r.get("state").asText().equals("purchased")) continue;
+            CdmRepo.Booking b = repoBooking(r);
+            if (b == null) throw new RuntimeException("the booked document of repo " + r.get("repoId").asText() + " is not in the payload store");
+            boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+            BigDecimal price = feedPrice(r.get("security").asText());
+            BigDecimal e = CdmRepoMargin.exposure(b.trade(), elections, businessDate, CdmRepo.terms(b.trade()).quantity(), price, seller);
+            exposures.add(e);
+            rows.add(new LinkedHashMap<>(Map.of("repoId", r.get("repoId").asText(), "role", seller ? "seller" : "buyer",
+                    "price", price.stripTrailingZeros().toPlainString(), "exposureUsd", e.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString())));
+        }
+        BigDecimal held = BigDecimal.ZERO;
+        long cashHeld = 0;
+        String tUsd = cfg.tokenAddress("tUSD");
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            String callId = entry.get("callId").asText();
+            if (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmraCall(callId)) continue;
+            boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
+            long pid = c.get("activeProposal").asLong() - 1;
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
+                long qty = a.get("qty").asLong();
+                BigDecimal v = CdmRepoMargin.value(qty, feedPrice(a.get("token").asText()));
+                held = received ? held.add(v) : held.subtract(v);
+                if (a.get("token").asText().equalsIgnoreCase(tUsd)) cashHeld += received ? qty : -qty;
+            }
+        }
+        return new RepoMarginState(rows, held, cashHeld, CdmRepoMargin.netExposure(exposures, held));
+    }
+
+    private long gmraMta(String partyId) {
+        var role = partyId.equals("A") ? cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_1 : cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_2;
+        return CdmGmra.mtaUsd(gmraFold().terms().terms().getElections(), role);
+    }
+
+    /** Whether a GMRA call between the pair is still open: its amount is not yet in the margin held. */
+    private boolean gmraCallOpen() {
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            if (c.get("kind").asInt() == 1 && state >= 1 && state <= 3 && isGmraCall(entry.get("callId").asText())) return true;
+        }
+        return false;
+    }
+
+    private void repoMargin(Context ctx) {
+        RepoMarginState s = repoMarginState();
+        long mta = gmraMta(cfg.partyId);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("businessDate", businessDate.toString());
+        m.put("exposures", s.rows());
+        m.put("netMarginHeldUsd", s.held().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString());
+        m.put("cashMarginHeldUsd", String.valueOf(s.cashHeld()));
+        m.put("netExposureUsd", s.net().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString());
+        m.put("minimumTransferAmountUsd", String.valueOf(mta));
+        m.put("callableUsd", String.valueOf(CdmRepoMargin.callAmount(s.net(), mta)));
+        m.put("callOpen", gmraCallOpen());
+        List<Map<String, Object>> interest = new ArrayList<>();
+        var elections = gmraFold().terms().terms().getElections();
+        for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
+            String hash = r.get("cdmHash").asText();
+            String doc = payloads.get(hash);
+            if (doc == null || !CdmRepoMargin.isStatement(doc)) continue;
+            Map<String, Object> i = new LinkedHashMap<>(Map.of("interestId", r.get("interestId").asText(), "cdmHash", hash, "amountUsd", r.get("amount").asText()));
+            try {
+                var st = CdmRepoMargin.verify(doc, elections);
+                boolean ok = Cdm.keccakHex(doc).equalsIgnoreCase(hash) && String.valueOf(CdmRepoMargin.amount(st)).equals(r.get("amount").asText());
+                i.put("verified", ok);
+                i.put("payer", st.getPayer());
+                i.put("receiver", st.getReceiver());
+                i.put("days", st.getDays());
+            } catch (RuntimeException e) {
+                i.put("verified", false);
+                i.put("error", String.valueOf(e.getMessage()));
+            }
+            interest.add(i);
+        }
+        m.put("interest", interest);
+        ctx.json(m);
+    }
+
+    /** The party with the Net Exposure calls it, when it exceeds this party's minimum transfer amount. */
+    private void issueRepoMarginCall(Context ctx) {
+        if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
+        RepoMarginState s = repoMarginState();
+        long amountUsd = CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId));
+        if (amountUsd == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
+        long deadline = System.currentTimeMillis() / 1000 + 86400L * Math.max(1, gmraFold().terms().terms().getElections().getMarginTransfer().getTransferBusinessDays());
+        String callId = Cdm.onChainId(cfg.partyId + "-gmra-" + System.nanoTime());
+        Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, "Delivery", null, "VM", true);
+        record(callId, "IssueCall", cdm);
+        gmraCalls.put(callId.toLowerCase(), true);
+        gw.post("/calls", new LinkedHashMap<>(Map.of("callId", callId, "kind", CALL_KIND.get("VM"), "to", cfg.partyAddress(counterparty()),
+                "amount", BigInteger.valueOf(amountUsd).multiply(cfg.priceScale).toString(), "deadline", deadline, "cdmHash", cdm.hash)));
+        ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "amountUsd", amountUsd, "settlementMethod", "TitleTransfer"));
+    }
+
+    /** The called party agrees a GMRA call in full only for the amount this service computes for the caller. */
+    private void checkGmraCallAmount(JsonNode c) {
+        if (!c.get("to").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the called party responds to a call");
+        long expected = CdmRepoMargin.callAmount(repoMarginState().net().negate(), gmraMta(partyIdOf(c.get("from").asText())));
+        long called = new BigInteger(c.get("amount").asText()).divide(cfg.priceScale).longValue();
+        if (expected != called) throw new RuntimeException("the call amount " + called + " is not the Net Exposure this service computes: " + expected);
+    }
+
+    /** The assets are of kinds the marginTransfer election allows, and their value at the feed prices covers the amount. */
+    private void checkGmraCoverage(List<Map.Entry<String, Long>> assets, long agreedUsd) {
+        var mt = gmraFold().terms().terms().getElections().getMarginTransfer();
+        BigDecimal value = BigDecimal.ZERO;
+        for (Map.Entry<String, Long> a : assets) {
+            boolean cash = "tUSD".equals(a.getKey());
+            if (cash && !Boolean.TRUE.equals(mt.getCashMargin())) throw new RuntimeException("the GMRA does not allow Cash Margin");
+            if (!cash && !Boolean.TRUE.equals(mt.getSecuritiesMargin())) throw new RuntimeException("the GMRA does not allow Margin Securities");
+            value = value.add(CdmRepoMargin.value(a.getValue(), feedPrice(cfg.tokenAddress(a.getKey()))));
+        }
+        if (value.compareTo(BigDecimal.valueOf(agreedUsd)) < 0) throw new RuntimeException("the assets' value " + value.toPlainString() + " does not cover the agreed amount " + agreedUsd);
+    }
+
+    /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
+    private void stateRepoMarginInterest(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        LocalDate start = LocalDate.parse(String.valueOf(b.get("periodStart")));
+        LocalDate end = LocalDate.parse(String.valueOf(b.get("periodEnd")));
+        BigDecimal rate = new BigDecimal(String.valueOf(b.get("observedRatePct"))).movePointLeft(2);
+        long cash = repoMarginState().cashHeld();
+        if (cash <= 0) throw new RuntimeException("this party holds no Cash Margin");
+        CdmRepoMargin.Statement s = CdmRepoMargin.build(cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), start, end, cash, rate, gmraFold().terms().terms().getElections());
+        long amount = CdmRepoMargin.amount(s.statement());
+        String interestId = Cdm.onChainId("gmra-interest-" + cfg.partyId + "-" + System.nanoTime());
+        store.recordDocument(interestId, "RepoNetMarginInterestStatement", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), callParties);
+        JsonNode tx = gw.post("/interest", Map.of("interestId", interestId, "pledgor", cfg.partyAddress(counterparty()), "cashToken", cfg.tokenAddress("tUSD"),
+                "amount", String.valueOf(amount), "cdmHash", s.hash(), "hold", false));
+        ctx.json(Map.of("interestId", interestId, "cdmHash", s.hash(), "amountUsd", amount, "stateTx", tx.path("stated").path("txHash").asText()));
+    }
+
     // ---- legs of the initial margin (two-way initial margin, wp-adr-two-way-im) ----
     // A leg is {pledgor, secured party} addresses. Each party is the pledgor on one leg and the secured party on the
     // other. The default leg is the one BANK-A pledges on, so a request that names no leg acts as before.
@@ -1554,6 +1738,8 @@ public final class App {
         Map<String, Object> b = body(ctx);
         String response = (String) b.getOrDefault("response", "full");
         JsonNode c = gw.get("/calls/" + callId);
+        boolean gmra = isGmraCall(callId);
+        if (gmra && response.equals("full")) checkGmraCallAmount(c);
         BigInteger amount = new BigInteger(c.get("amount").asText());
         BigInteger agreed = switch (response) {
             case "full" -> amount;
@@ -1572,7 +1758,7 @@ public final class App {
         // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
         long units = Math.max(1, agreedUsd);
         Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()),
-                Cdm.regMarginType(CALL_KIND_NAME[c.get("kind").asInt()]));
+                Cdm.regMarginType(CALL_KIND_NAME[c.get("kind").asInt()]), gmra);
         record(callId, "RespondToCall", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
         Map<String, Object> out = new LinkedHashMap<>(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
@@ -1591,6 +1777,11 @@ public final class App {
         long nextPid = c.get("proposalCount").asLong(); // the id the contract assigns next (sequential per call)
         long agreedUsd = new BigInteger(c.get("agreed").asText()).divide(cfg.priceScale).longValue();
         String callIssuer = cfg.bankName(partyIdOf(c.get("from").asText()));
+        if (isGmraCall(callId)) {
+            List<Map.Entry<String, Long>> proposed = new ArrayList<>();
+            for (Map<String, Object> a : assetsIn) proposed.add(Map.entry((String) a.get("token"), ((Number) a.get("qty")).longValue()));
+            checkGmraCoverage(proposed, agreedUsd);
+        }
         List<Map<String, Object>> gwAssets = new ArrayList<>();
         List<Map<String, Object>> cdmAssets = new ArrayList<>();
         for (Map<String, Object> a : assetsIn) {
@@ -1677,6 +1868,12 @@ public final class App {
         long proposalId = ((Number) b.get("proposalId")).longValue();
         boolean accept = Boolean.TRUE.equals(b.get("accept"));
         String reason = (String) b.get("reason");
+        if (accept && isGmraCall(callId)) {
+            List<Map.Entry<String, Long>> proposed = new ArrayList<>();
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets"))
+                proposed.add(Map.entry(symbolByAddress.get(a.get("token").asText().toLowerCase()), a.get("qty").asLong()));
+            checkGmraCoverage(proposed, new BigInteger(gw.get("/calls/" + callId).get("agreed").asText()).divide(cfg.priceScale).longValue());
+        }
         Cdm cdm = Cdm.decide("P-" + proposalId, accept, reason);
         record(callId, "DecideProposal", cdm);
         gw.post("/calls/" + callId + "/decision", Map.of("proposalId", proposalId, "accept", accept, "cdmHash", cdm.hash));
@@ -1998,6 +2195,8 @@ public final class App {
         for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
             Map<String, Object> m = new LinkedHashMap<>();
             String hash = r.get("cdmHash").asText();
+            String stated = payloads.get(hash);
+            if (stated != null && CdmRepoMargin.isStatement(stated)) continue; // Net Margin interest: see /repo-margin
             m.put("interestId", r.get("interestId").asText());
             m.put("securedParty", partyIdOf(r.get("securedParty").asText()));
             m.put("pledgor", partyIdOf(r.get("pledgor").asText()));
