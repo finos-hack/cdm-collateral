@@ -260,6 +260,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-repogmra-pairoff | decomposes | node:task-repo-gmra-workflows | node:task-repo-pair-off |  | accepted |
 | e-dec-repogmra-buysellback | decomposes | node:task-repo-gmra-workflows | node:task-repo-buy-sell-back |  | accepted |
 | e-dec-repogmra-defaultcloseout | decomposes | node:task-repo-gmra-workflows | node:task-repo-default-close-out |  | accepted |
-| e-mrk-gmratermsadr-gmraterms | marks | waypoint:wp-adr-repo-gmra-terms | node:task-repo-gmra-terms |  | proposed |
-| e-drv-cdmdata-gmratermsadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-terms |  | proposed |
-| e-drv-finality-gmratermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-terms |  | proposed |
+| e-mrk-gmratermsadr-gmraterms | marks | waypoint:wp-adr-repo-gmra-terms | node:task-repo-gmra-terms |  | accepted |
+| e-drv-cdmdata-gmratermsadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-gmra-terms |  | accepted |
+| e-drv-finality-gmratermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-gmra-terms |  | accepted |
