@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T01:23:33Z
+updatedAt: 2026-11-08T01:49:59Z
 ```
 # Task: repo purchase and repurchase settled delivery versus payment
 
@@ -27,3 +27,15 @@ The details are decided when the task starts.
 
 **Design chosen 2026-11-07** (source `80d5c6596368a0436259035ca8d5c4b429f2f9e6`: "Go with 'recommended' for the rest of them"), recorded in
 [[wp-adr-repo-purchase-repurchase]] (proposed).
+
+Built on branch `repo-purchase-repurchase` (2026-11-07): cdm-ext `cdmx.collateral.repo` (`RepoPurchaseQuantity`,
+`RepoPriceDifferential`, `RepoRepurchasePrice`, the `RepoSettlement` document; 7 tests), the `RepoSettlement` contract
+(3 tests), the gateway routes and events, the service's `CdmRepo` with `/repos` and `/business-date` (4 tests), the
+console "Repos" card (3 tests) and the live spec `flow-repo-purchase-repurchase`. All 18 live specs pass on a new
+contract set (the previous deployment is kept as `besu.pre-repo-purchase-repurchase.json`).
+
+Found in the build, beyond the ADR: CDM's `Create_BusinessEvent` leaves the Repurchase event's
+`closedState -> activityDate` empty, which CDM's validation requires, so the services set it to the Repurchase Date;
+CDM's `FixedAmount` returns 332.475 as 332.4749..., so `RepoRepurchasePrice` rounds the Price Differential to ten
+decimals before rounding the total to the cash precision; the execution needs `executionDetails` (OffFacility) to
+validate. The buyer also checks, before affirming, that the trade's price is the feed price.
