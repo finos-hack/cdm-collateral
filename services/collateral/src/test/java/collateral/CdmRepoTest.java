@@ -155,6 +155,49 @@ class CdmRepoTest {
     }
 
     @Test
+    void anInterimPaymentReducesTheRepurchasePriceAndTheAccrual() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        // 1,000,000 x 4.5% x 2 / 360 = 250
+        CdmRepo.InterimPaid p = CdmRepo.interimInterest(b.trade(), DAY.plusDays(2));
+        assertEquals(250, p.amount());
+        assertEquals(b.repurchasePrice() - 250, p.booking().repurchasePrice());
+        assertTrue(CdmRepo.isReplacement(p.booking()));
+        assertEquals(p.booking().hash(), CdmRepo.verify(p.booking().json()).hash());
+        // Same day: nothing further has accrued.
+        assertThrows(IllegalStateException.class, () -> CdmRepo.interimInterest(p.booking().trade(), DAY.plusDays(2)));
+        // Three days on: 1,000,000 x 4.5% x 5 / 360 = 625, less the 250 paid.
+        CdmRepo.InterimPaid second = CdmRepo.interimInterest(p.booking().trade(), DAY.plusDays(5));
+        assertEquals(375, second.amount());
+        assertEquals(b.repurchasePrice() - 625, second.booking().repurchasePrice());
+    }
+
+    @Test
+    void anInterimPaymentIsNotDeductedAgainFromARepriceOrAtRepurchase() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.InterimPaid p = CdmRepo.interimInterest(b.trade(), DAY.plusDays(2));
+        CdmRepo.Settlement r = CdmRepo.repurchase(p.booking().trade());
+        assertEquals(b.repurchasePrice() - 250, r.settlement().getCashTransfer().getQuantity().getValue().longValueExact());
+        // The adjustment on the same day settles nothing more, and the new accrual starts from that date.
+        CdmRepo.Adjusted a = CdmRepo.adjust(p.booking().trade(), new BigDecimal("95"), new BigDecimal("1.02"), DAY.plusDays(2));
+        assertEquals(0, a.accruedFromSeller());
+        assertEquals(1_000_625, a.booking().repurchasePrice());
+    }
+
+    @Test
+    void theIncomeDocumentFollowsFromItsInputs() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        long qty = CdmRepo.terms(b.trade()).quantity();
+        CdmRepo.Income i = CdmRepo.income("0xabc", b.hash(), b.trade(), new BigDecimal("1.25"), DAY.plusDays(2));
+        assertEquals(new BigDecimal(qty).multiply(new BigDecimal("1.25")).setScale(0, java.math.RoundingMode.HALF_UP).longValueExact(), i.income().getAmount().longValueExact());
+        assertEquals(CdmRepo.terms(b.trade()).buyer(), i.income().getPayer());
+        assertEquals(i.hash(), CdmRepo.verifyIncome(i.json(), "0xabc", b.hash(), b.trade()).hash());
+        String tampered = i.json().replaceFirst("\"amount\":[0-9.]+", "\"amount\":1");
+        assertNotEquals(i.json(), tampered);
+        assertThrows(IllegalStateException.class, () -> CdmRepo.verifyIncome(tampered, "0xabc", b.hash(), b.trade()));
+        assertThrows(IllegalArgumentException.class, () -> CdmRepo.income("0xabc", b.hash(), b.trade(), BigDecimal.ONE, DAY.plusDays(7)));
+    }
+
+    @Test
     void aRisingPriceMakesTheBuyerPay() {
         CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
         CdmRepo.Repriced r = CdmRepo.reprice(b.trade(), new BigDecimal("100"), new BigDecimal("1.02"), DAY.plusDays(2));

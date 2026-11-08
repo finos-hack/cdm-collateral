@@ -2063,3 +2063,95 @@ test("flow-repo-substitution: the buyer refuses -> nothing moves and the repo is
     expect(done).toBe(1);
   }
 });
+
+// --- flow-repo-income ---
+// Interim interest and manufactured income (wp-adr-repo-income). The Seller pays accrued interest and the Repurchase Price
+// falls; the Buyer enters income on the securities and the Seller agrees.
+type PaymentRow = { interimPending?: string; incomePending?: string; repurchasePrice: string; quantity: string; verified: boolean };
+
+test("flow-repo-income: the seller pays accrued interest -> the buyer agrees -> the Repurchase Price falls by it -> the seller repurchases at the lower price", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r = await open(SERVICE.A, SERVICE.B, 1_000_000);
+  const fullRepurchase = Number((await repo(SERVICE.A, r.repoId))!.repurchasePrice);
+  const accrued = Math.round((1_000_000 * 0.045 * 2) / 360);
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`repo-${r.repoId}`);
+    await rowA.getByRole("button", { name: "Pay accrued interest" }).click({ timeout: STEP_TIMEOUT });
+    await expect(rowA.getByTestId(`repo-payment-${r.repoId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`repo-${r.repoId}`);
+    await rowB.getByRole("button", { name: `Agree interim interest USD ${accrued}` }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await repo(SERVICE.A, r.repoId))?.repurchasePrice, { timeout: 30_000 }).toBe(String(fullRepurchase - accrued));
+
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd - BigInt(accrued));
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd + BigInt(accrued));
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await repo(svc, r.repoId))?.verified, { timeout: 30_000 }).toBe(true);
+    // Nothing further has accrued on the same day.
+    await expect(call(`${SERVICE.A}/repos/${r.repoId}/interim-interest`, "POST", {})).rejects.toThrow("no Price Differential");
+  } finally {
+    const aUsdBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+    done = await close([r]);
+    expect(aUsdBefore - await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(BigInt(fullRepurchase - accrued));
+    expect(done).toBe(1);
+  }
+});
+
+test("flow-repo-income: the buyer enters income -> the seller agrees and is paid -> a second payment of the same document fails -> a refused payment moves nothing", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r = await open(SERVICE.A, SERVICE.B, 1_000_000);
+  const pending = async (svc: string) => (await repo(svc, r.repoId)) as unknown as PaymentRow;
+  const repurchase = (await repo(SERVICE.A, r.repoId))!.repurchasePrice;
+  const amount = Math.round(r.qty * 1.25);
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`repo-${r.repoId}`);
+    await rowB.getByLabel("Income per unit").fill("1.25");
+    await rowB.getByLabel("Income date").fill(inDays(2));
+    await rowB.getByRole("button", { name: "Pay income" }).click({ timeout: STEP_TIMEOUT });
+    await expect(rowB.getByTestId(`repo-payment-${r.repoId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`repo-${r.repoId}`);
+    await rowA.getByRole("button", { name: `Agree income USD ${amount}` }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => balanceOf(GATEWAY.A, tUSD, p.a), { timeout: 30_000 }).toBe(aUsd + BigInt(amount));
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd - BigInt(amount));
+    expect((await repo(SERVICE.A, r.repoId))!.repurchasePrice).toBe(repurchase);
+    await expect.poll(async () => (await pending(SERVICE.A)).incomePending, { timeout: 30_000 }).toBeUndefined();
+
+    // The same document cannot be paid twice.
+    const income = { incomePerUnit: "1.25", incomeDate: inDays(2) };
+    await expect(call(`${SERVICE.B}/repos/${r.repoId}/income`, "POST", income)).rejects.toThrow();
+
+    // The income date must be within the term.
+    await expect(call(`${SERVICE.B}/repos/${r.repoId}/income`, "POST", { incomePerUnit: "1", incomeDate: inDays(30) })).rejects.toThrow("outside");
+
+    // A refusal moves nothing and clears the request.
+    const aAfter = await balanceOf(GATEWAY.A, tUSD, p.a);
+    await call(`${SERVICE.B}/repos/${r.repoId}/income`, "POST", { incomePerUnit: "2", incomeDate: inDays(3) });
+    await expect.poll(async () => (await pending(SERVICE.A)).incomePending, { timeout: 30_000 }).toBe("toDecide");
+    await expect(call(`${SERVICE.A}/repo-margin/calls`, "POST", {})).rejects.toThrow();
+    await call(`${SERVICE.A}/repos/${r.repoId}/income/refuse`, "POST", {});
+    await expect.poll(async () => (await pending(SERVICE.B)).incomePending, { timeout: 30_000 }).toBeUndefined();
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aAfter);
+  } finally {
+    done = await close([r]);
+    expect(done).toBe(1);
+  }
+});

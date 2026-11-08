@@ -25,3 +25,18 @@ type RepoSettlement: <"One delivery-versus-payment settlement of a repo: the sec
             = cashTransfer -> payerReceiver -> receiverPartyReference
         and securityTransfer -> payerReceiver -> receiverPartyReference
             = cashTransfer -> payerReceiver -> payerPartyReference
+
+type RepoManufacturedIncome: <"Income on the purchased securities that the Buyer pays the Seller (GMRA paragraph 5, wp-adr-repo-income). CDM has no event for it. It does not change the trade.">
+    [rootType]
+    repoId string (1..1) <"The Transaction.">
+    tradeHash string (1..1) <"The hash of the trade state the income is paid on.">
+    security string (1..1) <"The ISIN of the purchased securities.">
+    quantity number (1..1) <"The purchased securities held.">
+    incomePerUnit number (1..1) <"The income on one unit, as entered by the Buyer.">
+    incomeDate date (1..1) <"The income date, as entered by the Buyer.">
+    amount number (1..1) <"The amount paid, from RepoManufacturedIncomeAmount.">
+    payer string (1..1) <"The Buyer.">
+    receiver string (1..1) <"The Seller.">
+
+    condition PositiveAmounts:
+        incomePerUnit > 0 and amount > 0

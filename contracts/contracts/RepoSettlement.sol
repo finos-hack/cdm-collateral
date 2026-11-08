@@ -16,7 +16,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// repo can be adjusted (wp-adr-repo-adjustment): the securities difference and the accrued cash move and the stored
 /// quantity, Repurchase Price and trade hash change in one transaction. The seller can substitute the securities of a
 /// purchased repo with the buyer's agreement (wp-adr-repo-substitution): both securities move and the stored security,
-/// quantity and trade hash change in one transaction; no cash moves.
+/// quantity and trade hash change in one transaction; no cash moves. Interim interest and manufactured income are paid in
+/// the cash token by agreed phases (wp-adr-repo-income).
 contract RepoSettlement {
     using SafeERC20 for IERC20;
 
@@ -33,7 +34,9 @@ contract RepoSettlement {
         Repurchase,
         Reprice,
         Adjustment,
-        Substitution
+        Substitution,
+        InterimInterest,
+        Income
     }
 
     struct Repo {
@@ -60,14 +63,17 @@ contract RepoSettlement {
     mapping(bytes32 => mapping(Phase => Instructions)) private _instructions;
     mapping(address => bytes32[]) private _reposOf;
     /// @dev The hash of the pending reprice's, adjustment's or substitution's CDM hash and amounts, which the agreeing party
-    /// must state identically. A repo has at most one of the three pending.
+    /// must state identically. A repo has at most one of these phases pending, including interim interest and income.
     mapping(bytes32 => bytes32) private _replacementTerms;
+    /// @dev Manufactured income documents already paid on a repo, by hash.
+    mapping(bytes32 => mapping(bytes32 => bool)) private _incomePaid;
 
     event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash);
     event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash);
     event RepoInstructed(bytes32 indexed repoId, Phase phase, address indexed party, bytes32 cdmHash);
     event RepoSettled(bytes32 indexed repoId, Phase phase, bytes32 cdmHash);
     event RepoSubstitutionRefused(bytes32 indexed repoId, bytes32 cdmHash);
+    event RepoPaymentRefused(bytes32 indexed repoId, Phase phase, bytes32 cdmHash);
 
     error RepoExists(bytes32 repoId);
     error NoRepo(bytes32 repoId);
@@ -84,6 +90,10 @@ contract RepoSettlement {
     error NotTheSeller();
     error SameSecurity();
     error NoSubstitution();
+    error NotThePayer();
+    error NoPaymentPending();
+    error NotAPaymentPhase();
+    error IncomeAlreadyPaid();
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash
     /// token, the Purchase Price and the Repurchase Price, and the hash of the CDM trade.
@@ -147,6 +157,8 @@ contract RepoSettlement {
             delete _instructions[repoId][Phase.Reprice];
             delete _instructions[repoId][Phase.Adjustment];
             delete _instructions[repoId][Phase.Substitution];
+            delete _instructions[repoId][Phase.InterimInterest];
+            delete _instructions[repoId][Phase.Income];
             delete _replacementTerms[repoId];
             IERC20(r.security).safeTransferFrom(r.buyer, r.seller, r.quantity);
             IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, r.repurchasePrice);
@@ -168,7 +180,7 @@ contract RepoSettlement {
     ) external {
         if (newPurchasePrice == 0 || newRepurchasePrice < newPurchasePrice) revert ZeroAmount();
         bytes32 terms = keccak256(abi.encode(cdmHash, newPurchasePrice, newRepurchasePrice, cashFromSeller));
-        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Reprice, cdmHash, terms);
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Reprice, cdmHash, terms, true);
         if (!settles) return;
         r.purchasePrice = newPurchasePrice;
         r.repurchasePrice = newRepurchasePrice;
@@ -191,7 +203,7 @@ contract RepoSettlement {
     ) external {
         if (newQuantity == 0) revert ZeroAmount();
         bytes32 terms = keccak256(abi.encode(cdmHash, newQuantity, newRepurchasePrice, accruedFromSeller));
-        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Adjustment, cdmHash, terms);
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Adjustment, cdmHash, terms, true);
         if (newRepurchasePrice < r.purchasePrice) revert ZeroAmount();
         if (!settles) return;
         uint256 oldQuantity = r.quantity;
@@ -213,7 +225,7 @@ contract RepoSettlement {
         if (newSecurity == p.security) revert SameSecurity();
         if (msg.sender == p.buyer && _instructions[repoId][Phase.Substitution].seller == bytes32(0)) revert NotTheSeller();
         bytes32 terms = keccak256(abi.encode(cdmHash, newSecurity, newQuantity));
-        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Substitution, cdmHash, terms);
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Substitution, cdmHash, terms, true);
         if (!settles) return;
         address oldSecurity = r.security;
         uint256 oldQuantity = r.quantity;
@@ -235,9 +247,61 @@ contract RepoSettlement {
         emit RepoSubstitutionRefused(repoId, requested);
     }
 
-    /// @dev Records a party's reprice, adjustment or substitution instruction. When it is the second, it checks the two match, clears
+    /// @notice The seller pays interim interest on a purchased repo (wp-adr-repo-income) with the hash of the CDM event,
+    /// which becomes the trade hash. The buyer's matching instruction agrees: it moves the cash and lowers the Repurchase Price.
+    function instructInterimInterest(bytes32 repoId, bytes32 cdmHash, uint256 amount, uint256 newRepurchasePrice) external {
+        if (amount == 0) revert ZeroAmount();
+        Repo storage p = _load(repoId);
+        _requireFirstInstruction(repoId, Phase.InterimInterest, p.seller);
+        if (newRepurchasePrice < p.purchasePrice) revert ZeroAmount();
+        bytes32 terms = keccak256(abi.encode(cdmHash, amount, newRepurchasePrice));
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.InterimInterest, cdmHash, terms, true);
+        if (!settles) return;
+        r.repurchasePrice = newRepurchasePrice;
+        IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, amount);
+        emit RepoSettled(repoId, Phase.InterimInterest, cdmHash);
+    }
+
+    /// @notice The buyer pays manufactured income on a purchased repo (GMRA paragraph 5, wp-adr-repo-income) with the hash
+    /// of the document. The seller's matching instruction agrees and moves the cash. The trade does not change. One
+    /// document is paid once.
+    function instructIncome(bytes32 repoId, bytes32 cdmHash, uint256 amount) external {
+        if (amount == 0) revert ZeroAmount();
+        if (_incomePaid[repoId][cdmHash]) revert IncomeAlreadyPaid();
+        Repo storage p = _load(repoId);
+        _requireFirstInstruction(repoId, Phase.Income, p.buyer);
+        bytes32 terms = keccak256(abi.encode(cdmHash, amount));
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Income, cdmHash, terms, false);
+        if (!settles) return;
+        _incomePaid[repoId][cdmHash] = true;
+        IERC20(r.cash).safeTransferFrom(r.buyer, r.seller, amount);
+        emit RepoSettled(repoId, Phase.Income, cdmHash);
+    }
+
+    /// @notice The receiving party refuses a pending interim interest or income payment, which clears it.
+    function refusePayment(bytes32 repoId, Phase phase) external {
+        if (phase != Phase.InterimInterest && phase != Phase.Income) revert NotAPaymentPhase();
+        Repo storage r = _load(repoId);
+        bool interim = phase == Phase.InterimInterest;
+        if (msg.sender != (interim ? r.buyer : r.seller)) revert NotAParty();
+        Instructions storage ins = _instructions[repoId][phase];
+        bytes32 requested = interim ? ins.seller : ins.buyer;
+        if (requested == bytes32(0)) revert NoPaymentPending();
+        delete _instructions[repoId][phase];
+        delete _replacementTerms[repoId];
+        emit RepoPaymentRefused(repoId, phase, requested);
+    }
+
+    /// @dev The payer's instruction comes first; the other party can only answer it.
+    function _requireFirstInstruction(bytes32 repoId, Phase phase, address payer) private view {
+        Instructions storage ins = _instructions[repoId][phase];
+        bytes32 first = payer == _repos[repoId].seller ? ins.seller : ins.buyer;
+        if (msg.sender != payer && first == bytes32(0)) revert NotThePayer();
+    }
+
+    /// @dev Records a party's instruction for a phase after the purchase. When it is the second, it checks the two match, clears
     /// them, sets the trade hash and returns settles = true for the caller to move the assets.
-    function _instructReplacement(bytes32 repoId, Phase phase, bytes32 cdmHash, bytes32 terms)
+    function _instructReplacement(bytes32 repoId, Phase phase, bytes32 cdmHash, bytes32 terms, bool replacesTrade)
         private
         returns (Repo storage r, bool settles)
     {
@@ -245,7 +309,7 @@ contract RepoSettlement {
         if (r.state != RepoState.Purchased) revert WrongState(r.state);
         Instructions storage repurchase = _instructions[repoId][Phase.Repurchase];
         if (repurchase.seller != bytes32(0) || repurchase.buyer != bytes32(0)) revert RepurchaseInstructed();
-        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.Substitution); p++) {
+        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.Income); p++) {
             if (Phase(p) == phase) continue;
             Instructions storage rival = _instructions[repoId][Phase(p)];
             if (rival.seller != bytes32(0) || rival.buyer != bytes32(0)) revert ReplacementPending();
@@ -266,7 +330,7 @@ contract RepoSettlement {
         if (other == bytes32(0)) return (r, false);
         delete _instructions[repoId][phase];
         delete _replacementTerms[repoId];
-        r.tradeHash = cdmHash;
+        if (replacesTrade) r.tradeHash = cdmHash;
         return (r, true);
     }
 

@@ -28,6 +28,9 @@ contract", "Leave out"):
   it. The Seller's agreement is the check on the input, and the Seller can refuse.
 - **Settlement.** `RepoSettlement` gains an interim interest phase and an income phase. The paying party instructs and the
   other party's matching instruction agrees and moves the tUSD in one transaction.
+- **Accrual.** CDM records the interim payment in the trade's transfer history and leaves the terms unchanged. `cdm-ext`
+  `RepoPriceDifferential` deducts payments dated after the trade's effective date, so the Repurchase Price, exposure, reprice
+  and adjustment amounts all use the net accrual.
 - **Not built.** CDM's on-demand rate change.
 - **Prototype.** Actions in the Repos card and live specs.
 
