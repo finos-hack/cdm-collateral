@@ -3,7 +3,7 @@ id: wp-adr-repo-margin-maintenance
 kind: decision
 subtype: adr
 timestamp: 2026-11-08T14:35:55Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-margin-maintenance
   sourceRef: ae0dea272a7d57577b0c8d0625863feb6ded3a8c
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T14:35:55Z
   confidence: 0.7
 createdAt: 2026-11-08T14:35:55Z
-updatedAt: 2026-11-08T14:35:55Z
+updatedAt: 2026-11-08T14:58:07Z
 ```
 
 # ADR: repo margin is called on the pair's Net Exposure and settled by title transfer through the MarginCall contract and the VM path

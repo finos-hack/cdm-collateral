@@ -266,7 +266,11 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-repopradr-purchaserepurchase | marks | waypoint:wp-adr-repo-purchase-repurchase | node:task-repo-purchase-repurchase |  | accepted |
 | e-drv-cdmdata-repopradr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-purchase-repurchase |  | accepted |
 | e-drv-finality-repopradr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-purchase-repurchase |  | accepted |
-| e-mrk-repomarginadr-marginmaint | marks | waypoint:wp-adr-repo-margin-maintenance | node:task-repo-margin-maintenance |  | proposed |
-| e-drv-cdmdata-repomarginadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-margin-maintenance |  | proposed |
-| e-drv-finality-repomarginadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-margin-maintenance |  | proposed |
-| e-drv-callstate-repomarginadr | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-repo-margin-maintenance |  | proposed |
+| e-mrk-repomarginadr-marginmaint | marks | waypoint:wp-adr-repo-margin-maintenance | node:task-repo-margin-maintenance |  | accepted |
+| e-drv-cdmdata-repomarginadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-margin-maintenance |  | accepted |
+| e-drv-finality-repomarginadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-margin-maintenance |  | accepted |
+| e-drv-callstate-repomarginadr | drives | concept:concept-asr-onchain-call-state | waypoint:wp-adr-repo-margin-maintenance |  | accepted |
+| e-dec-cdmdev-smerepomargin | decomposes | node:goal-cdm-development | node:task-sme-repo-margin-exposure |  | proposed |
+| e-lnk-repomargin-smerepomargin | links | node:task-repo-margin-maintenance | node:task-sme-repo-margin-exposure |  | proposed |
+| e-dec-cdmdev-smerepolivespec | decomposes | node:goal-cdm-development | node:task-sme-repo-live-spec-returns |  | proposed |
+| e-lnk-repopr-smerepolivespec | links | node:task-repo-purchase-repurchase | node:task-sme-repo-live-spec-returns |  | proposed |
