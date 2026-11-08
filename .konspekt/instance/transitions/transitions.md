@@ -985,3 +985,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
 | edge:e-dec-cdmdev-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
 | edge:e-lnk-subst-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| node:task-repo-substitution | status | open | resolved | 2026-11-08T20:45:57Z | 18b7999491e105aa2eea878407ae6999254f1f87 | denisurusov |
