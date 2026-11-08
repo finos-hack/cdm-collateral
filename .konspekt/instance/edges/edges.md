@@ -294,4 +294,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-incadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-income |  | accepted |
 | e-dec-cdmdev-smeincome | decomposes | node:goal-cdm-development | node:task-sme-repo-income-rules |  | accepted |
 | e-lnk-income-smeincome | links | node:task-repo-income | node:task-sme-repo-income-rules |  | accepted |
-| e-dec-cdmdev-gatewaytypecheck | decomposes | node:goal-cdm-development | node:task-gateway-type-check |  | proposed |
+| e-dec-cdmdev-gatewaytypecheck | decomposes | node:goal-cdm-development | node:task-gateway-type-check |  | accepted |

@@ -3,7 +3,7 @@ id: task-gateway-type-check
 type: task
 title: Type-check the gateway in CI
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-income
   sourceRef: 4d99f087ff103e4c3d5799b9ac5c1f98537f958d
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T21:19:44Z
   confidence: 0.8
 createdAt: 2026-11-08T21:19:44Z
-updatedAt: 2026-11-08T21:19:44Z
+updatedAt: 2026-11-08T21:55:20Z
 ```
 # Task: type-check the gateway in CI
 

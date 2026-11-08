@@ -2,7 +2,7 @@
 id: task-repo-income
 type: task
 title: Repo interest and manufactured income
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T20:48:34Z
+updatedAt: 2026-11-08T21:55:20Z
 ```
 # Task: repo interest and manufactured income
 
