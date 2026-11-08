@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 63 questions in 14 tasks, all open.
+Status of the ledger: 69 questions in 15 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -146,3 +146,14 @@ Status of the ledger: 63 questions in 14 tasks, all open.
 | RAD-4 | The prototype offers an adjustment under the same minimum transfer amount as a margin call. Does the minimum apply to an adjustment? | open | |
 | RAD-5 | Is an adjustment agreed in place of a margin call, or is it a way of satisfying a call already made? | open | |
 | RAD-6 | The prototype leaves Net Margin held unchanged, so after an adjustment the other party can call that margin back. Should an adjustment take the margin held into account? | open | |
+
+### `task-sme-repo-substitution-rules`: substituting repo securities under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| SUB-1 | Must the substitute's Market Value be at least that of the securities it replaces, on the substitution date, with quantity rounded up to whole units? | open | |
+| SUB-2 | The prototype accepts any security with a feed price and relies on the Buyer's agreement. Does the GMRA or Annex I limit which securities may be substituted? | open | |
+| SUB-3 | The prototype replaces all the securities of one repo. Is a partial substitution in scope? | open | |
+| SUB-4 | The prototype moves no cash and keeps the Repurchase Price. Is that correct under paragraph 8? | open | |
+| SUB-5 | May the Buyer refuse a substitution without a reason? | open | |
+| SUB-6 | A rounded-up substitute may leave a small excess with the Buyer, and later price moves follow the new security. Is any margin step required at the substitution? | open | |

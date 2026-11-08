@@ -14,7 +14,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// contract keeps CollateralControl under the EIP-170 size limit. A purchased repo can be repriced (wp-adr-repo-reprice):
 /// the cash moves and the stored prices and trade hash change in one transaction; the securities do not move. A purchased
 /// repo can be adjusted (wp-adr-repo-adjustment): the securities difference and the accrued cash move and the stored
-/// quantity, Repurchase Price and trade hash change in one transaction.
+/// quantity, Repurchase Price and trade hash change in one transaction. The seller can substitute the securities of a
+/// purchased repo with the buyer's agreement (wp-adr-repo-substitution): both securities move and the stored security,
+/// quantity and trade hash change in one transaction; no cash moves.
 contract RepoSettlement {
     using SafeERC20 for IERC20;
 
@@ -30,7 +32,8 @@ contract RepoSettlement {
         Purchase,
         Repurchase,
         Reprice,
-        Adjustment
+        Adjustment,
+        Substitution
     }
 
     struct Repo {
@@ -56,14 +59,15 @@ contract RepoSettlement {
     mapping(bytes32 => Repo) private _repos;
     mapping(bytes32 => mapping(Phase => Instructions)) private _instructions;
     mapping(address => bytes32[]) private _reposOf;
-    /// @dev The hash of the pending reprice's or adjustment's CDM hash and amounts, which the agreeing party must state
-    /// identically. A repo has at most one of the two pending.
+    /// @dev The hash of the pending reprice's, adjustment's or substitution's CDM hash and amounts, which the agreeing party
+    /// must state identically. A repo has at most one of the three pending.
     mapping(bytes32 => bytes32) private _replacementTerms;
 
     event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash);
     event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash);
     event RepoInstructed(bytes32 indexed repoId, Phase phase, address indexed party, bytes32 cdmHash);
     event RepoSettled(bytes32 indexed repoId, Phase phase, bytes32 cdmHash);
+    event RepoSubstitutionRefused(bytes32 indexed repoId, bytes32 cdmHash);
 
     error RepoExists(bytes32 repoId);
     error NoRepo(bytes32 repoId);
@@ -77,6 +81,9 @@ contract RepoSettlement {
     error NotAnInstructPhase();
     error ReplacementPending();
     error RepurchaseInstructed();
+    error NotTheSeller();
+    error SameSecurity();
+    error NoSubstitution();
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash
     /// token, the Purchase Price and the Repurchase Price, and the hash of the CDM trade.
@@ -139,6 +146,7 @@ contract RepoSettlement {
             r.repurchaseHash = cdmHash;
             delete _instructions[repoId][Phase.Reprice];
             delete _instructions[repoId][Phase.Adjustment];
+            delete _instructions[repoId][Phase.Substitution];
             delete _replacementTerms[repoId];
             IERC20(r.security).safeTransferFrom(r.buyer, r.seller, r.quantity);
             IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, r.repurchasePrice);
@@ -160,7 +168,7 @@ contract RepoSettlement {
     ) external {
         if (newPurchasePrice == 0 || newRepurchasePrice < newPurchasePrice) revert ZeroAmount();
         bytes32 terms = keccak256(abi.encode(cdmHash, newPurchasePrice, newRepurchasePrice, cashFromSeller));
-        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Reprice, Phase.Adjustment, cdmHash, terms);
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Reprice, cdmHash, terms);
         if (!settles) return;
         r.purchasePrice = newPurchasePrice;
         r.repurchasePrice = newRepurchasePrice;
@@ -183,7 +191,7 @@ contract RepoSettlement {
     ) external {
         if (newQuantity == 0) revert ZeroAmount();
         bytes32 terms = keccak256(abi.encode(cdmHash, newQuantity, newRepurchasePrice, accruedFromSeller));
-        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Adjustment, Phase.Reprice, cdmHash, terms);
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Adjustment, cdmHash, terms);
         if (newRepurchasePrice < r.purchasePrice) revert ZeroAmount();
         if (!settles) return;
         uint256 oldQuantity = r.quantity;
@@ -195,9 +203,41 @@ contract RepoSettlement {
         emit RepoSettled(repoId, Phase.Adjustment, cdmHash);
     }
 
-    /// @dev Records a party's reprice or adjustment instruction. When it is the second, it checks the two match, clears
+    /// @notice The seller requests a substitution of all the securities of a purchased repo (wp-adr-repo-substitution) with
+    /// the hash of the CDM event, which becomes the trade hash, the substitute security and its quantity. The buyer's
+    /// matching instruction is the agreement: it returns the current securities to the seller, delivers the substitute to
+    /// the buyer and updates the repo. The seller may replace its request until the buyer has answered.
+    function instructSubstitution(bytes32 repoId, bytes32 cdmHash, address newSecurity, uint256 newQuantity) external {
+        if (newQuantity == 0 || newSecurity == address(0)) revert ZeroAmount();
+        Repo storage p = _load(repoId);
+        if (newSecurity == p.security) revert SameSecurity();
+        if (msg.sender == p.buyer && _instructions[repoId][Phase.Substitution].seller == bytes32(0)) revert NotTheSeller();
+        bytes32 terms = keccak256(abi.encode(cdmHash, newSecurity, newQuantity));
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Substitution, cdmHash, terms);
+        if (!settles) return;
+        address oldSecurity = r.security;
+        uint256 oldQuantity = r.quantity;
+        r.security = newSecurity;
+        r.quantity = newQuantity;
+        IERC20(oldSecurity).safeTransferFrom(r.buyer, r.seller, oldQuantity);
+        IERC20(newSecurity).safeTransferFrom(r.seller, r.buyer, newQuantity);
+        emit RepoSettled(repoId, Phase.Substitution, cdmHash);
+    }
+
+    /// @notice The buyer refuses the seller's pending substitution, which clears it.
+    function refuseSubstitution(bytes32 repoId) external {
+        Repo storage r = _load(repoId);
+        if (msg.sender != r.buyer) revert NotTheBuyer();
+        bytes32 requested = _instructions[repoId][Phase.Substitution].seller;
+        if (requested == bytes32(0)) revert NoSubstitution();
+        delete _instructions[repoId][Phase.Substitution];
+        delete _replacementTerms[repoId];
+        emit RepoSubstitutionRefused(repoId, requested);
+    }
+
+    /// @dev Records a party's reprice, adjustment or substitution instruction. When it is the second, it checks the two match, clears
     /// them, sets the trade hash and returns settles = true for the caller to move the assets.
-    function _instructReplacement(bytes32 repoId, Phase phase, Phase otherPhase, bytes32 cdmHash, bytes32 terms)
+    function _instructReplacement(bytes32 repoId, Phase phase, bytes32 cdmHash, bytes32 terms)
         private
         returns (Repo storage r, bool settles)
     {
@@ -205,8 +245,11 @@ contract RepoSettlement {
         if (r.state != RepoState.Purchased) revert WrongState(r.state);
         Instructions storage repurchase = _instructions[repoId][Phase.Repurchase];
         if (repurchase.seller != bytes32(0) || repurchase.buyer != bytes32(0)) revert RepurchaseInstructed();
-        Instructions storage rival = _instructions[repoId][otherPhase];
-        if (rival.seller != bytes32(0) || rival.buyer != bytes32(0)) revert ReplacementPending();
+        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.Substitution); p++) {
+            if (Phase(p) == phase) continue;
+            Instructions storage rival = _instructions[repoId][Phase(p)];
+            if (rival.seller != bytes32(0) || rival.buyer != bytes32(0)) revert ReplacementPending();
+        }
         Instructions storage ins = _instructions[repoId][phase];
         bool isSeller = msg.sender == r.seller;
         if (!isSeller && msg.sender != r.buyer) revert NotAParty();

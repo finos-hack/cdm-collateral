@@ -11,11 +11,13 @@ import cdmx.collateral.repo.functions.RepoAccruedPriceDifferential;
 import cdmx.collateral.repo.functions.RepoAdjustmentInstruction;
 import cdmx.collateral.repo.functions.RepoIsAdjustment;
 import cdmx.collateral.repo.functions.RepoIsReprice;
+import cdmx.collateral.repo.functions.RepoIsSubstitution;
 import cdmx.collateral.repo.functions.RepoPurchasePrice;
 import cdmx.collateral.repo.functions.RepoPurchaseQuantity;
 import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
 import cdmx.collateral.repo.functions.RepoRepricedPurchasePrice;
 import cdmx.collateral.repo.functions.RepoRepurchasePrice;
+import cdmx.collateral.repo.functions.RepoSubstitutionQuantity;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.regnosys.rosetta.common.hashing.ReferenceConfig;
 import com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep;
@@ -56,6 +58,9 @@ public final class CdmRepo {
 
     /** An adjusted Transaction, its new quantity and the accrued Price Differential the Seller pays the Buyer. */
     public record Adjusted(Booking booking, long newQuantity, long accruedFromSeller) {}
+
+    /** A Transaction after a substitution and the substitute's quantity. */
+    public record Substituted(Booking booking, long newQuantity) {}
 
     /** A purchase or repurchase settlement document and its hash. */
     public record Settlement(RepoSettlement settlement, String json, String hash) {}
@@ -179,9 +184,12 @@ public final class CdmRepo {
         if (ev.getInstruction() == null || ev.getInstruction().size() != 1 || ev.getInstruction().get(0).getPrimitiveInstruction() == null)
             throw new IllegalStateException("the booked document is not one execution or replacement");
         var primitive = ev.getInstruction().get(0).getPrimitiveInstruction();
-        if (primitive.getExecution() == null && primitive.getSplit() == null)
+        boolean substitution = primitive.getQuantityChange() != null && primitive.getTermsChange() != null;
+        if (primitive.getExecution() == null && primitive.getSplit() == null && !substitution)
             throw new IllegalStateException("the booked document is not one execution or replacement");
         BusinessEvent rebuilt = create(new ArrayList<>(ev.getInstruction()), ev.getEventDate());
+        if (substitution && !CdmRuntime.fn(RepoIsSubstitution.class).evaluate(rebuilt))
+            throw new IllegalStateException("the document is not a substitution of the repo");
         if (primitive.getSplit() != null) {
             rebuilt = withActivityDate(rebuilt);
             if (!CdmRuntime.fn(RepoIsReprice.class).evaluate(rebuilt) && !CdmRuntime.fn(RepoIsAdjustment.class).evaluate(rebuilt))
@@ -213,7 +221,8 @@ public final class CdmRepo {
         return new Terms(
                 t.path("tradeIdentifier").path(0).path("assignedIdentifier").path(0).path("identifier").path("@data").asText(),
                 seller, buyer,
-                sec.path("observable").path("@data").path("identifier").path(0).path("identifier").path("@data").asText(),
+                // The collateral portfolio names the current security: CDM's quantity change keeps the lot's observable (defect D22).
+                et.path("collateral").path("collateralPortfolio").path(0).path("collateralPosition").path(0).path("product").path("asset").path("identifier").path(0).path("identifier").path("@data").asText(),
                 sec.path("quantity").path("value").decimalValue().longValueExact(),
                 sec.path("price").path(0).path("value").decimalValue(),
                 CdmRuntime.fn(RepoPurchasePrice.class).evaluate(ts).getValue().longValueExact(),
@@ -327,9 +336,41 @@ public final class CdmRepo {
         return new Adjusted(booking(adjustmentEvent(ts, price, newQuantity, date)), newQuantity, accrued);
     }
 
-    /** Whether a booking's document replaced the trade first booked: a reprice or an adjustment. */
+    /** The collateral portfolio with the substitute security and quantity in place of the current ones. */
+    private static cdm.event.common.CollateralPortfolio substitutePortfolio(TradeState ts, String isin, long quantity) {
+        var tree = (com.fasterxml.jackson.databind.node.ObjectNode) CdmRuntime.JSON.valueToTree(ts).path("trade").path("product").path("economicTerms").path("collateral").path("collateralPortfolio").path(0);
+        var position = (com.fasterxml.jackson.databind.node.ObjectNode) tree.path("collateralPosition").path(0);
+        ((com.fasterxml.jackson.databind.node.ObjectNode) position.path("priceQuantity").path(0).path("quantity")).put("value", quantity);
+        var product = (com.fasterxml.jackson.databind.node.ObjectNode) position.path("product");
+        product.set("asset", CdmRuntime.JSON.valueToTree(security(isin)));
+        ((com.fasterxml.jackson.databind.node.ObjectNode) product.path("economicTerms").path("payout").path(0)).set("underlier", CdmRuntime.JSON.valueToTree(security(isin)));
+        return CdmRuntime.load(cdm.event.common.CollateralPortfolio.class, CdmRuntime.JSON.convertValue(tree, Map.class));
+    }
+
+    /** CDM's substitution event. The effective date stays the trade's, so the accrual does not restart and the Repurchase
+     *  Price does not change (wp-adr-repo-substitution); the event date is the substitution date. */
+    static BusinessEvent substitutionEvent(TradeState ts, String isin, long newQuantity, BigDecimal newPrice, LocalDate date) {
+        var change = CdmRuntime.load(cdm.observable.asset.PriceQuantity.class, o(
+                "price", l(o("value", newPrice, "unit", usd(), "perUnitOf", o("financialUnit", "Share"), "priceType", "AssetPrice")),
+                "quantity", o("value", newQuantity, "unit", o("financialUnit", "Share"))));
+        var pi = CdmRuntime.fn(cdm.event.common.functions.Create_SubstitutionPrimitiveInstruction.class)
+                .evaluate(ts, effective(terms(ts).purchaseDate()), substitutePortfolio(ts, isin, newQuantity), List.of(change));
+        Instruction i = Instruction.builder().setBeforeValue(ts).setPrimitiveInstruction(pi).build();
+        return create(List.of(i), Date.of(date));
+    }
+
+    /** The substitution of all the securities of a Transaction (wp-adr-repo-substitution): the substitute's quantity has at
+     *  least the Market Value of the securities replaced, at the two feed prices. */
+    public static Substituted substitute(TradeState ts, String isin, BigDecimal price, BigDecimal substitutePrice, LocalDate date) {
+        Terms t = terms(ts);
+        if (t.isin().equals(isin)) throw new IllegalArgumentException("the substitute is the current security");
+        long newQuantity = CdmRuntime.fn(RepoSubstitutionQuantity.class).evaluate(BigDecimal.valueOf(t.quantity()), price, substitutePrice).longValueExact();
+        return new Substituted(booking(substitutionEvent(ts, isin, newQuantity, substitutePrice, date)), newQuantity);
+    }
+
+    /** Whether a booking's document replaced the trade first booked: a reprice, an adjustment or a substitution. */
     public static boolean isReplacement(Booking b) {
-        return b.event().getInstruction().get(0).getPrimitiveInstruction().getSplit() != null;
+        return b.event().getInstruction().get(0).getPrimitiveInstruction().getExecution() == null;
     }
 
     /** The hash of the trade alone, so the two services can compare the TradeState they hold. */

@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-07T23:11:58Z
+updatedAt: 2026-11-08T19:59:37Z
 ```
 # Task: repo substitution of purchased securities
 
@@ -24,3 +24,5 @@ Row 6 of the repo workflows (section C of the workflow map), split from [[task-r
 - **Prototype:** request, agreement and settlement of a substitution on-chain, as in `flow-substitution`; a live spec.
 
 The details are decided when the task starts.
+
+**Design chosen 2026-11-08** (source `1f591034dc560e55251b72785553d524701abbf3`), recorded in [[wp-adr-repo-substitution]] (proposed).

@@ -108,6 +108,53 @@ class CdmRepoTest {
     }
 
     @Test
+    void aSubstitutionReplacesTheSecuritiesAndKeepsThePrices() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Terms before = CdmRepo.terms(b.trade());
+        CdmRepo.Substituted s = CdmRepo.substitute(b.trade(), "US0000000MMF", new BigDecimal("100"), new BigDecimal("80"), DAY.plusDays(2));
+        long expected = new BigDecimal(before.quantity()).multiply(new BigDecimal("100")).divide(new BigDecimal("80"), 0, java.math.RoundingMode.UP).longValueExact();
+        assertEquals(expected, s.newQuantity());
+        CdmRepo.Terms t = CdmRepo.terms(s.booking().trade());
+        assertEquals("US0000000MMF", t.isin());
+        assertEquals(expected, t.quantity());
+        assertEquals(before.purchasePrice(), t.purchasePrice());
+        assertEquals(0, new BigDecimal("80").compareTo(t.price()));
+        assertEquals(before.purchaseDate(), t.purchaseDate());
+        assertEquals(before.repurchaseDate(), t.repurchaseDate());
+        assertEquals(b.repurchasePrice(), s.booking().repurchasePrice());
+        assertTrue(CdmRepo.isReplacement(s.booking()));
+    }
+
+    @Test
+    void theSubstitutionDocumentRebuildsAndATamperedOneIsRejected() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Substituted s = CdmRepo.substitute(b.trade(), "US0000000MMF", new BigDecimal("100"), new BigDecimal("80"), DAY.plusDays(2));
+        assertEquals(s.booking().hash(), CdmRepo.verify(s.booking().json()).hash());
+        String tampered = s.booking().json().replaceFirst("US0000000MMF", "US0000000XXX");
+        assertNotEquals(s.booking().json(), tampered);
+        assertThrows(IllegalStateException.class, () -> CdmRepo.verify(tampered));
+    }
+
+    @Test
+    void aSubstitutedTradeRepurchasesTheSubstituteAtTheOriginalPrice() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Substituted s = CdmRepo.substitute(b.trade(), "US0000000MMF", new BigDecimal("100"), new BigDecimal("80"), DAY.plusDays(2));
+        CdmRepo.Settlement r = CdmRepo.repurchase(s.booking().trade());
+        assertEquals(b.repurchasePrice(), r.settlement().getCashTransfer().getQuantity().getValue().longValueExact());
+        assertEquals(s.newQuantity(), r.settlement().getSecurityTransfer().getQuantity().getValue().longValueExact());
+        assertTrue(CdmRuntime.toJson(r.settlement().getSecurityTransfer()).contains("US0000000MMF"));
+    }
+
+    @Test
+    void cdmQualifySubstitutionIsFalseDuringTheTermDefectD22() {
+        CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Substituted s = CdmRepo.substitute(b.trade(), "US0000000MMF", new BigDecimal("100"), new BigDecimal("80"), DAY.plusDays(2));
+        assertFalse(CdmRuntime.fn(cdm.event.qualification.functions.Qualify_Substitution.class).evaluate(s.booking().event()));
+        // CDM's quantity change keeps the observable of the lot.
+        assertTrue(CdmRuntime.toJson(s.booking().trade().getTrade().getTradeLot().get(0)).contains(CdmRepo.terms(b.trade()).isin()));
+    }
+
+    @Test
     void aRisingPriceMakesTheBuyerPay() {
         CdmRepo.Booking b = CdmRepo.book(terms(1_000_000));
         CdmRepo.Repriced r = CdmRepo.reprice(b.trade(), new BigDecimal("100"), new BigDecimal("1.02"), DAY.plusDays(2));

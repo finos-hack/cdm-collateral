@@ -148,7 +148,10 @@ pays the interest),
 repo instead of calling margin; wp-adr-repo-reprice), `POST /repo-margin/reprice/agree` (the other party agrees, only if its service
 builds the same CDM reprice event for each repo at the feed price and business date; the second instruction moves the cash),
 `POST /repo-margin/adjust` and `POST /repo-margin/adjust/agree` (the same for an adjustment of the securities quantity; the second
-instruction moves the securities difference and the accrued Price Differential; wp-adr-repo-adjustment), and
+instruction moves the securities difference and the accrued Price Differential; wp-adr-repo-adjustment),
+`POST /repos/{id}/substitute` (the Seller requests another security on the feed for all the repo's securities; wp-adr-repo-substitution),
+`POST /repos/{id}/substitute/agree` (the Buyer agrees, only if its service builds the same CDM event at the feed prices and business
+date; both securities move and no cash), `POST /repos/{id}/substitute/refuse`, and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

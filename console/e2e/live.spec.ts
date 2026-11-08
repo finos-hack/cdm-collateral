@@ -1976,3 +1976,90 @@ test("flow-repo-adjustment: every open repo in both directions is adjusted -> th
     expect(done).toBe(3);
   }
 });
+
+// --- flow-repo-substitution ---
+// The Seller replaces the securities of one purchased repo (wp-adr-repo-substitution): A asks to substitute tMMF for tUST in
+// its console and B agrees in its console. Both securities move in one transaction and no cash moves.
+const scaledPrice = async (token: string) => BigInt((await call<{ price: string }>(`${GATEWAY.A}/prices/${token}`)).price);
+const substituteQuantity = (qty: number, price: bigint, substitutePrice: bigint) => {
+  const value = BigInt(qty) * price;
+  return Number(value / substitutePrice + (value % substitutePrice === 0n ? 0n : 1n));
+};
+
+test("flow-repo-substitution: the seller requests tMMF for tUST -> the buyer agrees -> both securities move and no cash -> the seller repurchases the tMMF at the original price", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUST, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  const tMMF = p.tokens.tMMF;
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r = await open(SERVICE.A, SERVICE.B, 1_000_000);
+  const expectedRepurchase = (await repo(SERVICE.A, r.repoId))!.repurchasePrice;
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    const newQty = substituteQuantity(r.qty, await scaledPrice(tUST), await scaledPrice(tMMF));
+    const aUst = await balanceOf(GATEWAY.A, tUST, p.a), bUst = await balanceOf(GATEWAY.B, tUST, p.b), aMmf = await balanceOf(GATEWAY.A, tMMF, p.a), bMmf = await balanceOf(GATEWAY.B, tMMF, p.b), aUsd = await balanceOf(GATEWAY.A, tUSD, p.a);
+
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`repo-${r.repoId}`);
+    await rowA.getByRole("button", { name: "Substitute tMMF" }).click({ timeout: STEP_TIMEOUT });
+    await expect(rowA.getByTestId(`repo-substitution-${r.repoId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(call(`${SERVICE.A}/repo-margin/calls`, "POST", {})).rejects.toThrow();
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aUst);
+
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`repo-${r.repoId}`);
+    await rowB.getByRole("button", { name: `Agree substitution by ${newQty.toLocaleString("en-US")} tMMF` }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await repo(SERVICE.A, r.repoId))?.quantity, { timeout: 30_000 }).toBe(String(newQty));
+
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aUst + BigInt(r.qty));
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bUst - BigInt(r.qty));
+    expect(await balanceOf(GATEWAY.A, tMMF, p.a)).toBe(aMmf - BigInt(newQty));
+    expect(await balanceOf(GATEWAY.B, tMMF, p.b)).toBe(bMmf + BigInt(newQty));
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await repo(svc, r.repoId))?.verified, { timeout: 30_000 }).toBe(true);
+      const row = (await repo(svc, r.repoId))! as unknown as { security: string; purchasePrice: string; repurchasePrice: string };
+      expect(row.security).toBe("tMMF");
+      expect(row.purchasePrice).toBe("1000000");
+      expect(row.repurchasePrice).toBe(expectedRepurchase);
+    }
+  } finally {
+    const aUsdBefore = await balanceOf(GATEWAY.A, tUSD, p.a), aMmfBefore = await balanceOf(GATEWAY.A, tMMF, p.a);
+    done = await close([r]);
+    expect(aUsdBefore - await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(BigInt(expectedRepurchase));
+    expect(await balanceOf(GATEWAY.A, tMMF, p.a)).toBeGreaterThan(aMmfBefore);
+    expect(done).toBe(1);
+  }
+});
+
+test("flow-repo-substitution: the buyer refuses -> nothing moves and the repo is unchanged -> a request at other feed prices is not agreed", async () => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUST, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r = await open(SERVICE.A, SERVICE.B, 500_000);
+  let done = 0;
+  try {
+    await setDate(inDays(1));
+    const aUst = await balanceOf(GATEWAY.A, tUST, p.a), bUst = await balanceOf(GATEWAY.B, tUST, p.b);
+    await call(`${SERVICE.A}/repos/${r.repoId}/substitute`, "POST", { security: "tMMF" });
+    await expect.poll(async () => ((await repo(SERVICE.B, r.repoId)) as unknown as { substitutionPending?: string }).substitutionPending, { timeout: 30_000 }).toBe("toDecide");
+    await expect(call(`${SERVICE.B}/repos/${r.repoId}/substitute`, "POST", { security: "tMMF" })).rejects.toThrow("only the Seller");
+    await call(`${SERVICE.B}/repos/${r.repoId}/substitute/refuse`, "POST", {});
+    await expect.poll(async () => ((await repo(SERVICE.A, r.repoId)) as unknown as { substitutionPending?: string }).substitutionPending, { timeout: 30_000 }).toBeUndefined();
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aUst);
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bUst);
+    expect((await repo(SERVICE.A, r.repoId))!.quantity).toBe(String(r.qty));
+
+    // The Buyer's service rebuilds the event from the feed: after the price moves, the earlier request is not the one it builds.
+    await call(`${SERVICE.A}/repos/${r.repoId}/substitute`, "POST", { security: "tMMF" });
+    await expect.poll(async () => ((await repo(SERVICE.B, r.repoId)) as unknown as { substitutionPending?: string }).substitutionPending, { timeout: 30_000 }).toBe("toDecide");
+    await setPrice(PRICE_TUST - 3);
+    await expect(call(`${SERVICE.B}/repos/${r.repoId}/substitute/agree`, "POST", {})).rejects.toThrow("is not the one this service builds");
+    await call(`${SERVICE.B}/repos/${r.repoId}/substitute/refuse`, "POST", {});
+  } finally {
+    done = await close([r]);
+    expect(done).toBe(1);
+  }
+});

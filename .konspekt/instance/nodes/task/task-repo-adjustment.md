@@ -2,7 +2,7 @@
 id: task-repo-adjustment
 type: task
 title: Repo adjustment
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T17:19:27Z
+updatedAt: 2026-11-08T19:31:43Z
 ```
 # Task: repo adjustment
 

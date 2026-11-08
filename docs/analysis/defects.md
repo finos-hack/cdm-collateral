@@ -39,6 +39,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D19 | Rune Java generator (rune-maven-plugin 10.15.1): `distinct` on an alias of extracted values generates Java that does not compile *(added 2026-11-06)* | toolchain | `cdm-ext/rosetta/cdmx-collateral-amendment-func.rosetta`, condition `DistinctAssets` |
 | D20 | `Qualify_Reprice` cannot be true for a repo whose lot holds both the cash and the security: `ExtractTradePurchasePrice` and `ExtractTradeCollateralQuantity` read the same list of all quantities, and the qualifier requires that list both to differ and to match (`Qualify_Adjustment` has the same contradiction in the opposite direction) *(added 2026-11-08)* | qualification | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 592; `rosetta/event-common-func.rosetta` |
 | D21 | `Create_AdjustmentPrimitiveInstruction` writes the new securities quantity into every quantity of the lot, so a repo's cash quantity becomes the number of securities *(added 2026-11-08)* | function logic | CDM 7.7.0 `rosetta/event-common-func.rosetta` 1843 |
+| D22 | `Qualify_Substitution` cannot be true during a repo's term, and the quantity change of `Create_SubstitutionPrimitiveInstruction` leaves the old security as the lot's `observable` *(added 2026-11-08)* | qualification, function logic | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 821; `rosetta/product-common-settlement-func.rosetta` 35 |
 
 ## Details
 
@@ -326,4 +327,17 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   10,737, the new number of securities.
 - **Effect:** the function cannot adjust a repo whose lot holds both the cash and the security. `cdm-ext`
   `RepoAdjustmentInstruction` has the same shape, limited to the securities' price quantity (`wp-adr-repo-adjustment`).
+  Not reported (project owner's instruction).
+
+### D22 — Repo substitution: qualification and the lot's observable *(added 2026-11-08)*
+
+- `Qualify_Substitution` requires the new effective date to equal the old termination date, and the new termination date
+  to equal the old termination date, so the replacement trade would have no term. It also requires a changed payout, and
+  `Create_SubstitutionInstruction` changes only the collateral portfolio.
+- `Create_QuantityChange` copies `observable` unchanged through `UpdateAmountForEachMatchingQuantity`, so after a
+  substitution the trade lot still names the old security.
+- Observed: over the prototype's repo, `Qualify_Substitution` is false for the event `Create_SubstitutionPrimitiveInstruction`
+  produces, and the lot keeps the old ISIN (`CdmRepoTest.cdmQualifySubstitutionIsFalseDuringTheTermDefectD22`).
+- **Effect:** `cdm-ext` `RepoIsSubstitution` qualifies the event, and the prototype reads the current security from the
+  collateral portfolio (`wp-adr-repo-substitution`). `Create_SubstitutionPrimitiveInstruction` itself is used unchanged.
   Not reported (project owner's instruction).
