@@ -185,6 +185,18 @@ export const api = {
   /** Either party: propose an amendment (a new pledgor MTA, haircut changes) to the counterparty. */
   proposeAmendment: (p: LiveParty, mtaUsd: number | null, haircuts: LiveHaircutTerm[]) =>
     req<{ amendmentId: string; cdmHash: string; proposeTx: string }>(p, "POST", "/amendments", { mtaUsd, haircuts }),
+  /** This party's repos and the service's business date (wp-adr-repo-purchase-repurchase). */
+  repos: (p: LiveParty) => req<LiveRepos>(p, "GET", "/repos"),
+  /** The seller books a term repo with the counterparty; the quantity follows from the feed price. */
+  bookRepo: (p: LiveParty, terms: { security: string; purchasePrice: number; ratePercent: string; termDays: number; marginRatio?: string | null }) =>
+    req<{ repoId: string; tradeHash: string; quantity: number; repurchasePrice: number; bookTx: string }>(p, "POST", "/repos", terms),
+  affirmRepo: (p: LiveParty, repoId: string) => req<{ repoId: string; tradeHash: string; affirmTx: string }>(p, "POST", `/repos/${repoId}/affirm`, {}),
+  /** Approve this party's leg and instruct the purchase or the repurchase; the second instruction settles both legs. */
+  settleRepo: (p: LiveParty, repoId: string, phase: "purchase" | "repurchase") =>
+    req<{ repoId: string; phase: string; cdmHash: string; instructTx: string }>(p, "POST", `/repos/${repoId}/settle`, { phase }),
+  repoTrade: (p: LiveParty, repoId: string) => req<LiveRepoTrade>(p, "GET", `/repos/${repoId}/trade`),
+  businessDate: (p: LiveParty) => req<{ businessDate: string }>(p, "GET", "/business-date"),
+  setBusinessDate: (p: LiveParty, businessDate: string) => req<{ businessDate: string }>(p, "POST", "/business-date", { businessDate }),
   /** The GMRA terms in force and the pair's GMRA amendments (wp-adr-repo-gmra-terms). */
   gmraTerms: (p: LiveParty) => req<LiveGmraTerms>(p, "GET", "/gmra/terms"),
   /** Either party: propose a GMRA amendment, one party's MTA and/or the default Margin Ratio. */
@@ -258,6 +270,47 @@ export interface LiveAmendment {
   /** The pledgor's new Minimum Transfer Amount, when the amendment changes the elections. */
   mtaUsd: string | null;
   effectiveDate?: string;
+}
+
+/** A term repo as the service shows it: the on-chain record and the CDM trade this service rebuilt and checked. */
+export interface LiveRepo {
+  repoId: string;
+  role: "seller" | "buyer";
+  counterparty: LiveParty;
+  state: "booked" | "affirmed" | "purchased" | "repurchased";
+  security: string;
+  quantity: string;
+  purchasePrice: string;
+  repurchasePrice: string;
+  tradeHash: string;
+  purchaseHash: string | null;
+  repurchaseHash: string | null;
+  instructedByMe: boolean;
+  instructedByCounterparty: boolean;
+  verified: boolean;
+  problem: string | null;
+  price?: string;
+  ratePercent?: string;
+  marginRatio?: string;
+  purchaseDate?: string;
+  repurchaseDate?: string;
+  tradeStateHash?: string;
+  /** The business date is on or after the Repurchase Date. */
+  repurchaseDue?: boolean;
+}
+
+export interface LiveRepos {
+  businessDate: string;
+  repos: LiveRepo[];
+}
+
+export interface LiveRepoTrade {
+  repoId: string;
+  state: string;
+  tradeHash: string;
+  tradeStateHash: string;
+  closedTradeStateHash?: string;
+  closedState?: string;
 }
 
 /** The GMRA elections as the service shows them (cdm-ext GmraElections). */

@@ -459,6 +459,54 @@ describe("task-live-read-latency", () => {
   });
 });
 
+describe("flow-repo-purchase-repurchase", () => {
+  const repo = (over: Record<string, unknown>) => ({
+    repoId: "0xr1", role: "seller", counterparty: "B", state: "booked", security: "tUST", quantity: "10366", purchasePrice: "1000000",
+    repurchasePrice: "1000875", tradeHash: "0x01", purchaseHash: null, repurchaseHash: null, instructedByMe: false,
+    instructedByCounterparty: false, verified: true, problem: null, price: "98.4", ratePercent: "4.5", marginRatio: "1.02",
+    purchaseDate: "2026-11-09", repurchaseDate: "2026-11-16", tradeStateHash: "0x02", repurchaseDue: false, ...over,
+  });
+
+  it("the seller books a repo with the Purchase Price, rate and term", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-09", repos: [] } });
+    const card = await screen.findByTestId("repos");
+    expect(within(card).getByTestId("business-date").textContent).toContain("2026-11-09");
+    await user.clear(within(card).getByLabelText("Term (days)"));
+    await user.type(within(card).getByLabelText("Term (days)"), "14");
+    await user.click(within(card).getByRole("button", { name: "Book repo: sell to B" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos", body: { security: "tUST", purchasePrice: 1000000, ratePercent: "4.5", termDays: 14, marginRatio: null } }]));
+  });
+
+  it("the buyer affirms, and the repurchase waits for the Repurchase Date", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-09", repos: [
+      repo({ repoId: "0xr1", role: "buyer", counterparty: "A" }),
+      repo({ repoId: "0xr2", role: "buyer", counterparty: "A", state: "purchased" }),
+    ] } });
+    const booked = await screen.findByTestId("repo-0xr1");
+    expect(booked.textContent).toContain("10,366 tUST at 98.4");
+    expect(booked.textContent).toContain("USD 1,000,875 (4.5%)");
+    expect(within(await screen.findByTestId("repo-0xr2")).queryByRole("button")).toBeNull();
+    expect((await screen.findByTestId("repo-0xr2")).textContent).toContain("repurchase from 2026-11-16");
+    await user.click(within(booked).getByRole("button", { name: "Affirm repo" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/affirm", body: {} }]));
+  });
+
+  it("each party settles the purchase; a repo that does not verify offers no action", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      repo({ repoId: "0xr1", state: "affirmed" }),
+      repo({ repoId: "0xr3", state: "affirmed", verified: false, problem: "the on-chain quantity is not the trade's" }),
+    ] } });
+    const bad = await screen.findByTestId("repo-0xr3");
+    expect(bad.textContent).toContain("the on-chain quantity is not the trade's");
+    expect(within(bad).queryByRole("button")).toBeNull();
+    await user.click(within(await screen.findByTestId("repo-0xr1")).getByRole("button", { name: "Settle purchase" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/settle", body: { phase: "purchase" } }]));
+  });
+});
+
 describe("flow-repo-gmra-terms", () => {
   const elections = (mtaB: string) => ({
     baseCurrency: "USD", marginRatioBasis: "PerTransaction", defaultMarginRatio: "1.02", mtaUsd: { A: "250000", B: mtaB },

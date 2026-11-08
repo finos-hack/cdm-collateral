@@ -25,7 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms,
+  type LiveGmraTerms, type LiveRepo, type LiveRepos,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -53,6 +53,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [interest, setInterest] = useState<LiveInterest[]>([]);
   const [agreement, setAgreement] = useState<LiveAgreement | null>(null);
   const [gmra, setGmra] = useState<LiveGmraTerms | null>(null);
+  const [repos, setRepos] = useState<LiveRepos | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -84,6 +85,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.reconciliations(party).then((r) => setRecons(Array.isArray(r) ? r : [])).catch(() => setRecons([])),
         api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null)),
         api.gmraTerms(party).then((g) => setGmra(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmra(null)),
+        api.repos(party).then((r) => setRepos(r?.businessDate && Array.isArray(r?.repos) ? r : null)).catch(() => setRepos(null)),
       );
       setState(await api.state(party));
       setError(null);
@@ -392,6 +394,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {agreement && <AgreementTerms party={party} other={other} agreement={agreement} busy={busy} run={run} />}
 
       {gmra && <GmraTermsCard party={party} other={other} gmra={gmra} busy={busy} run={run} />}
+
+      {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />
 
@@ -818,6 +822,94 @@ function GmraTermsCard(props: { party: LiveParty; other: LiveParty; gmra: LiveGm
                     </>
                   )}
                 </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/** Term repos under the GMRA (wp-adr-repo-purchase-repurchase): the seller books, the buyer affirms, and each party
+ *  settles the purchase and, from the Repurchase Date, the repurchase, delivery versus payment. */
+function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos; defaultMarginRatio: string; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, repos: r, defaultMarginRatio, busy, run } = props;
+  const [security, setSecurity] = useState("tUST");
+  const [purchasePrice, setPurchasePrice] = useState(1_000_000);
+  const [ratePercent, setRatePercent] = useState("4.5");
+  const [termDays, setTermDays] = useState(7);
+  const [marginRatio, setMarginRatio] = useState("");
+  const [date, setDate] = useState("");
+  const action = (p: LiveRepo) => {
+    if (!p.verified) return null;
+    if (p.state === "booked")
+      return p.role === "buyer" ? <button disabled={busy} onClick={() => run(() => api.affirmRepo(party, p.repoId))}>Affirm repo</button> : "awaiting affirmation";
+    const phase = p.state === "affirmed" ? "purchase" : p.state === "purchased" ? "repurchase" : null;
+    if (!phase) return null;
+    if (p.instructedByMe) return `${phase} instructed, awaiting ${other}`;
+    if (phase === "repurchase" && !p.repurchaseDue) return `repurchase from ${p.repurchaseDate}`;
+    return (
+      <button disabled={busy} onClick={() => run(() => api.settleRepo(party, p.repoId, phase))}>
+        {phase === "purchase" ? "Settle purchase" : "Settle repurchase"}
+      </button>
+    );
+  };
+  return (
+    <div className="card" data-testid="repos">
+      <h3>Repos</h3>
+      <div className="row">
+        <span data-testid="business-date">business date {r.businessDate}</span>
+        <label>
+          Set business date <input aria-label="Business date" type="date" value={date} onChange={(ev) => setDate(ev.target.value)} />
+        </label>
+        <button disabled={busy || date === ""} onClick={() => run(() => api.setBusinessDate(party, date))}>Set business date</button>
+      </div>
+      <div className="row">
+        <label>
+          Sell{" "}
+          <select aria-label="Repo security" value={security} onChange={(ev) => setSecurity(ev.target.value)}>
+            <option value="tUST">tUST</option>
+            <option value="tMMF">tMMF</option>
+          </select>
+        </label>
+        <label>
+          Purchase Price (tUSD) <input aria-label="Purchase Price (tUSD)" type="number" value={purchasePrice} step={100000} onChange={(ev) => setPurchasePrice(Number(ev.target.value))} style={{ width: 120 }} />
+        </label>
+        <label>
+          Repo rate (% p.a.) <input aria-label="Repo rate (% p.a.)" value={ratePercent} onChange={(ev) => setRatePercent(ev.target.value)} style={{ width: 60 }} />
+        </label>
+        <label>
+          Term (days) <input aria-label="Term (days)" type="number" value={termDays} min={1} onChange={(ev) => setTermDays(Number(ev.target.value))} style={{ width: 60 }} />
+        </label>
+        <label>
+          Margin Ratio <input aria-label="Repo Margin Ratio" value={marginRatio} placeholder={defaultMarginRatio} onChange={(ev) => setMarginRatio(ev.target.value)} style={{ width: 60 }} />
+        </label>
+        <button
+          disabled={busy || purchasePrice <= 0 || termDays < 1 || ratePercent === ""}
+          onClick={() => run(() => api.bookRepo(party, { security, purchasePrice, ratePercent, termDays, marginRatio: marginRatio === "" ? null : marginRatio }))}
+        >
+          Book repo: sell to {other}
+        </button>
+      </div>
+      {r.repos.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Repo</th><th>Role</th><th>Securities</th><th>Purchase Price</th><th>Repurchase Price</th><th>Dates</th><th>State</th><th></th></tr>
+          </thead>
+          <tbody>
+            {r.repos.map((p) => (
+              <tr key={p.repoId} data-testid={`repo-${p.repoId}`}>
+                <td className="mono">{short(p.repoId)}</td>
+                <td>{p.role} · {p.counterparty}</td>
+                <td>{Number(p.quantity).toLocaleString("en-US")} {p.security}{p.price ? ` at ${p.price}` : ""}</td>
+                <td>{usd(p.purchasePrice)}</td>
+                <td>{usd(p.repurchasePrice)}{p.ratePercent ? ` (${p.ratePercent}%)` : ""}</td>
+                <td>{p.purchaseDate ? `${p.purchaseDate} → ${p.repurchaseDate}` : "—"}</td>
+                <td data-testid={`repo-state-${p.repoId}`}>
+                  {p.verified ? <span className="ok">{p.state} ✓</span> : <span className="bad">{p.problem ?? "not verified"}</span>}
+                </td>
+                <td>{action(p)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,0 +1,27 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: the settlement of a repo's purchase and repurchase (wp-adr-repo-purchase-repurchase). The repo itself is CDM's TradeState; the seller is Party1 and the buyer Party2.">
+version "${project.version}"
+
+import cdm.event.common.*
+
+enum RepoSettlementPhaseEnum: <"Which leg of a repo a settlement is for.">
+    Purchase <"On the Purchase Date: the seller delivers the securities and the buyer pays the Purchase Price (GMRA paragraph 3).">
+    Repurchase <"On the Repurchase Date: the buyer delivers equivalent securities and the seller pays the Repurchase Price (GMRA paragraph 3(f)).">
+
+type RepoSettlement: <"One delivery-versus-payment settlement of a repo: the securities one way and the cash the other, both in one on-chain transaction.">
+    [rootType]
+    phase RepoSettlementPhaseEnum (1..1) <"Purchase or repurchase.">
+    trade TradeState (1..1) <"The repo as booked and affirmed.">
+    securityTransfer ScheduledTransfer (1..1) <"The securities: from the seller at the purchase, back from the buyer at the repurchase.">
+    cashTransfer ScheduledTransfer (1..1) <"The cash: the Purchase Price from the buyer, or the Repurchase Price from the seller.">
+    repurchase BusinessEvent (0..1) <"CDM's Repurchase business event, which sets the trade's quantities to zero. Present for the repurchase only.">
+
+    condition RepurchaseEvent: <"The repurchase carries CDM's Repurchase business event; the purchase carries none.">
+        if phase = RepoSettlementPhaseEnum -> Repurchase
+        then repurchase -> intent = EventIntentEnum -> Repurchase
+        else repurchase is absent
+
+    condition OppositeDirections: <"The cash moves against the securities.">
+        securityTransfer -> payerReceiver -> payerPartyReference
+            = cashTransfer -> payerReceiver -> receiverPartyReference
+        and securityTransfer -> payerReceiver -> receiverPartyReference
+            = cashTransfer -> payerReceiver -> payerPartyReference

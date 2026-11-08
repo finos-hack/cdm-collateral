@@ -42,6 +42,7 @@
     ".konspekt/instance/waypoints/wp-adr-replacement-call-link.md",
     ".konspekt/instance/waypoints/wp-adr-repo-gmra-scope.md",
     ".konspekt/instance/waypoints/wp-adr-repo-gmra-terms.md",
+    ".konspekt/instance/waypoints/wp-adr-repo-purchase-repurchase.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",
     ".konspekt/instance/waypoints/wp-adr-substitution-fold-portfolio.md",
@@ -349,6 +350,15 @@
       "metadata": {
         "language": "Solidity"
       }
+    },
+    {
+      "unique-id": "repo-settlement-contract",
+      "node-type": "service",
+      "name": "Repo settlement contract",
+      "description": "Term repos under the GMRA (flow-repo-purchase-repurchase): the seller books the trade's hash and amounts, the buyer affirms the same hash, and the purchase and the repurchase each settle delivery versus payment when the second party instructs with the same CDM settlement hash, both legs in one transaction. No dates are checked on-chain; each service holds a business date. Separate from the collateral control contract, which is close to the EIP-170 size limit (wp-adr-repo-purchase-repurchase).",
+      "metadata": {
+        "language": "Solidity"
+      }
     }
   ],
   "relationships": [
@@ -394,7 +404,8 @@
             "collateral-control-contract",
             "margin-call-contract",
             "oracle-feed-contract",
-            "portfolio-reconciliation-contract"
+            "portfolio-reconciliation-contract",
+            "repo-settlement-contract"
           ]
         }
       }
@@ -438,7 +449,8 @@
             "collateral-control-contract",
             "margin-call-contract",
             "oracle-feed-contract",
-            "portfolio-reconciliation-contract"
+            "portfolio-reconciliation-contract",
+            "repo-settlement-contract"
           ]
         }
       }

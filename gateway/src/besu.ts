@@ -54,7 +54,13 @@ export interface LedgerEvent {
     | "AmendmentDecided"
     | "TermsAmendmentProposed"
     | "TermsAmendmentDecided"
+    | "RepoBooked"
+    | "RepoAffirmed"
+    | "RepoInstructed"
+    | "RepoSettled"
     | "SettlementNetted";
+  /** RepoBooked, RepoAffirmed, RepoInstructed, RepoSettled (flow-repo-purchase-repurchase). */
+  repoId?: Hex;
   callId?: Hex;
   /** ClosedOut (flow-close-out-netting). */
   closeOutId?: Hex;
@@ -202,6 +208,10 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "AmendmentDecided(bytes32,bool,bytes32)",
     "TermsAmendmentProposed(bytes32,bytes32,address,address,bytes32)",
     "TermsAmendmentDecided(bytes32,bytes32,bool,bytes32)",
+    "RepoBooked(bytes32,address,address,bytes32)",
+    "RepoAffirmed(bytes32,address,bytes32)",
+    "RepoInstructed(bytes32,uint8,address,bytes32)",
+    "RepoSettled(bytes32,uint8,bytes32)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -346,6 +356,41 @@ const reconciliationAbi = parseAbi([
 
 export const RunStateName = ["none", "one result", "agreed", "disagreed"];
 
+// flow-repo-purchase-repurchase (wp-adr-repo-purchase-repurchase): a term repo's trade hash, its amounts, and the
+// delivery-versus-payment settlement of its purchase and repurchase.
+const repoAbi = parseAbi([
+  "function book(bytes32 repoId, address buyer, address security, uint256 quantity, address cash, uint256 purchasePrice, uint256 repurchasePrice, bytes32 tradeHash)",
+  "function affirm(bytes32 repoId, bytes32 tradeHash)",
+  "function instruct(bytes32 repoId, uint8 phase, bytes32 cdmHash)",
+  "function getRepo(bytes32 repoId) view returns ((address seller, address buyer, address security, uint256 quantity, address cash, uint256 purchasePrice, uint256 repurchasePrice, bytes32 tradeHash, uint8 state, bytes32 purchaseHash, bytes32 repurchaseHash))",
+  "function getInstructions(bytes32 repoId, uint8 phase) view returns (bytes32 seller, bytes32 buyer)",
+  "function reposOf(address party) view returns (bytes32[])",
+  "event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash)",
+  "event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash)",
+  "event RepoInstructed(bytes32 indexed repoId, uint8 phase, address indexed party, bytes32 cdmHash)",
+  "event RepoSettled(bytes32 indexed repoId, uint8 phase, bytes32 cdmHash)",
+]);
+
+export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased"];
+export const RepoPhase: Record<string, number> = { purchase: 0, repurchase: 1 };
+
+export interface OnChainRepo {
+  repoId: Hex;
+  seller: Address;
+  buyer: Address;
+  security: Address;
+  quantity: bigint;
+  cash: Address;
+  purchasePrice: bigint;
+  repurchasePrice: bigint;
+  tradeHash: Hex;
+  state: string;
+  purchaseHash: Hex;
+  repurchaseHash: Hex;
+  /** The hashes each party has instructed for the phase in progress (zero hash: not yet). */
+  instructed: { seller: Hex; buyer: Hex };
+}
+
 const erc20Abi = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
@@ -411,6 +456,13 @@ export interface LedgerAdapter {
   reconciliationIdOf(firstSnapshotId: Hex, secondSnapshotId: Hex): Promise<Hex>;
   getSnapshot(snapshotId: Hex): Promise<{ party: Address; counterparty: Address; snapshotHash: Hex; committedAt: bigint }>;
   getRun(reconciliationId: Hex): Promise<{ firstSnapshotId: Hex; secondSnapshotId: Hex; firstPartyResult: Hex; secondPartyResult: Hex; breakCount: number; state: string }>;
+  /** Repo (wp-adr-repo-purchase-repurchase): the seller books, the buyer affirms, each party instructs each phase. */
+  bookRepo(repoId: Hex, buyer: Address, security: Address, quantity: bigint, cash: Address, purchasePrice: bigint, repurchasePrice: bigint, tradeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  affirmRepo(repoId: Hex, tradeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  instructRepo(repoId: Hex, phase: "purchase" | "repurchase", cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getRepo(repoId: Hex): Promise<OnChainRepo>;
+  listRepos(party: Address): Promise<OnChainRepo[]>;
+  repoContract(): Address;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -898,6 +950,40 @@ export class BesuAdapter implements LedgerAdapter {
     })) as boolean;
   }
 
+  /** The RepoSettlement address, which each party approves for its leg. */
+  repoContract(): Address {
+    const a = this.reg.contracts.repoSettlement;
+    if (!a) throw new Error("no RepoSettlement in the deployment registry; redeploy the contracts");
+    return a;
+  }
+
+  bookRepo(repoId: Hex, buyer: Address, security: Address, quantity: bigint, cash: Address, purchasePrice: bigint, repurchasePrice: bigint, tradeHash: Hex) {
+    return this.send(this.repoContract(), repoAbi, "book", [repoId, buyer, security, quantity, cash, purchasePrice, repurchasePrice, tradeHash]);
+  }
+
+  affirmRepo(repoId: Hex, tradeHash: Hex) {
+    return this.send(this.repoContract(), repoAbi, "affirm", [repoId, tradeHash]);
+  }
+
+  instructRepo(repoId: Hex, phase: "purchase" | "repurchase", cdmHash: Hex) {
+    if (!(phase in RepoPhase)) throw new Error(`unknown repo phase ${phase}`);
+    return this.send(this.repoContract(), repoAbi, "instruct", [repoId, RepoPhase[phase], cdmHash]);
+  }
+
+  async getRepo(repoId: Hex): Promise<OnChainRepo> {
+    const address = this.repoContract();
+    const r = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getRepo", args: [repoId] })) as Omit<OnChainRepo, "repoId" | "state" | "instructed"> & { state: number };
+    const state = Number(r.state);
+    // The phase in progress: the purchase until it settles, then the repurchase.
+    const [seller, buyer] = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getInstructions", args: [repoId, state >= 3 ? 1 : 0] })) as readonly [Hex, Hex];
+    return { ...r, repoId, state: RepoStateName[state] ?? String(state), instructed: { seller, buyer } };
+  }
+
+  async listRepos(party: Address) {
+    const ids = (await this.pub.readContract({ address: this.repoContract(), abi: repoAbi, functionName: "reposOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map((id) => this.getRepo(id)));
+  }
+
   private reconciliationAddress(): Address {
     const a = this.reg.contracts.portfolioReconciliation;
     if (!a) throw new Error("no PortfolioReconciliation in the deployment registry; redeploy the contracts");
@@ -1079,9 +1165,25 @@ export class BesuAdapter implements LedgerAdapter {
       },
       onError,
     });
+    const repo = this.reg.contracts.repoSettlement;
+    const unwatchRepo = repo
+      ? this.ws.watchContractEvent({
+          address: repo,
+          abi: repoAbi,
+          onLogs: (logs) => {
+            for (const log of logs) {
+              const name = (log as any).eventName as LedgerEvent["event"];
+              const a = ((log as any).args ?? {}) as { repoId?: Hex; seller?: Address; buyer?: Address; party?: Address; tradeHash?: Hex; cdmHash?: Hex };
+              onEvent({ event: name, repoId: a.repoId, cdmHash: a.cdmHash ?? a.tradeHash, party: a.party ?? a.seller ?? a.buyer, ...meta(log) });
+            }
+          },
+          onError,
+        })
+      : () => undefined;
     return () => {
       unwatchControl();
       unwatchOracle();
+      unwatchRepo();
     };
   }
 

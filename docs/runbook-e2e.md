@@ -250,6 +250,17 @@ B's service verifies the document against the terms in force and B's gateway cal
 GMRA terms hash moves on-chain and both services fold the amendment. The CSA terms are a separate chain and do not
 change.
 
+Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
+Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
+from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
+`Create_BusinessEvent`, the Repurchase Price with cdm-ext `RepoRepurchasePrice`, and A's gateway calls `book` on the
+`RepoSettlement` contract. B's service rebuilds the trade from the booked document and checks the on-chain amounts;
+B clicks `Affirm repo`. Each party then clicks `Settle purchase`: its gateway approves its leg and instructs with the
+hash of the cdm-ext `RepoSettlement` document, and the second instruction moves the securities to B and the tUSD to A
+in one transaction. `Settle repurchase` appears once the service's business date is on or after the Repurchase Date;
+set it in the card (`Set business date`). The second repurchase instruction returns the securities and pays the
+Repurchase Price.
+
 Close-out flow (`flow-close-out-netting`): while A has collateral in escrow, B enters a Close-out Amount in the
 "Close-out on default" card and clicks `Declare default & close out A`. B's service sends the default notice if the
 feed does not show it, values the escrow after haircuts, builds the CDM `CloseOutStatement` and calls `closeOut`: the
@@ -315,7 +326,9 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
 `flow-substitution`, `flow-interest-on-cash`, `flow-settlement-netting`, `flow-call-cancellation`,
 `flow-call-replacement`, `flow-agreement-amendment` (it restores the baseline terms), `flow-allocation`,
-`flow-reconciliation`, `flow-two-way-im-default` and `flow-repo-gmra-terms` (it restores the baseline MTA).
+`flow-reconciliation`, `flow-two-way-im-default`, `flow-repo-gmra-terms` (it restores the baseline MTA) and
+`flow-repo-purchase-repurchase` (it sets both business dates back to today; the seller pays the Price Differential,
+which the top-up before each run restores).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

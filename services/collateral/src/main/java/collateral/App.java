@@ -131,6 +131,13 @@ public final class App {
         app.get("/api/v1/gmra/terms", this::gmraTerms);
         app.post("/api/v1/gmra/amendments", this::proposeGmraAmendment);
         app.post("/api/v1/gmra/amendments/{id}/decision", this::decideGmraAmendment);
+        app.get("/api/v1/business-date", ctx -> ctx.json(Map.of("businessDate", businessDate.toString())));
+        app.post("/api/v1/business-date", this::setBusinessDate);
+        app.get("/api/v1/repos", this::repos);
+        app.post("/api/v1/repos", this::bookRepo);
+        app.post("/api/v1/repos/{id}/affirm", this::affirmRepo);
+        app.post("/api/v1/repos/{id}/settle", this::settleRepo);
+        app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
         app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
@@ -220,6 +227,11 @@ public final class App {
                     onAmendmentEvent(event, e, block, logIndex, data);
                 } else if (event.equals("TermsAmendmentProposed") || event.equals("TermsAmendmentDecided")) {
                     onGmraAmendmentEvent(event, e, block, logIndex, data);
+                } else if (event.startsWith("Repo") && e.hasNonNull("repoId")) {
+                    String id = e.get("repoId").asText();
+                    JsonNode r = gw.get("/repos/" + id);
+                    if (r.get("seller").asText().equalsIgnoreCase(cfg.myAddress) || r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress))
+                        store.recordEvent(event, id, party, block, logIndex, data);
                 } else if (event.startsWith("Substitution")) {
                     String id = e.get("substitutionId").asText();
                     if (substitutionInvolvesMe(id)) {
@@ -714,6 +726,215 @@ public final class App {
         String x = a.get("pledgor").asText(), y = a.get("securedParty").asText();
         boolean ours = (x.equalsIgnoreCase(cfg.myAddress) && y.equalsIgnoreCase(other)) || (x.equalsIgnoreCase(other) && y.equalsIgnoreCase(cfg.myAddress));
         if (ours) store.recordEvent(event, id, a.get("proposer").asText(), block, logIndex, data);
+    }
+
+    // --- repo purchase and repurchase (task-repo-purchase-repurchase, wp-adr-repo-purchase-repurchase) ---
+    // The trade is CDM's TradeState in an execution BusinessEvent, published to the payload store by the seller and
+    // anchored on-chain by its hash; the buyer rebuilds and checks it before affirming. Each party instructs the
+    // purchase and the repurchase with the hash of the same cdm-ext RepoSettlement document.
+
+    /** The service's business date (wp-adr-repo-purchase-repurchase: the operator can move it in the prototype). */
+    private volatile LocalDate businessDate = LocalDate.now();
+
+    /** Bookings checked by this service, by the hash of the booked document (a booked document never changes). */
+    private final Map<String, CdmRepo.Booking> repoBookings = new ConcurrentHashMap<>();
+
+    private void setBusinessDate(Context ctx) {
+        businessDate = LocalDate.parse(String.valueOf(body(ctx).get("businessDate")));
+        ctx.json(Map.of("businessDate", businessDate.toString()));
+    }
+
+    /** The booked document behind an on-chain repo, rebuilt and checked by this service; null if not in the store. */
+    private CdmRepo.Booking repoBooking(JsonNode r) {
+        String hash = r.get("tradeHash").asText();
+        CdmRepo.Booking b = repoBookings.get(hash);
+        if (b != null) return b;
+        String doc = payloads.get(hash);
+        if (doc == null) return null;
+        if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the booked document does not hash to the on-chain trade hash");
+        b = CdmRepo.verify(doc);
+        repoBookings.put(hash, b);
+        return b;
+    }
+
+    /** What is wrong between an on-chain repo and its trade, or null. */
+    private String repoProblem(JsonNode r, CdmRepo.Booking b) {
+        CdmRepo.Terms t = CdmRepo.terms(b.trade());
+        String sym = symbolByAddress.get(r.get("security").asText().toLowerCase());
+        if (!r.get("repoId").asText().equalsIgnoreCase(t.tradeId())) return "the trade identifier is not the repo id";
+        if (!cfg.bankName(partyIdOf(r.get("seller").asText())).equals(t.seller())) return "the seller is not Party1 of the trade";
+        if (!cfg.bankName(partyIdOf(r.get("buyer").asText())).equals(t.buyer())) return "the buyer is not Party2 of the trade";
+        if (sym == null || !cfg.isin(sym).equals(t.isin())) return "the security token is not the trade's security";
+        if (!"tUSD".equals(symbolByAddress.get(r.get("cash").asText().toLowerCase()))) return "the cash token is not tUSD";
+        if (r.get("quantity").asLong() != t.quantity()) return "the on-chain quantity is not the trade's";
+        if (CdmRepo.quantity(t.purchasePrice(), t.marginRatio(), t.price()) != t.quantity()) return "the quantity does not follow from the Purchase Price, Margin Ratio and price";
+        if (r.get("purchasePrice").asLong() != t.purchasePrice()) return "the on-chain Purchase Price is not the trade's";
+        if (r.get("repurchasePrice").asLong() != b.repurchasePrice()) return "the on-chain Repurchase Price is not RepoRepurchasePrice over the trade";
+        return null;
+    }
+
+    private Map<String, Object> repoView(JsonNode r) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        String state = r.get("state").asText();
+        m.put("repoId", r.get("repoId").asText());
+        m.put("role", seller ? "seller" : "buyer");
+        m.put("counterparty", partyIdOf(seller ? r.get("buyer").asText() : r.get("seller").asText()));
+        m.put("state", state);
+        m.put("security", symbolByAddress.get(r.get("security").asText().toLowerCase()));
+        m.put("quantity", r.get("quantity").asText());
+        m.put("purchasePrice", r.get("purchasePrice").asText());
+        m.put("repurchasePrice", r.get("repurchasePrice").asText());
+        m.put("tradeHash", r.get("tradeHash").asText());
+        m.put("purchaseHash", r.get("purchaseHash").asText().equals(ZERO_HASH) ? null : r.get("purchaseHash").asText());
+        m.put("repurchaseHash", r.get("repurchaseHash").asText().equals(ZERO_HASH) ? null : r.get("repurchaseHash").asText());
+        JsonNode ins = r.get("instructed");
+        m.put("instructedByMe", !ins.get(seller ? "seller" : "buyer").asText().equals(ZERO_HASH));
+        m.put("instructedByCounterparty", !ins.get(seller ? "buyer" : "seller").asText().equals(ZERO_HASH));
+        try {
+            CdmRepo.Booking b = repoBooking(r);
+            if (b == null) {
+                m.put("verified", false);
+                m.put("problem", "the booked document is not in the payload store");
+                return m;
+            }
+            CdmRepo.Terms t = CdmRepo.terms(b.trade());
+            m.put("price", t.price().stripTrailingZeros().toPlainString());
+            m.put("ratePercent", t.rate().movePointRight(2).stripTrailingZeros().toPlainString());
+            m.put("marginRatio", t.marginRatio().stripTrailingZeros().toPlainString());
+            m.put("purchaseDate", t.purchaseDate().toString());
+            m.put("repurchaseDate", t.repurchaseDate().toString());
+            m.put("tradeStateHash", CdmRepo.tradeHash(b.trade()));
+            String problem = repoProblem(r, b);
+            m.put("verified", problem == null);
+            m.put("problem", problem);
+            m.put("repurchaseDue", !businessDate.isBefore(t.repurchaseDate()));
+        } catch (Exception ex) {
+            m.put("verified", false);
+            m.put("problem", ex.getMessage());
+        }
+        return m;
+    }
+
+    /** This party's repos, newest first, with the business date. */
+    private void repos(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) out.add(0, repoView(r));
+        ctx.json(Map.of("businessDate", businessDate.toString(), "repos", out));
+    }
+
+    /** The seller books a term repo with the counterparty: security (tUST or tMMF), Purchase Price (whole tUSD), repo
+     *  rate in percent per annum, term in days from the business date, and optionally the Margin Ratio (default: the
+     *  GMRA's default Margin Ratio). The quantity follows from the feed price. */
+    private void bookRepo(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        String sym = String.valueOf(b.getOrDefault("security", "tUST"));
+        if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new RuntimeException("not a security token: " + sym);
+        long purchasePrice = Long.parseLong(String.valueOf(b.get("purchasePrice")));
+        BigDecimal rate = new BigDecimal(String.valueOf(b.get("ratePercent"))).movePointLeft(2);
+        int termDays = Integer.parseInt(String.valueOf(b.getOrDefault("termDays", "7")));
+        if (termDays < 1) throw new RuntimeException("the term is at least one day");
+        Object mr = b.get("marginRatio");
+        BigDecimal marginRatio = mr == null || String.valueOf(mr).isBlank()
+                ? gmraFold().terms().terms().getElections().getDefaultMarginRatio() : new BigDecimal(String.valueOf(mr));
+        BigInteger scaled = feedPrices().get(cfg.tokenAddress(sym).toLowerCase());
+        if (scaled == null) throw new RuntimeException("no feed price for " + sym);
+        BigDecimal price = new BigDecimal(scaled).divide(new BigDecimal(cfg.priceScale)).stripTrailingZeros();
+        String repoId = Cdm.onChainId("repo-" + cfg.partyId + "-" + System.nanoTime());
+        long qty = CdmRepo.quantity(purchasePrice, marginRatio, price);
+        CdmRepo.Terms t = new CdmRepo.Terms(repoId, cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), cfg.isin(sym), qty, price,
+                purchasePrice, rate, marginRatio, businessDate, businessDate, businessDate.plusDays(termDays));
+        CdmRepo.Booking booking = CdmRepo.book(t);
+        store.recordDocument(repoId, "BusinessEvent", "out", booking.hash(), booking.json());
+        payloads.put(booking.hash(), booking.json(), callParties);
+        repoBookings.put(booking.hash(), booking);
+        JsonNode tx = gw.post("/repos", Map.of("repoId", repoId, "buyer", cfg.partyAddress(counterparty()), "security", cfg.tokenAddress(sym),
+                "quantity", String.valueOf(qty), "cash", cfg.tokenAddress("tUSD"), "purchasePrice", String.valueOf(purchasePrice),
+                "repurchasePrice", String.valueOf(booking.repurchasePrice()), "tradeHash", booking.hash()));
+        ctx.json(Map.of("repoId", repoId, "tradeHash", booking.hash(), "quantity", qty, "repurchasePrice", booking.repurchasePrice(),
+                "bookTx", tx.path("txHash").asText()));
+    }
+
+    /** The buyer affirms: the booked trade rebuilds, matches the on-chain amounts, and its price is the feed price. */
+    private void affirmRepo(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode r = gw.get("/repos/" + id);
+        if (!r.get("state").asText().equals("booked")) throw new RuntimeException("repo " + id + " is not booked");
+        if (!r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the buyer affirms a repo");
+        CdmRepo.Booking b = repoBooking(r);
+        if (b == null) throw new RuntimeException("the booked document is not in the payload store");
+        String problem = repoProblem(r, b);
+        if (problem != null) throw new RuntimeException(problem);
+        BigInteger scaled = feedPrices().get(r.get("security").asText().toLowerCase());
+        BigDecimal feed = scaled == null ? null : new BigDecimal(scaled).divide(new BigDecimal(cfg.priceScale));
+        if (feed == null || feed.compareTo(CdmRepo.terms(b.trade()).price()) != 0) throw new RuntimeException("the trade's price is not the feed price");
+        store.recordDocument(id, "BusinessEvent", "in", b.hash(), b.json());
+        JsonNode tx = gw.post("/repos/" + id + "/affirm", Map.of("tradeHash", b.hash()));
+        ctx.json(Map.of("repoId", id, "tradeHash", b.hash(), "affirmTx", tx.path("txHash").asText()));
+    }
+
+    /** Instruct the purchase or the repurchase: build the RepoSettlement document, approve this party's leg and
+     *  instruct with its hash. The repurchase only on or after the Repurchase Date by this service's business date. */
+    private void settleRepo(Context ctx) {
+        String id = ctx.pathParam("id");
+        String phase = String.valueOf(body(ctx).getOrDefault("phase", "purchase"));
+        JsonNode r = gw.get("/repos/" + id);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!seller && !r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("not a party to repo " + id);
+        if (!ins(r, seller).equals(ZERO_HASH)) throw new RuntimeException("already instructed");
+        CdmRepo.Booking b = repoBooking(r);
+        if (b == null) throw new RuntimeException("the booked document is not in the payload store");
+        String problem = repoProblem(r, b);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmRepo.Terms t = CdmRepo.terms(b.trade());
+        CdmRepo.Settlement s;
+        String token;
+        long amount;
+        if (phase.equals("purchase")) {
+            if (!r.get("state").asText().equals("affirmed")) throw new RuntimeException("repo " + id + " is not affirmed");
+            s = CdmRepo.purchase(b.trade());
+            token = seller ? r.get("security").asText() : r.get("cash").asText();
+            amount = seller ? t.quantity() : t.purchasePrice();
+        } else if (phase.equals("repurchase")) {
+            if (!r.get("state").asText().equals("purchased")) throw new RuntimeException("repo " + id + " is not purchased");
+            if (businessDate.isBefore(t.repurchaseDate())) throw new RuntimeException("the business date " + businessDate + " is before the Repurchase Date " + t.repurchaseDate());
+            s = CdmRepo.repurchase(b.trade());
+            token = seller ? r.get("cash").asText() : r.get("security").asText();
+            amount = seller ? b.repurchasePrice() : t.quantity();
+        } else {
+            throw new RuntimeException("unknown phase " + phase);
+        }
+        store.recordDocument(id, "RepoSettlement", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), callParties);
+        JsonNode tx = gw.post("/repos/" + id + "/instruct", Map.of("phase", phase, "cdmHash", s.hash(), "token", token, "amount", String.valueOf(amount)));
+        ctx.json(Map.of("repoId", id, "phase", phase, "cdmHash", s.hash(), "instructTx", tx.path("txHash").asText()));
+    }
+
+    private static String ins(JsonNode r, boolean seller) {
+        return r.get("instructed").get(seller ? "seller" : "buyer").asText();
+    }
+
+    /** The TradeState this service holds for a repo and, once repurchased, the closed TradeState from the anchored
+     *  repurchase document, which must be the one this service builds. */
+    private void repoTrade(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode r = gw.get("/repos/" + id);
+        CdmRepo.Booking b = repoBooking(r);
+        if (b == null) throw new RuntimeException("the booked document is not in the payload store");
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("repoId", id);
+        out.put("state", r.get("state").asText());
+        out.put("tradeHash", b.hash());
+        out.put("tradeStateHash", CdmRepo.tradeHash(b.trade()));
+        String rh = r.get("repurchaseHash").asText();
+        if (!rh.equals(ZERO_HASH)) {
+            CdmRepo.Settlement s = CdmRepo.repurchase(b.trade());
+            if (!s.hash().equalsIgnoreCase(rh)) throw new RuntimeException("the anchored repurchase is not the one this service builds");
+            var closed = s.settlement().getRepurchase().getAfter().get(0);
+            out.put("closedTradeStateHash", CdmRepo.tradeHash(closed));
+            out.put("closedState", closed.getState().getClosedState().getState().toString());
+        }
+        ctx.json(out);
     }
 
     // ---- legs of the initial margin (two-way initial margin, wp-adr-two-way-im) ----

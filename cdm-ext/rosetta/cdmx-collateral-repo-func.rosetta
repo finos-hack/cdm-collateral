@@ -1,0 +1,95 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: the prices of a term repo (wp-adr-repo-purchase-repurchase).">
+version "${project.version}"
+
+import cdm.base.datetime.*
+import cdm.base.math.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdm.product.asset.*
+import cdm.product.common.schedule.*
+
+func RepoPurchaseQuantity: <"The number of securities a seller delivers for a Purchase Price: Purchase Price x Margin Ratio / price, rounded up to whole units, so the market value is at least the Margin Ratio times the Purchase Price (GMRA paragraph 2(bb)).">
+    inputs:
+        purchasePrice number (1..1) <"The Purchase Price, in the price's currency.">
+        marginRatio number (1..1) <"The Transaction's Margin Ratio, market value over Purchase Price.">
+        price number (1..1) <"The price of one unit of the security.">
+    output:
+        quantity number (1..1)
+
+    condition PositivePurchasePrice:
+        purchasePrice > 0
+    condition MarginRatioAtLeastOne: <"CDM 7.7.0 requires marginPercentage to be at least 1.">
+        marginRatio >= 1
+    condition PositivePrice:
+        price > 0
+
+    set quantity: RoundToNearest(purchasePrice * marginRatio / price, 1, RoundingModeEnum -> Up)
+
+func RepoInterestRatePayout: <"The repo's InterestRatePayout: the repo rate on the Purchase Price.">
+    inputs:
+        tradeState TradeState (1..1)
+    output:
+        payout InterestRatePayout (1..1)
+
+    set payout:
+        tradeState -> trade -> product -> economicTerms -> payout only-element as InterestRatePayout
+
+func RepoPurchasePrice: <"The Purchase Price: the notional of the repo's InterestRatePayout.">
+    inputs:
+        tradeState TradeState (1..1)
+    output:
+        purchasePrice Money (1..1)
+
+    alias quantity: RepoInterestRatePayout(tradeState) -> priceQuantity -> quantitySchedule
+
+    set purchasePrice -> value: quantity -> value
+    set purchasePrice -> unit -> currency: quantity -> unit -> currency
+
+func RepoPriceDifferential: <"The Price Differential (GMRA paragraph 2(pp)) to a date: CDM's FixedAmount on the Purchase Price at the repo rate over the period from the Purchase Date to the date, by the payout's day count fraction. CDM's InterestCashSettlementAmount needs the payout's calculationPeriodDates, and for a term repo CDM's CalculationPeriod gives an empty period, so the period is stated here.">
+    inputs:
+        tradeState TradeState (1..1)
+        date date (1..1) <"The Repurchase Date, or the day the differential is accrued to.">
+    output:
+        priceDifferential number (1..1)
+
+    alias purchaseDate: tradeState -> trade -> product -> economicTerms -> effectiveDate -> adjustableDate -> unadjustedDate
+
+    condition DateNotBeforePurchase: <"The date is on or after the Purchase Date.">
+        date >= purchaseDate
+
+    set priceDifferential:
+        FixedAmount(
+                RepoInterestRatePayout(tradeState),
+                RepoPurchasePrice(tradeState) -> value,
+                empty,
+                CalculationPeriodData {
+                    startDate: purchaseDate,
+                    endDate: date,
+                    daysInPeriod: DateDifference(purchaseDate, date),
+                    daysInLeapYearPeriod: LeapYearDateDifference(purchaseDate, date),
+                    isFirstPeriod: True,
+                    isLastPeriod: True
+                }
+            )
+
+func RepoRepurchasePrice: <"The Repurchase Price (GMRA paragraph 2(rr)): the Purchase Price plus the Price Differential to the Repurchase Date, rounded to the nearest at the given number of decimals (a half rounds up).">
+    inputs:
+        tradeState TradeState (1..1)
+        precision int (1..1) <"The decimals of the cash amount, e.g. 0 for a whole-unit cash token.">
+    output:
+        repurchasePrice Money (1..1)
+
+    alias repurchaseDate: tradeState -> trade -> product -> economicTerms -> terminationDate -> adjustableDate -> unadjustedDate
+    alias purchasePrice: RepoPurchasePrice(tradeState)
+
+    alias priceDifferential: <"CDM's FixedAmount divides by the day count basis without a fixed scale, so 332.475 comes back as 332.4749...; ten decimals first keeps a half at the cash precision from rounding down.">
+        RoundToPrecision(RepoPriceDifferential(tradeState, repurchaseDate), 10, RoundingDirectionEnum -> Nearest, True)
+
+    set repurchasePrice -> value:
+        RoundToPrecision(
+                purchasePrice -> value + priceDifferential,
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )
+    set repurchasePrice -> unit -> currency: purchasePrice -> unit -> currency
