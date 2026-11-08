@@ -1016,3 +1016,4 @@ excluded.
 | task-repo-substitution | 5be9ab787ecff50f7f2f97f6622f8488c6c70dfa | services/collateral/README.md | 2026-11-08T20:22:35Z |
 | task-repo-substitution | 5be9ab787ecff50f7f2f97f6622f8488c6c70dfa | docs/runbook-e2e.md | 2026-11-08T20:22:35Z |
 | task-repo-substitution | 5be9ab787ecff50f7f2f97f6622f8488c6c70dfa | architecture/prototype.architecture.json | 2026-11-08T20:22:35Z |
+| task-repo-substitution | 2aed9f119f1310b5facb8cce046f4b24130e0303 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T20:24:05Z |
