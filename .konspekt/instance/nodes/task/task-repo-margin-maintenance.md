@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T15:07:07Z
+updatedAt: 2026-11-08T15:41:39Z
 ```
 # Task: repo margin maintenance: Net Exposure and margin transfer
 
@@ -30,10 +30,11 @@ Net Margin interest (the `netMarginInterest` election, USD-SOFR) is entered by h
 oracle does not publish it.
 
 **Design chosen 2026-11-08** (source `ae0dea272a7d57577b0c8d0625863feb6ded3a8c`), recorded in
-[[wp-adr-repo-margin-maintenance]] (proposed).
+[[wp-adr-repo-margin-maintenance]] (accepted 2026-11-08).
 
 Built so far on branch `repo-margin-maintenance` (2026-11-08): the `cdm-ext` functions of
 [[wp-adr-repo-margin-maintenance]] (`RepoMarginRatio`, `RepoPurchasePriceForMarketValue`, `RepoTransactionExposure`,
 `RepoNetExposure`, `RepoMarginCallAmount`, `RepoNetMarginInterest`; 7 tests), and the service routes `/repo-margin`, `/repo-margin/calls`
-and `/repo-margin/interest` with `CdmRepoMargin` (5 tests; the routes have not run against a live stack). The console and the live spec
-are not built.
+and `/repo-margin/interest` with `CdmRepoMargin` (5 tests), the console "Repo margin (GMRA)" card (3 tests) and the live spec `flow-repo-margin-maintenance`.
+All 19 live specs pass on the local stack (2026-11-08), with no contract change or redeployment. The spec settles one call
+in cash and one in securities, pays Net Margin interest, repurchases the repo, and the seller calls the margin back.

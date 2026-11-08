@@ -944,3 +944,10 @@ excluded.
 | task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/main/java/collateral/Cdm.java | 2026-11-08T15:07:07Z |
 | task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/main/java/collateral/CdmRepoMargin.java | 2026-11-08T15:07:07Z |
 | task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/test/java/collateral/CdmRepoMarginTest.java | 2026-11-08T15:07:07Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | console/e2e/live.spec.ts | 2026-11-08T15:41:39Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | console/src/components/LiveConsole.test.tsx | 2026-11-08T15:41:39Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | console/src/components/LiveConsole.tsx | 2026-11-08T15:41:39Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | console/src/domain/liveApi.ts | 2026-11-08T15:41:39Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T15:41:39Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | services/collateral/README.md | 2026-11-08T15:41:39Z |
+| task-repo-margin-maintenance | 214173ec84eab7c6a2913f8530507bccf75be49c | services/collateral/src/main/java/collateral/App.java | 2026-11-08T15:41:39Z |
