@@ -1008,3 +1008,11 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-gateway-type-check | review | proposed | accepted | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
 | edge:e-dec-cdmdev-gatewaytypecheck | review | proposed | accepted | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
 | node:task-gateway-type-check | status | open | resolved | 2026-11-08T23:13:16Z | 20ee39c124ef4fb13de2cb2e6fcb83679a97d22c | denisurusov |
+| waypoint:wp-adr-repo-roll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| node:task-sme-repo-roll-rules | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| node:task-sme-repo-roll-rules | status |  | open | 2026-11-08T23:21:41Z |  |  |
+| edge:e-mrk-roladr-roll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| edge:e-drv-cdmdata-roladr | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| edge:e-drv-finality-roladr | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| edge:e-dec-cdmdev-smeroll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| edge:e-lnk-roll-smeroll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |

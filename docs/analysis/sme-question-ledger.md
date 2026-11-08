@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 75 questions in 16 tasks, all open.
+Status of the ledger: 82 questions in 17 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -168,3 +168,15 @@ Status of the ledger: 75 questions in 16 tasks, all open.
 | INC-4 | The prototype pays when the parties agree, with the income date as a stated field. Must payment be on the income date, and who holds the securities on the record date? | open | |
 | INC-5 | Under paragraph 5, may income be set off against other amounts, or applied to reduce the Repurchase Price or the exposure? | open | |
 | INC-6 | CDM's on-demand rate change is not built. Is an agreed change of the repo rate needed? | open | |
+
+### `task-sme-repo-roll-rules`: a repo roll under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| ROL-1 | The prototype has the Seller pay the Price Differential on the roll date and keeps the Purchase Price. Is that correct, or is the interest added to the new Purchase Price, or the Transaction reset to the market value? | open | |
+| ROL-2 | The prototype rolls only on the Repurchase Date. Can a Transaction be rolled earlier, or after a missed date? | open | |
+| ROL-3 | The prototype keeps the securities and does not revalue them at the roll. Must the rolled Transaction be priced or margined again at the roll? | open | |
+| ROL-4 | The proposing party enters the new repo rate and the other party agrees to it. Is there any constraint on the rate? | open | |
+| ROL-5 | After a refusal the repo stays due for repurchase on the same date. Is any other consequence intended? | open | |
+| ROL-6 | A settled repurchase clears a pending roll, and a repurchase instruction stops a roll from settling. Is that the right precedence? | open | |
+| ROL-7 | CDM closes the trade and opens another with the same identifier. Under the GMRA, is a roll a new Transaction needing its own Confirmation? | open | |
