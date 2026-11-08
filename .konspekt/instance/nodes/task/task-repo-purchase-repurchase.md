@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-07T23:11:58Z
+updatedAt: 2026-11-08T01:23:33Z
 ```
 # Task: repo purchase and repurchase settled delivery versus payment
 
@@ -24,3 +24,6 @@ Row 2 of the repo workflows (section C of the workflow map), split from [[task-r
 - **Prototype:** a delivery-versus-payment settlement for the purchase and the repurchase, the trade event hashes on-chain; a live spec.
 
 The details are decided when the task starts.
+
+**Design chosen 2026-11-07** (source `80d5c6596368a0436259035ca8d5c4b429f2f9e6`: "Go with 'recommended' for the rest of them"), recorded in
+[[wp-adr-repo-purchase-repurchase]] (proposed).

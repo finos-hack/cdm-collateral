@@ -904,3 +904,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-gmratermsadr | review | proposed | accepted | 2026-11-08T00:01:49Z |  | denisurusov |
 | edge:e-drv-finality-gmratermsadr | review | proposed | accepted | 2026-11-08T00:01:49Z |  | denisurusov |
 | node:task-repo-gmra-terms | status | open | resolved | 2026-11-08T00:02:30Z |  | denisurusov |
+| waypoint:wp-adr-repo-purchase-repurchase | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
+| edge:e-mrk-repopradr-purchaserepurchase | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
+| edge:e-drv-cdmdata-repopradr | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
+| edge:e-drv-finality-repopradr | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
