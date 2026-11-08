@@ -1,0 +1,19 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: the interest statement of Net Margin under a GMRA (wp-adr-repo-margin-maintenance). CDM's and cdm-ext's CollateralInterestStatement is built from a CSA's CollateralInterestParameters, which a GMRA does not have.">
+version "${project.version}"
+
+type RepoNetMarginInterestStatement: <"Interest on Cash Margin for one period (GMRA paragraph 4(f)): the party holding the Cash Margin pays the other.">
+    payer string (1..1) <"The party holding the Cash Margin.">
+    receiver string (1..1) <"The party that transferred it.">
+    periodStartDate date (1..1)
+    periodEndDate date (1..1)
+    days int (1..1) <"Calendar days from the start date to the end date.">
+    cashMargin number (1..1) <"The Cash Margin held throughout the period.">
+    observedRate number (1..1) <"The overnight rate entered for the period, as a decimal.">
+    spread number (1..1) <"The netMarginInterest election's spread, as a decimal.">
+    interest number (1..1) <"The amount payable, by RepoNetMarginInterest.">
+
+    condition TwoParties: <"The payer and the receiver differ.">
+        payer <> receiver
+
+    condition PeriodOrder: <"The period has at least one day.">
+        periodEndDate > periodStartDate
