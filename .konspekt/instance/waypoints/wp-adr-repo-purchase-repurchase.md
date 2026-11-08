@@ -3,7 +3,7 @@ id: wp-adr-repo-purchase-repurchase
 kind: decision
 subtype: adr
 timestamp: 2026-11-08T01:23:33Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-purchase-repurchase
   sourceRef: 80d5c6596368a0436259035ca8d5c4b429f2f9e6
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T01:23:33Z
   confidence: 0.7
 createdAt: 2026-11-08T01:23:33Z
-updatedAt: 2026-11-08T01:23:33Z
+updatedAt: 2026-11-08T01:55:28Z
 ```
 
 # ADR: a repo is a CDM TradeState booked by the seller and affirmed by the buyer; a new RepoSettlement contract settles purchase and repurchase delivery versus payment

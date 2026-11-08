@@ -2,7 +2,7 @@
 id: task-repo-purchase-repurchase
 type: task
 title: Repo purchase and repurchase settled delivery versus payment
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T01:49:59Z
+updatedAt: 2026-11-08T01:55:28Z
 ```
 # Task: repo purchase and repurchase settled delivery versus payment
 
@@ -39,3 +39,7 @@ Found in the build, beyond the ADR: CDM's `Create_BusinessEvent` leaves the Repu
 CDM's `FixedAmount` returns 332.475 as 332.4749..., so `RepoRepurchasePrice` rounds the Price Differential to ten
 decimals before rounding the total to the cash precision; the execution needs `executionDetails` (OffFacility) to
 validate. The buyer also checks, before affirming, that the trade's price is the feed price.
+
+**Open question for subject-matter experts (2026-11-07,** source `0ef54baaa98806298dc824298cef7111bd63236a`: "4. something for SMEs to answer"**):** the
+live spec leaves the 875 tUSD Price Differential with the buyer on every run; `check` restores the free balances before
+each run. Whether a live spec should also return such amounts itself is left to subject-matter experts.
