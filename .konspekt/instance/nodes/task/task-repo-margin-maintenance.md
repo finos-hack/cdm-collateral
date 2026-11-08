@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-07T23:11:58Z
+updatedAt: 2026-11-08T00:04:52Z
 ```
 # Task: repo margin maintenance: Net Exposure and margin transfer
 
@@ -24,3 +24,7 @@ Row 3 of the repo workflows (section C of the workflow map), split from [[task-r
 - **Prototype:** a margin call from the party with the Net Exposure, settled by title transfer; a live spec.
 
 The details are decided when the task starts.
+
+**Rate input (2026-11-07,** source `84f74941a221fc7241c20cf18a88a87067400bc1`: "4. by hand for the prototype"**):** in the prototype the overnight rate for
+Net Margin interest (the `netMarginInterest` election, USD-SOFR) is entered by hand, as the CSA interest rate is; the
+oracle does not publish it.
