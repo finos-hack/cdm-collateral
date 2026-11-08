@@ -6,7 +6,7 @@
 import http from "node:http";
 import { getAddress } from "viem";
 import type { Address, Hex } from "viem";
-import { BesuAdapter } from "./besu.ts";
+import { BesuAdapter, RepoPhase } from "./besu.ts";
 
 const NODE = process.env.NODE ?? "bank-a";
 const PORT = Number(process.env.PORT ?? 8201);
@@ -247,6 +247,17 @@ route("POST", "/ledger/v1/repos/:id/substitute", async (p, b) => {
   return J(await adapter.instructRepoSubstitution(p.id as Hex, b.cdmHash as Hex, getAddress(b.newSecurity), BigInt(b.newQuantity)));
 });
 route("POST", "/ledger/v1/repos/:id/substitute/refuse", async (p) => J(await adapter.refuseRepoSubstitution(p.id as Hex)));
+
+// Interim interest and manufactured income (wp-adr-repo-income): the payer instructs, the receiver's matching instruction agrees.
+route("POST", "/ledger/v1/repos/:id/interim-interest", async (p, b) => {
+  await approveAll(b.approvals);
+  return J(await adapter.instructRepoInterimInterest(p.id as Hex, b.cdmHash as Hex, BigInt(b.amount), BigInt(b.newRepurchasePrice)));
+});
+route("POST", "/ledger/v1/repos/:id/income", async (p, b) => {
+  await approveAll(b.approvals);
+  return J(await adapter.instructRepoIncome(p.id as Hex, b.cdmHash as Hex, BigInt(b.amount)));
+});
+route("POST", "/ledger/v1/repos/:id/refuse-payment", async (p, b) => J(await adapter.refuseRepoPayment(p.id as Hex, RepoPhase[b.phase])));
 
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
 

@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 69 questions in 15 tasks, all open.
+Status of the ledger: 75 questions in 16 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -157,3 +157,14 @@ Status of the ledger: 69 questions in 15 tasks, all open.
 | SUB-4 | The prototype moves no cash and keeps the Repurchase Price. Is that correct under paragraph 8? | open | |
 | SUB-5 | May the Buyer refuse a substitution without a reason? | open | |
 | SUB-6 | A rounded-up substitute may leave a small excess with the Buyer, and later price moves follow the new security. Is any margin step required at the substitution? | open | |
+
+### `task-sme-repo-income-rules`: interim interest and manufactured income under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| INC-1 | The prototype pays the whole Price Differential accrued to the date, less earlier interim payments, and reduces the Repurchase Price by it. Is that correct, and are partial payments needed? | open | |
+| INC-2 | The prototype lets the Seller start an interim payment and needs the Buyer's agreement. Can either party demand it? | open | |
+| INC-3 | The prototype computes income per unit times the quantity, rounded to whole tUSD. Is it the amount paid by the issuer on the securities held, and is withholding tax taken into account? | open | |
+| INC-4 | The prototype pays when the parties agree, with the income date as a stated field. Must payment be on the income date, and who holds the securities on the record date? | open | |
+| INC-5 | Under paragraph 5, may income be set off against other amounts, or applied to reduce the Repurchase Price or the exposure? | open | |
+| INC-6 | CDM's on-demand rate change is not built. Is an agreed change of the repo rate needed? | open | |

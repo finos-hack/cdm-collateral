@@ -7,6 +7,7 @@ import cdm.event.common.*
 import cdm.observable.asset.*
 import cdm.product.asset.*
 import cdm.product.common.schedule.*
+import cdm.product.common.settlement.*
 
 func RepoPurchaseQuantity: <"The number of securities a seller delivers for a Purchase Price: Purchase Price x Margin Ratio / price, rounded up to whole units, so the market value is at least the Margin Ratio times the Purchase Price (GMRA paragraph 2(bb)).">
     inputs:
@@ -45,7 +46,24 @@ func RepoPurchasePrice: <"The Purchase Price: the notional of the repo's Interes
     set purchasePrice -> value: quantity -> value
     set purchasePrice -> unit -> currency: quantity -> unit -> currency
 
-func RepoPriceDifferential: <"The Price Differential (GMRA paragraph 2(pp)) to a date: CDM's FixedAmount on the Purchase Price at the repo rate over the period from the Purchase Date to the date, by the payout's day count fraction. CDM's InterestCashSettlementAmount needs the payout's calculationPeriodDates, and for a term repo CDM's CalculationPeriod gives an empty period, so the period is stated here.">
+func RepoInterimInterestPaid: <"The interim interest already paid on a Transaction by a date (wp-adr-repo-income): the NetInterest transfers CDM's on-demand interest payment adds to the transfer history. Only payments after the trade's effective date count: a reprice or adjustment starts a new accrual on its date, and the payments made up to that date belong to the earlier accrual.">
+    inputs:
+        tradeState TradeState (1..1)
+        date date (1..1) <"The day the Price Differential is accrued to.">
+    output:
+        paid number (1..1)
+
+    alias purchaseDate: tradeState -> trade -> product -> economicTerms -> effectiveDate -> adjustableDate -> unadjustedDate
+
+    set paid:
+        tradeState -> transferHistory
+            extract transfer as ScheduledTransfer
+            then filter transferType = ScheduledTransferEnum -> NetInterest
+            then filter settlementDate -> adjustedDate > purchaseDate and settlementDate -> adjustedDate <= date
+            then extract quantity -> value
+            then sum
+
+func RepoPriceDifferential: <"The Price Differential (GMRA paragraph 2(pp)) to a date: CDM's FixedAmount on the Purchase Price at the repo rate over the period from the Purchase Date to the date, by the payout's day count fraction. CDM's InterestCashSettlementAmount needs the payout's calculationPeriodDates, and for a term repo CDM's CalculationPeriod gives an empty period, so the period is stated here. Interim interest already paid is deducted (wp-adr-repo-income).">
     inputs:
         tradeState TradeState (1..1)
         date date (1..1) <"The Repurchase Date, or the day the differential is accrued to.">
@@ -70,7 +88,7 @@ func RepoPriceDifferential: <"The Price Differential (GMRA paragraph 2(pp)) to a
                     isFirstPeriod: True,
                     isLastPeriod: True
                 }
-            )
+            ) - RepoInterimInterestPaid(tradeState, date)
 
 func RepoRepurchasePrice: <"The Repurchase Price (GMRA paragraph 2(rr)): the Purchase Price plus the Price Differential to the Repurchase Date, rounded to the nearest at the given number of decimals (a half rounds up).">
     inputs:

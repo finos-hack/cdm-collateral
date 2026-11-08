@@ -267,6 +267,19 @@ func RepoIsSubstitution: <"Whether a BusinessEvent substitutes the securities of
             and newTerms -> effectiveDate = priorTerms -> effectiveDate
             and newTerms -> terminationDate = priorTerms -> terminationDate
 
+func RepoManufacturedIncomeAmount: <"The manufactured income on a Transaction: income per unit times quantity, rounded to the nearest at the given number of decimals (wp-adr-repo-income).">
+    inputs:
+        quantity number (1..1)
+        incomePerUnit number (1..1)
+        precision int (1..1)
+    output:
+        amount number (1..1)
+
+    condition PositiveInputs:
+        quantity > 0 and incomePerUnit > 0
+
+    set amount: RoundToPrecision(quantity * incomePerUnit, precision, RoundingDirectionEnum -> Nearest, True)
+
 func RepoNetExposure: <"A party's Net Exposure to the other: the sum of the Transaction Exposures across the pair's repos, each stated from this party's side (positive when this party is exposed), less the net margin this party holds. Positive when this party may call margin.">
     inputs:
         exposures number (0..*) <"The Transaction Exposures, from this party's side, in both directions.">

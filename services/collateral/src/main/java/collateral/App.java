@@ -147,6 +147,12 @@ public final class App {
         app.post("/api/v1/repos/{id}/substitute", this::requestRepoSubstitution);
         app.post("/api/v1/repos/{id}/substitute/agree", this::agreeRepoSubstitution);
         app.post("/api/v1/repos/{id}/substitute/refuse", this::refuseRepoSubstitution);
+        app.post("/api/v1/repos/{id}/interim-interest", this::payInterimInterest);
+        app.post("/api/v1/repos/{id}/interim-interest/agree", this::agreeInterimInterest);
+        app.post("/api/v1/repos/{id}/interim-interest/refuse", ctx -> refuseRepoPayment(ctx, "interimInterest", "buyer"));
+        app.post("/api/v1/repos/{id}/income", this::payIncome);
+        app.post("/api/v1/repos/{id}/income/agree", this::agreeIncome);
+        app.post("/api/v1/repos/{id}/income/refuse", ctx -> refuseRepoPayment(ctx, "income", "seller"));
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
@@ -813,6 +819,7 @@ public final class App {
                 m.put("substituteProblem", String.valueOf(ex.getMessage()));
             }
         }
+        addPendingPayments(m, r, seller, state);
         try {
             CdmRepo.Booking b = repoBooking(r);
             if (b == null) {
@@ -1066,6 +1073,7 @@ public final class App {
         m.put("adjustOffered", replacementPending("adjustment", true));
         m.put("adjustToAgree", replacementPending("adjustment", false));
         m.put("substitutionsPending", substitutionsPending());
+        m.put("paymentsPending", paymentsPending());
         List<Map<String, Object>> interest = new ArrayList<>();
         var elections = gmraFold().terms().terms().getElections();
         for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
@@ -1093,7 +1101,7 @@ public final class App {
     /** The party with the Net Exposure calls it, when it exceeds this party's minimum transfer amount. */
     private void issueRepoMarginCall(Context ctx) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
-        if (replacementsPending() > 0) throw new RuntimeException("a reprice, adjustment or substitution between the parties is still pending");
+        if (replacementsPending() > 0) throw new RuntimeException("a reprice, adjustment, substitution or payment between the parties is still pending");
         RepoMarginState s = repoMarginState();
         long amountUsd = CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId));
         if (amountUsd == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
@@ -1141,7 +1149,12 @@ public final class App {
     private int replacementsPending() {
         return replacementPending("reprice", true) + replacementPending("reprice", false)
                 + replacementPending("adjustment", true) + replacementPending("adjustment", false)
-                + substitutionsPending();
+                + substitutionsPending() + paymentsPending();
+    }
+
+    private int paymentsPending() {
+        return replacementPending("interimInterest", true) + replacementPending("interimInterest", false)
+                + replacementPending("income", true) + replacementPending("income", false);
     }
 
     private int substitutionsPending() {
@@ -1216,7 +1229,7 @@ public final class App {
     private void proposeReplacement(Context ctx, ReplacementBuilder builder) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
         if (replacementPending("reprice", false) + replacementPending("adjustment", false) > 0) throw new RuntimeException("the counterparty has made an offer: agree to it");
-        if (substitutionsPending() > 0) throw new RuntimeException("a substitution between the parties is still pending");
+        if (substitutionsPending() + paymentsPending() > 0) throw new RuntimeException("a substitution or payment between the parties is still pending");
         RepoMarginState s = repoMarginState();
         if (CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId)) == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
         var elections = gmraFold().terms().terms().getElections();
@@ -1284,6 +1297,112 @@ public final class App {
         JsonNode r = purchasedRepo(ctx);
         if (!r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the Buyer can refuse a substitution");
         ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/substitute/refuse", Map.of()).path("txHash").asText()));
+    }
+
+    // ---- repo interim interest and manufactured income (wp-adr-repo-income) ----
+    // The payer instructs and the receiver agrees or refuses. Rules to confirm in task-sme-repo-income-rules.
+
+    private void addPendingPayments(Map<String, Object> m, JsonNode r, boolean seller, String state) {
+        if (!state.equals("purchased")) return;
+        String interim = r.get("interimInterest").get("seller").asText();
+        if (!interim.equals(ZERO_HASH)) {
+            m.put("interimPending", seller ? "requested" : "toDecide");
+            try {
+                var ev = CdmRepo.verify(payloads.get(interim));
+                var history = ev.trade().getTransferHistory();
+                m.put("interimAmount", history.get(history.size() - 1).getTransfer().getScheduledTransfer().getQuantity().getValue().toPlainString());
+            } catch (RuntimeException ex) {
+                m.put("paymentProblem", String.valueOf(ex.getMessage()));
+            }
+        }
+        String income = r.get("income").get("buyer").asText();
+        if (!income.equals(ZERO_HASH)) {
+            m.put("incomePending", seller ? "toDecide" : "requested");
+            try {
+                var doc = CdmRuntime.JSON.readValue(payloads.get(income), cdmx.collateral.repo.RepoManufacturedIncome.class);
+                m.put("incomeAmount", doc.getAmount().toPlainString());
+                m.put("incomePerUnit", doc.getIncomePerUnit().stripTrailingZeros().toPlainString());
+                m.put("incomeDate", doc.getIncomeDate().toLocalDate().toString());
+            } catch (Exception ex) {
+                m.put("paymentProblem", String.valueOf(ex.getMessage()));
+            }
+        }
+    }
+
+    private void requireRole(JsonNode r, String role, String action) {
+        if (!r.get(role).asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the " + (role.equals("seller") ? "Seller" : "Buyer") + " can " + action);
+    }
+
+    private Replacement interimLeg(JsonNode r) {
+        CdmRepo.Booking b = replaceable(r);
+        if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
+        CdmRepo.InterimPaid next = CdmRepo.interimInterest(b.trade(), businessDate);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        Map<String, Object> amounts = new LinkedHashMap<>(Map.of("amount", String.valueOf(next.amount()), "newRepurchasePrice", String.valueOf(next.booking().repurchasePrice())));
+        Map<String, Long> pays = seller ? Map.of(r.get("cash").asText(), next.amount()) : Map.of();
+        return new Replacement(r, next.booking(), "interim-interest", amounts, pays);
+    }
+
+    /** The Seller pays the Price Differential accrued to the business date, less earlier interim payments. */
+    private void payInterimInterest(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        requireRole(r, "seller", "pay interim interest");
+        Replacement leg = interimLeg(r);
+        Map<String, Object> row = replacementRow(leg, instructReplacement(leg, totalPayments(List.of(leg))));
+        row.put("amount", leg.amounts().get("amount"));
+        ctx.json(row);
+    }
+
+    /** The Buyer agrees only if this service builds the same event at its business date. */
+    private void agreeInterimInterest(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        requireRole(r, "buyer", "agree interim interest");
+        String offered = r.get("interimInterest").get("seller").asText();
+        if (offered.equals(ZERO_HASH)) throw new RuntimeException("no interim interest is offered");
+        Replacement leg = interimLeg(r);
+        if (!leg.next().hash().equalsIgnoreCase(offered))
+            throw new RuntimeException("the interim interest offered for repo " + leg.id() + " is not the one this service builds at the business date " + businessDate);
+        ctx.json(replacementRow(leg, instructReplacement(leg, Map.of())));
+    }
+
+    private String instructIncome(JsonNode r, CdmRepo.Income income, List<Map<String, String>> approvals) {
+        String id = r.get("repoId").asText();
+        store.recordDocument(id, "RepoManufacturedIncome", "out", income.hash(), income.json());
+        payloads.put(income.hash(), income.json(), callParties);
+        return gw.post("/repos/" + id + "/income", Map.of("cdmHash", income.hash(), "amount", income.income().getAmount().toPlainString(), "approvals", approvals)).path("txHash").asText();
+    }
+
+    /** The Buyer pays income on the purchased securities, entered by hand. */
+    private void payIncome(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        requireRole(r, "buyer", "pay manufactured income");
+        CdmRepo.Booking b = replaceable(r);
+        if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
+        Map<String, Object> in = body(ctx);
+        CdmRepo.Income income = CdmRepo.income(r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade(),
+                new BigDecimal(String.valueOf(in.get("incomePerUnit"))), LocalDate.parse(String.valueOf(in.get("incomeDate"))));
+        String tx = instructIncome(r, income, List.of(Map.of("token", r.get("cash").asText(), "amount", income.income().getAmount().toPlainString())));
+        ctx.json(Map.of("repoId", r.get("repoId").asText(), "cdmHash", income.hash(), "amount", income.income().getAmount().toPlainString(), "instructTx", tx));
+    }
+
+    /** The Seller agrees only if the document follows from its inputs over the trade this service holds. */
+    private void agreeIncome(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        requireRole(r, "seller", "agree manufactured income");
+        String offered = r.get("income").get("buyer").asText();
+        if (offered.equals(ZERO_HASH)) throw new RuntimeException("no income is offered");
+        String doc = payloads.get(offered);
+        if (doc == null) throw new RuntimeException("the income document is not in the payload store");
+        CdmRepo.Booking b = replaceable(r);
+        if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
+        CdmRepo.Income income = CdmRepo.verifyIncome(doc, r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade());
+        ctx.json(Map.of("repoId", r.get("repoId").asText(), "instructTx", instructIncome(r, income, List.of())));
+    }
+
+    private void refuseRepoPayment(Context ctx, String phase, String role) {
+        JsonNode r = purchasedRepo(ctx);
+        requireRole(r, role, "refuse this payment");
+        ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/refuse-payment", Map.of("phase", phase)).path("txHash").asText()));
     }
 
     /** The counterparty's offer is agreed only if this service builds the same event for every repo in it. */

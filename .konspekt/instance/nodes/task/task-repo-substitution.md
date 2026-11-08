@@ -2,7 +2,7 @@
 id: task-repo-substitution
 type: task
 title: Repo substitution of purchased securities
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-08T19:59:37Z
+updatedAt: 2026-11-08T20:45:57Z
 ```
 # Task: repo substitution of purchased securities
 

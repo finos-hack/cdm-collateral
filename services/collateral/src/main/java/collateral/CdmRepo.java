@@ -6,12 +6,14 @@ import cdm.event.common.Instruction;
 import cdm.event.common.TradeState;
 import cdm.event.common.functions.Create_BusinessEvent;
 import cdm.event.common.functions.ResolveRepurchaseTransferInstruction;
+import cdmx.collateral.repo.RepoManufacturedIncome;
 import cdmx.collateral.repo.RepoSettlement;
 import cdmx.collateral.repo.functions.RepoAccruedPriceDifferential;
 import cdmx.collateral.repo.functions.RepoAdjustmentInstruction;
 import cdmx.collateral.repo.functions.RepoIsAdjustment;
 import cdmx.collateral.repo.functions.RepoIsReprice;
 import cdmx.collateral.repo.functions.RepoIsSubstitution;
+import cdmx.collateral.repo.functions.RepoManufacturedIncomeAmount;
 import cdmx.collateral.repo.functions.RepoPurchasePrice;
 import cdmx.collateral.repo.functions.RepoPurchaseQuantity;
 import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
@@ -61,6 +63,12 @@ public final class CdmRepo {
 
     /** A Transaction after a substitution and the substitute's quantity. */
     public record Substituted(Booking booking, long newQuantity) {}
+
+    /** A Transaction after an interim interest payment and the amount the Seller pays the Buyer. */
+    public record InterimPaid(Booking booking, long amount) {}
+
+    /** A manufactured income document, its JSON and hash. */
+    public record Income(RepoManufacturedIncome income, String json, String hash) {}
 
     /** A purchase or repurchase settlement document and its hash. */
     public record Settlement(RepoSettlement settlement, String json, String hash) {}
@@ -184,10 +192,13 @@ public final class CdmRepo {
         if (ev.getInstruction() == null || ev.getInstruction().size() != 1 || ev.getInstruction().get(0).getPrimitiveInstruction() == null)
             throw new IllegalStateException("the booked document is not one execution or replacement");
         var primitive = ev.getInstruction().get(0).getPrimitiveInstruction();
+        boolean interim = primitive.getTransfer() != null;
         boolean substitution = primitive.getQuantityChange() != null && primitive.getTermsChange() != null;
-        if (primitive.getExecution() == null && primitive.getSplit() == null && !substitution)
+        if (primitive.getExecution() == null && primitive.getSplit() == null && !substitution && !interim)
             throw new IllegalStateException("the booked document is not one execution or replacement");
         BusinessEvent rebuilt = create(new ArrayList<>(ev.getInstruction()), ev.getEventDate());
+        if (interim && !CdmRuntime.fn(cdm.event.qualification.functions.Qualify_CashTransfer.class).evaluate(rebuilt))
+            throw new IllegalStateException("the document is not a cash transfer on the repo");
         if (substitution && !CdmRuntime.fn(RepoIsSubstitution.class).evaluate(rebuilt))
             throw new IllegalStateException("the document is not a substitution of the repo");
         if (primitive.getSplit() != null) {
@@ -366,6 +377,46 @@ public final class CdmRepo {
         if (t.isin().equals(isin)) throw new IllegalArgumentException("the substitute is the current security");
         long newQuantity = CdmRuntime.fn(RepoSubstitutionQuantity.class).evaluate(BigDecimal.valueOf(t.quantity()), price, substitutePrice).longValueExact();
         return new Substituted(booking(substitutionEvent(ts, isin, newQuantity, substitutePrice, date)), newQuantity);
+    }
+
+    /** The interim interest payment (wp-adr-repo-income): CDM's on-demand interest payment of the Price Differential
+     *  accrued to the date, less earlier interim payments. The payment goes into the transfer history, which is deducted
+     *  from the Price Differential, so the Repurchase Price falls by the amount. */
+    public static InterimPaid interimInterest(TradeState ts, LocalDate date) {
+        long amount = CdmRuntime.fn(RepoAccruedPriceDifferential.class).evaluate(ts, Date.of(date), CASH_PRECISION).longValueExact();
+        if (amount <= 0) throw new IllegalStateException("no Price Differential has accrued to " + date);
+        var money = CdmRuntime.load(cdm.observable.asset.Money.class, o("value", amount, "unit", usd()));
+        var settlementDate = CdmRuntime.load(cdm.product.common.settlement.SettlementDate.class,
+                o("adjustableOrRelativeDate", o("adjustedDate", o("@data", date.toString()))));
+        var pi = CdmRuntime.fn(cdm.event.common.functions.Create_OnDemandInterestPaymentPrimitiveInstruction.class).evaluate(ts, money, settlementDate);
+        Instruction i = Instruction.builder().setBeforeValue(ts).setPrimitiveInstruction(pi).build();
+        return new InterimPaid(booking(create(List.of(i), Date.of(date))), amount);
+    }
+
+    /** The manufactured income document for a Transaction (wp-adr-repo-income): the Buyer pays the Seller. */
+    public static Income income(String repoId, String tradeHash, TradeState ts, BigDecimal incomePerUnit, LocalDate incomeDate) {
+        Terms t = terms(ts);
+        if (incomeDate.isBefore(t.purchaseDate()) || !incomeDate.isBefore(t.repurchaseDate()))
+            throw new IllegalArgumentException("the income date is outside the Transaction's term");
+        BigDecimal amount = CdmRuntime.fn(RepoManufacturedIncomeAmount.class).evaluate(BigDecimal.valueOf(t.quantity()), incomePerUnit, CASH_PRECISION);
+        RepoManufacturedIncome doc = CdmRuntime.load(RepoManufacturedIncome.class, o("repoId", repoId, "tradeHash", tradeHash, "security", t.isin(),
+                "quantity", t.quantity(), "incomePerUnit", incomePerUnit, "incomeDate", incomeDate.toString(), "amount", amount, "payer", t.buyer(), "receiver", t.seller()));
+        CdmRuntime.validate(doc);
+        String json = CdmRuntime.toJson(doc);
+        return new Income(doc, json, Cdm.keccakHex(json));
+    }
+
+    /** The Seller's check of a requested income: the same document follows from its inputs over the trade this service holds. */
+    public static Income verifyIncome(String json, String repoId, String tradeHash, TradeState ts) {
+        RepoManufacturedIncome doc;
+        try {
+            doc = CdmRuntime.JSON.readValue(json, RepoManufacturedIncome.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a RepoManufacturedIncome: " + e.getMessage(), e);
+        }
+        Income again = income(repoId, tradeHash, ts, doc.getIncomePerUnit(), doc.getIncomeDate().toLocalDate());
+        if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json))) throw new IllegalStateException("the income document does not follow from its inputs over this trade");
+        return again;
     }
 
     /** Whether a booking's document replaced the trade first booked: a reprice, an adjustment or a substitution. */

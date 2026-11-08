@@ -869,9 +869,31 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
           <button disabled={busy} onClick={() => run(() => api.refuseRepoSubstitution(party, p.repoId))}>Refuse substitution</button>
         </>
       );
-    if (p.role !== "seller" || p.repurchaseDue || p.instructedByMe) return null;
+    if (p.role !== "seller" || p.repurchaseDue || p.instructedByMe || p.interimPending || p.incomePending) return null;
     const substitute = p.security === "tUST" ? "tMMF" : "tUST";
     return <button disabled={busy} onClick={() => run(() => api.requestRepoSubstitution(party, p.repoId, substitute))}>Substitute {substitute}</button>;
+  };
+  const payment = (p: LiveRepo) => {
+    if (!p.verified || p.state !== "purchased") return null;
+    if (p.interimPending === "requested") return <span data-testid={`repo-payment-${p.repoId}`}>interim interest USD {p.interimAmount} offered</span>;
+    if (p.interimPending === "toDecide")
+      return (
+        <>
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoInterimInterest(party, p.repoId))}>Agree interim interest USD {p.interimAmount}</button>
+          <button disabled={busy} onClick={() => run(() => api.refuseRepoInterimInterest(party, p.repoId))}>Refuse interim interest</button>
+        </>
+      );
+    if (p.incomePending === "requested") return <span data-testid={`repo-payment-${p.repoId}`}>income USD {p.incomeAmount} offered</span>;
+    if (p.incomePending === "toDecide")
+      return (
+        <>
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoIncome(party, p.repoId))}>Agree income USD {p.incomeAmount}</button>
+          <button disabled={busy} onClick={() => run(() => api.refuseRepoIncome(party, p.repoId))}>Refuse income</button>
+        </>
+      );
+    if (p.substitutionPending || p.repurchaseDue || p.instructedByMe) return null;
+    if (p.role === "seller") return <button disabled={busy} onClick={() => run(() => api.payRepoInterimInterest(party, p.repoId))}>Pay accrued interest</button>;
+    return <RepoIncomeEntry disabled={busy} onPay={(income) => run(() => api.payRepoIncome(party, p.repoId, income))} />;
   };
   return (
     <div className="card" data-testid="repos">
@@ -927,7 +949,7 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
                 <td data-testid={`repo-state-${p.repoId}`}>
                   {p.verified ? <span className="ok">{p.state} ✓</span> : <span className="bad">{p.problem ?? "not verified"}</span>}
                 </td>
-                <td>{action(p)} {substitution(p)}</td>
+                <td>{action(p)} {substitution(p)} {payment(p)}</td>
               </tr>
             ))}
           </tbody>
@@ -937,11 +959,24 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
   );
 }
 
+/** The Buyer enters income on the purchased securities by hand (wp-adr-repo-income). */
+function RepoIncomeEntry(props: { disabled: boolean; onPay: (income: { incomePerUnit: string; incomeDate: string }) => void }) {
+  const [incomePerUnit, setIncomePerUnit] = useState("");
+  const [incomeDate, setIncomeDate] = useState("");
+  return (
+    <>
+      <input aria-label="Income per unit" value={incomePerUnit} onChange={(ev) => setIncomePerUnit(ev.target.value)} style={{ width: 60 }} />
+      <input aria-label="Income date" type="date" value={incomeDate} onChange={(ev) => setIncomeDate(ev.target.value)} />
+      <button disabled={props.disabled || incomePerUnit === "" || incomeDate === ""} onClick={() => props.onPay({ incomePerUnit, incomeDate })}>Pay income</button>
+    </>
+  );
+}
+
 /** Repo margin under the GMRA (wp-adr-repo-margin-maintenance): Net Exposure across the pair's repos, the margin call
  *  it allows, settled by title transfer in the calls list, and the interest on Cash Margin. */
 function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: LiveRepoMargin; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, other, margin: m, busy, run } = props;
-  const pending = m.repriceOffered + m.repriceToAgree + m.adjustOffered + m.adjustToAgree + m.substitutionsPending;
+  const pending = m.repriceOffered + m.repriceToAgree + m.adjustOffered + m.adjustToAgree + m.substitutionsPending + m.paymentsPending;
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [ratePct, setRatePct] = useState("");

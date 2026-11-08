@@ -985,3 +985,22 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
 | edge:e-dec-cdmdev-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
 | edge:e-lnk-subst-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
+| node:task-repo-substitution | status | open | resolved | 2026-11-08T20:45:57Z | 18b7999491e105aa2eea878407ae6999254f1f87 | denisurusov |
+| waypoint:wp-adr-repo-income | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| node:task-sme-repo-income-rules | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| node:task-sme-repo-income-rules | status |  | open | 2026-11-08T20:48:34Z |  |  |
+| edge:e-mrk-incadr-income | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| edge:e-drv-cdmdata-incadr | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| edge:e-drv-finality-incadr | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| edge:e-dec-cdmdev-smeincome | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| edge:e-lnk-income-smeincome | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
+| waypoint:wp-adr-repo-income | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| node:task-sme-repo-income-rules | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| edge:e-mrk-incadr-income | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| edge:e-drv-cdmdata-incadr | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| edge:e-drv-finality-incadr | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| edge:e-dec-cdmdev-smeincome | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| edge:e-lnk-income-smeincome | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| node:task-gateway-type-check | review |  | proposed | 2026-11-08T21:19:44Z |  |  |
+| node:task-gateway-type-check | status |  | open | 2026-11-08T21:19:44Z |  |  |
+| edge:e-dec-cdmdev-gatewaytypecheck | review |  | proposed | 2026-11-08T21:19:44Z |  |  |

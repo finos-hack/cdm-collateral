@@ -5,6 +5,7 @@ import cdmx.collateral.gmra.GmraElections;
 import cdmx.collateral.gmra.MarginRatioBasisEnum;
 import cdmx.collateral.gmra.NetMarginInterest;
 import cdmx.collateral.repo.functions.RepoAccruedPriceDifferential;
+import cdmx.collateral.repo.functions.RepoManufacturedIncomeAmount;
 import cdmx.collateral.repo.functions.RepoMarginCallAmount;
 import cdmx.collateral.repo.functions.RepoMarginRatio;
 import cdmx.collateral.repo.functions.RepoNetExposure;
@@ -102,6 +103,12 @@ class RepoMarginTest {
         same("10201", fn(RepoSubstitutionQuantity.class).evaluate(new BigDecimal("10737"), new BigDecimal("95"), new BigDecimal("100")));
         // exact: 100 x 50 / 25 = 200
         same("200", fn(RepoSubstitutionQuantity.class).evaluate(new BigDecimal("100"), new BigDecimal("50"), new BigDecimal("25")));
+    }
+
+    @Test
+    void manufacturedIncomeIsPerUnitTimesQuantityRounded() {
+        // 10,201 x 1.25 = 12,751.25
+        same("12751", fn(RepoManufacturedIncomeAmount.class).evaluate(new BigDecimal("10201"), new BigDecimal("1.25"), 0));
     }
 
     @Test

@@ -209,6 +209,14 @@ export const api = {
   requestRepoSubstitution: (p: LiveParty, id: string, security: string) => req<{ repoId: string; newQuantity: string }>(p, "POST", `/repos/${id}/substitute`, { security }),
   agreeRepoSubstitution: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/substitute/agree`, {}),
   refuseRepoSubstitution: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/substitute/refuse`, {}),
+  /** Interim interest on a purchased repo: the Seller pays, the Buyer agrees or refuses (wp-adr-repo-income). */
+  payRepoInterimInterest: (p: LiveParty, id: string) => req<{ repoId: string; amount: string }>(p, "POST", `/repos/${id}/interim-interest`, {}),
+  agreeRepoInterimInterest: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/interim-interest/agree`, {}),
+  refuseRepoInterimInterest: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/interim-interest/refuse`, {}),
+  /** Manufactured income on a purchased repo: the Buyer pays, the Seller agrees or refuses (wp-adr-repo-income). */
+  payRepoIncome: (p: LiveParty, id: string, income: { incomePerUnit: string; incomeDate: string }) => req<{ repoId: string; amount: string }>(p, "POST", `/repos/${id}/income`, income),
+  agreeRepoIncome: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/income/agree`, {}),
+  refuseRepoIncome: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/income/refuse`, {}),
   /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
   payRepoMarginInterest: (p: LiveParty, period: { periodStart: string; periodEnd: string; observedRatePct: string }) =>
     req<{ interestId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/interest", period),
@@ -318,6 +326,13 @@ export interface LiveRepo {
   substitutionPending?: "requested" | "toDecide";
   substituteSecurity?: string;
   substituteQuantity?: string;
+  /** A pending interim interest or income payment: requested by this party, or for this party to decide. */
+  interimPending?: "requested" | "toDecide";
+  interimAmount?: string;
+  incomePending?: "requested" | "toDecide";
+  incomeAmount?: string;
+  incomePerUnit?: string;
+  incomeDate?: string;
 }
 
 export interface LiveRepos {
@@ -342,6 +357,8 @@ export interface LiveRepoMargin {
   adjustToAgree: number;
   /** Pending substitutions of the pair's repos. */
   substitutionsPending: number;
+  /** Pending interim interest and income payments of the pair's repos. */
+  paymentsPending: number;
   interest: { interestId: string; cdmHash: string; amountUsd: string; verified: boolean; payer?: string; receiver?: string; days?: number; error?: string }[];
 }
 
