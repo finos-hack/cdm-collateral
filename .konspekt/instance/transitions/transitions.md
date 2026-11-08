@@ -913,3 +913,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
 | edge:e-drv-finality-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
 | node:task-repo-purchase-repurchase | status | open | resolved | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
+| waypoint:wp-adr-repo-margin-maintenance | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-mrk-repomarginadr-marginmaint | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-drv-cdmdata-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-drv-finality-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
+| edge:e-drv-callstate-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
