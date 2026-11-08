@@ -938,3 +938,9 @@ excluded.
 | task-repo-margin-maintenance | 41567e7ba4656ce8011931f5641228abe236d010 | cdm-ext/src/test/java/cdmx/RepoMarginTest.java | 2026-11-08T14:38:31Z |
 | task-repo-margin-maintenance | 41567e7ba4656ce8011931f5641228abe236d010 | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T14:38:31Z |
 | task-repo-margin-maintenance | 9612a93ffbcd4507ddd17d08a47c71a1a8454609 | docs/analysis/sme-question-ledger.md | 2026-11-08T15:02:17Z |
+| task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | cdm-ext/rosetta/cdmx-collateral-repo-margin-type.rosetta | 2026-11-08T15:07:07Z |
+| task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | docs/analysis/cdm-workflow-task-map.md | 2026-11-08T15:07:07Z |
+| task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/main/java/collateral/App.java | 2026-11-08T15:07:07Z |
+| task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/main/java/collateral/Cdm.java | 2026-11-08T15:07:07Z |
+| task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/main/java/collateral/CdmRepoMargin.java | 2026-11-08T15:07:07Z |
+| task-repo-margin-maintenance | 853652872f27bacfcb404464b092c3b68cd2bcba | services/collateral/src/test/java/collateral/CdmRepoMarginTest.java | 2026-11-08T15:07:07Z |
