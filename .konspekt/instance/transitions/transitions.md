@@ -938,3 +938,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
 | edge:e-lnk-repopr-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
 | node:task-repo-margin-maintenance | status | open | resolved | 2026-11-08T15:44:59Z | c773fad4a30b82770c93c68a8eb759651dfa8c91 | denisurusov |
+| waypoint:wp-adr-repo-reprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| node:task-sme-repo-reprice-rules | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| node:task-sme-repo-reprice-rules | status |  | open | 2026-11-08T15:59:51Z |  |  |
+| edge:e-mrk-repricadr-reprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| edge:e-drv-cdmdata-repricadr | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| edge:e-drv-finality-repricadr | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| edge:e-dec-cdmdev-smereprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
+| edge:e-lnk-reprice-smereprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
