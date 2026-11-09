@@ -217,6 +217,10 @@ export const api = {
   payRepoIncome: (p: LiveParty, id: string, income: { incomePerUnit: string; incomeDate: string }) => req<{ repoId: string; amount: string }>(p, "POST", `/repos/${id}/income`, income),
   agreeRepoIncome: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/income/agree`, {}),
   refuseRepoIncome: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/income/refuse`, {}),
+  /** A roll on the Repurchase Date: either party proposes, the other agrees or refuses (wp-adr-repo-roll). */
+  proposeRepoRoll: (p: LiveParty, id: string, roll: { newRepurchaseDate: string; ratePercent: string }) => req<{ repoId: string }>(p, "POST", `/repos/${id}/roll`, roll),
+  agreeRepoRoll: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/roll/agree`, {}),
+  refuseRepoRoll: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/roll/refuse`, {}),
   /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
   payRepoMarginInterest: (p: LiveParty, period: { periodStart: string; periodEnd: string; observedRatePct: string }) =>
     req<{ interestId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/interest", period),
@@ -333,6 +337,11 @@ export interface LiveRepo {
   incomeAmount?: string;
   incomePerUnit?: string;
   incomeDate?: string;
+  /** A pending roll: proposed by this party, or for this party to decide. */
+  rollPending?: "requested" | "toDecide";
+  rollToDate?: string;
+  rollRatePercent?: string;
+  rollInterest?: string;
 }
 
 export interface LiveRepos {
@@ -357,7 +366,7 @@ export interface LiveRepoMargin {
   adjustToAgree: number;
   /** Pending substitutions of the pair's repos. */
   substitutionsPending: number;
-  /** Pending interim interest and income payments of the pair's repos. */
+  /** Pending interim interest, income payments and rolls of the pair's repos. */
   paymentsPending: number;
   interest: { interestId: string; cdmHash: string; amountUsd: string; verified: boolean; payer?: string; receiver?: string; days?: number; error?: string }[];
 }

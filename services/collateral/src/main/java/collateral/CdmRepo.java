@@ -70,6 +70,9 @@ public final class CdmRepo {
     /** A manufactured income document, its JSON and hash. */
     public record Income(RepoManufacturedIncome income, String json, String hash) {}
 
+    /** A rolled repo: the new trade and the Price Differential the Seller pays on the roll date. */
+    public record Rolled(Booking booking, long interest) {}
+
     /** A purchase or repurchase settlement document and its hash. */
     public record Settlement(RepoSettlement settlement, String json, String hash) {}
 
@@ -203,8 +206,9 @@ public final class CdmRepo {
             throw new IllegalStateException("the document is not a substitution of the repo");
         if (primitive.getSplit() != null) {
             rebuilt = withActivityDate(rebuilt);
-            if (!CdmRuntime.fn(RepoIsReprice.class).evaluate(rebuilt) && !CdmRuntime.fn(RepoIsAdjustment.class).evaluate(rebuilt))
-                throw new IllegalStateException("the document is neither a reprice nor an adjustment of the repo");
+            if (!CdmRuntime.fn(RepoIsReprice.class).evaluate(rebuilt) && !CdmRuntime.fn(RepoIsAdjustment.class).evaluate(rebuilt)
+                    && !CdmRuntime.fn(cdm.event.qualification.functions.Qualify_Roll.class).evaluate(rebuilt))
+                throw new IllegalStateException("the document is not a reprice, an adjustment or a roll of the repo");
         }
         Booking again = booking(rebuilt);
         if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json)))
@@ -419,7 +423,33 @@ public final class CdmRepo {
         return again;
     }
 
-    /** Whether a booking's document replaced the trade first booked: a reprice, an adjustment or a substitution. */
+    /** CDM's roll event on the Repurchase Date: the trade is closed and replaced by one starting on that date, with the
+     *  new Repurchase Date and repo rate and the same securities and Purchase Price. */
+    static BusinessEvent rollEvent(TradeState ts, LocalDate newRepurchaseDate, BigDecimal rate) {
+        LocalDate rollDate = terms(ts).repurchaseDate();
+        List<cdm.observable.asset.PriceQuantity> change = new ArrayList<>();
+        for (var pq : ts.getTrade().getTradeLot().get(0).getPriceQuantity()) {
+            var node = (com.fasterxml.jackson.databind.node.ObjectNode) CdmRuntime.JSON.valueToTree(pq);
+            if (!node.has("observable")) ((com.fasterxml.jackson.databind.node.ObjectNode) node.path("price").path(0)).put("value", rate);
+            change.add(CdmRuntime.load(cdm.observable.asset.PriceQuantity.class, CdmRuntime.JSON.convertValue(node, Map.class)));
+        }
+        var pi = CdmRuntime.fn(cdm.event.common.functions.Create_RollPrimitiveInstruction.class).evaluate(ts, effective(rollDate), effective(newRepurchaseDate), change);
+        Instruction i = Instruction.builder().setBeforeValue(ts).setPrimitiveInstruction(pi).build();
+        return withActivityDate(create(List.of(i), Date.of(rollDate)));
+    }
+
+    /** The roll of a Transaction on its Repurchase Date (wp-adr-repo-roll). The Seller pays the Price Differential to that
+     *  date, net of interim interest, and the Purchase Price does not change. The rate is normalised so the agreeing party
+     *  builds the same document from the rate read back from it. */
+    public static Rolled roll(TradeState ts, LocalDate newRepurchaseDate, BigDecimal rate) {
+        Terms t = terms(ts);
+        if (!newRepurchaseDate.isAfter(t.repurchaseDate())) throw new IllegalArgumentException("the new Repurchase Date is not after the current one");
+        if (rate.signum() <= 0) throw new IllegalArgumentException("the repo rate is not positive");
+        long interest = CdmRuntime.fn(RepoAccruedPriceDifferential.class).evaluate(ts, Date.of(t.repurchaseDate()), CASH_PRECISION).longValueExact();
+        return new Rolled(booking(rollEvent(ts, newRepurchaseDate, rate.stripTrailingZeros())), interest);
+    }
+
+    /** Whether a booking's document replaced the trade first booked: a reprice, an adjustment, a substitution or a roll. */
     public static boolean isReplacement(Booking b) {
         return b.event().getInstruction().get(0).getPrimitiveInstruction().getExecution() == null;
     }

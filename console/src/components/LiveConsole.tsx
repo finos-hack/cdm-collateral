@@ -895,6 +895,19 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
     if (p.role === "seller") return <button disabled={busy} onClick={() => run(() => api.payRepoInterimInterest(party, p.repoId))}>Pay accrued interest</button>;
     return <RepoIncomeEntry disabled={busy} onPay={(income) => run(() => api.payRepoIncome(party, p.repoId, income))} />;
   };
+  const rollAction = (p: LiveRepo) => {
+    if (!p.verified || p.state !== "purchased") return null;
+    if (p.rollPending === "requested") return <span data-testid={`repo-roll-${p.repoId}`}>roll to {p.rollToDate} at {p.rollRatePercent}% proposed</span>;
+    if (p.rollPending === "toDecide")
+      return (
+        <>
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoRoll(party, p.repoId))}>Agree roll to {p.rollToDate} at {p.rollRatePercent}%</button>
+          <button disabled={busy} onClick={() => run(() => api.refuseRepoRoll(party, p.repoId))}>Refuse roll</button>
+        </>
+      );
+    if (p.repurchaseDate !== r.businessDate || p.instructedByMe || p.instructedByCounterparty || p.substitutionPending || p.interimPending || p.incomePending) return null;
+    return <RepoRollEntry disabled={busy} ratePercent={p.ratePercent ?? ""} onRoll={(roll) => run(() => api.proposeRepoRoll(party, p.repoId, roll))} />;
+  };
   return (
     <div className="card" data-testid="repos">
       <h3>Repos</h3>
@@ -949,13 +962,26 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
                 <td data-testid={`repo-state-${p.repoId}`}>
                   {p.verified ? <span className="ok">{p.state} ✓</span> : <span className="bad">{p.problem ?? "not verified"}</span>}
                 </td>
-                <td>{action(p)} {substitution(p)} {payment(p)}</td>
+                <td>{action(p)} {substitution(p)} {payment(p)} {rollAction(p)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
     </div>
+  );
+}
+
+/** A party proposes rolling a repo on its Repurchase Date (wp-adr-repo-roll). The rate starts at the current one. */
+function RepoRollEntry(props: { disabled: boolean; ratePercent: string; onRoll: (roll: { newRepurchaseDate: string; ratePercent: string }) => void }) {
+  const [newRepurchaseDate, setNewRepurchaseDate] = useState("");
+  const [ratePercent, setRatePercent] = useState(props.ratePercent);
+  return (
+    <>
+      <input aria-label="New Repurchase Date" type="date" value={newRepurchaseDate} onChange={(ev) => setNewRepurchaseDate(ev.target.value)} />
+      <input aria-label="Roll rate (%)" value={ratePercent} onChange={(ev) => setRatePercent(ev.target.value)} style={{ width: 60 }} />
+      <button disabled={props.disabled || newRepurchaseDate === "" || ratePercent === ""} onClick={() => props.onRoll({ newRepurchaseDate, ratePercent })}>Roll repo</button>
+    </>
   );
 }
 

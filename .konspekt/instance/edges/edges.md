@@ -295,3 +295,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeincome | decomposes | node:goal-cdm-development | node:task-sme-repo-income-rules |  | accepted |
 | e-lnk-income-smeincome | links | node:task-repo-income | node:task-sme-repo-income-rules |  | accepted |
 | e-dec-cdmdev-gatewaytypecheck | decomposes | node:goal-cdm-development | node:task-gateway-type-check |  | accepted |
+| e-mrk-roladr-roll | marks | waypoint:wp-adr-repo-roll | node:task-repo-roll |  | accepted |
+| e-drv-cdmdata-roladr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-roll |  | accepted |
+| e-drv-finality-roladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-roll |  | accepted |
+| e-dec-cdmdev-smeroll | decomposes | node:goal-cdm-development | node:task-sme-repo-roll-rules |  | accepted |
+| e-lnk-roll-smeroll | links | node:task-repo-roll | node:task-sme-repo-roll-rules |  | accepted |

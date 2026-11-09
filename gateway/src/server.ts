@@ -259,6 +259,13 @@ route("POST", "/ledger/v1/repos/:id/income", async (p, b) => {
 });
 route("POST", "/ledger/v1/repos/:id/refuse-payment", async (p, b) => J(await adapter.refuseRepoPayment(p.id as Hex, RepoPhase[b.phase])));
 
+// A roll on the Repurchase Date (wp-adr-repo-roll): either party instructs, the other's matching instruction agrees.
+route("POST", "/ledger/v1/repos/:id/roll", async (p, b) => {
+  await approveAll(b.approvals);
+  return J(await adapter.instructRepoRoll(p.id as Hex, b.cdmHash as Hex, BigInt(b.newRepurchasePrice)));
+});
+route("POST", "/ledger/v1/repos/:id/roll/refuse", async (p) => J(await adapter.refuseRepoRoll(p.id as Hex)));
+
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
 
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));

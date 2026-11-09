@@ -36,7 +36,8 @@ contract RepoSettlement {
         Adjustment,
         Substitution,
         InterimInterest,
-        Income
+        Income,
+        Roll
     }
 
     struct Repo {
@@ -74,6 +75,7 @@ contract RepoSettlement {
     event RepoSettled(bytes32 indexed repoId, Phase phase, bytes32 cdmHash);
     event RepoSubstitutionRefused(bytes32 indexed repoId, bytes32 cdmHash);
     event RepoPaymentRefused(bytes32 indexed repoId, Phase phase, bytes32 cdmHash);
+    event RepoRollRefused(bytes32 indexed repoId, bytes32 cdmHash);
 
     error RepoExists(bytes32 repoId);
     error NoRepo(bytes32 repoId);
@@ -94,6 +96,7 @@ contract RepoSettlement {
     error NoPaymentPending();
     error NotAPaymentPhase();
     error IncomeAlreadyPaid();
+    error NoRoll();
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash
     /// token, the Purchase Price and the Repurchase Price, and the hash of the CDM trade.
@@ -159,6 +162,7 @@ contract RepoSettlement {
             delete _instructions[repoId][Phase.Substitution];
             delete _instructions[repoId][Phase.InterimInterest];
             delete _instructions[repoId][Phase.Income];
+            delete _instructions[repoId][Phase.Roll];
             delete _replacementTerms[repoId];
             IERC20(r.security).safeTransferFrom(r.buyer, r.seller, r.quantity);
             IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, r.repurchasePrice);
@@ -292,6 +296,35 @@ contract RepoSettlement {
         emit RepoPaymentRefused(repoId, phase, requested);
     }
 
+    /// @notice A party instructs the roll of a purchased repo (wp-adr-repo-roll) with the hash of the CDM roll event, which
+    /// becomes the trade hash, and the new Repurchase Price. The other party's matching instruction agrees: the seller pays
+    /// the buyer the stored Repurchase Price less the Purchase Price, and the Repurchase Price is updated. The securities do
+    /// not move. Each service checks the Repurchase Date.
+    function instructRoll(bytes32 repoId, bytes32 cdmHash, uint256 newRepurchasePrice) external {
+        Repo storage p = _load(repoId);
+        if (newRepurchasePrice < p.purchasePrice) revert ZeroAmount();
+        bytes32 terms = keccak256(abi.encode(cdmHash, newRepurchasePrice));
+        (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Roll, cdmHash, terms, true);
+        if (!settles) return;
+        uint256 interest = r.repurchasePrice - r.purchasePrice;
+        r.repurchasePrice = newRepurchasePrice;
+        if (interest > 0) IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, interest);
+        emit RepoSettled(repoId, Phase.Roll, cdmHash);
+    }
+
+    /// @notice The party that did not propose the pending roll refuses it, which clears it.
+    function refuseRoll(bytes32 repoId) external {
+        Repo storage r = _load(repoId);
+        bool isSeller = msg.sender == r.seller;
+        if (!isSeller && msg.sender != r.buyer) revert NotAParty();
+        Instructions storage ins = _instructions[repoId][Phase.Roll];
+        bytes32 proposed = isSeller ? ins.buyer : ins.seller;
+        if (proposed == bytes32(0)) revert NoRoll();
+        delete _instructions[repoId][Phase.Roll];
+        delete _replacementTerms[repoId];
+        emit RepoRollRefused(repoId, proposed);
+    }
+
     /// @dev The payer's instruction comes first; the other party can only answer it.
     function _requireFirstInstruction(bytes32 repoId, Phase phase, address payer) private view {
         Instructions storage ins = _instructions[repoId][phase];
@@ -309,7 +342,7 @@ contract RepoSettlement {
         if (r.state != RepoState.Purchased) revert WrongState(r.state);
         Instructions storage repurchase = _instructions[repoId][Phase.Repurchase];
         if (repurchase.seller != bytes32(0) || repurchase.buyer != bytes32(0)) revert RepurchaseInstructed();
-        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.Income); p++) {
+        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.Roll); p++) {
             if (Phase(p) == phase) continue;
             Instructions storage rival = _instructions[repoId][Phase(p)];
             if (rival.seller != bytes32(0) || rival.buyer != bytes32(0)) revert ReplacementPending();

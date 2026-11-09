@@ -617,6 +617,33 @@ describe("flow-repo-margin-maintenance", () => {
     await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/interim-interest/agree", body: {} }]));
   });
 
+  it("a party proposes a roll only on the Repurchase Date, at the current rate unless changed", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      substitutionRepo({ repoId: "0xr1", role: "buyer", counterparty: "A", repurchaseDue: true }),
+      substitutionRepo({ repoId: "0xr2", repurchaseDate: "2026-11-20" }),
+    ] } });
+    const row = await screen.findByTestId("repo-0xr1");
+    expect(within(await screen.findByTestId("repo-0xr2")).queryByRole("button", { name: "Roll repo" })).toBeNull();
+    expect((within(row).getByRole("button", { name: "Roll repo" }) as HTMLButtonElement).disabled).toBe(true);
+    await user.type(within(row).getByLabelText("New Repurchase Date"), "2026-11-23");
+    await user.click(within(row).getByRole("button", { name: "Roll repo" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/roll", body: { newRepurchaseDate: "2026-11-23", ratePercent: "4.5" } }]));
+  });
+
+  it("the other party agrees or refuses a proposed roll", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      substitutionRepo({ repurchaseDue: true, rollPending: "toDecide", rollToDate: "2026-11-23", rollRatePercent: "5", rollInterest: "875" }),
+    ] } });
+    const card = await screen.findByTestId("repos");
+    expect(within(card).queryByRole("button", { name: "Roll repo" })).toBeNull();
+    await user.click(within(card).getByRole("button", { name: "Agree roll to 2026-11-23 at 5%" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/roll/agree", body: {} }]));
+    await user.click(within(card).getByRole("button", { name: "Refuse roll" }));
+    await waitFor(() => expect(posts[1]).toEqual({ path: "/repos/0xr1/roll/refuse", body: {} }));
+  });
+
   it("no margin action is available while a substitution is pending", async () => {
     serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ substitutionsPending: 1 }) });
     const card = await screen.findByTestId("repo-margin");
