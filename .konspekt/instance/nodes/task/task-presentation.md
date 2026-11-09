@@ -29,3 +29,5 @@ Slide order set by the project owner (2026-11-09):
 
 Instruction of 2026-11-09: the deck treats every row of `docs/analysis/cdm-workflow-task-map.md` as done,
 including section C rows 9 to 14, which the map lists as not built.
+
+Draft deck 2026-11-09 (9 slides, cover plus the 8 above): https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa
