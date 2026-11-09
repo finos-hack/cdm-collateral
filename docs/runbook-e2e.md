@@ -138,25 +138,13 @@ developer machine:
 - **Browser.** Chromium is preinstalled and `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` is set. Pass it to `check`:
   `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome bash scripts/live-e2e.sh check`. The revision
   directory name (`chromium-1243`) can differ; `ls /opt/pw-browsers` shows it.
-- **Besu genesis as root.** The workspace shell runs as uid 0. On a first start, `besu/start-network.sh` runs the
-  genesis step with `--user 0:0`, and the image entrypoint `besu-entry.sh` then runs Besu twice (once with
-  `--print-paths-and-exit` to find paths to `chown`, once for the command). The first run writes
-  `besu/networkFiles/`; the second fails with `java.lang.IllegalArgumentException: Output directory already exists.`
-  and the script exits under `set -e`. The generated files are complete. Finish the first-run steps by hand from
-  `besu/`, then start the network:
-
-  ```bash
-  NODES=(mkt bank-a bank-b bank-c)
-  mapfile -t KEYS < <(find networkFiles/keys -mindepth 1 -maxdepth 1 -type d | sort)
-  for i in 0 1 2 3; do mkdir -p "${NODES[$i]}/data"; cp "${KEYS[$i]}/key" "${NODES[$i]}/data/key"; done
-  PUB=$(tr -d '[:space:]' < "${KEYS[0]}/key.pub"); PUB=${PUB#0x}
-  printf 'BOOTNODE_ENODE=enode://%s@172.28.0.11:30303\nBESU_USER=%s:%s\n' "$PUB" "$(id -u)" "$(id -g)" > .env
-  bash ./start-network.sh
-  ```
-
-  Hosts whose shell user is not root (dev container, Codespaces, CI) take the entrypoint's non-root branch and do not
-  hit this.
-- **Resources.** 2 CPU cores and 7.8 GB RAM: the full `check` took 13.9 min with a load average up to 6 and no
+- **Root shell.** The workspace shell runs as uid 0. `besu/start-network.sh` runs the genesis step with
+  `--entrypoint /opt/besu/bin/besu`, so no manual step is needed. Without that flag the image entrypoint
+  `besu-entry.sh`, for uid 0, runs Besu twice (once with `--print-paths-and-exit`, once for the command); the first run
+  writes `besu/networkFiles/` and the second fails with
+  `java.lang.IllegalArgumentException: Output directory already exists.` A script from before this change shows that
+  error on any host where the shell user is root, for example under `sudo`.
+- **Resources.** 2 CPU cores and 7.8 GB RAM: the full `check` took 13.9 to 15.2 min with a load average up to 6 and no
   timeouts.
 
 ### Step 1 — Besu network
@@ -605,7 +593,16 @@ At commit `e276f39`, following section 4 "In a claude.ai web session":
 - `up` exited 0 in 96 s with the seven health checks OK and the console at HTTP 200.
 - `check` with `CHROMIUM_PATH` passed all 27 live specs then present, exit 0 in 13.9 min.
 
-Not run in this workspace: the specs added after `e276f39`, `reset`, and `npm run cycle`.
+At commit `3a99cb9` (`main` at `dc55bed` plus this runbook section), with `besu/start-network.sh` calling the Besu
+binary for the genesis step (`--entrypoint /opt/besu/bin/besu`):
+
+- `build` exited 0 in 61 s; `reset` exited 0 and removed the chain, the keys and the deployment.
+- `up` exited 0 in 125 s as root on the new chain: the genesis step wrote `besu/networkFiles/` without
+  `Output directory already exists`, the script wrote `besu/.env` and the node keys, and the seven health checks were
+  OK.
+- `check` with `CHROMIUM_PATH` passed all 29 live specs, exit 0 in 15.2 min.
+
+Not run in this workspace: `npm run cycle`.
 
 ### 2026-11-03 — `reset`, `up` and `check` on Windows 11 (Git Bash, Docker Desktop, Node 24.13)
 

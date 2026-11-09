@@ -16,7 +16,11 @@ if [ ! -f networkFiles/genesis.json ]; then
   rm -rf networkFiles
   # MSYS_NO_PATHCONV: Git Bash on Windows otherwise rewrites the container paths /data/... to C:/Program Files/Git/...
   # (no effect on Linux or macOS).
-  MSYS_NO_PATHCONV=1 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/data" "$IMAGE" \
+  # --entrypoint: the image entrypoint besu-entry.sh, when the container runs as uid 0, first runs
+  # `besu --print-paths-and-exit "$@"` and then the command. For generate-blockchain-config the first run writes
+  # networkFiles/ and the second fails with "Output directory already exists". Calling the binary directly runs the
+  # command once for any uid (root shells: claude.ai web sessions, sudo).
+  MSYS_NO_PATHCONV=1 docker run --rm --entrypoint /opt/besu/bin/besu --user "$(id -u):$(id -g)" -v "$PWD:/data" "$IMAGE" \
     operator generate-blockchain-config \
     --config-file=/data/qbftConfigFile.json --to=/data/networkFiles --private-key-file-name=key
   mapfile -t KEYS < <(find networkFiles/keys -mindepth 1 -maxdepth 1 -type d | sort)
