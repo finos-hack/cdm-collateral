@@ -115,6 +115,50 @@ in bash on Linux, macOS, Codespaces, WSL and Git Bash on Windows. The CI workflo
 
 The steps below are the same sequence done by hand.
 
+### In a claude.ai web session (cloud workspace)
+
+A claude.ai web session gives the agent a Linux workspace with Docker, JDK 21, Maven, Node 22 and a preinstalled
+Chromium. The stack builds, starts and passes `check` there (section 10, 2026-11-08), with these differences from a
+developer machine:
+
+- **Network allowlist.** Outbound HTTPS goes through a proxy that admits package managers by default. Add these
+  entries under claude.ai Settings > Capabilities > Allowed websites (Pro and Max plans; on Team and Enterprise an
+  owner adds them under Organization settings > Capabilities). Entries took effect in a running session.
+
+  | Entry | Needed by |
+  |---|---|
+  | `repo1.maven.org`, `repo.maven.apache.org` | `build` (Maven dependencies) |
+  | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com`, `*.docker.com` | Besu image pull (layers come from `production.cloudfront.docker.com`) |
+  | `binaries.soliditylang.org` | `hardhat test` and `deploy:besu` (solc download) |
+
+- **Docker daemon.** The daemon is not running at session start. Start it before `up`:
+  `(setsid nohup dockerd >/tmp/dockerd.log 2>&1 &)`, then wait until `docker info` succeeds.
+- **One turn.** Processes left running after the agent's reply are stopped, including `dockerd` and the Besu
+  containers. Run `up` and `check` in the same turn; the chain on disk is kept for the next `up`.
+- **Browser.** Chromium is preinstalled and `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` is set. Pass it to `check`:
+  `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome bash scripts/live-e2e.sh check`. The revision
+  directory name (`chromium-1243`) can differ; `ls /opt/pw-browsers` shows it.
+- **Besu genesis as root.** The workspace shell runs as uid 0. On a first start, `besu/start-network.sh` runs the
+  genesis step with `--user 0:0`, and the image entrypoint `besu-entry.sh` then runs Besu twice (once with
+  `--print-paths-and-exit` to find paths to `chown`, once for the command). The first run writes
+  `besu/networkFiles/`; the second fails with `java.lang.IllegalArgumentException: Output directory already exists.`
+  and the script exits under `set -e`. The generated files are complete. Finish the first-run steps by hand from
+  `besu/`, then start the network:
+
+  ```bash
+  NODES=(mkt bank-a bank-b bank-c)
+  mapfile -t KEYS < <(find networkFiles/keys -mindepth 1 -maxdepth 1 -type d | sort)
+  for i in 0 1 2 3; do mkdir -p "${NODES[$i]}/data"; cp "${KEYS[$i]}/key" "${NODES[$i]}/data/key"; done
+  PUB=$(tr -d '[:space:]' < "${KEYS[0]}/key.pub"); PUB=${PUB#0x}
+  printf 'BOOTNODE_ENODE=enode://%s@172.28.0.11:30303\nBESU_USER=%s:%s\n' "$PUB" "$(id -u)" "$(id -g)" > .env
+  bash ./start-network.sh
+  ```
+
+  Hosts whose shell user is not root (dev container, Codespaces, CI) take the entrypoint's non-root branch and do not
+  hit this.
+- **Resources.** 2 CPU cores and 7.8 GB RAM: the full `check` took 13.9 min with a load average up to 6 and no
+  timeouts.
+
 ### Step 1 — Besu network
 
 ```bash
@@ -458,6 +502,19 @@ is missing, and old `besu/<node>/data/` chain databases do not match a new genes
 | `build` fails with `EPERM` on `console/node_modules/@esbuild/win32-x64/esbuild.exe` (Windows) | the running console dev server holds the file; `npm ci` has already emptied part of `node_modules` | `bash scripts/live-e2e.sh down`, then `build` again |
 
 ## 10. Verification status of this runbook
+
+### 2026-11-08 — claude.ai web session (cloud workspace, 2 cores, Docker 29.9.2, JDK 21.0.12, Node 22.23)
+
+At commit `e276f39`, following section 4 "In a claude.ai web session":
+
+- `build` exited 0 in 2 min 40 s. Unit suites: `contracts` 83 passing, `console` 104 passed, `cdm-ext` 242,
+  `services/collateral` 65 and `services/oracle` 13 run with 0 failures.
+- The first `besu/start-network.sh` failed at the genesis step as described there; after the manual steps the network
+  started (four nodes, peers `0x3`, four validators).
+- `up` exited 0 in 96 s with the seven health checks OK and the console at HTTP 200.
+- `check` with `CHROMIUM_PATH` passed all 27 live specs then present, exit 0 in 13.9 min.
+
+Not run in this workspace: the specs added after `e276f39`, `reset`, and `npm run cycle`.
 
 ### 2026-11-03 — `reset`, `up` and `check` on Windows 11 (Git Bash, Docker Desktop, Node 24.13)
 
