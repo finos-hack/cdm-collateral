@@ -1025,6 +1025,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-roll-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
 | node:investigation-live-spec-in-claude-web | review |  | proposed | 2026-11-09T00:17:00Z |  |  |
 | node:investigation-live-spec-in-claude-web | status |  | active | 2026-11-09T00:17:00Z |  |  |
+| node:task-repo-roll | status | open | resolved | 2026-11-09T00:27:02Z | a1623dde2b68f67b0223a996e80a0a8c5410a2bd | denisurusov |
 | edge:e-dec-e2eflow-livespecweb | review |  | proposed | 2026-11-09T00:43:47Z |  |  |
 | node:goal-adoption | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
 | node:goal-adoption | status |  | open | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
