@@ -1060,10 +1060,8 @@ excluded.
 | task-repo-roll | 5855a1af3600eddd68bee65824672c3e39115e8d | architecture/prototype.architecture.json | 2026-11-08T23:54:50Z |
 | task-repo-roll | 4e0d2366aeff0928d36a646694d41d4c3999c3b9 | docs/analysis/cdm-workflow-task-map.md | 2026-11-09T00:03:26Z |
 | investigation-live-spec-in-claude-web | 8cef35111a7d4d9635370b4ce25f116245c46559 | docs/runbook-e2e.md | 2026-11-09T00:42:56Z |
-| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/cdm-workflow-task-map.md | 2026-11-10T23:14:02Z |
-| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/cdm-development/gap-register.md | 2026-11-10T23:14:02Z |
-| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/business-case.md | 2026-11-10T23:14:02Z |
-| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/defects.md | 2026-11-10T23:14:02Z |
+| task-repo-roll | c84e55622af51beea51821e3202c68e22dcb3ac7 | docs/analysis/cdm-workflow-task-map.md | 2026-11-09T01:10:43Z |
+| task-repo-roll | c84e55622af51beea51821e3202c68e22dcb3ac7 | .konspekt/instance/waypoints/wp-adr-repo-roll.md | 2026-11-09T01:10:43Z |
 | task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/README.md | 2026-11-10T23:04:12Z |
 | task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/deck.json | 2026-11-10T23:04:12Z |
 | task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-10T23:04:12Z |
@@ -1077,3 +1075,7 @@ excluded.
 | task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/industry.html | 2026-11-10T23:04:12Z |
 | task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/join.html | 2026-11-10T23:04:12Z |
 | task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/sme.html | 2026-11-10T23:04:12Z |
+| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/cdm-workflow-task-map.md | 2026-11-10T23:14:02Z |
+| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/cdm-development/gap-register.md | 2026-11-10T23:14:02Z |
+| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/business-case.md | 2026-11-10T23:14:02Z |
+| investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/defects.md | 2026-11-10T23:14:02Z |
