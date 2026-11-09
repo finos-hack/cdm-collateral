@@ -1058,3 +1058,4 @@ excluded.
 | task-repo-roll | 5855a1af3600eddd68bee65824672c3e39115e8d | services/collateral/README.md | 2026-11-08T23:54:50Z |
 | task-repo-roll | 5855a1af3600eddd68bee65824672c3e39115e8d | docs/runbook-e2e.md | 2026-11-08T23:54:50Z |
 | task-repo-roll | 5855a1af3600eddd68bee65824672c3e39115e8d | architecture/prototype.architecture.json | 2026-11-08T23:54:50Z |
+| task-repo-roll | 4e0d2366aeff0928d36a646694d41d4c3999c3b9 | docs/analysis/cdm-workflow-task-map.md | 2026-11-09T00:03:26Z |
