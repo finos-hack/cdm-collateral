@@ -6,7 +6,8 @@ status: active
 review: proposed
 provenance:
   conversationId: claude-ai-web-live-spec
-  sourceRef: e276f39
+  sourceRef: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
+  contentHash: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
   timestamp: 2026-11-09T00:17:00Z
   confidence: 0.9
 createdAt: 2026-11-09T00:17:00Z
