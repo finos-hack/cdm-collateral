@@ -1016,3 +1016,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-roladr | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
 | edge:e-dec-cdmdev-smeroll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
 | edge:e-lnk-roll-smeroll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
+| waypoint:wp-adr-repo-roll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| node:task-sme-repo-roll-rules | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| edge:e-mrk-roladr-roll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| edge:e-drv-cdmdata-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| edge:e-drv-finality-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| edge:e-dec-cdmdev-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| edge:e-lnk-roll-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |

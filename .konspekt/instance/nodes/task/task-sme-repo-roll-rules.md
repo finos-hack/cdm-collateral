@@ -3,7 +3,7 @@ id: task-sme-repo-roll-rules
 type: task
 title: Confirm with a business SME the rules for a repo roll under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-roll
   sourceRef: e1c2bf5c4fd1267ffad133deb7c37373f3ac3c24
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-08T23:21:41Z
   confidence: 0.6
 createdAt: 2026-11-08T23:21:41Z
-updatedAt: 2026-11-08T23:21:41Z
+updatedAt: 2026-11-09T00:03:11Z
 ```
 # Task: confirm the rules for a repo roll under the GMRA
 
