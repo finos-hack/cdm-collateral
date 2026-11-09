@@ -1231,3 +1231,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-gmsla-rebate-rules | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
 | edge:e-dec-cdmdev-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
 | edge:e-lnk-gmslarbt-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
+| node:investigation-live-spec-in-claude-web | review | proposed | accepted | 2026-11-09T00:49:00Z | e765ec4d7d239f00f16330ce6c7b942512cd3359 | denisurusov |
+| edge:e-dec-e2eflow-livespecweb | review | proposed | accepted | 2026-11-09T00:49:00Z | e765ec4d7d239f00f16330ce6c7b942512cd3359 | denisurusov |
+| waypoint:wp-dec-besu-genesis-entrypoint | review |  | proposed | 2026-11-09T00:49:00Z |  |  |
+| edge:e-mrk-besugenesis-livespecweb | review |  | proposed | 2026-11-09T00:49:00Z |  |  |

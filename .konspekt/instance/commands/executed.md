@@ -482,3 +482,8 @@ at execution time.
 | task-gmsla-terms | aede0a63066d3ff4be6904bd04a9d66a30f7c9fe |
 | task-gmsla-terms | 1f0112627b071b6cf9d88fea4649d99b9d5e25f6 |
 | task-gmsla-loan-delivery-return | a09a5441a9d781ded2372d75257b6dae32f32330 |
+| investigation-live-spec-in-claude-web | df0b09bfafce73469f5f3d174469ced27d73fefb |
+| investigation-live-spec-in-claude-web | 5c38dfacb911781d8a502c77d6b848d201011f50 |
+| investigation-live-spec-in-claude-web | a81fbb3dd501cfceff1498016cde9bbaf37d1e2e |
+| investigation-live-spec-in-claude-web | 0014c29c47593bd011dff7c948f0a7af23e92499 |
+| investigation-live-spec-in-claude-web | 37d50a9f0fafcf8318744f65f8368d424d8b4cf6 |

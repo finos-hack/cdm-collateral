@@ -300,7 +300,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-roladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-roll |  | accepted |
 | e-dec-cdmdev-smeroll | decomposes | node:goal-cdm-development | node:task-sme-repo-roll-rules |  | accepted |
 | e-lnk-roll-smeroll | links | node:task-repo-roll | node:task-sme-repo-roll-rules |  | accepted |
-| e-dec-e2eflow-livespecweb | decomposes | node:goal-end-to-end-flow | node:investigation-live-spec-in-claude-web |  | proposed |
+| e-dec-e2eflow-livespecweb | decomposes | node:goal-end-to-end-flow | node:investigation-live-spec-in-claude-web |  | accepted |
 | e-dec-adoption-presentation | decomposes | node:goal-adoption | node:task-presentation |  | proposed |
 | e-note-workflowtaskmap-defermapping | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-defer-message-standard-mapping |  | accepted |
 | e-note-businesscase-defermapping | notes | node:goal-business-case | noteworthy:nw-defer-message-standard-mapping |  | accepted |
@@ -361,3 +361,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smerbt | decomposes | node:goal-cdm-development | node:task-sme-gmsla-rebate-rules |  | accepted |
 | e-lnk-gmslarbt-smerbt | links | node:task-gmsla-rebate | node:task-sme-gmsla-rebate-rules |  | accepted |
 | e-lnk-rbtadr-gmslafee | links | waypoint:wp-adr-gmsla-rebate | node:task-gmsla-lending-fee |  | accepted |
+| e-mrk-besugenesis-livespecweb | marks | waypoint:wp-dec-besu-genesis-entrypoint | node:investigation-live-spec-in-claude-web |  | proposed |

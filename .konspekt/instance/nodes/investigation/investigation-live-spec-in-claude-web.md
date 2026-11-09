@@ -3,7 +3,7 @@ id: investigation-live-spec-in-claude-web
 type: investigation
 title: Run the live spec tests in a claude.ai web session
 status: active
-review: proposed
+review: accepted
 provenance:
   conversationId: claude-ai-web-live-spec
   sourceRef: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-09T00:17:00Z
   confidence: 0.9
 createdAt: 2026-11-09T00:17:00Z
-updatedAt: 2026-11-09T00:43:03Z
+updatedAt: 2026-11-09T00:49:00Z
 ```
 # Investigation: run the live spec tests in a claude.ai web session
 
@@ -58,3 +58,8 @@ JDK 21.0.12, Maven 3.9.11, Node 22.23.4. Outbound HTTPS goes through an allowlis
 7. Runbook. `docs/runbook-e2e.md` section 4 "In a claude.ai web session" records findings 1 to 5, and section 10
    records the run of finding 6 (commit `8cef351`). The specs added on `main` after `e276f39` (PR #52) were not run
    in this workspace.
+8. Fix for finding 3: the project owner chose option (a), recorded as [[wp-dec-besu-genesis-entrypoint]].
+   `besu/start-network.sh` runs the genesis step with `--entrypoint /opt/besu/bin/besu`. Verified as root at
+   `3a99cb9` plus the fix: `build` exit 0 (61 s), `reset` exit 0, `up` exit 0 (125 s) with no
+   `Output directory already exists`, `check` 29 passed, 0 failed (15.2 min), which covers the PR #52 specs. The
+   runbook's manual first-run steps were removed.
