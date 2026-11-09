@@ -1023,3 +1023,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
 | edge:e-dec-cdmdev-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
 | edge:e-lnk-roll-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| node:investigation-live-spec-in-claude-web | review |  | proposed | 2026-11-09T00:17:00Z |  |  |
+| node:investigation-live-spec-in-claude-web | status |  | active | 2026-11-09T00:17:00Z |  |  |
+| edge:e-dec-e2eflow-livespecweb | review |  | proposed | 2026-11-09T00:43:47Z |  |  |
