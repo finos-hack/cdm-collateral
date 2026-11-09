@@ -1026,3 +1026,8 @@ into state history — an instance without it is v1-conformant and records none.
 | node:investigation-live-spec-in-claude-web | review |  | proposed | 2026-11-09T00:17:00Z |  |  |
 | node:investigation-live-spec-in-claude-web | status |  | active | 2026-11-09T00:17:00Z |  |  |
 | edge:e-dec-e2eflow-livespecweb | review |  | proposed | 2026-11-09T00:43:47Z |  |  |
+| node:goal-adoption | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
+| node:goal-adoption | status |  | open | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
+| node:task-presentation | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
+| node:task-presentation | status |  | active | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
+| edge:e-dec-adoption-presentation | review |  | proposed | 2026-11-09T12:57:26Z |  |  |

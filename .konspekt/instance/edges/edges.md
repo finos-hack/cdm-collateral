@@ -301,3 +301,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeroll | decomposes | node:goal-cdm-development | node:task-sme-repo-roll-rules |  | accepted |
 | e-lnk-roll-smeroll | links | node:task-repo-roll | node:task-sme-repo-roll-rules |  | accepted |
 | e-dec-e2eflow-livespecweb | decomposes | node:goal-end-to-end-flow | node:investigation-live-spec-in-claude-web |  | proposed |
+| e-dec-adoption-presentation | decomposes | node:goal-adoption | node:task-presentation |  | proposed |
