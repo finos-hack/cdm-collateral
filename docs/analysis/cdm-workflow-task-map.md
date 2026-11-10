@@ -97,3 +97,23 @@ the Workflow column until their scope is decided.
 - `task-onchain-privacy`: what each participant must not see of other parties' calls, pledges and disputes.
 - `task-collateral-service-unit-tests`: `services/collateral` has no unit tests.
 - `task-live-spec-balance-aware-amounts`: live specs drain the pledgor's balances on a persistent chain.
+
+## Gaps with no workflow row
+
+Every gap in the register appears in a row above or in this table, with the reason it has no row of its own. The
+reasons were accepted by the project owner on 2026-11-10 (source
+`76b1272797c0e7a3814ebe05fbcfcd8223578c22`); G26 is deferred by the project owner's decision
+`nw-defer-message-standard-mapping`.
+
+| Gap | Register status | Why no row |
+|---|---|---|
+| G24 | closed (proposed, for review): `cdmx.collateral.ledger` `TokenizedAsset` | Applies to every flow that moves a token (tUST, tMMF, tUSD), so no single workflow owns it. |
+| G25 | closed (proposed, for review): `LedgerAnchor`, built by the collateral service (`CdmAnchors`) | Applies to every flow: the service anchors each folded step and the live specs check both parties' anchors. |
+| G29 | closed (proposed, for review): 120 tests in 12 classes (2026-11-04) | Tests ship with every extension, in each row's `cdm-ext` work. |
+| G39 | closed: Java toolchain (`wp-adr-java-cdm-stack`) | Applies to every extension and every flow. |
+| G26 | open, P2; **deferred** (`nw-defer-message-standard-mapping`, project owner, 2026-11-10) | **Deferred.** A mapping between CDM and ISO 20022 `colr` or FpML collateral messages. The first goal is a proof of concept of CDM over Besu; mapping from a message standard to CDM is important, even critical, but trivial. The prototype's parties exchange CDM documents (`wp-adr-cdm-payload-carrier`); this is the simplification stated under `nw-mimic-real-flows`. Business case criterion S8 is deferred with it. |
+| G30 | open, P2 | Not hit by the prototype (accepted by the project owner, 2026-11-10). D7: CDM's `Qualify_RepurchaseAgreement` requires one `InterestRatePayout` only. Checked 2026-11-10 with a temporary test over the collateral service's repo events (`CdmRepo`: book, interim interest once and twice, reprice, adjust, substitute, roll, interim interest then roll): every resulting trade has one payout, an `InterestRatePayout`, and qualifies as a repo. CDM's on-demand interest payment records a transfer in the trade's transfer history and adds no payout leg, so the defect register's inference that it may fail qualification does not hold for these trades. D13 concerns CDM's own event samples, which the prototype does not read. Rows C9 (pair-off) and C10 (buy/sell-back, through `Qualify_BuySellBack`, which has the same one-payout rule) are not built yet and are checked when they start. |
+| G27 | open, P3 | Tracked in the register only (accepted by the project owner, 2026-11-10): a mapping between asset taxonomies, P3, so no built flow depends on it (register). The mapping starts from `collateral-asset-taxonomy-mapping.md`. |
+| G28 | open, P3 | Tracked in the register only (accepted by the project owner, 2026-11-10): regulatory and reference-data references; the register lists no flow that needs them. |
+| G31 | open, P3 | Not hit by the prototype; tracked in the register only (accepted by the project owner, 2026-11-10). D3 and D6 are in CDM's repo sample `functions/repo-and-bond/repo-execution-func-input.json` and its documentation page. Checked 2026-11-10: the prototype reads three CDM samples, none of them that one: the 2018 NY law IM CSA (`CdmAgreement`, validated when loaded) and two FpML-ingested rates swaps (`CdmReconciliation`). `CdmRepo` builds its execution in the shape of the repo sample but without its faults: `collateralType` NonCash, `collateralCriteria` and `isIncluded` set (D6), and the Margin Ratio as `marginPercentage`, 1.02 in the tests (D3); every booking event is validated (`CdmRepo` line 172). `CdmAgreementTest`, `CdmReconciliationTest` and `CdmRepoTest` pass (33 tests). |
+| G32 | open, P3 | Misspellings in CDM; renaming needs a CDM change, so no local closure exists (register: "note only"). |

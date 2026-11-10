@@ -87,7 +87,7 @@ the claim that audience can check in this repository, and S5 measures delivery t
 | # | Claim | Label | Evidence or test |
 |---|---|---|---|
 | V1 | The margin-call lifecycle can be expressed in CDM's own DSL (Rune) on top of CDM 7.7.0, without editing CDM | **Observed** | `cdm-ext/` builds `MarginCallState`, one instruction and `Apply…` function per step, and `CollateralEvent`; `MarginCallTest` and `EventTest` run the im-call, im-dispute and im-return scenarios and pass CDM's full validation of each event (`cdm-ext/README.md`) |
-| V2 | Both parties holding the same CDM representation of a margin call removes the per-firm format translation in call exchange | **Hypothesis** | First milestone (qualitative): the two participant workflow services of `task-e2e-wiring` exchange only CDM objects over the peer messaging API and reach the same state (S2). After G26 closes (measured): comparison against an ISO 20022 `colr` baseline (S8) |
+| V2 | Both parties holding the same CDM representation of a margin call removes the per-firm format translation in call exchange | **Hypothesis** | First milestone (qualitative): the two participant workflow services of `task-e2e-wiring` exchange only CDM objects over the peer messaging API and reach the same state (S2). After G26 closes (measured): comparison against an ISO 20022 `colr` baseline (S8), deferred with G26 (`nw-defer-message-standard-mapping`) |
 | V3 | Executable eligibility and call calculation in CDM lets both parties compute the same call amount from the same terms | **Hypothesis**, partly observed | CDM's Delivery/Return Amount functions run for the ISDA 2018 IM CSA only (M3); concentration limits and rating order are missing (M2, TX3) |
 | V4 | Settlement against tokenized collateral reaches a deterministic finality point, so a collateral movement has a defined "settled" moment | **Hypothesis** for this prototype; **observed** in the GDF sandbox | `concept-asr-settlement-finality`; Besu QBFT network in this repository; [GDF] settlement in under two minutes |
 | V5 | A ledger-neutral gateway keeps the workflow independent of one ledger (Besu ERC-20 now, Canton CIP-56 later) | **Hypothesis** | `concept-asr-ledger-neutrality`; tested when a second adapter is added |
@@ -191,7 +191,7 @@ of one family in C2:
 
 The case is supported when each criterion below has a recorded result. Criteria S1–S3 measure the first milestone
 and are checkable in this repository; S4 depends on a ledger decision and S5 on delivery to the first audience; S6–S7
-measure the completion goals; S8 follows G26.
+measure the completion goals; S8 follows G26, and both are deferred (`nw-defer-message-standard-mapping`, 2026-11-10).
 
 | # | Criterion | Supports | How it is checked |
 |---|---|---|---|
@@ -202,7 +202,7 @@ measure the completion goals; S8 follows G26.
 | S5 | FINOS CDM and the Collateral Working Group receive the consolidated findings and defects (`findings.md`, `defects.md`) and the `cdm-ext` reference implementation with its tests | First audience (§2) | Delivery recorded through the FINOS collaboration |
 | S6 | Every P1–P3 gap in the gap register has closure status `closed` | C1 | Closure-status table of `gap-register.md` |
 | S7 | Every lifecycle step of each of the five families' flows runs through `cdm-ext` with tests, for each asset grouping in scope (§5) | C2 | One end-to-end scenario per family and step; coverage table to be added to `collateral-flows.md` |
-| S8 | The margin-call exchange of S2, run once with CDM objects and once with ISO 20022 `colr` messages mapped through G26, needs no per-firm translation step in the CDM run | V2 (measured) | Scheduled after G26 closes |
+| S8 | The margin-call exchange of S2, run once with CDM objects and once with ISO 20022 `colr` messages mapped through G26, needs no per-firm translation step in the CDM run | V2 (measured) | **Deferred** with G26 (`nw-defer-message-standard-mapping`, project owner, 2026-11-10): the first goal is a proof of concept of CDM over Besu; mapping from a message standard to CDM is important, even critical, but trivial |
 
 ## 8. Open decisions
 

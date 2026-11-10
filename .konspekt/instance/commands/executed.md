@@ -448,3 +448,5 @@ at execution time.
 | investigation-live-spec-in-claude-web | a0ce23b56b0e31feed48fcd16aa5b8eb4d7a4c2e |
 | investigation-live-spec-in-claude-web | 738a35e92c942355a12e00283513970c73cd49f5 |
 | investigation-live-spec-in-claude-web | 16bb98c9b45453e2cc320a59471084cf2f11f6c6 |
+| investigation-cdm-workflow-task-map | 6817f401c5d11b256d3350f67f5c4e15579d6fdb |
+| investigation-cdm-workflow-task-map | 4c09fb60cc5f0cbeeccf61f740812b3a168d278d |
