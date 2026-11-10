@@ -1079,3 +1079,7 @@ excluded.
 | investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/cdm-development/gap-register.md | 2026-11-10T23:14:02Z |
 | investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/business-case.md | 2026-11-10T23:14:02Z |
 | investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/defects.md | 2026-11-10T23:14:02Z |
+| task-repo-pair-off | ce2d6d12a392d364211fa7c7b7c3eadec69c2b81 | docs/analysis/cdm-workflow-task-map.md | 2026-11-10T23:28:25Z |
+| task-repo-pair-off | ce2d6d12a392d364211fa7c7b7c3eadec69c2b81 | docs/analysis/cdm-other-agreements-coverage-matrix.md | 2026-11-10T23:28:25Z |
+| task-repo-pair-off | ce2d6d12a392d364211fa7c7b7c3eadec69c2b81 | docs/analysis/defects.md | 2026-11-10T23:28:25Z |
+| task-repo-pair-off | ce2d6d12a392d364211fa7c7b7c3eadec69c2b81 | docs/analysis/sme-question-ledger.md | 2026-11-10T23:28:25Z |
