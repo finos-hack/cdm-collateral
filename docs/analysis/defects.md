@@ -141,6 +141,12 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
   `Create_OnDemandInterestPaymentPrimitiveInstruction` adds a payout leg, so its after-trade may fail qualification.
 - **CDM issue:** [#4692](https://github.com/finos/common-domain-model/issues/4692), open (ICMA, 2026-05-07), proposes
   removing `only-element`.
+- **Checked against the prototype (2026-11-10, gap G30):** a temporary test over the collateral service's repo events
+  (`services/collateral` `CdmRepo`: book, interim interest once and twice, reprice, adjust, substitute, roll, interim
+  interest then roll) found one payout, an `InterestRatePayout`, on every resulting trade, and
+  `Qualify_RepurchaseAgreement` true for each. `Create_OnDemandInterestPaymentPrimitiveInstruction` records the payment
+  in the trade's transfer history and adds no payout leg, so the inference above does not hold for it. Repos with
+  coupon, dividend or other payout legs were not tested; the prototype books none.
 
 [d7a]: https://github.com/finos/common-domain-model/blob/f685b4b45d8faa419425c018a52af66f40e43c0b/rosetta-source/src/main/rosetta/product-qualification-func.rosetta#L1793
 [d7b]: https://github.com/finos/common-domain-model/blob/f685b4b45d8faa419425c018a52af66f40e43c0b/rosetta-source/src/main/rosetta/product-qualification-func.rosetta#L1806

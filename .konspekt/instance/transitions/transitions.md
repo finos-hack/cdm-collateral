@@ -1031,3 +1031,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-presentation | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
 | node:task-presentation | status |  | active | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
 | edge:e-dec-adoption-presentation | review |  | proposed | 2026-11-09T12:57:26Z |  |  |
+| noteworthy:nw-defer-message-standard-mapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
+| edge:e-note-workflowtaskmap-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
+| edge:e-note-businesscase-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
