@@ -1064,3 +1064,16 @@ excluded.
 | investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/cdm-development/gap-register.md | 2026-11-10T23:14:02Z |
 | investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/business-case.md | 2026-11-10T23:14:02Z |
 | investigation-cdm-workflow-task-map | daf689eee077b697d4db4d5a07989901732583c3 | docs/analysis/defects.md | 2026-11-10T23:14:02Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/README.md | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/deck.json | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/render_pdf.py | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/app.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/besu.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/cover.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/coverage.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/finos-dtcc.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/gaps.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/industry.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/join.html | 2026-11-10T23:04:12Z |
+| task-presentation | 81f929ce1ea85bc1f789c6b2d638a28c1df5126b | docs/presentations/intro_deck/slides/sme.html | 2026-11-10T23:04:12Z |
