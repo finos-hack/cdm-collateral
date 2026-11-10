@@ -40,6 +40,8 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D20 | `Qualify_Reprice` cannot be true for a repo whose lot holds both the cash and the security: `ExtractTradePurchasePrice` and `ExtractTradeCollateralQuantity` read the same list of all quantities, and the qualifier requires that list both to differ and to match (`Qualify_Adjustment` has the same contradiction in the opposite direction) *(added 2026-11-08)* | qualification | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 592; `rosetta/event-common-func.rosetta` |
 | D21 | `Create_AdjustmentPrimitiveInstruction` writes the new securities quantity into every quantity of the lot, so a repo's cash quantity becomes the number of securities *(added 2026-11-08)* | function logic | CDM 7.7.0 `rosetta/event-common-func.rosetta` 1843 |
 | D22 | `Qualify_Substitution` cannot be true during a repo's term, and the quantity change of `Create_SubstitutionPrimitiveInstruction` leaves the old security as the lot's `observable` *(added 2026-11-08)* | qualification, function logic | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 821; `rosetta/product-common-settlement-func.rosetta` 35 |
+| D23 | `Create_RollPrimitiveInstruction` gives the closing leg of a roll the new termination date instead of the roll date *(added 2026-11-08)* | event | `rosetta/event-common-func.rosetta` 1466; `functions/repo-and-bond/roll-output.json` |
+| D24 | `Create_PairOffInstruction` builds instructions with both a `before` trade state and an `execution`, which CDM's `Instruction` condition `NewTrade` forbids, so every pair-off event fails CDM's own validation, CDM's sample output included; it also only tags the trades with a package and settles nothing *(added 2026-11-10)* | event / validation | `rosetta/event-common-func.rosetta` 1656; `rosetta/event-common-type.rosetta` 41; `functions/repo-and-bond/pair-off-output.json` |
 
 ## Details
 
@@ -358,3 +360,19 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   (`CdmRepoTest.cdmClosingLegCarriesTheNewTerminationDateDefectD23`).
 - **Effect:** none on the resulting trade states: changing that date in a document leaves the rebuilt trades unchanged. The
   prototype uses the function unchanged (`wp-adr-repo-roll`). Not reported (project owner's instruction).
+
+### D24 — `Create_PairOffInstruction` fails CDM's own `Instruction` condition *(added 2026-11-10)*
+
+- `Create_PairOffInstruction` (`event-common-func.rosetta` line 1656) sets `before` to each trade and an `execution`
+  primitive that re-executes it with a package reference. `Instruction` condition `NewTrade` (`event-common-type.rosetta`
+  line 41) requires `before` to be absent when an `execution` exists.
+- `Qualify_PairOff` (`event-qualification-func.rosetta` line 417) compares the after trades with each instruction's
+  `before`, so the instruction cannot drop `before` either.
+- The function only adds the package reference: its description says the existing trades are not terminated, and no
+  transfer or settlement follows. CDM's sample (`functions/repo-and-bond/pair-off.md`) pairs off one trade executed twice
+  in the same direction.
+- Observed 2026-11-10 with a temporary test: over two offsetting repos built by the collateral service (`CdmRepo`), and
+  over CDM's own `pair-off-output.json`, CDM validation fails `NewTrade` on both instructions; `Qualify_PairOff` is true;
+  both trades stay `Executed` with no transfers; each trade keeps one `InterestRatePayout` and qualifies as a repo (G30).
+- **Effect:** the pair-off is built by a `cdm-ext` replacement instruction and qualified by its own qualifier
+  (`wp-adr-repo-pair-off`). Not reported (project owner's instruction).

@@ -1037,3 +1037,11 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-defer-message-standard-mapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
 | edge:e-note-workflowtaskmap-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
 | edge:e-note-businesscase-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
+| waypoint:wp-adr-repo-pair-off | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| node:task-sme-repo-pair-off-rules | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| node:task-sme-repo-pair-off-rules | status |  | open | 2026-11-10T23:26:13Z |  |  |
+| edge:e-mrk-pofadr-pairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-drv-cdmdata-pofadr | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-drv-finality-pofadr | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-dec-cdmdev-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-lnk-pairoff-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |

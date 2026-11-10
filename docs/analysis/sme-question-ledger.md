@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 82 questions in 17 tasks, all open.
+Status of the ledger: 89 questions in 18 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -180,3 +180,15 @@ Status of the ledger: 82 questions in 17 tasks, all open.
 | ROL-5 | After a refusal the repo stays due for repurchase on the same date. Is any other consequence intended? | open | |
 | ROL-6 | A settled repurchase clears a pending roll, and a repurchase instruction stops a roll from settling. Is that the right precedence? | open | |
 | ROL-7 | CDM closes the trade and opens another with the same identifier. Under the GMRA, is a roll a new Transaction needing its own Confirmation? | open | |
+
+### `task-sme-repo-pair-off-rules`: a repo pair-off under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| POF-1 | The prototype pairs off two repos only when they are between the same parties in opposite directions, with the same security, quantity, cash currency and Repurchase Date. Which of these must match in practice, and is a pair-off of repos with different Repurchase Dates possible? | open | |
+| POF-2 | Only equal quantities pair off. Is a partial pair-off (the difference delivered) common, and how is the residual treated? | open | |
+| POF-3 | The prototype nets the repurchase legs on the common Repurchase Date. Is pairing off the purchase legs (the repos never start) also in scope? | open | |
+| POF-4 | The net cash is the difference of the two Repurchase Prices, paid by the Seller of the repo with the higher one. Are interim interest, income or margin also netted into it? | open | |
+| POF-5 | Either party proposes and the other agrees or refuses. Is a pair-off agreed bilaterally like this, or instructed through a settlement system? | open | |
+| POF-6 | The paired repos leave the pair's Net Exposure on settlement. Must the margin held be adjusted at the same time? | open | |
+| POF-7 | CDM keeps both trades and adds a package reference; the prototype then marks both repurchased. Under the GMRA, are the two Transactions terminated, or settled by netting? | open | |
