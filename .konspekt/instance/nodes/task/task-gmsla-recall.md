@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:16:16Z
+updatedAt: 2026-11-11T19:15:12Z
 ```
 # Task: recall of loaned securities
 
@@ -24,3 +24,15 @@ Row 15 of section C of the workflow map, split from [[task-securities-lending-gm
 - **Prototype:** recall on `SecuritiesLoan`, the notice in both services and the console; a live spec.
 
 The details are decided when the task starts, after a temporary test of CDM's functions over the prototype's loans.
+
+**CDM check, 2026-11-11.** A temporary test ran CDM over loans in the prototype's shape (100,000 tMMF lent by BANK-A
+to BANK-B against tUSD or tUST, margin 1.02):
+
+- **`RecallProvision`** (`isRecallable`, an `intendedSettlementDate` two business days after the notice) on the loan's
+  `TerminationProvision` passes CDM validation on both loans.
+- **A transfer of type `Recall`** of 40,000 tMMF from the borrower to the lender, through `Create_BusinessEvent` over a
+  transfer instruction, passes validation and qualifies only as `SecurityTransfer`. A transfer of type `Return`
+  qualifies the same way. Either adds one entry to the trade's transfer history and leaves the loaned quantity at
+  100,000 and the trade open.
+- CDM has no recall notice, no recall qualification and no effect of a recall on the loan. The return that ends a
+  recalled loan is the quantity-change event of [[task-gmsla-loan-delivery-return]].
