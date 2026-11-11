@@ -1139,3 +1139,4 @@ excluded.
 | task-repo-default-close-out | 29f9f795f2b620bf30c6a07700eb384f229051b3 | docs/analysis/defects.md | 2026-11-11T13:03:43Z |
 | task-repo-default-close-out | d2ed39281f8829d112792f2add08a5c2229ed5fd | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T13:07:54Z |
 | task-repo-default-close-out | d2ed39281f8829d112792f2add08a5c2229ed5fd | docs/analysis/sme-question-ledger.md | 2026-11-11T13:07:54Z |
+| task-repo-default-close-out | e56591a8fe3ac41f0402b5bb78e2d4e477bb0a5f | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T13:09:46Z |
