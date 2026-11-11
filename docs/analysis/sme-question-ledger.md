@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 142 questions in 26 tasks, all open.
+Status of the ledger: 148 questions in 27 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -287,3 +287,14 @@ Status of the ledger: 142 questions in 26 tasks, all open.
 | RBT-4 | The invoice total is the sum of the daily accruals per sub-period, rounded half-up once (to whole tUSD in the prototype, whose cash token has no decimals). Is rounding per invoice the usual practice, or per day? | open | |
 | RBT-5 | Negative rebate rates are refused. Are negative rebates (the borrower pays) used for USD cash collateral, and should the prototype support them? | open | |
 | RBT-6 | A returned loan can still be billed for the period up to its return date. Is the final rebate usually settled with the return, or billed with the next periodic statement? | open | |
+
+### `task-sme-gmsla-fee-rules`: billing and paying the lending fee under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| FEE-1 | The lending fee accrues on the market value of the loaned securities, without the margin. CDM's billing function charges it on the market value times the margin (the collateral requirement). Under GMSLA 2010 practice, is the fee charged on the loan value or on the collateral value? | open | |
+| FEE-2 | The prototype values the loaned securities at one price per invoice, the feed price on the billing date, because its feed keeps no history. In practice, is the fee accrued daily on each day's market value, and which price source and time are used? | open | |
+| FEE-3 | The fee accrues ACT/360, the start day counted and the end day not, at a fixed rate agreed at booking. Is that the usual convention for a USD-denominated lending fee, and are fee rates renegotiated during an open loan? | open | |
+| FEE-4 | The lender issues the fee invoice and the borrower pays on agreement, in USD cash. In practice, who issues the fee statement, how often, and how is a disputed amount handled? | open | |
+| FEE-5 | A substitution of the collateral does not change the fee. Is that right, or does the fee depend on the type of collateral held? | open | |
+| FEE-6 | A returned loan can still be billed for the period up to its return date. Is the final fee usually settled with the return, or billed with the next periodic statement? | open | |

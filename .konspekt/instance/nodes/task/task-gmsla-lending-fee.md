@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T23:21:49Z
+updatedAt: 2026-11-11T23:29:22Z
 ```
 # Task: lending fee on loans against non-cash collateral
 
@@ -49,3 +49,6 @@ lent by BANK-A to BANK-B against 1,037 tUST, margin 1.02, fee 0.5% in cdm-ext `G
 - CDM has no fee invoice agreement and no record of which periods are billed; row 17's `SecuritiesLoan.bill`,
   `payBill` and `refuseBill` already bill either party's rate (wp-adr-gmsla-rebate, 10a), so no contract change is
   needed for the fee.
+
+**Design chosen 2026-11-11** (source `1577efddfacbb1f2fedacd57705e2f766a8b44bc`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in [[wp-adr-gmsla-lending-fee]]
+(proposed); the rules are questions for an SME in [[task-sme-gmsla-fee-rules]].

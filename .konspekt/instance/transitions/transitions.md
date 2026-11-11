@@ -1252,3 +1252,11 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-index-cross-mode-portability | status | open | resolved | 2026-11-04T02:59:07Z | 4ee571002628f2836bef93d14d9a2d9ecef1e5b5 | denisurusov |
 | waypoint:wp-dec-besu-genesis-entrypoint | review | proposed | accepted | 2026-11-11T23:18:36Z | 1bb0b05b37aa3eae99cefeaf54d1b6b8f10378b1 | denisurusov |
 | edge:e-mrk-besugenesis-livespecweb | review | proposed | accepted | 2026-11-11T23:18:36Z | 1bb0b05b37aa3eae99cefeaf54d1b6b8f10378b1 | denisurusov |
+| waypoint:wp-adr-gmsla-lending-fee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| node:task-sme-gmsla-fee-rules | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| node:task-sme-gmsla-fee-rules | status |  | open | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| edge:e-mrk-feeadr-gmslafee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| edge:e-drv-cdmdata-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| edge:e-drv-finality-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| edge:e-dec-cdmdev-smefee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| edge:e-lnk-gmslafee-smefee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
