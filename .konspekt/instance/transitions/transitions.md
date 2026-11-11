@@ -1149,3 +1149,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
 | edge:e-dec-cdmdev-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
 | edge:e-lnk-gmslaterms-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| waypoint:wp-adr-gmsla-loan-delivery-return | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| node:task-sme-gmsla-loan-delivery-return-rules | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| node:task-sme-gmsla-loan-delivery-return-rules | status |  | open | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| edge:e-mrk-ldradr-gmslaldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| edge:e-drv-cdmdata-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| edge:e-drv-finality-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| edge:e-dec-cdmdev-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| edge:e-lnk-gmslaldr-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |

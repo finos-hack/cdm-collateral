@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T16:23:40Z
+updatedAt: 2026-11-11T16:38:28Z
 ```
 # Task: securities loan delivery against collateral, and full and partial return
 
@@ -48,3 +48,8 @@ tMMF lent by BANK-A (Party1, Lender) to BANK-B (Party2, Borrower), against cash 
   - `Create_Return` on the same loan is valid but carries no instruction and qualifies as no event (D26).
 - **The collateral after a return.** The return changes only the loaned quantity. The collateral position keeps its
   quantity, so CDM's event does not record the redelivery of collateral.
+
+**Design chosen 2026-11-11** (source `0459d62f952baa979a166c76641c678927e782b0`: "1a 2a 3a 4a 5a 6a 7a 8a"), recorded in
+[[wp-adr-gmsla-loan-delivery-return]] (proposed); the rules are questions for an SME in
+[[task-sme-gmsla-loan-delivery-return-rules]].
+

@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 112 questions in 21 tasks, all open.
+Status of the ledger: 118 questions in 22 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -232,3 +232,14 @@ Status of the ledger: 112 questions in 21 tasks, all open.
 | GST-4 | The baseline has automatic early termination not applicable for both parties. Is that usual for an English law GMSLA 2010 between two banks? | open | |
 | GST-5 | The baseline applies netting of deliveries (paragraph 5.6) and the failure-to-redeliver indemnity (paragraph 6.4). Are these the usual elections? | open | |
 | GST-6 | An agreed amendment of the elections takes effect on its effective date. Does it apply to loans already outstanding, or only to new loans? | open | |
+
+### `task-sme-gmsla-loan-delivery-return-rules`: securities loan delivery and return under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| LDR-1 | The initial collateral is the Market Value of the Loaned Securities at the booking date's price times the loan's margin, rounded up. Is that the Required Collateral Value under GMSLA 2010, and is it priced on the trade date or the settlement date? | open | |
+| LDR-2 | On a partial return the lender redelivers collateral in proportion to the quantity returned, in the same settlement. Is that usual, or is the excess collateral returned only through the next mark? | open | |
+| LDR-3 | Open loans may be returned on any business day, and the prototype settles a return when both parties instruct it. What notice of return does the borrower give, and what is the standard settlement period? | open | |
+| LDR-4 | A cash-collateral loan states a rebate rate, and a loan against securities states a fee rate, both fixed at booking. Are both agreed per loan, and can a rate change during the loan? | open | |
+| LDR-5 | Collateral passes to the lender by outright title transfer, as under GMSLA 2010. Should the prototype also support the GMSLA 2018 security interest (pledge) variant? | open | |
+| LDR-6 | A full return is qualified as a full return and not as a termination. Is the end of a loan by full return treated differently from its early termination (for example on recall or default)? | open | |
