@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.75
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-11T16:00:00Z
+updatedAt: 2026-11-11T15:11:27Z
 ```
 # Task: implement the securities lending (GMSLA) collateral workflows
 
@@ -39,3 +39,15 @@ to be defined when this task starts.
   `Recall` transfer type; no recall function or event.
 - Terms: `GlobalMasterSecuritiesLendingAgreement` holds collateral, Base Currency and Events of Default elections.
 - Marking and substitution: no lending function; the CSA and repo functions the prototype uses are the candidates.
+
+**Scope chosen 2026-11-11** (source `58c01e3dad7c97cb870c00fde33af78f4201e5dd`), recorded in [[wp-adr-securities-lending-gmsla-scope]] (proposed): seven
+workflows and default, one task each:
+
+1. [[task-gmsla-terms]]: GMSLA agreement terms and their amendment.
+2. [[task-gmsla-loan-delivery-return]]: Securities loan delivery against collateral, and full and partial return.
+3. [[task-gmsla-marking]]: Securities lending marking to market and margin transfer.
+4. [[task-gmsla-recall]]: Recall of loaned securities.
+5. [[task-gmsla-substitution]]: Substitution of non-cash collateral.
+6. [[task-gmsla-rebate]]: Rebate on cash collateral.
+7. [[task-gmsla-lending-fee]]: Lending fee on loans against non-cash collateral.
+8. [[task-gmsla-default-close-out]]: Securities lending default and close-out.
