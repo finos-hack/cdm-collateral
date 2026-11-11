@@ -78,10 +78,10 @@ Paths below are relative to `rosetta-source/src/main/rosetta/` unless they start
 | R17 | Custody | **2** | settlement location only | – | – | – | `settlementTerms.securitySettlementCentre` (required by `AssetPayout` condition `SettlementCentreRequired`). `PartyRoleEnum.ThirdPartyCustodian` (`base-staticdata-party-enum.rosetta` line 118). The CSA custody types are not linked to repo |
 | R18 | Collateral allocation / optimisation | **0** | – | – | – | – | Nothing found *(name search)*. `Qualify_Allocation` and `Qualify_Shaping` concern trade allocation and splitting, not collateral allocation |
 | R19 | Reconciliation | **0** | – | – | – | – | Nothing found *(name search)* |
-| R20 | Close-out / event of default | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default elections. No default-valuation function *(name search)* |
+| R20 | Close-out / event of default | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default elections. No default-valuation function *(name search)*. Checked 2026-11-11 (task-map row C11): `Create_TerminationInstruction` ends a repo and `Qualify_Termination` holds once the closed state's `activityDate` is set; CDM 7.7.0 has no `Termination` intent, and the event carries no amount. CDM's repurchase event fails `Qualify_Repurchase` (D25) |
 | R21 | Exposure netting: net exposure across all transactions *(added 2026-10-15)* | **0** | – | – | – | – | As R6/R7: no Net Exposure type or function *(name search)* |
 | R22 | Settlement netting *(added 2026-10-15)* | **1** | – | – | – | pair-off samples (context) | No GMRA settlement-netting election (R1). Trade-level `StandardSettlementStyleEnum.Net` only. Pair-off (R13) closes offsetting transactions and is executable, but it is a trade event, not netting of collateral movements |
-| R23 | Close-out netting on default *(added 2026-10-15)* | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default or set-off elections (R1, R20) |
+| R23 | Close-out netting on default *(added 2026-10-15)* | **0** | – | – | – | – | `GlobalMasterRepoAgreement` has no default or set-off elections (R1, R20). The prototype's close-out netting is `cdm-ext` `GmraCloseOutStatement` (task-map row C11, `wp-adr-repo-default-close-out`) |
 | R24 | Collateral proposal *(added 2026-10-16)* | **2** | generic only | – | – | – | As CSA row 24 |
 | R25 | Collateral proposal acceptance or rejection *(added 2026-10-16)* | **0** | – | – | – | – | As CSA row 25 |
 

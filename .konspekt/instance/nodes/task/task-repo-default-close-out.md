@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T23:11:58Z
   confidence: 0.8
 createdAt: 2026-11-07T23:11:58Z
-updatedAt: 2026-11-11T13:09:45Z
+updatedAt: 2026-11-11T14:01:58Z
 ```
 
 # Task: repo default and close-out under GMRA paragraph 10
@@ -47,3 +47,11 @@ Repurchase Date 2026-11-16, an Event of Default on 2026-11-12):
     qualifies as `Renegotiation`; the trade stays open.
 - The Repurchase Price to the default date is `cdm-ext` `RepoPriceDifferential` to a date. The Default Market Values,
   the netting and the balance are new; `cdmx.collateral.closeout` holds the ISDA 2002 Section 6(e) types only.
+
+**Built 2026-11-11:** `cdm-ext` (`GmraDefaultNotice`, `GmraDefaultTransactionValue`, `GmraDefaultHeldMargin`,
+`GmraDefaultUnpaidIncome`, `GmraCloseOutStatement`; `GmraDefaultRepurchasePrice`, `GmraDefaultMarketValue`,
+`GmraCloseOutNetAmount`), `RepoSettlement` (`serveDefaultNotice`, `closeOutDefault`, `payCloseOut`, the oracle feed in the
+constructor), the gateway, service and console, and the live spec `flow-repo-default-close-out`, which passes on a local
+stack with all 34 live specs. CDM's termination event carries no intent: CDM 7.7.0 has no `Termination` intent (see the
+correction in [[wp-adr-repo-default-close-out]]). Agreed income is paid when agreed, so the prototype has no unpaid income
+to close out; the statement type carries it for completeness.

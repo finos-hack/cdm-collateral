@@ -198,6 +198,13 @@ export const api = {
   repoTrade: (p: LiveParty, repoId: string) => req<LiveRepoTrade>(p, "GET", `/repos/${repoId}/trade`),
   /** Net Exposure across the pair's repos and the Net Margin held (wp-adr-repo-margin-maintenance). */
   repoMargin: (p: LiveParty) => req<LiveRepoMargin>(p, "GET", "/repo-margin"),
+  /** GMRA default close-out (wp-adr-repo-default-close-out): the default status, a preview and the recorded close-outs. */
+  repoDefault: (p: LiveParty) => req<LiveRepoDefault>(p, "GET", "/repo-default"),
+  /** The non-defaulting party closes out every purchased repo with the counterparty; notifies the default first if needed. */
+  closeOutRepoDefault: (p: LiveParty) =>
+    req<{ closeOutId: string; cdmHash: string; statement: LiveGmraCloseOutStatement; closeOutTx: string }>(p, "POST", "/repo-default/close-out", {}),
+  /** The party that owes a close-out balance pays it. */
+  payRepoCloseOut: (p: LiveParty, id: string) => req<{ closeOutId: string; amount: string; payTx: string }>(p, "POST", `/repo-default/close-outs/${id}/pay`, {}),
   /** The party with the Net Exposure calls it; the service computes the amount. */
   callRepoMargin: (p: LiveParty) => req<{ callId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/calls", {}),
   /** Reprice every purchased repo instead of calling margin (wp-adr-repo-reprice); the other party agrees. */
@@ -311,7 +318,7 @@ export interface LiveRepo {
   repoId: string;
   role: "seller" | "buyer";
   counterparty: LiveParty;
-  state: "booked" | "affirmed" | "purchased" | "repurchased";
+  state: "booked" | "affirmed" | "purchased" | "repurchased" | "closedOut";
   security: string;
   quantity: string;
   purchasePrice: string;
@@ -360,6 +367,47 @@ export interface LiveRepo {
   pairOffWith?: string;
   pairOffNet?: string;
   pairOffProblem?: string;
+}
+
+export interface LiveGmraCloseOutStatement {
+  earlyTerminationDate: string;
+  automaticEarlyTermination: boolean;
+  nonDefaultingParty: string;
+  defaultingParty: string;
+  transactions: { repoId: string; seller: string; buyer: string; buySellBack: boolean; repurchasePrice: string; price: string; quantity: string; defaultMarketValue: string }[];
+  heldMargin: { holder: string; asset: string; quantity: string; value: string }[];
+  netAmount: string;
+  balance: string;
+  payer: string | null;
+  receiver: string | null;
+}
+
+export interface LiveRepoCloseOut {
+  closeOutId: string;
+  cdmHash: string;
+  nonDefaulting: LiveParty;
+  defaulting: LiveParty;
+  amount: string;
+  paid: boolean;
+  payer: LiveParty | null;
+  toPay: boolean;
+  noticeServed: boolean;
+  verified: boolean;
+  problem?: string | null;
+  statement?: LiveGmraCloseOutStatement;
+}
+
+export interface LiveRepoDefault {
+  businessDate: string;
+  counterparty: LiveParty;
+  counterpartyInDefault: boolean;
+  inDefault: boolean;
+  automaticEarlyTermination: boolean;
+  baseCurrency: string;
+  openTransactions: number;
+  preview?: LiveGmraCloseOutStatement;
+  previewProblem?: string;
+  closeOuts: LiveRepoCloseOut[];
 }
 
 export interface LiveRepos {

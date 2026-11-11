@@ -1,0 +1,98 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: the amounts of a GMRA default close-out (paragraph 10, wp-adr-repo-default-close-out).">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.base.math.*
+
+func GmraDefaultRepurchasePrice: <"A Transaction's Repurchase Price as at the Early Termination Date (GMRA paragraph 10(c)): the Purchase Price plus the Price Differential accrued to that date, less interim interest paid (RepoPriceDifferential), less a buy/sell-back's income deduction; rounded to the nearest at the given number of decimals.">
+    inputs:
+        tradeState TradeState (1..1)
+        earlyTerminationDate date (1..1)
+        incomeDeduction number (1..1) <"A buy/sell-back's agreed income deductions; zero for a repo.">
+        precision int (1..1)
+    output:
+        repurchasePrice number (1..1)
+
+    alias repurchaseDate: tradeState -> trade -> product -> economicTerms -> terminationDate -> adjustableDate -> unadjustedDate
+
+    condition NoDeductionOnARepo:
+        if RepoIsBuySellBack(tradeState) = False then incomeDeduction = 0
+    condition NotAfterTheRepurchaseDate: <"A Transaction past its Repurchase Date is repurchased, not closed out.">
+        earlyTerminationDate <= repurchaseDate
+
+    set repurchasePrice:
+        RoundToPrecision(
+                RepoPurchasePrice(tradeState) -> value
+                    + RoundToPrecision(RepoPriceDifferential(tradeState, earlyTerminationDate), 10, RoundingDirectionEnum -> Nearest, True),
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            ) - incomeDeduction
+
+func GmraDefaultMarketValue: <"The Default Market Value of securities (GMRA paragraph 10(e)): quantity x the price at the Default Valuation Time, rounded to the nearest at the given number of decimals. The prototype uses the oracle's price only.">
+    inputs:
+        quantity number (1..1)
+        price number (1..1)
+        precision int (1..1)
+    output:
+        value number (1..1)
+
+    condition NotNegative:
+        quantity >= 0 and price >= 0
+
+    set value:
+        RoundToPrecision(quantity * price, precision, RoundingDirectionEnum -> Nearest, True)
+
+func GmraDefaultTransactionAmount: <"What one Transaction contributes to a party's net amount: the Buyer is owed the Repurchase Price and owes the Default Market Value; the Seller the reverse. Positive when the other party owes this party.">
+    inputs:
+        transactionValue GmraDefaultTransactionValue (1..1)
+        party string (1..1)
+    output:
+        amount number (1..1)
+
+    condition AParty:
+        party = transactionValue -> buyer or party = transactionValue -> seller
+
+    set amount:
+        if party = transactionValue -> buyer
+        then transactionValue -> repurchasePrice - transactionValue -> defaultMarketValue
+        else transactionValue -> defaultMarketValue - transactionValue -> repurchasePrice
+
+func GmraDefaultMarginAmount: <"What held margin contributes to a party's net amount: the holder owes its value back. Positive when the other party owes this party.">
+    inputs:
+        heldMargin GmraDefaultHeldMargin (1..1)
+        party string (1..1)
+    output:
+        amount number (1..1)
+
+    set amount:
+        if party = heldMargin -> holder then 0 - heldMargin -> value else heldMargin -> value
+
+func GmraDefaultIncomeAmount: <"What unpaid income contributes to a party's net amount. Positive when the other party owes this party.">
+    inputs:
+        unpaidIncome GmraDefaultUnpaidIncome (1..1)
+        party string (1..1)
+    output:
+        amount number (1..1)
+
+    set amount:
+        if party = unpaidIncome -> receiver then unpaidIncome -> amount else 0 - unpaidIncome -> amount
+
+func GmraCloseOutNetAmount: <"The set-off of GMRA paragraph 10(c): every value in the close-out, from one party's side, summed to one amount in the Base Currency. Positive when the other party pays this party.">
+    inputs:
+        transactionValue GmraDefaultTransactionValue (0..*)
+        heldMargin GmraDefaultHeldMargin (0..*)
+        unpaidIncome GmraDefaultUnpaidIncome (0..*)
+        party string (1..1)
+    output:
+        netAmount number (1..1)
+
+    alias transactions:
+        if transactionValue exists then (transactionValue extract GmraDefaultTransactionAmount(item, party) then sum) else 0
+    alias margin:
+        if heldMargin exists then (heldMargin extract GmraDefaultMarginAmount(item, party) then sum) else 0
+    alias income:
+        if unpaidIncome exists then (unpaidIncome extract GmraDefaultIncomeAmount(item, party) then sum) else 0
+
+    set netAmount:
+        transactions + margin + income

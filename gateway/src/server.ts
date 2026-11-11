@@ -276,6 +276,21 @@ route("POST", "/ledger/v1/repos/:id/pair-off/refuse", async (p) => J(await adapt
 
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
 
+// A GMRA default close-out (wp-adr-repo-default-close-out): the non-defaulting party serves a Default Notice (unless
+// automatic early termination applies) and closes out every purchased repo of the pair; the party owing the balance pays.
+route("POST", "/ledger/v1/repo-default/notice", async (_p, b) =>
+  J(await adapter.serveRepoDefaultNotice(getAddress(b.defaulting), b.noticeHash as Hex)));
+route("GET", "/ledger/v1/repo-default/notice", async (_p, _b, url) =>
+  J({ noticeHash: await adapter.repoDefaultNotice(getAddress(url.searchParams.get("nonDefaulting")!), getAddress(url.searchParams.get("defaulting")!)) }));
+route("POST", "/ledger/v1/repo-default/close-outs", async (_p, b) =>
+  J(await adapter.closeOutRepoDefault(b.closeOutId as Hex, getAddress(b.defaulting), b.noticeHash as Hex, b.cdmHash as Hex,
+    getAddress(b.cash), getAddress(b.payer), BigInt(b.amount))));
+route("POST", "/ledger/v1/repo-default/close-outs/:id/pay", async (p, b) => {
+  await adapter.approve(getAddress(b.token), adapter.repoContract(), BigInt(b.amount));
+  return J(await adapter.payRepoCloseOut(p.id as Hex));
+});
+route("GET", "/ledger/v1/repo-default/close-outs", async (_p, _b, url) => J(await adapter.listRepoCloseOuts(getAddress(url.searchParams.get("party")!))));
+
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));
 
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---

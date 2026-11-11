@@ -1,0 +1,95 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: a GMRA 2011 Event of Default and close-out (paragraph 10, gaps R20 and R23, wp-adr-repo-default-close-out). CDM 7.7.0 has no GMRA default, Default Market Value or close-out netting; each Transaction ends with CDM's termination event, and the values and the net balance are stated here.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.event.qualification.*
+
+type GmraDefaultNotice: <"The Event of Default and its Early Termination Date (GMRA paragraph 10(a) to 10(b)). The Event of Default is the oracle's default record of the defaulting party. Without automatic early termination the non-defaulting party serves this record as its Default Notice; with it no notice is served and the Early Termination Date is the date of the default.">
+    [rootType]
+    nonDefaultingParty string (1..1)
+    defaultingParty string (1..1)
+    eventOfDefaultDate date (1..1) <"The business date on which the non-defaulting party's service observed the oracle's default record.">
+    earlyTerminationDate date (1..1) <"The date on which the Repurchase Date of every Transaction is deemed to occur.">
+    automaticEarlyTermination boolean (1..1) <"The pair's GMRA election (GmraDefaultValuation): true when the default terminates without notice.">
+
+    condition TwoParties:
+        nonDefaultingParty <> defaultingParty
+
+    condition NotBeforeTheDefault:
+        earlyTerminationDate >= eventOfDefaultDate
+
+    condition AutomaticOnTheDefaultDate: <"Automatic early termination takes effect on the date of the default.">
+        if automaticEarlyTermination = True then earlyTerminationDate = eventOfDefaultDate
+
+type GmraDefaultTransactionValue: <"One Transaction in the close-out (GMRA paragraph 10(c)): the Repurchase Price the Seller owes and the Default Market Value of the Equivalent Securities the Buyer owes, both as at the Early Termination Date.">
+    repoId string (1..1)
+    termination BusinessEvent (1..1) <"CDM's termination event of the Transaction on the Early Termination Date (Create_TerminationInstruction); CDM 7.7.0 has no Termination intent, and Qualify_Termination requires none.">
+    seller string (1..1)
+    buyer string (1..1)
+    buySellBack boolean (1..1)
+    repurchasePrice number (1..1) <"GmraDefaultRepurchasePrice: the Repurchase Price accrued to the Early Termination Date, less any buy/sell-back income deduction.">
+    security string (1..1) <"The ISIN of the Equivalent Securities.">
+    quantity number (1..1)
+    price number (1..1) <"The price of one unit at the Default Valuation Time: the oracle's price.">
+    defaultMarketValue number (1..1) <"GmraDefaultMarketValue: quantity x price.">
+
+    condition Terminated: <"The event is CDM's termination of the Transaction.">
+        Qualify_Termination(termination)
+
+    condition NotNegative:
+        repurchasePrice >= 0 and quantity >= 0 and price >= 0 and defaultMarketValue >= 0
+
+type GmraDefaultHeldMargin: <"Margin one party holds from the other under the pair's GMRA calls (GMRA paragraph 10(c)): Cash Margin at its amount, Margin Securities at their Default Market Value. The holder owes the value back.">
+    holder string (1..1)
+    giver string (1..1)
+    asset string (1..1) <"The Base Currency for Cash Margin, the ISIN for Margin Securities.">
+    cash boolean (1..1)
+    quantity number (1..1)
+    price number (1..1) <"1 for Cash Margin; the oracle's price at the Default Valuation Time for Margin Securities.">
+    value number (1..1)
+    callId string (1..*) <"The GMRA margin calls the margin was transferred under, which the close-out settles: margin views after it no longer count them.">
+
+    condition CashAtPar:
+        if cash = True then price = 1
+
+    condition NotNegative:
+        quantity >= 0 and price >= 0 and value >= 0
+
+type GmraDefaultUnpaidIncome: <"Income on a Transaction that was agreed, fell due and was not paid before the Early Termination Date (GMRA paragraph 10(c)).">
+    repoId string (1..1)
+    payer string (1..1)
+    receiver string (1..1)
+    amount number (1..1)
+
+    condition Positive:
+        amount > 0
+
+type GmraCloseOutStatement: <"The close-out of every Transaction between the pair after an Event of Default (GMRA paragraph 10(c) to 10(d)): the values each party owes, set off into one balance in the Base Currency payable by one party. No securities move.">
+    [rootType]
+    notice GmraDefaultNotice (1..1)
+    baseCurrency string (1..1) <"The Base Currency, as an ISO 4217 code.">
+    valuationDate date (1..1) <"The day of the Default Valuation Time.">
+    transactionValue GmraDefaultTransactionValue (1..*)
+    heldMargin GmraDefaultHeldMargin (0..*)
+    unpaidIncome GmraDefaultUnpaidIncome (0..*)
+    netAmount number (1..1) <"GmraCloseOutNetAmount from the non-defaulting party's side: positive when the defaulting party pays.">
+    balance number (1..1) <"The amount the payer pays.">
+    payer string (0..1)
+    receiver string (0..1)
+
+    condition NetAmount: <"The net amount is the set-off of every value in the statement.">
+        netAmount = GmraCloseOutNetAmount(transactionValue, heldMargin, unpaidIncome, notice -> nonDefaultingParty)
+
+    condition Balance: <"The balance is the net amount, paid by the party that owes it; no payer when it is zero.">
+        if netAmount > 0
+        then balance = netAmount and payer = notice -> defaultingParty and receiver = notice -> nonDefaultingParty
+        else if netAmount < 0
+        then balance = 0 - netAmount and payer = notice -> nonDefaultingParty and receiver = notice -> defaultingParty
+        else balance = 0 and payer is absent and receiver is absent
+
+    condition PairOnly: <"Every Transaction is between the two parties.">
+        [notice -> nonDefaultingParty, notice -> defaultingParty] contains transactionValue -> seller
+            and [notice -> nonDefaultingParty, notice -> defaultingParty] contains transactionValue -> buyer
+
+    condition ValuedOnTheTerminationDate:
+        valuationDate >= notice -> earlyTerminationDate

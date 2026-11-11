@@ -16,6 +16,11 @@ updatedAt: 2026-11-11T13:09:45Z
 
 # ADR: a GMRA default terminates every Transaction of the pair with CDM's termination event and settles one net balance in the Base Currency
 
+**Correction, 2026-11-11 (maintainer, during the build):** choice 1a was put to the project owner as CDM's termination
+event "with intent `Termination`". CDM 7.7.0's `EventIntentEnum` has no `Termination` value, and `Qualify_Termination`
+requires the intent to be absent. The event carries no intent; it is CDM's termination event and qualifies as
+`Termination`. Only the wording of the choice changes.
+
 For [[task-repo-default-close-out]] (section C, row 11 of the workflow map), within [[wp-adr-repo-gmra-scope]]. The
 project owner chose on 2026-11-11 (source `e1f2afbe9b0618c7020e6ec16844cce661c77ef2`): (1a) CDM's termination event
 with intent `Termination` ends each Transaction; (2a) the Default Market Value of securities is the oracle's on-chain
@@ -37,7 +42,7 @@ accepts once the closed state's `activityDate` is set; it carries no amount. CDM
   say whether the default is an Act of Insolvency; the prototype treats every recorded default as one when the election
   is set.
 - **Termination.** On the Early Termination Date every open Transaction of the pair ends with CDM's termination event
-  (`Create_TerminationInstruction`, intent `Termination`, `activityDate` the Early Termination Date), one event per
+  (`Create_TerminationInstruction`, no intent, `activityDate` the Early Termination Date), one event per
   Transaction. Pending instructions on those Transactions lapse.
 - **Values.** For each Transaction, from the non-defaulting party's side: the Repurchase Price accrued to the Early
   Termination Date (`RepoRepurchasePrice` to a date, less interim interest paid; for a buy/sell-back, less the income
@@ -53,8 +58,11 @@ accepts once the closed state's `activityDate` is set; it carries no amount. CDM
   Transactions close, the statement hash and the balance are stored. The party that owes the balance then pays it in
   the Base Currency token; until paid it stays recorded as owed.
 - **Prototype.** A default close-out action in the console for the non-defaulting party, the statement view for both,
-  and a live spec that records a default, closes out two repos and a buy/sell-back of the pair and settles the balance.
-  The spec clears the default afterwards, so other specs on the persistent chain are unaffected.
+  and a live spec that records a default, closes out a repo and a buy/sell-back of the pair that offset in quantity (so
+  no securities drain from the persistent chain) and settles the balance. The spec restores the defaulting party's
+  default status as it found it.
+- **Margin settled.** Each held-margin entry names the GMRA calls it came from; after a close-out the margin views no
+  longer count those calls.
 
 **Consequences.**
 - `cdm-ext` gains the Default Notice record, the per-Transaction default values and the GMRA close-out statement, next

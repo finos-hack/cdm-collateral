@@ -25,7 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms, type LiveRepo, type LiveRepoMargin, type LiveRepos,
+  type LiveGmraTerms, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -55,6 +55,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [gmra, setGmra] = useState<LiveGmraTerms | null>(null);
   const [repos, setRepos] = useState<LiveRepos | null>(null);
   const [repoMargin, setRepoMargin] = useState<LiveRepoMargin | null>(null);
+  const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -88,6 +89,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.gmraTerms(party).then((g) => setGmra(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmra(null)),
         api.repos(party).then((r) => setRepos(r?.businessDate && Array.isArray(r?.repos) ? r : null)).catch(() => setRepos(null)),
         api.repoMargin(party).then((m) => setRepoMargin(m?.businessDate && Array.isArray(m?.exposures) ? m : null)).catch(() => setRepoMargin(null)),
+        api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
       );
       setState(await api.state(party));
       setError(null);
@@ -399,6 +401,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
+      {repoDefault && <RepoDefaultCard party={party} other={other} d={repoDefault} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />
 
@@ -1046,6 +1049,59 @@ function RepoIncomeEntry(props: { disabled: boolean; label: string; onPay: (inco
 
 /** Repo margin under the GMRA (wp-adr-repo-margin-maintenance): Net Exposure across the pair's repos, the margin call
  *  it allows, settled by title transfer in the calls list, and the interest on Cash Margin. */
+/** GMRA default close-out (wp-adr-repo-default-close-out): the non-defaulting party closes out every purchased repo of
+ *  the pair into one balance in the Base Currency; the party that owes it pays. No securities move. */
+function RepoDefaultCard(props: { party: LiveParty; other: LiveParty; d: LiveRepoDefault; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, d, busy, run } = props;
+  const p = d.preview;
+  const balanceText = (s: { balance: string; payer: string | null }) => (s.payer ? `${s.payer} pays USD ${s.balance}` : "no balance");
+  return (
+    <div className="card" data-testid="repo-default">
+      <h3>Repo default (GMRA paragraph 10)</h3>
+      <div className="row">
+        <span data-testid="repo-default-status">
+          {d.inDefault ? "this party is in default" : d.counterpartyInDefault ? `${other} is in default` : "no default recorded"}
+        </span>
+        <span>{d.automaticEarlyTermination ? "automatic early termination" : "Default Notice required"}</span>
+        <span>{d.openTransactions} purchased repo(s) with {other}</span>
+        {!d.inDefault && d.openTransactions > 0 && (
+          <button data-testid="repo-default-close-out" disabled={busy || !p} onClick={() => run(() => api.closeOutRepoDefault(party))}>
+            {d.counterpartyInDefault ? `Close out ${other}'s default` : `Declare ${other}'s default and close out`}
+            {p ? `: ${balanceText(p)}` : ""}
+          </button>
+        )}
+        {d.previewProblem && <span className="bad">{d.previewProblem}</span>}
+      </div>
+      {d.closeOuts.length > 0 && (
+        <table>
+          <thead>
+            <tr><th>close-out</th><th>defaulting</th><th>Early Termination Date</th><th>Transactions</th><th>balance</th><th>verified</th><th></th></tr>
+          </thead>
+          <tbody>
+            {d.closeOuts.map((c) => (
+              <tr key={c.closeOutId} data-testid={`repo-closeout-${c.closeOutId}`}>
+                <td>{c.closeOutId.slice(0, 10)}…</td>
+                <td>{c.defaulting}</td>
+                <td>{c.statement?.earlyTerminationDate ?? ""}{c.noticeServed ? " (notice)" : ""}</td>
+                <td>{c.statement?.transactions.length ?? ""}</td>
+                <td data-testid="repo-closeout-balance">{c.payer ? `${c.payer} pays USD ${c.amount}` : "none"}{c.paid ? " — paid" : ""}</td>
+                <td className={c.verified ? "" : "bad"}>{c.verified ? "yes" : c.problem ?? "no"}</td>
+                <td>
+                  {c.toPay && (
+                    <button disabled={busy || !c.verified} onClick={() => run(() => api.payRepoCloseOut(party, c.closeOutId))}>
+                      Pay USD {c.amount}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 function RepoMarginCard(props: { party: LiveParty; other: LiveParty; margin: LiveRepoMargin; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, other, margin: m, busy, run } = props;
   const pending = m.repriceOffered + m.repriceToAgree + m.adjustOffered + m.adjustToAgree + m.substitutionsPending + m.paymentsPending;
