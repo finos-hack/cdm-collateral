@@ -248,6 +248,11 @@ export const api = {
     req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/gmra/amendments/${amendmentId}/decision`, { consent }),
   /** The GMSLA terms in force and the pair's GMSLA amendments (wp-adr-gmsla-terms). */
   gmslaTerms: (p: LiveParty) => req<LiveGmslaTerms>(p, "GET", "/gmsla/terms"),
+  /** The aggregated mark of the pair's securities loans, stated for this party (wp-adr-gmsla-marking). */
+  gmslaMarking: (p: LiveParty) => req<LiveGmslaMarking>(p, "GET", "/gmsla-marking"),
+  /** Call the net figure as a GMSLA VM call by title transfer; its IssueCall step carries the mark statement's hash. */
+  callGmslaMargin: (p: LiveParty) =>
+    req<{ callId: string; cdmHash: string; statementHash: string; amountUsd: number }>(p, "POST", "/gmsla-marking/calls", {}),
   /** This party's securities loans (wp-adr-gmsla-loan-delivery-return). */
   loans: (p: LiveParty) => req<LiveLoans>(p, "GET", "/loans"),
   /** The lender books a loan; the collateral follows from the feed prices and the margin (default: the GMSLA default margin). */
@@ -470,6 +475,19 @@ export interface LiveLoan {
 export interface LiveLoans {
   businessDate: string;
   loans: LiveLoan[];
+}
+
+export interface LiveGmslaMarking {
+  party: string;
+  businessDate: string;
+  loans: { loanId: string; role: string; quantity: string; price: string; marketValueUsd: string; marginPercent: string; requirementUsd: string; collateralValueUsd: string; exposureUsd: string }[];
+  netMarginHeldUsd: string;
+  netExposureUsd: string;
+  minimumTransferAmountUsd: string;
+  callableUsd: string;
+  statementHash: string;
+  callOpen: boolean;
+  settledCalls: string[];
 }
 
 export interface LiveRepoMargin {

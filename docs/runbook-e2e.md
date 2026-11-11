@@ -317,6 +317,17 @@ shows the last return's qualification beside CDM's (defect D4). Both services mu
 rules are the assumptions in `docs/analysis/sme-question-ledger.md` (LDR-1 to LDR-6). BANK-B's test balance holds
 5,000 tUST so that it can post tUST as collateral.
 
+Securities lending marks (`flow-gmsla-marking`): the "Securities lending marks (GMSLA)" card shows the pair's open loans
+marked together at the feed prices on the business date. For each loan it shows the lender's requirement (Market Value
+× margin, cdm-ext `GmslaLoanRequirement`), the collateral value at the feed price without a haircut, and the exposure
+from this party's side. It also shows the margin this party holds net from settled GMSLA calls, and the net figure
+(cdm-ext `GmslaNetExposure`). When the net figure exceeds the party's GMSLA minimum transfer amount, the party clicks
+`Call GMSLA margin from …`. Its service publishes the cdm-ext `GmslaMarkStatement` and issues a VM call by title
+transfer whose IssueCall step names the GMSLA and carries the statement's hash. The called party's service agrees in
+full only if it rebuilds the same statement. It delivers tUSD or tUST covering the amount at the feed prices. The spec
+raises the tMMF price to 1.10 so that A calls B for 510,000, then restores it so that B calls the 510,000 back, and
+returns the loan. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (MRK-1 to MRK-6).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -464,7 +475,8 @@ price and both business dates after the repurchase; the seller pays the Price Di
 and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll`, `flow-repo-pair-off`, `flow-repo-buy-sell-back` and `flow-repo-default-close-out` (the same; the default close-out
 offsets a repo with a buy/sell-back of the same size so no securities drain, and restores A's default status as it found it),
 and `flow-gmsla-terms` (it restores the baseline notification time), and `flow-gmsla-loan-delivery-return` (every loan
-it books is returned in full, so every balance ends where it started).
+it books is returned in full, so every balance ends where it started), and `flow-gmsla-marking` (it restores the tMMF
+price, the borrower calls the margin back, and the loan is returned).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

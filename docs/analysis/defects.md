@@ -44,6 +44,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D24 | `Create_PairOffInstruction` builds instructions with both a `before` trade state and an `execution`, which CDM's `Instruction` condition `NewTrade` forbids, so every pair-off event fails CDM's own validation, CDM's sample output included; it also only tags the trades with a package and settles nothing *(added 2026-11-10)* | event / validation | `rosetta/event-common-func.rosetta` 1656; `rosetta/event-common-type.rosetta` 41; `functions/repo-and-bond/pair-off-output.json` |
 | D26 | CDM's securities lending return settlement workflow (`RunReturnSettlementWorkflow`) builds the return event with no `instruction`, so no event qualification can hold for it; every step of CDM's three lending settlement workflows fails CDM validation on CDM's own samples, and only the execution step qualifies *(added 2026-11-11)* | event / qualification / validation | `cdm.security.lending.functions.SettlementFunctionHelper`; `functions/sec-lending/full-return-settlement-workflow-func-output.json`, `part-return-settlement-workflow-func-output.json`, `new-settlement-workflow-func-output.json` |
 | D27 | `ResolveSecurityFinanceBillingAmount` reads the lending fee from an `InterestRatePayout` and the lent security from the collateral path, and CDM's own lending trade has neither, so every billing record of CDM's invoice sample has no amount and the invoice has no `billingSummary`, which is required *(added 2026-11-11)* | function / sample | `rosetta/event-common-func.rosetta` 1254–1345; `functions/sec-lending/create-security-lending-invoice-func-output.json` |
+| D29 | `SecurityFinanceCashSettlementAmount` returns a transfer whose payer and receiver are the reverse of the `PayerReceiver` it is given, and it values the loan only at the trade's own price, with no price input *(added 2026-11-11)* | function | `SecurityFinanceCashSettlementAmount` (cdm-java 7.7.0, `cdm.event.common.functions`) |
 | D28 | `LegalAgreement`'s condition `AgreementVerification` checks the agreement type for security, credit support, collateral transfer and master agreement schedule elections, but not for `masterAgreementElections`, so a GMSLA (or GMRA or ISDA) election block under a legal agreement of any type validates *(added 2026-11-11)* | validation | `rosetta/legaldocumentation-common-type.rosetta` 78–88 |
 
 ## Details
@@ -444,3 +445,16 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   `SecurityAgreement` passes CDM validation; with type `MasterAgreement` and master agreement type `GMSLA` it passes
   too, as it should.
 - **Effect:** none on the prototype, which builds the agreement type itself; a check in `cdm-ext` covers it.
+
+### D29 — CDM's security finance settlement amount reverses payer and receiver *(added 2026-11-11)*
+
+- `SecurityFinanceCashSettlementAmount(tradeState, date, quantity, payerReceiver)` returns a transfer of the
+  quantity × the trade's price × its `marginPercentage`.
+- Observed 2026-11-11 with a temporary test on loans in the prototype's shape (task-gmsla-marking):
+  - Given payer Party2 (the borrower) and receiver Party1, the transfer's payer is BANK-A (Party1) and its receiver
+    BANK-B. Given payer Party1, it is the reverse. The roles are swapped either way.
+  - On a loan of 100,000 tMMF at 1.00 and margin 1.02, the amount is USD 102,000, against cash or tUST collateral
+    alike; 40,000 shares give USD 40,800.
+  - The function has no price input: it values the loan at the price booked in the trade, so it cannot mark a loan to
+    a later price.
+- **Effect:** the prototype does not use it for marking; `cdm-ext` computes the marked requirement.

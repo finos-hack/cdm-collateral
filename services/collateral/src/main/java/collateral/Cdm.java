@@ -88,11 +88,17 @@ public final class Cdm {
 
     /** {@code gmra}: the call is under the GMRA (wp-adr-repo-margin-maintenance), so its agreement type names it. */
     private static Map<String, Object> callBase(String callId, String issuer, String direction, String regMarginType, boolean gmra) {
+        return callBase(callId, issuer, direction, regMarginType, gmra ? "GMRA" : null);
+    }
+
+    /** {@code master}: the master agreement the call is under (MasterAgreementTypeEnum: GMRA, GMSLA), or null for a call
+     *  under the CSA. */
+    private static Map<String, Object> callBase(String callId, String issuer, String direction, String regMarginType, String master) {
         String pledgor = pledgorOf(issuer, direction), securedParty = otherBank(pledgor);
         return o("instructionType", o("callType", "MarginCall"),
                 "callIdentifier", ident(callId, issuer),
-                "callAgreementType", gmra
-                        ? o("agreementType", "MasterAgreement", "masterAgreementType", o("@data", "GMRA"))
+                "callAgreementType", master != null
+                        ? o("agreementType", "MasterAgreement", "masterAgreementType", o("@data", master))
                         : o("agreementType", "CreditSupportAgreement", "creditSupportAgreementType", o("@data", "CreditSupportAnnex")),
                 "regMarginType", regMarginType,
                 "partyRole", l(o("partyReference", party(pledgor), "role", "Pledgor"),
@@ -130,10 +136,22 @@ public final class Cdm {
     }
 
     public static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall, String regMarginType, boolean gmra) {
-        Map<String, Object> issuance = callBase(callId, issuer, direction, regMarginType, gmra);
+        return issue(callId, issuer, amountUsd, direction, replacesCall, regMarginType, gmra ? "GMRA" : null, null);
+    }
+
+    /** A VM delivery call under the GMSLA (wp-adr-gmsla-marking): the IssueCall step carries the hash of the
+     *  GmslaMarkStatement its amount comes from. */
+    public static Cdm issueGmsla(String callId, String issuer, long amountUsd, String markStatementHash) {
+        return issue(callId, issuer, amountUsd, "Delivery", null, "VM", "GMSLA", markStatementHash);
+    }
+
+    private static Cdm issue(String callId, String issuer, long amountUsd, String direction, String replacesCall, String regMarginType,
+                             String master, String markStatement) {
+        Map<String, Object> issuance = callBase(callId, issuer, direction, regMarginType, master);
         issuance.put("callAmountInBaseCurrency", money(amountUsd));
         Map<String, Object> issue = o("issuance", issuance, "direction", direction);
         if (replacesCall != null) issue.put("replacesCall", replacesCall);
+        if (markStatement != null) issue.put("markStatement", markStatement);
         return new Cdm("issue", issue);
     }
 
@@ -155,7 +173,13 @@ public final class Cdm {
 
     public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
                               String action, long units, String collateralIsin, String regMarginType, boolean gmra) {
-        Map<String, Object> resp = callBase(callId, issuer, action, regMarginType, gmra);
+        return respond(callId, issuer, kind, agreedUsd, action, units, collateralIsin, regMarginType, gmra ? "GMRA" : null);
+    }
+
+    /** {@code master}: as for {@link #callBase(String, String, String, String, String)}. */
+    public static Cdm respond(String callId, String issuer, String kind, long agreedUsd,
+                              String action, long units, String collateralIsin, String regMarginType, String master) {
+        Map<String, Object> resp = callBase(callId, issuer, action, regMarginType, master);
         resp.put("marginResponseType", kind); // AgreeinFull | PartiallyAgree | Dispute
         resp.put("agreedAmountBaseCurrency", money(agreedUsd));
         resp.put("marginCallResponseAction",

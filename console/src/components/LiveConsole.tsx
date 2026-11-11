@@ -25,7 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms, type LiveGmslaTerms, type LiveLoan, type LiveLoans, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
+  type LiveGmraTerms, type LiveGmslaMarking, type LiveGmslaTerms, type LiveLoan, type LiveLoans, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -57,6 +57,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [repos, setRepos] = useState<LiveRepos | null>(null);
   const [loans, setLoans] = useState<LiveLoans | null>(null);
   const [repoMargin, setRepoMargin] = useState<LiveRepoMargin | null>(null);
+  const [gmslaMarking, setGmslaMarking] = useState<LiveGmslaMarking | null>(null);
   const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
@@ -93,6 +94,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.repos(party).then((r) => setRepos(r?.businessDate && Array.isArray(r?.repos) ? r : null)).catch(() => setRepos(null)),
         api.loans(party).then((l) => setLoans(l?.businessDate && Array.isArray(l?.loans) ? l : null)).catch(() => setLoans(null)),
         api.repoMargin(party).then((m) => setRepoMargin(m?.businessDate && Array.isArray(m?.exposures) ? m : null)).catch(() => setRepoMargin(null)),
+        api.gmslaMarking(party).then((m) => setGmslaMarking(m?.businessDate && Array.isArray(m?.loans) ? m : null)).catch(() => setGmslaMarking(null)),
         api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
       );
       setState(await api.state(party));
@@ -404,6 +406,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {gmra && <GmraTermsCard party={party} other={other} gmra={gmra} busy={busy} run={run} />}
       {gmsla && <GmslaTermsCard party={party} other={other} gmsla={gmsla} busy={busy} run={run} />}
       {loans && <LoansCard party={party} other={other} loans={loans} defaultMargin={gmsla?.elections.defaultMargin ?? "1.02"} busy={busy} run={run} />}
+      {gmslaMarking && <GmslaMarkingCard party={party} other={other} mark={gmslaMarking} busy={busy} run={run} />}
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
@@ -1308,6 +1311,51 @@ function RepoDefaultCard(props: { party: LiveParty; other: LiveParty; d: LiveRep
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+/** The aggregated mark of the pair's securities loans (wp-adr-gmsla-marking): each open loan's requirement and
+ *  collateral at the feed prices, the margin held from settled GMSLA calls, and the call the net figure allows. */
+function GmslaMarkingCard(props: { party: LiveParty; other: LiveParty; mark: LiveGmslaMarking; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, mark: m, busy, run } = props;
+  const usd = (v: string) => Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return (
+    <div className="card" data-testid="gmsla-marking">
+      <h3>Securities lending marks (GMSLA)</h3>
+      <div className="row">
+        <span data-testid="gmsla-net-exposure">net figure USD {usd(m.netExposureUsd)}</span>
+        <span data-testid="gmsla-margin-held">margin held USD {usd(m.netMarginHeldUsd)}</span>
+        <span>minimum transfer USD {usd(m.minimumTransferAmountUsd)}</span>
+        {m.callOpen ? (
+          <span data-testid="gmsla-call-open">a GMSLA margin call is open</span>
+        ) : (
+          <button disabled={busy || m.callableUsd === "0"} onClick={() => run(() => api.callGmslaMargin(party))}>
+            {m.callableUsd === "0" ? "Nothing to call" : `Call GMSLA margin from ${other}: USD ${usd(m.callableUsd)}`}
+          </button>
+        )}
+      </div>
+      {m.loans.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Loan</th><th>Role</th><th>Quantity</th><th>Price</th><th>Requirement</th><th>Collateral</th><th>Exposure</th></tr>
+          </thead>
+          <tbody>
+            {m.loans.map((l) => (
+              <tr key={l.loanId} data-testid={`gmsla-mark-${l.loanId}`}>
+                <td className="mono">{short(l.loanId)}</td>
+                <td>{l.role}</td>
+                <td>{Number(l.quantity).toLocaleString("en-US")}</td>
+                <td>{l.price}</td>
+                <td>{usd(l.requirementUsd)} ({l.marginPercent}%)</td>
+                <td>{usd(l.collateralValueUsd)}</td>
+                <td>{usd(l.exposureUsd)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div className="mono small">statement {short(m.statementHash)} · business date {m.businessDate}</div>
     </div>
   );
 }

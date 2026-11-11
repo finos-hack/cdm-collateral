@@ -2,7 +2,7 @@
 id: task-gmsla-loan-delivery-return
 type: task
 title: Securities loan delivery against collateral, and full and partial return
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T17:12:22Z
+updatedAt: 2026-11-11T18:10:31Z
 ```
 # Task: securities loan delivery against collateral, and full and partial return
 
@@ -60,3 +60,4 @@ console's "Securities loans (GMSLA)" card; live spec `flow-gmsla-loan-delivery-r
 of loan pass CDM validation through booking, delivery, a partial return and a full return. CDM qualifies the full return
 of the tUST loan as both `FullReturn` and `Termination` (D4). BANK-B's test balance now holds 5,000 tUST.
 
+**Resolved 2026-11-11**: PR #60 merged (source `27940ebe8edf7fc4e79374b55bf7b097597d1d84`).

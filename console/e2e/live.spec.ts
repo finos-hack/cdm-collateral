@@ -2744,3 +2744,144 @@ test("flow-gmsla-loan-delivery-return: A lends tMMF to B against tUSD -> B affir
   expect(await bal()).toEqual(start);
   expect(errors).toEqual([]);
 });
+
+// --- flow-gmsla-marking ---
+// The pair's loans are marked together at the feed prices (wp-adr-gmsla-marking). The tMMF price rises, so the lender A
+// is short of collateral and calls B in its console; B rebuilds the mark statement before agreeing and delivers tUSD by
+// title transfer. The price is restored, so B now holds too little and calls the excess back. The loan is returned and
+// every balance ends where it started.
+type GmslaMarking = {
+  party: string; businessDate: string; netMarginHeldUsd: string; netExposureUsd: string; callableUsd: string; callOpen: boolean;
+  statementHash: string; settledCalls: string[]; loans: { loanId: string; role: string; requirementUsd: string; collateralValueUsd: string; exposureUsd: string }[];
+};
+
+test("flow-gmsla-marking: the tMMF price rises -> the lender calls the shortfall, B delivers tUSD -> the price is restored -> B calls the excess back -> the loan is returned; every balance restored", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const tMMF = p.tokens.tMMF, tUSD = p.tokens.tUSD;
+  const today = new Date().toLocaleDateString("en-CA");
+  const mark = (svc: string) => call<GmslaMarking>(`${svc}/gmsla-marking`);
+  const feedIs = async (price: number) => {
+    for (const gw of [GATEWAY.A, GATEWAY.B]) {
+      await expect.poll(async () => (await call<{ price: string | null }>(`${gw}/prices/${tMMF}`)).price, { timeout: 30_000 })
+        .toBe(String(BigInt(Math.round(price * 100)) * 1_000_000n));
+    }
+  };
+  const setPrice = async (price: number) => {
+    await call(`${ORACLE}/market-data/tMMF`, "PUT", { price: String(price) });
+    await feedIs(price);
+  };
+  const bal = async () => ({
+    aMmf: await balanceOf(GATEWAY.A, tMMF, p.a), bMmf: await balanceOf(GATEWAY.A, tMMF, p.b),
+    aUsd: await balanceOf(GATEWAY.A, tUSD, p.a), bUsd: await balanceOf(GATEWAY.A, tUSD, p.b),
+  });
+  const settled = async (svc: string, callId: string) =>
+    expect.poll(async () => (await call<{ calls: { callId: string; state: string }[] }>(`${svc}/state`)).calls.find((c) => c.callId === callId)?.state, { timeout: 60_000 }).toBe("settled");
+  const noCallOpen = async () => {
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await mark(svc)).callOpen, { timeout: 30_000 }).toBe(false);
+  };
+  const loanState = async (svc: string, id: string) => (await call<{ loans: Loan[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id);
+
+  // Setup: both business dates on today; no open loan and no GMSLA margin between the pair.
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  const before = await mark(SERVICE.A);
+  expect(before.loans).toEqual([]);
+  expect(Number(before.netMarginHeldUsd)).toBe(0);
+  const start = await bal();
+
+  // A lends 5,000,000 tMMF to B against tUSD at the default margin (through the services; the UI path is
+  // flow-gmsla-loan-delivery-return).
+  const quantity = 5_000_000;
+  const { loanId, collateralAmount } = await call<{ loanId: string; collateralAmount: number }>(`${SERVICE.A}/loans`, "POST",
+    { security: "tMMF", quantity, collateral: "tUSD", ratePercent: "4" });
+  await call(`${SERVICE.B}/loans/${loanId}/affirm`, "POST", {});
+  await call(`${SERVICE.A}/loans/${loanId}/deliver`, "POST", {});
+  await call(`${SERVICE.B}/loans/${loanId}/deliver`, "POST", {});
+  await expect.poll(async () => (await loanState(SERVICE.B, loanId))?.state, { timeout: STEP_TIMEOUT }).toBe("open");
+  expect(collateralAmount).toBe(5_100_000);
+
+  let returned = false;
+  try {
+    // At the booking price the collateral covers the margin: nothing to call either way.
+    await expect.poll(async () => (await mark(SERVICE.A)).callableUsd, { timeout: 30_000 }).toBe("0");
+    expect((await mark(SERVICE.B)).callableUsd).toBe("0");
+
+    // The price rises to 1.10: A requires 5,610,000 and holds 5,100,000, so A may call 510,000; B's figure is the opposite.
+    await setPrice(1.1);
+    const shortfall = 5_610_000 - collateralAmount;
+    await expect.poll(async () => (await mark(SERVICE.A)).callableUsd, { timeout: 30_000 }).toBe(String(shortfall));
+    const m = await mark(SERVICE.A);
+    expect(m.loans.map((l) => [l.role, l.requirementUsd, l.collateralValueUsd, l.exposureUsd])).toEqual([["lender", "5610000.00", "5100000.00", "510000.00"]]);
+    expect(Number((await mark(SERVICE.B)).netExposureUsd)).toBe(-shortfall);
+    expect((await mark(SERVICE.B)).callableUsd).toBe("0");
+
+    // A calls in its console; a second call is refused while it is open.
+    await page.goto("/#/live/A");
+    const card = page.getByTestId("gmsla-marking");
+    await expect(page.getByTestId("gmsla-net-exposure")).toHaveText(`net figure USD ${shortfall.toLocaleString("en-US")}`, { timeout: STEP_TIMEOUT });
+    await card.getByRole("button", { name: `Call GMSLA margin from B: USD ${shortfall.toLocaleString("en-US")}` }).click({ timeout: STEP_TIMEOUT });
+    let callId: string | undefined;
+    await expect.poll(async () => {
+      callId = (await call<{ calls: { callId: string; kind: string; amountUsd: string; state: string }[] }>(`${SERVICE.B}/state`)).calls
+        .find((c) => c.kind === "VM" && c.amountUsd === String(shortfall) && c.state === "issued")?.callId;
+      return callId ?? null;
+    }, { timeout: 30_000 }).not.toBeNull();
+    await expect(page.getByTestId("gmsla-call-open")).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(call(`${SERVICE.A}/gmsla-marking/calls`, "POST", {})).rejects.toThrow("still open");
+
+    // B agrees after rebuilding the statement. An under-covering proposal and tMMF are refused off-chain; then B
+    // delivers the shortfall in tUSD and A accepts.
+    await call(`${SERVICE.B}/calls/${callId}/response`, "POST", { response: "full" });
+    await expect(call(`${SERVICE.B}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tUSD", qty: shortfall - 1 }] })).rejects.toThrow("does not cover");
+    await expect(call(`${SERVICE.B}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tMMF", qty: shortfall }] })).rejects.toThrow("tUSD or tUST");
+    const first = await call<{ proposalId: number }>(`${SERVICE.B}/calls/${callId}/proposal`, "POST", { assets: [{ token: "tUSD", qty: shortfall }] });
+    await call(`${SERVICE.A}/calls/${callId}/decision`, "POST", { proposalId: first.proposalId, accept: true });
+    await call(`${SERVICE.B}/calls/${callId}/transfer`, "POST", { proposalId: first.proposalId });
+    await settled(SERVICE.A, callId!);
+    await noCallOpen();
+    let now = await bal();
+    expect(now.aUsd - start.aUsd).toBe(BigInt(collateralAmount + shortfall));
+    // The margin counts in the next mark: nothing is left to call.
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await mark(svc)).callableUsd, { timeout: 30_000 }).toBe("0");
+    expect((await mark(SERVICE.A)).netMarginHeldUsd).toBe(`${shortfall}.00`);
+    await page.reload();
+    await expect(page.getByTestId("gmsla-margin-held")).toHaveText(`margin held USD ${shortfall.toLocaleString("en-US")}`, { timeout: STEP_TIMEOUT });
+
+    // The price is restored: B now has the excess to call back, which A delivers.
+    await setPrice(1);
+    await expect.poll(async () => (await mark(SERVICE.B)).callableUsd, { timeout: 30_000 }).toBe(String(shortfall));
+    const back = await call<{ callId: string; amountUsd: number }>(`${SERVICE.B}/gmsla-marking/calls`, "POST", {});
+    expect(back.amountUsd).toBe(shortfall);
+    await call(`${SERVICE.A}/calls/${back.callId}/response`, "POST", { response: "full" });
+    const second = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${back.callId}/proposal`, "POST", { assets: [{ token: "tUSD", qty: shortfall }] });
+    await call(`${SERVICE.B}/calls/${back.callId}/decision`, "POST", { proposalId: second.proposalId, accept: true });
+    await call(`${SERVICE.A}/calls/${back.callId}/transfer`, "POST", { proposalId: second.proposalId });
+    await settled(SERVICE.B, back.callId);
+    await noCallOpen();
+    for (const svc of [SERVICE.A, SERVICE.B]) expect(Number((await mark(svc)).netMarginHeldUsd)).toBe(0);
+    now = await bal();
+    expect(now.aUsd - start.aUsd).toBe(BigInt(collateralAmount));
+
+    // The loan is returned in full; the return redelivers only the loan's own collateral.
+    await call(`${SERVICE.B}/loans/${loanId}/return`, "POST", { quantity });
+    await call(`${SERVICE.A}/loans/${loanId}/return`, "POST", {});
+    await expect.poll(async () => (await loanState(SERVICE.A, loanId))?.state, { timeout: STEP_TIMEOUT }).toBe("returned");
+    returned = true;
+    await expect.poll(async () => (await mark(SERVICE.A)).loans.length, { timeout: 30_000 }).toBe(0);
+    expect(await bal()).toEqual(start);
+    expect(errors).toEqual([]);
+  } finally {
+    await call(`${ORACLE}/market-data/tMMF`, "PUT", { price: "1" });
+    await feedIs(1);
+    if (!returned) {
+      // Leave no open loan for the next run: return it in full at the restored price.
+      const l = await loanState(SERVICE.A, loanId);
+      if (l?.state === "open") {
+        await call(`${SERVICE.B}/loans/${loanId}/return`, "POST", { quantity: Number(l.quantity) }).catch(() => undefined);
+        await call(`${SERVICE.A}/loans/${loanId}/return`, "POST", {}).catch(() => undefined);
+      }
+    }
+  }
+});

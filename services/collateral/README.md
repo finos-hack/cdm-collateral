@@ -144,6 +144,12 @@ and checking the price and collateral), `POST /loans/{id}/deliver` (either party
 approving what it delivers), `POST /loans/{id}/return` (either party, on the business date: body `quantity`, or none to
 agree the counterparty's pending return; CDM's return event with the collateral reduced, `Qualify_GmslaReturn`, and the
 collateral redelivered by `GmslaReturnCollateral`),
+`GET /gmsla-marking` (the aggregated mark of the pair's open loans stated for this party, cdm-ext `GmslaMarkStatement`
+built by `CdmGmslaMark`: each loan's requirement, collateral value and exposure at the feed prices, the margin held net
+from settled GMSLA calls, the net figure, the minimum transfer amount, `callableUsd`, `statementHash` and `callOpen`;
+wp-adr-gmsla-marking), `POST /gmsla-marking/calls` (the party whose net figure exceeds its minimum transfer amount: a VM
+call by title transfer whose IssueCall step names the GMSLA and carries the statement hash; the called party agrees in
+full only if it rebuilds the same statement, and proposes tUSD or tUST whose value at the feed prices covers the amount),
 `GET /repos` (this party's term repos with the business date: the on-chain record from `RepoSettlement` and the CDM
 trade this service rebuilt from the booked document and checked against it, `verified`; wp-adr-repo-purchase-repurchase),
 `POST /repos` (body `security` tUST or tMMF, `purchasePrice` whole tUSD, `ratePercent`, `termDays`, optional

@@ -145,6 +145,8 @@ public final class App {
         app.post("/api/v1/loans/{id}/affirm", this::affirmLoan);
         app.post("/api/v1/loans/{id}/deliver", this::deliverLoan);
         app.post("/api/v1/loans/{id}/return", this::returnLoan);
+        app.get("/api/v1/gmsla-marking", this::gmslaMarking);
+        app.post("/api/v1/gmsla-marking/calls", this::issueGmslaMarginCall);
         app.get("/api/v1/repos", this::repos);
         app.post("/api/v1/repos", this::bookRepo);
         app.post("/api/v1/repos/{id}/affirm", this::affirmRepo);
@@ -1389,11 +1391,12 @@ public final class App {
     // A GMRA call is a CallKind.VM call settled by title transfer whose CDM issuance names the GMRA. Rules to confirm in
     // task-sme-repo-margin-exposure.
 
-    private final Map<String, Boolean> gmraCalls = new ConcurrentHashMap<>();
+    /** The anchored IssueCall document of each call, by call id (a known answer is kept: a call's issuance never changes). */
+    private final Map<String, String> issueDocs = new ConcurrentHashMap<>();
 
-    /** Whether a call's anchored issuance names the GMRA (a known answer is kept: a call's issuance never changes). */
-    private boolean isGmraCall(String callId) {
-        Boolean known = gmraCalls.get(callId.toLowerCase());
+    /** A call's anchored IssueCall document; null when it is not yet in the payload store. */
+    private String issueDoc(String callId) {
+        String known = issueDocs.get(callId.toLowerCase());
         if (known != null) return known;
         // The gateway's log scan and the payload store can lag the mined issuance by a moment.
         for (int attempt = 0; attempt < 5; attempt++) {
@@ -1401,9 +1404,8 @@ public final class App {
             String hash = steps.isEmpty() ? null : steps.get(0).get("cdmHash").asText();
             String doc = hash == null ? null : payloads.get(hash);
             if (doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
-                boolean gmra = CdmRepoMargin.isGmraIssue(doc);
-                gmraCalls.put(callId.toLowerCase(), gmra);
-                return gmra;
+                issueDocs.put(callId.toLowerCase(), doc);
+                return doc;
             }
             try {
                 Thread.sleep(200);
@@ -1412,7 +1414,23 @@ public final class App {
                 break;
             }
         }
-        return false;
+        return null;
+    }
+
+    /** The master agreement a call's issuance names (GMRA, GMSLA), or null for a CSA call or an issuance not yet stored. */
+    private String callAgreement(String callId) {
+        String doc = issueDoc(callId);
+        return doc == null ? null : CdmGmslaMark.agreementOf(doc);
+    }
+
+    /** Whether a call's anchored issuance names the GMRA. */
+    private boolean isGmraCall(String callId) {
+        return "GMRA".equals(callAgreement(callId));
+    }
+
+    /** Whether a call's anchored issuance names the GMSLA (wp-adr-gmsla-marking). */
+    private boolean isGmslaCall(String callId) {
+        return "GMSLA".equals(callAgreement(callId));
     }
 
     private record RepoMarginState(List<Map<String, Object>> rows, BigDecimal held, long cashHeld, BigDecimal net) {}
@@ -1530,10 +1548,133 @@ public final class App {
         String callId = Cdm.onChainId(cfg.partyId + "-gmra-" + System.nanoTime());
         Cdm cdm = Cdm.issue(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, "Delivery", null, "VM", true);
         record(callId, "IssueCall", cdm);
-        gmraCalls.put(callId.toLowerCase(), true);
+        issueDocs.put(callId.toLowerCase(), cdm.json);
         gw.post("/calls", new LinkedHashMap<>(Map.of("callId", callId, "kind", CALL_KIND.get("VM"), "to", cfg.partyAddress(counterparty()),
                 "amount", BigInteger.valueOf(amountUsd).multiply(cfg.priceScale).toString(), "deadline", deadline, "cdmHash", cdm.hash)));
         ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "amountUsd", amountUsd, "settlementMethod", "TitleTransfer"));
+    }
+
+    // ---- securities lending marks (task-gmsla-marking, wp-adr-gmsla-marking) ----
+    // The pair's open loans are marked together (GMSLA paragraph 5.4) at the feed prices on the business date. The party
+    // whose net figure exceeds its minimum transfer amount calls it as a VM call by title transfer whose IssueCall step
+    // names the GMSLA and carries the hash of the cdm-ext GmslaMarkStatement. Rules to confirm in
+    // task-sme-gmsla-marking-rules.
+
+    private long gmslaMta(String partyId) {
+        var role = partyId.equals("A") ? cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_1 : cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_2;
+        return CdmGmsla.mtaUsd(gmslaFold().terms().terms(), role);
+    }
+
+    /** The margin this party holds net from the pair's settled GMSLA calls, at the feed prices, and the calls. */
+    private record GmslaMarginHeld(BigDecimal value, List<String> calls) {}
+
+    private GmslaMarginHeld gmslaMarginHeld() {
+        BigDecimal held = BigDecimal.ZERO;
+        List<String> calls = new ArrayList<>();
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            String callId = entry.get("callId").asText();
+            if (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmslaCall(callId)) continue;
+            boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
+            long pid = c.get("activeProposal").asLong() - 1;
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
+                BigDecimal v = CdmRepoMargin.value(a.get("qty").asLong(), feedPrice(a.get("token").asText()));
+                held = received ? held.add(v) : held.subtract(v);
+            }
+            calls.add(callId);
+        }
+        return new GmslaMarginHeld(held, calls);
+    }
+
+    /** The mark stated for a party ("A" or "B"): the pair's open loans from the chain, checked against their trades,
+     *  at the feed prices on this service's business date. */
+    private CdmGmslaMark.Statement gmslaMark(String statedFor) {
+        List<CdmGmslaMark.LoanInput> loans = new ArrayList<>();
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress))) {
+            if (!l.get("state").asText().equals("open")) continue;
+            String id = l.get("loanId").asText();
+            LoanCurrent c = loanCurrent(l);
+            if (c == null) throw new RuntimeException("the document of loan " + id + " is not in the payload store");
+            String problem = loanProblem(l, c);
+            if (problem != null) throw new RuntimeException("loan " + id + ": " + problem);
+            CdmLoan.Terms t = CdmLoan.terms(c.trade(), c.terms());
+            String sec = symbolByAddress.get(l.get("security").asText().toLowerCase());
+            String col = symbolByAddress.get(l.get("collateral").asText().toLowerCase());
+            loans.add(new CdmGmslaMark.LoanInput(id, l.get("tradeHash").asText(), t.lender(), t.borrower(), t.isin(), l.get("quantity").asLong(),
+                    loanFeedPrice(sec), t.margin(), t.cash() ? "USD" : t.collateralIsin(), l.get("collateralAmount").asLong(),
+                    t.cash() ? BigDecimal.ONE : loanFeedPrice(col)));
+        }
+        BigDecimal held = gmslaMarginHeld().value();
+        boolean mine = statedFor.equals(cfg.partyId);
+        String other = statedFor.equals("A") ? "B" : "A";
+        return CdmGmslaMark.build(cfg.bankName(statedFor), cfg.bankName(other), businessDate, "USD", loans,
+                mine ? held : held.negate(), gmslaMta(statedFor));
+    }
+
+    /** Whether a GMSLA call between the pair is still open: its amount is not yet in the margin held. */
+    private boolean gmslaCallOpen() {
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            if (c.get("kind").asInt() == 1 && state >= 1 && state <= 3 && isGmslaCall(entry.get("callId").asText())) return true;
+        }
+        return false;
+    }
+
+    private void gmslaMarking(Context ctx) {
+        CdmGmslaMark.Statement s = gmslaMark(cfg.partyId);
+        Map<String, Object> m = new LinkedHashMap<>(CdmGmslaMark.view(s.statement()));
+        m.put("statementHash", s.hash());
+        m.put("callOpen", gmslaCallOpen());
+        m.put("settledCalls", gmslaMarginHeld().calls());
+        ctx.json(m);
+    }
+
+    /** The party whose net figure exceeds its minimum transfer amount calls it: the statement is published and its
+     *  hash rides in the call's IssueCall step. */
+    private void issueGmslaMarginCall(Context ctx) {
+        if (gmslaCallOpen()) throw new RuntimeException("a GMSLA margin call between the parties is still open");
+        CdmGmslaMark.Statement s = gmslaMark(cfg.partyId);
+        long amountUsd = CdmGmslaMark.callAmount(s.statement());
+        if (amountUsd == 0) throw new RuntimeException("the net figure " + s.statement().getNetExposure().toPlainString() + " does not exceed the minimum transfer amount");
+        String callId = Cdm.onChainId(cfg.partyId + "-gmsla-" + System.nanoTime());
+        store.recordDocument(callId, "GmslaMarkStatement", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), callParties);
+        Cdm cdm = Cdm.issueGmsla(Cdm.cdmCallId(callId), cfg.bankName(cfg.partyId), amountUsd, s.hash());
+        record(callId, "IssueCall", cdm);
+        issueDocs.put(callId.toLowerCase(), cdm.json);
+        long deadline = System.currentTimeMillis() / 1000 + 86400L;
+        gw.post("/calls", new LinkedHashMap<>(Map.of("callId", callId, "kind", CALL_KIND.get("VM"), "to", cfg.partyAddress(counterparty()),
+                "amount", BigInteger.valueOf(amountUsd).multiply(cfg.priceScale).toString(), "deadline", deadline, "cdmHash", cdm.hash)));
+        ctx.json(Map.of("callId", callId, "cdmHash", cdm.hash, "statementHash", s.hash(), "amountUsd", amountUsd, "settlementMethod", "TitleTransfer"));
+    }
+
+    /** The called party agrees a GMSLA call in full only if it builds the same mark for the caller: the hash in the
+     *  IssueCall step, and the amount called. */
+    private void checkGmslaCall(String callId, JsonNode c) {
+        if (!c.get("to").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the called party responds to a call");
+        String doc = issueDoc(callId);
+        String stated = doc == null ? null : CdmGmslaMark.markStatementOf(doc);
+        if (stated == null) throw new RuntimeException("the call's IssueCall step carries no mark statement");
+        CdmGmslaMark.Statement again = gmslaMark(partyIdOf(c.get("from").asText()));
+        long called = new BigInteger(c.get("amount").asText()).divide(cfg.priceScale).longValue();
+        if (!again.hash().equalsIgnoreCase(stated))
+            throw new RuntimeException("the call's mark statement is not the one this service builds at the feed prices and business date " + businessDate
+                    + " (net figure " + again.statement().getNetExposure().toPlainString() + ")");
+        if (CdmGmslaMark.callAmount(again.statement()) != called) throw new RuntimeException("the call amount " + called + " is not the mark's call amount");
+        String published = payloads.get(stated);
+        if (published != null) store.recordDocument(callId, "GmslaMarkStatement", "in", stated, published);
+    }
+
+    /** GMSLA margin is cash (tUSD) or tUST, and its value at the feed prices, without a haircut, covers the amount. */
+    private void checkGmslaCoverage(List<Map.Entry<String, Long>> assets, long agreedUsd) {
+        BigDecimal value = BigDecimal.ZERO;
+        for (Map.Entry<String, Long> a : assets) {
+            if (!"tUSD".equals(a.getKey()) && !"tUST".equals(a.getKey())) throw new RuntimeException("GMSLA margin is tUSD or tUST, not " + a.getKey());
+            value = value.add(CdmRepoMargin.value(a.getValue(), feedPrice(cfg.tokenAddress(a.getKey()))));
+        }
+        if (value.compareTo(BigDecimal.valueOf(agreedUsd)) < 0) throw new RuntimeException("the assets' value " + value.toPlainString() + " does not cover the agreed amount " + agreedUsd);
     }
 
     // ---- repo reprice and adjustment (wp-adr-repo-reprice, wp-adr-repo-adjustment) ----
@@ -2720,8 +2861,9 @@ public final class App {
         Map<String, Object> b = body(ctx);
         String response = (String) b.getOrDefault("response", "full");
         JsonNode c = gw.get("/calls/" + callId);
-        boolean gmra = isGmraCall(callId);
-        if (gmra && response.equals("full")) checkGmraCallAmount(c);
+        String master = callAgreement(callId);
+        if ("GMRA".equals(master) && response.equals("full")) checkGmraCallAmount(c);
+        if ("GMSLA".equals(master) && response.equals("full")) checkGmslaCall(callId, c);
         BigInteger amount = new BigInteger(c.get("amount").asText());
         BigInteger agreed = switch (response) {
             case "full" -> amount;
@@ -2740,7 +2882,7 @@ public final class App {
         // The response states indicative collateral; the actual assets are chosen at proposal time (single-token cycle).
         long units = Math.max(1, agreedUsd);
         Cdm cdm = Cdm.respond(Cdm.cdmCallId(callId), issuer, kindCdm, agreedUsd, action, units, cfg.isin(cfg.firstTokenSymbol()),
-                Cdm.regMarginType(CALL_KIND_NAME[c.get("kind").asInt()]), gmra);
+                Cdm.regMarginType(CALL_KIND_NAME[c.get("kind").asInt()]), master);
         record(callId, "RespondToCall", cdm);
         gw.post("/calls/" + callId + "/response", Map.of("response", RESPONSE.get(response), "agreed", agreed.toString(), "cdmHash", cdm.hash));
         Map<String, Object> out = new LinkedHashMap<>(Map.of("ok", true, "agreedUsd", String.valueOf(agreedUsd)));
@@ -2759,10 +2901,12 @@ public final class App {
         long nextPid = c.get("proposalCount").asLong(); // the id the contract assigns next (sequential per call)
         long agreedUsd = new BigInteger(c.get("agreed").asText()).divide(cfg.priceScale).longValue();
         String callIssuer = cfg.bankName(partyIdOf(c.get("from").asText()));
-        if (isGmraCall(callId)) {
+        String master = callAgreement(callId);
+        if (master != null) {
             List<Map.Entry<String, Long>> proposed = new ArrayList<>();
             for (Map<String, Object> a : assetsIn) proposed.add(Map.entry((String) a.get("token"), ((Number) a.get("qty")).longValue()));
-            checkGmraCoverage(proposed, agreedUsd);
+            if (master.equals("GMRA")) checkGmraCoverage(proposed, agreedUsd);
+            else checkGmslaCoverage(proposed, agreedUsd);
         }
         List<Map<String, Object>> gwAssets = new ArrayList<>();
         List<Map<String, Object>> cdmAssets = new ArrayList<>();
@@ -2850,11 +2994,14 @@ public final class App {
         long proposalId = ((Number) b.get("proposalId")).longValue();
         boolean accept = Boolean.TRUE.equals(b.get("accept"));
         String reason = (String) b.get("reason");
-        if (accept && isGmraCall(callId)) {
+        String master = accept ? callAgreement(callId) : null;
+        if (master != null) {
             List<Map.Entry<String, Long>> proposed = new ArrayList<>();
             for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets"))
                 proposed.add(Map.entry(symbolByAddress.get(a.get("token").asText().toLowerCase()), a.get("qty").asLong()));
-            checkGmraCoverage(proposed, new BigInteger(gw.get("/calls/" + callId).get("agreed").asText()).divide(cfg.priceScale).longValue());
+            long agreed = new BigInteger(gw.get("/calls/" + callId).get("agreed").asText()).divide(cfg.priceScale).longValue();
+            if (master.equals("GMRA")) checkGmraCoverage(proposed, agreed);
+            else checkGmslaCoverage(proposed, agreed);
         }
         Cdm cdm = Cdm.decide("P-" + proposalId, accept, reason);
         record(callId, "DecideProposal", cdm);

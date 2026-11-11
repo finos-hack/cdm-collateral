@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 118 questions in 22 tasks, all open.
+Status of the ledger: 124 questions in 23 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -243,3 +243,14 @@ Status of the ledger: 118 questions in 22 tasks, all open.
 | LDR-4 | A cash-collateral loan states a rebate rate, and a loan against securities states a fee rate, both fixed at booking. Are both agreed per loan, and can a rate change during the loan? | open | |
 | LDR-5 | Collateral passes to the lender by outright title transfer, as under GMSLA 2010. Should the prototype also support the GMSLA 2018 security interest (pledge) variant? | open | |
 | LDR-6 | A full return is qualified as a full return and not as a termination. Is the end of a loan by full return treated differently from its early termination (for example on recall or default)? | open | |
+
+### `task-sme-gmsla-marking-rules`: marking securities loans under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| MRK-1 | Loans are marked together per pair (GMSLA paragraph 5.4): each party's requirement as lender less the collateral it holds, the two directions netted to one figure. Is that how aggregated marking is computed, and is margin from earlier calls netted in the same figure? | open | |
+| MRK-2 | Either party may call: a lender short of collateral calls for more, and a borrower over-collateralised calls for the excess back. Is that usual, and is the call made by notice to the other party? | open | |
+| MRK-3 | A call is made only when the net figure exceeds the calling party's minimum transfer amount. Does the GMSLA minimum transfer amount apply this way, and is there also a rounding of the amount called? | open | |
+| MRK-4 | Collateral is valued at its market price without a haircut, the loan's margin being the buffer. Is a haircut on non-cash collateral applied as well under GMSLA 2010? | open | |
+| MRK-5 | The margin delivered on a call stays with the pair and is netted at the next mark; a return of a loan redelivers only that loan's own collateral. Is margin attributed to individual loans in practice? | open | |
+| MRK-6 | Prices are the feed prices on the business date, and a call settles by the next business day. What are the usual valuation time and settlement period for a margin call under the GMSLA? | open | |
