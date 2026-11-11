@@ -1265,3 +1265,5 @@ excluded.
 | task-gmsla-recall | ac93b2fd3886e407f86e52820ea8d3c2b7e7b36c | services/collateral/src/main/java/collateral/CdmRecall.java | 2026-11-11T19:55:15Z |
 | task-gmsla-recall | ac93b2fd3886e407f86e52820ea8d3c2b7e7b36c | services/collateral/src/test/java/collateral/CdmRecallTest.java | 2026-11-11T19:55:15Z |
 | task-gmsla-substitution | 4c085f9e844da25c2fe1f45abdc4a3f92e956de8 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T20:02:35Z |
+| task-gmsla-substitution | 888c4178b90c5bad2de03ad41132230a11c745e3 | architecture/prototype.architecture.json | 2026-11-11T20:05:23Z |
+| task-gmsla-substitution | 888c4178b90c5bad2de03ad41132230a11c745e3 | docs/analysis/sme-question-ledger.md | 2026-11-11T20:05:23Z |
