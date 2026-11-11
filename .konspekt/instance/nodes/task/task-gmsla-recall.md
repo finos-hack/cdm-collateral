@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T19:15:12Z
+updatedAt: 2026-11-11T19:17:49Z
 ```
 # Task: recall of loaned securities
 
@@ -36,3 +36,7 @@ to BANK-B against tUSD or tUST, margin 1.02):
   100,000 and the trade open.
 - CDM has no recall notice, no recall qualification and no effect of a recall on the loan. The return that ends a
   recalled loan is the quantity-change event of [[task-gmsla-loan-delivery-return]].
+
+**Design chosen 2026-11-11** (source `72146b83411def7096cb21b1d196e0988e884c38`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in [[wp-adr-gmsla-recall]]
+(proposed); the rules are questions for an SME in [[task-sme-gmsla-recall-rules]].
+

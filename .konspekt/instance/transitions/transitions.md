@@ -1181,3 +1181,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
 | edge:e-dec-cdmdev-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
 | edge:e-lnk-gmslamrk-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| waypoint:wp-adr-gmsla-recall | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| node:task-sme-gmsla-recall-rules | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| node:task-sme-gmsla-recall-rules | status |  | open | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| edge:e-mrk-rcladr-gmslarcl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| edge:e-drv-cdmdata-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| edge:e-drv-finality-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| edge:e-dec-cdmdev-smercl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| edge:e-lnk-gmslarcl-smercl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
