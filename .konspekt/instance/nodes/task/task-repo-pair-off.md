@@ -2,7 +2,7 @@
 id: task-repo-pair-off
 type: task
 title: Repo pair-off
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-11T00:07:12Z
+updatedAt: 2026-11-11T01:11:49Z
 ```
 # Task: repo pair-off
 
