@@ -1292,3 +1292,5 @@ excluded.
 | task-gmsla-substitution | bda49e1d7ed0f3892f5d312fee7a4d98bd2f41a0 | contracts/scripts/deploy.ts | 2026-11-11T21:02:26Z |
 | task-gmsla-substitution | bda49e1d7ed0f3892f5d312fee7a4d98bd2f41a0 | services/collateral/src/main/java/collateral/App.java | 2026-11-11T21:02:26Z |
 | task-gmsla-rebate | d13ad64b899ca62323b4ec3e0c61a693797ff5f8 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T20:36:45Z |
+| task-gmsla-rebate | 03be3ae5432d53918955aa2e60566892073174bd | architecture/prototype.architecture.json | 2026-11-11T20:39:13Z |
+| task-gmsla-rebate | 03be3ae5432d53918955aa2e60566892073174bd | docs/analysis/sme-question-ledger.md | 2026-11-11T20:39:13Z |
