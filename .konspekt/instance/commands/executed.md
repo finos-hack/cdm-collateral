@@ -474,3 +474,10 @@ at execution time.
 | task-repo-default-close-out | ab2ba3191b0e756ce11f9534e96ca9d3355e8eff |
 | task-repo-default-close-out | 4a9f167f73c36ed40abae69f6a67cd3b4a333597 |
 | task-repo-default-close-out | dcdec001f96f1a60b52ef8db0c7d2b1f4131cf6f |
+| task-securities-lending-gmsla-workflows | de2abbc168d4f26659ad1a92ae4571800e51b54a |
+| task-gmsla-terms | 9894bdc550332bcf6ebae50c5ed44e61aa0fb90c |
+| task-gmsla-terms | 81f480b05a75b429d1808a34d37f0fb7aeabfebd |
+| task-gmsla-terms | 25c07828c59bae91fc0e61ec6cad39534f97762f |
+| task-gmsla-terms | 64a4b004f682bd8ed9d98d5863ccfbc7efeddd8b |
+| task-gmsla-terms | aede0a63066d3ff4be6904bd04a9d66a30f7c9fe |
+| task-gmsla-terms | 1f0112627b071b6cf9d88fea4649d99b9d5e25f6 |

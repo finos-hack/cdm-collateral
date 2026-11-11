@@ -2,7 +2,7 @@
 id: task-repo-default-close-out
 type: task
 title: Repo default and close-out under GMRA paragraph 10
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T23:11:58Z
   confidence: 0.8
 createdAt: 2026-11-07T23:11:58Z
-updatedAt: 2026-11-11T14:01:58Z
+updatedAt: 2026-11-11T14:57:51Z
 ```
 
 # Task: repo default and close-out under GMRA paragraph 10

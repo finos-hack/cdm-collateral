@@ -51,6 +51,8 @@
     ".konspekt/instance/waypoints/wp-adr-repo-pair-off.md",
     ".konspekt/instance/waypoints/wp-adr-repo-buy-sell-back.md",
     ".konspekt/instance/waypoints/wp-adr-repo-default-close-out.md",
+    ".konspekt/instance/waypoints/wp-adr-securities-lending-gmsla-scope.md",
+    ".konspekt/instance/waypoints/wp-adr-gmsla-terms.md",
     ".konspekt/instance/waypoints/wp-adr-repo-purchase-repurchase.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",

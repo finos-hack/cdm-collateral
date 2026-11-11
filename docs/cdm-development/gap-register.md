@@ -68,14 +68,14 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | G16 | Substitution works for repo and lending only (`condition SecurityFinance`) and is qualified as a renegotiation | row 14, C18, T8; D5; TX5 | 2 | substitution column (planned) | P2 | functions, events, replacement |
 | G17 | Interest on cash collateral, lending rebate and manufactured payments are types only | rows 15, C11, S12, S20 | 2 | interest and income column (planned) | P2 | functions |
 | G18 | Recall of lent securities has types only; full return collides with termination in qualification | S14; D4 | 2 | loan return / recall column (planned) | P2 | functions, replacement |
-| G19 | Agreement terms amendment is missing for GMRA and has no GMSLA instruction | R2, S2 (row 2 is covered, score 4) | 0–2 | terms amendment column, repo and lending rows (planned) | P2 | events |
+| G19 | Agreement terms amendment is missing for GMRA and has no GMSLA instruction | R2, S2 (row 2 is covered, score 4) | 0–2 | terms amendment column; repo: `cdm-ext` `GmraTermsAmendment` (task-map row C1); lending: `cdm-ext` `GmslaTermsAmendment` (task-map row C12, 2026-11-11) | P2 | events |
 
 ### Agreements outside ISDA
 
 | ID | Gap | Sources | CDM score | Needed by | Priority | Closure kind |
 |---|---|---|---|---|---|---|
 | G20 | GMRA terms cannot be represented (empty type, ISLA-only clause identifiers) | O1; R1 | 1 | repo row (planned) | P2 | types |
-| G21 | GMSLA elections and clause library are used by no function or sample | O2; S1 | 2 | lending row (planned) | P2 | functions, samples |
+| G21 | GMSLA elections and clause library are used by no function or sample | O2; S1 | 2 | lending: CDM's GMSLA elections held as is in `cdm-ext` `GmslaTerms` with the elections CDM lacks, task-map row C12 (2026-11-11, `wp-adr-gmsla-terms`); the clause library is not used | P2 | functions, samples |
 | G22 | Triparty: party role and one clause only; no agent valuation, allocation or settlement | O9; T1, T6, T7, T9 | 0–1 | triparty row (planned) | P3 | types, functions |
 | G23 | CCP: trade clearing only; no CCP margin model, default management or porting | O10; C1, C5, C12 | 0–1 | CCP row (planned) | P3 | types, functions |
 

@@ -31,5 +31,15 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      # The runner image ships Google Chrome (CHROME_BIN). Passed as CHROMIUM_PATH, playwright.config.ts uses it as
+      # executablePath, so the job needs no apt download (on 2026-11-11 the runner could not resolve
+      # azure.archive.ubuntu.com and `playwright install --with-deps` failed). Only an image without Chrome installs
+      # Playwright Chromium with its system libraries.
+      - name: Browser for the e2e specs
+        run: |
+          if [ -n "${CHROME_BIN:-}" ] && [ -x "${CHROME_BIN}" ]; then
+            echo "CHROMIUM_PATH=${CHROME_BIN}" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
       - run: npm run test:e2e

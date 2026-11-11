@@ -62,16 +62,23 @@ async function call<T = any>(url: string, method = "GET", body?: unknown): Promi
 const shortId = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
 
 /**
+ * Waits until A's gateway reads a call B just issued. B's gateway returns once B's node has the issuing block; A's node
+ * may import it later, and A's response then reads a call A's node does not hold yet (MarginCall NoSuchCall; CI runs
+ * 42515444660, 42929679573 and 43061438276).
+ */
+async function seenByA(callId: string) {
+  await expect
+    .poll(async () => (await fetch(`${GATEWAY.A}/calls/${callId}`).catch(() => null))?.ok ?? false, { timeout: 30_000 })
+    .toBe(true);
+}
+
+/**
  * Setup for the return and enforcement specs: an IM call settled into escrow, driven through the same service API the
  * consoles call (the UI path of this flow is covered by the flow-im-margin-call-pledge spec). Returns the callId.
  */
 async function pledgeThroughServices(amountUsd: number, qty: number, token = "tUST"): Promise<string> {
   const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
-  // B's gateway returns once B's node has the issuing block; A's node may import it later, and A's response then reads a
-  // call A's node does not hold yet (MarginCall NoSuchCall; CI runs 42515444660 and 42929679573). Wait until A's gateway reads it.
-  await expect
-    .poll(async () => (await fetch(`${GATEWAY.A}/calls/${callId}`).catch(() => null))?.ok ?? false, { timeout: 30_000 })
-    .toBe(true);
+  await seenByA(callId);
   await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token, qty }] });
   await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
@@ -763,6 +770,7 @@ test("flow-settlement-netting: VM call, VM return and held interest due the same
 
   // 1. B calls VM from A; A agrees and proposes tUSD; B accepts. Not settled: it waits for the netting.
   const { callId: vm } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "VM", toParty: "A", amountUsd: vmUsd, deadlineDays: 1 });
+  await seenByA(vm);
   await call(`${SERVICE.A}/calls/${vm}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${vm}/proposal`, "POST", { assets: [{ token: "tUSD", qty: vmUsd }] });
   await call(`${SERVICE.B}/calls/${vm}/decision`, "POST", { proposalId, accept: true });
@@ -883,6 +891,7 @@ test("flow-call-cancellation: secured party withdraws an unanswered call; reques
   const amount2 = amountUsd + 5;
   const qty = Math.ceil(amount2 / TUST_VALUE);
   const { callId: c } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd: amount2, deadlineDays: 1 });
+  await seenByA(c);
   await call(`${SERVICE.A}/calls/${c}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${c}/proposal`, "POST", { assets: [{ token: "tUST", qty }] });
   await call(`${SERVICE.B}/calls/${c}/decision`, "POST", { proposalId, accept: true });
@@ -1427,6 +1436,91 @@ test("flow-repo-gmra-terms: both parties hold the same GMRA terms -> A proposes 
       .poll(async () => {
         const t = await call<GmraTerms>(`${svc}/gmra/terms`);
         return t.verified && t.elections.mtaUsd.B === baselineMta;
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+});
+
+type GmslaTerms = {
+  elections: { notificationTime: string; mtaUsd: { A: string; B: string }; defaultMargin: string; aggregation: string };
+  termsHash: string;
+  onChainTermsHash: string;
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: { amendmentId: string; proposer: "A" | "B"; state: string; changed?: string[] }[];
+};
+
+test("flow-gmsla-terms: both parties hold the same GMSLA terms -> A proposes a new notification time -> B consents -> terms hash moves on-chain under kind GMSLA, both services fold it", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+
+  // Setup: refuse a GMSLA amendment a failed earlier run left pending; both parties start on the same terms.
+  const start = await call<GmslaTerms>(`${SERVICE.B}/gmsla/terms`);
+  const left = start.amendments.find((m) => m.state === "proposed");
+  if (left) await call(`${left.proposer === "A" ? SERVICE.B : SERVICE.A}/gmsla/amendments/${left.amendmentId}/decision`, "POST", { consent: false });
+  const before = [await call<GmslaTerms>(`${SERVICE.A}/gmsla/terms`), await call<GmslaTerms>(`${SERVICE.B}/gmsla/terms`)];
+  for (const t of before) expect(t.verified, t.problem ?? "").toBe(true);
+  expect(before[0].termsHash).toBe(before[1].termsHash);
+  expect(before[0].elections).toEqual(before[1].elections);
+  expect(before[0].elections.aggregation).toBe("Aggregated");
+  const baselineTime = before[0].elections.notificationTime.slice(0, 5);
+  const known = new Set(before[0].amendments.map((m) => m.amendmentId));
+  const time = baselineTime === "11:00" ? "11:30" : "11:00";
+  const gmraBefore = await call<{ termsHash: string }>(`${GATEWAY.A}/master-terms?kind=GMRA&a=${p.a}&b=${p.b}`);
+
+  // A proposes a new notification time in its console.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("gmsla-terms");
+  await expect(card.getByText("GMSLA terms verified against the chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await card.getByLabel("New GMSLA notification time").fill(time);
+  await card.getByRole("button", { name: "Propose GMSLA amendment → B" }).click();
+
+  let id = "";
+  await expect
+    .poll(async () => {
+      const m = (await call<GmslaTerms>(`${SERVICE.B}/gmsla/terms`)).amendments.find((x) => !known.has(x.amendmentId));
+      id = m?.amendmentId ?? "";
+      return m?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("proposed");
+
+  // B checks the cdm-ext GmslaTermsAmendment and consents in its console.
+  await page.goto("/#/live/B");
+  const row = page.getByTestId(`gmsla-amendment-${id}`);
+  await expect(row.getByText("NotificationTime")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await row.getByRole("button", { name: "Consent to GMSLA amendment" }).click();
+  await expect(row.getByText("agreed on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // Both services fold the amendment to the same terms, matching the on-chain terms hash under kind GMSLA.
+  const folded: GmslaTerms[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const t = await call<GmslaTerms>(`${svc}/gmsla/terms`);
+        return t.verified && t.elections.notificationTime.startsWith(time) ? true : (t.problem ?? t.elections.notificationTime);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    folded.push(await call<GmslaTerms>(`${svc}/gmsla/terms`));
+  }
+  expect(folded[0].termsHash).toBe(folded[1].termsHash);
+  expect(folded[0].termsHash).not.toBe(before[0].termsHash);
+  const onChain = await call<{ termsHash: string; pendingAmendment: string }>(`${GATEWAY.A}/master-terms?kind=GMSLA&a=${p.a}&b=${p.b}`);
+  expect(onChain).toEqual({ termsHash: folded[0].termsHash, pendingAmendment: ZERO_HASH });
+  // The GMRA chain between the parties did not move.
+  expect((await call<{ termsHash: string }>(`${GATEWAY.A}/master-terms?kind=GMRA&a=${p.a}&b=${p.b}`)).termsHash).toBe(gmraBefore.termsHash);
+
+  // Restore the baseline notification time through the services: B proposes, A consents.
+  const { amendmentId } = await call<{ amendmentId: string }>(`${SERVICE.B}/gmsla/amendments`, "POST", { notificationTime: baselineTime });
+  await expect
+    .poll(async () => (await call<GmslaTerms>(`${SERVICE.A}/gmsla/terms`)).amendments.find((m) => m.amendmentId === amendmentId)?.state ?? null, { timeout: 60_000 })
+    .toBe("proposed");
+  await call(`${SERVICE.A}/gmsla/amendments/${amendmentId}/decision`, "POST", { consent: true });
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const t = await call<GmslaTerms>(`${svc}/gmsla/terms`);
+        return t.verified && t.elections.notificationTime.startsWith(baselineTime);
       }, { timeout: 60_000 })
       .toBe(true);
   }

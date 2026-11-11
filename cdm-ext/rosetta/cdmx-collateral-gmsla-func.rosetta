@@ -1,0 +1,112 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.legaldocumentation.common.*
+import cdm.legaldocumentation.master.isla.*
+import cdm.observable.asset.*
+import cdmx.collateral.gmra.*
+
+func SameGmslaAgreement: <"Two GMSLA terms are of the same agreement: the same identification, date, contractual parties and roles.">
+    inputs:
+        before GmslaTerms (1..1)
+        after GmslaTerms (1..1)
+    output:
+        same boolean (1..1)
+
+    set same:
+        before -> agreement -> legalAgreementIdentification = after -> agreement -> legalAgreementIdentification
+            and before -> agreement -> agreementDate = after -> agreement -> agreementDate
+            and before -> agreement -> contractualParty = after -> agreement -> contractualParty
+            and before -> agreement -> agreementTerms -> counterparty = after -> agreement -> agreementTerms -> counterparty
+
+func GmslaElectionsOf: <"The GMSLA elections CDM's LegalAgreement holds.">
+    inputs:
+        terms GmslaTerms (1..1)
+    output:
+        gmsla GlobalMasterSecuritiesLendingAgreement (1..1)
+
+    set gmsla:
+        terms -> agreement -> agreementTerms -> agreement -> masterAgreementElections -> islaGmsla
+
+func ChangedGmslaElections: <"The elections whose values differ between two GMSLA terms, in GmslaElectionEnum order.">
+    inputs:
+        before GmslaTerms (1..1)
+        after GmslaTerms (1..1)
+    output:
+        changed GmslaElectionEnum (0..*)
+
+    alias b: GmslaElectionsOf(before)
+    alias a: GmslaElectionsOf(after)
+
+    add changed:
+        if b -> collateral -> standardDefinitionOfMarketValueUsed <> a -> collateral -> standardDefinitionOfMarketValueUsed
+            or ((b -> collateral -> definitionOfMarketValueNonStandard exists or a -> collateral -> definitionOfMarketValueNonStandard exists)
+                and b -> collateral -> definitionOfMarketValueNonStandard <> a -> collateral -> definitionOfMarketValueNonStandard)
+        then GmslaElectionEnum -> MarketValue
+    add changed:
+        if b -> collateral -> aggregation <> a -> collateral -> aggregation then GmslaElectionEnum -> Aggregation
+    add changed:
+        if b -> collateral -> nettingObligationsApply <> a -> collateral -> nettingObligationsApply then GmslaElectionEnum -> NettingOfDeliveries
+    add changed:
+        if b -> collateral -> failureToDevliverIndemnityApplies <> a -> collateral -> failureToDevliverIndemnityApplies
+        then GmslaElectionEnum -> FailureToRedeliverIndemnity
+    add changed:
+        if b -> collateral -> notificationTime <> a -> collateral -> notificationTime then GmslaElectionEnum -> NotificationTime
+    add changed:
+        if b -> baseCurrency <> a -> baseCurrency then GmslaElectionEnum -> BaseCurrency
+    add changed:
+        if b -> eventsOfDefault <> a -> eventsOfDefault then GmslaElectionEnum -> EventsOfDefault
+    add changed:
+        if before -> elections -> minimumTransferAmount <> after -> elections -> minimumTransferAmount then GmslaElectionEnum -> MinimumTransferAmount
+    add changed:
+        if before -> elections -> defaultMargin <> after -> elections -> defaultMargin then GmslaElectionEnum -> DefaultMargin
+
+func Qualify_GmslaTermsChange: <"Qualifies a GMSLA amendment as a change of terms: the same agreement, and at least one election differs.">
+    inputs:
+        amendment GmslaTermsAmendment (1..1)
+    output:
+        is_event boolean (1..1)
+
+    set is_event:
+        SameGmslaAgreement(amendment -> before, amendment -> after)
+            and ChangedGmslaElections(amendment -> before, amendment -> after) exists
+
+func Create_GmslaTermsAmendment: <"An amendment of a GMSLA's elections: the terms after hold the same agreement with the new GMSLA elections and prototype elections, and the amendment names the elections that change.">
+    inputs:
+        before GmslaTerms (1..1) <"The terms in force (the baseline, or the terms after the last agreed amendment).">
+        gmsla GlobalMasterSecuritiesLendingAgreement (1..1) <"The amended GMSLA elections, whole.">
+        elections GmslaPrototypeElections (1..1) <"The amended prototype elections, whole.">
+        eventDate date (1..1)
+        effectiveDate date (1..1)
+    output:
+        amendment GmslaTermsAmendment (1..1)
+
+    condition EffectiveNotBeforeEvent: <"The amendment takes effect on or after its event date.">
+        effectiveDate >= eventDate
+
+    set amendment -> before: before
+    set amendment -> after: before
+    set amendment -> after -> agreement -> agreementTerms -> agreement -> masterAgreementElections -> islaGmsla: gmsla
+    set amendment -> after -> elections: elections
+    set amendment -> changedElection: ChangedGmslaElections(before, amendment -> after)
+    set amendment -> eventDate: eventDate
+    set amendment -> effectiveDate: effectiveDate
+    set amendment -> eventQualifier:
+        if Qualify_GmslaTermsChange(amendment) then "AgreementTermsChange"
+
+    post-condition ElectionsChange: <"At least one election differs from the terms in force.">
+        amendment -> changedElection exists
+
+func GmslaMinimumTransferAmountFor: <"A party's minimum transfer amount under GMSLA terms.">
+    inputs:
+        terms GmslaTerms (1..1)
+        party CounterpartyRoleEnum (1..1)
+    output:
+        amount Money (0..1)
+
+    set amount:
+        terms -> elections -> minimumTransferAmount
+            filter item -> party = party
+            then only-element
+            then extract item -> amount

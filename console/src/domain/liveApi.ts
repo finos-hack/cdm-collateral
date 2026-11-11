@@ -246,6 +246,14 @@ export const api = {
   /** The counterparty: consent to or refuse a proposed GMRA amendment. */
   decideGmraAmendment: (p: LiveParty, amendmentId: string, consent: boolean) =>
     req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/gmra/amendments/${amendmentId}/decision`, { consent }),
+  /** The GMSLA terms in force and the pair's GMSLA amendments (wp-adr-gmsla-terms). */
+  gmslaTerms: (p: LiveParty) => req<LiveGmslaTerms>(p, "GET", "/gmsla/terms"),
+  /** Propose a change of the GMSLA elections: the notification time (HH:mm), one party's MTA and/or the default margin. */
+  proposeGmslaAmendment: (p: LiveParty, change: { notificationTime?: string | null; party?: LiveParty; mtaUsd?: number | null; defaultMargin?: string | null }) =>
+    req<{ amendmentId: string; cdmHash: string; changed: string[]; proposeTx: string }>(p, "POST", "/gmsla/amendments", change),
+  /** The counterparty consents to or refuses a pending GMSLA amendment. */
+  decideGmslaAmendment: (p: LiveParty, amendmentId: string, consent: boolean) =>
+    req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/gmsla/amendments/${amendmentId}/decision`, { consent }),
   /** The other party: consent to or refuse a proposed amendment. */
   decideAmendment: (p: LiveParty, amendmentId: string, consent: boolean) =>
     req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/amendments/${amendmentId}/decision`, { consent }),
@@ -456,6 +464,45 @@ export interface LiveGmraElections {
   netMarginInterest: string;
   incomePayment: string;
   defaultValuation: string;
+}
+
+/** The GMSLA elections as the service shows them (CDM's GMSLA elections and the cdm-ext GmslaPrototypeElections). */
+export interface LiveGmslaElections {
+  baseCurrency: string;
+  marketValue: string;
+  aggregation: string;
+  nettingOfDeliveries: string;
+  failureToRedeliverIndemnity: string;
+  notificationTime: string;
+  automaticEarlyTermination: Record<LiveParty, string>;
+  mtaUsd: Record<LiveParty, string>;
+  defaultMargin: string;
+}
+
+export interface LiveGmslaAmendment {
+  amendmentId: string;
+  block: string;
+  proposer: LiveParty;
+  mine: boolean;
+  state: "none" | "proposed" | "agreed" | "refused";
+  cdmHash: string;
+  changed?: string[];
+  after?: LiveGmslaElections;
+  effectiveDate?: string;
+}
+
+export interface LiveGmslaTerms {
+  agreement: string;
+  party1: string;
+  party2: string;
+  elections: LiveGmslaElections;
+  termsHash: string;
+  onChainTermsHash: string;
+  agreedAmendments: number;
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: LiveGmslaAmendment[];
 }
 
 export interface LiveGmraAmendment {

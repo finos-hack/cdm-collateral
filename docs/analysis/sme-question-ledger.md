@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 106 questions in 20 tasks, all open.
+Status of the ledger: 112 questions in 21 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -219,3 +219,16 @@ Status of the ledger: 106 questions in 20 tasks, all open.
 | DCO-7 | A buy/sell-back enters at its Repurchase Price less the income deduction. Is that right under the Buy/Sell Back Annex when the income date falls after the Early Termination Date? | open | |
 | DCO-8 | The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply? | open | |
 | DCO-9 | The close-out ends only Transactions whose purchase has settled; one booked and affirmed but not yet purchased stays open. Does the Event of Default terminate it too, and with what value? | open | |
+
+## Securities lending under the GMSLA
+
+### `task-sme-gmsla-terms-baseline`: the baseline GMSLA elections and their amendment
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| GST-1 | CDM's GMSLA elections hold one notification time. Which notices does it govern under GMSLA 2010 (margin calls, recall notices, both), and is 10:00 London a usual baseline? | open | |
+| GST-2 | GMSLA 2010 has no standard minimum transfer amount. Is a per-party minimum transfer amount in the Schedule usual, and does it apply to the aggregated mark under paragraph 5.4? | open | |
+| GST-3 | The prototype's agreement carries a default margin of 102% for loans that state none. Is margin always agreed per loan, or is an agreement-level default usual? | open | |
+| GST-4 | The baseline has automatic early termination not applicable for both parties. Is that usual for an English law GMSLA 2010 between two banks? | open | |
+| GST-5 | The baseline applies netting of deliveries (paragraph 5.6) and the failure-to-redeliver indemnity (paragraph 6.4). Are these the usual elections? | open | |
+| GST-6 | An agreed amendment of the elections takes effect on its effective date. Does it apply to loans already outstanding, or only to new loans? | open | |

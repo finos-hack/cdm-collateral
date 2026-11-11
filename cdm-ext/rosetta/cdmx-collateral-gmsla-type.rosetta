@@ -1,0 +1,60 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: the terms of a GMSLA 2010 between two parties and their amendment (gap G21, wp-adr-gmsla-terms). CDM 7.7.0's LegalAgreement holds the GMSLA elections (masterAgreementElections -> islaGmsla) as they are; this namespace adds the elections the prototype needs that CDM's type lacks, and the amendment, which CDM's AgreementTermsChangeInstruction cannot carry for a GMSLA.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.legaldocumentation.common.*
+import cdm.legaldocumentation.master.*
+import cdmx.collateral.gmra.*
+
+enum GmslaElectionEnum: <"The elections of GmslaTerms, to name the ones an amendment changes.">
+    MarketValue <"The standard or non-standard definition of Market Value.">
+    Aggregation <"Paragraph 5.4: aggregated or loan by loan marking.">
+    NettingOfDeliveries <"Paragraph 5.6: netting of obligations to deliver Collateral and redeliver Equivalent Collateral.">
+    FailureToRedeliverIndemnity <"Paragraph 6.4: indemnity for failure to redeliver Equivalent Non-Cash Collateral.">
+    NotificationTime
+    BaseCurrency
+    EventsOfDefault <"Each party's Events of Default elections (automatic early termination).">
+    MinimumTransferAmount
+    DefaultMargin
+
+type GmslaPrototypeElections: <"The elections the prototype's lending workflows read that CDM's GlobalMasterSecuritiesLendingAgreement does not hold.">
+    minimumTransferAmount PartyMinimumTransferAmount (2..2) <"One per party: a call on the aggregated mark in that party's favour is made only when it exceeds this amount.">
+    defaultMargin number (1..1) <"The margin for a loan that states none, as a ratio of the Market Value of the Collateral to that of the Loaned Securities (1.02 is 102%).">
+
+    condition OnePerParty: <"Party1 and Party2 each have one minimum transfer amount.">
+        minimumTransferAmount -> party contains CounterpartyRoleEnum -> Party1
+            and minimumTransferAmount -> party contains CounterpartyRoleEnum -> Party2
+
+    condition PositiveMargin: <"A margin is greater than zero.">
+        defaultMargin > 0
+
+type GmslaTerms: <"A GMSLA between two parties: CDM's LegalAgreement with its GMSLA elections, and the elections CDM's type lacks.">
+    agreement LegalAgreement (1..1)
+    elections GmslaPrototypeElections (1..1)
+
+    condition IsGmsla: <"The legal agreement is a GMSLA master agreement that holds the GMSLA elections. CDM's own AgreementVerification does not tie these elections to the agreement type (defect D28).">
+        agreement -> legalAgreementIdentification -> agreementName -> agreementType = LegalAgreementTypeEnum -> MasterAgreement
+            and agreement -> legalAgreementIdentification -> agreementName -> masterAgreementType = MasterAgreementTypeEnum -> GMSLA
+            and agreement -> agreementTerms -> agreement -> masterAgreementElections -> islaGmsla exists
+
+    condition BothRoles: <"One counterparty is Party1 and the other Party2.">
+        agreement -> agreementTerms -> counterparty -> role contains CounterpartyRoleEnum -> Party1
+            and agreement -> agreementTerms -> counterparty -> role contains CounterpartyRoleEnum -> Party2
+
+    condition InBaseCurrency: <"The minimum transfer amounts are in the Base Currency.">
+        elections -> minimumTransferAmount -> amount -> unit -> currency
+            all = agreement -> agreementTerms -> agreement -> masterAgreementElections -> islaGmsla -> baseCurrency -> baseCurrency to-string
+
+type GmslaTermsAmendment: <"An agreed change of a GMSLA's elections between its two parties. The agreement's identification, date and parties are unchanged.">
+    before GmslaTerms (1..1)
+    after GmslaTerms (1..1)
+    changedElection GmslaElectionEnum (1..*) <"The elections whose values differ between before and after.">
+    eventDate date (1..1)
+    effectiveDate date (1..1)
+    eventQualifier string (0..1) <"AgreementTermsChange when Qualify_GmslaTermsChange holds.">
+
+    condition SameAgreement: <"An amendment changes the elections of one agreement between the same parties.">
+        SameGmslaAgreement(before, after)
+
+    condition EffectiveNotBeforeEvent: <"The amendment takes effect on or after its event date.">
+        effectiveDate >= eventDate
