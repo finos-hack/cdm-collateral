@@ -348,6 +348,15 @@ A pays the lower Sell Back Price. A buy/sell-back has no interim interest, a rol
 and it pairs off only with another buy/sell-back. The rules are the assumptions listed in
 `docs/analysis/sme-question-ledger.md` (BSB-1 to BSB-8).
 
+Default close-out (`flow-repo-default-close-out`): in the "Repo default (GMRA paragraph 10)" card of the non-defaulting
+party B clicks `Declare A's default and close out` (or `Close out A's default` when the oracle feed already shows it). B's
+service notifies the default to the oracle service if needed, serves the Default Notice on-chain (the baseline GMRA terms
+elect no automatic early termination) and records the close-out statement: every purchased repo and buy/sell-back of the
+pair closes out at once, valued at its Repurchase Price to the Early Termination Date against the Default Market Value of
+its securities at the feed price, with any margin held under the pair's GMRA calls; one balance in tUSD remains. No
+securities move. Both services show the statement as verified, and the party that owes the balance clicks `Pay USD …`.
+The rules are the assumptions listed in `docs/analysis/sme-question-ledger.md` (DCO-1 to DCO-8).
+
 Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
 Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
 from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
@@ -429,7 +438,8 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 which the top-up before each run restores), `flow-repo-margin-maintenance` (it restores the tUST price and both
 business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
 price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
-and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll`, `flow-repo-pair-off` and `flow-repo-buy-sell-back` (the same).
+and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll`, `flow-repo-pair-off`, `flow-repo-buy-sell-back` and `flow-repo-default-close-out` (the same; the default close-out
+offsets a repo with a buy/sell-back of the same size so no securities drain, and restores A's default status as it found it).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

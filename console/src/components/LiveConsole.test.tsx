@@ -813,3 +813,36 @@ describe("flow-repo-gmra-terms", () => {
     await waitFor(() => expect(posts).toEqual([{ path: "/gmra/amendments/0xabc/decision", body: { consent: true } }]));
   });
 });
+
+describe("flow-repo-default-close-out", () => {
+  const statement = {
+    earlyTerminationDate: "2026-11-12", automaticEarlyTermination: true, nonDefaultingParty: "BANK-A", defaultingParty: "BANK-B",
+    transactions: [{ repoId: "0xr1", seller: "BANK-A", buyer: "BANK-B", buySellBack: false, repurchasePrice: "1000375", price: "98.4", quantity: "10366", defaultMarketValue: "1020014" }],
+    heldMargin: [], netAmount: "19639", balance: "19639", payer: "BANK-B", receiver: "BANK-A",
+  };
+  const view = (over: Record<string, unknown>) => ({
+    businessDate: "2026-11-12", counterparty: "B", counterpartyInDefault: false, inDefault: false, automaticEarlyTermination: true,
+    baseCurrency: "USD", openTransactions: 1, preview: statement, closeOuts: [], ...over,
+  });
+
+  it("the non-defaulting party declares the default and closes out with the balance shown", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: [] }, NO_SHORTFALL, { "/repo-default": view({}) });
+    const button = await screen.findByTestId("repo-default-close-out");
+    expect(button.textContent).toBe("Declare B's default and close out: BANK-B pays USD 19639");
+    await user.click(button);
+    await waitFor(() => expect(posts).toEqual([{ path: "/repo-default/close-out", body: {} }]));
+  });
+
+  it("the defaulting party is offered no close-out and pays a verified balance", async () => {
+    const user = userEvent.setup();
+    const closeOut = { closeOutId: "0xc0ffee0000", cdmHash: "0x01", nonDefaulting: "A", defaulting: "B", amount: "19639", paid: false, payer: "B",
+      toPay: true, noticeServed: false, verified: true, statement };
+    serve("B", { calls: [], balances: [] }, NO_SHORTFALL, { "/repo-default": view({ counterparty: "A", inDefault: true, openTransactions: 0, preview: undefined, closeOuts: [closeOut] }) });
+    expect((await screen.findByTestId("repo-default-status")).textContent).toBe("this party is in default");
+    expect(screen.queryByTestId("repo-default-close-out")).toBeNull();
+    expect(screen.getByTestId("repo-closeout-balance").textContent).toBe("B pays USD 19639");
+    await user.click(screen.getByRole("button", { name: "Pay USD 19639" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repo-default/close-outs/0xc0ffee0000/pay", body: {} }]));
+  });
+});

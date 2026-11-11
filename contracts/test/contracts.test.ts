@@ -860,7 +860,7 @@ describe("CDM collateral contracts", async () => {
     const PURCHASE = 0, REPURCHASE = 1;
     const ZERO_BYTES32 = `0x${"0".repeat(64)}`;
     beforeEach(async () => {
-      repo = await viem.deployContract("RepoSettlement", []);
+      repo = await viem.deployContract("RepoSettlement", [oracle.address]);
       tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "US0000000USD", "000000USD", "QUSD00000"]);
       bankC = (await viem.getWalletClients())[3];
       await tUSD.write.mint([aAddr, 1000n]); // the seller pays the Price Differential out of its own cash
@@ -1537,6 +1537,108 @@ describe("CDM collateral contracts", async () => {
         assert.equal(await repo.read.pairOffWith([R]), ZERO_BYTES32);
         assert.equal((await repo.read.getInstructions([R, PAIR_OFF]))[0], ZERO_BYTES32);
         assert.equal((await repo.read.getRepo([R])).state, 3); // REPO-1 is still open
+      });
+    });
+    describe("default close-out (task-repo-default-close-out)", () => {
+      const R2 = H("REPO-2"), R3 = H("REPO-3");
+      const CLOSED_OUT = 5;
+      const CO = H("CO-1");
+      // REPO-1 (A sells 103 tUST to B) and REPO-2 (B sells 50 tUST to A) purchased; REPO-3 booked only.
+      const purchased = async () => {
+        await repo.write.affirm([R, H("trade")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+        await tUSD.write.mint([aAddr, 5000n]);
+        await repo.write.book([R2, aAddr, tUST.address, 50n, tUSD.address, 5000n, 5003n, H("t2")], { account: bankB.account });
+        await repo.write.affirm([R2, H("t2")], { account: bankA.account });
+        await tUST.write.approve([repo.address, 50n], { account: bankB.account });
+        await tUSD.write.approve([repo.address, 5000n], { account: bankA.account });
+        await repo.write.instruct([R2, PURCHASE, H("p2")], { account: bankB.account });
+        await repo.write.instruct([R2, PURCHASE, H("p2")], { account: bankA.account });
+        await repo.write.book([R3, bAddr, tUST.address, 1n, tUSD.address, 100n, 101n, H("t3")], { account: bankA.account });
+      };
+      const defaultB = () => oracle.write.setDefault([bAddr, true], { account: operator.account });
+
+      it("needs the oracle's default record, and the non-defaulting party may not be in default", async () => {
+        await purchased();
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+        await assert.rejects(repo.write.serveDefaultNotice([bAddr, H("n")], { account: bankA.account }));
+        await defaultB();
+        await assert.rejects(repo.write.closeOutDefault([CO, aAddr, zeroHash, H("st"), tUSD.address, aAddr, 7n], { account: bankB.account }));
+        await oracle.write.setDefault([aAddr, true], { account: operator.account });
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+      });
+
+      it("closes out every purchased repo of the pair in one transaction and moves no securities", async () => {
+        await purchased();
+        await defaultB();
+        const ust = [await bal(tUST, aAddr), await bal(tUST, bAddr)];
+        const usd = [await bal(tUSD, aAddr), await bal(tUSD, bAddr)];
+        await repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account });
+        for (const r of [R, R2]) {
+          const x = await repo.read.getRepo([r]);
+          assert.equal(x.state, CLOSED_OUT);
+          assert.equal(x.repurchaseHash, H("st"));
+        }
+        assert.equal((await repo.read.getRepo([R3])).state, 1); // booked only: not closed out
+        assert.deepEqual([await bal(tUST, aAddr), await bal(tUST, bAddr)], ust);
+        assert.deepEqual([await bal(tUSD, aAddr), await bal(tUSD, bAddr)], usd);
+        const c = await repo.read.getCloseOut([CO]);
+        assert.equal(getAddress(c.payer), bAddr);
+        assert.equal(c.amount, 7n);
+        assert.equal(c.paid, false);
+        assert.deepEqual(await repo.read.closeOutsOf([bAddr]), [CO]);
+        await assert.rejects(repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account })); // closed out
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+        await assert.rejects(repo.write.closeOutDefault([H("CO-2"), bAddr, zeroHash, H("st2"), tUSD.address, bAddr, 7n], { account: bankA.account })); // nothing left
+      });
+
+      it("the payer pays the balance once; a zero balance has no payer", async () => {
+        await purchased();
+        await defaultB();
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, zeroHash.slice(0, 42), 7n], { account: bankA.account }));
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 0n], { account: bankA.account }));
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bankC.account.address, 7n], { account: bankA.account }));
+        // A, the non-defaulting party, owes the balance
+        await repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, aAddr, 7n], { account: bankA.account });
+        await assert.rejects(repo.write.payCloseOut([CO], { account: bankB.account }));
+        await assert.rejects(repo.write.payCloseOut([CO], { account: bankA.account })); // no allowance
+        await tUSD.write.approve([repo.address, 7n], { account: bankA.account });
+        const a = await bal(tUSD, aAddr), b = await bal(tUSD, bAddr);
+        await repo.write.payCloseOut([CO], { account: bankA.account });
+        assert.equal(await bal(tUSD, aAddr), a - 7n);
+        assert.equal(await bal(tUSD, bAddr), b + 7n);
+        assert.equal((await repo.read.getCloseOut([CO])).paid, true);
+        await tUSD.write.approve([repo.address, 7n], { account: bankA.account });
+        await assert.rejects(repo.write.payCloseOut([CO], { account: bankA.account }));
+      });
+
+      it("a zero balance is recorded as settled", async () => {
+        await purchased();
+        await defaultB();
+        await repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, zeroHash.slice(0, 42), 0n], { account: bankA.account });
+        assert.equal((await repo.read.getCloseOut([CO])).paid, true);
+      });
+
+      it("a close-out under a Default Notice names the notice served", async () => {
+        await purchased();
+        await defaultB();
+        await assert.rejects(repo.write.serveDefaultNotice([aAddr, H("n")], { account: bankA.account }));
+        await assert.rejects(repo.write.serveDefaultNotice([bAddr, zeroHash], { account: bankA.account }));
+        await repo.write.serveDefaultNotice([bAddr, H("n")], { account: bankA.account });
+        assert.equal(await repo.read.defaultNotice([aAddr, bAddr]), H("n"));
+        await assert.rejects(repo.write.closeOutDefault([CO, bAddr, H("other"), H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+        await repo.write.closeOutDefault([CO, bAddr, H("n"), H("st"), tUSD.address, bAddr, 7n], { account: bankA.account });
+        assert.equal((await repo.read.getCloseOut([CO])).noticeHash, H("n"));
+      });
+
+      it("a pending repurchase instruction lapses at the close-out", async () => {
+        await purchased();
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account });
+        await defaultB();
+        await repo.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account });
+        assert.equal((await repo.read.getInstructions([R, REPURCHASE]))[0], ZERO_BYTES32);
       });
     });
   });

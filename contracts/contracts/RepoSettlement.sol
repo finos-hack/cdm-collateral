@@ -4,6 +4,11 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/// @notice The default record of the oracle feed (OracleFeed).
+interface IDefaultFeed {
+    function isDefaulted(address party) external view returns (bool);
+}
+
 /// @title Repo settlement, delivery versus payment
 /// @notice Settles the purchase and the repurchase of a term repo under the GMRA (task-repo-purchase-repurchase,
 /// wp-adr-repo-purchase-repurchase). The trade is CDM's TradeState, held by both parties' services; only its hash is
@@ -21,7 +26,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// on their common Repurchase Date (wp-adr-repo-pair-off): both are repurchased in one transaction, no securities move, and
 /// only the difference of the two Repurchase Prices is paid. A buy/sell-back (wp-adr-repo-buy-sell-back) is booked as such
 /// and settles like a repo, except that agreed income moves no cash and lowers its Sell Back Price instead, and it has no
-/// interim interest.
+/// interim interest. After the oracle feed records a party's default (wp-adr-repo-default-close-out, GMRA paragraph 10), the
+/// non-defaulting party closes out every purchased repo of the pair in one transaction: no securities move, and one net
+/// balance in the cash token is recorded, which the party that owes it then pays.
 contract RepoSettlement {
     using SafeERC20 for IERC20;
 
@@ -30,7 +37,8 @@ contract RepoSettlement {
         Booked,
         Affirmed,
         Purchased,
-        Repurchased
+        Repurchased,
+        ClosedOut
     }
 
     enum Phase {
@@ -80,6 +88,26 @@ contract RepoSettlement {
     /// @dev A buy/sell-back's agreed income deductions in the current term: the Seller pays the Repurchase Price less this.
     mapping(bytes32 => uint256) private _incomeDeduction;
 
+    /// @notice A GMRA default close-out (wp-adr-repo-default-close-out): the net balance of every repo of the pair, payable
+    /// by `payer` to the other party in the cash token. `noticeHash` is zero under automatic early termination.
+    struct CloseOut {
+        address nonDefaulting;
+        address defaulting;
+        address payer;
+        address cash;
+        uint256 amount;
+        bytes32 noticeHash;
+        bytes32 cdmHash;
+        bool paid;
+    }
+
+    /// @notice The default feed: the oracle's record of which parties are in default.
+    IDefaultFeed public immutable oracle;
+    /// @dev The Default Notice the non-defaulting party served on the defaulting party, by hash of the CDM record.
+    mapping(address => mapping(address => bytes32)) private _defaultNotice;
+    mapping(bytes32 => CloseOut) private _closeOuts;
+    mapping(address => bytes32[]) private _closeOutsOf;
+
     event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash);
     event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash);
     event RepoInstructed(bytes32 indexed repoId, Phase phase, address indexed party, bytes32 cdmHash);
@@ -89,6 +117,11 @@ contract RepoSettlement {
     event RepoRollRefused(bytes32 indexed repoId, bytes32 cdmHash);
     event RepoPairedOff(bytes32 indexed repoA, bytes32 indexed repoB, bytes32 cdmHash);
     event RepoPairOffRefused(bytes32 indexed repoA, bytes32 indexed repoB, bytes32 cdmHash);
+    event DefaultNoticeServed(address indexed nonDefaulting, address indexed defaulting, bytes32 noticeHash);
+    event RepoClosedOut(bytes32 indexed repoId, bytes32 indexed closeOutId);
+    event CloseOutRecorded(bytes32 indexed closeOutId, address indexed nonDefaulting, address indexed defaulting,
+        bytes32 cdmHash, address payer, uint256 amount);
+    event CloseOutPaid(bytes32 indexed closeOutId, address indexed payer, uint256 amount);
 
     error RepoExists(bytes32 repoId);
     error NoRepo(bytes32 repoId);
@@ -115,6 +148,18 @@ contract RepoSettlement {
     error NoPairOff();
     error NotForBuySellBack();
     error DeductionTooLarge();
+    error NoDefault(address party);
+    error InDefault(address party);
+    error CloseOutExists();
+    error NoNotice();
+    error NothingToCloseOut();
+    error WrongPayer();
+    error NoCloseOut();
+    error AlreadyPaid();
+
+    constructor(address oracle_) {
+        oracle = IDefaultFeed(oracle_);
+    }
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash
     /// token, the Purchase Price and the Repurchase Price, and the hash of the CDM trade.
@@ -544,6 +589,82 @@ contract RepoSettlement {
 
     function reposOf(address party) external view returns (bytes32[] memory) {
         return _reposOf[party];
+    }
+
+    // ---- default and close-out (wp-adr-repo-default-close-out, GMRA paragraph 10) ----
+
+    /// @notice The non-defaulting party serves a Default Notice on a party the oracle feed records in default, with the
+    /// hash of the CDM record (GmraDefaultNotice), which names the Early Termination Date. A later notice replaces it.
+    function serveDefaultNotice(address defaulting, bytes32 noticeHash) external {
+        if (noticeHash == bytes32(0)) revert ZeroAmount();
+        if (defaulting == msg.sender) revert SelfCounterparty();
+        if (!oracle.isDefaulted(defaulting)) revert NoDefault(defaulting);
+        if (oracle.isDefaulted(msg.sender)) revert InDefault(msg.sender);
+        _defaultNotice[msg.sender][defaulting] = noticeHash;
+        emit DefaultNoticeServed(msg.sender, defaulting, noticeHash);
+    }
+
+    /// @notice The non-defaulting party closes out every purchased repo with the defaulting party: each is marked closed
+    /// out under `cdmHash`, the hash of the CDM close-out statement (GmraCloseOutStatement), and every pending phase on it
+    /// lapses. No securities move. `payer` (either party, or zero when `amount` is zero) owes `amount` of `cash` to the
+    /// other. `noticeHash` is the served Default Notice, or zero under automatic early termination. The contract checks
+    /// no amounts: both services compute the statement from the chain's repos and prices.
+    function closeOutDefault(
+        bytes32 closeOutId,
+        address defaulting,
+        bytes32 noticeHash,
+        bytes32 cdmHash,
+        address cash,
+        address payer,
+        uint256 amount
+    ) external {
+        if (_closeOuts[closeOutId].cdmHash != bytes32(0) || cdmHash == bytes32(0)) revert CloseOutExists();
+        if (!oracle.isDefaulted(defaulting)) revert NoDefault(defaulting);
+        if (oracle.isDefaulted(msg.sender)) revert InDefault(msg.sender);
+        if (noticeHash != bytes32(0) && noticeHash != _defaultNotice[msg.sender][defaulting]) revert NoNotice();
+        if (amount == 0 ? payer != address(0) : (payer != msg.sender && payer != defaulting)) revert WrongPayer();
+        uint256 closed;
+        bytes32[] storage ids = _reposOf[msg.sender];
+        for (uint256 i = 0; i < ids.length; i++) {
+            Repo storage r = _repos[ids[i]];
+            if (r.state != RepoState.Purchased || (r.seller != defaulting && r.buyer != defaulting)) continue;
+            bytes32 paired = _pairOffWith[ids[i]];
+            if (paired != bytes32(0)) _clearPairOff(ids[i], paired);
+            delete _instructions[ids[i]][Phase.Repurchase];
+            _close(ids[i], cdmHash);
+            r.state = RepoState.ClosedOut;
+            closed++;
+            emit RepoClosedOut(ids[i], closeOutId);
+        }
+        if (closed == 0) revert NothingToCloseOut();
+        _closeOuts[closeOutId] = CloseOut(msg.sender, defaulting, payer, cash, amount, noticeHash, cdmHash, amount == 0);
+        _closeOutsOf[msg.sender].push(closeOutId);
+        _closeOutsOf[defaulting].push(closeOutId);
+        emit CloseOutRecorded(closeOutId, msg.sender, defaulting, cdmHash, payer, amount);
+    }
+
+    /// @notice The party that owes a close-out balance pays it in the cash token (approve this contract first).
+    function payCloseOut(bytes32 closeOutId) external {
+        CloseOut storage c = _closeOuts[closeOutId];
+        if (c.cdmHash == bytes32(0)) revert NoCloseOut();
+        if (c.paid) revert AlreadyPaid();
+        if (msg.sender != c.payer) revert NotThePayer();
+        c.paid = true;
+        address receiver = c.payer == c.nonDefaulting ? c.defaulting : c.nonDefaulting;
+        IERC20(c.cash).safeTransferFrom(c.payer, receiver, c.amount);
+        emit CloseOutPaid(closeOutId, c.payer, c.amount);
+    }
+
+    function defaultNotice(address nonDefaulting, address defaulting) external view returns (bytes32) {
+        return _defaultNotice[nonDefaulting][defaulting];
+    }
+
+    function getCloseOut(bytes32 closeOutId) external view returns (CloseOut memory) {
+        return _closeOuts[closeOutId];
+    }
+
+    function closeOutsOf(address party) external view returns (bytes32[] memory) {
+        return _closeOutsOf[party];
     }
 
     function _load(bytes32 repoId) private view returns (Repo storage r) {

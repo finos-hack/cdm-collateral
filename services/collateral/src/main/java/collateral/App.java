@@ -160,6 +160,9 @@ public final class App {
         app.post("/api/v1/repos/{id}/pair-off/agree", this::agreePairOff);
         app.post("/api/v1/repos/{id}/pair-off/refuse", this::refusePairOff);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
+        app.get("/api/v1/repo-default", this::repoDefault);
+        app.post("/api/v1/repo-default/close-out", this::closeOutRepoDefault);
+        app.post("/api/v1/repo-default/close-outs/{id}/pay", this::payRepoCloseOut);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
         app.post("/api/v1/substitutions/{id}/decision", this::decideSubstitution);
@@ -1029,6 +1032,7 @@ public final class App {
     /** Net Exposure at this service's business date: every purchased repo's exposure from this party's side, less the
      *  margin this party holds net, from the settled GMRA calls' accepted proposals at the current feed prices. */
     private RepoMarginState repoMarginState() {
+        Set<String> closedOutCalls = repoCloseOutSettledCalls();
         var elections = gmraFold().terms().terms().getElections();
         List<Map<String, Object>> rows = new ArrayList<>();
         List<BigDecimal> exposures = new ArrayList<>();
@@ -1051,6 +1055,7 @@ public final class App {
             int state = c.get("state").asInt();
             String callId = entry.get("callId").asText();
             if (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmraCall(callId)) continue;
+            if (closedOutCalls.contains(callId.toLowerCase())) continue; // settled in a default close-out
             boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
             long pid = c.get("activeProposal").asLong() - 1;
             for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
@@ -2579,6 +2584,330 @@ public final class App {
         JsonNode enforced = gw.post("/calls/" + callId + "/enforce", Map.of());
         ctx.json(new LinkedHashMap<>(Map.of("ok", true, "pledgor", pledgor,
                 "defaultTx", notice.path("tx").path("txHash").asText(), "enforceTx", enforced.path("txHash").asText())));
+    }
+
+    // ---- GMRA default close-out (task-repo-default-close-out, wp-adr-repo-default-close-out) ----
+
+    private final Map<String, GmraCloseOutStatementView> repoCloseOutDocs = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private record GmraCloseOutStatementView(cdmx.collateral.repo.GmraCloseOutStatement statement) {}
+
+    /** The statement of an on-chain close-out from the payload store, parsed once; null if not in the store. */
+    private cdmx.collateral.repo.GmraCloseOutStatement closeOutStatement(String hash) {
+        GmraCloseOutStatementView v = repoCloseOutDocs.get(hash);
+        if (v != null) return v.statement();
+        String doc = payloads.get(hash);
+        if (doc == null) return null;
+        if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the close-out document does not hash to the on-chain hash");
+        var s = CdmRepoDefault.parse(doc);
+        repoCloseOutDocs.put(hash, new GmraCloseOutStatementView(s));
+        return s;
+    }
+
+    /** The GMRA calls whose margin a recorded close-out of this party settled: margin views no longer count them. */
+    private Set<String> repoCloseOutSettledCalls() {
+        Set<String> out = new java.util.HashSet<>();
+        for (JsonNode c : gw.getQuery("/repo-default/close-outs", Map.of("party", cfg.myAddress))) {
+            var s = closeOutStatement(c.get("cdmHash").asText());
+            if (s != null) for (String id : CdmRepoDefault.settledCalls(s)) out.add(id.toLowerCase());
+        }
+        return out;
+    }
+
+    /** This party's purchased repos with the counterparty, oldest first, as the contract closes them out. */
+    private List<JsonNode> purchasedWithCounterparty() {
+        String other = cfg.partyAddress(counterparty());
+        List<JsonNode> out = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            if (!r.get("state").asText().equals("purchased")) continue;
+            if (r.get("seller").asText().equalsIgnoreCase(other) || r.get("buyer").asText().equalsIgnoreCase(other)) out.add(r);
+        }
+        return out;
+    }
+
+    /** The Transactions to close out, from this service's own checked bookings, priced by `price`. */
+    private List<CdmRepoDefault.TxInput> closeOutTransactions(List<JsonNode> repos, java.util.function.Function<JsonNode, BigDecimal> price) {
+        List<CdmRepoDefault.TxInput> out = new ArrayList<>();
+        for (JsonNode r : repos) {
+            CdmRepo.Booking b = repoBooking(r);
+            if (b == null) throw new RuntimeException("the booked document of repo " + r.get("repoId").asText() + " is not in the payload store");
+            String problem = repoProblem(r, b);
+            if (problem != null) throw new RuntimeException("repo " + r.get("repoId").asText() + ": " + problem);
+            out.add(new CdmRepoDefault.TxInput(r.get("repoId").asText(), b.trade(), deductionOf(r), price.apply(r)));
+        }
+        return out;
+    }
+
+    /** The margin each party holds net per asset under the pair's settled GMRA calls not yet closed out, priced by `price`
+     *  (asset code: the Base Currency for tUSD, the ISIN otherwise; null price: the asset is left out). */
+    private List<CdmRepoDefault.MarginInput> closeOutMargin(String baseCurrency, java.util.function.Function<String, BigDecimal> price) {
+        Set<String> closedOutCalls = repoCloseOutSettledCalls();
+        Map<String, Long> net = new LinkedHashMap<>();
+        Map<String, List<String>> calls = new LinkedHashMap<>();
+        String tUsd = cfg.tokenAddress("tUSD");
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            String callId = entry.get("callId").asText();
+            if (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmraCall(callId)) continue;
+            if (closedOutCalls.contains(callId.toLowerCase())) continue;
+            boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
+            long pid = c.get("activeProposal").asLong() - 1;
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
+                String token = a.get("token").asText();
+                String asset = token.equalsIgnoreCase(tUsd) ? baseCurrency : cfg.isin(symbolByAddress.get(token.toLowerCase()));
+                net.merge(asset, received ? a.get("qty").asLong() : -a.get("qty").asLong(), Long::sum);
+                calls.computeIfAbsent(asset, k -> new ArrayList<>());
+                if (!calls.get(asset).contains(callId)) calls.get(asset).add(callId);
+            }
+        }
+        List<CdmRepoDefault.MarginInput> out = new ArrayList<>();
+        for (var e : net.entrySet()) {
+            if (e.getValue() == 0) continue;
+            BigDecimal p = price.apply(e.getKey());
+            if (p == null) continue;
+            boolean mine = e.getValue() > 0;
+            out.add(new CdmRepoDefault.MarginInput(mine ? myBank() : counterpartyBank(), mine ? counterpartyBank() : myBank(), e.getKey(),
+                    e.getKey().equals(baseCurrency), Math.abs(e.getValue()), p, calls.get(e.getKey())));
+        }
+        return out;
+    }
+
+    private BigDecimal feedPriceOfAsset(String asset, String baseCurrency) {
+        if (asset.equals(baseCurrency)) return BigDecimal.ONE;
+        for (var e : cfg.tokenSymbols().entrySet())
+            if (cfg.isin(e.getValue()).equals(asset)) return feedPrice(e.getKey());
+        throw new RuntimeException("no token for " + asset);
+    }
+
+    /** The close-out statement this party would record now as the non-defaulting party, at the feed prices. */
+    private CdmRepoDefault.Statement repoCloseOutPreview(CdmRepoDefault.Notice notice) {
+        var elections = gmraFold().terms().terms().getElections();
+        String ccy = elections.getBaseCurrency();
+        List<JsonNode> repos = purchasedWithCounterparty();
+        if (repos.isEmpty()) throw new RuntimeException("no purchased repo with " + counterparty() + " to close out");
+        return CdmRepoDefault.statement(notice.notice(), ccy, businessDate,
+                closeOutTransactions(repos, r -> feedPrice(r.get("security").asText())),
+                closeOutMargin(ccy, a -> feedPriceOfAsset(a, ccy)));
+    }
+
+    /** Whether a recorded close-out's statement is the one this party rebuilds from its own trades, the chain's
+     *  deductions and margin, and the prices the statement states; and the on-chain record matches it. */
+    private String repoCloseOutProblem(JsonNode c, cdmx.collateral.repo.GmraCloseOutStatement s, String json) {
+        String hash = c.get("cdmHash").asText();
+        if (!Cdm.keccakHex(json).equalsIgnoreCase(hash)) return "the statement does not hash to the on-chain hash";
+        List<JsonNode> repos = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress)))
+            if (r.get("state").asText().equals("closedOut") && r.get("repurchaseHash").asText().equalsIgnoreCase(hash)) repos.add(r);
+        if (repos.size() != s.getTransactionValue().size()) return "the statement values " + s.getTransactionValue().size() + " Transactions; the contract closed out " + repos.size();
+        String ccy = s.getBaseCurrency();
+        // The margin as it stood before this close-out: drop this statement's own calls from the exclusion.
+        Set<String> own = new java.util.HashSet<>();
+        for (String id : CdmRepoDefault.settledCalls(s)) own.add(id.toLowerCase());
+        List<CdmRepoDefault.MarginInput> margin = new ArrayList<>();
+        for (var m : CdmRepoDefault.heldMargin(s)) {
+            if (!m.getCallId().stream().allMatch(id -> own.contains(id.toLowerCase()))) return "the statement's margin names unknown calls";
+            margin.add(new CdmRepoDefault.MarginInput(m.getHolder(), m.getGiver(), m.getAsset(), m.getCash(), m.getQuantity().longValueExact(), m.getPrice(), m.getCallId()));
+        }
+        for (CdmRepoDefault.MarginInput m : margin) {
+            long mine = 0;
+            // Each party's own call history must give the same net quantity per asset.
+            for (CdmRepoDefault.MarginInput x : closeOutMarginIncluding(ccy, own)) if (x.asset().equals(m.asset())) mine = x.holder().equals(m.holder()) ? x.quantity() : -x.quantity();
+            if (mine != m.quantity()) return "the statement's margin in " + m.asset() + " is not the margin held";
+        }
+        CdmRepoDefault.Statement rebuilt;
+        try {
+            rebuilt = CdmRepoDefault.statement(s.getNotice(), ccy, s.getValuationDate().toLocalDate(),
+                    closeOutTransactions(repos, r -> CdmRepoDefault.statedPrice(s, r.get("repoId").asText())), margin);
+        } catch (RuntimeException ex) {
+            return "the statement does not rebuild: " + ex.getMessage();
+        }
+        if (!rebuilt.hash().equalsIgnoreCase(hash)) return "the statement rebuilt from this party's trades differs";
+        long amount = c.get("amount").asLong();
+        if (amount != rebuilt.balance()) return "the on-chain balance is not the statement's";
+        String payer = c.get("payer").asText();
+        String payerName = amount == 0 ? null : cfg.bankName(partyIdOf(payer));
+        if (amount != 0 && !payerName.equals(rebuilt.payer())) return "the on-chain payer is not the statement's";
+        return null;
+    }
+
+    /** closeOutMargin with the given calls counted although a close-out settled them (to check that close-out). */
+    private List<CdmRepoDefault.MarginInput> closeOutMarginIncluding(String baseCurrency, Set<String> include) {
+        Map<String, Long> net = new LinkedHashMap<>();
+        String tUsd = cfg.tokenAddress("tUSD");
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            String callId = entry.get("callId").asText();
+            if (!include.contains(callId.toLowerCase())) continue;
+            JsonNode c = entry.get("call");
+            boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
+            long pid = c.get("activeProposal").asLong() - 1;
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
+                String token = a.get("token").asText();
+                String asset = token.equalsIgnoreCase(tUsd) ? baseCurrency : cfg.isin(symbolByAddress.get(token.toLowerCase()));
+                net.merge(asset, received ? a.get("qty").asLong() : -a.get("qty").asLong(), Long::sum);
+            }
+        }
+        List<CdmRepoDefault.MarginInput> out = new ArrayList<>();
+        for (var e : net.entrySet()) {
+            if (e.getValue() == 0) continue;
+            boolean mine = e.getValue() > 0;
+            out.add(new CdmRepoDefault.MarginInput(mine ? myBank() : counterpartyBank(), mine ? counterpartyBank() : myBank(), e.getKey(),
+                    e.getKey().equals(baseCurrency), Math.abs(e.getValue()), BigDecimal.ONE, List.of()));
+        }
+        return out;
+    }
+
+    private Map<String, Object> statementView(cdmx.collateral.repo.GmraCloseOutStatement s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("earlyTerminationDate", s.getNotice().getEarlyTerminationDate().toString());
+        m.put("automaticEarlyTermination", s.getNotice().getAutomaticEarlyTermination());
+        m.put("nonDefaultingParty", s.getNotice().getNonDefaultingParty());
+        m.put("defaultingParty", s.getNotice().getDefaultingParty());
+        List<Map<String, Object>> tx = new ArrayList<>();
+        for (var v : s.getTransactionValue()) {
+            Map<String, Object> t = new LinkedHashMap<>();
+            t.put("repoId", v.getRepoId());
+            t.put("seller", v.getSeller());
+            t.put("buyer", v.getBuyer());
+            t.put("buySellBack", v.getBuySellBack());
+            t.put("repurchasePrice", v.getRepurchasePrice().toPlainString());
+            t.put("price", v.getPrice().stripTrailingZeros().toPlainString());
+            t.put("quantity", v.getQuantity().toPlainString());
+            t.put("defaultMarketValue", v.getDefaultMarketValue().toPlainString());
+            tx.add(t);
+        }
+        m.put("transactions", tx);
+        List<Map<String, Object>> held = new ArrayList<>();
+        for (var h : CdmRepoDefault.heldMargin(s))
+            held.add(new LinkedHashMap<>(Map.of("holder", h.getHolder(), "asset", h.getAsset(), "quantity", h.getQuantity().toPlainString(), "value", h.getValue().toPlainString())));
+        m.put("heldMargin", held);
+        m.put("netAmount", s.getNetAmount().toPlainString());
+        m.put("balance", s.getBalance().toPlainString());
+        m.put("payer", s.getPayer());
+        m.put("receiver", s.getReceiver());
+        return m;
+    }
+
+    /** The default close-out view: the default status of both parties, the election, a preview when this party may close
+     *  out, and the recorded close-outs with their verification and payment. */
+    private void repoDefault(Context ctx) {
+        String other = cfg.partyAddress(counterparty());
+        boolean counterpartyInDefault = gw.get("/defaults/" + other).get("inDefault").asBoolean();
+        boolean inDefault = gw.get("/defaults/" + cfg.myAddress).get("inDefault").asBoolean();
+        var elections = gmraFold().terms().terms().getElections();
+        boolean automatic = elections.getDefaultValuation().getAutomaticEarlyTermination();
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("businessDate", businessDate.toString());
+        m.put("counterparty", counterparty());
+        m.put("counterpartyInDefault", counterpartyInDefault);
+        m.put("inDefault", inDefault);
+        m.put("automaticEarlyTermination", automatic);
+        m.put("baseCurrency", elections.getBaseCurrency());
+        int open = purchasedWithCounterparty().size();
+        m.put("openTransactions", open);
+        if (!inDefault && open > 0) {
+            try {
+                var n = CdmRepoDefault.notice(myBank(), counterpartyBank(), businessDate, businessDate, automatic);
+                m.put("preview", statementView(repoCloseOutPreview(n).statement()));
+            } catch (RuntimeException ex) {
+                m.put("previewProblem", ex.getMessage());
+            }
+        }
+        List<Map<String, Object>> closeOuts = new ArrayList<>();
+        for (JsonNode c : gw.getQuery("/repo-default/close-outs", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> v = new LinkedHashMap<>();
+            String hash = c.get("cdmHash").asText();
+            v.put("closeOutId", c.get("closeOutId").asText());
+            v.put("cdmHash", hash);
+            v.put("nonDefaulting", partyIdOf(c.get("nonDefaulting").asText()));
+            v.put("defaulting", partyIdOf(c.get("defaulting").asText()));
+            v.put("amount", c.get("amount").asText());
+            v.put("paid", c.get("paid").asBoolean());
+            boolean iPay = c.get("amount").asLong() > 0 && c.get("payer").asText().equalsIgnoreCase(cfg.myAddress);
+            v.put("payer", c.get("amount").asLong() > 0 ? partyIdOf(c.get("payer").asText()) : null);
+            v.put("toPay", iPay && !c.get("paid").asBoolean());
+            v.put("noticeServed", !c.get("noticeHash").asText().equals(ZERO_HASH));
+            String doc = payloads.get(hash);
+            if (doc == null) {
+                v.put("verified", false);
+                v.put("problem", "the statement is not in the payload store");
+            } else {
+                try {
+                    var s = closeOutStatement(hash);
+                    v.put("statement", statementView(s));
+                    String problem = repoCloseOutProblem(c, s, doc);
+                    v.put("verified", problem == null);
+                    v.put("problem", problem);
+                } catch (RuntimeException ex) {
+                    v.put("verified", false);
+                    v.put("problem", ex.getMessage());
+                }
+            }
+            closeOuts.add(0, v);
+        }
+        m.put("closeOuts", closeOuts);
+        ctx.json(m);
+    }
+
+    /** The non-defaulting party closes out every purchased repo with the counterparty (GMRA paragraph 10). The default
+     *  goes to the oracle service first when the feed does not show it (as in flow-default-enforcement). Without
+     *  automatic early termination this service serves the Default Notice on-chain; the Early Termination Date and the
+     *  Default Valuation Time are its business date. It records the statement and the balance on RepoSettlement. */
+    private void closeOutRepoDefault(Context ctx) {
+        String other = cfg.partyAddress(counterparty());
+        if (gw.get("/defaults/" + cfg.myAddress).get("inDefault").asBoolean())
+            throw new RuntimeException("the oracle feed records this party in default; only the non-defaulting party closes out");
+        String defaultTx = null;
+        if (!gw.get("/defaults/" + other).get("inDefault").asBoolean()) {
+            JsonNode notified = oracle.post("/defaults", Map.of("party", other, "inDefault", true, "notifiedBy", myBank()));
+            defaultTx = notified.path("tx").path("txHash").asText(null);
+        }
+        var elections = gmraFold().terms().terms().getElections();
+        boolean automatic = elections.getDefaultValuation().getAutomaticEarlyTermination();
+        CdmRepoDefault.Notice notice = CdmRepoDefault.notice(myBank(), counterpartyBank(), businessDate, businessDate, automatic);
+        CdmRepoDefault.Statement st = repoCloseOutPreview(notice);
+        String noticeHash = ZERO_HASH, noticeTx = null;
+        String closeOutId = Cdm.onChainId("repo-close-out-" + cfg.partyId + "-" + System.nanoTime());
+        if (!automatic) {
+            store.recordDocument(closeOutId, "GmraDefaultNotice", "out", notice.hash(), notice.json());
+            payloads.put(notice.hash(), notice.json(), callParties);
+            noticeTx = gw.post("/repo-default/notice", Map.of("defaulting", other, "noticeHash", notice.hash())).path("txHash").asText();
+            noticeHash = notice.hash();
+        }
+        store.recordDocument(closeOutId, "GmraCloseOutStatement", "out", st.hash(), st.json());
+        payloads.put(st.hash(), st.json(), callParties);
+        String payer = st.balance() == 0 ? "0x0000000000000000000000000000000000000000"
+                : (st.payer().equals(myBank()) ? cfg.myAddress : other);
+        JsonNode tx = gw.post("/repo-default/close-outs", Map.of("closeOutId", closeOutId, "defaulting", other, "noticeHash", noticeHash,
+                "cdmHash", st.hash(), "cash", cfg.tokenAddress("tUSD"), "payer", payer, "amount", String.valueOf(st.balance())));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("closeOutId", closeOutId);
+        out.put("cdmHash", st.hash());
+        out.put("noticeHash", noticeHash.equals(ZERO_HASH) ? null : noticeHash);
+        out.put("statement", statementView(st.statement()));
+        out.put("defaultTx", defaultTx);
+        out.put("noticeTx", noticeTx);
+        out.put("closeOutTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The party that owes a close-out balance pays it, after checking the statement. */
+    private void payRepoCloseOut(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode c = null;
+        for (JsonNode x : gw.getQuery("/repo-default/close-outs", Map.of("party", cfg.myAddress)))
+            if (x.get("closeOutId").asText().equalsIgnoreCase(id)) c = x;
+        if (c == null) throw new RuntimeException("no close-out " + id + " of this party");
+        if (c.get("paid").asBoolean()) throw new RuntimeException("close-out " + id + " is paid");
+        if (!c.get("payer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("this party does not owe the balance of close-out " + id);
+        String hash = c.get("cdmHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null) throw new RuntimeException("the statement is not in the payload store");
+        String problem = repoCloseOutProblem(c, closeOutStatement(hash), doc);
+        if (problem != null) throw new RuntimeException("close-out " + id + ": " + problem);
+        store.recordDocument(id, "GmraCloseOutStatement", "in", hash, doc);
+        JsonNode tx = gw.post("/repo-default/close-outs/" + id + "/pay", Map.of("token", c.get("cash").asText(), "amount", c.get("amount").asText()));
+        ctx.json(Map.of("closeOutId", id, "amount", c.get("amount").asText(), "payTx", tx.path("txHash").asText()));
     }
 
     // ---- reclaim after the secured party's default (two-way initial margin, wp-adr-two-way-im) ----

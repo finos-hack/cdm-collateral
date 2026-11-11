@@ -162,7 +162,15 @@ repo rate; the other party agrees or refuses; wp-adr-repo-roll),
 `POST /repos/{id}/pair-off` (body `{otherRepoId}`) with `/agree` and `/refuse` (on the common Repurchase Date either party
 proposes the pair-off of two offsetting purchased repos; the other party agrees, only if its service builds the same cdm-ext
 `RepoPairOffSettlement` document, or refuses; on agreement both repos are repurchased and only the net cash is paid;
-wp-adr-repo-pair-off), and
+wp-adr-repo-pair-off),
+`GET /api/v1/repo-default`, `POST /api/v1/repo-default/close-out` and `POST /api/v1/repo-default/close-outs/{id}/pay`
+(GMRA paragraph 10, wp-adr-repo-default-close-out: the non-defaulting party notifies the default to the oracle service
+when the feed does not show it, serves a cdm-ext `GmraDefaultNotice` on-chain unless automatic early termination is
+elected, and records a cdm-ext `GmraCloseOutStatement` that closes out every purchased repo of the pair with CDM's
+termination event, values each at the Repurchase Price to the Early Termination Date against the Default Market Value at
+the feed price, adds the margin held under the pair's GMRA calls, and sets it all off into one tUSD balance; no
+securities move; the other party's service rebuilds the statement from its own trades and the stated prices, and the
+party owing the balance pays it), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

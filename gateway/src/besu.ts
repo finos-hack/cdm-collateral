@@ -384,9 +384,29 @@ const repoAbi = parseAbi([
   "event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash)",
   "event RepoInstructed(bytes32 indexed repoId, uint8 phase, address indexed party, bytes32 cdmHash)",
   "event RepoSettled(bytes32 indexed repoId, uint8 phase, bytes32 cdmHash)",
+  // GMRA default close-out (wp-adr-repo-default-close-out)
+  "function serveDefaultNotice(address defaulting, bytes32 noticeHash)",
+  "function closeOutDefault(bytes32 closeOutId, address defaulting, bytes32 noticeHash, bytes32 cdmHash, address cash, address payer, uint256 amount)",
+  "function payCloseOut(bytes32 closeOutId)",
+  "function defaultNotice(address nonDefaulting, address defaulting) view returns (bytes32)",
+  "function getCloseOut(bytes32 closeOutId) view returns ((address nonDefaulting, address defaulting, address payer, address cash, uint256 amount, bytes32 noticeHash, bytes32 cdmHash, bool paid))",
+  "function closeOutsOf(address party) view returns (bytes32[])",
 ]);
 
-export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased"];
+export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased", "closedOut"];
+
+/** A GMRA default close-out on RepoSettlement (wp-adr-repo-default-close-out). */
+export interface OnChainRepoCloseOut {
+  closeOutId: Hex;
+  nonDefaulting: Address;
+  defaulting: Address;
+  payer: Address;
+  cash: Address;
+  amount: bigint;
+  noticeHash: Hex;
+  cdmHash: Hex;
+  paid: boolean;
+}
 export const RepoPhase: Record<string, number> = { purchase: 0, repurchase: 1, reprice: 2, adjustment: 3, substitution: 4, interimInterest: 5, income: 6, roll: 7, pairOff: 8 };
 
 export interface OnChainRepo {
@@ -512,6 +532,12 @@ export interface LedgerAdapter {
   getRepo(repoId: Hex): Promise<OnChainRepo>;
   listRepos(party: Address): Promise<OnChainRepo[]>;
   repoContract(): Address;
+  /** GMRA default close-out (wp-adr-repo-default-close-out). */
+  serveRepoDefaultNotice(defaulting: Address, noticeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  closeOutRepoDefault(closeOutId: Hex, defaulting: Address, noticeHash: Hex, cdmHash: Hex, cash: Address, payer: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  payRepoCloseOut(closeOutId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  repoDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex>;
+  listRepoCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1085,6 +1111,34 @@ export class BesuAdapter implements LedgerAdapter {
   async listRepos(party: Address) {
     const ids = (await this.pub.readContract({ address: this.repoContract(), abi: repoAbi, functionName: "reposOf", args: [party] })) as readonly Hex[];
     return Promise.all(ids.map((id) => this.getRepo(id)));
+  }
+
+  /** The non-defaulting party serves a Default Notice (wp-adr-repo-default-close-out) with the hash of its CDM record. */
+  serveRepoDefaultNotice(defaulting: Address, noticeHash: Hex) {
+    return this.send(this.repoContract(), repoAbi, "serveDefaultNotice", [defaulting, noticeHash]);
+  }
+
+  /** The non-defaulting party closes out every purchased repo with the defaulting party under the statement hash. */
+  closeOutRepoDefault(closeOutId: Hex, defaulting: Address, noticeHash: Hex, cdmHash: Hex, cash: Address, payer: Address, amount: bigint) {
+    return this.send(this.repoContract(), repoAbi, "closeOutDefault", [closeOutId, defaulting, noticeHash, cdmHash, cash, payer, amount]);
+  }
+
+  /** The party that owes a close-out balance pays it (after approving the repo contract for the amount). */
+  payRepoCloseOut(closeOutId: Hex) {
+    return this.send(this.repoContract(), repoAbi, "payCloseOut", [closeOutId]);
+  }
+
+  async repoDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex> {
+    return (await this.pub.readContract({ address: this.repoContract(), abi: repoAbi, functionName: "defaultNotice", args: [nonDefaulting, defaulting] })) as Hex;
+  }
+
+  async listRepoCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]> {
+    const address = this.repoContract();
+    const ids = (await this.pub.readContract({ address, abi: repoAbi, functionName: "closeOutsOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map(async (closeOutId) => ({
+      closeOutId,
+      ...((await this.pub.readContract({ address, abi: repoAbi, functionName: "getCloseOut", args: [closeOutId] })) as Omit<OnChainRepoCloseOut, "closeOutId">),
+    })));
   }
 
   private reconciliationAddress(): Address {

@@ -129,7 +129,7 @@ async function main() {
   await send("MarginCall.setControl", (nonce) => marginCall.write.setControl([control.address], { nonce }));
   const reconciliation = await deploy("PortfolioReconciliation", []);
   console.log("PortfolioReconciliation", reconciliation.address);
-  const repoSettlement = await deploy("RepoSettlement", []);
+  const repoSettlement = await deploy("RepoSettlement", [oracle.address]);
   console.log("RepoSettlement       ", repoSettlement.address);
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string }> = {};

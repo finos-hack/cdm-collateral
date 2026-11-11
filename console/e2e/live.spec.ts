@@ -2452,3 +2452,95 @@ test("flow-repo-buy-sell-back: two offsetting buy/sell-backs pair off on the Rep
     await setDate(today);
   }
 });
+
+// --- flow-repo-default-close-out ---
+// A GMRA default close-out (wp-adr-repo-default-close-out, GMRA paragraph 10). B is the non-defaulting party: earlier specs
+// leave A in default on the persistent chain, and none ever puts B in default. A repo A sells and a buy/sell-back B sells
+// offset in quantity, so the close-out, which moves no securities, leaves both parties' tUST where it was and only the
+// small net balance moves. The spec restores A's default status as it found it.
+type CloseOutStatementView = { earlyTerminationDate: string; nonDefaultingParty: string; transactions: { repoId: string; buySellBack: boolean;
+  repurchasePrice: string; defaultMarketValue: string }[]; heldMargin: { holder: string; value: string }[]; netAmount: string; balance: string; payer: string | null };
+type RepoDefaultView = { counterpartyInDefault: boolean; inDefault: boolean; automaticEarlyTermination: boolean; openTransactions: number;
+  preview?: CloseOutStatementView; closeOuts: { closeOutId: string; amount: string; paid: boolean; payer: string | null; toPay: boolean;
+  noticeServed: boolean; verified: boolean; problem?: string; statement?: CloseOutStatementView }[] };
+
+test("flow-repo-default-close-out: B declares A's default in the console -> Default Notice -> every purchased repo of the pair closes out, no securities move -> the party owing the net balance pays it", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUST, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  const view = (svc: string) => call<RepoDefaultView>(`${svc}/repo-default`);
+  const aWasInDefault = (await call<{ inDefault: boolean }>(`${GATEWAY.B}/defaults/${p.a}`)).inDefault;
+  expect((await call<{ inDefault: boolean }>(`${GATEWAY.A}/defaults/${p.b}`)).inDefault).toBe(false);
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r1 = await open(SERVICE.A, SERVICE.B, 1_000_000, "4.5"); // a repo A sells to B
+  const r2 = await open(SERVICE.B, SERVICE.A, 1_000_000, "4", true); // a buy/sell-back B sells to A
+  let closedOut = false;
+  try {
+    await setDate(inDays(3));
+    const before = await view(SERVICE.B);
+    expect(before.inDefault).toBe(false);
+    expect(before.automaticEarlyTermination).toBe(false); // the baseline GMRA elections: a Default Notice is served
+    const preview = before.preview!;
+    const value = (s: CloseOutStatementView, id: string) => s.transactions.find((t) => t.repoId === id)!;
+    // As at the Early Termination Date, three days in: 1,000,000 + 375 at 4.5% and + 333 at 4%; 10,366 tUST at 98.4.
+    expect(value(preview, r1.repoId)).toMatchObject({ buySellBack: false, repurchasePrice: "1000375", defaultMarketValue: "1020014" });
+    expect(value(preview, r2.repoId)).toMatchObject({ buySellBack: true, repurchasePrice: "1000333", defaultMarketValue: "1020014" });
+    // From B's side r1 gives -19,639 and r2 +19,681; margin held between the pair, if any, is owed back by its holder.
+    const margin = preview.heldMargin.reduce((sum, m) => sum + (m.holder === preview.nonDefaultingParty ? -Number(m.value) : Number(m.value)), 0);
+    expect(Number(preview.netAmount)).toBe(42 + margin + otherTransactions(preview, [r1.repoId, r2.repoId]));
+
+    const aSec = await balanceOf(GATEWAY.A, tUST, p.a), bSec = await balanceOf(GATEWAY.B, tUST, p.b);
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+
+    // 1. B declares A's default and closes out in its console: the oracle records the default (if not already), B serves
+    // the Default Notice on-chain, then records the statement and the balance; both repos close out.
+    await page.goto("/#/live/B");
+    await page.getByTestId("repo-default-close-out").click({ timeout: STEP_TIMEOUT });
+    for (const id of [r1.repoId, r2.repoId])
+      await expect.poll(async () => (await repo(SERVICE.A, id))?.state, { timeout: 60_000 }).toBe("closedOut");
+    closedOut = true;
+    for (const gw of [GATEWAY.A, GATEWAY.B]) expect((await call<{ inDefault: boolean }>(`${gw}/defaults/${p.a}`)).inDefault).toBe(true);
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aSec);
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bSec);
+
+    // 2. Both services rebuild the statement from their own trades and agree; the defaulting party is offered no close-out.
+    const a = await view(SERVICE.A), b = await view(SERVICE.B);
+    expect(a.inDefault).toBe(true);
+    expect(a.preview).toBeUndefined();
+    const coA = a.closeOuts[0], coB = b.closeOuts[0];
+    expect(coA.closeOutId).toBe(coB.closeOutId);
+    expect(coA.verified && coB.verified).toBe(true);
+    expect(coB.noticeServed).toBe(true);
+    expect(coB.statement!.balance).toBe(preview.balance);
+    expect(coB.amount).toBe(preview.balance);
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+
+    // 3. The party owing the balance pays it in its console.
+    const amount = BigInt(coB.amount);
+    if (amount > 0n) {
+      const payerSvc = coB.payer === "A" ? "A" : "B";
+      await page.goto(`/#/live/${payerSvc}`);
+      await page.getByTestId(`repo-closeout-${coB.closeOutId}`).getByRole("button", { name: `Pay USD ${coB.amount}` }).click({ timeout: STEP_TIMEOUT });
+      await expect.poll(async () => (await view(SERVICE.B)).closeOuts[0].paid, { timeout: 60_000 }).toBe(true);
+      const sign = payerSvc === "A" ? -1n : 1n;
+      expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd + sign * amount);
+      expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd - sign * amount);
+    } else {
+      expect(coB.paid).toBe(true);
+    }
+    for (const svc of [SERVICE.A, SERVICE.B])
+      for (const id of [r1.repoId, r2.repoId]) expect((await repo(svc, id))?.verified).toBe(true);
+  } finally {
+    if (!closedOut) await close([r1, r2]);
+    if (!aWasInDefault) await call(`${ORACLE}/defaults`, "POST", { party: p.a, inDefault: false, notifiedBy: "e2e restore" });
+    await setDate(today);
+  }
+});
+
+/** The net contribution, from the non-defaulting party's side, of Transactions in a statement other than `ids` (repos
+ *  left open between the pair by an earlier, interrupted run are closed out too). */
+function otherTransactions(s: CloseOutStatementView, ids: string[]): number {
+  const nd = s.nonDefaultingParty;
+  return s.transactions.filter((t) => !ids.includes(t.repoId))
+    .reduce((sum, t) => sum + ((t as unknown as { buyer: string }).buyer === nd ? Number(t.repurchasePrice) - Number(t.defaultMarketValue) : Number(t.defaultMarketValue) - Number(t.repurchasePrice)), 0);
+}

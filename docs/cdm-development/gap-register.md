@@ -59,7 +59,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | ID | Gap | Sources | CDM score | Needed by | Priority | Closure kind |
 |---|---|---|---|---|---|---|
 | G14 | Custody and segregation are legal terms only; no enforcement step against segregated IM | row 17; ADR `wp-adr-im-segregation` | 2 | im-default | P1 | functions, events |
-| G15 | Close-out netting on default: elections only (CSA, GMSLA), absent for repo and CCP | rows 23, R20, R23, S19, S25, C12, C16 | 0–2 | im-default (close-out statement); VM default (planned) | P2 | types, functions |
+| G15 | Close-out netting on default: elections only (CSA, GMSLA), absent for repo and CCP | rows 23, R20, R23, S19, S25, C12, C16 | 0–2 | im-default (close-out statement); VM default (planned); repo: `cdm-ext` GMRA close-out statement, task-map row C11 (2026-11-11, `wp-adr-repo-default-close-out`) | P2 | types, functions |
 
 ### Substitution, interest, returns of lent securities
 

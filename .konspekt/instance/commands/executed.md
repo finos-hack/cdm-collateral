@@ -465,3 +465,12 @@ at execution time.
 | task-repo-buy-sell-back | fc64ce549a5d3bed8a822546927953cfd08bde75 |
 | task-repo-buy-sell-back | b26e1208320112e5e037bcd028be502c4179dac2 |
 | task-repo-buy-sell-back | aa76995c47b8ef378cdc65c2520d71bf9069eee5 |
+| task-repo-default-close-out | 91ce06f9fe5023ab43713b37ec0e5fc0cc88f58b |
+| task-repo-default-close-out | 7318cb25b941a2a0deb783cb156339892446e1de |
+| task-repo-default-close-out | d4e6d50217e620acd5d5d02f86511044eb141a75 |
+| task-repo-default-close-out | 651ea899402437b218b676dd1ac4a63b7cf3b4dd |
+| task-repo-default-close-out | 0e12e24ca9604bb3ee18b246179275324d016f08 |
+| task-repo-default-close-out | fc16e45aab86ac7eba069c327bab21996f8d7401 |
+| task-repo-default-close-out | ab2ba3191b0e756ce11f9534e96ca9d3355e8eff |
+| task-repo-default-close-out | 4a9f167f73c36ed40abae69f6a67cd3b4a333597 |
+| task-repo-default-close-out | dcdec001f96f1a60b52ef8db0c7d2b1f4131cf6f |
