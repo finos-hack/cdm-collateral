@@ -3,7 +3,7 @@ id: task-sme-gmsla-recall-rules
 type: task
 title: Confirm with a business SME the rules for recalling loaned securities under the GMSLA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-recall
   sourceRef: 72146b83411def7096cb21b1d196e0988e884c38
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T19:17:49Z
   confidence: 0.55
 createdAt: 2026-11-11T19:17:49Z
-updatedAt: 2026-11-11T19:17:49Z
+updatedAt: 2026-11-11T19:39:49Z
 ```
 # Task: confirm the rules for recalling loaned securities under the GMSLA
 

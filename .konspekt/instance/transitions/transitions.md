@@ -1189,3 +1189,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
 | edge:e-dec-cdmdev-smercl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
 | edge:e-lnk-gmslarcl-smercl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
+| waypoint:wp-adr-gmsla-recall | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| node:task-sme-gmsla-recall-rules | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| edge:e-mrk-rcladr-gmslarcl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| edge:e-drv-cdmdata-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| edge:e-drv-finality-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| edge:e-dec-cdmdev-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| edge:e-lnk-gmslarcl-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
