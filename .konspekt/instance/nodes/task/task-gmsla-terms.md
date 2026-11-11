@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:30:34Z
+updatedAt: 2026-11-11T15:47:13Z
 ```
 # Task: GMSLA agreement terms and their amendment
 
@@ -45,3 +45,13 @@ The details are decided when the task starts, after a temporary test of CDM's fu
 
 **Design chosen 2026-11-11** (source `0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95`: "1a 2a 3a 4a 5a"), recorded in [[wp-adr-gmsla-terms]] (accepted 2026-11-11); the
 baseline elections are questions for an SME in [[task-sme-gmsla-terms-baseline]].
+
+**Built 2026-11-11.** `cdmx.collateral.gmsla`: `GmslaTerms` (CDM's `LegalAgreement` unchanged, with
+`GmslaPrototypeElections`; conditions `IsGmsla`, `BothRoles`, `InBaseCurrency`), `GmslaTermsAmendment`,
+`ChangedGmslaElections`, `Qualify_GmslaTermsChange`, `Create_GmslaTermsAmendment` and `GmslaMinimumTransferAmountFor`,
+with `GmslaTermsTest` (6 tests). Found in the build: Rune treats two absent values as different under `<>`, so the
+non-standard Market Value comparison checks for presence first. Service: `CdmGmsla` and `GET /gmsla/terms`,
+`POST /gmsla/amendments`, `POST /gmsla/amendments/{id}/decision` (`CdmGmslaTest`, 4 tests); the gateway's terms
+amendment routes take the kind already, and `CollateralControl` is unchanged. Console: "GMSLA terms" card (2 unit
+tests). Live spec `flow-gmsla-terms` passes locally, and all 35 live specs pass.
+

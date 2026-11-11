@@ -1432,6 +1432,91 @@ test("flow-repo-gmra-terms: both parties hold the same GMRA terms -> A proposes 
   }
 });
 
+type GmslaTerms = {
+  elections: { notificationTime: string; mtaUsd: { A: string; B: string }; defaultMargin: string; aggregation: string };
+  termsHash: string;
+  onChainTermsHash: string;
+  verified: boolean;
+  problem: string | null;
+  pendingAmendment: string | null;
+  amendments: { amendmentId: string; proposer: "A" | "B"; state: string; changed?: string[] }[];
+};
+
+test("flow-gmsla-terms: both parties hold the same GMSLA terms -> A proposes a new notification time -> B consents -> terms hash moves on-chain under kind GMSLA, both services fold it", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+
+  // Setup: refuse a GMSLA amendment a failed earlier run left pending; both parties start on the same terms.
+  const start = await call<GmslaTerms>(`${SERVICE.B}/gmsla/terms`);
+  const left = start.amendments.find((m) => m.state === "proposed");
+  if (left) await call(`${left.proposer === "A" ? SERVICE.B : SERVICE.A}/gmsla/amendments/${left.amendmentId}/decision`, "POST", { consent: false });
+  const before = [await call<GmslaTerms>(`${SERVICE.A}/gmsla/terms`), await call<GmslaTerms>(`${SERVICE.B}/gmsla/terms`)];
+  for (const t of before) expect(t.verified, t.problem ?? "").toBe(true);
+  expect(before[0].termsHash).toBe(before[1].termsHash);
+  expect(before[0].elections).toEqual(before[1].elections);
+  expect(before[0].elections.aggregation).toBe("Aggregated");
+  const baselineTime = before[0].elections.notificationTime.slice(0, 5);
+  const known = new Set(before[0].amendments.map((m) => m.amendmentId));
+  const time = baselineTime === "11:00" ? "11:30" : "11:00";
+  const gmraBefore = await call<{ termsHash: string }>(`${GATEWAY.A}/master-terms?kind=GMRA&a=${p.a}&b=${p.b}`);
+
+  // A proposes a new notification time in its console.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("gmsla-terms");
+  await expect(card.getByText("GMSLA terms verified against the chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await card.getByLabel("New GMSLA notification time").fill(time);
+  await card.getByRole("button", { name: "Propose GMSLA amendment → B" }).click();
+
+  let id = "";
+  await expect
+    .poll(async () => {
+      const m = (await call<GmslaTerms>(`${SERVICE.B}/gmsla/terms`)).amendments.find((x) => !known.has(x.amendmentId));
+      id = m?.amendmentId ?? "";
+      return m?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("proposed");
+
+  // B checks the cdm-ext GmslaTermsAmendment and consents in its console.
+  await page.goto("/#/live/B");
+  const row = page.getByTestId(`gmsla-amendment-${id}`);
+  await expect(row.getByText("NotificationTime")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await row.getByRole("button", { name: "Consent to GMSLA amendment" }).click();
+  await expect(row.getByText("agreed on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // Both services fold the amendment to the same terms, matching the on-chain terms hash under kind GMSLA.
+  const folded: GmslaTerms[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const t = await call<GmslaTerms>(`${svc}/gmsla/terms`);
+        return t.verified && t.elections.notificationTime.startsWith(time) ? true : (t.problem ?? t.elections.notificationTime);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    folded.push(await call<GmslaTerms>(`${svc}/gmsla/terms`));
+  }
+  expect(folded[0].termsHash).toBe(folded[1].termsHash);
+  expect(folded[0].termsHash).not.toBe(before[0].termsHash);
+  const onChain = await call<{ termsHash: string; pendingAmendment: string }>(`${GATEWAY.A}/master-terms?kind=GMSLA&a=${p.a}&b=${p.b}`);
+  expect(onChain).toEqual({ termsHash: folded[0].termsHash, pendingAmendment: ZERO_HASH });
+  // The GMRA chain between the parties did not move.
+  expect((await call<{ termsHash: string }>(`${GATEWAY.A}/master-terms?kind=GMRA&a=${p.a}&b=${p.b}`)).termsHash).toBe(gmraBefore.termsHash);
+
+  // Restore the baseline notification time through the services: B proposes, A consents.
+  const { amendmentId } = await call<{ amendmentId: string }>(`${SERVICE.B}/gmsla/amendments`, "POST", { notificationTime: baselineTime });
+  await expect
+    .poll(async () => (await call<GmslaTerms>(`${SERVICE.A}/gmsla/terms`)).amendments.find((m) => m.amendmentId === amendmentId)?.state ?? null, { timeout: 60_000 })
+    .toBe("proposed");
+  await call(`${SERVICE.A}/gmsla/amendments/${amendmentId}/decision`, "POST", { consent: true });
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const t = await call<GmslaTerms>(`${svc}/gmsla/terms`);
+        return t.verified && t.elections.notificationTime.startsWith(baselineTime);
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+});
+
 type Repo = {
   repoId: string; role: "seller" | "buyer"; state: string; security: string; quantity: string; purchasePrice: string;
   repurchasePrice: string; tradeHash: string; verified: boolean; problem: string | null; instructedByMe: boolean;

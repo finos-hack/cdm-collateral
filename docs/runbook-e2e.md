@@ -294,6 +294,15 @@ B's service verifies the document against the terms in force and B's gateway cal
 GMRA terms hash moves on-chain and both services fold the amendment. The CSA terms are a separate chain and do not
 change.
 
+GMSLA terms (`flow-gmsla-terms`): the "GMSLA terms" card in each console shows the pair's GMSLA 2010 elections (CDM's
+`LegalAgreement` with its GMSLA elections, plus the minimum transfer amounts and default margin of cdm-ext
+`GmslaPrototypeElections`, held as cdm-ext `GmslaTerms`), the terms hash and whether the terms verify against the chain.
+A enters a new notification time and clicks `Propose GMSLA amendment → B`: A's service builds the cdm-ext
+`GmslaTermsAmendment` and A's gateway calls `proposeTermsAmendment` (kind GMSLA). B clicks `Consent to GMSLA
+amendment`; B's service verifies the document against the terms in force and B's gateway calls `decideTermsAmendment`.
+The pair's GMSLA terms hash moves on-chain and both services fold the amendment. The GMRA chain does not change. The
+baseline elections are the assumptions listed in `docs/analysis/sme-question-ledger.md` (GST-1 to GST-6).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -439,7 +448,8 @@ which the top-up before each run restores), `flow-repo-margin-maintenance` (it r
 business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
 price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
 and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll`, `flow-repo-pair-off`, `flow-repo-buy-sell-back` and `flow-repo-default-close-out` (the same; the default close-out
-offsets a repo with a buy/sell-back of the same size so no securities drain, and restores A's default status as it found it).
+offsets a repo with a buy/sell-back of the same size so no securities drain, and restores A's default status as it found it),
+and `flow-gmsla-terms` (it restores the baseline notification time).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

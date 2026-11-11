@@ -814,6 +814,44 @@ describe("flow-repo-gmra-terms", () => {
   });
 });
 
+describe("flow-gmsla-terms", () => {
+  const elections = (time: string) => ({
+    baseCurrency: "USD", marketValue: "standard definition", aggregation: "Aggregated", nettingOfDeliveries: "applies",
+    failureToRedeliverIndemnity: "applies", notificationTime: `${time} GBLO`,
+    automaticEarlyTermination: { A: "does not apply", B: "does not apply" }, mtaUsd: { A: "250000", B: "250000" }, defaultMargin: "1.02",
+  });
+  const terms = (amendments: unknown[], pending: string | null = null) => ({
+    agreement: "ISLA GMSLA 2010 (English law), CDM LegalAgreement in cdm-ext GmslaTerms", party1: "BANK-A", party2: "BANK-B",
+    elections: elections("10:00"), termsHash: "0x" + "0".repeat(64), onChainTermsHash: "0x" + "0".repeat(64), agreedAmendments: 0,
+    verified: true, problem: null, pendingAmendment: pending, amendments,
+  });
+
+  it("either party proposes a new notification time", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmsla/terms": terms([]) });
+    const card = await screen.findByTestId("gmsla-terms");
+    expect(within(card).getByTestId("gmsla-notification-time").textContent).toContain("10:00 GBLO");
+    expect(within(card).getByText("GMSLA terms verified against the chain ✓")).toBeTruthy();
+    await user.type(within(card).getByLabelText("New GMSLA notification time"), "11:00");
+    await user.click(within(card).getByRole("button", { name: "Propose GMSLA amendment → B" }));
+    await waitFor(() =>
+      expect(posts).toEqual([{ path: "/gmsla/amendments", body: { notificationTime: "11:00", party: "B", mtaUsd: null, defaultMargin: null } }]),
+    );
+  });
+
+  it("the counterparty consents to a pending amendment; the proposer cannot propose another", async () => {
+    const user = userEvent.setup();
+    const pending = { amendmentId: "0xdef", block: "9", proposer: "A", mine: false, state: "proposed", cdmHash: "0x01",
+      changed: ["NotificationTime"], after: elections("11:00") };
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmsla/terms": terms([pending], "0xdef") });
+    const row = await screen.findByTestId("gmsla-amendment-0xdef");
+    expect(row.textContent).toContain("11:00 GBLO");
+    expect(within(await screen.findByTestId("gmsla-terms")).getByRole("button", { name: "Propose GMSLA amendment → A" })).toHaveProperty("disabled", true);
+    await user.click(within(row).getByRole("button", { name: "Consent to GMSLA amendment" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/gmsla/amendments/0xdef/decision", body: { consent: true } }]));
+  });
+});
+
 describe("flow-repo-default-close-out", () => {
   const statement = {
     earlyTerminationDate: "2026-11-12", automaticEarlyTermination: true, nonDefaultingParty: "BANK-A", defaultingParty: "BANK-B",

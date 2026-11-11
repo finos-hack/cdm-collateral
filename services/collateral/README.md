@@ -127,6 +127,13 @@ agreed GMRA amendments; with the contract's terms hash beside them, `verified`; 
 `POST /gmra/amendments` (body `party` A or B with `mtaUsd`, and/or `defaultMarginRatio`; either party: CDM
 `GmraTermsAmendment` from cdm-ext `Create_GmraTermsAmendment`, then `proposeTermsAmendment` on-chain),
 `POST /gmra/amendments/{id}/decision` (body `consent`; the counterparty verifies the amendment first),
+`GET /gmsla/terms` (the GMSLA 2010 terms in force: CDM's `LegalAgreement` with its GMSLA elections and the cdm-ext
+`GmslaPrototypeElections`, held as cdm-ext `GmslaTerms` with BANK-A as Party1 and BANK-B as Party2, folded in
+`CdmGmsla` over the pair's agreed GMSLA amendments; with the contract's terms hash for kind GMSLA beside them,
+`verified`; wp-adr-gmsla-terms), `POST /gmsla/amendments` (body `notificationTime` HH:mm, `party` A or B with
+`mtaUsd`, and/or `defaultMargin`; either party: cdm-ext `GmslaTermsAmendment` from `Create_GmslaTermsAmendment`, then
+`proposeTermsAmendment` on-chain), `POST /gmsla/amendments/{id}/decision` (body `consent`; the counterparty verifies the
+amendment first),
 `GET /repos` (this party's term repos with the business date: the on-chain record from `RepoSettlement` and the CDM
 trade this service rebuilt from the booked document and checked against it, `verified`; wp-adr-repo-purchase-repurchase),
 `POST /repos` (body `security` tUST or tMMF, `purchasePrice` whole tUSD, `ratePercent`, `termDays`, optional

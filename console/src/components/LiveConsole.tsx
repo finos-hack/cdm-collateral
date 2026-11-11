@@ -25,7 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
+  type LiveGmraTerms, type LiveGmslaTerms, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -53,6 +53,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [interest, setInterest] = useState<LiveInterest[]>([]);
   const [agreement, setAgreement] = useState<LiveAgreement | null>(null);
   const [gmra, setGmra] = useState<LiveGmraTerms | null>(null);
+  const [gmsla, setGmsla] = useState<LiveGmslaTerms | null>(null);
   const [repos, setRepos] = useState<LiveRepos | null>(null);
   const [repoMargin, setRepoMargin] = useState<LiveRepoMargin | null>(null);
   const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
@@ -87,6 +88,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.reconciliations(party).then((r) => setRecons(Array.isArray(r) ? r : [])).catch(() => setRecons([])),
         api.agreement(party).then((a) => setAgreement(Array.isArray(a?.haircuts) && Array.isArray(a?.amendments) ? a : null)).catch(() => setAgreement(null)),
         api.gmraTerms(party).then((g) => setGmra(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmra(null)),
+        api.gmslaTerms(party).then((g) => setGmsla(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmsla(null)),
         api.repos(party).then((r) => setRepos(r?.businessDate && Array.isArray(r?.repos) ? r : null)).catch(() => setRepos(null)),
         api.repoMargin(party).then((m) => setRepoMargin(m?.businessDate && Array.isArray(m?.exposures) ? m : null)).catch(() => setRepoMargin(null)),
         api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
@@ -398,6 +400,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {agreement && <AgreementTerms party={party} other={other} agreement={agreement} busy={busy} run={run} />}
 
       {gmra && <GmraTermsCard party={party} other={other} gmra={gmra} busy={busy} run={run} />}
+      {gmsla && <GmslaTermsCard party={party} other={other} gmsla={gmsla} busy={busy} run={run} />}
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
@@ -745,6 +748,101 @@ function AgreementTerms(props: { party: LiveParty; other: LiveParty; agreement: 
                     <>
                       <button disabled={busy} onClick={() => run(() => api.decideAmendment(party, m.amendmentId, true))}>Consent</button>
                       <button disabled={busy} onClick={() => run(() => api.decideAmendment(party, m.amendmentId, false))}>Refuse</button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/** The GMSLA terms in force, the amendment form and the pair's GMSLA amendments (wp-adr-gmsla-terms). */
+function GmslaTermsCard(props: { party: LiveParty; other: LiveParty; gmsla: LiveGmslaTerms; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, gmsla: g, busy, run } = props;
+  const [time, setTime] = useState<string>("");
+  const [mtaParty, setMtaParty] = useState<LiveParty>("B");
+  const [mta, setMta] = useState<string>("");
+  const [margin, setMargin] = useState<string>("");
+  const e = g.elections;
+  return (
+    <div className="card" data-testid="gmsla-terms">
+      <h3>GMSLA terms</h3>
+      <div className="small">{g.agreement} · Party1 {g.party1} · Party2 {g.party2}</div>
+      <div className="row">
+        <span>{g.agreedAmendments} agreed amendment{g.agreedAmendments === 1 ? "" : "s"}</span>
+        <span className="mono small" data-testid="gmsla-hash">terms hash {short(g.termsHash)}</span>
+        <span data-testid="gmsla-verified">
+          {g.verified ? <span className="ok">GMSLA terms verified against the chain ✓</span> : <span className="bad">{g.problem ?? "GMSLA terms do not match the chain"}</span>}
+        </span>
+      </div>
+      <table className="tbl">
+        <tbody>
+          <tr><th>Base Currency</th><td>{e.baseCurrency}</td></tr>
+          <tr><th>Market Value</th><td>{e.marketValue}</td></tr>
+          <tr><th>Aggregation (paragraph 5.4)</th><td>{e.aggregation}</td></tr>
+          <tr><th>Netting of deliveries (paragraph 5.6)</th><td>{e.nettingOfDeliveries}</td></tr>
+          <tr><th>Failure to redeliver indemnity (paragraph 6.4)</th><td>{e.failureToRedeliverIndemnity}</td></tr>
+          <tr data-testid="gmsla-notification-time"><th>Notification time</th><td>{e.notificationTime}</td></tr>
+          <tr><th>Automatic early termination</th><td>A {e.automaticEarlyTermination.A} · B {e.automaticEarlyTermination.B}</td></tr>
+          <tr data-testid="gmsla-mta"><th>Minimum transfer amount</th><td>A {usd(e.mtaUsd.A)} · B {usd(e.mtaUsd.B)}</td></tr>
+          <tr><th>Default margin</th><td>{e.defaultMargin}</td></tr>
+        </tbody>
+      </table>
+      <div className="row">
+        <label>
+          Notification time <input aria-label="New GMSLA notification time" value={time} placeholder="HH:mm" onChange={(ev) => setTime(ev.target.value)} style={{ width: 70 }} />
+        </label>
+        <label>
+          MTA of{" "}
+          <select aria-label="GMSLA MTA party" value={mtaParty} onChange={(ev) => setMtaParty(ev.target.value as LiveParty)}>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </label>
+        <label>
+          New MTA (USD) <input aria-label="New GMSLA MTA (USD)" type="number" value={mta} placeholder="unchanged" step={50000} onChange={(ev) => setMta(ev.target.value)} style={{ width: 120 }} />
+        </label>
+        <label>
+          Default margin <input aria-label="New GMSLA default margin" value={margin} placeholder="unchanged" onChange={(ev) => setMargin(ev.target.value)} style={{ width: 80 }} />
+        </label>
+        <button
+          disabled={busy || !!g.pendingAmendment || !g.verified || (time === "" && mta === "" && margin === "")}
+          onClick={() =>
+            run(() =>
+              api.proposeGmslaAmendment(party, {
+                notificationTime: time === "" ? null : time,
+                party: mtaParty,
+                mtaUsd: mta === "" ? null : Number(mta),
+                defaultMargin: margin === "" ? null : margin,
+              }),
+            )
+          }
+        >
+          Propose GMSLA amendment → {other}
+        </button>
+      </div>
+      {g.amendments.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Amendment</th><th>Proposer</th><th>Changes</th><th>Notification time after</th><th>State</th></tr>
+          </thead>
+          <tbody>
+            {g.amendments.map((m) => (
+              <tr key={m.amendmentId} data-testid={`gmsla-amendment-${m.amendmentId}`}>
+                <td className="mono">{short(m.amendmentId)}</td>
+                <td>{m.proposer}</td>
+                <td>{m.changed?.join(", ") ?? "—"}</td>
+                <td>{m.after?.notificationTime ?? "—"}</td>
+                <td>
+                  {m.state === "agreed" ? <span className="ok">agreed on-chain ✓</span> : m.state}
+                  {m.state === "proposed" && !m.mine && (
+                    <>
+                      <button disabled={busy} onClick={() => run(() => api.decideGmslaAmendment(party, m.amendmentId, true))}>Consent to GMSLA amendment</button>
+                      <button disabled={busy} onClick={() => run(() => api.decideGmslaAmendment(party, m.amendmentId, false))}>Refuse GMSLA amendment</button>
                     </>
                   )}
                 </td>
