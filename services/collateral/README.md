@@ -162,8 +162,13 @@ the total is `GmslaInvoiceTotal`, rounded to whole tUSD; CDM's `SecurityLendingI
 `ParentTotal` billing summary built by the service, since CDM's `Create_BillingSummary` has no implementation (D27), and
 CDM's payment event, a transfer of type `InterestReturn` qualified `CashTransfer`; `GET /loans` shows `billing` with the
 `billedThrough` date, the `pending` invoice and whether it rebuilds, or the `billable` period; wp-adr-gmsla-rebate),
+`POST /loans/{id}/bill` also bills the lending fee of a loan against securities (the lender: rate type `Fee`, each
+part accruing `FixedAmount` over a fee `InterestRatePayout` built from the fee rate, fixed, ACT/360, on the loaned
+quantity outstanding x the loaned security's feed price on the business date; a substitution does not split the
+period; wp-adr-gmsla-lending-fee),
 `POST /loans/{id}/bill/pay` (the payer: rebuilds the invoice over its own loan documents, checks the start at the
-billed-through date, the on-chain amount and period end, and an end no later than its business date) and
+billed-through date, the on-chain amount and period end, an end no later than its business date, and for a fee the
+price against its own feed) and
 `POST /loans/{id}/bill/refuse` (the payer),
 `GET /gmsla-marking` (the aggregated mark of the pair's open loans stated for this party, cdm-ext `GmslaMarkStatement`
 built by `CdmGmslaMark`: each loan's requirement, collateral value and exposure at the feed prices, the margin held net

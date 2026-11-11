@@ -344,6 +344,13 @@ gateway calls `bill`. The lender's console shows `rebate … tUSD for … to …
 through …`. Totals are whole tUSD (tUSD has no decimals). Loans booked before this deployment start from their
 delivery. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (RBT-1 to RBT-6).
 
+Lending fees (`flow-gmsla-lending-fee`): for a delivered loan against securities, the lender's Rate billing column
+shows `Bill fee <start> to <end>`, over the same periods as the rebate. The fee accrues on the loaned quantity
+outstanding at the loaned security's feed price on the lender's business date, one price per invoice. The borrower's
+console shows `fee … tUSD for … to … at <price>` with each part, and `Pay … tUSD` and `Refuse invoice`; the
+borrower's service refuses an invoice whose price is not its own feed price. The rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (FEE-1 to FEE-6).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -495,7 +502,8 @@ it books is returned in full, so every balance ends where it started), and `flow
 price, the borrower calls the margin back, and the loan is returned), and `flow-gmsla-recall` (it restores both
 business dates, and every loan it books is returned in full), and `flow-gmsla-substitution` (the return after the
 substitution redelivers the tAGY, so every balance ends where it started), and `flow-gmsla-rebate` (it restores both business
-dates and returns its loan; the lender's tUSD falls by the rebates it pays).
+dates and returns its loan; the lender's tUSD falls by the rebates it pays), and `flow-gmsla-lending-fee` (the
+same, with the borrower paying the fees).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

@@ -1249,7 +1249,10 @@ public final class App {
     }
 
 
-    // ---- billing the loan's rate (task-gmsla-rebate, wp-adr-gmsla-rebate) ----
+    // ---- billing the loan's rate (task-gmsla-rebate, wp-adr-gmsla-rebate; task-gmsla-lending-fee, wp-adr-gmsla-lending-fee) ----
+    // The lending fee on non-cash collateral uses the same billing: the lender bills it on the loaned quantity outstanding
+    // at the loaned security's feed price on its business date, and the borrower's service checks that price against its
+    // own feed.
     // The party receiving the rate (the borrower for a rebate on cash collateral) builds the cdm-ext GmslaLoanInvoice for
     // the period from the billed-through date (or the delivery) to its business date (or the return date of a returned
     // loan), and bills on SecuritiesLoan with its hash; the payer's service rebuilds it over its own loan documents and
@@ -1347,7 +1350,7 @@ public final class App {
                 pending.put("problem", ex.getMessage());
             }
             m.put("pending", pending);
-        } else if (cash) {
+        } else {
             LocalDate[] period = billablePeriod(l, loanTimeline(l));
             if (period != null) m.put("billable", Map.of("periodStart", period[0].toString(), "periodEnd", period[1].toString()));
         }
@@ -1375,11 +1378,17 @@ public final class App {
         if (!known.doc().getPeriodStart().toLocalDate().equals(start)) throw new IllegalStateException("the invoice does not start at " + start);
         if (known.onChainAmount() != b.get("amount").asLong()) throw new IllegalStateException("the on-chain amount is not the invoice total");
         if (CdmRecall.yyyymmdd(known.periodEnd()) != b.get("periodEnd").asInt()) throw new IllegalStateException("the on-chain period end is not the invoice's");
+        if (known.doc().getPrice() != null) {
+            BigDecimal mine = loanFeedPrice(symbolByAddress.get(l.get("security").asText().toLowerCase()));
+            if (known.doc().getPrice().compareTo(mine) != 0)
+                throw new IllegalStateException("the invoice prices the loaned security at " + known.doc().getPrice().toPlainString() + ", this service's feed at " + mine.toPlainString());
+        }
         if (!b.get("cashToken").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) throw new IllegalStateException("the invoice is not payable in tUSD");
         return known;
     }
 
-    /** The borrower bills the rebate of a cash loan for the period to its business date (or the return date). */
+    /** The party receiving the loan's rate bills it for the period to its business date (or the return date): the
+     *  borrower the rebate of a cash loan, the lender the fee of a loan against securities. */
     private void billLoan(Context ctx) {
         String id = ctx.pathParam("id");
         JsonNode l = gw.get("/loans/" + id);
@@ -1390,12 +1399,14 @@ public final class App {
         if (!l.path("bill").path("invoiceHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("an invoice of loan " + id + " is already pending");
         LoanCurrent c = loanCurrent(l);
         if (c == null) throw new RuntimeException("the loan document is not in the payload store");
-        if (c.terms().getRebateRate() == null) throw new RuntimeException("only a loan against cash collateral has a rebate (the fee is row 18)");
-        if (lender) throw new RuntimeException("the borrower bills the rebate");
+        boolean cash = c.terms().getRebateRate() != null;
+        if (cash && lender) throw new RuntimeException("the borrower bills the rebate");
+        if (!cash && !lender) throw new RuntimeException("the lender bills the fee");
         var timeline = loanTimeline(l);
         LocalDate[] period = billablePeriod(l, timeline);
         if (period == null) throw new RuntimeException("nothing to bill: loan " + id + " is billed through " + businessDate);
-        CdmLoanInvoice.Invoice inv = CdmLoanInvoice.rebate(timeline, c.terms(), period[0], period[1]);
+        CdmLoanInvoice.Invoice inv = cash ? CdmLoanInvoice.rebate(timeline, c.terms(), period[0], period[1])
+                : CdmLoanInvoice.fee(timeline, c.terms(), period[0], period[1], loanFeedPrice(symbolByAddress.get(l.get("security").asText().toLowerCase())));
         store.recordDocument(id, "GmslaLoanInvoice", "out", inv.hash(), inv.json());
         payloads.put(inv.hash(), inv.json(), callParties);
         loanInvoices.put(inv.hash(), inv);

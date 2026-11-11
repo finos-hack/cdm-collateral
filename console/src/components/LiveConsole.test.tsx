@@ -967,7 +967,7 @@ describe("flow-gmsla-rebate", () => {
     deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
   });
 
-  it("the borrower bills the rebate for the period to its business date; a loan against securities has no rebate to bill", async () => {
+  it("the borrower bills the rebate for the period to its business date; it does not bill the fee of a loan against securities", async () => {
     const user = userEvent.setup();
     serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
       "/loans": { businessDate: "2026-12-11", loans: [
@@ -994,6 +994,42 @@ describe("flow-gmsla-rebate", () => {
     expect(screen.getByTestId("loan-billed-through-0xl1").textContent).toBe("billed through 2026-12-11");
     const row = screen.getByTestId("loan-0xl1");
     await user.click(within(row).getByRole("button", { name: "Pay 68 tUSD" }));
+    await user.click(within(row).getByRole("button", { name: "Refuse invoice" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill/pay", body: {} }, { path: "/loans/0xl1/bill/refuse", body: {} }]));
+  });
+});
+
+describe("flow-gmsla-lending-fee", () => {
+  const loan = (over: Record<string, unknown>) => ({
+    loanId: "0xl1", role: "lender", counterparty: "B", state: "open", security: "tMMF", quantity: "60000", collateral: "tUST",
+    collateralAmount: "623", tradeHash: "0x01", price: "1", marginPercent: "102", feeRatePercent: "0.5", termDate: null,
+    deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
+  });
+
+  it("the lender bills the fee for the period to its business date", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-12-11", loans: [loan({ billing: { billedThrough: null, rateType: "Fee", billedByMe: true,
+        billable: { periodStart: "2026-11-11", periodEnd: "2026-12-11" }, verified: true } })] },
+    });
+    const row = await screen.findByTestId("loan-0xl1");
+    await user.click(within(row).getByRole("button", { name: "Bill fee 2026-11-11 to 2026-12-11" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill", body: {} }]));
+  });
+
+  it("the borrower sees the fee at the billing date's price and pays or refuses it", async () => {
+    const user = userEvent.setup();
+    const pending = { rateType: "Fee", price: "1.1", amount: "37", periodStart: "2026-11-11", periodEnd: "2026-12-11", billedByMe: false, verified: true,
+      periods: [{ startDate: "2026-11-11", endDate: "2026-11-26", notional: "110000", accrual: "22.9166666667", quantity: "100000" },
+        { startDate: "2026-11-26", endDate: "2026-12-11", notional: "66000", accrual: "13.75", quantity: "60000" }] };
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-12-11", loans: [loan({ role: "borrower", counterparty: "A",
+        billing: { billedThrough: null, rateType: "Fee", billedByMe: false, pending, verified: true } })] },
+    });
+    expect((await screen.findByTestId("loan-bill-0xl1")).textContent).toBe(
+      "fee 37 tUSD for 2026-11-11 to 2026-12-11 at 1.1 (110,000 2026-11-11 to 2026-11-26: 22.9166666667; 66,000 2026-11-26 to 2026-12-11: 13.75)");
+    const row = screen.getByTestId("loan-0xl1");
+    await user.click(within(row).getByRole("button", { name: "Pay 37 tUSD" }));
     await user.click(within(row).getByRole("button", { name: "Refuse invoice" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill/pay", body: {} }, { path: "/loans/0xl1/bill/refuse", body: {} }]));
   });

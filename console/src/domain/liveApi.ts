@@ -266,7 +266,8 @@ export const api = {
     req<{ loanId: string; cdmHash: string; agreeTx: string }>(p, "POST", `/loans/${loanId}/substitute/agree`, {}),
   refuseLoanSubstitution: (p: LiveParty, loanId: string) =>
     req<{ loanId: string; refuseTx: string }>(p, "POST", `/loans/${loanId}/substitute/refuse`, {}),
-  /** The borrower bills the rebate of a cash loan to its business date (wp-adr-gmsla-rebate); the lender pays or refuses. */
+  /** The party receiving the loan's rate bills it to its business date: the borrower the rebate of a cash loan
+   *  (wp-adr-gmsla-rebate), the lender the fee of a loan against securities (wp-adr-gmsla-lending-fee); the other pays or refuses. */
   billLoan: (p: LiveParty, loanId: string) =>
     req<{ loanId: string; invoiceHash: string; amount: string; periodStart: string; periodEnd: string; billTx: string }>(p, "POST", `/loans/${loanId}/bill`, {}),
   payLoanBill: (p: LiveParty, loanId: string) =>
@@ -505,8 +506,9 @@ export interface LiveLoanBilling {
   rateType?: "Rebate" | "Fee";
   billedByMe?: boolean;
   pending?: {
+    rateType?: "Rebate" | "Fee"; price?: string;
     amount: string; periodEnd: string; billedByMe: boolean; verified: boolean; problem?: string;
-    periodStart?: string; periods?: { startDate: string; endDate: string; notional: string; accrual: string }[];
+    periodStart?: string; periods?: { startDate: string; endDate: string; notional: string; accrual: string; quantity?: string }[];
   };
   billable?: { periodStart: string; periodEnd: string };
   verified: boolean;
