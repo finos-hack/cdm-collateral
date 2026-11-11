@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T20:05:16Z
   confidence: 0.55
 createdAt: 2026-11-11T20:05:16Z
-updatedAt: 2026-11-11T20:09:55Z
+updatedAt: 2026-11-11T22:34:24Z
 ```
 # ADR: the borrower substitutes all the non-cash collateral of one loan with another security meeting the required collateral, with the lender's agreement, settled in one transaction on SecuritiesLoan
 
@@ -52,3 +52,9 @@ of this record is the maintainer's proposal.
   token list gain `tAGY`.
 - Row 14's marking values the loan's collateral at the new security's feed price after a substitution.
 - The rules are assumptions for an SME ([[task-sme-gmsla-substitution-rules]]).
+
+**Corrected 2026-11-11** by the project owner (source `5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e`: "1b"), after the row 16 PR: CDM's substitution terms
+change replaces only the collateral portfolio, so the trade after still named the original collateral as eligible. The
+substitution event now also sets the eligible collateral to the substitute, with the loan's margin, so the trade after
+names what it holds. Substitution documents built before this change no longer rebuild; loans booked on the row 17
+deployment are not affected.
