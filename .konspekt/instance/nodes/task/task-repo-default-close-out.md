@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T23:11:58Z
   confidence: 0.8
 createdAt: 2026-11-07T23:11:58Z
-updatedAt: 2026-11-07T23:11:58Z
+updatedAt: 2026-11-11T13:03:34Z
 ```
 
 # Task: repo default and close-out under GMRA paragraph 10
@@ -29,3 +29,18 @@ owner on 2026-11-07 (source `098fab36b2d91ff22a659917fbb8c77ca7aa4108`: "3. 11th
   on-chain; a live spec.
 
 The details are decided when the task starts.
+
+**CDM check, 2026-11-11** (a temporary test over a repo and a buy/sell-back built by `CdmRepo`, purchase 2026-11-09,
+Repurchase Date 2026-11-16, an Event of Default on 2026-11-12):
+
+- CDM has no GMRA default: no Event of Default, default notice, Default Market Value or close-out netting. Its
+  `EventsOfDefault` type is the ISLA (GMSLA) election and `AutomaticEarlyTermination` the ISDA one.
+- Three CDM routes close the trade or bring its Repurchase Date forward, none with an amount:
+  - CDM's repurchase event (`ResolveRepurchaseTransferInstruction`) on the default date: valid, intent `Repurchase`, the
+    trade `Terminated`; `Qualify_Repurchase` is false, on the Repurchase Date too (defect D25).
+  - `Create_TerminationInstruction` on the default date: `Qualify_Termination` holds; CDM validation fails until the
+    closed state's `activityDate` is set (as `CdmRepo` already does for reprice and roll).
+  - `Create_EffectiveOrTerminationDateTermChangeInstruction` moving the termination date to the default date: valid,
+    qualifies as `Renegotiation`; the trade stays open.
+- The Repurchase Price to the default date is `cdm-ext` `RepoPriceDifferential` to a date. The Default Market Values,
+  the netting and the balance are new; `cdmx.collateral.closeout` holds the ISDA 2002 Section 6(e) types only.

@@ -376,3 +376,17 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   both trades stay `Executed` with no transfers; each trade keeps one `InterestRatePayout` and qualifies as a repo (G30).
 - **Effect:** the pair-off is built by a `cdm-ext` replacement instruction and qualified by its own qualifier
   (`wp-adr-repo-pair-off`). Not reported (project owner's instruction).
+
+### D25 — CDM's repurchase event fails `Qualify_Repurchase` *(added 2026-11-11)*
+
+- `ResolveRepurchaseTransferInstruction` (`event-common-func.rosetta` line 1430) gives the `Repurchase` intent and one
+  `quantityChange` primitive that replaces every quantity with zero. It adds no `transfer` primitive.
+- `Qualify_Repurchase` (`event-qualification-func.rosetta` line 637) requires
+  `(primitiveInstruction -> quantityChange, primitiveInstruction -> transfer) only exists`: both a quantity change and a
+  transfer on the one instruction.
+- Observed 2026-11-11 with a temporary test over a repo and a buy/sell-back built by the collateral service (`CdmRepo`):
+  the repurchase event from `ResolveRepurchaseTransferInstruction`, on the Repurchase Date and on an earlier date, passes
+  CDM validation and closes the trade as `Terminated`, and `Qualify_Repurchase` is false. No CDM issue mentions
+  `ResolveRepurchaseTransferInstruction`.
+- **Effect:** every repurchase the prototype settles since `wp-adr-repo-purchase-repurchase` carries an event CDM does not
+  qualify as a repurchase. The settlement is unaffected: the cash and securities are the prototype's own transfers.
