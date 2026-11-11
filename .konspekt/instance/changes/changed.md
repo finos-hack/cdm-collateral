@@ -1319,3 +1319,9 @@ excluded.
 | task-gmsla-rebate | a382005dcc0c2ed9098a015adb4768ae39e857a3 | services/collateral/src/test/java/collateral/CdmLoanInvoiceTest.java | 2026-11-11T22:38:23Z |
 | wp-dec-besu-genesis-entrypoint | 64cd9565fd0ce9f23a8ff39e2d37b8af0dee1f77 | besu/start-network.sh | 2026-11-09T01:08:02Z |
 | investigation-live-spec-in-claude-web | 64cd9565fd0ce9f23a8ff39e2d37b8af0dee1f77 | docs/runbook-e2e.md | 2026-11-09T01:08:02Z |
+| task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | .github/workflows/cdm-ext.yml | 2026-11-11T23:12:00Z |
+| task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | .github/workflows/console.yml | 2026-11-11T23:12:00Z |
+| task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | .github/workflows/e2e-live-stack.yml | 2026-11-11T23:12:00Z |
+| task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | .github/workflows/gateway.yml | 2026-11-11T23:12:00Z |
+| task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | .github/workflows/konspekt-conformance.yml | 2026-11-11T23:12:00Z |
+| task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | docs/runbook-e2e.md | 2026-11-11T23:12:00Z |
