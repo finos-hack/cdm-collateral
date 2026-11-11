@@ -1294,3 +1294,4 @@ excluded.
 | task-gmsla-rebate | de1d9ae90832fc5f2c83b844f6bdabb123fc94b4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T20:36:45Z |
 | task-gmsla-rebate | fb8296c52640962c490d60ab4d69c4153b1afce6 | architecture/prototype.architecture.json | 2026-11-11T20:39:13Z |
 | task-gmsla-rebate | fb8296c52640962c490d60ab4d69c4153b1afce6 | docs/analysis/sme-question-ledger.md | 2026-11-11T20:39:13Z |
+| task-gmsla-substitution | badbd0e3eda1a528437945b3aa34f0b83a1ce080 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T22:30:59Z |
