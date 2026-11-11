@@ -1161,3 +1161,4 @@ excluded.
 | task-repo-default-close-out | 8e4f2fed6ffe2d0b4ac53eea93f05fd1b6092c3f | services/collateral/src/main/java/collateral/App.java | 2026-11-11T14:02:15Z |
 | task-repo-default-close-out | 8e4f2fed6ffe2d0b4ac53eea93f05fd1b6092c3f | services/collateral/src/main/java/collateral/CdmRepoDefault.java | 2026-11-11T14:02:15Z |
 | task-repo-default-close-out | 8e4f2fed6ffe2d0b4ac53eea93f05fd1b6092c3f | services/collateral/src/test/java/collateral/CdmRepoDefaultTest.java | 2026-11-11T14:02:15Z |
+| task-repo-default-close-out | 84a0ccab61970db05239a6bcf9121661c04a8c3f | docs/analysis/sme-question-ledger.md | 2026-11-11T14:15:56Z |
