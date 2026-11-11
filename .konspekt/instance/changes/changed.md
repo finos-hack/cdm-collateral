@@ -1191,3 +1191,5 @@ excluded.
 | task-gmsla-terms | d30f416195a7ec5e655d17ff240efffdbcf7f597 | console/e2e/live.spec.ts | 2026-11-11T17:10:52Z |
 | task-gmsla-terms | d30f416195a7ec5e655d17ff240efffdbcf7f597 | services/collateral/src/main/java/collateral/App.java | 2026-11-11T17:10:52Z |
 | task-gmsla-terms | d30f416195a7ec5e655d17ff240efffdbcf7f597 | services/oracle/src/main/java/oracle/App.java | 2026-11-11T17:10:52Z |
+| task-gmsla-loan-delivery-return | fb3a09d61b18568dbab9e312b1e17f5ce041ef48 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T16:23:41Z |
+| task-gmsla-loan-delivery-return | fb3a09d61b18568dbab9e312b1e17f5ce041ef48 | docs/analysis/defects.md | 2026-11-11T16:23:41Z |
