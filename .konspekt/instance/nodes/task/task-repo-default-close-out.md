@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T23:11:58Z
   confidence: 0.8
 createdAt: 2026-11-07T23:11:58Z
-updatedAt: 2026-11-11T13:03:34Z
+updatedAt: 2026-11-11T13:07:05Z
 ```
 
 # Task: repo default and close-out under GMRA paragraph 10
@@ -28,7 +28,10 @@ owner on 2026-11-07 (source `098fab36b2d91ff22a659917fbb8c77ca7aa4108`: "3. 11th
 - **Prototype:** default notices through `services/oracle` as in `flow-default-enforcement`; the net balance settled
   on-chain; a live spec.
 
-The details are decided when the task starts.
+The details are decided when the task starts. Design chosen 2026-11-11 (source `e1f2afbe9b0618c7020e6ec16844cce661c77ef2`): CDM's termination event per
+Transaction, oracle prices as Default Market Values, one net balance over every Transaction, margin and unpaid income,
+a Default Notice or automatic early termination, and only the balance settled ([[wp-adr-repo-default-close-out]],
+proposed); the rules are assumptions in [[task-sme-repo-default-close-out-rules]].
 
 **CDM check, 2026-11-11** (a temporary test over a repo and a buy/sell-back built by `CdmRepo`, purchase 2026-11-09,
 Repurchase Date 2026-11-16, an Event of Default on 2026-11-12):

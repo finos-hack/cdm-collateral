@@ -314,3 +314,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-bsbadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-buy-sell-back |  | accepted |
 | e-dec-cdmdev-smebsb | decomposes | node:goal-cdm-development | node:task-sme-repo-buy-sell-back-rules |  | accepted |
 | e-lnk-bsb-smebsb | links | node:task-repo-buy-sell-back | node:task-sme-repo-buy-sell-back-rules |  | accepted |
+| e-mrk-dcoadr-defaultcloseout | marks | waypoint:wp-adr-repo-default-close-out | node:task-repo-default-close-out |  | proposed |
+| e-drv-cdmdata-dcoadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-default-close-out |  | proposed |
+| e-drv-finality-dcoadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-default-close-out |  | proposed |
+| e-dec-cdmdev-smedco | decomposes | node:goal-cdm-development | node:task-sme-repo-default-close-out-rules |  | proposed |
+| e-lnk-dco-smedco | links | node:task-repo-default-close-out | node:task-sme-repo-default-close-out-rules |  | proposed |

@@ -1070,3 +1070,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
 | edge:e-lnk-bsb-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
 | node:task-repo-buy-sell-back | status | open | resolved | 2026-11-11T12:56:08Z | 01afb79b41bae16a17f1b01ac91610f6583f0583 | denisurusov |
+| waypoint:wp-adr-repo-default-close-out | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| node:task-sme-repo-default-close-out-rules | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| node:task-sme-repo-default-close-out-rules | status |  | open | 2026-11-11T13:07:05Z |  |  |
+| edge:e-mrk-dcoadr-defaultcloseout | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| edge:e-drv-cdmdata-dcoadr | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| edge:e-drv-finality-dcoadr | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| edge:e-dec-cdmdev-smedco | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| edge:e-lnk-dco-smedco | review |  | proposed | 2026-11-11T13:07:05Z |  |  |

@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 97 questions in 19 tasks, all open.
+Status of the ledger: 105 questions in 20 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -205,3 +205,16 @@ Status of the ledger: 97 questions in 19 tasks, all open.
 | BSB-6 | At a roll the Seller pays the Price Differential less the deduction, the Buyer pays any excess, and the deduction resets. Is that correct? | open | |
 | BSB-7 | Only two trades of the same type pair off. Can a repo and a buy/sell-back be paired off? | open | |
 | BSB-8 | The tokenized securities accrue no coupon, so the prototype quotes no accrued interest in the purchase and sell-back prices. For coupon securities, how are the clean price and accrued interest stated? | open | |
+
+### `task-sme-repo-default-close-out-rules`: a GMRA default and close-out
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| DCO-1 | Each Transaction enters as the Repurchase Price accrued to the Early Termination Date, owed by the Seller, against the Default Market Value of the Equivalent Securities, owed by the Buyer. Is that paragraph 10(c)? | open | |
+| DCO-2 | The prototype uses one market price at the Default Valuation Time. Under paragraph 10(e) the non-defaulting party may use the net proceeds of a sale or purchase, or quotations. Which method applies when? | open | |
+| DCO-3 | The elections hold a Default Valuation Time and a business day calendar. Which day: the Early Termination Date, or a number of dealing days after it? | open | |
+| DCO-4 | The oracle records a default without its kind, and with automatic early termination elected every default terminates without notice. Should only an Act of Insolvency do so? | open | |
+| DCO-5 | Cash Margin is owed back at its amount and Margin Securities at their Default Market Value. Is accrued Net Margin interest also included? | open | |
+| DCO-6 | Agreed income that was due and not paid enters the balance. Does interest on it apply? | open | |
+| DCO-7 | A buy/sell-back enters at its Repurchase Price less the income deduction. Is that right under the Buy/Sell Back Annex when the income date falls after the Early Termination Date? | open | |
+| DCO-8 | The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply? | open | |
