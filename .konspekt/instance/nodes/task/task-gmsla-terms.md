@@ -43,5 +43,5 @@ The details are decided when the task starts, after a temporary test of CDM's fu
 - On-chain: `CollateralControl`'s terms amendment chain is keyed by agreement kind and unordered pair
   (`wp-adr-repo-gmra-terms`), so a GMSLA chain needs no contract change.
 
-**Design chosen 2026-11-11** (source `0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95`: "1a 2a 3a 4a 5a"), recorded in [[wp-adr-gmsla-terms]] (proposed); the
+**Design chosen 2026-11-11** (source `0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95`: "1a 2a 3a 4a 5a"), recorded in [[wp-adr-gmsla-terms]] (accepted 2026-11-11); the
 baseline elections are questions for an SME in [[task-sme-gmsla-terms-baseline]].

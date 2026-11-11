@@ -3,7 +3,7 @@ id: task-sme-gmsla-terms-baseline
 type: task
 title: Confirm with a business SME the baseline GMSLA elections and their amendment
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-terms
   sourceRef: 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:30:34Z
   confidence: 0.6
 createdAt: 2026-11-11T15:30:34Z
-updatedAt: 2026-11-11T15:30:34Z
+updatedAt: 2026-11-11T15:32:22Z
 ```
 # Task: confirm the baseline GMSLA elections and their amendment
 

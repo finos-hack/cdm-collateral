@@ -1142,3 +1142,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
 | edge:e-dec-cdmdev-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
 | edge:e-lnk-gmslaterms-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| waypoint:wp-adr-gmsla-terms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| node:task-sme-gmsla-terms-baseline | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| edge:e-mrk-gmslatermsadr-gmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| edge:e-drv-cdmdata-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| edge:e-drv-finality-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| edge:e-dec-cdmdev-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
+| edge:e-lnk-gmslaterms-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
