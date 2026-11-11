@@ -1220,3 +1220,4 @@ excluded.
 | task-gmsla-loan-delivery-return | b619e91694e744a2a072ddcdf7e84049ba7a61ae | console/e2e/live.spec.ts | 2026-11-11T17:12:23Z |
 | task-gmsla-loan-delivery-return | b619e91694e744a2a072ddcdf7e84049ba7a61ae | docs/runbook-e2e.md | 2026-11-11T17:12:23Z |
 | task-gmsla-loan-delivery-return | b619e91694e744a2a072ddcdf7e84049ba7a61ae | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T17:12:23Z |
+| task-gmsla-terms | c01bc1ba9fec40f1b28069299d889e10427d28d4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T17:44:31Z |
