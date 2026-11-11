@@ -3,7 +3,7 @@ id: wp-adr-gmsla-substitution
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T20:05:16Z
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-substitution
   sourceRef: 48fe886bd6db13fa671e8e91d418ed0f300f1833
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T20:05:16Z
   confidence: 0.55
 createdAt: 2026-11-11T20:05:16Z
-updatedAt: 2026-11-11T20:05:16Z
+updatedAt: 2026-11-11T20:09:55Z
 ```
 # ADR: the borrower substitutes all the non-cash collateral of one loan with another security meeting the required collateral, with the lender's agreement, settled in one transaction on SecuritiesLoan
 

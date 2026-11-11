@@ -3,7 +3,7 @@ id: task-sme-gmsla-substitution-rules
 type: task
 title: Confirm with a business SME the rules for substituting non-cash collateral of a loan under the GMSLA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-substitution
   sourceRef: 48fe886bd6db13fa671e8e91d418ed0f300f1833
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T20:05:16Z
   confidence: 0.55
 createdAt: 2026-11-11T20:05:16Z
-updatedAt: 2026-11-11T20:05:16Z
+updatedAt: 2026-11-11T20:09:55Z
 ```
 # Task: confirm the rules for substituting non-cash collateral of a loan under the GMSLA
 

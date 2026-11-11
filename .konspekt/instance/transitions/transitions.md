@@ -1205,3 +1205,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
 | edge:e-dec-cdmdev-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
 | edge:e-lnk-gmslasub-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| waypoint:wp-adr-gmsla-substitution | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| node:task-sme-gmsla-substitution-rules | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| edge:e-mrk-lsbadr-gmslasub | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| edge:e-drv-cdmdata-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| edge:e-drv-finality-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| edge:e-dec-cdmdev-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| edge:e-lnk-gmslasub-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
