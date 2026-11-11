@@ -2,7 +2,7 @@
 id: task-gmsla-marking
 type: task
 title: Securities lending marking to market and margin transfer
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T18:15:49Z
+updatedAt: 2026-11-11T19:39:49Z
 ```
 # Task: securities lending marking to market and margin transfer
 
@@ -40,3 +40,5 @@ The details are decided when the task starts, after a temporary test of CDM's fu
 **Design chosen 2026-11-11** (source `e56a84b64d6211be054d63c35b84556e556a0feb`: "1a 2a 3a 4a 5a 6a 7a 8a"), recorded in [[wp-adr-gmsla-marking]]
 (proposed); the rules are questions for an SME in [[task-sme-gmsla-marking-rules]].
 
+
+**Resolved 2026-11-11**: PR #61 merged (source `6713ea5dc1b1b7654c3f47b0835b8f60e69393f2`).

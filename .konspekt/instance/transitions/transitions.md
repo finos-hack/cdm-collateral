@@ -1196,3 +1196,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
 | edge:e-dec-cdmdev-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
 | edge:e-lnk-gmslarcl-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| node:task-gmsla-marking | status | open | resolved | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
