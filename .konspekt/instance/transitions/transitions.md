@@ -1238,3 +1238,15 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-ci-actions-minutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
 | node:task-ci-actions-minutes | status |  | resolved | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
 | edge:e-dec-e2eflow-ciminutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
+| noteworthy:nw-konspekt-cross-mode-portability | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
+| node:task-konspekt-index-cross-mode-portability | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
+| node:task-konspekt-index-cross-mode-portability | status |  | open | 2026-11-04T02:34:39Z |  |  |
+| edge:e-note-adoption-crossmode | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
+| edge:e-dec-adoption-konspektindex | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
+| edge:e-note-konspektindex-crossmode | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
+| noteworthy:nw-konspekt-cross-mode-portability | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
+| node:task-konspekt-index-cross-mode-portability | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
+| edge:e-note-adoption-crossmode | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
+| edge:e-dec-adoption-konspektindex | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
+| edge:e-note-konspektindex-crossmode | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
+| node:task-konspekt-index-cross-mode-portability | status | open | resolved | 2026-11-04T02:59:07Z | 4ee571002628f2836bef93d14d9a2d9ecef1e5b5 | denisurusov |
