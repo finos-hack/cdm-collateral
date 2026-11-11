@@ -266,6 +266,13 @@ export const api = {
     req<{ loanId: string; cdmHash: string; agreeTx: string }>(p, "POST", `/loans/${loanId}/substitute/agree`, {}),
   refuseLoanSubstitution: (p: LiveParty, loanId: string) =>
     req<{ loanId: string; refuseTx: string }>(p, "POST", `/loans/${loanId}/substitute/refuse`, {}),
+  /** The borrower bills the rebate of a cash loan to its business date (wp-adr-gmsla-rebate); the lender pays or refuses. */
+  billLoan: (p: LiveParty, loanId: string) =>
+    req<{ loanId: string; invoiceHash: string; amount: string; periodStart: string; periodEnd: string; billTx: string }>(p, "POST", `/loans/${loanId}/bill`, {}),
+  payLoanBill: (p: LiveParty, loanId: string) =>
+    req<{ loanId: string; invoiceHash: string; payTx: string }>(p, "POST", `/loans/${loanId}/bill/pay`, {}),
+  refuseLoanBill: (p: LiveParty, loanId: string) =>
+    req<{ loanId: string; refuseTx: string }>(p, "POST", `/loans/${loanId}/bill/refuse`, {}),
   /** This party's securities loans (wp-adr-gmsla-loan-delivery-return). */
   loans: (p: LiveParty) => req<LiveLoans>(p, "GET", "/loans"),
   /** The lender books a loan; the collateral follows from the feed prices and the margin (default: the GMSLA default margin). */
@@ -487,8 +494,23 @@ export interface LiveLoan {
   substitution?: { collateral: string; collateralAmount: string; requestedByMe: boolean; returned?: string; date?: string; verified: boolean; problem?: string };
   /** The substitution the trade in force comes from, if any. */
   lastSubstitution?: { isin: string; quantity: string; returned: string; date: string; qualification: string; cdmQualifySubstitution: boolean };
+  /** The billing of the loan's rate (wp-adr-gmsla-rebate): the billed-through date, the pending invoice, or the period billable now. */
+  billing?: LiveLoanBilling;
   verified: boolean;
   problem?: string | null;
+}
+
+export interface LiveLoanBilling {
+  billedThrough?: string | null;
+  rateType?: "Rebate" | "Fee";
+  billedByMe?: boolean;
+  pending?: {
+    amount: string; periodEnd: string; billedByMe: boolean; verified: boolean; problem?: string;
+    periodStart?: string; periods?: { startDate: string; endDate: string; notional: string; accrual: string }[];
+  };
+  billable?: { periodStart: string; periodEnd: string };
+  verified: boolean;
+  problem?: string;
 }
 
 export interface LiveLoans {

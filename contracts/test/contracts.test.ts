@@ -1814,6 +1814,43 @@ describe("CDM collateral contracts", async () => {
       assert.equal(await bal(tAGY, bAddr), 100n);
     });
 
+    it("the borrower bills the rebate; the lender pays it in tUSD and the loan is billed through the period end (task-gmsla-rebate)", async () => {
+      const Z = `0x${"0".repeat(64)}`;
+      await assert.rejects(loans.write.bill([L, tUSD.address, 20261211, 17n, H("i1")], { account: bankB.account })); // not delivered
+      await deliver();
+      await assert.rejects(loans.write.bill([L, tUSD.address, 20261211, 17n, H("i1")], { account: bankC.account })); // not a party
+      await assert.rejects(loans.write.bill([L, tUSD.address, 20261211, 0n, H("i1")], { account: bankB.account }));
+      await assert.rejects(loans.write.bill([L, tUSD.address, 20261211, 17n, Z as `0x${string}`], { account: bankB.account }));
+      await loans.write.bill([L, tUSD.address, 20261211, 17n, H("i1")], { account: bankB.account });
+      await assert.rejects(loans.write.bill([L, tUSD.address, 20261212, 1n, H("i2")], { account: bankB.account })); // one pending
+      await assert.rejects(loans.write.payBill([L, H("i1")], { account: bankB.account })); // the biller does not pay
+      await assert.rejects(loans.write.payBill([L, H("x")], { account: bankA.account })); // other hash
+      const [biller, token, end, amount, hash, through] = await loans.read.getBill([L]);
+      assert.deepEqual([biller.toLowerCase(), token.toLowerCase(), end, amount, hash, through], [bAddr.toLowerCase(), tUSD.address.toLowerCase(), 20261211, 17n, H("i1"), 0]);
+      const a0 = await bal(tUSD, aAddr), b0 = await bal(tUSD, bAddr);
+      await tUSD.write.approve([loans.address, 17n], { account: bankA.account });
+      await loans.write.payBill([L, H("i1")], { account: bankA.account });
+      assert.equal(await bal(tUSD, aAddr), a0 - 17n);
+      assert.equal(await bal(tUSD, bAddr), b0 + 17n);
+      assert.equal((await loans.read.getBill([L]))[5], 20261211);
+      assert.equal((await loans.read.getBill([L]))[3], 0n);
+      await assert.rejects(loans.write.bill([L, tUSD.address, 20261211, 5n, H("i2")], { account: bankB.account })); // not after billed
+      // The lender refuses the next invoice; a returned loan can still be billed.
+      await loans.write.bill([L, tUSD.address, 20261215, 5n, H("i2")], { account: bankB.account });
+      await assert.rejects(loans.write.refuseBill([L], { account: bankB.account }));
+      await loans.write.refuseBill([L], { account: bankA.account });
+      assert.equal((await loans.read.getBill([L]))[5], 20261211);
+      await tUSD.write.mint([aAddr, 100n]); // the lender redelivers all 5,100 after paying 17
+      await tMMF.write.approve([loans.address, 100n], { account: bankB.account });
+      await tUSD.write.approve([loans.address, 5100n], { account: bankA.account });
+      await loans.write.instructReturn([L, 100n, 5100n, H("r")], { account: bankB.account });
+      await loans.write.instructReturn([L, 100n, 5100n, H("r")], { account: bankA.account });
+      await loans.write.bill([L, tUSD.address, 20261215, 5n, H("i3")], { account: bankB.account });
+      await tUSD.write.approve([loans.address, 5n], { account: bankA.account });
+      await loans.write.payBill([L, H("i3")], { account: bankA.account });
+      assert.equal((await loans.read.getBill([L]))[5], 20261215);
+    });
+
     it("the lender refuses a substitution; none can be requested while a return is pending", async () => {
       const tAGY = await viem.deployContract("TokenizedCollateral", ["Tokenized agency bond", "tAGY", "US3137EAGY10", "3137EAGY1", "QAGY00000"]);
       await deliver();

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -150,6 +151,9 @@ public final class App {
         app.post("/api/v1/loans/{id}/substitute", this::requestLoanSubstitution);
         app.post("/api/v1/loans/{id}/substitute/agree", this::agreeLoanSubstitution);
         app.post("/api/v1/loans/{id}/substitute/refuse", this::refuseLoanSubstitution);
+        app.post("/api/v1/loans/{id}/bill", this::billLoan);
+        app.post("/api/v1/loans/{id}/bill/pay", this::payLoanBill);
+        app.post("/api/v1/loans/{id}/bill/refuse", this::refuseLoanBill);
         app.get("/api/v1/gmsla-marking", this::gmslaMarking);
         app.post("/api/v1/gmsla-marking/calls", this::issueGmslaMarginCall);
         app.get("/api/v1/repos", this::repos);
@@ -1013,6 +1017,13 @@ public final class App {
         if (rc.path("quantity").asLong(0) > 0) m.put("recall", recallView(l, rc));
         JsonNode sb = l.path("substitution");
         if (!sb.path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) m.put("substitution", substitutionView(l, sb, lender));
+        if (!state.equals("booked") && !state.equals("affirmed")) {
+            try {
+                m.put("billing", billingView(l, lender));
+            } catch (Exception ex) {
+                m.put("billing", Map.of("verified", false, "problem", String.valueOf(ex.getMessage())));
+            }
+        }
         try {
             LoanCurrent c = loanCurrent(l);
             if (c == null) {
@@ -1235,6 +1246,197 @@ public final class App {
         out.put("cdmHash", s.hash());
         out.put("agreeTx", tx.path("txHash").asText());
         ctx.json(out);
+    }
+
+
+    // ---- billing the loan's rate (task-gmsla-rebate, wp-adr-gmsla-rebate) ----
+    // The party receiving the rate (the borrower for a rebate on cash collateral) builds the cdm-ext GmslaLoanInvoice for
+    // the period from the billed-through date (or the delivery) to its business date (or the return date of a returned
+    // loan), and bills on SecuritiesLoan with its hash; the payer's service rebuilds it over its own loan documents and
+    // pays in tUSD, or refuses. The rules are assumptions listed in task-sme-gmsla-rebate-rules.
+
+    /** The loan's timeline: the trade in force from the delivery date, then from each settled return or substitution,
+     *  found by walking back from the on-chain trade hash through the documents' trades before. */
+    private List<CdmLoanInvoice.Change> loanTimeline(JsonNode l) {
+        String id = l.get("loanId").asText();
+        // The loan's documents this service holds, by the hash of the trade each one leaves in force.
+        Map<String, LoanCurrent> byAfter = new HashMap<>();
+        for (Map<String, Object> msg : store.messagesFor(id)) {
+            String type = String.valueOf(msg.get("msgType"));
+            if (!type.equals("GmslaLoanSettlement") && !type.equals("GmslaLoanSubstitution")) continue;
+            String json = String.valueOf(msg.get("cdmJson"));
+            if (type.equals("GmslaLoanSettlement") && !json.contains("\"returnEvent\"")) continue;
+            String hash = String.valueOf(msg.get("cdmHash"));
+            if (payloads.get(hash) == null) payloads.put(hash, json, callParties);
+            LoanCurrent c = loanDocAt(hash);
+            if (c != null) byAfter.put(CdmRepo.tradeHash(c.trade()), c);
+        }
+        LinkedList<CdmLoanInvoice.Change> out = new LinkedList<>();
+        LoanCurrent cur = loanCurrent(l);
+        if (cur == null) throw new IllegalStateException("the loan document is not in the payload store");
+        while (cur.booking() == null) {
+            cdm.event.common.TradeState before;
+            LocalDate date;
+            if (cur.lastReturn() != null) {
+                before = cur.lastReturn().settlement().getTrade();
+                date = cur.lastReturn().settlement().getReturnEvent().getEventDate().toLocalDate();
+            } else if (cur.lastSubstitution() != null) {
+                before = cur.lastSubstitution().doc().getTrade();
+                date = cur.lastSubstitution().doc().getSubstitutionEvent().getEventDate().toLocalDate();
+            } else throw new IllegalStateException("the loan document is neither a booking, a return nor a substitution");
+            out.addFirst(new CdmLoanInvoice.Change(date, cur.trade()));
+            LoanCurrent prev = byAfter.get(CdmRepo.tradeHash(before));
+            if (prev == null) {
+                // The first change: the trade before it is the booked trade.
+                out.addFirst(new CdmLoanInvoice.Change(deliveryDate(l), before));
+                return out;
+            }
+            cur = prev;
+        }
+        out.addFirst(new CdmLoanInvoice.Change(deliveryDate(l), cur.trade()));
+        return out;
+    }
+
+    /** The delivery date: the settlement date of the delivery document anchored on-chain. */
+    private LocalDate deliveryDate(JsonNode l) {
+        String hash = l.get("deliveryHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the delivery document is not in the payload store");
+        try {
+            JsonNode d = CdmRuntime.JSON.readTree(doc);
+            return LocalDate.parse(d.path("securityTransfer").path("settlementDate").path("adjustedDate").path("@data").asText(
+                    d.path("securityTransfer").path("settlementDate").path("adjustedDate").asText()));
+        } catch (Exception e) {
+            throw new IllegalStateException("the delivery document has no settlement date: " + e.getMessage(), e);
+        }
+    }
+
+    /** The period this service would bill: from the billed-through date (or the delivery) to its business date, or to
+     *  the return date of a returned loan. Null when nothing is billable. */
+    private LocalDate[] billablePeriod(JsonNode l, List<CdmLoanInvoice.Change> timeline) {
+        int through = l.path("bill").path("billedThrough").asInt(0);
+        LocalDate start = through == 0 ? timeline.get(0).date() : CdmRecall.fromYyyymmdd(through);
+        LocalDate end = l.get("state").asText().equals("returned") ? timeline.get(timeline.size() - 1).date() : businessDate;
+        return end.isAfter(start) ? new LocalDate[]{start, end} : null;
+    }
+
+    /** Invoice documents this service has checked, by hash (a document never changes). */
+    private final Map<String, CdmLoanInvoice.Invoice> loanInvoices = new ConcurrentHashMap<>();
+
+    private Map<String, Object> billingView(JsonNode l, boolean lender) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        JsonNode b = l.path("bill");
+        int through = b.path("billedThrough").asInt(0);
+        m.put("billedThrough", through == 0 ? null : CdmRecall.fromYyyymmdd(through).toString());
+        LoanCurrent c = loanCurrent(l);
+        boolean cash = c != null && c.terms().getRebateRate() != null;
+        m.put("rateType", cash ? "Rebate" : "Fee");
+        m.put("billedByMe", cash ? !lender : lender); // the party receiving the rate bills
+        String hash = b.path("invoiceHash").asText(ZERO_HASH);
+        if (!hash.equals(ZERO_HASH)) {
+            Map<String, Object> pending = new LinkedHashMap<>();
+            pending.put("amount", b.get("amount").asText());
+            pending.put("periodEnd", CdmRecall.fromYyyymmdd(b.get("periodEnd").asInt()).toString());
+            pending.put("billedByMe", b.get("biller").asText().equalsIgnoreCase(cfg.myAddress));
+            try {
+                CdmLoanInvoice.Invoice inv = pendingInvoice(l, b);
+                pending.putAll(CdmLoanInvoice.view(inv));
+                pending.put("verified", true);
+            } catch (Exception ex) {
+                pending.put("verified", false);
+                pending.put("problem", ex.getMessage());
+            }
+            m.put("pending", pending);
+        } else if (cash) {
+            LocalDate[] period = billablePeriod(l, loanTimeline(l));
+            if (period != null) m.put("billable", Map.of("periodStart", period[0].toString(), "periodEnd", period[1].toString()));
+        }
+        m.put("verified", true);
+        return m;
+    }
+
+    /** The pending invoice, checked: it hashes to the on-chain hash, rebuilds over this service's loan documents, starts
+     *  at the billed-through date (or the delivery), and its total and period end are the on-chain ones. */
+    private CdmLoanInvoice.Invoice pendingInvoice(JsonNode l, JsonNode b) {
+        String hash = b.get("invoiceHash").asText();
+        CdmLoanInvoice.Invoice known = loanInvoices.get(hash);
+        if (known == null) {
+            String doc = payloads.get(hash);
+            if (doc == null) throw new IllegalStateException("the invoice is not in the payload store");
+            if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the invoice does not hash to the on-chain hash");
+            LoanCurrent c = loanCurrent(l);
+            if (c == null) throw new IllegalStateException("the loan document is not in the payload store");
+            known = CdmLoanInvoice.verify(doc, loanTimeline(l), c.terms());
+            loanInvoices.put(hash, known);
+        }
+        if (!known.doc().getLoanId().equalsIgnoreCase(l.get("loanId").asText())) throw new IllegalStateException("the invoice is for another loan");
+        int through = b.get("billedThrough").asInt(0);
+        LocalDate start = through == 0 ? loanTimeline(l).get(0).date() : CdmRecall.fromYyyymmdd(through);
+        if (!known.doc().getPeriodStart().toLocalDate().equals(start)) throw new IllegalStateException("the invoice does not start at " + start);
+        if (known.onChainAmount() != b.get("amount").asLong()) throw new IllegalStateException("the on-chain amount is not the invoice total");
+        if (CdmRecall.yyyymmdd(known.periodEnd()) != b.get("periodEnd").asInt()) throw new IllegalStateException("the on-chain period end is not the invoice's");
+        if (!b.get("cashToken").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) throw new IllegalStateException("the invoice is not payable in tUSD");
+        return known;
+    }
+
+    /** The borrower bills the rebate of a cash loan for the period to its business date (or the return date). */
+    private void billLoan(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        boolean lender = l.get("lender").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!lender && !l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("not a party to loan " + id);
+        String state = l.get("state").asText();
+        if (!state.equals("open") && !state.equals("returned")) throw new RuntimeException("loan " + id + " is not delivered");
+        if (!l.path("bill").path("invoiceHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("an invoice of loan " + id + " is already pending");
+        LoanCurrent c = loanCurrent(l);
+        if (c == null) throw new RuntimeException("the loan document is not in the payload store");
+        if (c.terms().getRebateRate() == null) throw new RuntimeException("only a loan against cash collateral has a rebate (the fee is row 18)");
+        if (lender) throw new RuntimeException("the borrower bills the rebate");
+        var timeline = loanTimeline(l);
+        LocalDate[] period = billablePeriod(l, timeline);
+        if (period == null) throw new RuntimeException("nothing to bill: loan " + id + " is billed through " + businessDate);
+        CdmLoanInvoice.Invoice inv = CdmLoanInvoice.rebate(timeline, c.terms(), period[0], period[1]);
+        store.recordDocument(id, "GmslaLoanInvoice", "out", inv.hash(), inv.json());
+        payloads.put(inv.hash(), inv.json(), callParties);
+        loanInvoices.put(inv.hash(), inv);
+        JsonNode tx = gw.post("/loans/" + id + "/bill", Map.of("cashToken", cfg.tokenAddress("tUSD"), "periodEnd", CdmRecall.yyyymmdd(inv.periodEnd()),
+                "amount", String.valueOf(inv.onChainAmount()), "invoiceHash", inv.hash()));
+        Map<String, Object> out = new LinkedHashMap<>(CdmLoanInvoice.view(inv));
+        out.put("loanId", id);
+        out.put("invoiceHash", inv.hash());
+        out.put("billTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The payer pays the pending invoice once it rebuilds over its own documents and ends no later than its business date. */
+    private void payLoanBill(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        JsonNode b = l.path("bill");
+        if (b.path("invoiceHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("no invoice of loan " + id + " is pending");
+        if (b.get("biller").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("the biller does not pay its own invoice");
+        if (!l.get("lender").asText().equalsIgnoreCase(cfg.myAddress) && !l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress))
+            throw new RuntimeException("not a party to loan " + id);
+        CdmLoanInvoice.Invoice inv = pendingInvoice(l, b);
+        if (inv.periodEnd().isAfter(businessDate)) throw new RuntimeException("the invoice ends after this service's business date " + businessDate);
+        store.recordDocument(id, "GmslaLoanInvoice", "in", inv.hash(), inv.json());
+        JsonNode tx = gw.post("/loans/" + id + "/bill/pay", Map.of("invoiceHash", inv.hash(), "token", b.get("cashToken").asText(), "amount", b.get("amount").asText()));
+        Map<String, Object> out = new LinkedHashMap<>(CdmLoanInvoice.view(inv));
+        out.put("loanId", id);
+        out.put("invoiceHash", inv.hash());
+        out.put("payTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The payer refuses the pending invoice, which clears it; nothing moves. */
+    private void refuseLoanBill(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        JsonNode b = l.path("bill");
+        if (b.path("invoiceHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("no invoice of loan " + id + " is pending");
+        if (b.get("biller").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the payer refuses an invoice");
+        JsonNode tx = gw.post("/loans/" + id + "/bill/refuse", Map.of());
+        ctx.json(Map.of("loanId", id, "refuseTx", tx.path("txHash").asText()));
     }
 
     /** The lender refuses the pending substitution, which clears it; nothing moves. */

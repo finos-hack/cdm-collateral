@@ -3101,3 +3101,124 @@ test("flow-gmsla-substitution: A lends tMMF to B against tUST -> B asks to subst
     await returnAll(id).catch(() => undefined);
   }
 });
+
+// --- flow-gmsla-rebate ---
+// The borrower bills the rebate on a loan's cash collateral (wp-adr-gmsla-rebate): the cdm-ext GmslaLoanInvoice covers
+// the period from the billed-through date (or the delivery) to the business date, split at each settled return, each
+// part accruing CDM's FixedAmount on the cash held (ACT/360), the total rounded to whole tUSD. The lender's service
+// rebuilds it over its own loan documents and pays it in tUSD, or refuses it; a returned loan is billed to its return date.
+test("flow-gmsla-rebate: A lends tMMF to B against tUSD -> B returns part mid-period -> B bills the rebate over both parts, A pays -> the next invoice starts at the billed-through date, A refuses -> after the full return B bills to the return date, A pays", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const tMMF = p.tokens.tMMF, tUSD = p.tokens.tUSD;
+  const iso = (d: Date) => d.toLocaleDateString("en-CA");
+  const today = iso(new Date());
+  const addDays = (date: string, n: number) => {
+    const d = new Date(`${date}T12:00:00`);
+    d.setDate(d.getDate() + n);
+    return iso(d);
+  };
+  const d15 = addDays(today, 15), d30 = addDays(today, 30), d40 = addDays(today, 40);
+  const setDate = async (date: string) => {
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: date });
+  };
+  const bal = async () => ({
+    aMmf: await balanceOf(GATEWAY.A, tMMF, p.a), bMmf: await balanceOf(GATEWAY.A, tMMF, p.b),
+    aUsd: await balanceOf(GATEWAY.A, tUSD, p.a), bUsd: await balanceOf(GATEWAY.A, tUSD, p.b),
+  });
+  type Pending = { amount: string; periodStart?: string; periodEnd: string; verified: boolean; problem?: string; periods?: { notional: string }[] };
+  type Billing = { billedThrough?: string | null; pending?: Pending; billable?: { periodStart: string; periodEnd: string }; verified: boolean; problem?: string };
+  type LoanView = Loan & { billing?: Billing };
+  const loanOf = async (svc: string, id: string) => (await call<{ loans: LoanView[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id)!;
+  // The invoice total: the sum of cash held x 4% x days / 360 over the parts, rounded half-up to whole tUSD.
+  const rebate = (parts: [bigint, number][]) => {
+    const n = parts.reduce((s, [held, days]) => s + held * BigInt(days) * 4n, 0n), d = 36_000n;
+    return (2n * n + d) / (2n * d);
+  };
+  const fmt = (v: bigint) => Number(v).toLocaleString("en-US");
+  const returnPart = async (id: string, quantity: number) => {
+    await call(`${SERVICE.B}/loans/${id}/return`, "POST", { quantity });
+    await call(`${SERVICE.A}/loans/${id}/return`, "POST", {});
+  };
+
+  // Setup: A lends 100,000 tMMF to B against tUSD at a 4% rebate, delivered today (the UI path is flow-gmsla-loan-delivery-return).
+  await setDate(today);
+  const start = await bal();
+  const { loanId: id } = await call<{ loanId: string }>(`${SERVICE.A}/loans`, "POST", { security: "tMMF", quantity: 100_000, collateral: "tUSD", ratePercent: "4" });
+  try {
+    await call(`${SERVICE.B}/loans/${id}/affirm`, "POST", {});
+    await call(`${SERVICE.A}/loans/${id}/deliver`, "POST", {});
+    await call(`${SERVICE.B}/loans/${id}/deliver`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.B, id))?.state, { timeout: STEP_TIMEOUT }).toBe("open");
+    const held0 = BigInt((await loanOf(SERVICE.A, id)).collateralAmount);
+    await expect(call(`${SERVICE.A}/loans/${id}/bill`, "POST", {})).rejects.toThrow("the borrower bills");
+
+    // 1. Fifteen days on, B returns 40,000; less cash is held from then on.
+    await setDate(d15);
+    await returnPart(id, 40_000);
+    await expect.poll(async () => (await loanOf(SERVICE.A, id)).quantity, { timeout: STEP_TIMEOUT }).toBe("60000");
+    const held1 = BigInt((await loanOf(SERVICE.A, id)).collateralAmount);
+    expect(held1 < held0).toBe(true);
+
+    // 2. Thirty days on, B bills in its console: two parts, split at the return; A's service rebuilds the invoice.
+    await setDate(d30);
+    const first = rebate([[held0, 15], [held1, 15]]);
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`loan-${id}`);
+    await rowB.getByRole("button", { name: `Bill rebate ${today} to ${d30}` }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`loan-bill-${id}`)).toContainText(`rebate ${fmt(first)} tUSD for ${today} to ${d30}`, { timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await loanOf(SERVICE.A, id)).billing?.pending, { timeout: 30_000 })
+      .toMatchObject({ amount: String(first), periodStart: today, periodEnd: d30, verified: true, periods: [{ notional: String(held0) }, { notional: String(held1) }] });
+    await expect(call(`${SERVICE.B}/loans/${id}/bill`, "POST", {})).rejects.toThrow("already pending");
+    await expect(call(`${SERVICE.B}/loans/${id}/bill/pay`, "POST", {})).rejects.toThrow("does not pay its own");
+    const billed = await bal();
+
+    // 3. A pays in its console: the rebate moves in tUSD from A to B and both services show the billed-through date.
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`loan-${id}`);
+    await rowA.getByRole("button", { name: `Pay ${fmt(first)} tUSD` }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`loan-billed-through-${id}`)).toHaveText(`billed through ${d30}`, { timeout: STEP_TIMEOUT });
+    for (const svc of [SERVICE.A, SERVICE.B])
+      await expect.poll(async () => { const b = (await loanOf(svc, id)).billing; return { through: b?.billedThrough, pending: b?.pending ?? null }; }, { timeout: 30_000 })
+        .toEqual({ through: d30, pending: null });
+    const paid = await bal();
+    expect(billed.aUsd - paid.aUsd).toBe(first);
+    expect(paid.bUsd - billed.bUsd).toBe(first);
+
+    // 4. Ten days on, B bills again: the invoice starts at the billed-through date, on the cash kept. A refuses in its
+    //    console: nothing moves and the billed-through date stays.
+    await setDate(d40);
+    const second = rebate([[held1, 10]]);
+    const inv = await call<{ periodStart: string; periodEnd: string; amount: string }>(`${SERVICE.B}/loans/${id}/bill`, "POST", {});
+    expect(inv).toMatchObject({ periodStart: d30, periodEnd: d40, amount: String(second) });
+    await page.goto("/#/live/A");
+    await expect(page.getByTestId(`loan-bill-${id}`)).toContainText(`rebate ${fmt(second)} tUSD for ${d30} to ${d40}`, { timeout: STEP_TIMEOUT });
+    await rowA.getByRole("button", { name: "Refuse invoice" }).click();
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await loanOf(svc, id)).billing?.pending ?? null, { timeout: 30_000 }).toBeNull();
+    expect(await bal()).toEqual(paid);
+    expect((await loanOf(SERVICE.B, id)).billing?.billedThrough).toBe(d30);
+
+    // 5. B returns the rest; the returned loan is billed in B's console to its return date, A pays, and nothing is left to bill.
+    await returnPart(id, 60_000);
+    await expect.poll(async () => (await loanOf(SERVICE.A, id)).state, { timeout: STEP_TIMEOUT }).toBe("returned");
+    await setDate(addDays(d40, 5));
+    await page.goto("/#/live/B");
+    await rowB.getByRole("button", { name: `Bill rebate ${d30} to ${d40}` }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await loanOf(SERVICE.A, id)).billing?.pending, { timeout: 30_000 }).toMatchObject({ amount: String(second), verified: true });
+    await call(`${SERVICE.A}/loans/${id}/bill/pay`, "POST", {});
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await loanOf(svc, id)).billing?.billedThrough, { timeout: 30_000 }).toBe(d40);
+    await expect(call(`${SERVICE.B}/loans/${id}/bill`, "POST", {})).rejects.toThrow("nothing to bill");
+    // The loaned securities and the collateral are back; A paid B the two rebates.
+    const end = await bal();
+    expect({ aMmf: end.aMmf, bMmf: end.bMmf }).toEqual({ aMmf: start.aMmf, bMmf: start.bMmf });
+    expect(start.aUsd - end.aUsd).toBe(first + second);
+    expect(end.bUsd - start.bUsd).toBe(first + second);
+    expect(errors).toEqual([]);
+  } finally {
+    await setDate(today);
+    const l = await loanOf(SERVICE.A, id).catch(() => undefined);
+    if (l?.state === "open") await returnPart(id, Number(l.quantity)).catch(() => undefined);
+  }
+});

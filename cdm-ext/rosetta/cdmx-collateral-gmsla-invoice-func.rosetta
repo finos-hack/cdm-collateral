@@ -1,0 +1,13 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.base.math.*
+
+func GmslaInvoiceTotal: <"The total of a loan invoice (wp-adr-gmsla-rebate): the sum of the accruals of its periods, rounded to the nearest once, at the cash token's precision (the prototype's tUSD has no decimals, as for repo interest).">
+    inputs:
+        accrual number (1..*) <"The unrounded accrual of each period.">
+        precision int (1..1) <"The decimals of the cash paid.">
+    output:
+        total number (1..1)
+
+    set total: RoundToPrecision(accrual sum, precision, RoundingDirectionEnum -> Nearest, True)

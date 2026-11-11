@@ -321,6 +321,14 @@ route("POST", "/ledger/v1/loans/:id/substitute/agree", async (p, b) => {
   await adapter.approve(getAddress(b.token), adapter.loanContract(), BigInt(b.amount));
   return J(await adapter.agreeLoanSubstitution(p.id as Hex, b.cdmHash as Hex));
 });
+// The party receiving the loan's rate bills it (wp-adr-gmsla-rebate); the payer approves the cash token and pays, or refuses.
+route("POST", "/ledger/v1/loans/:id/bill", async (p, b) =>
+  J(await adapter.billLoan(p.id as Hex, getAddress(b.cashToken), Number(b.periodEnd), BigInt(b.amount), b.invoiceHash as Hex)));
+route("POST", "/ledger/v1/loans/:id/bill/pay", async (p, b) => {
+  await adapter.approve(getAddress(b.token), adapter.loanContract(), BigInt(b.amount));
+  return J(await adapter.payLoanBill(p.id as Hex, b.invoiceHash as Hex));
+});
+route("POST", "/ledger/v1/loans/:id/bill/refuse", async (p) => J(await adapter.refuseLoanBill(p.id as Hex)));
 route("POST", "/ledger/v1/loans/:id/substitute/refuse", async (p) => J(await adapter.refuseLoanSubstitution(p.id as Hex)));
 route("GET", "/ledger/v1/loans/:id", async (p) => J(await adapter.getLoan(p.id as Hex)));
 route("GET", "/ledger/v1/loans", async (_p, _b, url) => J(await adapter.listLoans(getAddress(url.searchParams.get("party")!))));

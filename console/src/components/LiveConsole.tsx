@@ -1027,6 +1027,38 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       </>
     );
   };
+  // The rebate of a cash loan (wp-adr-gmsla-rebate): the borrower bills the period since the billed-through date, the
+  // lender pays the checked invoice in tUSD or refuses it.
+  const billing = (l: LiveLoan) => {
+    const b = l.billing;
+    if (!l.verified || !b || (l.state !== "open" && l.state !== "returned")) return "—";
+    if (!b.verified) return <span className="bad">{b.problem ?? "billing not verified"}</span>;
+    const through = b.billedThrough ? <span data-testid={`loan-billed-through-${l.loanId}`}>billed through {b.billedThrough}</span> : null;
+    const p = b.pending;
+    if (p) {
+      const parts = (p.periods ?? []).map((x) => `${Number(x.notional).toLocaleString("en-US")} ${x.startDate} to ${x.endDate}: ${x.accrual}`).join("; ");
+      const status = (
+        <span data-testid={`loan-bill-${l.loanId}`} className={p.verified ? undefined : "bad"}>
+          {p.verified ? `rebate ${Number(p.amount).toLocaleString("en-US")} tUSD for ${p.periodStart} to ${p.periodEnd} (${parts})` : p.problem ?? "invoice not verified"}
+        </span>
+      );
+      if (p.billedByMe) return <>{through}{through ? " " : null}{status}, awaiting {other}</>;
+      return (
+        <>
+          {through}{through ? " " : null}{status}{" "}
+          <button disabled={busy || !p.verified} onClick={() => run(() => api.payLoanBill(party, l.loanId))}>Pay {Number(p.amount).toLocaleString("en-US")} tUSD</button>{" "}
+          <button disabled={busy} onClick={() => run(() => api.refuseLoanBill(party, l.loanId))}>Refuse invoice</button>
+        </>
+      );
+    }
+    if (b.rateType !== "Rebate" || !b.billedByMe || !b.billable) return through ?? "—";
+    return (
+      <>
+        {through}{through ? " " : null}
+        <button disabled={busy} onClick={() => run(() => api.billLoan(party, l.loanId))}>Bill rebate {b.billable.periodStart} to {b.billable.periodEnd}</button>
+      </>
+    );
+  };
   return (
     <div className="card" data-testid="loans">
       <h3>Securities loans (GMSLA)</h3>
@@ -1069,7 +1101,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       {r.loans.length > 0 && (
         <table className="tbl">
           <thead>
-            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th>Substitution</th><th></th></tr>
+            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th>Substitution</th><th>Rebate</th><th></th></tr>
           </thead>
           <tbody>
             {r.loans.map((l) => (
@@ -1089,6 +1121,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
                 </td>
                 <td>{recall(l)}</td>
                 <td>{substitution(l)}</td>
+                <td>{billing(l)}</td>
                 <td>{action(l)}</td>
               </tr>
             ))}

@@ -154,6 +154,17 @@ on the business date, qualified by `GmslaIsSubstitution`; the trade after names 
 collateral; `GET /loans` shows a pending `substitution` and the
 `lastSubstitution`; wp-adr-gmsla-substitution), `POST /loans/{id}/substitute/agree` (the lender: rebuilds the document
 from its trade, feed and business date) and `POST /loans/{id}/substitute/refuse` (the lender),
+`POST /loans/{id}/bill` (the borrower of a loan against cash: cdm-ext `GmslaLoanInvoice` built by `CdmLoanInvoice` for
+the period from the billed-through date, or the delivery date, to the business date, or the return date of a returned
+loan; the period is split at each settled return or substitution, found by walking back from the trade hash through the
+loan's documents, each part accrues CDM's `FixedAmount` over the collateral's `InterestRatePayout` on the cash held, and
+the total is `GmslaInvoiceTotal`, rounded to whole tUSD; CDM's `SecurityLendingInvoice` with the records' amounts and a
+`ParentTotal` billing summary built by the service, since CDM's `Create_BillingSummary` has no implementation (D27), and
+CDM's payment event, a transfer of type `InterestReturn` qualified `CashTransfer`; `GET /loans` shows `billing` with the
+`billedThrough` date, the `pending` invoice and whether it rebuilds, or the `billable` period; wp-adr-gmsla-rebate),
+`POST /loans/{id}/bill/pay` (the payer: rebuilds the invoice over its own loan documents, checks the start at the
+billed-through date, the on-chain amount and period end, and an end no later than its business date) and
+`POST /loans/{id}/bill/refuse` (the payer),
 `GET /gmsla-marking` (the aggregated mark of the pair's open loans stated for this party, cdm-ext `GmslaMarkStatement`
 built by `CdmGmslaMark`: each loan's requirement, collateral value and exposure at the feed prices, the margin held net
 from settled GMSLA calls, the net figure, the minimum transfer amount, `callableUsd`, `statementHash` and `callOpen`;

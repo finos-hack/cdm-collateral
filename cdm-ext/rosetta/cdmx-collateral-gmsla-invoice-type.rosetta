@@ -1,0 +1,49 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdmx.collateral.gmsla.functions.*
+
+enum GmslaRateTypeEnum: <"The rate a loan invoice bills (wp-adr-gmsla-rebate).">
+    Rebate <"Against cash collateral: the lender pays the borrower the rebate on the cash held.">
+    Fee <"Against non-cash collateral: the borrower pays the lender the lending fee (row 18).">
+
+type GmslaInvoicePeriod: <"A part of an invoice period during which the amount the rate applies to did not change: for a rebate, the cash collateral held.">
+    startDate date (1..1) <"The first day that accrues.">
+    endDate date (1..1) <"The day after the last day that accrues.">
+    notional number (1..1) <"The amount the rate applies to over the period.">
+    accrual number (1..1) <"CDM FixedAmount over the period, unrounded.">
+
+    condition Dates: <"A period has at least one day.">
+        endDate > startDate
+
+    condition NotNegative:
+        notional >= 0
+
+type GmslaLoanInvoice: <"An invoice of a loan's rate for a period (wp-adr-gmsla-rebate): the accrual day by day on what was held, split at each change, CDM's SecurityLendingInvoice with the amounts and billing summary filled in (CDM leaves them empty on a loan, defect D27), and CDM's payment event. The party receiving the rate publishes it and bills with its hash; the paying party's service rebuilds it and pays with the same hash.">
+    [rootType]
+    loanId string (1..1) <"The loan's on-chain identifier.">
+    rateType GmslaRateTypeEnum (1..1)
+    rate number (1..1) <"The rate per annum, as a decimal.">
+    periodStart date (1..1) <"The billed-through date, or the delivery date for the first invoice.">
+    periodEnd date (1..1) <"The business date of the invoice, or the return date of a returned loan.">
+    period GmslaInvoicePeriod (1..*) <"The periods between changes, in date order.">
+    precision int (1..1) <"The decimals of the cash paid: 0 for the prototype's tUSD.">
+    amount number (1..1) <"The invoice total: GmslaInvoiceTotal.">
+    invoice SecurityLendingInvoice (1..1) <"CDM's invoice: one billing record per period and a GrandTotal summary.">
+    paymentEvent BusinessEvent (1..1) <"CDM's payment: Create_BusinessEvent over a transfer of the amount, type InterestReturn, qualified CashTransfer.">
+
+    condition PeriodBounds: <"The periods start at the invoice start and end at its end.">
+        period -> startDate first = periodStart and period -> endDate last = periodEnd
+
+    condition Total: <"The amount is the rounded sum of the accruals.">
+        amount = GmslaInvoiceTotal(period -> accrual, precision)
+
+    condition Positive:
+        amount > 0
+
+    condition RebateNotNegative: <"A rebate rate is not negative (wp-adr-gmsla-rebate 6a).">
+        if rateType = GmslaRateTypeEnum -> Rebate then rate >= 0
+
+    condition OneRecordPerPeriod:
+        invoice -> billingRecord count = period count

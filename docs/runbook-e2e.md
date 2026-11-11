@@ -346,6 +346,14 @@ at the feed prices on the business date, and its gateway calls `requestSubstitut
 the lender and the tUST back to the borrower in one transaction. No return can be instructed while a substitution is
 pending. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (LSB-1 to LSB-6).
 
+Rebates (`flow-gmsla-rebate`): for a delivered loan against tUSD, the borrower's Rebate column shows `Bill rebate <start> to
+<end>`: from the billed-through date (or the delivery date) to the business date, or to the return date of a returned
+loan. The borrower's service builds the cdm-ext `GmslaLoanInvoice`, one part per stretch of constant cash held, and its
+gateway calls `bill`. The lender's console shows `rebate … tUSD for … to …` with each part's cash held and accrual, and
+`Pay … tUSD` and `Refuse invoice`; paying moves the tUSD from the lender to the borrower and both consoles show `billed
+through …`. Totals are whole tUSD (tUSD has no decimals). Loans booked before this deployment start from their
+delivery. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (RBT-1 to RBT-6).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -496,7 +504,8 @@ and `flow-gmsla-terms` (it restores the baseline notification time), and `flow-g
 it books is returned in full, so every balance ends where it started), and `flow-gmsla-marking` (it restores the tMMF
 price, the borrower calls the margin back, and the loan is returned), and `flow-gmsla-recall` (it restores both
 business dates, and every loan it books is returned in full), and `flow-gmsla-substitution` (the return after the
-substitution redelivers the tAGY, so every balance ends where it started).
+substitution redelivers the tAGY, so every balance ends where it started), and `flow-gmsla-rebate` (it restores both business
+dates and returns its loan; the lender's tUSD falls by the rebates it pays).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

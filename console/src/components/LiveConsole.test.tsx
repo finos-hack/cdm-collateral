@@ -960,6 +960,45 @@ describe("flow-gmsla-substitution", () => {
   });
 });
 
+describe("flow-gmsla-rebate", () => {
+  const loan = (over: Record<string, unknown>) => ({
+    loanId: "0xl1", role: "borrower", counterparty: "A", state: "open", security: "tMMF", quantity: "60000", collateral: "tUSD",
+    collateralAmount: "61200", tradeHash: "0x01", price: "1", marginPercent: "102", rebateRatePercent: "4", termDate: null,
+    deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
+  });
+
+  it("the borrower bills the rebate for the period to its business date; a loan against securities has no rebate to bill", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-12-11", loans: [
+        loan({ billing: { billedThrough: null, rateType: "Rebate", billedByMe: true, billable: { periodStart: "2026-11-11", periodEnd: "2026-12-11" }, verified: true } }),
+        loan({ loanId: "0xl2", collateral: "tUST", collateralAmount: "1037", rebateRatePercent: undefined, feeRatePercent: "0.5",
+          billing: { billedThrough: null, rateType: "Fee", billedByMe: false, verified: true } }),
+      ] },
+    });
+    const row = await screen.findByTestId("loan-0xl1");
+    expect(within(screen.getByTestId("loan-0xl2")).queryByRole("button", { name: /Bill/ })).toBeNull();
+    await user.click(within(row).getByRole("button", { name: "Bill rebate 2026-11-11 to 2026-12-11" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill", body: {} }]));
+  });
+
+  it("the lender pays or refuses the checked invoice; the billed-through date is shown", async () => {
+    const user = userEvent.setup();
+    const pending = { amount: "68", periodStart: "2026-12-11", periodEnd: "2026-12-21", billedByMe: false, verified: true,
+      periods: [{ startDate: "2026-12-11", endDate: "2026-12-21", notional: "61200", accrual: "68" }] };
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-12-21", loans: [loan({ role: "lender", counterparty: "B",
+        billing: { billedThrough: "2026-12-11", rateType: "Rebate", billedByMe: false, pending, verified: true } })] },
+    });
+    expect((await screen.findByTestId("loan-bill-0xl1")).textContent).toBe("rebate 68 tUSD for 2026-12-11 to 2026-12-21 (61,200 2026-12-11 to 2026-12-21: 68)");
+    expect(screen.getByTestId("loan-billed-through-0xl1").textContent).toBe("billed through 2026-12-11");
+    const row = screen.getByTestId("loan-0xl1");
+    await user.click(within(row).getByRole("button", { name: "Pay 68 tUSD" }));
+    await user.click(within(row).getByRole("button", { name: "Refuse invoice" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill/pay", body: {} }, { path: "/loans/0xl1/bill/refuse", body: {} }]));
+  });
+});
+
 describe("flow-gmsla-marking", () => {
   const mark = (over: Record<string, unknown>) => ({
     party: "BANK-A", businessDate: "2026-11-11",

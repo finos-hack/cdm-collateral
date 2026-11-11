@@ -224,6 +224,9 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "LoanSubstitutionRequested(bytes32,address,uint256,bytes32)",
     "LoanSubstituted(bytes32,address,uint256,bytes32)",
     "LoanSubstitutionRefused(bytes32,bytes32)",
+    "LoanBilled(bytes32,address,address,uint32,uint256,bytes32)",
+    "LoanBillPaid(bytes32,address,uint32,uint256,bytes32)",
+    "LoanBillRefused(bytes32,bytes32)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -423,6 +426,10 @@ const loanAbi = parseAbi([
   "function agreeSubstitution(bytes32 loanId, bytes32 cdmHash)",
   "function refuseSubstitution(bytes32 loanId)",
   "function getSubstitution(bytes32 loanId) view returns (address collateral, uint256 collateralAmount, bytes32 cdmHash)",
+  "function bill(bytes32 loanId, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash)",
+  "function payBill(bytes32 loanId, bytes32 invoiceHash)",
+  "function refuseBill(bytes32 loanId)",
+  "function getBill(bytes32 loanId) view returns (address biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash, uint32 billedThrough)",
 ]);
 
 export const LoanStateName = ["none", "booked", "affirmed", "open", "returned"];
@@ -451,6 +458,9 @@ export interface OnChainLoan {
   /** The pending substitution (wp-adr-gmsla-substitution): the substitute token, its quantity and the CDM document's
    *  hash (zeros: none). */
   substitution: { collateral: Address; collateralAmount: bigint; cdmHash: Hex };
+  /** The pending invoice of the loan's rate (wp-adr-gmsla-rebate) and the date (YYYYMMDD) it is billed through (zeros:
+   *  none, never billed). */
+  bill: { biller: Address; cashToken: Address; periodEnd: number; amount: bigint; invoiceHash: Hex; billedThrough: number };
 }
 
 /** A GMRA default close-out on RepoSettlement (wp-adr-repo-default-close-out). */
@@ -608,6 +618,9 @@ export interface LedgerAdapter {
   requestLoanSubstitution(loanId: Hex, collateral: Address, collateralAmount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   agreeLoanSubstitution(loanId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   refuseLoanSubstitution(loanId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  billLoan(loanId: Hex, cashToken: Address, periodEnd: number, amount: bigint, invoiceHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  payLoanBill(loanId: Hex, invoiceHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  refuseLoanBill(loanId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   listLoans(party: Address): Promise<OnChainLoan[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
@@ -1139,15 +1152,28 @@ export class BesuAdapter implements LedgerAdapter {
     return this.send(this.loanContract(), loanAbi, "refuseSubstitution", [loanId]);
   }
 
+  billLoan(loanId: Hex, cashToken: Address, periodEnd: number, amount: bigint, invoiceHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "bill", [loanId, cashToken, periodEnd, amount, invoiceHash]);
+  }
+
+  payLoanBill(loanId: Hex, invoiceHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "payBill", [loanId, invoiceHash]);
+  }
+
+  refuseLoanBill(loanId: Hex) {
+    return this.send(this.loanContract(), loanAbi, "refuseBill", [loanId]);
+  }
+
   async getLoan(loanId: Hex): Promise<OnChainLoan> {
     const address = this.loanContract();
-    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall" | "substitution"> & { state: number };
+    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall" | "substitution" | "bill"> & { state: number };
     const [cq, cd, cn] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getRecall", args: [loanId] })) as readonly [bigint, number, Hex];
+    const [bb, bt, be, ba, bh, bth] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getBill", args: [loanId] })) as readonly [Address, Address, number, bigint, Hex, number];
     const [sc, sa, sh] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getSubstitution", args: [loanId] })) as readonly [Address, bigint, Hex];
     const [dl, db] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getDeliveryInstructions", args: [loanId] })) as readonly [Hex, Hex];
     const [rl, rb, rq, rc] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getReturnInstructions", args: [loanId] })) as readonly [Hex, Hex, bigint, bigint];
     const state = Number(l.state);
-    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn }, substitution: { collateral: sc, collateralAmount: sa, cdmHash: sh } };
+    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn }, substitution: { collateral: sc, collateralAmount: sa, cdmHash: sh }, bill: { biller: bb, cashToken: bt, periodEnd: Number(be), amount: ba, invoiceHash: bh, billedThrough: Number(bth) } };
   }
 
   async listLoans(party: Address) {

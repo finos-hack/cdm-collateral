@@ -24,6 +24,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// substitution document (cdm-ext GmslaLoanSubstitution); the lender's agreement with the same hash moves the substitute
 /// to the lender and the collateral held back to the borrower, and makes the hash the trade hash, in one transaction.
 /// No return can be instructed while a substitution is pending, and no substitution while a return is pending.
+/// Either party may bill the loan's rate for a period (task-gmsla-rebate, wp-adr-gmsla-rebate): the party receiving it
+/// (the borrower for a rebate on cash collateral, the lender for a fee) records the period end, the amount and the hash
+/// of the CDM invoice (cdm-ext GmslaLoanInvoice); the other party's payment with the same hash moves the amount in the
+/// cash token to the biller and sets the loan's billed-through date, or it refuses. The services check the period and
+/// the amount; a returned loan can still be billed.
 contract SecuritiesLoan {
     using SafeERC20 for IERC20;
 
@@ -80,6 +85,20 @@ contract SecuritiesLoan {
 
     mapping(bytes32 => Substitution) private _substitution;
 
+    /// @dev A loan's pending invoice: the biller, the cash token, the period end (YYYYMMDD), the amount and the CDM
+    /// invoice's hash.
+    struct Bill {
+        address biller;
+        address cashToken;
+        uint32 periodEnd;
+        uint256 amount;
+        bytes32 invoiceHash;
+    }
+
+    mapping(bytes32 => Bill) private _bill;
+    /// @dev The date (YYYYMMDD) a loan's rate is billed and paid through; zero: never billed.
+    mapping(bytes32 => uint32) private _billedThrough;
+
     event LoanBooked(bytes32 indexed loanId, address indexed lender, address indexed borrower, bytes32 tradeHash);
     event LoanAffirmed(bytes32 indexed loanId, address indexed borrower, bytes32 tradeHash);
     event LoanDeliveryInstructed(bytes32 indexed loanId, address indexed party, bytes32 cdmHash);
@@ -95,6 +114,9 @@ contract SecuritiesLoan {
     /// @dev The substitution settled: the new collateral and amount held, and the trade hash.
     event LoanSubstituted(bytes32 indexed loanId, address collateral, uint256 collateralAmount, bytes32 cdmHash);
     event LoanSubstitutionRefused(bytes32 indexed loanId, bytes32 cdmHash);
+    event LoanBilled(bytes32 indexed loanId, address indexed biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash);
+    event LoanBillPaid(bytes32 indexed loanId, address indexed payer, uint32 periodEnd, uint256 amount, bytes32 invoiceHash);
+    event LoanBillRefused(bytes32 indexed loanId, bytes32 invoiceHash);
 
     error LoanExists(bytes32 loanId);
     error NoLoan(bytes32 loanId);
@@ -115,6 +137,10 @@ contract SecuritiesLoan {
     error ReturnPending();
     error NoSubstitution();
     error SameCollateral();
+    error BillPending();
+    error NoBill();
+    error NotThePayer();
+    error PeriodNotAfterBilled();
 
     /// @notice The lender books a loan to the borrower: the loaned securities and quantity, the collateral token and the
     /// amount delivered at the delivery, and the hash of the CDM trade.
@@ -288,6 +314,54 @@ contract SecuritiesLoan {
         if (h == bytes32(0)) revert NoSubstitution();
         delete _substitution[loanId];
         emit LoanSubstitutionRefused(loanId, h);
+    }
+
+    /// @notice A party bills the loan's rate through `periodEnd` (YYYYMMDD, after the billed-through date) for `amount`
+    /// of `cashToken`, with the hash of the CDM invoice. One invoice per loan may be pending. An open or returned loan.
+    function bill(bytes32 loanId, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash) external {
+        Loan storage l = _load(loanId);
+        if (l.state != LoanState.Open && l.state != LoanState.Returned) revert WrongState(l.state);
+        if (msg.sender != l.lender && msg.sender != l.borrower) revert NotAParty();
+        if (_bill[loanId].invoiceHash != bytes32(0)) revert BillPending();
+        if (amount == 0 || periodEnd == 0 || invoiceHash == bytes32(0) || cashToken == address(0)) revert ZeroAmount();
+        if (periodEnd <= _billedThrough[loanId]) revert PeriodNotAfterBilled();
+        _bill[loanId] = Bill(msg.sender, cashToken, periodEnd, amount, invoiceHash);
+        emit LoanBilled(loanId, msg.sender, cashToken, periodEnd, amount, invoiceHash);
+    }
+
+    /// @notice The other party pays the pending invoice with the same hash: the amount of the invoice's cash token moves
+    /// from it to the biller and the loan is billed through the period end.
+    function payBill(bytes32 loanId, bytes32 invoiceHash) external {
+        Loan storage l = _load(loanId);
+        Bill memory b = _bill[loanId];
+        if (b.invoiceHash == bytes32(0)) revert NoBill();
+        address payer = b.biller == l.lender ? l.borrower : l.lender;
+        if (msg.sender != payer) revert NotThePayer();
+        if (invoiceHash != b.invoiceHash) revert HashMismatch(b.invoiceHash, invoiceHash);
+        delete _bill[loanId];
+        _billedThrough[loanId] = b.periodEnd;
+        IERC20(b.cashToken).safeTransferFrom(payer, b.biller, b.amount);
+        emit LoanBillPaid(loanId, payer, b.periodEnd, b.amount, invoiceHash);
+    }
+
+    /// @notice The payer refuses the pending invoice, which clears it.
+    function refuseBill(bytes32 loanId) external {
+        Loan storage l = _load(loanId);
+        Bill memory b = _bill[loanId];
+        if (b.invoiceHash == bytes32(0)) revert NoBill();
+        if (msg.sender != (b.biller == l.lender ? l.borrower : l.lender)) revert NotThePayer();
+        delete _bill[loanId];
+        emit LoanBillRefused(loanId, b.invoiceHash);
+    }
+
+    /// @notice The pending invoice (zeros: none) and the date the loan is billed through (zero: never).
+    function getBill(bytes32 loanId)
+        external
+        view
+        returns (address biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash, uint32 billedThrough)
+    {
+        Bill storage b = _bill[loanId];
+        return (b.biller, b.cashToken, b.periodEnd, b.amount, b.invoiceHash, _billedThrough[loanId]);
     }
 
     /// @notice The pending substitution (zeros: none).
