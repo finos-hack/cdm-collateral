@@ -1101,3 +1101,4 @@ excluded.
 | task-repo-pair-off | 875c780d2690486372edd953d20c1a6390f51d0a | services/collateral/src/main/java/collateral/App.java | 2026-11-11T00:10:09Z |
 | task-repo-pair-off | 875c780d2690486372edd953d20c1a6390f51d0a | services/collateral/src/main/java/collateral/CdmRepo.java | 2026-11-11T00:10:09Z |
 | task-repo-pair-off | 875c780d2690486372edd953d20c1a6390f51d0a | services/collateral/src/test/java/collateral/CdmRepoTest.java | 2026-11-11T00:10:09Z |
+| task-repo-pair-off | c34369784ca25f096728a40c1ebe40fbb6abdc04 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T00:13:05Z |
