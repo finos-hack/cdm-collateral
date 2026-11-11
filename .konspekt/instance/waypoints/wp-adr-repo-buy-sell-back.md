@@ -3,7 +3,7 @@ id: wp-adr-repo-buy-sell-back
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T01:42:28Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-buy-sell-back
   sourceRef: a778f993a5a736fc18ae08c6df925fd62a81d0f5
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T01:42:28Z
   confidence: 0.6
 createdAt: 2026-11-11T01:42:28Z
-updatedAt: 2026-11-11T01:42:28Z
+updatedAt: 2026-11-11T03:30:38Z
 ```
 
 # ADR: a buy/sell-back is a repo with CDM's trade type BuySellBack, income lowers the sell-back price, and the repo flows apply except interim interest

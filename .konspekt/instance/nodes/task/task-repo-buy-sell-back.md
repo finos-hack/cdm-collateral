@@ -25,7 +25,7 @@ Row 10 of the repo workflows (section C of the workflow map), split from [[task-
 
 The details are decided when the task starts. Design chosen 2026-11-11 (source `a778f993a5a736fc18ae08c6df925fd62a81d0f5`): a trade type chosen
 at booking, income lowering the sell-back price, the repo flows except interim interest, and pair-off only within one
-type ([[wp-adr-repo-buy-sell-back]], proposed); the rules are assumptions in [[task-sme-repo-buy-sell-back-rules]].
+type ([[wp-adr-repo-buy-sell-back]], accepted 2026-11-11); the rules are assumptions in [[task-sme-repo-buy-sell-back-rules]].
 
 **Check for gap G30 (defect D7) when the task starts:** CDM's repo qualification accepts one `InterestRatePayout` only. Run a
 temporary test over the buy/sell-back trade and each of its events (`Qualify_BuySellBack` has the same rule): count the payouts and evaluate CDM's qualification function on each resulting trade.

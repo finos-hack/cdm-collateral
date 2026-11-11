@@ -3,7 +3,7 @@ id: task-sme-repo-buy-sell-back-rules
 type: task
 title: Confirm with a business SME the rules for a buy/sell-back under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-buy-sell-back
   sourceRef: a778f993a5a736fc18ae08c6df925fd62a81d0f5
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T01:42:28Z
   confidence: 0.6
 createdAt: 2026-11-11T01:42:28Z
-updatedAt: 2026-11-11T01:42:28Z
+updatedAt: 2026-11-11T03:30:38Z
 ```
 # Task: confirm the rules for a buy/sell-back under the GMRA
 

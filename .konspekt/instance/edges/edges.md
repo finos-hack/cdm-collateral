@@ -309,8 +309,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-pofadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-pair-off |  | accepted |
 | e-dec-cdmdev-smepairoff | decomposes | node:goal-cdm-development | node:task-sme-repo-pair-off-rules |  | accepted |
 | e-lnk-pairoff-smepairoff | links | node:task-repo-pair-off | node:task-sme-repo-pair-off-rules |  | accepted |
-| e-mrk-bsbadr-buysellback | marks | waypoint:wp-adr-repo-buy-sell-back | node:task-repo-buy-sell-back |  | proposed |
-| e-drv-cdmdata-bsbadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-buy-sell-back |  | proposed |
-| e-drv-finality-bsbadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-buy-sell-back |  | proposed |
-| e-dec-cdmdev-smebsb | decomposes | node:goal-cdm-development | node:task-sme-repo-buy-sell-back-rules |  | proposed |
-| e-lnk-bsb-smebsb | links | node:task-repo-buy-sell-back | node:task-sme-repo-buy-sell-back-rules |  | proposed |
+| e-mrk-bsbadr-buysellback | marks | waypoint:wp-adr-repo-buy-sell-back | node:task-repo-buy-sell-back |  | accepted |
+| e-drv-cdmdata-bsbadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-buy-sell-back |  | accepted |
+| e-drv-finality-bsbadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-buy-sell-back |  | accepted |
+| e-dec-cdmdev-smebsb | decomposes | node:goal-cdm-development | node:task-sme-repo-buy-sell-back-rules |  | accepted |
+| e-lnk-bsb-smebsb | links | node:task-repo-buy-sell-back | node:task-sme-repo-buy-sell-back-rules |  | accepted |
