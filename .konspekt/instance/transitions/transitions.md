@@ -1222,3 +1222,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
 | edge:e-lnk-gmslarbt-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
 | edge:e-lnk-rbtadr-gmslafee | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| waypoint:wp-adr-gmsla-rebate | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
+| edge:e-mrk-rbtadr-gmslarbt | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
+| edge:e-drv-cdmdata-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
+| edge:e-drv-finality-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
+| edge:e-lnk-rbtadr-gmslafee | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |

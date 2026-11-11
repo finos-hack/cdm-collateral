@@ -3,7 +3,7 @@ id: wp-adr-gmsla-rebate
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T20:39:13Z
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-rebate
   sourceRef: 7aad715d9ef96f8f93b411878275c88a846e99a8
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T20:39:13Z
   confidence: 0.55
 createdAt: 2026-11-11T20:39:13Z
-updatedAt: 2026-11-11T20:39:13Z
+updatedAt: 2026-11-11T20:43:36Z
 ```
 # ADR: the party receiving a loan's rate bills it for the period since the last billing, accrued day by day on what was held; the payer's agreement pays it in tUSD on SecuritiesLoan
 

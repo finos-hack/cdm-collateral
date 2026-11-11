@@ -355,9 +355,9 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-lsbadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-substitution |  | accepted |
 | e-dec-cdmdev-smelsb | decomposes | node:goal-cdm-development | node:task-sme-gmsla-substitution-rules |  | accepted |
 | e-lnk-gmslasub-smelsb | links | node:task-gmsla-substitution | node:task-sme-gmsla-substitution-rules |  | accepted |
-| e-mrk-rbtadr-gmslarbt | marks | waypoint:wp-adr-gmsla-rebate | node:task-gmsla-rebate |  | proposed |
-| e-drv-cdmdata-rbtadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-rebate |  | proposed |
-| e-drv-finality-rbtadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-rebate |  | proposed |
+| e-mrk-rbtadr-gmslarbt | marks | waypoint:wp-adr-gmsla-rebate | node:task-gmsla-rebate |  | accepted |
+| e-drv-cdmdata-rbtadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-rebate |  | accepted |
+| e-drv-finality-rbtadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-rebate |  | accepted |
 | e-dec-cdmdev-smerbt | decomposes | node:goal-cdm-development | node:task-sme-gmsla-rebate-rules |  | proposed |
 | e-lnk-gmslarbt-smerbt | links | node:task-gmsla-rebate | node:task-sme-gmsla-rebate-rules |  | proposed |
-| e-lnk-rbtadr-gmslafee | links | waypoint:wp-adr-gmsla-rebate | node:task-gmsla-lending-fee |  | proposed |
+| e-lnk-rbtadr-gmslafee | links | waypoint:wp-adr-gmsla-rebate | node:task-gmsla-lending-fee |  | accepted |
