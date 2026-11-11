@@ -3,7 +3,7 @@ id: task-gmsla-default-close-out
 type: task
 title: Securities lending default and close-out
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
   sourceRef: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
@@ -11,12 +11,12 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:11:27Z
+updatedAt: 2026-11-11T15:16:16Z
 ```
 # Task: securities lending default and close-out
 
 Row 19 of section C of the workflow map, split from [[task-securities-lending-gmsla-workflows]] within
-[[wp-adr-securities-lending-gmsla-scope]] (proposed; the project owner's choices of 2026-11-11).
+[[wp-adr-securities-lending-gmsla-scope]] (accepted 2026-11-11; the project owner's choices of 2026-11-11).
 
 - **CDM status:** elections only (S19, S25, score 2: G15): `EventsOfDefault`, automatic early termination.
 - **Scope:** An Event of Default, the close-out of every loan of the pair at its value against the collateral held, and one net balance in the Base Currency, as the GMRA close-out of `task-repo-default-close-out`.

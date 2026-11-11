@@ -40,7 +40,7 @@ to be defined when this task starts.
 - Terms: `GlobalMasterSecuritiesLendingAgreement` holds collateral, Base Currency and Events of Default elections.
 - Marking and substitution: no lending function; the CSA and repo functions the prototype uses are the candidates.
 
-**Scope chosen 2026-11-11** (source `58c01e3dad7c97cb870c00fde33af78f4201e5dd`), recorded in [[wp-adr-securities-lending-gmsla-scope]] (proposed): seven
+**Scope chosen 2026-11-11** (source `58c01e3dad7c97cb870c00fde33af78f4201e5dd`), recorded in [[wp-adr-securities-lending-gmsla-scope]] (accepted 2026-11-11): seven
 workflows and default, one task each:
 
 1. [[task-gmsla-terms]]: GMSLA agreement terms and their amendment.

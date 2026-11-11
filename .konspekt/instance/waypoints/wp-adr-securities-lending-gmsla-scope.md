@@ -3,7 +3,7 @@ id: wp-adr-securities-lending-gmsla-scope
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T15:11:27Z
-review: proposed
+review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
   sourceRef: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:11:27Z
+updatedAt: 2026-11-11T15:16:16Z
 ```
 # ADR: securities lending under the GMSLA covers seven workflows and default; loans are CDM trades held by both services and settled on a new SecuritiesLoan contract; marking is aggregated per pair
 

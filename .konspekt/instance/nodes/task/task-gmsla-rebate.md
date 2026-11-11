@@ -3,7 +3,7 @@ id: task-gmsla-rebate
 type: task
 title: Rebate on cash collateral
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
   sourceRef: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
@@ -11,12 +11,12 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:11:27Z
+updatedAt: 2026-11-11T15:16:16Z
 ```
 # Task: rebate on cash collateral
 
 Row 17 of section C of the workflow map, split from [[task-securities-lending-gmsla-workflows]] within
-[[wp-adr-securities-lending-gmsla-scope]] (proposed; the project owner's choices of 2026-11-11).
+[[wp-adr-securities-lending-gmsla-scope]] (accepted 2026-11-11; the project owner's choices of 2026-11-11).
 
 - **CDM status:** no rebate function (S12, score 2): `PriceSubTypeEnum.Rebate` only.
 - **Scope:** The lender pays the borrower a rebate at the agreed rate on cash collateral held, billed for a period and paid in tUSD.

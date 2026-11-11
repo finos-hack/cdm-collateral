@@ -1114,3 +1114,23 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-slgmsla-rebate | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
 | edge:e-dec-slgmsla-lendingfee | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
 | edge:e-dec-slgmsla-defaultcloseout | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
+| waypoint:wp-adr-securities-lending-gmsla-scope | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-terms | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-loan-delivery-return | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-marking | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-recall | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-substitution | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-lending-fee | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| node:task-gmsla-default-close-out | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-mrk-slscope-slgmsla | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-drv-cdmdata-slscope | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-drv-finality-slscope | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-terms | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-loandeliveryreturn | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-marking | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-recall | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-substitution | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-lendingfee | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| edge:e-dec-slgmsla-defaultcloseout | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |

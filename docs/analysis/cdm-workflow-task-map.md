@@ -73,7 +73,7 @@ reporting (G36).
 Rows are in build order (`nw-agreement-family-order`): repo and securities lending (P2) before triparty
 and CCP (P3). Repo has one row per workflow, in the build order of `wp-adr-repo-gmra-scope` (proposed, 2026-11-07),
 each with its own task under `task-repo-gmra-workflows`. Securities lending has one row per workflow, in the build
-order of `wp-adr-securities-lending-gmsla-scope` (proposed, 2026-11-11), each with its own task under
+order of `wp-adr-securities-lending-gmsla-scope` (accepted 2026-11-11), each with its own task under
 `task-securities-lending-gmsla-workflows`; the CDM check of 2026-11-11 is recorded in that task. The other families list
 the workflows the analysis covers in the Workflow column until their scope is decided.
 
