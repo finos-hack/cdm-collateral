@@ -1,0 +1,29 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.event.common.functions.*
+
+func GmslaIsSubstitution: <"Whether a BusinessEvent substitutes the collateral of a securities loan (wp-adr-gmsla-substitution, defect D22): one open trade state after it and none closed, the loaned lot's quantities and the payout unchanged, a changed collateral portfolio, and unchanged effective and termination dates. CDM's Qualify_Substitution requires the new effective date to equal the old termination date and a changed payout, so it cannot be true for an open loan or during a term.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias priorTerms: ExtractBeforeEconomicTerms(businessEvent)
+    alias newTerms: ExtractOpenEconomicTerms(businessEvent)
+    alias priorLot: ExtractBeforeTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias newLot: ExtractAfterTrade(businessEvent) -> tradeLot only-element -> priceQuantity
+    alias priorQuantity: priorLot extract item -> quantity then extract item -> value
+    alias newQuantity: newLot extract item -> quantity then extract item -> value
+
+    set is_event:
+        FilterOpenTradeStates(businessEvent -> after) count = 1
+            and FilterClosedTradeStates(businessEvent -> after) count = 0
+            and priorTerms -> collateral exists
+            and priorQuantity exists
+            and priorQuantity = newQuantity
+            and newTerms -> payout = priorTerms -> payout
+            and newTerms -> collateral -> collateralPortfolio <> priorTerms -> collateral -> collateralPortfolio
+            and newTerms -> effectiveDate = priorTerms -> effectiveDate
+            and newTerms -> terminationDate = priorTerms -> terminationDate

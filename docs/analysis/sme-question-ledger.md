@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 130 questions in 24 tasks, all open.
+Status of the ledger: 136 questions in 25 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -265,3 +265,14 @@ Status of the ledger: 130 questions in 24 tasks, all open.
 | RCL-4 | When the borrower misses the date, the prototype only shows the recall as overdue. What may the lender do, and from when: a buy-in, a default notice, or both (row 19)? | open | |
 | RCL-5 | The collateral stays with the lender until the return, which redelivers it in proportion. Is that right, or is collateral released when the recall is made? | open | |
 | RCL-6 | A borrower's own return of part of a recalled loan reduces the quantity still recalled. Is that how a partial return during a recall is treated? | open | |
+
+### `task-sme-gmsla-substitution-rules`: substituting non-cash collateral of a loan under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| LSB-1 | The borrower may substitute the collateral of a loan with alternative collateral acceptable to the lender. Under GMSLA 2010, is the lender's agreement needed for each substitution, or only that the substitute be eligible under the agreed collateral schedule? | open | |
+| LSB-2 | The substitute must be worth at least the loan's required collateral (the loaned value times the margin) at the substitution date's prices. Is that the right test, or must it equal the value of the collateral it replaces? | open | |
+| LSB-3 | The substitute and the original collateral move in one transaction. In practice, must the borrower deliver the substitute first, with the lender returning the original afterwards, and by when? | open | |
+| LSB-4 | A substitution replaces all the collateral of one loan. Are partial substitutions, giving a loan with mixed collateral, usual under the GMSLA? | open | |
+| LSB-5 | The loan's fee is unchanged by a substitution. Is the fee repriced when the collateral changes, for example to a lower-grade security? | open | |
+| LSB-6 | A substitution is allowed while a recall is pending. Is that right, or does a recall freeze the collateral until the return? | open | |

@@ -2,7 +2,7 @@
 id: task-gmsla-recall
 type: task
 title: Recall of loaned securities
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T19:17:49Z
+updatedAt: 2026-11-11T20:43:22Z
 ```
 # Task: recall of loaned securities
 
@@ -40,3 +40,4 @@ to BANK-B against tUSD or tUST, margin 1.02):
 **Design chosen 2026-11-11** (source `72146b83411def7096cb21b1d196e0988e884c38`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in [[wp-adr-gmsla-recall]]
 (proposed); the rules are questions for an SME in [[task-sme-gmsla-recall-rules]].
 
+**Resolved 2026-11-11**: PR #62 merged (source `1dba795152ed770e8a520fdf4466d1d453bb6406`).

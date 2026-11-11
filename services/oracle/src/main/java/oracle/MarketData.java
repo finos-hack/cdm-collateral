@@ -17,7 +17,7 @@ import java.util.Map;
  */
 final class MarketData {
     /** Mock ratings, not sourced from a rating agency. Tokens without an entry have no rating. */
-    private static final Map<String, String> MOCK_RATINGS = Map.of("tUST", "AA+", "tMMF", "AAAm");
+    private static final Map<String, String> MOCK_RATINGS = Map.of("tUST", "AA+", "tMMF", "AAAm", "tAGY", "AA+");
 
     record Entry(String symbol, String token, BigInteger price, String rating) {
         Map<String, Object> json(BigInteger scale) {

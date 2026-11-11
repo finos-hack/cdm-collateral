@@ -38,6 +38,8 @@ const TOKENS = [
   { sym: "tUST", name: "Tokenized US Treasury 4.25% 2034", isin: "US912810TM60", cusip: "912810TM6", dti: "QX4V2W9N3", price: 984n * SCALE / 10n, haircutBps: 200 },
   { sym: "tMMF", name: "Tokenized USD government MMF", isin: "US9128100000", cusip: "912810000", dti: "QZ0000000", price: 1n * SCALE, haircutBps: 400 },
   { sym: "tUSD", name: "USD deposit token", isin: "US0000000USD", cusip: "000000USD", dti: "QUSD00000", price: 1n * SCALE, haircutBps: 0 },
+  // Loan collateral only (wp-adr-gmsla-substitution): the substitute for tUST under the GMSLA; not CSA-eligible.
+  { sym: "tAGY", name: "Tokenized US agency bond 4.50% 2031", isin: "US3137EAGY10", cusip: "3137EAGY1", dti: "QAGY00000", price: 992n * SCALE / 10n, haircutBps: 300, csa: false },
 ];
 
 // Opening balances (whole units) — union of the IM and VM starting positions in scenarios.ts.
@@ -134,7 +136,7 @@ async function main() {
   const securitiesLoan = await deploy("SecuritiesLoan", []);
   console.log("SecuritiesLoan       ", securitiesLoan.address);
 
-  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string }> = {};
+  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean }> = {};
   for (const t of TOKENS) {
     const token = await deploy("TokenizedCollateral", [t.name, t.sym, t.isin, t.cusip, t.dti]);
     console.log(`  ${t.sym.padEnd(6)}           `, token.address);
@@ -143,9 +145,9 @@ async function main() {
       const to = parties[node as keyof typeof parties];
       if (amount > 0n) await send(`${t.sym}.mint ${node}`, (nonce) => token.write.mint([to, amount], { nonce }));
     }
-    await send(`setEligibility ${t.sym}`, (nonce) => control.write.setEligibility([token.address, true, t.haircutBps], { nonce }));
+    if (t.csa !== false) await send(`setEligibility ${t.sym}`, (nonce) => control.write.setEligibility([token.address, true, t.haircutBps], { nonce }));
     await send(`publishPrice ${t.sym}`, (nonce) => oracle.write.publishPrice([token.address, t.price], { account: deployer.account, nonce }));
-    tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti };
+    tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti, csa: t.csa !== false };
   }
 
   const registry = {

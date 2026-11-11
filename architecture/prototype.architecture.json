@@ -56,6 +56,7 @@
     ".konspekt/instance/waypoints/wp-adr-gmsla-loan-delivery-return.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-marking.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-recall.md",
+    ".konspekt/instance/waypoints/wp-adr-gmsla-substitution.md",
     ".konspekt/instance/waypoints/wp-adr-repo-purchase-repurchase.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",

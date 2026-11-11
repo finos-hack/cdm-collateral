@@ -147,6 +147,9 @@ public final class App {
         app.post("/api/v1/loans/{id}/return", this::returnLoan);
         app.post("/api/v1/loans/{id}/recall", this::recallLoan);
         app.post("/api/v1/loans/{id}/recall/withdraw", this::withdrawLoanRecall);
+        app.post("/api/v1/loans/{id}/substitute", this::requestLoanSubstitution);
+        app.post("/api/v1/loans/{id}/substitute/agree", this::agreeLoanSubstitution);
+        app.post("/api/v1/loans/{id}/substitute/refuse", this::refuseLoanSubstitution);
         app.get("/api/v1/gmsla-marking", this::gmslaMarking);
         app.post("/api/v1/gmsla-marking/calls", this::issueGmslaMarginCall);
         app.get("/api/v1/repos", this::repos);
@@ -354,12 +357,15 @@ public final class App {
     private record Fold(CdmAgreement.Terms terms, boolean verified, String problem, JsonNode amendments) {}
 
     /** The baseline IM CSA of a leg: the CDM sample with Party1 the leg's secured party, Party2 its pledgor, and the
-     *  registry's haircuts (the deployed global schedule). */
+     *  registry's haircuts (the deployed global schedule). A token deployed as not CSA-eligible ("csa": false, e.g.
+     *  tAGY, loan collateral only: wp-adr-gmsla-substitution) is not in the schedule. */
     private synchronized CdmAgreement.Terms baselineTerms(String[] ps) {
         return baselineTerms.computeIfAbsent(legKey(ps), k -> {
             Map<String, Integer> h = new LinkedHashMap<>();
-            cfg.registry.get("tokens").fieldNames().forEachRemaining(sym ->
-                    h.put(cfg.isin(sym), cfg.registry.get("tokens").get(sym).get("haircutBps").asInt()));
+            cfg.registry.get("tokens").fieldNames().forEachRemaining(sym -> {
+                JsonNode t = cfg.registry.get("tokens").get(sym);
+                if (t.path("csa").asBoolean(true)) h.put(cfg.isin(sym), t.get("haircutBps").asInt());
+            });
             return CdmAgreement.baselineTerms(cfg.bankName(partyIdOf(ps[1])), cfg.bankName(partyIdOf(ps[0])), h);
         });
     }
@@ -926,8 +932,10 @@ public final class App {
     // a cdm-ext GmslaLoanSettlement both services build; a return's hash becomes the on-chain trade hash, so the document at
     // the trade hash is the booking until the first return and the last return after it.
 
-    /** A loan's trade in force: the trade state, the loan's terms, and the booking or the last return it comes from. */
-    private record LoanCurrent(cdm.event.common.TradeState trade, cdmx.collateral.gmsla.GmslaLoanTerms terms, CdmLoan.Booking booking, CdmLoan.Settlement lastReturn) {}
+    /** A loan's trade in force: the trade state, the loan's terms, and the booking, the last return or the last
+     *  substitution it comes from. */
+    private record LoanCurrent(cdm.event.common.TradeState trade, cdmx.collateral.gmsla.GmslaLoanTerms terms, CdmLoan.Booking booking,
+                               CdmLoan.Settlement lastReturn, CdmLoanSubstitution.Substitution lastSubstitution) {}
 
     /** Loan documents checked by this service, by hash (a document never changes). */
     private final Map<String, LoanCurrent> loanDocs = new ConcurrentHashMap<>();
@@ -944,12 +952,15 @@ public final class App {
         String doc = payloads.get(hash);
         if (doc == null) return null;
         if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the loan document does not hash to the on-chain trade hash");
-        if (doc.contains("\"returnEvent\"")) {
+        if (doc.contains("\"substitutionEvent\"")) {
+            CdmLoanSubstitution.Substitution sub = CdmLoanSubstitution.verify(doc);
+            c = new LoanCurrent(sub.after(), sub.doc().getTerms(), null, null, sub);
+        } else if (doc.contains("\"returnEvent\"")) {
             CdmLoan.Settlement s = CdmLoan.verifyReturn(doc);
-            c = new LoanCurrent(s.after(), s.settlement().getTerms(), null, s);
+            c = new LoanCurrent(s.after(), s.settlement().getTerms(), null, s, null);
         } else {
             CdmLoan.Booking b = CdmLoan.verify(doc);
-            c = new LoanCurrent(b.trade(), b.loan().getTerms(), b, null);
+            c = new LoanCurrent(b.trade(), b.loan().getTerms(), b, null, null);
         }
         loanDocs.put(hash, c);
         return c;
@@ -1000,6 +1011,8 @@ public final class App {
         }
         JsonNode rc = l.path("recall");
         if (rc.path("quantity").asLong(0) > 0) m.put("recall", recallView(l, rc));
+        JsonNode sb = l.path("substitution");
+        if (!sb.path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) m.put("substitution", substitutionView(l, sb, lender));
         try {
             LoanCurrent c = loanCurrent(l);
             if (c == null) {
@@ -1017,6 +1030,7 @@ public final class App {
             if (c.lastReturn() != null) {
                 m.put("lastReturn", CdmLoan.view(c.lastReturn()));
             }
+            if (c.lastSubstitution() != null) m.put("lastSubstitution", CdmLoanSubstitution.view(c.lastSubstitution()));
             String problem = loanProblem(l, c);
             m.put("verified", problem == null);
             m.put("problem", problem);
@@ -1113,6 +1127,126 @@ public final class App {
         ctx.json(Map.of("loanId", id, "withdrawalHash", w.hash(), "withdrawTx", tx.path("txHash").asText()));
     }
 
+    // ---- substitution of non-cash collateral (task-gmsla-substitution, wp-adr-gmsla-substitution) ----
+    // The borrower's cdm-ext GmslaLoanSubstitution is published and its hash anchored on SecuritiesLoan with the
+    // substitute token and quantity. The lender's service rebuilds it from the chain, the loan's trade in force, the feed
+    // and its business date, and agrees with the same hash, which becomes the trade hash; or refuses. The rules are
+    // assumptions listed in task-sme-gmsla-substitution-rules.
+
+    /** Substitution documents this service has checked, by hash (a document never changes). */
+    private final Map<String, CdmLoanSubstitution.Substitution> loanSubstitutions = new ConcurrentHashMap<>();
+
+    /** The pending substitution's document, checked: it hashes to the on-chain hash, rebuilds to the same document, is
+     *  over the loan's trade in force, and names the on-chain substitute token and quantity. */
+    private CdmLoanSubstitution.Substitution pendingSubstitution(JsonNode l, JsonNode sb) {
+        String hash = sb.get("cdmHash").asText();
+        CdmLoanSubstitution.Substitution known = loanSubstitutions.get(hash);
+        if (known == null) {
+            String doc = payloads.get(hash);
+            if (doc == null) throw new IllegalStateException("the substitution document is not in the payload store");
+            if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the substitution document does not hash to the on-chain hash");
+            known = CdmLoanSubstitution.verify(doc);
+            loanSubstitutions.put(hash, known);
+        }
+        LoanCurrent c = loanCurrent(l);
+        if (c == null) throw new IllegalStateException("the loan document is not in the payload store");
+        if (!CdmRepo.tradeHash(c.trade()).equals(CdmRepo.tradeHash(known.doc().getTrade())))
+            throw new IllegalStateException("the substitution is not over the loan's trade in force");
+        String sym = symbolByAddress.get(sb.get("collateral").asText().toLowerCase());
+        if (sym == null || !cfg.isin(sym).equals(known.isin())) throw new IllegalStateException("the on-chain substitute is not the document's");
+        if (sb.get("collateralAmount").asLong() != known.quantity()) throw new IllegalStateException("the on-chain substitute quantity is not the document's");
+        return known;
+    }
+
+    private Map<String, Object> substitutionView(JsonNode l, JsonNode sb, boolean lender) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("collateral", symbolByAddress.get(sb.get("collateral").asText().toLowerCase()));
+        m.put("collateralAmount", sb.get("collateralAmount").asText());
+        m.put("requestedByMe", !lender);
+        try {
+            CdmLoanSubstitution.Substitution s = pendingSubstitution(l, sb);
+            m.putAll(CdmLoanSubstitution.view(s));
+            m.put("verified", true);
+        } catch (Exception ex) {
+            m.put("verified", false);
+            m.put("problem", ex.getMessage());
+        }
+        return m;
+    }
+
+    /** The borrower asks to substitute all the collateral of an open loan against securities with another security
+     *  (body `collateral`, a token symbol), at the required collateral at the feed prices on the business date. */
+    private void requestLoanSubstitution(Context ctx) {
+        String id = ctx.pathParam("id");
+        Object col = body(ctx).get("collateral");
+        if (col == null || String.valueOf(col).isBlank()) throw new RuntimeException("name the substitute token (collateral)");
+        String sym = String.valueOf(col);
+        JsonNode l = gw.get("/loans/" + id);
+        if (!l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the borrower substitutes the collateral");
+        if (!l.get("state").asText().equals("open")) throw new RuntimeException("loan " + id + " is not open");
+        if (!l.path("substitution").path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("a substitution of loan " + id + " is already pending");
+        JsonNode r = l.get("pendingReturn");
+        if (!r.get("lender").asText().equals(ZERO_HASH) || !r.get("borrower").asText().equals(ZERO_HASH)) throw new RuntimeException("a return of loan " + id + " is pending");
+        if ("tUSD".equals(sym)) throw new RuntimeException("cash is not a substitute: only non-cash collateral is substituted");
+        LoanCurrent c = loanCurrent(l);
+        if (c == null) throw new RuntimeException("the loan document is not in the payload store");
+        String problem = loanProblem(l, c);
+        if (problem != null) throw new RuntimeException(problem);
+        String sec = symbolByAddress.get(l.get("security").asText().toLowerCase());
+        CdmLoanSubstitution.Substitution s = CdmLoanSubstitution.substitute(c.trade(), c.terms(), cfg.isin(sym),
+                loanFeedPrice(sec), loanFeedPrice(sym), businessDate);
+        store.recordDocument(id, "GmslaLoanSubstitution", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), callParties);
+        loanSubstitutions.put(s.hash(), s);
+        JsonNode tx = gw.post("/loans/" + id + "/substitute", Map.of("collateral", cfg.tokenAddress(sym),
+                "collateralAmount", String.valueOf(s.quantity()), "cdmHash", s.hash()));
+        Map<String, Object> out = new LinkedHashMap<>(CdmLoanSubstitution.view(s));
+        out.put("loanId", id);
+        out.put("cdmHash", s.hash());
+        out.put("requestTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The lender agrees to the pending substitution: the document must rebuild, be over the trade in force, use the
+     *  feed prices on this service's business date and be dated it; the agreement approves the collateral redelivered. */
+    private void agreeLoanSubstitution(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        if (!l.get("lender").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the lender agrees to a substitution");
+        JsonNode sb = l.path("substitution");
+        if (sb.path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("no substitution of loan " + id + " is pending");
+        LoanCurrent c = loanCurrent(l);
+        if (c == null) throw new RuntimeException("the loan document is not in the payload store");
+        String problem = loanProblem(l, c);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmLoanSubstitution.Substitution s = pendingSubstitution(l, sb);
+        String sec = symbolByAddress.get(l.get("security").asText().toLowerCase());
+        String sym = symbolByAddress.get(sb.get("collateral").asText().toLowerCase());
+        CdmLoanSubstitution.Substitution mine = CdmLoanSubstitution.substitute(c.trade(), c.terms(), cfg.isin(sym),
+                loanFeedPrice(sec), loanFeedPrice(sym), businessDate);
+        if (!mine.hash().equalsIgnoreCase(s.hash()))
+            throw new RuntimeException("the substitution is not the one this service builds (feed prices and business date " + businessDate + ")");
+        store.recordDocument(id, "GmslaLoanSubstitution", "in", s.hash(), s.json());
+        loanDocs.put(s.hash(), new LoanCurrent(s.after(), s.doc().getTerms(), null, null, s));
+        JsonNode tx = gw.post("/loans/" + id + "/substitute/agree", Map.of("cdmHash", s.hash(),
+                "token", l.get("collateral").asText(), "amount", l.get("collateralAmount").asText()));
+        Map<String, Object> out = new LinkedHashMap<>(CdmLoanSubstitution.view(s));
+        out.put("loanId", id);
+        out.put("cdmHash", s.hash());
+        out.put("agreeTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The lender refuses the pending substitution, which clears it; nothing moves. */
+    private void refuseLoanSubstitution(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        if (!l.get("lender").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the lender refuses a substitution");
+        if (l.path("substitution").path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("no substitution of loan " + id + " is pending");
+        JsonNode tx = gw.post("/loans/" + id + "/substitute/refuse", Map.of());
+        ctx.json(Map.of("loanId", id, "refuseTx", tx.path("txHash").asText()));
+    }
+
     /** This party's loans, newest first, with the business date. */
     private void loans(Context ctx) {
         List<Map<String, Object>> out = new ArrayList<>();
@@ -1147,7 +1281,7 @@ public final class App {
         CdmLoan.Booking booking = CdmLoan.book(t);
         store.recordDocument(loanId, "GmslaLoan", "out", booking.hash(), booking.json());
         payloads.put(booking.hash(), booking.json(), callParties);
-        loanDocs.put(booking.hash(), new LoanCurrent(booking.trade(), booking.loan().getTerms(), booking, null));
+        loanDocs.put(booking.hash(), new LoanCurrent(booking.trade(), booking.loan().getTerms(), booking, null, null));
         JsonNode tx = gw.post("/loans", Map.of("loanId", loanId, "borrower", cfg.partyAddress(counterparty()), "security", cfg.tokenAddress(sym),
                 "quantity", String.valueOf(quantity), "collateral", cfg.tokenAddress(col), "collateralAmount", String.valueOf(collateralAmount),
                 "tradeHash", booking.hash()));
@@ -1209,6 +1343,8 @@ public final class App {
         boolean lender = l.get("lender").asText().equalsIgnoreCase(cfg.myAddress);
         if (!lender && !l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("not a party to loan " + id);
         if (!l.get("state").asText().equals("open")) throw new RuntimeException("loan " + id + " is not open");
+        if (!l.path("substitution").path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH))
+            throw new RuntimeException("a substitution of loan " + id + " is pending");
         JsonNode r = l.get("pendingReturn");
         if (!r.get(lender ? "lender" : "borrower").asText().equals(ZERO_HASH)) throw new RuntimeException("already instructed");
         boolean pending = !r.get(lender ? "borrower" : "lender").asText().equals(ZERO_HASH);
@@ -1231,7 +1367,7 @@ public final class App {
             throw new RuntimeException("the counterparty's return is not the one this service builds (business date " + businessDate + ")");
         store.recordDocument(id, "GmslaLoanSettlement", "out", s.hash(), s.json());
         payloads.put(s.hash(), s.json(), callParties);
-        loanDocs.put(s.hash(), new LoanCurrent(s.after(), s.settlement().getTerms(), null, s));
+        loanDocs.put(s.hash(), new LoanCurrent(s.after(), s.settlement().getTerms(), null, s, null));
         String token = lender ? l.get("collateral").asText() : l.get("security").asText();
         long amount = lender ? s.collateralAmount() : s.quantity();
         JsonNode tx = gw.post("/loans/" + id + "/return", Map.of("quantity", String.valueOf(s.quantity()), "collateralAmount", String.valueOf(s.collateralAmount()),

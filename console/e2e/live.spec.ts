@@ -3000,3 +3000,104 @@ test("flow-gmsla-recall: A recalls part -> B returns it, the recall clears -> A 
     for (const l of ids) await returnAll(l).catch(() => undefined);
   }
 });
+
+// --- flow-gmsla-substitution ---
+// The borrower substitutes all the non-cash collateral of a loan with another security (wp-adr-gmsla-substitution): the
+// substitute quantity is the loan's required collateral at the feed prices (GmslaRequiredCollateral); the lender's
+// service rebuilds the cdm-ext GmslaLoanSubstitution and agrees with the same hash, and one transaction moves the
+// substitute to the lender and the collateral held back to the borrower. A refused substitution moves nothing; no
+// return can be instructed while one is pending.
+test("flow-gmsla-substitution: A lends tMMF to B against tUST -> B asks to substitute tAGY -> A refuses, nothing moves -> B asks again -> A agrees, tAGY in and tUST back in one transaction -> the return redelivers tAGY; every balance restored", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const tMMF = p.tokens.tMMF, tUST = p.tokens.tUST, tAGY = p.tokens.tAGY;
+  const today = new Date().toLocaleDateString("en-CA");
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  const bal = async () => ({
+    aMmf: await balanceOf(GATEWAY.A, tMMF, p.a), bMmf: await balanceOf(GATEWAY.A, tMMF, p.b),
+    aUst: await balanceOf(GATEWAY.A, tUST, p.a), bUst: await balanceOf(GATEWAY.A, tUST, p.b),
+    aAgy: await balanceOf(GATEWAY.A, tAGY, p.a), bAgy: await balanceOf(GATEWAY.A, tAGY, p.b),
+  });
+  type SubstitutionView = { collateral: string; collateralAmount: string; verified: boolean; problem?: string };
+  type LastSubstitution = { quantity: string; qualification: string; cdmQualifySubstitution: boolean };
+  type LoanView = Loan & { substitution?: SubstitutionView; lastSubstitution?: LastSubstitution; marginPercent?: string };
+  const loanOf = async (svc: string, id: string) => (await call<{ loans: LoanView[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id)!;
+  const returnAll = async (id: string) => {
+    const l = await loanOf(SERVICE.A, id);
+    if (l?.state !== "open") return;
+    if (l.substitution) await call(`${SERVICE.A}/loans/${id}/substitute/refuse`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.B, id)).substitution ?? null, { timeout: 30_000 }).toBeNull();
+    await call(`${SERVICE.B}/loans/${id}/return`, "POST", { quantity: Number(l.quantity) });
+    await call(`${SERVICE.A}/loans/${id}/return`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.A, id))?.state, { timeout: STEP_TIMEOUT }).toBe("returned");
+  };
+
+  // Setup: A lends 100,000 tMMF to B against tUST (the UI path is flow-gmsla-loan-delivery-return).
+  const start = await bal();
+  const { loanId: id } = await call<{ loanId: string }>(`${SERVICE.A}/loans`, "POST", { security: "tMMF", quantity: 100_000, collateral: "tUST", ratePercent: "0.5" });
+  try {
+    await call(`${SERVICE.B}/loans/${id}/affirm`, "POST", {});
+    await call(`${SERVICE.A}/loans/${id}/deliver`, "POST", {});
+    await call(`${SERVICE.B}/loans/${id}/deliver`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.B, id))?.state, { timeout: STEP_TIMEOUT }).toBe("open");
+    const opened = await loanOf(SERVICE.A, id);
+    const ustHeld = BigInt(opened.collateralAmount);
+    // The substitute: 100,000 tMMF at its feed price x the margin / the tAGY feed price, rounded up.
+    const margin = BigInt(opened.marginPercent!);
+    const value = 100_000n * (await scaledPrice(tMMF)) * margin;
+    const agyPrice = (await scaledPrice(tAGY)) * 100n;
+    const agyQty = value / agyPrice + (value % agyPrice === 0n ? 0n : 1n);
+
+    // 1. B asks in its console to substitute tAGY; A's service verifies the request; no return meanwhile.
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`loan-${id}`);
+    await rowB.getByRole("button", { name: "Substitute tAGY" }).click({ timeout: STEP_TIMEOUT });
+    const requested = `${Number(agyQty).toLocaleString("en-US")} tAGY for ${Number(ustHeld).toLocaleString("en-US")} tUST requested`;
+    await expect(page.getByTestId(`loan-substitution-${id}`)).toHaveText(requested, { timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await loanOf(SERVICE.A, id)).substitution, { timeout: 30_000 })
+      .toMatchObject({ collateral: "tAGY", collateralAmount: String(agyQty), verified: true });
+    await expect(call(`${SERVICE.B}/loans/${id}/return`, "POST", { quantity: 1 })).rejects.toThrow("substitution");
+    await expect(call(`${SERVICE.B}/loans/${id}/substitute`, "POST", { collateral: "tAGY" })).rejects.toThrow("already pending");
+    await expect(call(`${SERVICE.B}/loans/${id}/substitute/agree`, "POST", {})).rejects.toThrow("only the lender");
+    const delivered = await bal();
+
+    // 2. A refuses in its console: nothing moves and the loan keeps its tUST.
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`loan-${id}`);
+    await expect(page.getByTestId(`loan-substitution-${id}`)).toHaveText(requested, { timeout: STEP_TIMEOUT });
+    await rowA.getByRole("button", { name: "Refuse substitution" }).click();
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await loanOf(svc, id)).substitution ?? null, { timeout: 30_000 }).toBeNull();
+    expect(await bal()).toEqual(delivered);
+    expect((await loanOf(SERVICE.B, id)).collateral).toBe("tUST");
+
+    // 3. B asks again; A agrees in its console: tAGY to A and all the tUST back to B in one transaction.
+    await call(`${SERVICE.B}/loans/${id}/substitute`, "POST", { collateral: "tAGY" });
+    await page.goto("/#/live/A");
+    await rowA.getByRole("button", { name: "Agree substitution" }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`loan-collateral-${id}`)).toContainText(`${Number(agyQty).toLocaleString("en-US")} tAGY`, { timeout: STEP_TIMEOUT });
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => {
+        const l = await loanOf(svc, id);
+        return { collateral: l.collateral, amount: l.collateralAmount, verified: l.verified, pending: l.substitution ?? null, last: l.lastSubstitution };
+      }, { timeout: 30_000 }).toMatchObject({ collateral: "tAGY", amount: String(agyQty), verified: true, pending: null,
+        last: { quantity: String(agyQty), qualification: "GmslaIsSubstitution", cdmQualifySubstitution: false } });
+    }
+    const after = await bal();
+    expect(after.aAgy - delivered.aAgy).toBe(agyQty);
+    expect(delivered.bAgy - after.bAgy).toBe(agyQty);
+    expect(after.bUst - delivered.bUst).toBe(ustHeld);
+    expect(delivered.aUst - after.aUst).toBe(ustHeld);
+    expect(after.aMmf).toBe(delivered.aMmf); // the loaned securities stay with B
+    await page.goto("/#/live/B");
+    await expect(page.getByTestId(`loan-last-substitution-${id}`)).toContainText(`substituted ${Number(agyQty).toLocaleString("en-US")} tAGY`, { timeout: STEP_TIMEOUT });
+
+    // 4. B returns the loan: A redelivers the tAGY; every balance ends where it started.
+    await returnAll(id);
+    expect(await bal()).toEqual(start);
+    expect(errors).toEqual([]);
+  } finally {
+    await returnAll(id).catch(() => undefined);
+  }
+});

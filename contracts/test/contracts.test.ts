@@ -1775,5 +1775,56 @@ describe("CDM collateral contracts", async () => {
       await loans.write.recall([L, 50n, 20261114, H("n2")], { account: bankA.account }); // a new recall after withdrawal
       assert.equal((await loans.read.getRecall([L]))[0], 50n);
     });
+
+    it("the borrower substitutes all the collateral with the lender's agreement in one transaction (task-gmsla-substitution)", async () => {
+      const Z = `0x${"0".repeat(64)}`;
+      const tAGY = await viem.deployContract("TokenizedCollateral", ["Tokenized agency bond", "tAGY", "US3137EAGY10", "3137EAGY1", "QAGY00000"]);
+      await tAGY.write.mint([bAddr, 100n]);
+      await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 52n, H("s1")], { account: bankB.account })); // not open
+      await deliver();
+      await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 52n, H("s1")], { account: bankA.account })); // not the borrower
+      await assert.rejects(loans.write.requestSubstitution([L, tUSD.address, 52n, H("s1")], { account: bankB.account })); // same collateral
+      await assert.rejects(loans.write.requestSubstitution([L, tMMF.address, 52n, H("s1")], { account: bankB.account })); // the loaned security
+      await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 0n, H("s1")], { account: bankB.account }));
+      await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 52n, Z as `0x${string}`], { account: bankB.account }));
+      await loans.write.requestSubstitution([L, tAGY.address, 52n, H("s1")], { account: bankB.account });
+      const [subToken, subQty, subHash] = await loans.read.getSubstitution([L]);
+      assert.deepEqual([subToken.toLowerCase(), subQty, subHash], [tAGY.address.toLowerCase(), 52n, H("s1")]);
+      await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 53n, H("s2")], { account: bankB.account })); // one pending
+      await assert.rejects(loans.write.instructReturn([L, 10n, 510n, H("r")], { account: bankB.account })); // no return meanwhile
+      await assert.rejects(loans.write.agreeSubstitution([L, H("s1")], { account: bankB.account })); // not the lender
+      await assert.rejects(loans.write.agreeSubstitution([L, H("x")], { account: bankA.account })); // other hash
+      await tAGY.write.approve([loans.address, 52n], { account: bankB.account });
+      await tUSD.write.approve([loans.address, 5100n], { account: bankA.account });
+      await loans.write.agreeSubstitution([L, H("s1")], { account: bankA.account });
+      const l = await loans.read.getLoan([L]);
+      assert.equal(l.collateral.toLowerCase(), tAGY.address.toLowerCase());
+      assert.equal(l.collateralAmount, 52n);
+      assert.equal(l.tradeHash, H("s1"));
+      assert.equal(l.quantity, 100n);
+      assert.equal(await bal(tAGY, aAddr), 52n);
+      assert.equal(await bal(tUSD, bAddr), 10000n); // all the cash collateral is back
+      assert.equal(await bal(tUSD, aAddr), 0n);
+      assert.deepEqual(await loans.read.getSubstitution([L]), ["0x0000000000000000000000000000000000000000", 0n, Z]);
+      // The full return now redelivers the substitute.
+      await tMMF.write.approve([loans.address, 100n], { account: bankB.account });
+      await tAGY.write.approve([loans.address, 52n], { account: bankA.account });
+      await loans.write.instructReturn([L, 100n, 52n, H("r")], { account: bankB.account });
+      await loans.write.instructReturn([L, 100n, 52n, H("r")], { account: bankA.account });
+      assert.equal(await bal(tAGY, bAddr), 100n);
+    });
+
+    it("the lender refuses a substitution; none can be requested while a return is pending", async () => {
+      const tAGY = await viem.deployContract("TokenizedCollateral", ["Tokenized agency bond", "tAGY", "US3137EAGY10", "3137EAGY1", "QAGY00000"]);
+      await deliver();
+      await assert.rejects(loans.write.refuseSubstitution([L], { account: bankA.account })); // none pending
+      await loans.write.requestSubstitution([L, tAGY.address, 52n, H("s1")], { account: bankB.account });
+      await assert.rejects(loans.write.refuseSubstitution([L], { account: bankB.account }));
+      await loans.write.refuseSubstitution([L], { account: bankA.account });
+      assert.equal((await loans.read.getSubstitution([L]))[1], 0n);
+      assert.equal((await loans.read.getLoan([L])).tradeHash, H("trade"));
+      await loans.write.instructReturn([L, 10n, 510n, H("r")], { account: bankB.account });
+      await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 52n, H("s2")], { account: bankB.account }));
+    });
   });
 });

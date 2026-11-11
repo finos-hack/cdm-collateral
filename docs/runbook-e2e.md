@@ -337,6 +337,15 @@ agrees as for any return. A settled return reduces the recall and clears it when
 `Withdraw recall` to withdraw a pending recall. Loans booked before this deployment have no `RecallProvision` and cannot
 be recalled. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (RCL-1 to RCL-6).
 
+Substitutions (`flow-gmsla-substitution`): for an open loan against securities, the borrower's Substitution column
+shows `Substitute tAGY` (or `Substitute tUST`, the security other than the current collateral and the loaned one).
+`tAGY` is a test agency bond deployed for loan collateral only (feed price 99.20, BANK-B test balance 5,000); it is not
+eligible under the CSA. The borrower's service builds the cdm-ext `GmslaLoanSubstitution` with the substitute quantity
+at the feed prices on the business date, and its gateway calls `requestSubstitution`. The lender's console shows
+`… tAGY for … tUST requested` with `Agree substitution` and `Refuse substitution`; agreeing moves the substitute to
+the lender and the tUST back to the borrower in one transaction. No return can be instructed while a substitution is
+pending. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (LSB-1 to LSB-6).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -486,7 +495,8 @@ offsets a repo with a buy/sell-back of the same size so no securities drain, and
 and `flow-gmsla-terms` (it restores the baseline notification time), and `flow-gmsla-loan-delivery-return` (every loan
 it books is returned in full, so every balance ends where it started), and `flow-gmsla-marking` (it restores the tMMF
 price, the borrower calls the margin back, and the loan is returned), and `flow-gmsla-recall` (it restores both
-business dates, and every loan it books is returned in full).
+business dates, and every loan it books is returned in full), and `flow-gmsla-substitution` (the return after the
+substitution redelivers the tAGY, so every balance ends where it started).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and
