@@ -1135,3 +1135,5 @@ excluded.
 | task-repo-buy-sell-back | 7b3a87d0ad9c03a74dc119bbc974030cccf1ae25 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T03:31:09Z |
 | task-repo-buy-sell-back | e45964f499be84b372eec579c8dc95cabf24402b | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T03:31:58Z |
 | task-repo-buy-sell-back | bea0467a2d69fef5c805598cb85be3ec4cbbc4a8 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T12:56:08Z |
+| task-repo-default-close-out | 29f9f795f2b620bf30c6a07700eb384f229051b3 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T13:03:43Z |
+| task-repo-default-close-out | 29f9f795f2b620bf30c6a07700eb384f229051b3 | docs/analysis/defects.md | 2026-11-11T13:03:43Z |
