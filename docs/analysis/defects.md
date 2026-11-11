@@ -104,6 +104,13 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 - **CDM issue:** [#5109](https://github.com/finos/common-domain-model/issues/5109), open; fixed on the 8.x line in
   PR #5241 (2026-10-01) and reopened for backport to 6.x and 7.x. The maintainers add that `Qualify_FullReturn`
   looks for the `AssetPayout` on the collateral path, which is wrong for securities lending.
+- Observed 2026-11-11 on loans in the prototype's shape (task-gmsla-loan-delivery-return), each return built with
+  `Create_BusinessEvent` over a quantity-change instruction:
+  - Against non-cash collateral, whose position carries an `AssetPayout`, a full return qualifies as both `FullReturn`
+    and `Termination`. This is the collision itself.
+  - Against cash collateral it qualifies only as `Termination`. `AssetPayoutUnderlierNotCash` forbids cash as an
+    `AssetPayout` underlier, so the collateral path never holds an `AssetPayout` and `Qualify_FullReturn` cannot hold.
+  - A partial return qualifies as `PartialTermination` against either kind.
 
 [d4a]: https://github.com/finos/common-domain-model/blob/f685b4b45d8faa419425c018a52af66f40e43c0b/rosetta-source/src/main/rosetta/event-qualification-func.rosetta#L215-L240
 [d4b]: https://github.com/finos/common-domain-model/blob/f685b4b45d8faa419425c018a52af66f40e43c0b/rosetta-source/src/main/rosetta/event-qualification-func.rosetta#L841-L861
@@ -409,6 +416,10 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   and the settlement steps qualify as no event (`FullReturn`, `Termination`, `PartialTermination`, `SecurityTransfer`,
   `Substitution` and `Reprice` all false). `Qualify_SecurityLending` holds for the trade. The workflows also need a
   `PostProcessor` binding that CDM's runtime module does not provide. No CDM issue mentions these functions.
+- The cause is `Create_Return` itself (`event-common-func.rosetta` line 1392): it sets only the `after` trade state
+  (through `Create_QuantityChange`) and the event date. On a loan that passes CDM validation (2026-11-11, task
+  `task-gmsla-loan-delivery-return`) its partial return is valid and still qualifies as no event; the same quantity
+  change as an instruction to `Create_BusinessEvent` qualifies as `PartialTermination`.
 
 ### D27 — CDM's lending invoice has no amounts *(added 2026-11-11)*
 
