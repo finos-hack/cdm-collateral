@@ -1170,3 +1170,5 @@ excluded.
 | task-securities-lending-gmsla-workflows | 74cce9230e70062f6044b49c6ca45714a2881317 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T15:16:24Z |
 | task-gmsla-terms | 820ba93ee389e470e0ff2ae6765aeb5673ac871f | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T15:18:59Z |
 | task-gmsla-terms | 820ba93ee389e470e0ff2ae6765aeb5673ac871f | docs/analysis/defects.md | 2026-11-11T15:18:59Z |
+| task-gmsla-terms | f958cfbb9f5213a8615921d08f7b1ffe2a398ffc | architecture/prototype.architecture.json | 2026-11-11T15:30:35Z |
+| task-gmsla-terms | f958cfbb9f5213a8615921d08f7b1ffe2a398ffc | docs/analysis/sme-question-ledger.md | 2026-11-11T15:30:35Z |
