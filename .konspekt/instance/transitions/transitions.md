@@ -1238,4 +1238,3 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-ci-actions-minutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
 | node:task-ci-actions-minutes | status |  | resolved | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
 | edge:e-dec-e2eflow-ciminutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
-| edge:e-lnk-ciminutes-cirunsspecs | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
