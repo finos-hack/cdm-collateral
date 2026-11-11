@@ -1197,3 +1197,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
 | edge:e-lnk-gmslarcl-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
 | node:task-gmsla-marking | status | open | resolved | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
+| waypoint:wp-adr-gmsla-substitution | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| node:task-sme-gmsla-substitution-rules | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| node:task-sme-gmsla-substitution-rules | status |  | open | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| edge:e-mrk-lsbadr-gmslasub | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| edge:e-drv-cdmdata-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| edge:e-drv-finality-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| edge:e-dec-cdmdev-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
+| edge:e-lnk-gmslasub-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |

@@ -350,3 +350,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-rcladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-recall |  | accepted |
 | e-dec-cdmdev-smercl | decomposes | node:goal-cdm-development | node:task-sme-gmsla-recall-rules |  | accepted |
 | e-lnk-gmslarcl-smercl | links | node:task-gmsla-recall | node:task-sme-gmsla-recall-rules |  | accepted |
+| e-mrk-lsbadr-gmslasub | marks | waypoint:wp-adr-gmsla-substitution | node:task-gmsla-substitution |  | proposed |
+| e-drv-cdmdata-lsbadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-substitution |  | proposed |
+| e-drv-finality-lsbadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-substitution |  | proposed |
+| e-dec-cdmdev-smelsb | decomposes | node:goal-cdm-development | node:task-sme-gmsla-substitution-rules |  | proposed |
+| e-lnk-gmslasub-smelsb | links | node:task-gmsla-substitution | node:task-sme-gmsla-substitution-rules |  | proposed |

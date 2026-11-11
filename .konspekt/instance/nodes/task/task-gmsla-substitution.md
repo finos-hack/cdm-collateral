@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T20:02:28Z
+updatedAt: 2026-11-11T20:05:16Z
 ```
 # Task: substitution of non-cash collateral
 
@@ -42,3 +42,6 @@ BANK-A to BANK-B against 1,037 tUST, margin 1.02, open term), replacing the tUST
   stays a fee (CDM keeps the payout), so a change between non-cash and cash collateral would leave the fee or rebate
   terms inconsistent.
 - CDM has no substitution request, consent, or value check for a loan.
+
+**Design chosen 2026-11-11** (source `48fe886bd6db13fa671e8e91d418ed0f300f1833`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in [[wp-adr-gmsla-substitution]]
+(proposed); the rules are questions for an SME in [[task-sme-gmsla-substitution-rules]].
