@@ -357,12 +357,15 @@ public final class App {
     private record Fold(CdmAgreement.Terms terms, boolean verified, String problem, JsonNode amendments) {}
 
     /** The baseline IM CSA of a leg: the CDM sample with Party1 the leg's secured party, Party2 its pledgor, and the
-     *  registry's haircuts (the deployed global schedule). */
+     *  registry's haircuts (the deployed global schedule). A token deployed as not CSA-eligible ("csa": false, e.g.
+     *  tAGY, loan collateral only: wp-adr-gmsla-substitution) is not in the schedule. */
     private synchronized CdmAgreement.Terms baselineTerms(String[] ps) {
         return baselineTerms.computeIfAbsent(legKey(ps), k -> {
             Map<String, Integer> h = new LinkedHashMap<>();
-            cfg.registry.get("tokens").fieldNames().forEachRemaining(sym ->
-                    h.put(cfg.isin(sym), cfg.registry.get("tokens").get(sym).get("haircutBps").asInt()));
+            cfg.registry.get("tokens").fieldNames().forEachRemaining(sym -> {
+                JsonNode t = cfg.registry.get("tokens").get(sym);
+                if (t.path("csa").asBoolean(true)) h.put(cfg.isin(sym), t.get("haircutBps").asInt());
+            });
             return CdmAgreement.baselineTerms(cfg.bankName(partyIdOf(ps[1])), cfg.bankName(partyIdOf(ps[0])), h);
         });
     }

@@ -136,7 +136,7 @@ async function main() {
   const securitiesLoan = await deploy("SecuritiesLoan", []);
   console.log("SecuritiesLoan       ", securitiesLoan.address);
 
-  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string }> = {};
+  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean }> = {};
   for (const t of TOKENS) {
     const token = await deploy("TokenizedCollateral", [t.name, t.sym, t.isin, t.cusip, t.dti]);
     console.log(`  ${t.sym.padEnd(6)}           `, token.address);
@@ -147,7 +147,7 @@ async function main() {
     }
     if (t.csa !== false) await send(`setEligibility ${t.sym}`, (nonce) => control.write.setEligibility([token.address, true, t.haircutBps], { nonce }));
     await send(`publishPrice ${t.sym}`, (nonce) => oracle.write.publishPrice([token.address, t.price], { account: deployer.account, nonce }));
-    tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti };
+    tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti, csa: t.csa !== false };
   }
 
   const registry = {
