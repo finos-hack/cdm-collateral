@@ -1212,3 +1212,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
 | edge:e-dec-cdmdev-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
 | edge:e-lnk-gmslasub-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
+| node:task-gmsla-recall | status | open | resolved | 2026-11-11T20:43:22Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
