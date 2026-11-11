@@ -1,7 +1,7 @@
 name: konspekt conformance
 
 # Checks the konspekt instance against spec/data-model/schema.ts and
-# spec/architecture/SERIALIZATION.md on every push and pull request that
+# spec/architecture/SERIALIZATION.md on every pull request that
 # touches it.
 #
 # Fails on ERRORS only — dangling edges, duplicate ids, broken provenance.
@@ -15,13 +15,9 @@ name: konspekt conformance
 # Installed by `node setup/init.mjs --add conformance`. Do not edit in place —
 # edit setup/components/conformance/workflow.yml and re-run with --force.
 
+# No run on the push to main (task-ci-actions-minutes, 2026-11-11): the pull request run checks the same
+# commit, since branches are rebased on main before their PR.
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".konspekt/instance/**"
-      - ".konspekt/lib/**"
-      - ".konspekt/spec/**"
   pull_request:
     paths:
       - ".konspekt/instance/**"

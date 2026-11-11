@@ -3,10 +3,9 @@ name: cdm-ext
 # Generate the local CDM extension (cdm-ext/rosetta) to Java with CDM 7.7.0's toolchain against cdm-java 7.7.0 and
 # run its JUnit tests (cdm-ext/pom.xml, decision wp-adr-java-cdm-stack).
 
+# No run on the push to main (task-ci-actions-minutes, 2026-11-11): the pull request run checks the same
+# commit, since branches are rebased on main before their PR.
 on:
-  push:
-    branches: [main]
-    paths: ["cdm-ext/**", ".github/workflows/cdm-ext.yml"]
   pull_request:
     paths: ["cdm-ext/**", ".github/workflows/cdm-ext.yml"]
   workflow_dispatch:

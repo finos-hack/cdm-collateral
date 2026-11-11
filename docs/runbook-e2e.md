@@ -111,7 +111,9 @@ The dev container runs `build` once when it is created and `up` every time it st
 It stops with `missing services/collateral/target/collateral-service.jar` (or `…/oracle-service.jar`) when a jar is
 not built. The script runs
 in bash on Linux, macOS, Codespaces, WSL and Git Bash on Windows. The CI workflow
-`.github/workflows/e2e-live-stack.yml` runs the same `up` command after the section 3 build.
+`.github/workflows/e2e-live-stack.yml` runs the same `up` command after the section 3 build. Since 2026-11-11 it
+runs only on demand (`workflow_dispatch`, from the Actions tab), to save GitHub Actions minutes; the full live suite
+runs locally before every pull request (`task-ci-actions-minutes`).
 
 The steps below are the same sequence done by hand.
 

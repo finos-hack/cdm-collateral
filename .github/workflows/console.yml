@@ -3,10 +3,9 @@ name: console
 # Typecheck, unit and component tests, production build and Playwright end-to-end tests of the React party
 # console (console/). The scenario files drive the end-to-end tests (architecture/testing.md).
 
+# No run on the push to main (task-ci-actions-minutes, 2026-11-11): the pull request run checks the same
+# commit, since branches are rebased on main before their PR.
 on:
-  push:
-    branches: [main]
-    paths: ["console/**", ".github/workflows/console.yml"]
   pull_request:
     paths: ["console/**", ".github/workflows/console.yml"]
   workflow_dispatch:

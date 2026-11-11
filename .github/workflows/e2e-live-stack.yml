@@ -15,22 +15,10 @@ name: e2e-live-stack
 # network -> deploy contracts (only if not deployed) -> store + two gateways + two services + console -> health checks
 # -> live specs.
 
+# Triggers: on demand only (workflow_dispatch), to save GitHub Actions minutes (task-ci-actions-minutes, the
+# project owner's choice 2026-11-11). The full live suite runs locally before every PR and its result is reported in
+# the PR body; run this workflow from the Actions tab when a clean-machine check is wanted.
 on:
-  push:
-    branches: [main]
-    paths: &paths
-      - "besu/**"
-      - "contracts/**"
-      - "gateway/**"
-      - "store/**"
-      - "services/**"
-      - "cdm-ext/**"
-      - "console/**"
-      - "scripts/**"
-      - "orchestrate.mjs"
-      - ".github/workflows/e2e-live-stack.yml"
-  pull_request:
-    paths: *paths
   workflow_dispatch:
 
 permissions:

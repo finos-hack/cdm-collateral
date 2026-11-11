@@ -3,10 +3,9 @@ name: gateway
 # Type check of the gateway (gateway/). The gateway runs its TypeScript directly with node, which strips the types and
 # checks none of them (task-gateway-type-check).
 
+# No run on the push to main (task-ci-actions-minutes, 2026-11-11): the pull request run checks the same
+# commit, since branches are rebased on main before their PR.
 on:
-  push:
-    branches: [main]
-    paths: ["gateway/**", ".github/workflows/gateway.yml"]
   pull_request:
     paths: ["gateway/**", ".github/workflows/gateway.yml"]
   workflow_dispatch:
