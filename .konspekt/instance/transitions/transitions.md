@@ -1085,3 +1085,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
 | edge:e-dec-cdmdev-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
 | edge:e-lnk-dco-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| node:task-repo-default-close-out | status | open | resolved | 2026-11-11T14:57:51Z | de1c3bb0a99c0ee0cc8a9c1c939343529103c103 | denisurusov |
