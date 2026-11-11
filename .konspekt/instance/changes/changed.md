@@ -1289,3 +1289,5 @@ excluded.
 | task-gmsla-substitution | 328e6d6597440c08dadc89d538e273aa4dd8c802 | services/collateral/src/test/java/collateral/CdmLoanSubstitutionTest.java | 2026-11-11T20:26:07Z |
 | task-gmsla-substitution | 328e6d6597440c08dadc89d538e273aa4dd8c802 | services/oracle/src/main/java/oracle/MarketData.java | 2026-11-11T20:26:07Z |
 | task-gmsla-recall | 0ba0489a7fdcabe6a125561154cbf7bc47d8841e | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T20:43:23Z |
+| task-gmsla-substitution | a820de7f36bb44a50b0c065f3fc1b2e1441a2a00 | contracts/scripts/deploy.ts | 2026-11-11T21:02:26Z |
+| task-gmsla-substitution | a820de7f36bb44a50b0c065f3fc1b2e1441a2a00 | services/collateral/src/main/java/collateral/App.java | 2026-11-11T21:02:26Z |
