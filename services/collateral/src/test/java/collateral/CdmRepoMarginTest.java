@@ -32,6 +32,13 @@ class CdmRepoMarginTest {
     }
 
     @Test
+    void aBuySellBackIncomeDeductionLowersTheBuyersExposureByTheDeductionTimesTheMarginRatio() {
+        // 87,060 - 5,186 x 1.02 = 81,770.28 (wp-adr-repo-buy-sell-back)
+        BigDecimal buyer = CdmRepoMargin.exposure(trade(), elections(), DAY, 10_366, new BigDecimal(90), false, 5_186);
+        assertEquals(0, new BigDecimal("81770.28").compareTo(buyer.setScale(2, java.math.RoundingMode.HALF_UP)));
+    }
+
+    @Test
     void aCallIsWholeUsdRoundedDownAboveTheMinimum() {
         assertEquals(300_000, CdmRepoMargin.callAmount(new BigDecimal("300000.9"), 250_000));
         assertEquals(0, CdmRepoMargin.callAmount(new BigDecimal(250_000), 250_000));

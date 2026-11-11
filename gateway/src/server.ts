@@ -216,7 +216,7 @@ route("GET", "/ledger/v1/master-terms", async (_p, _b, url) =>
 // moves both legs.
 route("POST", "/ledger/v1/repos", async (_p, b) =>
   J(await adapter.bookRepo(b.repoId as Hex, getAddress(b.buyer), getAddress(b.security), BigInt(b.quantity), getAddress(b.cash),
-    BigInt(b.purchasePrice), BigInt(b.repurchasePrice), b.tradeHash as Hex)),
+    BigInt(b.purchasePrice), BigInt(b.repurchasePrice), b.tradeHash as Hex, b.buySellBack === true)),
 );
 
 route("POST", "/ledger/v1/repos/:id/affirm", async (p, b) => J(await adapter.affirmRepo(p.id as Hex, b.tradeHash as Hex)));

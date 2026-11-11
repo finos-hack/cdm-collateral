@@ -843,6 +843,7 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
   const [ratePercent, setRatePercent] = useState("4.5");
   const [termDays, setTermDays] = useState(7);
   const [marginRatio, setMarginRatio] = useState("");
+  const [buySellBack, setBuySellBack] = useState(false);
   const [date, setDate] = useState("");
   const action = (p: LiveRepo) => {
     if (!p.verified) return null;
@@ -883,17 +884,20 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
           <button disabled={busy} onClick={() => run(() => api.refuseRepoInterimInterest(party, p.repoId))}>Refuse interim interest</button>
         </>
       );
-    if (p.incomePending === "requested") return <span data-testid={`repo-payment-${p.repoId}`}>income USD {p.incomeAmount} offered</span>;
+    // A buy/sell-back's income lowers the Sell Back Price by the income plus interest; no cash moves (wp-adr-repo-buy-sell-back).
+    const lower = p.buySellBack ? `, sell-back price lower by ${usd(p.incomeSellBackDeduction ?? "0")}` : "";
+    if (p.incomePending === "requested") return <span data-testid={`repo-payment-${p.repoId}`}>income USD {p.incomeAmount} offered{lower}</span>;
     if (p.incomePending === "toDecide")
       return (
         <>
-          <button disabled={busy} onClick={() => run(() => api.agreeRepoIncome(party, p.repoId))}>Agree income USD {p.incomeAmount}</button>
+          <button disabled={busy} onClick={() => run(() => api.agreeRepoIncome(party, p.repoId))}>Agree income USD {p.incomeAmount}{lower}</button>
           <button disabled={busy} onClick={() => run(() => api.refuseRepoIncome(party, p.repoId))}>Refuse income</button>
         </>
       );
     if (p.substitutionPending || p.repurchaseDue || p.instructedByMe) return null;
-    if (p.role === "seller") return <button disabled={busy} onClick={() => run(() => api.payRepoInterimInterest(party, p.repoId))}>Pay accrued interest</button>;
-    return <RepoIncomeEntry disabled={busy} onPay={(income) => run(() => api.payRepoIncome(party, p.repoId, income))} />;
+    // A buy/sell-back has no interim interest: its forward price is fixed at trade.
+    if (p.role === "seller") return p.buySellBack ? null : <button disabled={busy} onClick={() => run(() => api.payRepoInterimInterest(party, p.repoId))}>Pay accrued interest</button>;
+    return <RepoIncomeEntry disabled={busy} label={p.buySellBack ? "Enter income" : "Pay income"} onPay={(income) => run(() => api.payRepoIncome(party, p.repoId, income))} />;
   };
   const rollAction = (p: LiveRepo) => {
     if (!p.verified || p.state !== "purchased") return null;
@@ -928,7 +932,8 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
     // Full pair-off only (wp-adr-repo-pair-off): the same pair in the opposite direction, security, quantity and Repurchase Date.
     const offsetting = r.repos.filter(
       (q) => q.repoId !== p.repoId && q.verified && q.state === "purchased" && q.role !== p.role && q.counterparty === p.counterparty
-        && q.security === p.security && q.quantity === p.quantity && q.repurchaseDate === p.repurchaseDate && !q.pairOffPending && !q.rollPending,
+        && q.security === p.security && q.quantity === p.quantity && q.repurchaseDate === p.repurchaseDate && !q.pairOffPending && !q.rollPending
+        && !!q.buySellBack === !!p.buySellBack, // only trades of the same type (wp-adr-repo-buy-sell-back)
     );
     return (
       <>
@@ -950,6 +955,13 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
       </div>
       <div className="row">
         <label>
+          Type{" "}
+          <select aria-label="Repo type" value={buySellBack ? "bsb" : "repo"} onChange={(ev) => setBuySellBack(ev.target.value === "bsb")}>
+            <option value="repo">Repo</option>
+            <option value="bsb">Buy/sell-back</option>
+          </select>
+        </label>
+        <label>
           Sell{" "}
           <select aria-label="Repo security" value={security} onChange={(ev) => setSecurity(ev.target.value)}>
             <option value="tUST">tUST</option>
@@ -970,9 +982,9 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
         </label>
         <button
           disabled={busy || purchasePrice <= 0 || termDays < 1 || ratePercent === ""}
-          onClick={() => run(() => api.bookRepo(party, { security, purchasePrice, ratePercent, termDays, marginRatio: marginRatio === "" ? null : marginRatio }))}
+          onClick={() => run(() => api.bookRepo(party, { security, purchasePrice, ratePercent, termDays, marginRatio: marginRatio === "" ? null : marginRatio, buySellBack }))}
         >
-          Book repo: sell to {other}
+          {buySellBack ? "Book buy/sell-back" : "Book repo"}: sell to {other}
         </button>
       </div>
       {r.repos.length > 0 && (
@@ -984,10 +996,13 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
             {r.repos.map((p) => (
               <tr key={p.repoId} data-testid={`repo-${p.repoId}`}>
                 <td className="mono">{short(p.repoId)}</td>
-                <td>{p.role} · {p.counterparty}</td>
+                <td>{p.buySellBack ? "buy/sell-back · " : ""}{p.role} · {p.counterparty}</td>
                 <td>{Number(p.quantity).toLocaleString("en-US")} {p.security}{p.price ? ` at ${p.price}` : ""}</td>
                 <td>{usd(p.purchasePrice)}</td>
-                <td>{usd(p.repurchasePrice)}{p.ratePercent ? ` (${p.ratePercent}%)` : ""}</td>
+                <td data-testid={`repo-price-${p.repoId}`}>
+                  {usd(p.repurchasePrice)}{p.ratePercent ? ` (${p.ratePercent}%)` : ""}
+                  {p.buySellBack && p.incomeDeduction && p.incomeDeduction !== "0" ? `, sell back ${usd(p.sellBackPrice ?? p.repurchasePrice)}` : ""}
+                </td>
                 <td>{p.purchaseDate ? `${p.purchaseDate} → ${p.repurchaseDate}` : "—"}</td>
                 <td data-testid={`repo-state-${p.repoId}`}>
                   {p.verified ? <span className="ok">{p.state} ✓</span> : <span className="bad">{p.problem ?? "not verified"}</span>}
@@ -1015,15 +1030,16 @@ function RepoRollEntry(props: { disabled: boolean; ratePercent: string; onRoll: 
   );
 }
 
-/** The Buyer enters income on the purchased securities by hand (wp-adr-repo-income). */
-function RepoIncomeEntry(props: { disabled: boolean; onPay: (income: { incomePerUnit: string; incomeDate: string }) => void }) {
+/** The Buyer enters income on the purchased securities by hand (wp-adr-repo-income); on a buy/sell-back it lowers the
+ *  Sell Back Price instead of being paid (wp-adr-repo-buy-sell-back). */
+function RepoIncomeEntry(props: { disabled: boolean; label: string; onPay: (income: { incomePerUnit: string; incomeDate: string }) => void }) {
   const [incomePerUnit, setIncomePerUnit] = useState("");
   const [incomeDate, setIncomeDate] = useState("");
   return (
     <>
       <input aria-label="Income per unit" value={incomePerUnit} onChange={(ev) => setIncomePerUnit(ev.target.value)} style={{ width: 60 }} />
       <input aria-label="Income date" type="date" value={incomeDate} onChange={(ev) => setIncomeDate(ev.target.value)} />
-      <button disabled={props.disabled || incomePerUnit === "" || incomeDate === ""} onClick={() => props.onPay({ incomePerUnit, incomeDate })}>Pay income</button>
+      <button disabled={props.disabled || incomePerUnit === "" || incomeDate === ""} onClick={() => props.onPay({ incomePerUnit, incomeDate })}>{props.label}</button>
     </>
   );
 }

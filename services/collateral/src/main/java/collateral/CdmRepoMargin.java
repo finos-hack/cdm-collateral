@@ -42,8 +42,15 @@ public final class CdmRepoMargin {
     /** A Transaction's exposure from one party's side: positive when that party is exposed. The Buyer is exposed when
      *  RepoTransactionExposure is positive, so the Seller's side is its negative. */
     public static BigDecimal exposure(TradeState ts, GmraElections e, LocalDate date, long quantity, BigDecimal price, boolean mySideIsSeller) {
+        return exposure(ts, e, date, quantity, price, mySideIsSeller, 0);
+    }
+
+    /** The same for a buy/sell-back (wp-adr-repo-buy-sell-back): the accrued Repurchase Price less the income deduction,
+     *  so the exposure falls by the deduction times the Margin Ratio. Zero deduction for a repo. */
+    public static BigDecimal exposure(TradeState ts, GmraElections e, LocalDate date, long quantity, BigDecimal price, boolean mySideIsSeller, long incomeDeduction) {
         BigDecimal ratio = CdmRuntime.fn(RepoMarginRatio.class).evaluate(ts, e);
-        BigDecimal buyerSide = CdmRuntime.fn(RepoTransactionExposure.class).evaluate(ts, Date.of(date), BigDecimal.valueOf(quantity), price, ratio);
+        BigDecimal buyerSide = CdmRuntime.fn(RepoTransactionExposure.class).evaluate(ts, Date.of(date), BigDecimal.valueOf(quantity), price, ratio)
+                .subtract(BigDecimal.valueOf(incomeDeduction).multiply(ratio));
         return mySideIsSeller ? buyerSide.negate() : buyerSide;
     }
 

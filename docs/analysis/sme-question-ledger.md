@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 89 questions in 18 tasks, all open.
+Status of the ledger: 97 questions in 19 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -192,3 +192,16 @@ Status of the ledger: 89 questions in 18 tasks, all open.
 | POF-5 | Either party proposes and the other agrees or refuses. Is a pair-off agreed bilaterally like this, or instructed through a settlement system? | open | |
 | POF-6 | The paired repos leave the pair's Net Exposure on settlement. Must the margin held be adjusted at the same time? | open | |
 | POF-7 | CDM keeps both trades and adds a package reference; the prototype then marks both repurchased. Under the GMRA, are the two Transactions terminated, or settled by netting? | open | |
+
+### `task-sme-repo-buy-sell-back-rules`: a buy/sell-back under the GMRA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| BSB-1 | The income lowers the sell-back price by the income amount plus interest at the repo rate (ACT/360) from the income date to the Repurchase Date. Is that the GMRA Buy/Sell Back Annex formula, and which rate applies? | open | |
+| BSB-2 | The deduction is fixed when the Seller agrees it, to the Repurchase Date of that time. Is it recomputed if the Transaction is later repriced or adjusted? | open | |
+| BSB-3 | The Buyer enters the income per unit and date and the Seller agrees. Is that how the income is agreed in practice? | open | |
+| BSB-4 | A buy/sell-back's Transaction Exposure uses the accrued Repurchase Price less the full deduction. Should the interest part of the deduction accrue to the valuation date instead? | open | |
+| BSB-5 | Margin maintenance, repricing, adjustment, substitution, roll and pair-off apply as for a repo; interim interest does not. Is that right for a buy/sell-back under the Annex, and for an undocumented one? | open | |
+| BSB-6 | At a roll the Seller pays the Price Differential less the deduction, the Buyer pays any excess, and the deduction resets. Is that correct? | open | |
+| BSB-7 | Only two trades of the same type pair off. Can a repo and a buy/sell-back be paired off? | open | |
+| BSB-8 | The tokenized securities accrue no coupon, so the prototype quotes no accrued interest in the purchase and sell-back prices. For coupon securities, how are the clean price and accrued interest stated? | open | |

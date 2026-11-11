@@ -793,7 +793,13 @@ public final class App {
         if (!CdmRepo.isReplacement(b) && CdmRepo.quantity(t.purchasePrice(), t.marginRatio(), t.price()) != t.quantity()) return "the quantity does not follow from the Purchase Price, Margin Ratio and price";
         if (r.get("purchasePrice").asLong() != t.purchasePrice()) return "the on-chain Purchase Price is not the trade's";
         if (r.get("repurchasePrice").asLong() != b.repurchasePrice()) return "the on-chain Repurchase Price is not RepoRepurchasePrice over the trade";
+        if (r.path("buySellBack").asBoolean(false) != t.buySellBack()) return "the on-chain trade type is not the trade's";
         return null;
+    }
+
+    /** A buy/sell-back's agreed income deductions in the current term, from the chain; zero for a repo (wp-adr-repo-buy-sell-back). */
+    private static long deductionOf(JsonNode r) {
+        return r.path("incomeDeduction").asLong(0);
     }
 
     private Map<String, Object> repoView(JsonNode r) {
@@ -808,6 +814,9 @@ public final class App {
         m.put("quantity", r.get("quantity").asText());
         m.put("purchasePrice", r.get("purchasePrice").asText());
         m.put("repurchasePrice", r.get("repurchasePrice").asText());
+        m.put("buySellBack", r.path("buySellBack").asBoolean(false));
+        m.put("incomeDeduction", String.valueOf(deductionOf(r)));
+        m.put("sellBackPrice", String.valueOf(r.get("repurchasePrice").asLong() - deductionOf(r)));
         m.put("tradeHash", r.get("tradeHash").asText());
         m.put("purchaseHash", r.get("purchaseHash").asText().equals(ZERO_HASH) ? null : r.get("purchaseHash").asText());
         m.put("repurchaseHash", r.get("repurchaseHash").asText().equals(ZERO_HASH) ? null : r.get("repurchaseHash").asText());
@@ -862,7 +871,8 @@ public final class App {
 
     /** The seller books a term repo with the counterparty: security (tUST or tMMF), Purchase Price (whole tUSD), repo
      *  rate in percent per annum, term in days from the business date, and optionally the Margin Ratio (default: the
-     *  GMRA's default Margin Ratio). The quantity follows from the feed price. */
+     *  GMRA's default Margin Ratio). The quantity follows from the feed price. buySellBack: true books a buy/sell-back
+     *  (wp-adr-repo-buy-sell-back), the same terms with CDM's trade type BuySellBack. */
     private void bookRepo(Context ctx) {
         Map<String, Object> b = body(ctx);
         String sym = String.valueOf(b.getOrDefault("security", "tUST"));
@@ -880,14 +890,15 @@ public final class App {
         String repoId = Cdm.onChainId("repo-" + cfg.partyId + "-" + System.nanoTime());
         long qty = CdmRepo.quantity(purchasePrice, marginRatio, price);
         CdmRepo.Terms t = new CdmRepo.Terms(repoId, cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), cfg.isin(sym), qty, price,
-                purchasePrice, rate, marginRatio, businessDate, businessDate, businessDate.plusDays(termDays));
+                purchasePrice, rate, marginRatio, businessDate, businessDate, businessDate.plusDays(termDays),
+                Boolean.parseBoolean(String.valueOf(b.getOrDefault("buySellBack", "false"))));
         CdmRepo.Booking booking = CdmRepo.book(t);
         store.recordDocument(repoId, "BusinessEvent", "out", booking.hash(), booking.json());
         payloads.put(booking.hash(), booking.json(), callParties);
         repoBookings.put(booking.hash(), booking);
         JsonNode tx = gw.post("/repos", Map.of("repoId", repoId, "buyer", cfg.partyAddress(counterparty()), "security", cfg.tokenAddress(sym),
                 "quantity", String.valueOf(qty), "cash", cfg.tokenAddress("tUSD"), "purchasePrice", String.valueOf(purchasePrice),
-                "repurchasePrice", String.valueOf(booking.repurchasePrice()), "tradeHash", booking.hash()));
+                "repurchasePrice", String.valueOf(booking.repurchasePrice()), "tradeHash", booking.hash(), "buySellBack", t.buySellBack()));
         ctx.json(Map.of("repoId", repoId, "tradeHash", booking.hash(), "quantity", qty, "repurchasePrice", booking.repurchasePrice(),
                 "bookTx", tx.path("txHash").asText()));
     }
@@ -935,9 +946,9 @@ public final class App {
         } else if (phase.equals("repurchase")) {
             if (!r.get("state").asText().equals("purchased")) throw new RuntimeException("repo " + id + " is not purchased");
             if (businessDate.isBefore(t.repurchaseDate())) throw new RuntimeException("the business date " + businessDate + " is before the Repurchase Date " + t.repurchaseDate());
-            s = CdmRepo.repurchase(b.trade());
+            s = CdmRepo.repurchase(b.trade(), deductionOf(r));
             token = seller ? r.get("cash").asText() : r.get("security").asText();
-            amount = seller ? b.repurchasePrice() : t.quantity();
+            amount = seller ? CdmRepo.sellBackPrice(b.trade(), deductionOf(r)) : t.quantity();
         } else {
             throw new RuntimeException("unknown phase " + phase);
         }
@@ -967,7 +978,7 @@ public final class App {
         if (!rh.equals(ZERO_HASH)) {
             var closed = pairedOffClosedTrade(id, rh);
             if (closed == null) {
-                CdmRepo.Settlement s = CdmRepo.repurchase(b.trade());
+                CdmRepo.Settlement s = CdmRepo.repurchase(b.trade(), deductionOf(r));
                 if (!s.hash().equalsIgnoreCase(rh)) throw new RuntimeException("the anchored repurchase is not the one this service builds");
                 closed = s.settlement().getRepurchase().getAfter().get(0);
             }
@@ -1027,7 +1038,7 @@ public final class App {
             if (b == null) throw new RuntimeException("the booked document of repo " + r.get("repoId").asText() + " is not in the payload store");
             boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
             BigDecimal price = feedPrice(r.get("security").asText());
-            BigDecimal e = CdmRepoMargin.exposure(b.trade(), elections, businessDate, CdmRepo.terms(b.trade()).quantity(), price, seller);
+            BigDecimal e = CdmRepoMargin.exposure(b.trade(), elections, businessDate, CdmRepo.terms(b.trade()).quantity(), price, seller, deductionOf(r));
             exposures.add(e);
             rows.add(new LinkedHashMap<>(Map.of("repoId", r.get("repoId").asText(), "role", seller ? "seller" : "buyer",
                     "price", price.stripTrailingZeros().toPlainString(), "exposureUsd", e.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString())));
@@ -1331,10 +1342,18 @@ public final class App {
         if (!income.equals(ZERO_HASH)) {
             m.put("incomePending", seller ? "toDecide" : "requested");
             try {
-                var doc = CdmRuntime.JSON.readValue(payloads.get(income), cdmx.collateral.repo.RepoManufacturedIncome.class);
-                m.put("incomeAmount", doc.getAmount().toPlainString());
-                m.put("incomePerUnit", doc.getIncomePerUnit().stripTrailingZeros().toPlainString());
-                m.put("incomeDate", doc.getIncomeDate().toLocalDate().toString());
+                if (r.path("buySellBack").asBoolean(false)) {
+                    var doc = CdmRuntime.JSON.readValue(payloads.get(income), cdmx.collateral.repo.BuySellBackIncome.class);
+                    m.put("incomeAmount", doc.getIncomeAmount().toPlainString());
+                    m.put("incomeSellBackDeduction", doc.getDeduction().toPlainString());
+                    m.put("incomePerUnit", doc.getIncomePerUnit().stripTrailingZeros().toPlainString());
+                    m.put("incomeDate", doc.getIncomeDate().toLocalDate().toString());
+                } else {
+                    var doc = CdmRuntime.JSON.readValue(payloads.get(income), cdmx.collateral.repo.RepoManufacturedIncome.class);
+                    m.put("incomeAmount", doc.getAmount().toPlainString());
+                    m.put("incomePerUnit", doc.getIncomePerUnit().stripTrailingZeros().toPlainString());
+                    m.put("incomeDate", doc.getIncomeDate().toLocalDate().toString());
+                }
             } catch (Exception ex) {
                 m.put("paymentProblem", String.valueOf(ex.getMessage()));
             }
@@ -1378,21 +1397,35 @@ public final class App {
     }
 
     private String instructIncome(JsonNode r, CdmRepo.Income income, List<Map<String, String>> approvals) {
-        String id = r.get("repoId").asText();
-        store.recordDocument(id, "RepoManufacturedIncome", "out", income.hash(), income.json());
-        payloads.put(income.hash(), income.json(), callParties);
-        return gw.post("/repos/" + id + "/income", Map.of("cdmHash", income.hash(), "amount", income.income().getAmount().toPlainString(), "approvals", approvals)).path("txHash").asText();
+        return instructIncome(r, "RepoManufacturedIncome", income.hash(), income.json(), income.income().getAmount().toPlainString(), approvals);
     }
 
-    /** The Buyer pays income on the purchased securities, entered by hand. */
+    private String instructIncome(JsonNode r, String type, String hash, String json, String amount, List<Map<String, String>> approvals) {
+        String id = r.get("repoId").asText();
+        store.recordDocument(id, type, "out", hash, json);
+        payloads.put(hash, json, callParties);
+        return gw.post("/repos/" + id + "/income", Map.of("cdmHash", hash, "amount", amount, "approvals", approvals)).path("txHash").asText();
+    }
+
+    /** The Buyer pays income on the purchased securities, entered by hand. On a buy/sell-back the Buyer keeps it and
+     *  the Sell Back Price falls by the income plus interest to the Repurchase Date (wp-adr-repo-buy-sell-back). */
     private void payIncome(Context ctx) {
         JsonNode r = purchasedRepo(ctx);
         requireRole(r, "buyer", "pay manufactured income");
         CdmRepo.Booking b = replaceable(r);
         if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
         Map<String, Object> in = body(ctx);
-        CdmRepo.Income income = CdmRepo.income(r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade(),
-                new BigDecimal(String.valueOf(in.get("incomePerUnit"))), LocalDate.parse(String.valueOf(in.get("incomeDate"))));
+        BigDecimal perUnit = new BigDecimal(String.valueOf(in.get("incomePerUnit")));
+        LocalDate incomeDate = LocalDate.parse(String.valueOf(in.get("incomeDate")));
+        if (CdmRepo.isBuySellBack(b.trade())) {
+            CdmRepo.BuySellBackIncomeRecord bsb = CdmRepo.buySellBackIncome(r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade(), perUnit, incomeDate);
+            String deduction = String.valueOf(bsb.deduction());
+            String tx = instructIncome(r, "BuySellBackIncome", bsb.hash(), bsb.json(), deduction, List.of());
+            ctx.json(Map.of("repoId", r.get("repoId").asText(), "cdmHash", bsb.hash(), "amount", bsb.income().getIncomeAmount().toPlainString(),
+                    "sellBackDeduction", deduction, "instructTx", tx));
+            return;
+        }
+        CdmRepo.Income income = CdmRepo.income(r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade(), perUnit, incomeDate);
         String tx = instructIncome(r, income, List.of(Map.of("token", r.get("cash").asText(), "amount", income.income().getAmount().toPlainString())));
         ctx.json(Map.of("repoId", r.get("repoId").asText(), "cdmHash", income.hash(), "amount", income.income().getAmount().toPlainString(), "instructTx", tx));
     }
@@ -1407,6 +1440,12 @@ public final class App {
         if (doc == null) throw new RuntimeException("the income document is not in the payload store");
         CdmRepo.Booking b = replaceable(r);
         if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
+        if (CdmRepo.isBuySellBack(b.trade())) {
+            CdmRepo.BuySellBackIncomeRecord bsb = CdmRepo.verifyBuySellBackIncome(doc, r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade());
+            ctx.json(Map.of("repoId", r.get("repoId").asText(), "instructTx",
+                    instructIncome(r, "BuySellBackIncome", bsb.hash(), bsb.json(), String.valueOf(bsb.deduction()), List.of())));
+            return;
+        }
         CdmRepo.Income income = CdmRepo.verifyIncome(doc, r.get("repoId").asText(), r.get("tradeHash").asText(), b.trade());
         ctx.json(Map.of("repoId", r.get("repoId").asText(), "instructTx", instructIncome(r, income, List.of())));
     }
@@ -1452,7 +1491,7 @@ public final class App {
             if (problem != null) throw new RuntimeException("repo " + id + ": " + problem);
             bookings.add(b);
         }
-        return CdmRepo.pairOff(bookings.get(0).trade(), bookings.get(1).trade(), businessDate);
+        return CdmRepo.pairOff(bookings.get(0).trade(), bookings.get(1).trade(), businessDate, deductionOf(r), deductionOf(other));
     }
 
     /** What this party pays in a pair-off: the net amount if it is the Seller of the repo with the higher Repurchase Price. */
@@ -1526,9 +1565,10 @@ public final class App {
         if (!d.has("pairOff")) return null;
         String[] ids = d.at("/pairOff/after/0/trade/executionDetails/packageReference/listId/assignedIdentifier/0/identifier/@data").asText().split("/");
         if (ids.length != 2) throw new RuntimeException("the anchored pair-off names no pair of repos");
-        CdmRepo.Booking a = repoBooking(gw.get("/repos/" + ids[0])), b = repoBooking(gw.get("/repos/" + ids[1]));
+        JsonNode ra = gw.get("/repos/" + ids[0]), rb = gw.get("/repos/" + ids[1]);
+        CdmRepo.Booking a = repoBooking(ra), b = repoBooking(rb);
         if (a == null || b == null) throw new RuntimeException("a booked document of the pair-off is not in the payload store");
-        CdmRepo.PairedOff p = CdmRepo.pairOff(a.trade(), b.trade(), CdmRepo.terms(a.trade()).repurchaseDate());
+        CdmRepo.PairedOff p = CdmRepo.pairOff(a.trade(), b.trade(), CdmRepo.terms(a.trade()).repurchaseDate(), deductionOf(ra), deductionOf(rb));
         if (!p.hash().equalsIgnoreCase(repurchaseHash)) throw new RuntimeException("the anchored pair-off is not the one this service builds");
         return p.settlement().getRepurchase().get(p.first().equalsIgnoreCase(repoId) ? 0 : 1).getAfter().get(0);
     }
@@ -1545,7 +1585,9 @@ public final class App {
             CdmRepo.Terms offered = CdmRepo.terms(CdmRepo.verify(payloads.get(mine.equals(ZERO_HASH) ? theirs : mine)).trade());
             m.put("rollToDate", offered.repurchaseDate().toString());
             m.put("rollRatePercent", offered.rate().movePointRight(2).stripTrailingZeros().toPlainString());
-            m.put("rollInterest", new BigInteger(r.get("repurchasePrice").asText()).subtract(new BigInteger(r.get("purchasePrice").asText())).toString());
+            // net of a buy/sell-back's income deduction; negative when the Buyer pays (wp-adr-repo-buy-sell-back)
+            m.put("rollInterest", new BigInteger(r.get("repurchasePrice").asText()).subtract(new BigInteger(r.get("purchasePrice").asText()))
+                    .subtract(BigInteger.valueOf(deductionOf(r))).toString());
         } catch (RuntimeException ex) {
             m.put("rollProblem", String.valueOf(ex.getMessage()));
         }
@@ -1562,7 +1604,9 @@ public final class App {
         CdmRepo.Rolled next = CdmRepo.roll(b.trade(), newRepurchaseDate, rate == null ? t.rate() : rate);
         boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
         Map<String, Object> amounts = new LinkedHashMap<>(Map.of("newRepurchasePrice", String.valueOf(next.booking().repurchasePrice())));
-        return new Replacement(r, next.booking(), "roll", amounts, Map.of(r.get("cash").asText(), seller ? next.interest() : 0L));
+        // A buy/sell-back nets its income deduction: the Seller pays the rest, or the Buyer the excess (wp-adr-repo-buy-sell-back).
+        long net = next.interest() - deductionOf(r);
+        return new Replacement(r, next.booking(), "roll", amounts, Map.of(r.get("cash").asText(), seller ? Math.max(net, 0L) : Math.max(-net, 0L)));
     }
 
     /** A party proposes the roll of a purchased repo to a new Repurchase Date, at a repo rate in percent (default: the current rate). */

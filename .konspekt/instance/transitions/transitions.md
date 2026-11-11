@@ -1052,3 +1052,20 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
 | edge:e-dec-cdmdev-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
 | edge:e-lnk-pairoff-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| node:task-repo-pair-off | status | open | resolved | 2026-11-11T01:11:49Z | f66f6f311a48c5a33fba553bdc0f6e52fce7543b | denisurusov |
+
+| waypoint:wp-adr-repo-buy-sell-back | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| node:task-sme-repo-buy-sell-back-rules | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| node:task-sme-repo-buy-sell-back-rules | status |  | open | 2026-11-11T01:42:28Z |  |  |
+| edge:e-mrk-bsbadr-buysellback | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| edge:e-drv-cdmdata-bsbadr | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| edge:e-drv-finality-bsbadr | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| edge:e-dec-cdmdev-smebsb | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| edge:e-lnk-bsb-smebsb | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
+| waypoint:wp-adr-repo-buy-sell-back | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
+| node:task-sme-repo-buy-sell-back-rules | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
+| edge:e-mrk-bsbadr-buysellback | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
+| edge:e-drv-cdmdata-bsbadr | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
+| edge:e-drv-finality-bsbadr | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
+| edge:e-dec-cdmdev-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
+| edge:e-lnk-bsb-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |

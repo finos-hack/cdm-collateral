@@ -19,7 +19,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// quantity and trade hash change in one transaction; no cash moves. Interim interest and manufactured income are paid in
 /// the cash token by agreed phases (wp-adr-repo-income). Two offsetting purchased repos between the same parties pair off
 /// on their common Repurchase Date (wp-adr-repo-pair-off): both are repurchased in one transaction, no securities move, and
-/// only the difference of the two Repurchase Prices is paid.
+/// only the difference of the two Repurchase Prices is paid. A buy/sell-back (wp-adr-repo-buy-sell-back) is booked as such
+/// and settles like a repo, except that agreed income moves no cash and lowers its Sell Back Price instead, and it has no
+/// interim interest.
 contract RepoSettlement {
     using SafeERC20 for IERC20;
 
@@ -73,6 +75,10 @@ contract RepoSettlement {
     mapping(bytes32 => mapping(bytes32 => bool)) private _incomePaid;
     /// @dev The other repo of a repo's pending pair-off; zero when none is pending.
     mapping(bytes32 => bytes32) private _pairOffWith;
+    /// @dev Whether a repo is a buy/sell-back (wp-adr-repo-buy-sell-back).
+    mapping(bytes32 => bool) private _buySellBack;
+    /// @dev A buy/sell-back's agreed income deductions in the current term: the Seller pays the Repurchase Price less this.
+    mapping(bytes32 => uint256) private _incomeDeduction;
 
     event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash);
     event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash);
@@ -107,6 +113,8 @@ contract RepoSettlement {
     error NotAPair();
     error PairOffPending();
     error NoPairOff();
+    error NotForBuySellBack();
+    error DeductionTooLarge();
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash
     /// token, the Purchase Price and the Repurchase Price, and the hash of the CDM trade.
@@ -120,6 +128,35 @@ contract RepoSettlement {
         uint256 repurchasePrice,
         bytes32 tradeHash
     ) external {
+        _book(repoId, buyer, security, quantity, cash, purchasePrice, repurchasePrice, tradeHash);
+    }
+
+    /// @notice The seller books a buy/sell-back (wp-adr-repo-buy-sell-back): the same terms as a repo, and the CDM trade
+    /// carries CDM's trade type BuySellBack.
+    function bookBuySellBack(
+        bytes32 repoId,
+        address buyer,
+        address security,
+        uint256 quantity,
+        address cash,
+        uint256 purchasePrice,
+        uint256 repurchasePrice,
+        bytes32 tradeHash
+    ) external {
+        _book(repoId, buyer, security, quantity, cash, purchasePrice, repurchasePrice, tradeHash);
+        _buySellBack[repoId] = true;
+    }
+
+    function _book(
+        bytes32 repoId,
+        address buyer,
+        address security,
+        uint256 quantity,
+        address cash,
+        uint256 purchasePrice,
+        uint256 repurchasePrice,
+        bytes32 tradeHash
+    ) private {
         if (_repos[repoId].state != RepoState.None) revert RepoExists(repoId);
         if (buyer == msg.sender || buyer == address(0)) revert SelfCounterparty();
         if (quantity == 0 || purchasePrice == 0 || repurchasePrice < purchasePrice) revert ZeroAmount();
@@ -169,7 +206,7 @@ contract RepoSettlement {
             if (paired != bytes32(0)) _clearPairOff(repoId, paired);
             _close(repoId, cdmHash);
             IERC20(r.security).safeTransferFrom(r.buyer, r.seller, r.quantity);
-            IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, r.repurchasePrice);
+            IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, sellBackPrice(repoId));
         }
         emit RepoSettled(repoId, phase, cdmHash);
     }
@@ -259,6 +296,7 @@ contract RepoSettlement {
     /// which becomes the trade hash. The buyer's matching instruction agrees: it moves the cash and lowers the Repurchase Price.
     function instructInterimInterest(bytes32 repoId, bytes32 cdmHash, uint256 amount, uint256 newRepurchasePrice) external {
         if (amount == 0) revert ZeroAmount();
+        if (_buySellBack[repoId]) revert NotForBuySellBack();
         Repo storage p = _load(repoId);
         _requireFirstInstruction(repoId, Phase.InterimInterest, p.seller);
         if (newRepurchasePrice < p.purchasePrice) revert ZeroAmount();
@@ -272,7 +310,8 @@ contract RepoSettlement {
 
     /// @notice The buyer pays manufactured income on a purchased repo (GMRA paragraph 5, wp-adr-repo-income) with the hash
     /// of the document. The seller's matching instruction agrees and moves the cash. The trade does not change. One
-    /// document is paid once.
+    /// document is paid once. For a buy/sell-back (wp-adr-repo-buy-sell-back) the amount is the income deduction: the
+    /// agreement moves no cash and adds it to the repo's income deduction, which lowers the Sell Back Price.
     function instructIncome(bytes32 repoId, bytes32 cdmHash, uint256 amount) external {
         if (amount == 0) revert ZeroAmount();
         if (_incomePaid[repoId][cdmHash]) revert IncomeAlreadyPaid();
@@ -282,7 +321,13 @@ contract RepoSettlement {
         (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Income, cdmHash, terms, false);
         if (!settles) return;
         _incomePaid[repoId][cdmHash] = true;
-        IERC20(r.cash).safeTransferFrom(r.buyer, r.seller, amount);
+        if (_buySellBack[repoId]) {
+            uint256 deduction = _incomeDeduction[repoId] + amount;
+            if (deduction >= r.repurchasePrice) revert DeductionTooLarge();
+            _incomeDeduction[repoId] = deduction;
+        } else {
+            IERC20(r.cash).safeTransferFrom(r.buyer, r.seller, amount);
+        }
         emit RepoSettled(repoId, Phase.Income, cdmHash);
     }
 
@@ -303,7 +348,8 @@ contract RepoSettlement {
     /// @notice A party instructs the roll of a purchased repo (wp-adr-repo-roll) with the hash of the CDM roll event, which
     /// becomes the trade hash, and the new Repurchase Price. The other party's matching instruction agrees: the seller pays
     /// the buyer the stored Repurchase Price less the Purchase Price, and the Repurchase Price is updated. The securities do
-    /// not move. Each service checks the Repurchase Date.
+    /// not move. Each service checks the Repurchase Date. For a buy/sell-back the income deduction is netted: the Seller
+    /// pays the Price Differential less the deduction, the Buyer pays any excess, and the deduction resets for the new term.
     function instructRoll(bytes32 repoId, bytes32 cdmHash, uint256 newRepurchasePrice) external {
         Repo storage p = _load(repoId);
         if (newRepurchasePrice < p.purchasePrice) revert ZeroAmount();
@@ -311,8 +357,11 @@ contract RepoSettlement {
         (Repo storage r, bool settles) = _instructReplacement(repoId, Phase.Roll, cdmHash, terms, true);
         if (!settles) return;
         uint256 interest = r.repurchasePrice - r.purchasePrice;
+        uint256 deduction = _incomeDeduction[repoId];
         r.repurchasePrice = newRepurchasePrice;
-        if (interest > 0) IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, interest);
+        delete _incomeDeduction[repoId];
+        if (interest > deduction) IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, interest - deduction);
+        else if (deduction > interest) IERC20(r.cash).safeTransferFrom(r.buyer, r.seller, deduction - interest);
         emit RepoSettled(repoId, Phase.Roll, cdmHash);
     }
 
@@ -378,6 +427,7 @@ contract RepoSettlement {
         if (b.state != RepoState.Purchased) revert WrongState(b.state);
         if (a.seller != b.buyer || a.buyer != b.seller || a.security != b.security || a.quantity != b.quantity || a.cash != b.cash)
             revert NotAPair();
+        if (_buySellBack[repoA] != _buySellBack[repoB]) revert NotAPair();
         bytes32 pendingA = _pairOffWith[repoA];
         bytes32 pendingB = _pairOffWith[repoB];
         if ((pendingA != bytes32(0) && pendingA != repoB) || (pendingB != bytes32(0) && pendingB != repoA)) revert PairOffPending();
@@ -406,10 +456,12 @@ contract RepoSettlement {
         _clearPairOff(repoA, repoB);
         _close(repoA, cdmHash);
         _close(repoB, cdmHash);
-        if (a.repurchasePrice > b.repurchasePrice) {
-            IERC20(a.cash).safeTransferFrom(a.seller, a.buyer, a.repurchasePrice - b.repurchasePrice);
-        } else if (b.repurchasePrice > a.repurchasePrice) {
-            IERC20(b.cash).safeTransferFrom(b.seller, b.buyer, b.repurchasePrice - a.repurchasePrice);
+        uint256 priceA = sellBackPrice(repoA);
+        uint256 priceB = sellBackPrice(repoB);
+        if (priceA > priceB) {
+            IERC20(a.cash).safeTransferFrom(a.seller, a.buyer, priceA - priceB);
+        } else if (priceB > priceA) {
+            IERC20(b.cash).safeTransferFrom(b.seller, b.buyer, priceB - priceA);
         }
         emit RepoSettled(repoA, Phase.PairOff, cdmHash);
         emit RepoSettled(repoB, Phase.PairOff, cdmHash);
@@ -463,6 +515,21 @@ contract RepoSettlement {
         delete _instructions[repoB][Phase.PairOff];
         delete _pairOffWith[repoA];
         delete _pairOffWith[repoB];
+    }
+
+    /// @notice Whether a repo is a buy/sell-back.
+    function isBuySellBack(bytes32 repoId) external view returns (bool) {
+        return _buySellBack[repoId];
+    }
+
+    /// @notice A buy/sell-back's agreed income deductions in the current term; zero for a repo.
+    function incomeDeduction(bytes32 repoId) external view returns (uint256) {
+        return _incomeDeduction[repoId];
+    }
+
+    /// @notice What the Seller pays at the repurchase: the Repurchase Price less any buy/sell-back income deduction.
+    function sellBackPrice(bytes32 repoId) public view returns (uint256) {
+        return _repos[repoId].repurchasePrice - _incomeDeduction[repoId];
     }
 
     function getRepo(bytes32 repoId) external view returns (Repo memory) {

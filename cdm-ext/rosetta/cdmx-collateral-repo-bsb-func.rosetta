@@ -1,0 +1,76 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: buy/sell-back economics (gap G33, wp-adr-repo-buy-sell-back). CDM qualifies a buy/sell-back (AssetPayoutTradeTypeEnum BuySellBack, Qualify_BuySellBack) and defines that the income on the securities reduces the repurchase price, with interest for the delay, but has no function for it.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.base.math.*
+import cdm.base.datetime.*
+import cdm.product.asset.*
+import cdm.product.common.schedule.*
+import cdm.product.qualification.*
+
+func RepoIsBuySellBack: <"Whether a Transaction is a buy/sell-back: CDM's Qualify_BuySellBack on its economic terms.">
+    inputs:
+        tradeState TradeState (1..1)
+    output:
+        isBuySellBack boolean (1..1)
+
+    set isBuySellBack:
+        Qualify_BuySellBack(tradeState -> trade -> product -> economicTerms)
+
+func BuySellBackIncomeDeduction: <"The amount income lowers a buy/sell-back's Sell Back Price by (wp-adr-repo-buy-sell-back): the income amount plus interest on it at the repo rate, by the payout's day count fraction, from the income date to the Repurchase Date (CDM's FixedAmount over that period); rounded to the nearest at the given number of decimals.">
+    inputs:
+        tradeState TradeState (1..1)
+        incomeAmount number (1..1) <"The income paid on the securities: income per unit x quantity.">
+        incomeDate date (1..1)
+        precision int (1..1)
+    output:
+        deduction number (1..1)
+
+    alias purchaseDate: tradeState -> trade -> product -> economicTerms -> effectiveDate -> adjustableDate -> unadjustedDate
+    alias repurchaseDate: tradeState -> trade -> product -> economicTerms -> terminationDate -> adjustableDate -> unadjustedDate
+
+    alias interest:
+        FixedAmount(
+                RepoInterestRatePayout(tradeState),
+                incomeAmount,
+                empty,
+                CalculationPeriodData {
+                    startDate: incomeDate,
+                    endDate: repurchaseDate,
+                    daysInPeriod: DateDifference(incomeDate, repurchaseDate),
+                    daysInLeapYearPeriod: LeapYearDateDifference(incomeDate, repurchaseDate),
+                    isFirstPeriod: True,
+                    isLastPeriod: True
+                }
+            )
+
+    condition BuySellBack: <"Only a buy/sell-back folds income into its price; a repo pays manufactured income.">
+        RepoIsBuySellBack(tradeState)
+    condition PositiveIncome:
+        incomeAmount > 0
+    condition IncomeDateInTheTerm: <"The income date is within the Transaction's term.">
+        incomeDate >= purchaseDate and incomeDate <= repurchaseDate
+
+    set deduction:
+        RoundToPrecision(
+                RoundToPrecision(incomeAmount + interest, 10, RoundingDirectionEnum -> Nearest, True),
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )
+
+func BuySellBackSellBackPrice: <"The Sell Back Price of a buy/sell-back (wp-adr-repo-buy-sell-back): its Repurchase Price less the income deductions agreed in the term; for a repo, the Repurchase Price.">
+    inputs:
+        tradeState TradeState (1..1)
+        incomeDeduction number (1..1) <"The sum of the BuySellBackIncomeDeduction amounts agreed in the term; zero for a repo.">
+        precision int (1..1)
+    output:
+        sellBackPrice number (1..1)
+
+    condition NoDeductionOnARepo:
+        if RepoIsBuySellBack(tradeState) = False then incomeDeduction = 0
+    condition DeductionBelowThePrice:
+        incomeDeduction >= 0 and incomeDeduction < RepoRepurchasePrice(tradeState, precision) -> value
+
+    set sellBackPrice:
+        RepoRepurchasePrice(tradeState, precision) -> value - incomeDeduction
