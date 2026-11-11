@@ -3,7 +3,7 @@ id: wp-adr-gmsla-marking
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T18:15:49Z
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-marking
   sourceRef: e56a84b64d6211be054d63c35b84556e556a0feb
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T18:15:49Z
   confidence: 0.55
 createdAt: 2026-11-11T18:15:49Z
-updatedAt: 2026-11-11T18:15:49Z
+updatedAt: 2026-11-11T18:19:11Z
 ```
 # ADR: the pair's securities loans are marked together under GMSLA paragraph 5.4; the party the net figure favours calls through the existing margin-call path, above its minimum transfer amount
 

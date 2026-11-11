@@ -1174,3 +1174,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-mrkadr | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
 | edge:e-dec-cdmdev-smemrk | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
 | edge:e-lnk-gmslamrk-smemrk | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
+| waypoint:wp-adr-gmsla-marking | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| node:task-sme-gmsla-marking-rules | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| edge:e-mrk-mrkadr-gmslamrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| edge:e-drv-cdmdata-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| edge:e-drv-finality-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| edge:e-dec-cdmdev-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
+| edge:e-lnk-gmslamrk-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |

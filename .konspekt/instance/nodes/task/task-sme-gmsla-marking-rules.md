@@ -3,7 +3,7 @@ id: task-sme-gmsla-marking-rules
 type: task
 title: Confirm with a business SME the rules for marking securities loans under the GMSLA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-marking
   sourceRef: e56a84b64d6211be054d63c35b84556e556a0feb
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T18:15:49Z
   confidence: 0.55
 createdAt: 2026-11-11T18:15:49Z
-updatedAt: 2026-11-11T18:15:49Z
+updatedAt: 2026-11-11T18:19:11Z
 ```
 # Task: confirm the rules for marking securities loans under the GMSLA
 
