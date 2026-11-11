@@ -1165,3 +1165,5 @@ excluded.
 | task-repo-default-close-out | 461bbfdb0daf252c2c21eed06d699f4c03015df6 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T14:16:58Z |
 | task-securities-lending-gmsla-workflows | bf56ee10eb7683a124c0531ebc360d945d840d06 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T15:06:56Z |
 | task-securities-lending-gmsla-workflows | bf56ee10eb7683a124c0531ebc360d945d840d06 | docs/analysis/defects.md | 2026-11-11T15:06:56Z |
+| task-securities-lending-gmsla-workflows | f7a192ce82a2032739228729051211079b685efa | architecture/prototype.architecture.json | 2026-11-11T15:13:23Z |
+| task-securities-lending-gmsla-workflows | f7a192ce82a2032739228729051211079b685efa | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T15:13:23Z |
