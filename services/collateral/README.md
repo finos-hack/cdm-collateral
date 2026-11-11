@@ -155,7 +155,11 @@ date; both securities move and no cash), `POST /repos/{id}/substitute/refuse`,
 `POST /repos/{id}/interim-interest` and `POST /repos/{id}/income` with `/agree` and `/refuse` (the Seller pays accrued interest, the
 Buyer pays manufactured income entered by hand; the other party agrees or refuses; wp-adr-repo-income),
 `POST /repos/{id}/roll` with `/agree` and `/refuse` (on the Repurchase Date either party proposes the new Repurchase Date and
-repo rate; the other party agrees or refuses; wp-adr-repo-roll), and
+repo rate; the other party agrees or refuses; wp-adr-repo-roll),
+`POST /repos/{id}/pair-off` (body `{otherRepoId}`) with `/agree` and `/refuse` (on the common Repurchase Date either party
+proposes the pair-off of two offsetting purchased repos; the other party agrees, only if its service builds the same cdm-ext
+`RepoPairOffSettlement` document, or refuses; on agreement both repos are repurchased and only the net cash is paid;
+wp-adr-repo-pair-off), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.

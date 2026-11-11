@@ -17,7 +17,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// quantity, Repurchase Price and trade hash change in one transaction. The seller can substitute the securities of a
 /// purchased repo with the buyer's agreement (wp-adr-repo-substitution): both securities move and the stored security,
 /// quantity and trade hash change in one transaction; no cash moves. Interim interest and manufactured income are paid in
-/// the cash token by agreed phases (wp-adr-repo-income).
+/// the cash token by agreed phases (wp-adr-repo-income). Two offsetting purchased repos between the same parties pair off
+/// on their common Repurchase Date (wp-adr-repo-pair-off): both are repurchased in one transaction, no securities move, and
+/// only the difference of the two Repurchase Prices is paid.
 contract RepoSettlement {
     using SafeERC20 for IERC20;
 
@@ -37,7 +39,8 @@ contract RepoSettlement {
         Substitution,
         InterimInterest,
         Income,
-        Roll
+        Roll,
+        PairOff
     }
 
     struct Repo {
@@ -68,6 +71,8 @@ contract RepoSettlement {
     mapping(bytes32 => bytes32) private _replacementTerms;
     /// @dev Manufactured income documents already paid on a repo, by hash.
     mapping(bytes32 => mapping(bytes32 => bool)) private _incomePaid;
+    /// @dev The other repo of a repo's pending pair-off; zero when none is pending.
+    mapping(bytes32 => bytes32) private _pairOffWith;
 
     event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash);
     event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash);
@@ -76,6 +81,8 @@ contract RepoSettlement {
     event RepoSubstitutionRefused(bytes32 indexed repoId, bytes32 cdmHash);
     event RepoPaymentRefused(bytes32 indexed repoId, Phase phase, bytes32 cdmHash);
     event RepoRollRefused(bytes32 indexed repoId, bytes32 cdmHash);
+    event RepoPairedOff(bytes32 indexed repoA, bytes32 indexed repoB, bytes32 cdmHash);
+    event RepoPairOffRefused(bytes32 indexed repoA, bytes32 indexed repoB, bytes32 cdmHash);
 
     error RepoExists(bytes32 repoId);
     error NoRepo(bytes32 repoId);
@@ -97,6 +104,9 @@ contract RepoSettlement {
     error NotAPaymentPhase();
     error IncomeAlreadyPaid();
     error NoRoll();
+    error NotAPair();
+    error PairOffPending();
+    error NoPairOff();
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash
     /// token, the Purchase Price and the Repurchase Price, and the hash of the CDM trade.
@@ -155,15 +165,9 @@ contract RepoSettlement {
             IERC20(r.security).safeTransferFrom(r.seller, r.buyer, r.quantity);
             IERC20(r.cash).safeTransferFrom(r.buyer, r.seller, r.purchasePrice);
         } else {
-            r.state = RepoState.Repurchased;
-            r.repurchaseHash = cdmHash;
-            delete _instructions[repoId][Phase.Reprice];
-            delete _instructions[repoId][Phase.Adjustment];
-            delete _instructions[repoId][Phase.Substitution];
-            delete _instructions[repoId][Phase.InterimInterest];
-            delete _instructions[repoId][Phase.Income];
-            delete _instructions[repoId][Phase.Roll];
-            delete _replacementTerms[repoId];
+            bytes32 paired = _pairOffWith[repoId];
+            if (paired != bytes32(0)) _clearPairOff(repoId, paired);
+            _close(repoId, cdmHash);
             IERC20(r.security).safeTransferFrom(r.buyer, r.seller, r.quantity);
             IERC20(r.cash).safeTransferFrom(r.seller, r.buyer, r.repurchasePrice);
         }
@@ -340,13 +344,7 @@ contract RepoSettlement {
     {
         r = _load(repoId);
         if (r.state != RepoState.Purchased) revert WrongState(r.state);
-        Instructions storage repurchase = _instructions[repoId][Phase.Repurchase];
-        if (repurchase.seller != bytes32(0) || repurchase.buyer != bytes32(0)) revert RepurchaseInstructed();
-        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.Roll); p++) {
-            if (Phase(p) == phase) continue;
-            Instructions storage rival = _instructions[repoId][Phase(p)];
-            if (rival.seller != bytes32(0) || rival.buyer != bytes32(0)) revert ReplacementPending();
-        }
+        _requireNothingPending(repoId, phase);
         Instructions storage ins = _instructions[repoId][phase];
         bool isSeller = msg.sender == r.seller;
         if (!isSeller && msg.sender != r.buyer) revert NotAParty();
@@ -365,6 +363,106 @@ contract RepoSettlement {
         delete _replacementTerms[repoId];
         if (replacesTrade) r.tradeHash = cdmHash;
         return (r, true);
+    }
+
+    /// @notice A party instructs the pair-off of two purchased repos (wp-adr-repo-pair-off) with the hash of the CDM pair-off
+    /// settlement document. The repos must be between the same two parties in opposite directions, with the same security,
+    /// quantity and cash token; each service checks the common Repurchase Date. The other party's instruction with the same
+    /// hash, naming the two repos in either order, agrees: both repos are repurchased, no securities move, and the Seller of
+    /// the repo with the higher Repurchase Price pays its Buyer the difference.
+    function instructPairOff(bytes32 repoA, bytes32 repoB, bytes32 cdmHash) external {
+        if (repoA == repoB) revert NotAPair();
+        Repo storage a = _load(repoA);
+        Repo storage b = _load(repoB);
+        if (a.state != RepoState.Purchased) revert WrongState(a.state);
+        if (b.state != RepoState.Purchased) revert WrongState(b.state);
+        if (a.seller != b.buyer || a.buyer != b.seller || a.security != b.security || a.quantity != b.quantity || a.cash != b.cash)
+            revert NotAPair();
+        bytes32 pendingA = _pairOffWith[repoA];
+        bytes32 pendingB = _pairOffWith[repoB];
+        if ((pendingA != bytes32(0) && pendingA != repoB) || (pendingB != bytes32(0) && pendingB != repoA)) revert PairOffPending();
+        _requireNothingPending(repoA, Phase.PairOff);
+        _requireNothingPending(repoB, Phase.PairOff);
+        bool sellerOfA = msg.sender == a.seller;
+        if (!sellerOfA && msg.sender != a.buyer) revert NotAParty();
+        Instructions storage insA = _instructions[repoA][Phase.PairOff];
+        Instructions storage insB = _instructions[repoB][Phase.PairOff];
+        if ((sellerOfA ? insA.seller : insA.buyer) != bytes32(0)) revert AlreadyInstructed();
+        bytes32 other = sellerOfA ? insA.buyer : insA.seller;
+        if (other != bytes32(0) && other != cdmHash) revert HashMismatch(other, cdmHash);
+        if (sellerOfA) {
+            insA.seller = cdmHash;
+            insB.buyer = cdmHash;
+        } else {
+            insA.buyer = cdmHash;
+            insB.seller = cdmHash;
+        }
+        _pairOffWith[repoA] = repoB;
+        _pairOffWith[repoB] = repoA;
+        emit RepoInstructed(repoA, Phase.PairOff, msg.sender, cdmHash);
+        emit RepoInstructed(repoB, Phase.PairOff, msg.sender, cdmHash);
+        if (other == bytes32(0)) return;
+
+        _clearPairOff(repoA, repoB);
+        _close(repoA, cdmHash);
+        _close(repoB, cdmHash);
+        if (a.repurchasePrice > b.repurchasePrice) {
+            IERC20(a.cash).safeTransferFrom(a.seller, a.buyer, a.repurchasePrice - b.repurchasePrice);
+        } else if (b.repurchasePrice > a.repurchasePrice) {
+            IERC20(b.cash).safeTransferFrom(b.seller, b.buyer, b.repurchasePrice - a.repurchasePrice);
+        }
+        emit RepoSettled(repoA, Phase.PairOff, cdmHash);
+        emit RepoSettled(repoB, Phase.PairOff, cdmHash);
+        emit RepoPairedOff(repoA, repoB, cdmHash);
+    }
+
+    /// @notice The party that did not propose the pending pair-off of a repo refuses it, which clears it on both repos.
+    function refusePairOff(bytes32 repoId) external {
+        Repo storage r = _load(repoId);
+        bytes32 paired = _pairOffWith[repoId];
+        if (paired == bytes32(0)) revert NoPairOff();
+        bool isSeller = msg.sender == r.seller;
+        if (!isSeller && msg.sender != r.buyer) revert NotAParty();
+        Instructions storage ins = _instructions[repoId][Phase.PairOff];
+        bytes32 proposed = isSeller ? ins.buyer : ins.seller;
+        if (proposed == bytes32(0)) revert NoPairOff();
+        _clearPairOff(repoId, paired);
+        emit RepoPairOffRefused(repoId, paired, proposed);
+    }
+
+    /// @notice The other repo of a repo's pending pair-off, or zero.
+    function pairOffWith(bytes32 repoId) external view returns (bytes32) {
+        return _pairOffWith[repoId];
+    }
+
+    /// @dev No repurchase instruction and no instruction of another phase after the purchase is pending on the repo.
+    function _requireNothingPending(bytes32 repoId, Phase phase) private view {
+        Instructions storage repurchase = _instructions[repoId][Phase.Repurchase];
+        if (repurchase.seller != bytes32(0) || repurchase.buyer != bytes32(0)) revert RepurchaseInstructed();
+        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.PairOff); p++) {
+            if (Phase(p) == phase) continue;
+            Instructions storage rival = _instructions[repoId][Phase(p)];
+            if (rival.seller != bytes32(0) || rival.buyer != bytes32(0)) {
+                if (Phase(p) == Phase.PairOff) revert PairOffPending();
+                revert ReplacementPending();
+            }
+        }
+    }
+
+    /// @dev Marks a repo repurchased under a settlement hash and clears every phase pending on it.
+    function _close(bytes32 repoId, bytes32 cdmHash) private {
+        Repo storage r = _repos[repoId];
+        r.state = RepoState.Repurchased;
+        r.repurchaseHash = cdmHash;
+        for (uint8 p = uint8(Phase.Reprice); p <= uint8(Phase.PairOff); p++) delete _instructions[repoId][Phase(p)];
+        delete _replacementTerms[repoId];
+    }
+
+    function _clearPairOff(bytes32 repoA, bytes32 repoB) private {
+        delete _instructions[repoA][Phase.PairOff];
+        delete _instructions[repoB][Phase.PairOff];
+        delete _pairOffWith[repoA];
+        delete _pairOffWith[repoB];
     }
 
     function getRepo(bytes32 repoId) external view returns (Repo memory) {

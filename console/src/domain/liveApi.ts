@@ -221,6 +221,10 @@ export const api = {
   proposeRepoRoll: (p: LiveParty, id: string, roll: { newRepurchaseDate: string; ratePercent: string }) => req<{ repoId: string }>(p, "POST", `/repos/${id}/roll`, roll),
   agreeRepoRoll: (p: LiveParty, id: string) => req<{ repoId: string }>(p, "POST", `/repos/${id}/roll/agree`, {}),
   refuseRepoRoll: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/roll/refuse`, {}),
+  /** A pair-off of two offsetting repos on their common Repurchase Date: either party proposes, the other agrees or refuses (wp-adr-repo-pair-off). */
+  proposeRepoPairOff: (p: LiveParty, id: string, otherRepoId: string) => req<{ repoId: string; cdmHash: string }>(p, "POST", `/repos/${id}/pair-off`, { otherRepoId }),
+  agreeRepoPairOff: (p: LiveParty, id: string) => req<{ repoId: string; cdmHash: string }>(p, "POST", `/repos/${id}/pair-off/agree`, {}),
+  refuseRepoPairOff: (p: LiveParty, id: string) => req<{ refuseTx: string }>(p, "POST", `/repos/${id}/pair-off/refuse`, {}),
   /** The holder of Cash Margin states and pays the interest on it for one period, at the rate entered by hand. */
   payRepoMarginInterest: (p: LiveParty, period: { periodStart: string; periodEnd: string; observedRatePct: string }) =>
     req<{ interestId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/interest", period),
@@ -342,6 +346,12 @@ export interface LiveRepo {
   rollToDate?: string;
   rollRatePercent?: string;
   rollInterest?: string;
+  /** A pending pair-off: proposed by this party, or for this party to decide; the other repo; the net cash for this party
+   *  (positive: received, negative: paid); what is wrong with it, if anything. */
+  pairOffPending?: "requested" | "toDecide";
+  pairOffWith?: string;
+  pairOffNet?: string;
+  pairOffProblem?: string;
 }
 
 export interface LiveRepos {

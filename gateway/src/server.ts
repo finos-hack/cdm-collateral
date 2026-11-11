@@ -266,6 +266,14 @@ route("POST", "/ledger/v1/repos/:id/roll", async (p, b) => {
 });
 route("POST", "/ledger/v1/repos/:id/roll/refuse", async (p) => J(await adapter.refuseRepoRoll(p.id as Hex)));
 
+// A pair-off of two offsetting repos on their common Repurchase Date (wp-adr-repo-pair-off): either party instructs with
+// the other repo, the other party's matching instruction agrees; only the party paying the net cash approves an amount.
+route("POST", "/ledger/v1/repos/:id/pair-off", async (p, b) => {
+  await approveAll(b.approvals);
+  return J(await adapter.instructRepoPairOff(p.id as Hex, b.otherRepoId as Hex, b.cdmHash as Hex));
+});
+route("POST", "/ledger/v1/repos/:id/pair-off/refuse", async (p) => J(await adapter.refuseRepoPairOff(p.id as Hex)));
+
 route("GET", "/ledger/v1/repos/:id", async (p) => J(await adapter.getRepo(p.id as Hex)));
 
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));

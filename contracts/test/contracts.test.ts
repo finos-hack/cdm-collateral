@@ -1298,5 +1298,139 @@ describe("CDM collateral contracts", async () => {
         assert.equal((await repo.read.getInstructions([R, ROLL]))[0], ZERO_BYTES32);
       });
     });
+    describe("pair-off (task-repo-pair-off)", () => {
+      const PAIR_OFF = 8, ROLL = 7;
+      const R2 = H("REPO-2");
+      // REPO-1: A sells 103 tUST to B, Repurchase Price 10,009. REPO-2: B sells the same 103 tUST back to A for 10,000,
+      // Repurchase Price 10,006 (unless given). The pair-off nets to 3 tUSD from A to B.
+      const bothPurchased = async (rp2 = 10006n) => {
+        await repo.write.affirm([R, H("trade")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankA.account });
+        await repo.write.instruct([R, PURCHASE, H("p")], { account: bankB.account });
+        await repo.write.book([R2, aAddr, tUST.address, 103n, tUSD.address, 10000n, rp2, H("trade2")], { account: bankB.account });
+        await repo.write.affirm([R2, H("trade2")], { account: bankA.account });
+        await approveLegs(tUST, bankB, 103n, bankA, 10000n);
+        await repo.write.instruct([R2, PURCHASE, H("p2")], { account: bankB.account });
+        await repo.write.instruct([R2, PURCHASE, H("p2")], { account: bankA.account });
+      };
+
+      for (const [first, name] of [[0, "the seller of REPO-1 proposes"], [1, "the buyer of REPO-1 proposes"]] as const) {
+        it(`${name}: the agreement repurchases both repos, no securities move and only the net cash is paid`, async () => {
+          await bothPurchased();
+          await tUSD.write.approve([repo.address, 3n], { account: bankA.account });
+          const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr), secA = await bal(tUST, aAddr), secB = await bal(tUST, bAddr);
+          const parties = [bankA, bankB];
+          await repo.write.instructPairOff([R, R2, H("po")], { account: parties[first].account });
+          assert.equal(await repo.read.pairOffWith([R]), R2);
+          assert.equal(await repo.read.pairOffWith([R2]), R);
+          assert.equal(await bal(tUSD, aAddr), cashA); // one instruction moves nothing
+          await repo.write.instructPairOff([R2, R, H("po")], { account: parties[1 - first].account }); // either order
+          for (const id of [R, R2]) {
+            const r = await repo.read.getRepo([id]);
+            assert.equal(r.state, 4); // Repurchased
+            assert.equal(r.repurchaseHash, H("po"));
+            assert.equal(await repo.read.pairOffWith([id]), ZERO_BYTES32);
+            assert.equal((await repo.read.getInstructions([id, PAIR_OFF]))[0], ZERO_BYTES32);
+          }
+          assert.equal(await bal(tUSD, aAddr), cashA - 3n);
+          assert.equal(await bal(tUSD, bAddr), cashB + 3n);
+          assert.equal(await bal(tUST, aAddr), secA);
+          assert.equal(await bal(tUST, bAddr), secB);
+        });
+      }
+
+      it("moves no cash when the Repurchase Prices are equal, and the Seller of REPO-2 pays when its price is higher", async () => {
+        await bothPurchased(10009n);
+        const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr);
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account });
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankB.account });
+        assert.equal(await bal(tUSD, aAddr), cashA);
+        assert.equal(await bal(tUSD, bAddr), cashB);
+      });
+
+      it("pays from the Seller of REPO-2 when its Repurchase Price is the higher", async () => {
+        await bothPurchased(10015n);
+        await tUSD.write.approve([repo.address, 6n], { account: bankB.account });
+        const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr);
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankB.account });
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account });
+        assert.equal(await bal(tUSD, aAddr), cashA + 6n);
+        assert.equal(await bal(tUSD, bAddr), cashB - 6n);
+      });
+
+      it("rejects one repo twice, repos that do not offset, an outsider, a different hash and a repeated instruction", async () => {
+        await bothPurchased();
+        await assert.rejects(repo.write.instructPairOff([R, R, H("po")], { account: bankA.account }));
+        // REPO-3: A sells to B again, the same direction as REPO-1.
+        const R3 = H("REPO-3");
+        await tUST.write.mint([aAddr, 103n]);
+        await tUSD.write.mint([bAddr, 10000n]);
+        await repo.write.book([R3, bAddr, tUST.address, 103n, tUSD.address, 10000n, 10009n, H("t3")], { account: bankA.account });
+        await repo.write.affirm([R3, H("t3")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([R3, PURCHASE, H("p3")], { account: bankA.account });
+        await repo.write.instruct([R3, PURCHASE, H("p3")], { account: bankB.account });
+        await assert.rejects(repo.write.instructPairOff([R, R3, H("po")], { account: bankA.account }));
+        // REPO-4: B sells to A, but another quantity; not purchased yet.
+        const R4 = H("REPO-4");
+        await repo.write.book([R4, aAddr, tUST.address, 50n, tUSD.address, 5000n, 5003n, H("t4")], { account: bankB.account });
+        await assert.rejects(repo.write.instructPairOff([R, R4, H("po")], { account: bankA.account }));
+        await assert.rejects(repo.write.instructPairOff([R, R2, H("po")], { account: bankC.account }));
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account });
+        await assert.rejects(repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account }));
+        await assert.rejects(repo.write.instructPairOff([R2, R, H("other")], { account: bankB.account }));
+        assert.equal((await repo.read.getRepo([R])).state, 3); // still Purchased
+      });
+
+      it("only the other party refuses, and a refusal clears the pair-off on both repos and moves nothing", async () => {
+        await bothPurchased();
+        await assert.rejects(repo.write.refusePairOff([R], { account: bankB.account }));
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account });
+        await assert.rejects(repo.write.refusePairOff([R2], { account: bankA.account }));
+        await assert.rejects(repo.write.refusePairOff([R], { account: bankC.account }));
+        const cashA = await bal(tUSD, aAddr);
+        await repo.write.refusePairOff([R2], { account: bankB.account });
+        for (const id of [R, R2]) {
+          assert.equal(await repo.read.pairOffWith([id]), ZERO_BYTES32);
+          assert.equal((await repo.read.getInstructions([id, PAIR_OFF]))[1], ZERO_BYTES32);
+          assert.equal((await repo.read.getRepo([id])).state, 3);
+        }
+        assert.equal(await bal(tUSD, aAddr), cashA);
+      });
+
+      it("a repurchase instruction blocks a pair-off, and a repurchased repo cannot pair off", async () => {
+        await bothPurchased();
+        await tUST.write.mint([bAddr, 103n]); // B delivered its 103 tUST in REPO-2
+        await tUSD.write.mint([aAddr, 10000n]); // A paid 10,000 tUSD for REPO-2
+        await tUST.write.approve([repo.address, 103n], { account: bankB.account });
+        await tUSD.write.approve([repo.address, 10009n], { account: bankA.account });
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankA.account });
+        await assert.rejects(repo.write.instructPairOff([R, R2, H("po")], { account: bankB.account }));
+
+        // REPO-1 settles its repurchase; it can no longer pair off.
+        await repo.write.instruct([R, REPURCHASE, H("r")], { account: bankB.account });
+        assert.equal((await repo.read.getRepo([R])).state, 4);
+        await assert.rejects(repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account })); // R is repurchased
+      });
+
+      it("a pending pair-off blocks a roll on either repo, and the repurchase of one repo clears it on both", async () => {
+        await bothPurchased();
+        await repo.write.instructPairOff([R, R2, H("po")], { account: bankA.account });
+        const rp2 = (await repo.read.getRepo([R2])).repurchasePrice;
+        await assert.rejects(repo.write.instructRoll([R2, H("roll"), rp2], { account: bankB.account }));
+        assert.equal((await repo.read.getInstructions([R2, ROLL]))[0], ZERO_BYTES32);
+        // The repurchase of REPO-2 settles despite the pending pair-off and clears it on both repos.
+        await tUSD.write.mint([bAddr, 6n]); // B holds 10,000 tUSD and owes the Price Differential
+        await tUST.write.approve([repo.address, 103n], { account: bankA.account });
+        await tUSD.write.approve([repo.address, 10006n], { account: bankB.account });
+        await repo.write.instruct([R2, REPURCHASE, H("r2")], { account: bankA.account });
+        await assert.rejects(repo.write.instructPairOff([R2, R, H("po")], { account: bankB.account })); // repurchase instructed
+        await repo.write.instruct([R2, REPURCHASE, H("r2")], { account: bankB.account });
+        assert.equal(await repo.read.pairOffWith([R]), ZERO_BYTES32);
+        assert.equal((await repo.read.getInstructions([R, PAIR_OFF]))[0], ZERO_BYTES32);
+        assert.equal((await repo.read.getRepo([R])).state, 3); // REPO-1 is still open
+      });
+    });
   });
 });

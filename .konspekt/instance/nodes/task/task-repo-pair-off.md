@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-10T23:26:13Z
+updatedAt: 2026-11-11T00:07:12Z
 ```
 # Task: repo pair-off
 
@@ -33,4 +33,9 @@ assumptions in [[task-sme-repo-pair-off-rules]].
 temporary test over the pair-off: count the payouts and evaluate CDM's qualification function on each resulting trade.
 Record the result in the G30 row of `docs/analysis/cdm-workflow-task-map.md` (checked on 2026-11-10 for the repo events of `CdmRepo` built through row C8).
 Done 2026-11-10 for CDM's pair-off of two offsetting repos: each trade keeps one `InterestRatePayout` and qualifies as a
-repo. Repeat it for the `cdm-ext` pair-off event once built.
+repo. Repeated 2026-11-10 for the `cdm-ext` pair-off event `RepoPairOffEvent`: the same result, kept as the test
+`PairOffTest.eachPairedTradeStillQualifiesAsARepoWithOnePayoutGapG30`.
+
+**Built 2026-11-10:** `cdm-ext` (`RepoPairOffEvent`, `RepoIsPairOff`, `RepoPairOffSettlement`, `RepoPairOffNetAmount`), the
+`PairOff` phase of `RepoSettlement`, the gateway and service routes, the console's pair-off actions and the live spec
+`flow-repo-pair-off`, which passes on a local stack.

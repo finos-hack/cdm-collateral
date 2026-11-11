@@ -7,6 +7,7 @@ import cdm.event.common.TradeState;
 import cdm.event.common.functions.Create_BusinessEvent;
 import cdm.event.common.functions.ResolveRepurchaseTransferInstruction;
 import cdmx.collateral.repo.RepoManufacturedIncome;
+import cdmx.collateral.repo.RepoPairOffSettlement;
 import cdmx.collateral.repo.RepoSettlement;
 import cdmx.collateral.repo.functions.RepoAccruedPriceDifferential;
 import cdmx.collateral.repo.functions.RepoAdjustmentInstruction;
@@ -14,6 +15,9 @@ import cdmx.collateral.repo.functions.RepoIsAdjustment;
 import cdmx.collateral.repo.functions.RepoIsReprice;
 import cdmx.collateral.repo.functions.RepoIsSubstitution;
 import cdmx.collateral.repo.functions.RepoManufacturedIncomeAmount;
+import cdmx.collateral.repo.functions.RepoPairOffEvent;
+import cdmx.collateral.repo.functions.RepoPairOffMatches;
+import cdmx.collateral.repo.functions.RepoPairOffNetAmount;
 import cdmx.collateral.repo.functions.RepoPurchasePrice;
 import cdmx.collateral.repo.functions.RepoPurchaseQuantity;
 import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
@@ -75,6 +79,10 @@ public final class CdmRepo {
 
     /** A purchase or repurchase settlement document and its hash. */
     public record Settlement(RepoSettlement settlement, String json, String hash) {}
+
+    /** The pair-off of two repos (wp-adr-repo-pair-off): the settlement document, and the net amount (the first repo's
+     *  Repurchase Price less the second's; the repos in the order of their ids). */
+    public record PairedOff(RepoPairOffSettlement settlement, String json, String hash, String first, String second, long netAmount) {}
 
     private CdmRepo() {}
 
@@ -298,6 +306,38 @@ public final class CdmRepo {
                 "securityTransfer", transfer(t.quantity(), o("financialUnit", "Share"), security(t.isin()), t.buyer(), t.seller(), t.repurchaseDate()),
                 "cashTransfer", transfer(rp, usd(), cash(), t.seller(), t.buyer(), t.repurchaseDate()),
                 "repurchase", tree(repurchaseEvent(ts, t.repurchaseDate()))));
+    }
+
+    /** Whether two repos can pair off in full: cdm-ext RepoPairOffMatches. */
+    public static boolean pairOffMatches(TradeState a, TradeState b) {
+        return CdmRuntime.fn(RepoPairOffMatches.class).evaluate(a, b);
+    }
+
+    /** The pair-off of two offsetting repos on their common Repurchase Date (wp-adr-repo-pair-off, defect D24): cdm-ext's
+     *  pair-off event, CDM's Repurchase event of each paired trade, and the net cash. The repos are taken in the order of
+     *  their trade identifiers, so both parties build the same document from the two trades. The pair reference is issued
+     *  by the Seller of the first repo and names both repos. The event is not run through the reference resolver: both
+     *  trades use the same scoped keys, and resolving the whole event binds one trade's references to the other's values. */
+    public static PairedOff pairOff(TradeState x, TradeState y, LocalDate date) {
+        boolean ordered = terms(x).tradeId().compareTo(terms(y).tradeId()) <= 0;
+        TradeState a = ordered ? x : y, b = ordered ? y : x;
+        Terms ta = terms(a), tb = terms(b);
+        if (!pairOffMatches(a, b)) throw new IllegalArgumentException("repos " + ta.tradeId() + " and " + tb.tradeId()
+                + " do not offset: they need the same parties in opposite directions, security, quantity, currency and Repurchase Date");
+        if (!date.equals(ta.repurchaseDate())) throw new IllegalArgumentException("a pair-off settles on the common Repurchase Date " + ta.repurchaseDate() + "; the date is " + date);
+        var pairReference = CdmRuntime.load(cdm.base.staticdata.identifier.Identifier.class, o("issuer", o("@data", ta.seller()),
+                "assignedIdentifier", l(o("identifier", o("@data", ta.tradeId() + "/" + tb.tradeId())))));
+        BusinessEvent ev = CdmRuntime.fn(RepoPairOffEvent.class).evaluate(a, b, pairReference, Date.of(date));
+        long net = CdmRuntime.fn(RepoPairOffNetAmount.class).evaluate(a, b, CASH_PRECISION).longValueExact();
+        Map<String, Object> doc = new java.util.LinkedHashMap<>(o("pairOff", tree(ev),
+                "repurchase", l(tree(repurchaseEvent(ev.getAfter().get(0), date)), tree(repurchaseEvent(ev.getAfter().get(1), date))),
+                "netAmount", net));
+        if (net > 0) doc.put("netCashTransfer", transfer(net, usd(), cash(), ta.seller(), ta.buyer(), date));
+        if (net < 0) doc.put("netCashTransfer", transfer(-net, usd(), cash(), tb.seller(), tb.buyer(), date));
+        RepoPairOffSettlement s = CdmRuntime.load(RepoPairOffSettlement.class, doc);
+        CdmRuntime.validate(s);
+        String json = CdmRuntime.toJson(s);
+        return new PairedOff(s, json, Cdm.keccakHex(json), ta.tradeId(), tb.tradeId(), net);
     }
 
     /** CDM's Create_BusinessEvent leaves the closed state's activityDate empty, which CDM's validation requires; it is
