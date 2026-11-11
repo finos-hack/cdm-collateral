@@ -1167,3 +1167,4 @@ excluded.
 | task-securities-lending-gmsla-workflows | bf56ee10eb7683a124c0531ebc360d945d840d06 | docs/analysis/defects.md | 2026-11-11T15:06:56Z |
 | task-securities-lending-gmsla-workflows | f7a192ce82a2032739228729051211079b685efa | architecture/prototype.architecture.json | 2026-11-11T15:13:23Z |
 | task-securities-lending-gmsla-workflows | f7a192ce82a2032739228729051211079b685efa | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T15:13:23Z |
+| task-securities-lending-gmsla-workflows | 74cce9230e70062f6044b49c6ca45714a2881317 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T15:16:24Z |
