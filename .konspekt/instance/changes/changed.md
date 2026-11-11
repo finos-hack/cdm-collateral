@@ -1327,3 +1327,5 @@ excluded.
 | task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | docs/runbook-e2e.md | 2026-11-11T23:12:00Z |
 | goal-test-konspekt-adoption | 40ee16fd66197011360568a4995058af5a444101 | docs/project-narrative.md | 2026-11-04T02:34:39Z |
 | task-gmsla-lending-fee | 13707955649d8b7620d165605e739d006364ac5e | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T23:21:49Z |
+| task-gmsla-lending-fee | 0292cedcb60f328d30f45ffd2dc1ae07f4e2453c | architecture/prototype.architecture.json | 2026-11-11T23:29:32Z |
+| task-gmsla-lending-fee | 0292cedcb60f328d30f45ffd2dc1ae07f4e2453c | docs/analysis/sme-question-ledger.md | 2026-11-11T23:29:32Z |
