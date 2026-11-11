@@ -1104,3 +1104,4 @@ excluded.
 | task-repo-pair-off | c34369784ca25f096728a40c1ebe40fbb6abdc04 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T00:13:05Z |
 | task-repo-pair-off | f49e13c6b2438369169cdcb649cf20bdca92c35e | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T00:13:49Z |
 | task-repo-pair-off | fc520bacc0025994060e0c177a4603c18a088586 | console/e2e/live.spec.ts | 2026-11-11T00:44:30Z |
+| task-repo-buy-sell-back | 0ae20dd50798878c72d7a176a3c4989caced3038 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T01:16:44Z |
