@@ -248,6 +248,16 @@ export const api = {
     req<{ amendmentId: string; consent: boolean; decisionHash: string; decisionTx: string }>(p, "POST", `/gmra/amendments/${amendmentId}/decision`, { consent }),
   /** The GMSLA terms in force and the pair's GMSLA amendments (wp-adr-gmsla-terms). */
   gmslaTerms: (p: LiveParty) => req<LiveGmslaTerms>(p, "GET", "/gmsla/terms"),
+  /** This party's securities loans (wp-adr-gmsla-loan-delivery-return). */
+  loans: (p: LiveParty) => req<LiveLoans>(p, "GET", "/loans"),
+  /** The lender books a loan; the collateral follows from the feed prices and the margin (default: the GMSLA default margin). */
+  bookLoan: (p: LiveParty, terms: { security: string; quantity: number; collateral: string; ratePercent: string; margin?: string | null; termDays?: number | null }) =>
+    req<{ loanId: string; tradeHash: string; collateralAmount: number; bookTx: string }>(p, "POST", "/loans", terms),
+  affirmLoan: (p: LiveParty, loanId: string) => req<{ loanId: string; tradeHash: string; affirmTx: string }>(p, "POST", `/loans/${loanId}/affirm`, {}),
+  deliverLoan: (p: LiveParty, loanId: string) => req<{ loanId: string; cdmHash: string; instructTx: string }>(p, "POST", `/loans/${loanId}/deliver`, {}),
+  /** Instruct a return: the quantity, or the counterparty's pending return when quantity is omitted. */
+  returnLoan: (p: LiveParty, loanId: string, quantity?: number) =>
+    req<LiveLoanReturn & { loanId: string; cdmHash: string; instructTx: string }>(p, "POST", `/loans/${loanId}/return`, quantity === undefined ? {} : { quantity }),
   /** Propose a change of the GMSLA elections: the notification time (HH:mm), one party's MTA and/or the default margin. */
   proposeGmslaAmendment: (p: LiveParty, change: { notificationTime?: string | null; party?: LiveParty; mtaUsd?: number | null; defaultMargin?: string | null }) =>
     req<{ amendmentId: string; cdmHash: string; changed: string[]; proposeTx: string }>(p, "POST", "/gmsla/amendments", change),
@@ -421,6 +431,45 @@ export interface LiveRepoDefault {
 export interface LiveRepos {
   businessDate: string;
   repos: LiveRepo[];
+}
+
+/** A return's settlement (wp-adr-gmsla-loan-delivery-return): the quantity returned, the collateral redelivered, the
+ *  cdm-ext qualification and CDM's own qualifications of the return event (defect D4). */
+export interface LiveLoanReturn {
+  phase: string;
+  quantity: string;
+  collateralAmount: string;
+  qualification?: string;
+  cdmQualifications?: string[];
+}
+
+/** A securities loan under the GMSLA as this party's service sees it (wp-adr-gmsla-loan-delivery-return). */
+export interface LiveLoan {
+  loanId: string;
+  role: "lender" | "borrower";
+  counterparty: string;
+  state: "booked" | "affirmed" | "open" | "returned" | string;
+  security: string;
+  quantity: string;
+  collateral: string;
+  collateralAmount: string;
+  tradeHash: string;
+  price?: string;
+  marginPercent?: string;
+  rebateRatePercent?: string;
+  feeRatePercent?: string;
+  termDate?: string | null;
+  deliveryInstructedByMe: boolean;
+  deliveryInstructedByCounterparty: boolean;
+  pendingReturn?: { quantity: string; collateralAmount: string; instructedByMe: boolean; instructedByCounterparty: boolean };
+  lastReturn?: LiveLoanReturn;
+  verified: boolean;
+  problem?: string | null;
+}
+
+export interface LiveLoans {
+  businessDate: string;
+  loans: LiveLoan[];
 }
 
 export interface LiveRepoMargin {

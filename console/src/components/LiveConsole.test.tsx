@@ -852,6 +852,41 @@ describe("flow-gmsla-terms", () => {
   });
 });
 
+describe("flow-gmsla-loan-delivery-return", () => {
+  const loan = (over: Record<string, unknown>) => ({
+    loanId: "0xl1", role: "lender", counterparty: "B", state: "open", security: "tMMF", quantity: "100000", collateral: "tUSD",
+    collateralAmount: "102000", tradeHash: "0x01", price: "1", marginPercent: "102", rebateRatePercent: "4", termDate: null,
+    deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
+  });
+
+  it("the lender books a loan against cash at the GMSLA default margin", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/loans": { businessDate: "2026-11-11", loans: [] } });
+    const card = await screen.findByTestId("loans");
+    await user.clear(within(card).getByLabelText("Loan quantity"));
+    await user.type(within(card).getByLabelText("Loan quantity"), "40000");
+    await user.click(within(card).getByRole("button", { name: "Book loan: lend to B" }));
+    await waitFor(() =>
+      expect(posts).toEqual([{ path: "/loans", body: { security: "tMMF", quantity: 40000, collateral: "tUSD", ratePercent: "4", margin: null } }]),
+    );
+  });
+
+  it("the borrower returns part; the lender agrees the pending return and sees the last return qualified", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-11-11", loans: [
+        loan({ pendingReturn: { quantity: "40000", collateralAmount: "40800", instructedByMe: false, instructedByCounterparty: true } }),
+        loan({ loanId: "0xl2", quantity: "60000", collateralAmount: "61200",
+          lastReturn: { phase: "Return", quantity: "40000", collateralAmount: "40800", qualification: "PartialReturn", cdmQualifications: ["PartialTermination"] } }),
+      ] },
+    });
+    expect((await screen.findByTestId("loan-last-return-0xl2")).textContent).toBe("PartialReturn of 40,000, collateral back 40,800 (CDM: PartialTermination)");
+    const row = await screen.findByTestId("loan-0xl1");
+    await user.click(within(row).getByRole("button", { name: "Agree return of 40,000 tMMF (collateral back 40,800 tUSD)" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/return", body: {} }]));
+  });
+});
+
 describe("flow-repo-default-close-out", () => {
   const statement = {
     earlyTerminationDate: "2026-11-12", automaticEarlyTermination: true, nonDefaultingParty: "BANK-A", defaultingParty: "BANK-B",

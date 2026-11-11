@@ -2,7 +2,7 @@
 id: task-gmsla-terms
 type: task
 title: GMSLA agreement terms and their amendment
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:47:13Z
+updatedAt: 2026-11-11T17:44:30Z
 ```
 # Task: GMSLA agreement terms and their amendment
 
@@ -55,3 +55,4 @@ non-standard Market Value comparison checks for presence first. Service: `CdmGms
 amendment routes take the kind already, and `CollateralControl` is unchanged. Console: "GMSLA terms" card (2 unit
 tests). Live spec `flow-gmsla-terms` passes locally, and all 35 live specs pass.
 
+**Resolved 2026-11-11**: PR #59 merged (source `f62bbce51dcdcbfd3e7c7e68bdea07af64d6873a`).

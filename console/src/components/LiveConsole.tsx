@@ -25,7 +25,7 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms, type LiveGmslaTerms, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
+  type LiveGmraTerms, type LiveGmslaTerms, type LiveLoan, type LiveLoans, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
   type LiveParty,
   type LiveRevaluation,
   type LiveState,
@@ -55,6 +55,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [gmra, setGmra] = useState<LiveGmraTerms | null>(null);
   const [gmsla, setGmsla] = useState<LiveGmslaTerms | null>(null);
   const [repos, setRepos] = useState<LiveRepos | null>(null);
+  const [loans, setLoans] = useState<LiveLoans | null>(null);
   const [repoMargin, setRepoMargin] = useState<LiveRepoMargin | null>(null);
   const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
@@ -90,6 +91,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.gmraTerms(party).then((g) => setGmra(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmra(null)),
         api.gmslaTerms(party).then((g) => setGmsla(g?.elections && Array.isArray(g?.amendments) ? g : null)).catch(() => setGmsla(null)),
         api.repos(party).then((r) => setRepos(r?.businessDate && Array.isArray(r?.repos) ? r : null)).catch(() => setRepos(null)),
+        api.loans(party).then((l) => setLoans(l?.businessDate && Array.isArray(l?.loans) ? l : null)).catch(() => setLoans(null)),
         api.repoMargin(party).then((m) => setRepoMargin(m?.businessDate && Array.isArray(m?.exposures) ? m : null)).catch(() => setRepoMargin(null)),
         api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
       );
@@ -401,6 +403,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 
       {gmra && <GmraTermsCard party={party} other={other} gmra={gmra} busy={busy} run={run} />}
       {gmsla && <GmslaTermsCard party={party} other={other} gmsla={gmsla} busy={busy} run={run} />}
+      {loans && <LoansCard party={party} other={other} loans={loans} defaultMargin={gmsla?.elections.defaultMargin ?? "1.02"} busy={busy} run={run} />}
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
@@ -932,6 +935,115 @@ function GmraTermsCard(props: { party: LiveParty; other: LiveParty; gmra: LiveGm
         </table>
       )}
     </div>
+  );
+}
+
+/** Securities loans under the GMSLA (wp-adr-gmsla-loan-delivery-return): the lender books, the borrower affirms, both
+ *  instruct the delivery, and either instructs a full or partial return that the other agrees by instructing the same. */
+function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans; defaultMargin: string; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, loans: r, defaultMargin, busy, run } = props;
+  const [security, setSecurity] = useState("tMMF");
+  const [quantity, setQuantity] = useState(100_000);
+  const [collateral, setCollateral] = useState("tUSD");
+  const [ratePercent, setRatePercent] = useState("4");
+  const [margin, setMargin] = useState("");
+  const action = (l: LiveLoan) => {
+    if (!l.verified) return null;
+    if (l.state === "booked")
+      return l.role === "borrower" ? <button disabled={busy} onClick={() => run(() => api.affirmLoan(party, l.loanId))}>Affirm loan</button> : "awaiting affirmation";
+    if (l.state === "affirmed")
+      return l.deliveryInstructedByMe ? `delivery instructed, awaiting ${other}` : <button disabled={busy} onClick={() => run(() => api.deliverLoan(party, l.loanId))}>Settle delivery</button>;
+    if (l.state !== "open") return null;
+    const pr = l.pendingReturn;
+    if (pr?.instructedByMe) return <span data-testid={`loan-return-pending-${l.loanId}`}>return of {Number(pr.quantity).toLocaleString("en-US")} instructed, awaiting {other}</span>;
+    if (pr?.instructedByCounterparty)
+      return (
+        <button disabled={busy} onClick={() => run(() => api.returnLoan(party, l.loanId))}>
+          Agree return of {Number(pr.quantity).toLocaleString("en-US")} {l.security} (collateral back {Number(pr.collateralAmount).toLocaleString("en-US")} {l.collateral})
+        </button>
+      );
+    return <LoanReturnEntry disabled={busy} outstanding={Number(l.quantity)} onReturn={(q) => run(() => api.returnLoan(party, l.loanId, q))} />;
+  };
+  return (
+    <div className="card" data-testid="loans">
+      <h3>Securities loans (GMSLA)</h3>
+      <div className="row">
+        <span>business date {r.businessDate}</span>
+      </div>
+      <div className="row">
+        <label>
+          Lend{" "}
+          <select aria-label="Loan security" value={security} onChange={(ev) => setSecurity(ev.target.value)}>
+            <option value="tMMF">tMMF</option>
+            <option value="tUST">tUST</option>
+          </select>
+        </label>
+        <label>
+          Quantity <input aria-label="Loan quantity" type="number" value={quantity} min={1} onChange={(ev) => setQuantity(Number(ev.target.value))} style={{ width: 110 }} />
+        </label>
+        <label>
+          Against{" "}
+          <select aria-label="Loan collateral" value={collateral} onChange={(ev) => setCollateral(ev.target.value)}>
+            <option value="tUSD">tUSD (cash)</option>
+            <option value="tUST">tUST</option>
+            <option value="tMMF">tMMF</option>
+          </select>
+        </label>
+        <label>
+          {collateral === "tUSD" ? "Rebate rate (% p.a.)" : "Fee rate (% p.a.)"}{" "}
+          <input aria-label="Loan rate (% p.a.)" value={ratePercent} onChange={(ev) => setRatePercent(ev.target.value)} style={{ width: 60 }} />
+        </label>
+        <label>
+          Margin <input aria-label="Loan margin" value={margin} placeholder={defaultMargin} onChange={(ev) => setMargin(ev.target.value)} style={{ width: 60 }} />
+        </label>
+        <button
+          disabled={busy || quantity < 1 || ratePercent === "" || collateral === security}
+          onClick={() => run(() => api.bookLoan(party, { security, quantity, collateral, ratePercent, margin: margin === "" ? null : margin }))}
+        >
+          Book loan: lend to {other}
+        </button>
+      </div>
+      {r.loans.length > 0 && (
+        <table className="tbl">
+          <thead>
+            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th></th></tr>
+          </thead>
+          <tbody>
+            {r.loans.map((l) => (
+              <tr key={l.loanId} data-testid={`loan-${l.loanId}`}>
+                <td className="mono">{short(l.loanId)}</td>
+                <td>{l.role} · {l.counterparty}</td>
+                <td data-testid={`loan-quantity-${l.loanId}`}>{Number(l.quantity).toLocaleString("en-US")} {l.security}{l.price ? ` at ${l.price}` : ""}</td>
+                <td data-testid={`loan-collateral-${l.loanId}`}>{Number(l.collateralAmount).toLocaleString("en-US")} {l.collateral}{l.marginPercent ? ` (${l.marginPercent}%)` : ""}</td>
+                <td>{l.rebateRatePercent ? `rebate ${l.rebateRatePercent}%` : l.feeRatePercent ? `fee ${l.feeRatePercent}%` : "—"}</td>
+                <td data-testid={`loan-last-return-${l.loanId}`}>
+                  {l.lastReturn
+                    ? `${l.lastReturn.qualification} of ${Number(l.lastReturn.quantity).toLocaleString("en-US")}, collateral back ${Number(l.lastReturn.collateralAmount).toLocaleString("en-US")} (CDM: ${(l.lastReturn.cdmQualifications ?? []).join(", ") || "none"})`
+                    : "—"}
+                </td>
+                <td data-testid={`loan-state-${l.loanId}`}>
+                  {l.verified ? <span className="ok">{l.state} ✓</span> : <span className="bad">{l.problem ?? "not verified"}</span>}
+                </td>
+                <td>{action(l)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/** Either party instructs a return of an open loan: part of the outstanding quantity, or all of it. */
+function LoanReturnEntry(props: { disabled: boolean; outstanding: number; onReturn: (quantity: number) => void }) {
+  const [quantity, setQuantity] = useState(props.outstanding);
+  return (
+    <>
+      <input aria-label="Return quantity" type="number" value={quantity} min={1} max={props.outstanding} onChange={(ev) => setQuantity(Number(ev.target.value))} style={{ width: 110 }} />
+      <button disabled={props.disabled || quantity < 1 || quantity > props.outstanding} onClick={() => props.onReturn(quantity)}>
+        {quantity === props.outstanding ? "Return in full" : "Return part"}
+      </button>
+    </>
   );
 }
 

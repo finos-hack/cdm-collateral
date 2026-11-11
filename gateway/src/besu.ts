@@ -212,6 +212,12 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "RepoAffirmed(bytes32,address,bytes32)",
     "RepoInstructed(bytes32,uint8,address,bytes32)",
     "RepoSettled(bytes32,uint8,bytes32)",
+    "LoanBooked(bytes32,address,address,bytes32)",
+    "LoanAffirmed(bytes32,address,bytes32)",
+    "LoanDeliveryInstructed(bytes32,address,bytes32)",
+    "LoanDelivered(bytes32,bytes32)",
+    "LoanReturnInstructed(bytes32,address,uint256,uint256,bytes32)",
+    "LoanReturned(bytes32,uint256,uint256,bytes32,bool)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -395,6 +401,39 @@ const repoAbi = parseAbi([
 
 export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased", "closedOut"];
 
+const loanAbi = parseAbi([
+  "function book(bytes32 loanId, address borrower, address security, uint256 quantity, address collateral, uint256 collateralAmount, bytes32 tradeHash)",
+  "function affirm(bytes32 loanId, bytes32 tradeHash)",
+  "function instructDelivery(bytes32 loanId, bytes32 cdmHash)",
+  "function instructReturn(bytes32 loanId, uint256 quantity, uint256 collateralAmount, bytes32 cdmHash)",
+  "function getLoan(bytes32 loanId) view returns ((address lender, address borrower, address security, uint256 quantity, address collateral, uint256 collateralAmount, bytes32 tradeHash, uint8 state, bytes32 deliveryHash))",
+  "function getDeliveryInstructions(bytes32 loanId) view returns (bytes32 lender, bytes32 borrower)",
+  "function getReturnInstructions(bytes32 loanId) view returns (bytes32 lender, bytes32 borrower, uint256 quantity, uint256 collateralAmount)",
+  "function loansOf(address party) view returns (bytes32[])",
+]);
+
+export const LoanStateName = ["none", "booked", "affirmed", "open", "returned"];
+
+/** A securities loan on SecuritiesLoan (wp-adr-gmsla-loan-delivery-return). */
+export interface OnChainLoan {
+  loanId: Hex;
+  lender: Address;
+  borrower: Address;
+  security: Address;
+  /** The loaned quantity outstanding. */
+  quantity: bigint;
+  collateral: Address;
+  /** The collateral the lender holds. */
+  collateralAmount: bigint;
+  tradeHash: Hex;
+  state: string;
+  deliveryHash: Hex;
+  /** The hashes each party has instructed for the delivery (zero hash: not yet). */
+  delivery: { lender: Hex; borrower: Hex };
+  /** The pending return: each party's hash, the quantity and the collateral (zeros: none pending). */
+  pendingReturn: { lender: Hex; borrower: Hex; quantity: bigint; collateralAmount: bigint };
+}
+
 /** A GMRA default close-out on RepoSettlement (wp-adr-repo-default-close-out). */
 export interface OnChainRepoCloseOut {
   closeOutId: Hex;
@@ -538,6 +577,14 @@ export interface LedgerAdapter {
   payRepoCloseOut(closeOutId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   repoDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex>;
   listRepoCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]>;
+  /** Securities loans under the GMSLA (wp-adr-gmsla-loan-delivery-return). */
+  loanContract(): Address;
+  bookLoan(loanId: Hex, borrower: Address, security: Address, quantity: bigint, collateral: Address, collateralAmount: bigint, tradeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  affirmLoan(loanId: Hex, tradeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  instructLoanDelivery(loanId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  instructLoanReturn(loanId: Hex, quantity: bigint, collateralAmount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getLoan(loanId: Hex): Promise<OnChainLoan>;
+  listLoans(party: Address): Promise<OnChainLoan[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1023,6 +1070,43 @@ export class BesuAdapter implements LedgerAdapter {
       functionName: "isDefaulted",
       args: [party],
     })) as boolean;
+  }
+
+  /** The SecuritiesLoan address, which each party approves for what it delivers. */
+  loanContract(): Address {
+    const a = this.reg.contracts.securitiesLoan;
+    if (!a) throw new Error("no SecuritiesLoan in the deployment registry; redeploy the contracts");
+    return a;
+  }
+
+  bookLoan(loanId: Hex, borrower: Address, security: Address, quantity: bigint, collateral: Address, collateralAmount: bigint, tradeHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "book", [loanId, borrower, security, quantity, collateral, collateralAmount, tradeHash]);
+  }
+
+  affirmLoan(loanId: Hex, tradeHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "affirm", [loanId, tradeHash]);
+  }
+
+  instructLoanDelivery(loanId: Hex, cdmHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "instructDelivery", [loanId, cdmHash]);
+  }
+
+  instructLoanReturn(loanId: Hex, quantity: bigint, collateralAmount: bigint, cdmHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "instructReturn", [loanId, quantity, collateralAmount, cdmHash]);
+  }
+
+  async getLoan(loanId: Hex): Promise<OnChainLoan> {
+    const address = this.loanContract();
+    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn"> & { state: number };
+    const [dl, db] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getDeliveryInstructions", args: [loanId] })) as readonly [Hex, Hex];
+    const [rl, rb, rq, rc] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getReturnInstructions", args: [loanId] })) as readonly [Hex, Hex, bigint, bigint];
+    const state = Number(l.state);
+    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc } };
+  }
+
+  async listLoans(party: Address) {
+    const ids = (await this.pub.readContract({ address: this.loanContract(), abi: loanAbi, functionName: "loansOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map((id) => this.getLoan(id)));
   }
 
   /** The RepoSettlement address, which each party approves for its leg. */

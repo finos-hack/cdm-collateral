@@ -134,6 +134,16 @@ agreed GMRA amendments; with the contract's terms hash beside them, `verified`; 
 `mtaUsd`, and/or `defaultMargin`; either party: cdm-ext `GmslaTermsAmendment` from `Create_GmslaTermsAmendment`, then
 `proposeTermsAmendment` on-chain), `POST /gmsla/amendments/{id}/decision` (body `consent`; the counterparty verifies the
 amendment first),
+`GET /loans` (this party's securities loans with the business date: the on-chain record from `SecuritiesLoan` and the
+document at its trade hash, the booked cdm-ext `GmslaLoan` or the last return's `GmslaLoanSettlement`, rebuilt by
+`CdmLoan` and checked against it, `verified`; wp-adr-gmsla-loan-delivery-return), `POST /loans` (the lender; body
+`security`, `quantity`, `collateral` tUSD or tUST, `ratePercent` (rebate against tUSD, fee against tUST), optionally
+`margin` (default: the GMSLA default margin) and `termDays` (default: open); the collateral is cdm-ext
+`GmslaRequiredCollateral` at the feed prices), `POST /loans/{id}/affirm` (the borrower, after rebuilding the execution
+and checking the price and collateral), `POST /loans/{id}/deliver` (either party: the delivery `GmslaLoanSettlement`,
+approving what it delivers), `POST /loans/{id}/return` (either party, on the business date: body `quantity`, or none to
+agree the counterparty's pending return; CDM's return event with the collateral reduced, `Qualify_GmslaReturn`, and the
+collateral redelivered by `GmslaReturnCollateral`),
 `GET /repos` (this party's term repos with the business date: the on-chain record from `RepoSettlement` and the CDM
 trade this service rebuilt from the booked document and checked against it, `verified`; wp-adr-repo-purchase-repurchase),
 `POST /repos` (body `security` tUST or tMMF, `purchasePrice` whole tUSD, `ratePercent`, `termDays`, optional

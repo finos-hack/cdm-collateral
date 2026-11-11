@@ -1642,4 +1642,96 @@ describe("CDM collateral contracts", async () => {
       });
     });
   });
+
+  describe("securities loan delivery and return (task-gmsla-loan-delivery-return)", () => {
+    let loans: any, tUSD: any, bankC: any;
+    const H = (s: string) => keccak256(toHex(s));
+    const L = H("LOAN-1");
+    const bal = async (t: any, a: `0x${string}`) => t.read.balanceOf([a]);
+    beforeEach(async () => {
+      loans = await viem.deployContract("SecuritiesLoan", []);
+      tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "US0000000USD", "000000USD", "QUSD00000"]);
+      bankC = (await viem.getWalletClients())[3];
+      await tUSD.write.mint([bAddr, 10000n]);
+      // A lends 100 tMMF to B against 5,100 tUSD (100 × 50.00 × 1.02).
+      await loans.write.book([L, bAddr, tMMF.address, 100n, tUSD.address, 5100n, H("trade")], { account: bankA.account });
+    });
+    const deliver = async () => {
+      await loans.write.affirm([L, H("trade")], { account: bankB.account });
+      await tMMF.write.approve([loans.address, 100n], { account: bankA.account });
+      await tUSD.write.approve([loans.address, 5100n], { account: bankB.account });
+      await loans.write.instructDelivery([L, H("d")], { account: bankA.account });
+      await loans.write.instructDelivery([L, H("d")], { account: bankB.account });
+    };
+
+    it("books, affirms with the same hash, and delivers securities and collateral in the second instruction", async () => {
+      await assert.rejects(loans.write.affirm([L, H("other")], { account: bankB.account }));
+      await assert.rejects(loans.write.affirm([L, H("trade")], { account: bankA.account }));
+      await assert.rejects(loans.write.instructDelivery([L, H("d")], { account: bankA.account })); // not affirmed
+      await loans.write.affirm([L, H("trade")], { account: bankB.account });
+      assert.equal((await loans.read.getLoan([L])).state, 2); // Affirmed
+      await tMMF.write.approve([loans.address, 100n], { account: bankA.account });
+      await tUSD.write.approve([loans.address, 5100n], { account: bankB.account });
+      await loans.write.instructDelivery([L, H("d")], { account: bankB.account });
+      assert.equal(await bal(tMMF, bAddr), 0n); // one instruction moves nothing
+      assert.deepEqual(await loans.read.getDeliveryInstructions([L]), [`0x${"0".repeat(64)}`, H("d")]);
+      await loans.write.instructDelivery([L, H("d")], { account: bankA.account });
+      const l = await loans.read.getLoan([L]);
+      assert.equal(l.state, 3); // Open
+      assert.equal(l.deliveryHash, H("d"));
+      assert.equal(await bal(tMMF, bAddr), 100n);
+      assert.equal(await bal(tMMF, aAddr), 900n);
+      assert.equal(await bal(tUSD, aAddr), 5100n); // title transfer: the lender holds the collateral
+      assert.equal(await bal(tUSD, bAddr), 4900n);
+      assert.equal(await bal(tUSD, loans.address), 0n);
+    });
+
+    it("settles a partial return, then the full return of the rest, restoring every balance", async () => {
+      await deliver();
+      await tMMF.write.approve([loans.address, 100n], { account: bankB.account });
+      await tUSD.write.approve([loans.address, 5100n], { account: bankA.account });
+      await loans.write.instructReturn([L, 40n, 2040n, H("r1")], { account: bankB.account });
+      await assert.rejects(loans.write.instructReturn([L, 40n, 2000n, H("r1")], { account: bankA.account })); // other terms
+      await assert.rejects(loans.write.instructReturn([L, 40n, 2040n, H("x")], { account: bankA.account })); // other hash
+      assert.deepEqual(await loans.read.getReturnInstructions([L]), [`0x${"0".repeat(64)}`, H("r1"), 40n, 2040n]);
+      await loans.write.instructReturn([L, 40n, 2040n, H("r1")], { account: bankA.account });
+      let l = await loans.read.getLoan([L]);
+      assert.equal(l.state, 3); // still Open
+      assert.equal(l.quantity, 60n);
+      assert.equal(l.collateralAmount, 3060n);
+      assert.equal(l.tradeHash, H("r1"));
+      assert.equal(await bal(tMMF, aAddr), 940n);
+      assert.equal(await bal(tUSD, bAddr), 6940n);
+      // A full return must redeliver all the collateral held.
+      await assert.rejects(loans.write.instructReturn([L, 60n, 3000n, H("r2")], { account: bankB.account }));
+      await assert.rejects(loans.write.instructReturn([L, 61n, 3060n, H("r2")], { account: bankB.account }));
+      await loans.write.instructReturn([L, 60n, 3060n, H("r2")], { account: bankB.account });
+      await loans.write.instructReturn([L, 60n, 3060n, H("r2")], { account: bankA.account });
+      l = await loans.read.getLoan([L]);
+      assert.equal(l.state, 4); // Returned
+      assert.equal(l.quantity, 0n);
+      assert.equal(l.collateralAmount, 0n);
+      assert.equal(await bal(tMMF, aAddr), 1000n);
+      assert.equal(await bal(tMMF, bAddr), 0n);
+      assert.equal(await bal(tUSD, aAddr), 0n);
+      assert.equal(await bal(tUSD, bAddr), 10000n);
+      await assert.rejects(loans.write.instructReturn([L, 1n, 0n, H("r3")], { account: bankB.account }));
+    });
+
+    it("rejects an outsider, a second instruction, a return before delivery, a missing allowance and a bad booking", async () => {
+      await assert.rejects(loans.write.instructReturn([L, 1n, 0n, H("r")], { account: bankB.account })); // not open
+      await loans.write.affirm([L, H("trade")], { account: bankB.account });
+      await loans.write.instructDelivery([L, H("d")], { account: bankA.account });
+      await assert.rejects(loans.write.instructDelivery([L, H("d")], { account: bankA.account }));
+      await assert.rejects(loans.write.instructDelivery([L, H("d")], { account: bankC.account }));
+      await assert.rejects(loans.write.instructDelivery([L, H("e")], { account: bankB.account }));
+      await assert.rejects(loans.write.instructDelivery([L, H("d")], { account: bankB.account })); // no allowances
+      assert.equal(await bal(tMMF, bAddr), 0n);
+      await assert.rejects(loans.write.book([L, bAddr, tMMF.address, 1n, tUSD.address, 1n, H("t")], { account: bankA.account }));
+      await assert.rejects(loans.write.book([H("L2"), aAddr, tMMF.address, 1n, tUSD.address, 1n, H("t")], { account: bankA.account }));
+      await assert.rejects(loans.write.book([H("L3"), bAddr, tMMF.address, 0n, tUSD.address, 1n, H("t")], { account: bankA.account }));
+      await assert.rejects(loans.write.book([H("L4"), bAddr, tMMF.address, 1n, tUSD.address, 0n, H("t")], { account: bankA.account }));
+      assert.deepEqual(await loans.read.loansOf([bAddr]), [L]);
+    });
+  });
 });

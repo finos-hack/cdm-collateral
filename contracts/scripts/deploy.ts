@@ -110,7 +110,7 @@ async function main() {
 
   // Deploy with an explicit nonce; the address follows from the deployer and the nonce, so no lookup of the transaction
   // is needed before the receipt.
-  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement">(name: N, args: readonly unknown[]) {
+  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan">(name: N, args: readonly unknown[]) {
     const { abi, bytecode } = await hre.artifacts.readArtifact(name);
     let address: `0x${string}` | undefined;
     await send(`deploy ${name}`, (nonce) => {
@@ -131,6 +131,8 @@ async function main() {
   console.log("PortfolioReconciliation", reconciliation.address);
   const repoSettlement = await deploy("RepoSettlement", [oracle.address]);
   console.log("RepoSettlement       ", repoSettlement.address);
+  const securitiesLoan = await deploy("SecuritiesLoan", []);
+  console.log("SecuritiesLoan       ", securitiesLoan.address);
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string }> = {};
   for (const t of TOKENS) {
@@ -160,6 +162,7 @@ async function main() {
       oracleFeed: oracle.address,
       portfolioReconciliation: reconciliation.address,
       repoSettlement: repoSettlement.address,
+      securitiesLoan: securitiesLoan.address,
     },
     priceScale: SCALE.toString(),
     tokens: tokenRegistry,
