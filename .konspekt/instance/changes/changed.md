@@ -1195,3 +1195,7 @@ excluded.
 | task-gmsla-loan-delivery-return | fb3a09d61b18568dbab9e312b1e17f5ce041ef48 | docs/analysis/defects.md | 2026-11-11T16:23:41Z |
 | task-gmsla-loan-delivery-return | 68e5fa24d5d16f3ae15296d82e27484e7749fa2e | architecture/prototype.architecture.json | 2026-11-11T16:38:28Z |
 | task-gmsla-loan-delivery-return | 68e5fa24d5d16f3ae15296d82e27484e7749fa2e | docs/analysis/sme-question-ledger.md | 2026-11-11T16:38:28Z |
+| task-gmsla-loan-delivery-return | c3ab9839a63834c15267d19aec199fedd3aa16e6 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T16:23:41Z |
+| task-gmsla-loan-delivery-return | c3ab9839a63834c15267d19aec199fedd3aa16e6 | docs/analysis/defects.md | 2026-11-11T16:23:41Z |
+| task-gmsla-loan-delivery-return | 4f592ef7c92889bc5d65431a1f4f9ede2f4a84e4 | architecture/prototype.architecture.json | 2026-11-11T16:38:28Z |
+| task-gmsla-loan-delivery-return | 4f592ef7c92889bc5d65431a1f4f9ede2f4a84e4 | docs/analysis/sme-question-ledger.md | 2026-11-11T16:38:28Z |
