@@ -3,7 +3,7 @@ id: wp-adr-gmsla-lending-fee
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T23:29:22Z
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-lending-fee
   sourceRef: 1577efddfacbb1f2fedacd57705e2f766a8b44bc
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T23:29:22Z
   confidence: 0.6
 createdAt: 2026-11-11T23:29:22Z
-updatedAt: 2026-11-11T23:29:22Z
+updatedAt: 2026-11-11T23:42:15Z
 ```
 # ADR: the lender bills the lending fee on the loaned securities' market value at the billing date's feed price, through row 17's billing; the borrower's agreement pays it in tUSD
 
@@ -35,7 +35,8 @@ prototype's loan (D27); with a fee `InterestRatePayout` on the trade CDM bills t
   and its feed, and pays in tUSD, or refuses. The payment event is a transfer of type `InterestReturn`, as for the rebate:
   CDM's `ScheduledTransferEnum` has no lending-fee type, and a transfer of that type qualifies as `CashTransfer`.
 - **Rounding (6a).** Half-up to whole tUSD once per invoice, as for the rebate.
-- **Prototype (7a).** The Loans card's Rebate column becomes "Rate": "Bill fee … to …" for the lender, "Pay … tUSD" and
+- **Prototype (7a).** The Loans card's Rebate column becomes "Rate billing" (the card already has a "Rate" column
+  showing the rate): "Bill fee … to …" for the lender, "Pay … tUSD" and
   "Refuse invoice" for the borrower. Live spec `flow-gmsla-lending-fee`.
 - **Deployment (8a).** None: `SecuritiesLoan.bill`, `payBill` and `refuseBill` already bill either party's rate.
 - **CDM's basis (9a).** A question for the SME: is the fee charged on the loan value or on the collateral value?

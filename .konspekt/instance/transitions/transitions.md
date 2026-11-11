@@ -1260,3 +1260,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
 | edge:e-dec-cdmdev-smefee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
 | edge:e-lnk-gmslafee-smefee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
+| waypoint:wp-adr-gmsla-lending-fee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| node:task-sme-gmsla-fee-rules | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| edge:e-mrk-feeadr-gmslafee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| edge:e-drv-cdmdata-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| edge:e-drv-finality-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| edge:e-dec-cdmdev-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| edge:e-lnk-gmslafee-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |

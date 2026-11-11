@@ -3,7 +3,7 @@ id: task-sme-gmsla-fee-rules
 type: task
 title: Confirm with a business SME the rules for billing and paying the lending fee under the GMSLA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-lending-fee
   sourceRef: 1577efddfacbb1f2fedacd57705e2f766a8b44bc
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T23:29:22Z
   confidence: 0.6
 createdAt: 2026-11-11T23:29:22Z
-updatedAt: 2026-11-11T23:29:22Z
+updatedAt: 2026-11-11T23:42:15Z
 ```
 # Task: confirm the rules for billing and paying the lending fee under the GMSLA
 
