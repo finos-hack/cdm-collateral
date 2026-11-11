@@ -2,6 +2,7 @@ package collateral;
 
 import cdm.event.common.BusinessEvent;
 import cdm.event.common.CollateralPortfolio;
+import cdm.product.collateral.CollateralProvisions;
 import cdm.event.common.Instruction;
 import cdm.event.common.TradeState;
 import cdm.event.common.functions.Create_BusinessEvent;
@@ -51,6 +52,15 @@ public final class CdmLoanSubstitution {
         return CdmRuntime.load(CollateralPortfolio.class, (Map<String, Object>) portfolios.get(0));
     }
 
+    /** The collateral provisions a new loan with the substitute would have: its eligible collateral names the substitute. */
+    @SuppressWarnings("unchecked")
+    static CollateralProvisions provisions(CdmLoan.Terms t) {
+        Map<String, Object> product = (Map<String, Object>) CdmLoan.execution(t).get("product");
+        Map<String, Object> economicTerms = (Map<String, Object>) product.get("economicTerms");
+        Map<String, Object> collateral = (Map<String, Object>) economicTerms.get("collateral");
+        return CdmRuntime.load(CollateralProvisions.class, (Map<String, Object>) collateral.get("collateralProvisions"));
+    }
+
     /** CDM's substitution event over the loan in force: the new portfolio, the loaned lot restated, the effective date kept. */
     static BusinessEvent event(TradeState before, CdmLoan.Terms t, CdmLoan.Terms substituted, LocalDate date) {
         PriceQuantity lot = CdmRuntime.load(PriceQuantity.class, o(
@@ -58,7 +68,11 @@ public final class CdmLoanSubstitution {
                 "quantity", o("value", t.quantity(), "unit", o("financialUnit", "Share"))));
         var pi = CdmRuntime.fn(Create_SubstitutionPrimitiveInstruction.class).evaluate(before,
                 before.getTrade().getProduct().getEconomicTerms().getEffectiveDate(), portfolio(substituted), List.of(lot));
-        Instruction i = Instruction.builder().setBeforeValue(before).setPrimitiveInstruction(pi).build();
+        // CDM's terms change replaces only the portfolio; the eligible collateral is set to the substitute as well, so
+        // the trade after names what it holds (the project owner's choice 1b, 2026-11-11).
+        var pib = pi.toBuilder();
+        pib.getTermsChange().getProduct().getEconomicTerms().getCollateral().setCollateralProvisions(provisions(substituted));
+        Instruction i = Instruction.builder().setBeforeValue(before).setPrimitiveInstruction(pib.build()).build();
         return CdmRepo.resolved(BusinessEvent.class,
                 CdmRuntime.fn(Create_BusinessEvent.class).evaluate(new ArrayList<>(List.of(i)), null, Date.of(date), null));
     }

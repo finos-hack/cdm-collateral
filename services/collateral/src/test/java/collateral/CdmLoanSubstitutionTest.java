@@ -44,6 +44,13 @@ class CdmLoanSubstitutionTest {
         assertTrue(CdmRuntime.fn(GmslaIsSubstitution.class).evaluate(s.doc().getSubstitutionEvent()));
         assertFalse(CdmRuntime.fn(Qualify_Substitution.class).evaluate(s.doc().getSubstitutionEvent())); // D22
         assertEquals(ON, s.doc().getSubstitutionEvent().getEventDate().toLocalDate());
+        // The eligible collateral names the substitute, with the loan's margin (the project owner's choice 1b).
+        var eligible = after.getTrade().getProduct().getEconomicTerms().getCollateral().getCollateralProvisions().getEligibleCollateral();
+        assertEquals(1, eligible.size());
+        String criteria = CdmRuntime.JSON.valueToTree(eligible.get(0).getCollateralCriteria()).toString();
+        assertTrue(criteria.contains(TAGY), criteria);
+        assertFalse(criteria.contains(before.collateralIsin()), criteria);
+        assertEquals(0, before.margin().compareTo(eligible.get(0).getTreatment().getValuationTreatment().getMarginPercentage()));
     }
 
     @Test
