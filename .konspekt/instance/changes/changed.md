@@ -1224,3 +1224,5 @@ excluded.
 | task-gmsla-loan-delivery-return | 6d40f93fafbb26321a0db891928e23d083e9f2f4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T18:10:31Z |
 | task-gmsla-marking | 8db7673026497b77cc0ab0010171990f5800e324 | docs/analysis/defects.md | 2026-11-11T18:13:54Z |
 | task-gmsla-marking | 8db7673026497b77cc0ab0010171990f5800e324 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T18:13:54Z |
+| task-gmsla-marking | 8d0230eee8cd9fff0d63c29b5c33d43914fb1831 | architecture/prototype.architecture.json | 2026-11-11T18:15:50Z |
+| task-gmsla-marking | 8d0230eee8cd9fff0d63c29b5c33d43914fb1831 | docs/analysis/sme-question-ledger.md | 2026-11-11T18:15:50Z |
