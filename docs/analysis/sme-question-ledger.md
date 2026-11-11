@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 105 questions in 20 tasks, all open.
+Status of the ledger: 106 questions in 20 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -218,3 +218,4 @@ Status of the ledger: 105 questions in 20 tasks, all open.
 | DCO-6 | Agreed income that was due and not paid enters the balance. Does interest on it apply? | open | |
 | DCO-7 | A buy/sell-back enters at its Repurchase Price less the income deduction. Is that right under the Buy/Sell Back Annex when the income date falls after the Early Termination Date? | open | |
 | DCO-8 | The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply? | open | |
+| DCO-9 | The close-out ends only Transactions whose purchase has settled; one booked and affirmed but not yet purchased stays open. Does the Event of Default terminate it too, and with what value? | open | |

@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T13:07:05Z
   confidence: 0.55
 createdAt: 2026-11-11T13:07:05Z
-updatedAt: 2026-11-11T13:09:45Z
+updatedAt: 2026-11-11T14:15:55Z
 ```
 # Task: confirm the rules for a GMRA default and close-out
 
@@ -36,3 +36,5 @@ stated from model memory of GMRA 2011 paragraph 10 and not checked against the t
    the Buy/Sell Back Annex when the income date falls after the Early Termination Date?
 8. **Costs and interest on the balance.** The prototype adds no costs of the non-defaulting party and no interest on
    an unpaid balance. Which apply?
+9. **Unpurchased Transactions.** The close-out ends only Transactions whose purchase has settled. A Transaction booked
+   and affirmed but not yet purchased stays open. Does the Event of Default terminate it too, and with what value?
