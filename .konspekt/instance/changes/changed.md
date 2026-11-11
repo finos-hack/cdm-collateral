@@ -1187,3 +1187,4 @@ excluded.
 | task-gmsla-terms | e15d8a97b7abd286148c200db694ae3443d05146 | services/collateral/src/main/java/collateral/App.java | 2026-11-11T16:10:47Z |
 | task-gmsla-terms | e15d8a97b7abd286148c200db694ae3443d05146 | services/collateral/src/main/java/collateral/CdmGmsla.java | 2026-11-11T16:10:47Z |
 | task-gmsla-terms | e15d8a97b7abd286148c200db694ae3443d05146 | services/collateral/src/test/java/collateral/CdmGmslaTest.java | 2026-11-11T16:10:47Z |
+| task-gmsla-terms | 16acbe73fa85dde6792f25be18069e0997527030 | .github/workflows/console.yml | 2026-11-11T16:45:05Z |
