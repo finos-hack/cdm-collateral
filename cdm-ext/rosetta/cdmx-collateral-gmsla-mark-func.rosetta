@@ -1,0 +1,84 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.base.math.*
+
+func GmslaLoanRequirement: <"The collateral a lender requires for one loan on a mark (wp-adr-gmsla-marking): the Market Value of the loaned securities at the price times the loan's margin. CDM's SecurityFinanceCashSettlementAmount values a loan only at its booked price (defect D29).">
+    inputs:
+        quantity number (1..1) <"The loaned quantity outstanding.">
+        price number (1..1) <"The price of one loaned security on the business date.">
+        margin number (1..1)
+    output:
+        requirement number (1..1)
+
+    condition NotNegativeQuantity:
+        quantity >= 0
+    condition NotNegativePrice:
+        price >= 0
+    condition MarginAtLeastOne:
+        margin >= 1
+
+    set requirement: quantity * price * margin
+
+func GmslaLoanCollateralValue: <"The value of a loan's collateral on a mark (wp-adr-gmsla-marking): the units held at the price, without a haircut; the loan's margin is the buffer.">
+    inputs:
+        amount number (1..1)
+        price number (1..1)
+    output:
+        value number (1..1)
+
+    condition NotNegative:
+        amount >= 0 and price >= 0
+
+    set value: amount * price
+
+func GmslaLoansOfPair: <"Whether every loan is between the two parties, in either direction.">
+    inputs:
+        loan GmslaMarkedLoan (0..*)
+        party string (1..1)
+        counterparty string (1..1)
+    output:
+        ofPair boolean (1..1)
+
+    set ofPair:
+        (loan
+            filter (item -> lender = party and item -> borrower = counterparty) or (item -> lender = counterparty and item -> borrower = party)
+            then count) = (loan count)
+
+func GmslaLoanExposure: <"One loan's exposure from one party's side: the requirement less the collateral value when the party is the lender, the reverse when it is the borrower. Positive when the party is short of collateral.">
+    inputs:
+        loan GmslaMarkedLoan (1..1)
+        party string (1..1)
+    output:
+        exposure number (1..1)
+
+    set exposure:
+        if loan -> lender = party
+        then loan -> requirement - loan -> collateralValue
+        else loan -> collateralValue - loan -> requirement
+
+func GmslaNetExposure: <"A party's net figure under GMSLA paragraph 5.4 (wp-adr-gmsla-marking): the sum of the pair's loan exposures from its side, in both directions, less the net margin it holds from settled GMSLA calls. Positive when the party may call.">
+    inputs:
+        loan GmslaMarkedLoan (0..*)
+        party string (1..1)
+        netMarginHeld number (1..1)
+    output:
+        netExposure number (1..1)
+
+    set netExposure:
+        (loan extract GmslaLoanExposure(item, party) then sum) - netMarginHeld
+
+func GmslaMarginCallAmount: <"The amount a party may call on a mark: its net figure in whole units of the Base Currency, rounded down, when the net figure exceeds its minimum transfer amount; otherwise zero.">
+    inputs:
+        netExposure number (1..1)
+        minimumTransferAmount number (1..1)
+    output:
+        amount number (1..1)
+
+    condition NotNegativeMinimum:
+        minimumTransferAmount >= 0
+
+    set amount:
+        if netExposure > minimumTransferAmount
+        then RoundToNearest(netExposure, 1, RoundingModeEnum -> Down)
+        else 0

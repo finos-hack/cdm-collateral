@@ -1,0 +1,47 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+type GmslaMarkedLoan: <"One open loan in a mark (wp-adr-gmsla-marking): the loaned securities and the collateral at the feed prices on the business date.">
+    loanId string (1..1) <"The loan's on-chain identifier.">
+    tradeHash string (1..1) <"The on-chain trade hash of the loan's terms in force (its booking, or its last return).">
+    lender string (1..1)
+    borrower string (1..1)
+    security string (1..1) <"The ISIN of the loaned securities.">
+    quantity number (1..1) <"The loaned quantity outstanding.">
+    price number (1..1) <"The feed price of one loaned security.">
+    marketValue number (1..1) <"The Market Value of the loaned securities: quantity x price.">
+    margin number (1..1) <"The loan's margin.">
+    requirement number (1..1) <"The collateral the lender requires: GmslaLoanRequirement.">
+    collateral string (1..1) <"The collateral: its ISIN, or the Base Currency for cash.">
+    collateralAmount number (1..1) <"The collateral the lender holds for the loan, in units.">
+    collateralPrice number (1..1) <"The feed price of one unit of the collateral; 1 for cash.">
+    collateralValue number (1..1) <"The collateral's value at the feed price, without a haircut: GmslaLoanCollateralValue.">
+
+    condition TwoParties:
+        lender <> borrower
+    condition MarketValue:
+        marketValue = quantity * price
+    condition Requirement:
+        requirement = GmslaLoanRequirement(quantity, price, margin)
+    condition CollateralValue:
+        collateralValue = GmslaLoanCollateralValue(collateralAmount, collateralPrice)
+
+type GmslaMarkStatement: <"The aggregated mark of a pair's securities loans under GMSLA paragraph 5.4 (wp-adr-gmsla-marking), stated for one party: its net figure, and the call it allows. The calling party publishes it and its GMSLA call's IssueCall step carries its hash; the called party rebuilds it from the chain and the feed.">
+    party string (1..1) <"The party the mark is stated for, the calling party.">
+    counterparty string (1..1)
+    businessDate date (1..1)
+    baseCurrency string (1..1)
+    loan GmslaMarkedLoan (0..*) <"The pair's open loans in both directions, in loan identifier order.">
+    netMarginHeld number (1..1) <"The value at the feed prices of the collateral of the pair's settled GMSLA calls that the party holds net; negative when it has delivered margin net.">
+    netExposure number (1..1) <"GmslaNetExposure: positive when the party may call.">
+    minimumTransferAmount number (1..1) <"The party's minimum transfer amount under the GMSLA terms.">
+    callAmount number (1..1) <"GmslaMarginCallAmount.">
+
+    condition TwoParties:
+        party <> counterparty
+    condition LoansOfThePair: <"Every loan is between the two parties.">
+        GmslaLoansOfPair(loan, party, counterparty)
+    condition NetExposure:
+        netExposure = GmslaNetExposure(loan, party, netMarginHeld)
+    condition CallAmount:
+        callAmount = GmslaMarginCallAmount(netExposure, minimumTransferAmount)

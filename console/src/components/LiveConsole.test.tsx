@@ -1,7 +1,7 @@
 // Unit tests for the live console's flow-return and flow-default-enforcement actions. The workflow service is replaced
 // by a fetch stub that serves /context and /state and records every POST, so each test checks which actions a party
 // is offered for a given on-chain call state and what the console sends to its own service.
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LiveConsole } from "./LiveConsole";
 import type { LiveCall, LiveParty, LiveRevaluation, LiveState } from "../domain/liveApi";
@@ -884,6 +884,36 @@ describe("flow-gmsla-loan-delivery-return", () => {
     const row = await screen.findByTestId("loan-0xl1");
     await user.click(within(row).getByRole("button", { name: "Agree return of 40,000 tMMF (collateral back 40,800 tUSD)" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/return", body: {} }]));
+  });
+});
+
+describe("flow-gmsla-marking", () => {
+  const mark = (over: Record<string, unknown>) => ({
+    party: "BANK-A", businessDate: "2026-11-11",
+    loans: [{ loanId: "0xl1", role: "lender", quantity: "5000000", price: "1.1", marketValueUsd: "5500000.00", marginPercent: "102",
+      requirementUsd: "5610000.00", collateralValueUsd: "5100000.00", exposureUsd: "510000.00" }],
+    netMarginHeldUsd: "0.00", netExposureUsd: "510000.00", minimumTransferAmountUsd: "250000.00", callableUsd: "510000",
+    statementHash: "0x" + "ab".repeat(32), callOpen: false, settledCalls: [], ...over,
+  });
+
+  it("the lender short of collateral calls the net figure", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmsla-marking": mark({}) });
+    const card = await screen.findByTestId("gmsla-marking");
+    expect(screen.getByTestId("gmsla-net-exposure").textContent).toBe("net figure USD 510,000");
+    expect(within(screen.getByTestId("gmsla-mark-0xl1")).getAllByRole("cell").map((c) => c.textContent)).toEqual(
+      ["0xl1", "lender", "5,000,000", "1.1", "5,610,000 (102%)", "5,100,000", "510,000"]);
+    await user.click(within(card).getByRole("button", { name: "Call GMSLA margin from B: USD 510,000" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/gmsla-marking/calls", body: {} }]));
+  });
+
+  it("no call is offered below the minimum transfer amount or while a GMSLA call is open", async () => {
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmsla-marking": mark({ callableUsd: "0", netExposureUsd: "-510000.00" }) });
+    const card = await screen.findByTestId("gmsla-marking");
+    expect((within(card).getByRole("button", { name: "Nothing to call" }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmsla-marking": mark({ callOpen: true }) });
+    expect((await screen.findByTestId("gmsla-call-open")).textContent).toBe("a GMSLA margin call is open");
   });
 });
 

@@ -33,6 +33,7 @@ type IssueCallInstruction: <"Step IssueCall.">
     issuance MarginCallIssuance (1..1) <"The call as CDM represents it.">
     direction MarginCallActionEnum (1..1) <"Delivery: the called party delivers collateral. Return: the called party releases collateral it holds.">
     replacesCall string (0..1) <"The identifier of a cancelled call that this call replaces, for example a corrected call after a cancellation (task-csa-call-replacement). ReplacementAllowed checks it against the replaced call's state.">
+    markStatement string (0..1) <"A GMSLA call (wp-adr-gmsla-marking): the hash of the GmslaMarkStatement its amount comes from, which the called party rebuilds before agreeing.">
 
     condition CallIdentified: <"The call carries an identifier so later steps can refer to it.">
         issuance -> callIdentifier exists
