@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T20:39:13Z
   confidence: 0.55
 createdAt: 2026-11-11T20:39:13Z
-updatedAt: 2026-11-11T20:43:36Z
+updatedAt: 2026-11-11T22:32:46Z
 ```
 # ADR: the party receiving a loan's rate bills it for the period since the last billing, accrued day by day on what was held; the payer's agreement pays it in tUSD on SecuritiesLoan
 
@@ -32,17 +32,17 @@ record is the maintainer's proposal.
 - **Amount (2a).** The period is split at each date the cash held changed (each settled return). For each sub-period,
   CDM's `FixedAmount` over the collateral's `InterestRatePayout`, with the cash held in it as the notional and
   `CalculationPeriodRange` for the sub-period, gives the accrual (ACT/360 from the payout). The invoice total is the sum,
-  rounded half-up to the cent. The cash held by date comes from the loan's documents: the booking and each return
+  rounded half-up to whole tUSD (the cash token has no decimals; 2a below). The cash held by date comes from the loan's documents: the booking and each return
   document, back from the trade hash.
 - **Billing and payment (3a).** The borrower's service builds and anchors the invoice. The lender's service rebuilds it
   from the chain, the loan's documents and its business date, and refuses a difference. The lender pays or refuses.
 - **Document (4a).** `cdm-ext` `GmslaLoanInvoice`: CDM's `SecurityLendingInvoice` (one `BillingRecord` per sub-period
-  with its `recordTransfer` amount, payer and receiver, and a `GrandTotal` `billingSummary`, which CDM leaves empty,
+  with its `recordTransfer` amount, payer and receiver, and a `ParentTotal` `billingSummary`, which CDM leaves empty,
   D27), the sub-periods' notionals, and CDM's payment event: a `Create_BusinessEvent` over a transfer instruction of
   type `InterestReturn` qualified as `CashTransfer`. It is anchored by its own hash; the loan's trade hash does not move.
-- **On-chain (5a).** `SecuritiesLoan.bill(loanId, periodEnd, amount, invoiceHash)` by a party of the loan, one pending
+- **On-chain (5a).** `SecuritiesLoan.bill(loanId, cashToken, periodEnd, amount, invoiceHash)` by a party of the loan, one pending
   per loan, `periodEnd` after the billed-through date; `payBill(loanId, invoiceHash)` by the other party moves the
-  amount in tUSD from it to the biller and sets the billed-through date to `periodEnd`; `refuseBill(loanId)` by the payer
+  amount in the cash token stored with the bill (tUSD) from it to the biller and sets the billed-through date to `periodEnd`; `refuseBill(loanId)` by the payer
   clears it. The contract records the billed-through date; the services check the period.
 - **Rates (6a).** Rebate rates at or above zero only; a negative rate is refused at booking.
 - **Returned loans (7a).** A returned loan can be billed up to its return date, once; nothing accrues after it.
@@ -54,3 +54,9 @@ record is the maintainer's proposal.
 - `SecuritiesLoan` is redeployed. Loans booked before it carry no billed-through date and start from their delivery.
 - Row 18 reuses the billing; it adds only the fee's accrual basis and direction.
 - The rules are assumptions for an SME ([[task-sme-gmsla-rebate-rules]]).
+
+**Corrected 2026-11-11** by the project owner (source `5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e`: "2a 3a 4a"), after the build:
+- 2a: the total is rounded half-up to whole tUSD, the cash token's precision, as for repo; not to the cent.
+- 3a: the billing summary is `ParentTotal`, the records' total, as the comment of CDM's `Create_BillingSummary`
+  describes; CDM's function has no implementation, so the service builds it (D27).
+- 4a: `bill` takes the cash token, stored with the bill, so the payer cannot pay in another token.

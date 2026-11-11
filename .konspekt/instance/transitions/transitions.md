@@ -1228,3 +1228,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
 | edge:e-lnk-rbtadr-gmslafee | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
 | node:task-gmsla-substitution | status | open | resolved | 2026-11-11T22:30:25Z | 344bcc1695e32a485b57a758d9d1685040f127a9 | denisurusov |
+| node:task-sme-gmsla-rebate-rules | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
+| edge:e-dec-cdmdev-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
+| edge:e-lnk-gmslarbt-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
