@@ -67,6 +67,11 @@ const shortId = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
  */
 async function pledgeThroughServices(amountUsd: number, qty: number, token = "tUST"): Promise<string> {
   const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  // B's gateway returns once B's node has the issuing block; A's node may import it later, and A's response then reads a
+  // call A's node does not hold yet (MarginCall NoSuchCall; CI runs 42515444660 and 42929679573). Wait until A's gateway reads it.
+  await expect
+    .poll(async () => (await fetch(`${GATEWAY.A}/calls/${callId}`).catch(() => null))?.ok ?? false, { timeout: 30_000 })
+    .toBe(true);
   await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token, qty }] });
   await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
