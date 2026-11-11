@@ -1162,4 +1162,4 @@ excluded.
 | task-repo-default-close-out | 3b274115d7478618c879e38e6003f9f1b730676a | services/collateral/src/main/java/collateral/CdmRepoDefault.java | 2026-11-11T14:02:15Z |
 | task-repo-default-close-out | 3b274115d7478618c879e38e6003f9f1b730676a | services/collateral/src/test/java/collateral/CdmRepoDefaultTest.java | 2026-11-11T14:02:15Z |
 | task-repo-default-close-out | dfe9831f9df6b6c95dc0bec404e6294cab8843fe | docs/analysis/sme-question-ledger.md | 2026-11-11T14:15:56Z |
-| task-repo-default-close-out | 2928ed0d540472a72e52b693879e64c9d639d51d | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T14:16:58Z |
+| task-repo-default-close-out | 461bbfdb0daf252c2c21eed06d699f4c03015df6 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T14:16:58Z |
