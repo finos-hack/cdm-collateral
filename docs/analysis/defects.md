@@ -44,6 +44,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D24 | `Create_PairOffInstruction` builds instructions with both a `before` trade state and an `execution`, which CDM's `Instruction` condition `NewTrade` forbids, so every pair-off event fails CDM's own validation, CDM's sample output included; it also only tags the trades with a package and settles nothing *(added 2026-11-10)* | event / validation | `rosetta/event-common-func.rosetta` 1656; `rosetta/event-common-type.rosetta` 41; `functions/repo-and-bond/pair-off-output.json` |
 | D26 | CDM's securities lending return settlement workflow (`RunReturnSettlementWorkflow`) builds the return event with no `instruction`, so no event qualification can hold for it; every step of CDM's three lending settlement workflows fails CDM validation on CDM's own samples, and only the execution step qualifies *(added 2026-11-11)* | event / qualification / validation | `cdm.security.lending.functions.SettlementFunctionHelper`; `functions/sec-lending/full-return-settlement-workflow-func-output.json`, `part-return-settlement-workflow-func-output.json`, `new-settlement-workflow-func-output.json` |
 | D27 | `ResolveSecurityFinanceBillingAmount` reads the lending fee from an `InterestRatePayout` and the lent security from the collateral path, and CDM's own lending trade has neither, so every billing record of CDM's invoice sample has no amount and the invoice has no `billingSummary`, which is required *(added 2026-11-11)* | function / sample | `rosetta/event-common-func.rosetta` 1254–1345; `functions/sec-lending/create-security-lending-invoice-func-output.json` |
+| D28 | `LegalAgreement`'s condition `AgreementVerification` checks the agreement type for security, credit support, collateral transfer and master agreement schedule elections, but not for `masterAgreementElections`, so a GMSLA (or GMRA or ISDA) election block under a legal agreement of any type validates *(added 2026-11-11)* | validation | `rosetta/legaldocumentation-common-type.rosetta` 78–88 |
 
 ## Details
 
@@ -423,3 +424,12 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   `billingSummary`, which `SecurityLendingInvoice` requires. CDM's expected output
   `create-security-lending-invoice-func-output.json` is the same. CDM issues #3640 and #3871 (closed) change lending fee
   and rebate rate types; neither covers this.
+
+### D28 — A GMSLA election block validates under any agreement type *(added 2026-11-11)*
+
+- `AgreementVerification` (`legaldocumentation-common-type.rosetta` lines 78–88) ties four of `Agreement`'s election
+  blocks to an agreement type. `masterAgreementElections` (GMSLA, GMRA, ISDA Master Agreement) is not among them.
+- Observed 2026-11-11 with a temporary test: a `LegalAgreement` with GMSLA elections and agreement type
+  `SecurityAgreement` passes CDM validation; with type `MasterAgreement` and master agreement type `GMSLA` it passes
+  too, as it should.
+- **Effect:** none on the prototype, which builds the agreement type itself; a check in `cdm-ext` covers it.
