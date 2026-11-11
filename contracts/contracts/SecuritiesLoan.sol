@@ -15,6 +15,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// becomes the trade hash; the second instruction moves the securities back to the lender and the collateral back to the
 /// borrower in one transaction. A full return redelivers all the collateral held. Collateral passes by outright title transfer (GMSLA 2010): the contract holds no tokens, and each
 /// party approves it for what it delivers. Loans are open: the contract checks no dates.
+/// The lender may recall all or part of an open loan (task-gmsla-recall, wp-adr-gmsla-recall): the recall records the
+/// quantity, the intended settlement date and the hash of the CDM recall notice (cdm-ext GmslaRecallNotice); the borrower
+/// settles it through the return, and a settled return reduces the quantity still recalled. The contract does not
+/// enforce the date: the services show a recall overdue.
 contract SecuritiesLoan {
     using SafeERC20 for IERC20;
 
@@ -53,6 +57,15 @@ contract SecuritiesLoan {
     mapping(bytes32 => Instructions) private _return;
     mapping(address => bytes32[]) private _loansOf;
 
+    /// @dev A loan's pending recall: the quantity still recalled, the intended settlement date (YYYYMMDD) and the notice.
+    struct Recall {
+        uint256 quantity;
+        uint32 settlementDate;
+        bytes32 noticeHash;
+    }
+
+    mapping(bytes32 => Recall) private _recall;
+
     event LoanBooked(bytes32 indexed loanId, address indexed lender, address indexed borrower, bytes32 tradeHash);
     event LoanAffirmed(bytes32 indexed loanId, address indexed borrower, bytes32 tradeHash);
     event LoanDeliveryInstructed(bytes32 indexed loanId, address indexed party, bytes32 cdmHash);
@@ -60,6 +73,10 @@ contract SecuritiesLoan {
     event LoanReturnInstructed(bytes32 indexed loanId, address indexed party, uint256 quantity, uint256 collateralAmount,
         bytes32 cdmHash);
     event LoanReturned(bytes32 indexed loanId, uint256 quantity, uint256 collateralAmount, bytes32 cdmHash, bool full);
+    event LoanRecalled(bytes32 indexed loanId, uint256 quantity, uint32 settlementDate, bytes32 noticeHash);
+    event LoanRecallWithdrawn(bytes32 indexed loanId, bytes32 noticeHash, bytes32 withdrawalHash);
+    /// @dev A settled return reduced the recall; quantity is what is still recalled (zero: the recall is cleared).
+    event LoanRecallReduced(bytes32 indexed loanId, bytes32 noticeHash, uint256 quantity);
 
     error LoanExists(bytes32 loanId);
     error NoLoan(bytes32 loanId);
@@ -73,6 +90,9 @@ contract SecuritiesLoan {
     error AlreadyInstructed();
     error TooMuch();
     error FullReturnKeepsCollateral();
+    error NotTheLender();
+    error RecallPending();
+    error NoRecall();
 
     /// @notice The lender books a loan to the borrower: the loaned securities and quantity, the collateral token and the
     /// amount delivered at the delivery, and the hash of the CDM trade.
@@ -151,9 +171,55 @@ contract SecuritiesLoan {
         l.collateralAmount -= collateralAmount;
         l.tradeHash = cdmHash;
         if (full) l.state = LoanState.Returned;
+        _reduceRecall(loanId, quantity);
         IERC20(l.security).safeTransferFrom(l.borrower, l.lender, quantity);
         if (collateralAmount > 0) IERC20(l.collateral).safeTransferFrom(l.lender, l.borrower, collateralAmount);
         emit LoanReturned(loanId, quantity, collateralAmount, cdmHash, full);
+    }
+
+    /// @notice The lender recalls `quantity` of an open loan, due on `settlementDate` (YYYYMMDD), with the hash of the
+    /// CDM recall notice. One recall per loan may be pending.
+    function recall(bytes32 loanId, uint256 quantity, uint32 settlementDate, bytes32 noticeHash) external {
+        Loan storage l = _load(loanId);
+        if (l.state != LoanState.Open) revert WrongState(l.state);
+        if (msg.sender != l.lender) revert NotTheLender();
+        if (_recall[loanId].quantity != 0) revert RecallPending();
+        if (quantity == 0 || settlementDate == 0 || noticeHash == bytes32(0)) revert ZeroAmount();
+        if (quantity > l.quantity) revert TooMuch();
+        _recall[loanId] = Recall(quantity, settlementDate, noticeHash);
+        emit LoanRecalled(loanId, quantity, settlementDate, noticeHash);
+    }
+
+    /// @notice The lender withdraws the pending recall, with the hash of the CDM withdrawal document.
+    function withdrawRecall(bytes32 loanId, bytes32 withdrawalHash) external {
+        Loan storage l = _load(loanId);
+        if (msg.sender != l.lender) revert NotTheLender();
+        Recall storage r = _recall[loanId];
+        if (r.quantity == 0) revert NoRecall();
+        if (withdrawalHash == bytes32(0)) revert ZeroAmount();
+        bytes32 notice = r.noticeHash;
+        delete _recall[loanId];
+        emit LoanRecallWithdrawn(loanId, notice, withdrawalHash);
+    }
+
+    /// @dev A settled return of `quantity` reduces the pending recall, and clears it when it returns at least as much.
+    function _reduceRecall(bytes32 loanId, uint256 quantity) private {
+        Recall storage r = _recall[loanId];
+        if (r.quantity == 0) return;
+        bytes32 notice = r.noticeHash;
+        if (quantity >= r.quantity) {
+            delete _recall[loanId];
+            emit LoanRecallReduced(loanId, notice, 0);
+        } else {
+            r.quantity -= quantity;
+            emit LoanRecallReduced(loanId, notice, r.quantity);
+        }
+    }
+
+    /// @notice The pending recall (zeros: none).
+    function getRecall(bytes32 loanId) external view returns (uint256 quantity, uint32 settlementDate, bytes32 noticeHash) {
+        Recall storage r = _recall[loanId];
+        return (r.quantity, r.settlementDate, r.noticeHash);
     }
 
     /// @dev Records the caller's instruction hash; true when the other party has instructed the same hash already.

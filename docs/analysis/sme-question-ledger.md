@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 124 questions in 23 tasks, all open.
+Status of the ledger: 130 questions in 24 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -254,3 +254,14 @@ Status of the ledger: 124 questions in 23 tasks, all open.
 | MRK-4 | Collateral is valued at its market price without a haircut, the loan's margin being the buffer. Is a haircut on non-cash collateral applied as well under GMSLA 2010? | open | |
 | MRK-5 | The margin delivered on a call stays with the pair and is netted at the next mark; a return of a loan redelivers only that loan's own collateral. Is margin attributed to individual loans in practice? | open | |
 | MRK-6 | Prices are the feed prices on the business date, and a call settles by the next business day. What are the usual valuation time and settlement period for a margin call under the GMSLA? | open | |
+
+### `task-sme-gmsla-recall-rules`: recalling loaned securities under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| RCL-1 | The lender recalls all or part of a loan by notice, and the borrower must return the securities by the end of the standard settlement time for them. Is two business days after the notice the right date for the prototype's securities, and is the notice date the day the notice is given or the next business day after a cut-off time? | open | |
+| RCL-2 | A recall is recorded as a notice and does not change the loan; the loan ends only when the securities are returned. Is that how a recall works under GMSLA 2010, or does the notice itself terminate the loan for the recalled quantity? | open | |
+| RCL-3 | The lender may withdraw a recall before the securities are returned. Is a withdrawal usual, and does it need the borrower's agreement? | open | |
+| RCL-4 | When the borrower misses the date, the prototype only shows the recall as overdue. What may the lender do, and from when: a buy-in, a default notice, or both (row 19)? | open | |
+| RCL-5 | The collateral stays with the lender until the return, which redelivers it in proportion. Is that right, or is collateral released when the recall is made? | open | |
+| RCL-6 | A borrower's own return of part of a recalled loan reduces the quantity still recalled. Is that how a partial return during a recall is treated? | open | |

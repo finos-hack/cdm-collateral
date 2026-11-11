@@ -91,6 +91,9 @@ public final class CdmLoan {
                 "securitySettlementCentre", "SecuritySettlementCentre", "cashSettlementCentre", "CashSettlementCentre");
     }
 
+    /** Business days from a recall notice to its intended settlement date: the standard settlement cycle. */
+    public static final int RECALL_SETTLEMENT_DAYS = 2;
+
     /** The execution instruction for a loan (the shape the CDM check found valid). */
     static Map<String, Object> execution(Terms t) {
         Map<String, Object> lent = CdmRepo.security(t.isin());
@@ -131,6 +134,11 @@ public final class CdmLoan {
         if (t.termDate() != null) economicTerms.put("terminationDate", date(t.termDate()));
         economicTerms.put("payout", l(loanPayout));
         economicTerms.put("collateral", o("collateralPortfolio", l(portfolio), "collateralProvisions", provisions));
+        // The lender may recall the loan; the borrower returns within RECALL_SETTLEMENT_DAYS business days of the notice
+        // (wp-adr-gmsla-recall, cdm-ext GmslaRecallOffset).
+        economicTerms.put("terminationProvision", o("recallProvision", o("isRecallable", true,
+                "intendedSettlementDate", o("periodMultiplier", RECALL_SETTLEMENT_DAYS, "period", "D", "dayType", "Business",
+                        "businessDayConvention", "NONE", "dateRelativeTo", o("externalReference", "noticeDate")))));
         Map<String, Object> product = o("taxonomy", l(o("source", "ISDA", "value", o("name", o("@data", "SecurityLending")))),
                 "economicTerms", economicTerms);
         return o("product", product,

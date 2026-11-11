@@ -887,6 +887,45 @@ describe("flow-gmsla-loan-delivery-return", () => {
   });
 });
 
+describe("flow-gmsla-recall", () => {
+  const loan = (over: Record<string, unknown>) => ({
+    loanId: "0xl1", role: "lender", counterparty: "B", state: "open", security: "tMMF", quantity: "100000", collateral: "tUSD",
+    collateralAmount: "102000", tradeHash: "0x01", price: "1", marginPercent: "102", rebateRatePercent: "4", termDate: null,
+    deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
+  });
+  const recall = (over: Record<string, unknown>) => ({
+    quantity: "40000", intendedSettlementDate: "2026-11-16", overdue: false, noticeHash: "0xab", recalledQuantity: "40000", noticeDate: "2026-11-12", verified: true, ...over,
+  });
+
+  it("the lender recalls part of an open loan", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/loans": { businessDate: "2026-11-12", loans: [loan({})] } });
+    const row = await screen.findByTestId("loan-0xl1");
+    await user.clear(within(row).getByLabelText("Recall quantity"));
+    await user.type(within(row).getByLabelText("Recall quantity"), "40000");
+    await user.click(within(row).getByRole("button", { name: "Recall part" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/recall", body: { quantity: 40000 } }]));
+  });
+
+  it("the borrower sees an overdue recall and returns the quantity recalled; the lender can withdraw it", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-11-17", loans: [loan({ role: "borrower", counterparty: "A", recall: recall({ overdue: true }) })] },
+    });
+    expect((await screen.findByTestId("loan-recall-0xl1")).textContent).toBe("recall of 40,000 due 2026-11-16 (overdue)");
+    const row = screen.getByTestId("loan-0xl1");
+    expect(within(row).queryByRole("button", { name: "Withdraw recall" })).toBeNull();
+    expect(within(row).queryByLabelText("Recall quantity")).toBeNull();
+    await user.click(within(row).getByRole("button", { name: "Return part" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/return", body: { quantity: 40000 } }]));
+    cleanup();
+    posts.length = 0;
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/loans": { businessDate: "2026-11-12", loans: [loan({ recall: recall({}) })] } });
+    await user.click(await screen.findByRole("button", { name: "Withdraw recall" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/recall/withdraw", body: {} }]));
+  });
+});
+
 describe("flow-gmsla-marking", () => {
   const mark = (over: Record<string, unknown>) => ({
     party: "BANK-A", businessDate: "2026-11-11",

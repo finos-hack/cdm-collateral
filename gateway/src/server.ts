@@ -308,6 +308,9 @@ route("POST", "/ledger/v1/loans/:id/return", async (p, b) => {
   if (BigInt(b.amount) > 0n) await adapter.approve(getAddress(b.token), adapter.loanContract(), BigInt(b.amount));
   return J(await adapter.instructLoanReturn(p.id as Hex, BigInt(b.quantity), BigInt(b.collateralAmount), b.cdmHash as Hex));
 });
+route("POST", "/ledger/v1/loans/:id/recall", async (p, b) =>
+  J(await adapter.recallLoan(p.id as Hex, BigInt(b.quantity), Number(b.settlementDate), b.noticeHash as Hex)));
+route("POST", "/ledger/v1/loans/:id/recall/withdraw", async (p, b) => J(await adapter.withdrawLoanRecall(p.id as Hex, b.withdrawalHash as Hex)));
 route("GET", "/ledger/v1/loans/:id", async (p) => J(await adapter.getLoan(p.id as Hex)));
 route("GET", "/ledger/v1/loans", async (_p, _b, url) => J(await adapter.listLoans(getAddress(url.searchParams.get("party")!))));
 

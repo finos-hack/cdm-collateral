@@ -1733,5 +1733,47 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(loans.write.book([H("L4"), bAddr, tMMF.address, 1n, tUSD.address, 0n, H("t")], { account: bankA.account }));
       assert.deepEqual(await loans.read.loansOf([bAddr]), [L]);
     });
+
+    it("the lender recalls part; a smaller return reduces the recall and a return of the rest clears it (task-gmsla-recall)", async () => {
+      const Z = `0x${"0".repeat(64)}`;
+      await assert.rejects(loans.write.recall([L, 40n, 20261113, H("n1")], { account: bankA.account })); // not open
+      await deliver();
+      await assert.rejects(loans.write.recall([L, 40n, 20261113, H("n1")], { account: bankB.account })); // not the lender
+      await assert.rejects(loans.write.recall([L, 101n, 20261113, H("n1")], { account: bankA.account })); // too much
+      await assert.rejects(loans.write.recall([L, 0n, 20261113, H("n1")], { account: bankA.account }));
+      await assert.rejects(loans.write.recall([L, 40n, 20261113, Z as `0x${string}`], { account: bankA.account }));
+      await loans.write.recall([L, 40n, 20261113, H("n1")], { account: bankA.account });
+      assert.deepEqual(await loans.read.getRecall([L]), [40n, 20261113, H("n1")]);
+      await assert.rejects(loans.write.recall([L, 10n, 20261113, H("n2")], { account: bankA.account })); // one pending
+      // Nothing moves at the notice; the borrower returns 30, then 10.
+      assert.equal(await bal(tMMF, bAddr), 100n);
+      await tMMF.write.approve([loans.address, 100n], { account: bankB.account });
+      await tUSD.write.approve([loans.address, 5100n], { account: bankA.account });
+      await loans.write.instructReturn([L, 30n, 1530n, H("r1")], { account: bankB.account });
+      await loans.write.instructReturn([L, 30n, 1530n, H("r1")], { account: bankA.account });
+      assert.deepEqual(await loans.read.getRecall([L]), [10n, 20261113, H("n1")]);
+      await loans.write.instructReturn([L, 10n, 510n, H("r2")], { account: bankB.account });
+      await loans.write.instructReturn([L, 10n, 510n, H("r2")], { account: bankA.account });
+      assert.deepEqual(await loans.read.getRecall([L]), [0n, 0, Z]);
+      assert.equal((await loans.read.getLoan([L])).quantity, 60n);
+      // A recall of the rest is cleared by the full return.
+      await loans.write.recall([L, 60n, 20261116, H("n3")], { account: bankA.account });
+      await loans.write.instructReturn([L, 60n, 3060n, H("r3")], { account: bankB.account });
+      await loans.write.instructReturn([L, 60n, 3060n, H("r3")], { account: bankA.account });
+      assert.deepEqual(await loans.read.getRecall([L]), [0n, 0, Z]);
+      assert.equal((await loans.read.getLoan([L])).state, 4);
+    });
+
+    it("the lender withdraws a pending recall; only the lender, only a pending one", async () => {
+      await deliver();
+      await assert.rejects(loans.write.withdrawRecall([L, H("w")], { account: bankA.account })); // none pending
+      await loans.write.recall([L, 100n, 20261113, H("n1")], { account: bankA.account });
+      await assert.rejects(loans.write.withdrawRecall([L, H("w")], { account: bankB.account }));
+      await loans.write.withdrawRecall([L, H("w")], { account: bankA.account });
+      assert.deepEqual(await loans.read.getRecall([L]), [0n, 0, `0x${"0".repeat(64)}`]);
+      assert.equal((await loans.read.getLoan([L])).quantity, 100n);
+      await loans.write.recall([L, 50n, 20261114, H("n2")], { account: bankA.account }); // a new recall after withdrawal
+      assert.equal((await loans.read.getRecall([L]))[0], 50n);
+    });
   });
 });

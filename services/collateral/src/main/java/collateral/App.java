@@ -145,6 +145,8 @@ public final class App {
         app.post("/api/v1/loans/{id}/affirm", this::affirmLoan);
         app.post("/api/v1/loans/{id}/deliver", this::deliverLoan);
         app.post("/api/v1/loans/{id}/return", this::returnLoan);
+        app.post("/api/v1/loans/{id}/recall", this::recallLoan);
+        app.post("/api/v1/loans/{id}/recall/withdraw", this::withdrawLoanRecall);
         app.get("/api/v1/gmsla-marking", this::gmslaMarking);
         app.post("/api/v1/gmsla-marking/calls", this::issueGmslaMarginCall);
         app.get("/api/v1/repos", this::repos);
@@ -932,7 +934,11 @@ public final class App {
 
     /** The document at a loan's trade hash, checked by this service; null if not in the store. */
     private LoanCurrent loanCurrent(JsonNode l) {
-        String hash = l.get("tradeHash").asText();
+        return loanDocAt(l.get("tradeHash").asText());
+    }
+
+    /** The loan document with this hash (a booking or a return), checked by this service; null if not in the store. */
+    private LoanCurrent loanDocAt(String hash) {
         LoanCurrent c = loanDocs.get(hash);
         if (c != null) return c;
         String doc = payloads.get(hash);
@@ -992,6 +998,8 @@ public final class App {
             m.put("pendingReturn", Map.of("quantity", r.get("quantity").asText(), "collateralAmount", r.get("collateralAmount").asText(),
                     "instructedByMe", mine, "instructedByCounterparty", theirs));
         }
+        JsonNode rc = l.path("recall");
+        if (rc.path("quantity").asLong(0) > 0) m.put("recall", recallView(l, rc));
         try {
             LoanCurrent c = loanCurrent(l);
             if (c == null) {
@@ -1017,6 +1025,92 @@ public final class App {
             m.put("problem", ex.getMessage());
         }
         return m;
+    }
+
+    // ---- recall of loaned securities (task-gmsla-recall, wp-adr-gmsla-recall) ----
+    // The lender's cdm-ext GmslaRecallNotice is published and its hash anchored on SecuritiesLoan with the quantity and
+    // the intended settlement date; the borrower settles it through the return. Rules to confirm in
+    // task-sme-gmsla-recall-rules.
+
+    /** Recall notices this service has checked, by hash (a notice never changes). */
+    private final Map<String, CdmRecall.Notice> recallNotices = new ConcurrentHashMap<>();
+
+    /** The pending recall's notice, checked: it hashes to the on-chain notice hash, rebuilds from the trade at its trade
+     *  hash, and states the on-chain intended settlement date. */
+    private CdmRecall.Notice recallNotice(JsonNode l, JsonNode rc) {
+        String hash = rc.get("noticeHash").asText();
+        CdmRecall.Notice known = recallNotices.get(hash);
+        if (known != null) return known;
+        String doc = payloads.get(hash);
+        if (doc == null) throw new IllegalStateException("the recall notice is not in the payload store");
+        if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the recall notice does not hash to the on-chain notice hash");
+        var parsed = CdmRecall.parse(doc);
+        if (!parsed.getLoanId().equalsIgnoreCase(l.get("loanId").asText())) throw new IllegalStateException("the recall notice is for another loan");
+        LoanCurrent at = loanDocAt(parsed.getTradeHash());
+        if (at == null) throw new IllegalStateException("the loan document the notice recalls is not in the payload store");
+        CdmRecall.Notice n = CdmRecall.verify(doc, at.trade());
+        if (n.settlementDate() != rc.get("settlementDate").asInt()) throw new IllegalStateException("the on-chain settlement date is not the notice's");
+        boolean lender = l.get("lender").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!lender) store.recordDocument(l.get("loanId").asText(), "GmslaRecallNotice", "in", hash, doc);
+        recallNotices.put(hash, n);
+        return n;
+    }
+
+    private Map<String, Object> recallView(JsonNode l, JsonNode rc) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("quantity", rc.get("quantity").asText());
+        LocalDate due = CdmRecall.fromYyyymmdd(rc.get("settlementDate").asInt());
+        m.put("intendedSettlementDate", due.toString());
+        m.put("overdue", CdmRecall.overdue(due, businessDate));
+        m.put("noticeHash", rc.get("noticeHash").asText());
+        try {
+            CdmRecall.Notice n = recallNotice(l, rc);
+            m.put("recalledQuantity", n.notice().getQuantity().toPlainString());
+            m.put("noticeDate", n.notice().getNoticeDate().toString());
+            m.put("verified", true);
+        } catch (Exception e) {
+            m.put("verified", false);
+            m.put("problem", e.getMessage());
+        }
+        return m;
+    }
+
+    /** The lender recalls all or part of an open loan on the business date (body `quantity`, default: all outstanding). */
+    private void recallLoan(Context ctx) {
+        String id = ctx.pathParam("id");
+        Map<String, Object> b = ctx.body().isBlank() ? Map.of() : body(ctx);
+        JsonNode l = gw.get("/loans/" + id);
+        if (!l.get("lender").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the lender recalls a loan");
+        if (!l.get("state").asText().equals("open")) throw new RuntimeException("loan " + id + " is not open");
+        if (l.path("recall").path("quantity").asLong(0) > 0) throw new RuntimeException("a recall of loan " + id + " is already pending");
+        LoanCurrent c = loanCurrent(l);
+        if (c == null) throw new RuntimeException("the loan document is not in the payload store");
+        String problem = loanProblem(l, c);
+        if (problem != null) throw new RuntimeException(problem);
+        Object q = b.get("quantity");
+        long quantity = q == null || String.valueOf(q).isBlank() ? l.get("quantity").asLong() : Long.parseLong(String.valueOf(q));
+        CdmRecall.Notice n = CdmRecall.notice(c.trade(), l.get("tradeHash").asText(), quantity, businessDate);
+        store.recordDocument(id, "GmslaRecallNotice", "out", n.hash(), n.json());
+        payloads.put(n.hash(), n.json(), callParties);
+        recallNotices.put(n.hash(), n);
+        JsonNode tx = gw.post("/loans/" + id + "/recall", Map.of("quantity", String.valueOf(quantity), "settlementDate", n.settlementDate(), "noticeHash", n.hash()));
+        ctx.json(Map.of("loanId", id, "noticeHash", n.hash(), "quantity", quantity,
+                "intendedSettlementDate", n.notice().getIntendedSettlementDate().toString(), "recallTx", tx.path("txHash").asText()));
+    }
+
+    /** The lender withdraws the pending recall before the return settles it. */
+    private void withdrawLoanRecall(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        if (!l.get("lender").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the lender withdraws a recall");
+        JsonNode rc = l.path("recall");
+        if (rc.path("quantity").asLong(0) == 0) throw new RuntimeException("no recall of loan " + id + " is pending");
+        CdmRecall.Notice n = recallNotice(l, rc);
+        CdmRecall.Withdrawal w = CdmRecall.withdrawal(n.notice(), n.hash(), businessDate);
+        store.recordDocument(id, "GmslaRecallWithdrawal", "out", w.hash(), w.json());
+        payloads.put(w.hash(), w.json(), callParties);
+        JsonNode tx = gw.post("/loans/" + id + "/recall/withdraw", Map.of("withdrawalHash", w.hash()));
+        ctx.json(Map.of("loanId", id, "withdrawalHash", w.hash(), "withdrawTx", tx.path("txHash").asText()));
     }
 
     /** This party's loans, newest first, with the business date. */

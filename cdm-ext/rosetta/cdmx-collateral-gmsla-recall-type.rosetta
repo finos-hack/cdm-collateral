@@ -1,0 +1,35 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+type GmslaRecallNotice: <"The lender's notice recalling all or part of an open securities loan (wp-adr-gmsla-recall). CDM holds a RecallProvision and a Recall transfer type but has no recall notice; a Recall transfer qualifies only as SecurityTransfer and leaves the loan unchanged. The lender publishes the notice and anchors its hash on SecuritiesLoan; the borrower rebuilds it. The borrower settles it through the loan's return (GmslaLoanSettlement).">
+    [rootType]
+    loanId string (1..1) <"The loan's on-chain identifier.">
+    tradeHash string (1..1) <"The on-chain trade hash of the loan's terms in force when the notice is given.">
+    lender string (1..1)
+    borrower string (1..1)
+    security string (1..1) <"The ISIN of the loaned securities.">
+    quantityOutstanding number (1..1) <"The loaned quantity outstanding when the notice is given.">
+    quantity number (1..1) <"The quantity recalled.">
+    noticeDate date (1..1) <"The business date the notice is given.">
+    settlementOffset int (1..1) <"Business days from the notice to the intended settlement date: the loan's RecallProvision.">
+    intendedSettlementDate date (1..1) <"The date by which the borrower returns the securities: GmslaRecallSettlementDate.">
+
+    condition TwoParties:
+        lender <> borrower
+    condition PartOrAll: <"The lender recalls all or part of the quantity outstanding.">
+        quantity > 0 and quantity <= quantityOutstanding
+    condition PositiveOffset:
+        settlementOffset > 0
+    condition SettlementDate:
+        intendedSettlementDate = GmslaRecallSettlementDate(noticeDate, settlementOffset)
+
+type GmslaRecallWithdrawal: <"The lender's withdrawal of a pending recall before the return settles it (wp-adr-gmsla-recall).">
+    [rootType]
+    loanId string (1..1)
+    notice string (1..1) <"The hash of the GmslaRecallNotice withdrawn.">
+    lender string (1..1)
+    borrower string (1..1)
+    withdrawalDate date (1..1)
+
+    condition TwoParties:
+        lender <> borrower
