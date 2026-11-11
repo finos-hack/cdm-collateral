@@ -1131,3 +1131,5 @@ excluded.
 | task-repo-buy-sell-back | 67577b7ad5198c106e793696d2d4df557be5d3bb | services/collateral/src/main/java/collateral/CdmRepoMargin.java | 2026-11-11T02:24:46Z |
 | task-repo-buy-sell-back | 67577b7ad5198c106e793696d2d4df557be5d3bb | services/collateral/src/test/java/collateral/CdmRepoMarginTest.java | 2026-11-11T02:24:46Z |
 | task-repo-buy-sell-back | 67577b7ad5198c106e793696d2d4df557be5d3bb | services/collateral/src/test/java/collateral/CdmRepoTest.java | 2026-11-11T02:24:46Z |
+
+| task-repo-buy-sell-back | 7b3a87d0ad9c03a74dc119bbc974030cccf1ae25 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T03:31:09Z |
