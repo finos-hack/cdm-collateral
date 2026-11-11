@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-10T23:09:02Z
+updatedAt: 2026-11-11T01:16:36Z
 ```
 # Task: buy/sell-back
 
@@ -28,3 +28,8 @@ The details are decided when the task starts.
 **Check for gap G30 (defect D7) when the task starts:** CDM's repo qualification accepts one `InterestRatePayout` only. Run a
 temporary test over the buy/sell-back trade and each of its events (`Qualify_BuySellBack` has the same rule): count the payouts and evaluate CDM's qualification function on each resulting trade.
 Record the result in the G30 row of `docs/analysis/cdm-workflow-task-map.md` (checked on 2026-11-10 for the repo events of `CdmRepo` built through row C8).
+Done 2026-11-11: a `CdmRepo` trade with `AssetPayout.tradeType` `BuySellBack`, through every `CdmRepo` event (book, the buyer's
+check, repurchase, reprice, adjust, substitute, interim interest, roll, pair-off), stays valid, keeps one `InterestRatePayout`
+and the trade type, and qualifies as a buy/sell-back (`Qualify_BuySellBack`) and not as a repo. CDM's event qualifications do
+not test the product type. CDM has no buy/sell-back economics: the enum's definition says the income on the securities
+reduces the repurchase price, with interest from the income date, and no CDM function computes it.
