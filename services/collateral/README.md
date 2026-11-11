@@ -130,7 +130,8 @@ agreed GMRA amendments; with the contract's terms hash beside them, `verified`; 
 `GET /repos` (this party's term repos with the business date: the on-chain record from `RepoSettlement` and the CDM
 trade this service rebuilt from the booked document and checked against it, `verified`; wp-adr-repo-purchase-repurchase),
 `POST /repos` (body `security` tUST or tMMF, `purchasePrice` whole tUSD, `ratePercent`, `termDays`, optional
-`marginRatio`; the seller: quantity from cdm-ext `RepoPurchaseQuantity` at the feed price, CDM `TradeState` from
+`marginRatio`, optional `buySellBack` true for a buy/sell-back with CDM's trade type `BuySellBack` and `bookBuySellBack`
+on-chain, wp-adr-repo-buy-sell-back; the seller: quantity from cdm-ext `RepoPurchaseQuantity` at the feed price, CDM `TradeState` from
 `Create_BusinessEvent` in `CdmRepo`, Repurchase Price from cdm-ext `RepoRepurchasePrice`, then `book` on-chain),
 `POST /repos/{id}/affirm` (the buyer, after its checks and that the trade's price is the feed price),
 `POST /repos/{id}/settle` (body `phase` purchase or repurchase; builds the cdm-ext `RepoSettlement` document, approves
@@ -153,7 +154,9 @@ instruction moves the securities difference and the accrued Price Differential; 
 `POST /repos/{id}/substitute/agree` (the Buyer agrees, only if its service builds the same CDM event at the feed prices and business
 date; both securities move and no cash), `POST /repos/{id}/substitute/refuse`,
 `POST /repos/{id}/interim-interest` and `POST /repos/{id}/income` with `/agree` and `/refuse` (the Seller pays accrued interest, the
-Buyer pays manufactured income entered by hand; the other party agrees or refuses; wp-adr-repo-income),
+Buyer pays manufactured income entered by hand; the other party agrees or refuses; wp-adr-repo-income; on a buy/sell-back
+there is no interim interest, and the income is a cdm-ext `BuySellBackIncome` record whose deduction lowers the Sell Back
+Price and moves no cash; wp-adr-repo-buy-sell-back),
 `POST /repos/{id}/roll` with `/agree` and `/refuse` (on the Repurchase Date either party proposes the new Repurchase Date and
 repo rate; the other party agrees or refuses; wp-adr-repo-roll),
 `POST /repos/{id}/pair-off` (body `{otherRepoId}`) with `/agree` and `/refuse` (on the common Repurchase Date either party

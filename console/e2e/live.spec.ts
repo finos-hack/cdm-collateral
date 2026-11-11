@@ -1862,8 +1862,8 @@ const repoAdjustFixture = async () => {
         .toBe(String(BigInt(Math.round(price * 100)) * 1_000_000n));
     }
   };
-  const open = async (seller: string, buyer: string, purchasePrice: number, ratePercent = "4.5") => {
-    const { repoId } = await call<{ repoId: string }>(`${seller}/repos`, "POST", { security: "tUST", purchasePrice, ratePercent, termDays: 7, marginRatio: null });
+  const open = async (seller: string, buyer: string, purchasePrice: number, ratePercent = "4.5", buySellBack = false) => {
+    const { repoId } = await call<{ repoId: string }>(`${seller}/repos`, "POST", { security: "tUST", purchasePrice, ratePercent, termDays: 7, marginRatio: null, buySellBack });
     await expect.poll(async () => (await repo(buyer, repoId))?.state, { timeout: 30_000 }).toBe("booked");
     await call(`${buyer}/repos/${repoId}/affirm`, "POST", {});
     await expect.poll(async () => (await repo(seller, repoId))?.state, { timeout: 30_000 }).toBe("affirmed");
@@ -2332,5 +2332,123 @@ test("flow-repo-pair-off: only on the common Repurchase Date -> B proposes -> A 
   } finally {
     done = await close([r1, r2]);
     expect(done).toBe(2);
+  }
+});
+
+// --- flow-repo-buy-sell-back ---
+// A buy/sell-back is a repo with CDM's trade type BuySellBack (wp-adr-repo-buy-sell-back): agreed income moves no cash and
+// lowers the Sell Back Price by the income plus interest to the Repurchase Date, there is no interim interest, and only
+// two buy/sell-backs pair off.
+type BsbRow = { repoId: string; state: string; verified: boolean; buySellBack?: boolean; incomeDeduction?: string; sellBackPrice?: string;
+  repurchasePrice: string; incomePending?: string; pairOffPending?: string; pairOffNet?: string };
+
+test("flow-repo-buy-sell-back: A books a buy/sell-back in the console -> B affirms -> purchase -> B enters income -> A agrees, no cash moves and the Sell Back Price falls -> sell-back at the lower price", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUSD, today, inDays, repo, setDate, setPrice, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const row = async (svc: string, id: string) => (await repo(svc, id)) as unknown as BsbRow;
+  const before = new Set((await call<{ repos: { repoId: string }[] }>(`${SERVICE.A}/repos`)).repos.map((r) => r.repoId));
+
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("repos");
+  await card.getByLabel("Repo type").selectOption("bsb");
+  await card.getByRole("button", { name: "Book buy/sell-back: sell to B" }).click({ timeout: STEP_TIMEOUT });
+  let repoId = "";
+  await expect.poll(async () => {
+    const fresh = (await call<{ repos: BsbRow[] }>(`${SERVICE.A}/repos`)).repos.find((r) => !before.has(r.repoId) && r.buySellBack);
+    repoId = fresh?.repoId ?? "";
+    return repoId;
+  }, { timeout: 30_000 }).not.toBe("");
+  const r = { repoId, seller: SERVICE.A, buyer: SERVICE.B };
+  let done = false;
+  try {
+    await expect.poll(async () => (await row(SERVICE.B, repoId))?.state, { timeout: 30_000 }).toBe("booked");
+    expect((await row(SERVICE.B, repoId)).buySellBack).toBe(true);
+    await call(`${SERVICE.B}/repos/${repoId}/affirm`, "POST", {});
+    await expect.poll(async () => (await row(SERVICE.A, repoId))?.state, { timeout: 30_000 }).toBe("affirmed");
+    await call(`${SERVICE.B}/repos/${repoId}/settle`, "POST", { phase: "purchase" });
+    await call(`${SERVICE.A}/repos/${repoId}/settle`, "POST", { phase: "purchase" });
+    await expect.poll(async () => (await row(SERVICE.B, repoId))?.state, { timeout: 30_000 }).toBe("purchased");
+    await expect(page.getByTestId(`repo-${repoId}`)).toContainText("buy/sell-back · seller", { timeout: STEP_TIMEOUT });
+    // No interim interest on a buy/sell-back: the forward price is fixed at trade.
+    await expect(page.getByTestId(`repo-${repoId}`).getByRole("button", { name: "Pay accrued interest" })).toHaveCount(0);
+    await expect(call(`${SERVICE.A}/repos/${repoId}/interim-interest`, "POST", {})).rejects.toThrow("no interim interest");
+
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+    // B, the Buyer, enters income of 0.5 per unit three days in: 10,366 x 0.5 = 5,183, plus 5,183 x 4.5% x 4 / 360 = 2.59.
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`repo-${repoId}`);
+    await rowB.getByLabel("Income per unit").fill("0.5");
+    await rowB.getByLabel("Income date").fill(inDays(3));
+    await rowB.getByRole("button", { name: "Enter income" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await row(SERVICE.A, repoId)).incomePending, { timeout: 30_000 }).toBe("toDecide");
+
+    await page.goto("/#/live/A");
+    await page.getByTestId(`repo-${repoId}`).getByRole("button", { name: "Agree income USD 5183, sell-back price lower by USD 5,186" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await row(SERVICE.B, repoId)).incomeDeduction, { timeout: 30_000 }).toBe("5186");
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd);
+    const agreed = await row(SERVICE.A, repoId);
+    expect(agreed.repurchasePrice).toBe("1000875");
+    expect(agreed.sellBackPrice).toBe("995689");
+    await expect(page.getByTestId(`repo-price-${repoId}`)).toContainText("sell back USD 995,689", { timeout: STEP_TIMEOUT });
+
+    // The sell-back on the Repurchase Date: the Seller pays 1,000,875 - 5,186.
+    await setDate(inDays(7));
+    await call(`${SERVICE.A}/repos/${repoId}/settle`, "POST", { phase: "repurchase" });
+    await call(`${SERVICE.B}/repos/${repoId}/settle`, "POST", { phase: "repurchase" });
+    await expect.poll(async () => (await row(SERVICE.A, repoId)).state, { timeout: 30_000 }).toBe("repurchased");
+    done = true;
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd - 995_689n);
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd + 995_689n);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      expect((await row(svc, repoId)).verified).toBe(true);
+      expect((await call<{ closedState: string }>(`${svc}/repos/${repoId}/trade`)).closedState).toBe("Terminated");
+    }
+  } finally {
+    if (!done) await close([r]);
+    await setDate(today);
+  }
+});
+
+test("flow-repo-buy-sell-back: two offsetting buy/sell-backs pair off on the Repurchase Date, netting the Sell Back Prices -> a buy/sell-back does not pair off with a repo", async () => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const row = async (svc: string, id: string) => (await repo(svc, id)) as unknown as BsbRow;
+  const r1 = await open(SERVICE.A, SERVICE.B, 1_000_000, "4.5", true); // Repurchase Price 1,000,875
+  const r2 = await open(SERVICE.B, SERVICE.A, 1_000_000, "4", true); // Repurchase Price 1,000,778
+  const r3 = await open(SERVICE.A, SERVICE.B, 1_000_000, "4.5"); // a repo, A sells again
+  let paired = false;
+  try {
+    // Income on r1 lowers its Sell Back Price by 5,186 to 995,689.
+    await call(`${SERVICE.B}/repos/${r1.repoId}/income`, "POST", { incomePerUnit: "0.5", incomeDate: inDays(3) });
+    await expect.poll(async () => (await row(SERVICE.A, r1.repoId)).incomePending, { timeout: 30_000 }).toBe("toDecide");
+    await call(`${SERVICE.A}/repos/${r1.repoId}/income/agree`, "POST", {});
+    await expect.poll(async () => (await row(SERVICE.B, r1.repoId)).incomeDeduction, { timeout: 30_000 }).toBe("5186");
+
+    await setDate(inDays(7));
+    // r2 (a buy/sell-back B sells) and r3 (a repo A sells) offset in all but type.
+    await expect(call(`${SERVICE.B}/repos/${r2.repoId}/pair-off`, "POST", { otherRepoId: r3.repoId })).rejects.toThrow("do not offset");
+
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+    await call(`${SERVICE.A}/repos/${r1.repoId}/pair-off`, "POST", { otherRepoId: r2.repoId });
+    // 995,689 against 1,000,778: B, the Seller of r2, pays A 5,089.
+    await expect.poll(async () => (await row(SERVICE.B, r2.repoId)).pairOffPending, { timeout: 30_000 }).toBe("toDecide");
+    expect((await row(SERVICE.B, r2.repoId)).pairOffNet).toBe("-5089");
+    await call(`${SERVICE.B}/repos/${r2.repoId}/pair-off/agree`, "POST", {});
+    for (const id of [r1.repoId, r2.repoId])
+      await expect.poll(async () => (await row(SERVICE.A, id)).state, { timeout: 30_000 }).toBe("repurchased");
+    paired = true;
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd + 5_089n);
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd - 5_089n);
+    for (const svc of [SERVICE.A, SERVICE.B])
+      for (const id of [r1.repoId, r2.repoId])
+        expect((await call<{ closedState: string }>(`${svc}/repos/${id}/trade`)).closedState).toBe("Terminated");
+  } finally {
+    expect(await close(paired ? [r3] : [r1, r2, r3])).toBe(paired ? 1 : 3);
+    await setDate(today);
   }
 });

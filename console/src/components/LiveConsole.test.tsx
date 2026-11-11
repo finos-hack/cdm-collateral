@@ -475,7 +475,7 @@ describe("flow-repo-purchase-repurchase", () => {
     await user.clear(within(card).getByLabelText("Term (days)"));
     await user.type(within(card).getByLabelText("Term (days)"), "14");
     await user.click(within(card).getByRole("button", { name: "Book repo: sell to B" }));
-    await waitFor(() => expect(posts).toEqual([{ path: "/repos", body: { security: "tUST", purchasePrice: 1000000, ratePercent: "4.5", termDays: 14, marginRatio: null } }]));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos", body: { security: "tUST", purchasePrice: 1000000, ratePercent: "4.5", termDays: 14, marginRatio: null, buySellBack: false } }]));
   });
 
   it("the buyer affirms, and the repurchase waits for the Repurchase Date", async () => {
@@ -688,6 +688,53 @@ describe("flow-repo-margin-maintenance", () => {
     const card = await screen.findByTestId("repos");
     expect(within(card).queryByRole("button", { name: /^Agree pair-off/ })).toBeNull();
     expect((await screen.findByTestId("repo-pairoff-0xr1")).textContent).toContain("do not offset");
+  });
+
+  it("the seller books a buy/sell-back by choosing its type", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-09", repos: [] } });
+    const card = await screen.findByTestId("repos");
+    await user.selectOptions(within(card).getByLabelText("Repo type"), "bsb");
+    await user.click(within(card).getByRole("button", { name: "Book buy/sell-back: sell to B" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos", body: { security: "tUST", purchasePrice: 1000000, ratePercent: "4.5", termDays: 7, marginRatio: null, buySellBack: true } }]));
+  });
+
+  it("a buy/sell-back shows its Sell Back Price, offers no interim interest, and its Buyer enters income", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-09", repos: [
+      substitutionRepo({ buySellBack: true, incomeDeduction: "5186", sellBackPrice: "995689" }),
+      substitutionRepo({ repoId: "0xr2", role: "buyer", counterparty: "B", buySellBack: true, incomeDeduction: "0", sellBackPrice: "1000875" }),
+    ] } });
+    const seller = await screen.findByTestId("repo-0xr1");
+    expect(seller.textContent).toContain("buy/sell-back · seller");
+    expect((await screen.findByTestId("repo-price-0xr1")).textContent).toContain("sell back USD 995,689");
+    expect((await screen.findByTestId("repo-price-0xr2")).textContent).not.toContain("sell back");
+    expect(within(seller).queryByRole("button", { name: "Pay accrued interest" })).toBeNull();
+    const buyer = await screen.findByTestId("repo-0xr2");
+    await user.type(within(buyer).getByLabelText("Income per unit"), "0.5");
+    await user.type(within(buyer).getByLabelText("Income date"), "2026-11-12");
+    await user.click(within(buyer).getByRole("button", { name: "Enter income" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr2/income", body: { incomePerUnit: "0.5", incomeDate: "2026-11-12" } }]));
+  });
+
+  it("the Seller of a buy/sell-back sees how far its Sell Back Price falls before agreeing income", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-12", repos: [
+      substitutionRepo({ buySellBack: true, incomePending: "toDecide", incomeAmount: "5183", incomeSellBackDeduction: "5186" }),
+    ] } });
+    await user.click(within(await screen.findByTestId("repos")).getByRole("button", { name: "Agree income USD 5183, sell-back price lower by USD 5,186" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/income/agree", body: {} }]));
+  });
+
+  it("a buy/sell-back pairs off only with a buy/sell-back", async () => {
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      substitutionRepo({ buySellBack: true, repurchaseDue: true }),
+      substitutionRepo({ repoId: "0xr2", role: "buyer", repurchaseDue: true }), // a repo
+      substitutionRepo({ repoId: "0xr3", role: "buyer", buySellBack: true, repurchaseDue: true }),
+    ] } });
+    const row = await screen.findByTestId("repo-0xr1");
+    expect(within(row).queryByRole("button", { name: "Pair off with 0xr2" })).toBeNull();
+    expect(within(row).getByRole("button", { name: "Pair off with 0xr3" })).toBeTruthy();
   });
 
   it("no margin action is available while a substitution is pending", async () => {

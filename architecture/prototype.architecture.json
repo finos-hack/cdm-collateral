@@ -49,6 +49,7 @@
     ".konspekt/instance/waypoints/wp-adr-repo-income.md",
     ".konspekt/instance/waypoints/wp-adr-repo-roll.md",
     ".konspekt/instance/waypoints/wp-adr-repo-pair-off.md",
+    ".konspekt/instance/waypoints/wp-adr-repo-buy-sell-back.md",
     ".konspekt/instance/waypoints/wp-adr-repo-purchase-repurchase.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",

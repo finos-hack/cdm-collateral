@@ -1298,6 +1298,113 @@ describe("CDM collateral contracts", async () => {
         assert.equal((await repo.read.getInstructions([R, ROLL]))[0], ZERO_BYTES32);
       });
     });
+    describe("buy/sell-back (task-repo-buy-sell-back)", () => {
+      const INTERIM = 5, INCOME = 6;
+      const B1 = H("BSB-1"), B2 = H("BSB-2");
+      // BSB-1: A sells 103 tUST to B for 10,000 tUSD; Repurchase Price 10,009.
+      const purchasedBsb = async () => {
+        await repo.write.bookBuySellBack([B1, bAddr, tUST.address, 103n, tUSD.address, 10000n, 10009n, H("bsb")], { account: bankA.account });
+        await repo.write.affirm([B1, H("bsb")], { account: bankB.account });
+        await approveLegs(tUST, bankA, 103n, bankB, 10000n);
+        await repo.write.instruct([B1, PURCHASE, H("p")], { account: bankA.account });
+        await repo.write.instruct([B1, PURCHASE, H("p")], { account: bankB.account });
+      };
+      const agreeIncome = async (id: `0x${string}`, doc: string, deduction: bigint) => {
+        await repo.write.instructIncome([id, H(doc), deduction], { account: bankB.account });
+        await repo.write.instructIncome([id, H(doc), deduction], { account: bankA.account });
+      };
+
+      it("is booked as a buy/sell-back; a repo is not", async () => {
+        await purchasedBsb();
+        assert.equal(await repo.read.isBuySellBack([B1]), true);
+        assert.equal(await repo.read.isBuySellBack([R]), false);
+        assert.equal(await repo.read.sellBackPrice([B1]), 10009n);
+      });
+
+      it("agreed income moves no cash and lowers the Sell Back Price, which the repurchase pays", async () => {
+        await purchasedBsb();
+        const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr);
+        await agreeIncome(B1, "inc1", 4n);
+        await agreeIncome(B1, "inc2", 2n);
+        assert.equal(await bal(tUSD, aAddr), cashA);
+        assert.equal(await bal(tUSD, bAddr), cashB);
+        assert.equal(await repo.read.incomeDeduction([B1]), 6n);
+        assert.equal(await repo.read.sellBackPrice([B1]), 10003n);
+        assert.equal((await repo.read.getRepo([B1])).repurchasePrice, 10009n);
+        await approveLegs(tUST, bankB, 103n, bankA, 10003n);
+        await repo.write.instruct([B1, REPURCHASE, H("r")], { account: bankA.account });
+        await repo.write.instruct([B1, REPURCHASE, H("r")], { account: bankB.account });
+        assert.equal(await bal(tUSD, aAddr), cashA - 10003n);
+        assert.equal(await bal(tUSD, bAddr), cashB + 10003n);
+      });
+
+      it("has no interim interest, and the deduction stays below the Repurchase Price", async () => {
+        await purchasedBsb();
+        await assert.rejects(repo.write.instructInterimInterest([B1, H("int"), 4n, 10005n], { account: bankA.account }));
+        await repo.write.instructIncome([B1, H("big"), 10009n], { account: bankB.account });
+        await assert.rejects(repo.write.instructIncome([B1, H("big"), 10009n], { account: bankA.account }));
+        await repo.write.refusePayment([B1, INCOME], { account: bankA.account });
+        assert.equal(await repo.read.incomeDeduction([B1]), 0n);
+        assert.equal((await repo.read.getInstructions([B1, INTERIM]))[0], ZERO_BYTES32);
+      });
+
+      it("a roll nets the deduction against the Price Differential and resets it", async () => {
+        await purchasedBsb();
+        await agreeIncome(B1, "inc1", 4n);
+        await tUSD.write.approve([repo.address, 5n], { account: bankA.account });
+        const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr);
+        await repo.write.instructRoll([B1, H("roll"), 10016n], { account: bankA.account });
+        await repo.write.instructRoll([B1, H("roll"), 10016n], { account: bankB.account });
+        // Price Differential 9 less the deduction 4: the Seller pays 5
+        assert.equal(await bal(tUSD, aAddr), cashA - 5n);
+        assert.equal(await bal(tUSD, bAddr), cashB + 5n);
+        assert.equal(await repo.read.incomeDeduction([B1]), 0n);
+        assert.equal(await repo.read.sellBackPrice([B1]), 10016n);
+      });
+
+      it("a roll with a deduction above the Price Differential has the Buyer pay the excess", async () => {
+        await purchasedBsb();
+        await agreeIncome(B1, "inc1", 12n);
+        await tUSD.write.mint([bAddr, 3n]);
+        await tUSD.write.approve([repo.address, 3n], { account: bankB.account });
+        const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr);
+        await repo.write.instructRoll([B1, H("roll"), 10016n], { account: bankB.account });
+        await repo.write.instructRoll([B1, H("roll"), 10016n], { account: bankA.account });
+        assert.equal(await bal(tUSD, aAddr), cashA + 3n);
+        assert.equal(await bal(tUSD, bAddr), cashB - 3n);
+        assert.equal(await repo.read.incomeDeduction([B1]), 0n);
+      });
+
+      it("pairs off only with a buy/sell-back, netting the Sell Back Prices", async () => {
+        await purchasedBsb();
+        // REPO-1 (a repo) is B's offsetting candidate in the wrong type: B sells 103 tUST back to A.
+        const R2 = H("REPO-2");
+        await repo.write.book([R2, aAddr, tUST.address, 103n, tUSD.address, 10000n, 10006n, H("t2")], { account: bankB.account });
+        await repo.write.affirm([R2, H("t2")], { account: bankA.account });
+        await approveLegs(tUST, bankB, 103n, bankA, 10000n);
+        await repo.write.instruct([R2, PURCHASE, H("p2")], { account: bankB.account });
+        await repo.write.instruct([R2, PURCHASE, H("p2")], { account: bankA.account });
+        await assert.rejects(repo.write.instructPairOff([B1, R2, H("po")], { account: bankA.account }));
+        // BSB-2: the same in a buy/sell-back.
+        await tUST.write.mint([bAddr, 103n]);
+        await tUSD.write.mint([aAddr, 10000n]);
+        await repo.write.bookBuySellBack([B2, aAddr, tUST.address, 103n, tUSD.address, 10000n, 10006n, H("bsb2")], { account: bankB.account });
+        await repo.write.affirm([B2, H("bsb2")], { account: bankA.account });
+        await approveLegs(tUST, bankB, 103n, bankA, 10000n);
+        await repo.write.instruct([B2, PURCHASE, H("p3")], { account: bankB.account });
+        await repo.write.instruct([B2, PURCHASE, H("p3")], { account: bankA.account });
+        await agreeIncome(B1, "inc1", 4n);
+        // Sell Back Prices 10,005 and 10,006: the Seller of BSB-2 (B) pays A 1.
+        await tUSD.write.approve([repo.address, 1n], { account: bankB.account });
+        const cashA = await bal(tUSD, aAddr), cashB = await bal(tUSD, bAddr);
+        await repo.write.instructPairOff([B1, B2, H("po")], { account: bankA.account });
+        await repo.write.instructPairOff([B2, B1, H("po")], { account: bankB.account });
+        assert.equal(await bal(tUSD, aAddr), cashA + 1n);
+        assert.equal(await bal(tUSD, bAddr), cashB - 1n);
+        for (const id of [B1, B2]) assert.equal((await repo.read.getRepo([id])).state, 4);
+      });
+    });
+
     describe("pair-off (task-repo-pair-off)", () => {
       const PAIR_OFF = 8, ROLL = 7;
       const R2 = H("REPO-2");

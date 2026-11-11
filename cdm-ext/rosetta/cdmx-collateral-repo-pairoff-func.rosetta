@@ -9,8 +9,9 @@ import cdm.observable.asset.*
 import cdm.base.staticdata.asset.common.*
 import cdm.product.collateral.*
 import cdm.product.template.*
+import cdm.product.qualification.*
 
-func RepoPairOffMatches: <"Whether two repos can pair off in full (wp-adr-repo-pair-off): both open, between the same two parties in opposite directions, with the same security, quantity, cash currency and Repurchase Date. Equal quantities only; partial pair-off is not covered.">
+func RepoPairOffMatches: <"Whether two repos can pair off in full (wp-adr-repo-pair-off): both open, of the same type (both repos or both buy/sell-backs, wp-adr-repo-buy-sell-back), between the same two parties in opposite directions, with the same security, quantity, cash currency and Repurchase Date. Equal quantities only; partial pair-off is not covered.">
     inputs:
         repoA TradeState (1..1)
         repoB TradeState (1..1)
@@ -43,6 +44,7 @@ func RepoPairOffMatches: <"Whether two repos can pair off in full (wp-adr-repo-p
             and firstCash = secondCash
             and firstTerms -> terminationDate exists
             and firstTerms -> terminationDate = secondTerms -> terminationDate
+            and Qualify_BuySellBack(firstTerms) = Qualify_BuySellBack(secondTerms)
 
 func RepoPositionAsset: <"The asset of a repo's collateral position: the securities purchased.">
     inputs:
@@ -124,13 +126,15 @@ func RepoIsPairOff: <"Whether a BusinessEvent pairs off two repos (wp-adr-repo-p
             and firstPackage -> componentId contains firstBefore -> trade -> tradeIdentifier only-element
             and firstPackage -> componentId contains secondBefore -> trade -> tradeIdentifier only-element
 
-func RepoPairOffNetAmount: <"The net cash of a pair-off (wp-adr-repo-pair-off): the first repo's Repurchase Price less the second's. Positive: the Seller of the first repo pays its Buyer; negative: the Seller of the second repo pays its Buyer; zero: no cash moves. The securities returns cancel.">
+func RepoPairOffNetAmount: <"The net cash of a pair-off (wp-adr-repo-pair-off): the first repo's Sell Back Price less the second's (BuySellBackSellBackPrice: the Repurchase Price less any buy/sell-back income deduction, wp-adr-repo-buy-sell-back). Positive: the Seller of the first repo pays its Buyer; negative: the Seller of the second repo pays its Buyer; zero: no cash moves. The securities returns cancel.">
     inputs:
         repoA TradeState (1..1)
         repoB TradeState (1..1)
+        deductionA number (1..1) <"The first repo's buy/sell-back income deduction; zero for a repo.">
+        deductionB number (1..1) <"The second repo's buy/sell-back income deduction; zero for a repo.">
         decimals int (1..1)
     output:
         amount number (1..1)
 
     set amount:
-        RepoRepurchasePrice(repoA, decimals) -> value - RepoRepurchasePrice(repoB, decimals) -> value
+        BuySellBackSellBackPrice(repoA, deductionA, decimals) - BuySellBackSellBackPrice(repoB, deductionB, decimals)

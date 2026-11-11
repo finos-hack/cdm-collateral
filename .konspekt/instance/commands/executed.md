@@ -460,3 +460,8 @@ at execution time.
 | task-repo-pair-off | 7fbbd06081b033230500707cf97a9c070323a564 |
 | task-repo-pair-off | 1adcc60205e3fbb4ea77488cdb8d8673ec5b8377 |
 | task-repo-buy-sell-back | 84046aa078086291c7e532f10c59df13a203bcf7 |
+| task-repo-buy-sell-back | b2c0f57de93abc36804d5a366536a24d0a633bce |
+| task-repo-buy-sell-back | 87f90edc57da61e4e68a107979c82988b3fa593a |
+| task-repo-buy-sell-back | fc64ce549a5d3bed8a822546927953cfd08bde75 |
+| task-repo-buy-sell-back | b26e1208320112e5e037bcd028be502c4179dac2 |
+| task-repo-buy-sell-back | aa76995c47b8ef378cdc65c2520d71bf9069eee5 |

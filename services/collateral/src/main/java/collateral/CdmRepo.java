@@ -18,6 +18,10 @@ import cdmx.collateral.repo.functions.RepoManufacturedIncomeAmount;
 import cdmx.collateral.repo.functions.RepoPairOffEvent;
 import cdmx.collateral.repo.functions.RepoPairOffMatches;
 import cdmx.collateral.repo.functions.RepoPairOffNetAmount;
+import cdmx.collateral.repo.functions.RepoIsBuySellBack;
+import cdmx.collateral.repo.functions.BuySellBackSellBackPrice;
+import cdmx.collateral.repo.functions.BuySellBackIncomeDeduction;
+import cdmx.collateral.repo.BuySellBackIncome;
 import cdmx.collateral.repo.functions.RepoPurchasePrice;
 import cdmx.collateral.repo.functions.RepoPurchaseQuantity;
 import cdmx.collateral.repo.functions.RepoRepriceCashDifference;
@@ -52,9 +56,17 @@ public final class CdmRepo {
     static final int CASH_PRECISION = 0;
 
     /** What the seller enters, with the quantity computed from it, and the parties. Rate and Margin Ratio as decimals. */
+    /** A Transaction's terms; buySellBack sets CDM's trade type BuySellBack (wp-adr-repo-buy-sell-back). */
     public record Terms(String tradeId, String seller, String buyer, String isin, long quantity, BigDecimal price,
                         long purchasePrice, BigDecimal rate, BigDecimal marginRatio, LocalDate tradeDate,
-                        LocalDate purchaseDate, LocalDate repurchaseDate) {}
+                        LocalDate purchaseDate, LocalDate repurchaseDate, boolean buySellBack) {
+        /** A repo. */
+        public Terms(String tradeId, String seller, String buyer, String isin, long quantity, BigDecimal price,
+                     long purchasePrice, BigDecimal rate, BigDecimal marginRatio, LocalDate tradeDate,
+                     LocalDate purchaseDate, LocalDate repurchaseDate) {
+            this(tradeId, seller, buyer, isin, quantity, price, purchasePrice, rate, marginRatio, tradeDate, purchaseDate, repurchaseDate, false);
+        }
+    }
 
     /** The booked trade: CDM's execution BusinessEvent, its trade, its Rune JSON and hash, and the Repurchase Price. */
     public record Booking(BusinessEvent event, TradeState trade, String json, String hash, long repurchasePrice) {}
@@ -73,6 +85,10 @@ public final class CdmRepo {
 
     /** A manufactured income document, its JSON and hash. */
     public record Income(RepoManufacturedIncome income, String json, String hash) {}
+
+    /** The income on a buy/sell-back's securities (wp-adr-repo-buy-sell-back): the cdm-ext record, its Rune JSON and hash.
+     *  The deduction lowers the Sell Back Price; no cash moves. */
+    public record BuySellBackIncomeRecord(BuySellBackIncome income, String json, String hash, long deduction) {}
 
     /** A rolled repo: the new trade and the Price Differential the Seller pays on the roll date. */
     public record Rolled(Booking booking, long interest) {}
@@ -120,6 +136,7 @@ public final class CdmRepo {
                 "settlementTerms", o("settlementType", "Physical", "settlementCurrency", o("@data", "USD"),
                         "transferSettlementType", "DeliveryVersusPayment",
                         "securitySettlementCentre", "SecuritySettlementCentre", "cashSettlementCentre", "CashSettlementCentre"));
+        if (t.buySellBack()) assetPayout.put("tradeType", "BuySellBack");
         Map<String, Object> product = o(
                 "taxonomy", l(o("source", "CFI", "value", o("name", o("@data", "LRSTXD")))),
                 "economicTerms", o(
@@ -253,7 +270,19 @@ public final class CdmRepo {
                 treatment.path("marginPercentage").decimalValue(),
                 LocalDate.parse(t.path("tradeDate").path("@data").asText(t.path("tradeDate").asText())),
                 ts.getTrade().getProduct().getEconomicTerms().getEffectiveDate().getAdjustableDate().getUnadjustedDate().toLocalDate(),
-                ts.getTrade().getProduct().getEconomicTerms().getTerminationDate().getAdjustableDate().getUnadjustedDate().toLocalDate());
+                ts.getTrade().getProduct().getEconomicTerms().getTerminationDate().getAdjustableDate().getUnadjustedDate().toLocalDate(),
+                isBuySellBack(ts));
+    }
+
+    /** Whether the Transaction is a buy/sell-back: cdm-ext RepoIsBuySellBack (CDM's Qualify_BuySellBack). */
+    public static boolean isBuySellBack(TradeState ts) {
+        return CdmRuntime.fn(RepoIsBuySellBack.class).evaluate(ts);
+    }
+
+    /** What the Seller pays at the repurchase: cdm-ext BuySellBackSellBackPrice, the Repurchase Price less the income
+     *  deduction (zero for a repo). */
+    public static long sellBackPrice(TradeState ts, long incomeDeduction) {
+        return CdmRuntime.fn(BuySellBackSellBackPrice.class).evaluate(ts, BigDecimal.valueOf(incomeDeduction), CASH_PRECISION).longValueExact();
     }
 
     private static Map<String, Object> transfer(Number value, Map<String, Object> unit, Map<String, Object> asset, String payer, String receiver, LocalDate date) {
@@ -300,8 +329,13 @@ public final class CdmRepo {
     /** The repurchase: equivalent securities from the buyer and the Repurchase Price from the seller, on the Repurchase
      *  Date, with CDM's Repurchase event. */
     public static Settlement repurchase(TradeState ts) {
+        return repurchase(ts, 0);
+    }
+
+    /** The repurchase of a buy/sell-back: the Seller pays the Sell Back Price, the Repurchase Price less the income deduction. */
+    public static Settlement repurchase(TradeState ts, long incomeDeduction) {
         Terms t = terms(ts);
-        long rp = CdmRuntime.fn(RepoRepurchasePrice.class).evaluate(ts, CASH_PRECISION).getValue().longValueExact();
+        long rp = sellBackPrice(ts, incomeDeduction);
         return settlement(o("phase", "Repurchase", "trade", tree(ts),
                 "securityTransfer", transfer(t.quantity(), o("financialUnit", "Share"), security(t.isin()), t.buyer(), t.seller(), t.repurchaseDate()),
                 "cashTransfer", transfer(rp, usd(), cash(), t.seller(), t.buyer(), t.repurchaseDate()),
@@ -319,16 +353,23 @@ public final class CdmRepo {
      *  by the Seller of the first repo and names both repos. The event is not run through the reference resolver: both
      *  trades use the same scoped keys, and resolving the whole event binds one trade's references to the other's values. */
     public static PairedOff pairOff(TradeState x, TradeState y, LocalDate date) {
+        return pairOff(x, y, date, 0, 0);
+    }
+
+    /** The pair-off with each trade's buy/sell-back income deduction (zero for a repo): the net is the difference of the
+     *  Sell Back Prices (wp-adr-repo-buy-sell-back). */
+    public static PairedOff pairOff(TradeState x, TradeState y, LocalDate date, long deductionX, long deductionY) {
         boolean ordered = terms(x).tradeId().compareTo(terms(y).tradeId()) <= 0;
         TradeState a = ordered ? x : y, b = ordered ? y : x;
+        long deductionA = ordered ? deductionX : deductionY, deductionB = ordered ? deductionY : deductionX;
         Terms ta = terms(a), tb = terms(b);
         if (!pairOffMatches(a, b)) throw new IllegalArgumentException("repos " + ta.tradeId() + " and " + tb.tradeId()
-                + " do not offset: they need the same parties in opposite directions, security, quantity, currency and Repurchase Date");
+                + " do not offset: they need the same type, the same parties in opposite directions, security, quantity, currency and Repurchase Date");
         if (!date.equals(ta.repurchaseDate())) throw new IllegalArgumentException("a pair-off settles on the common Repurchase Date " + ta.repurchaseDate() + "; the date is " + date);
         var pairReference = CdmRuntime.load(cdm.base.staticdata.identifier.Identifier.class, o("issuer", o("@data", ta.seller()),
                 "assignedIdentifier", l(o("identifier", o("@data", ta.tradeId() + "/" + tb.tradeId())))));
         BusinessEvent ev = CdmRuntime.fn(RepoPairOffEvent.class).evaluate(a, b, pairReference, Date.of(date));
-        long net = CdmRuntime.fn(RepoPairOffNetAmount.class).evaluate(a, b, CASH_PRECISION).longValueExact();
+        long net = CdmRuntime.fn(RepoPairOffNetAmount.class).evaluate(a, b, BigDecimal.valueOf(deductionA), BigDecimal.valueOf(deductionB), CASH_PRECISION).longValueExact();
         Map<String, Object> doc = new java.util.LinkedHashMap<>(o("pairOff", tree(ev),
                 "repurchase", l(tree(repurchaseEvent(ev.getAfter().get(0), date)), tree(repurchaseEvent(ev.getAfter().get(1), date))),
                 "netAmount", net));
@@ -427,6 +468,7 @@ public final class CdmRepo {
      *  accrued to the date, less earlier interim payments. The payment goes into the transfer history, which is deducted
      *  from the Price Differential, so the Repurchase Price falls by the amount. */
     public static InterimPaid interimInterest(TradeState ts, LocalDate date) {
+        if (isBuySellBack(ts)) throw new IllegalStateException("a buy/sell-back has no interim interest: its forward price is fixed at trade");
         long amount = CdmRuntime.fn(RepoAccruedPriceDifferential.class).evaluate(ts, Date.of(date), CASH_PRECISION).longValueExact();
         if (amount <= 0) throw new IllegalStateException("no Price Differential has accrued to " + date);
         var money = CdmRuntime.load(cdm.observable.asset.Money.class, o("value", amount, "unit", usd()));
@@ -440,6 +482,7 @@ public final class CdmRepo {
     /** The manufactured income document for a Transaction (wp-adr-repo-income): the Buyer pays the Seller. */
     public static Income income(String repoId, String tradeHash, TradeState ts, BigDecimal incomePerUnit, LocalDate incomeDate) {
         Terms t = terms(ts);
+        if (t.buySellBack()) throw new IllegalStateException("a buy/sell-back pays no manufactured income: the income lowers its Sell Back Price");
         if (incomeDate.isBefore(t.purchaseDate()) || !incomeDate.isBefore(t.repurchaseDate()))
             throw new IllegalArgumentException("the income date is outside the Transaction's term");
         BigDecimal amount = CdmRuntime.fn(RepoManufacturedIncomeAmount.class).evaluate(BigDecimal.valueOf(t.quantity()), incomePerUnit, CASH_PRECISION);
@@ -460,6 +503,36 @@ public final class CdmRepo {
         }
         Income again = income(repoId, tradeHash, ts, doc.getIncomePerUnit(), doc.getIncomeDate().toLocalDate());
         if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json))) throw new IllegalStateException("the income document does not follow from its inputs over this trade");
+        return again;
+    }
+
+    /** The income on a buy/sell-back's securities (wp-adr-repo-buy-sell-back): the Buyer keeps it, and the Sell Back
+     *  Price falls by the cdm-ext BuySellBackIncomeDeduction, the income plus interest to the Repurchase Date. */
+    public static BuySellBackIncomeRecord buySellBackIncome(String repoId, String tradeHash, TradeState ts, BigDecimal incomePerUnit, LocalDate incomeDate) {
+        Terms t = terms(ts);
+        if (!t.buySellBack()) throw new IllegalStateException("a repo pays manufactured income");
+        if (incomeDate.isBefore(t.purchaseDate()) || !incomeDate.isBefore(t.repurchaseDate()))
+            throw new IllegalArgumentException("the income date is outside the Transaction's term");
+        BigDecimal amount = CdmRuntime.fn(RepoManufacturedIncomeAmount.class).evaluate(BigDecimal.valueOf(t.quantity()), incomePerUnit, CASH_PRECISION);
+        BigDecimal deduction = CdmRuntime.fn(BuySellBackIncomeDeduction.class).evaluate(ts, amount, Date.of(incomeDate), CASH_PRECISION);
+        BuySellBackIncome doc = CdmRuntime.load(BuySellBackIncome.class, o("repoId", repoId, "tradeHash", tradeHash, "security", t.isin(),
+                "quantity", t.quantity(), "incomePerUnit", incomePerUnit, "incomeDate", incomeDate.toString(), "incomeAmount", amount,
+                "deduction", deduction, "buyer", t.buyer(), "seller", t.seller()));
+        CdmRuntime.validate(doc);
+        String json = CdmRuntime.toJson(doc);
+        return new BuySellBackIncomeRecord(doc, json, Cdm.keccakHex(json), deduction.longValueExact());
+    }
+
+    /** The Seller's check of a buy/sell-back income: the same record follows from its inputs over the trade this service holds. */
+    public static BuySellBackIncomeRecord verifyBuySellBackIncome(String json, String repoId, String tradeHash, TradeState ts) {
+        BuySellBackIncome doc;
+        try {
+            doc = CdmRuntime.JSON.readValue(json, BuySellBackIncome.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a BuySellBackIncome: " + e.getMessage(), e);
+        }
+        BuySellBackIncomeRecord again = buySellBackIncome(repoId, tradeHash, ts, doc.getIncomePerUnit(), doc.getIncomeDate().toLocalDate());
+        if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json))) throw new IllegalStateException("the income record does not follow from its inputs over this trade");
         return again;
     }
 

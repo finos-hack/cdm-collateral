@@ -360,6 +360,9 @@ export const RunStateName = ["none", "one result", "agreed", "disagreed"];
 // delivery-versus-payment settlement of its purchase and repurchase.
 const repoAbi = parseAbi([
   "function book(bytes32 repoId, address buyer, address security, uint256 quantity, address cash, uint256 purchasePrice, uint256 repurchasePrice, bytes32 tradeHash)",
+  "function bookBuySellBack(bytes32 repoId, address buyer, address security, uint256 quantity, address cash, uint256 purchasePrice, uint256 repurchasePrice, bytes32 tradeHash)",
+  "function isBuySellBack(bytes32 repoId) view returns (bool)",
+  "function incomeDeduction(bytes32 repoId) view returns (uint256)",
   "function affirm(bytes32 repoId, bytes32 tradeHash)",
   "function instruct(bytes32 repoId, uint8 phase, bytes32 cdmHash)",
   "function instructReprice(bytes32 repoId, bytes32 cdmHash, uint256 newPurchasePrice, uint256 newRepurchasePrice, int256 cashFromSeller)",
@@ -415,6 +418,9 @@ export interface OnChainRepo {
   /** The same for a pending pair-off (wp-adr-repo-pair-off), and the other repo of it (zero hash: none). */
   pairOff: { seller: Hex; buyer: Hex };
   pairOffWith: Hex;
+  /** A buy/sell-back (wp-adr-repo-buy-sell-back), and its agreed income deductions in the current term (zero for a repo). */
+  buySellBack: boolean;
+  incomeDeduction: bigint;
 }
 
 const erc20Abi = parseAbi([
@@ -483,7 +489,7 @@ export interface LedgerAdapter {
   getSnapshot(snapshotId: Hex): Promise<{ party: Address; counterparty: Address; snapshotHash: Hex; committedAt: bigint }>;
   getRun(reconciliationId: Hex): Promise<{ firstSnapshotId: Hex; secondSnapshotId: Hex; firstPartyResult: Hex; secondPartyResult: Hex; breakCount: number; state: string }>;
   /** Repo (wp-adr-repo-purchase-repurchase): the seller books, the buyer affirms, each party instructs each phase. */
-  bookRepo(repoId: Hex, buyer: Address, security: Address, quantity: bigint, cash: Address, purchasePrice: bigint, repurchasePrice: bigint, tradeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  bookRepo(repoId: Hex, buyer: Address, security: Address, quantity: bigint, cash: Address, purchasePrice: bigint, repurchasePrice: bigint, tradeHash: Hex, buySellBack?: boolean): Promise<{ txHash: Hex; block: bigint }>;
   affirmRepo(repoId: Hex, tradeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   instructRepo(repoId: Hex, phase: "purchase" | "repurchase", cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** Reprice (wp-adr-repo-reprice): each party instructs the same reprice; the second instruction settles it. */
@@ -1000,8 +1006,8 @@ export class BesuAdapter implements LedgerAdapter {
     return a;
   }
 
-  bookRepo(repoId: Hex, buyer: Address, security: Address, quantity: bigint, cash: Address, purchasePrice: bigint, repurchasePrice: bigint, tradeHash: Hex) {
-    return this.send(this.repoContract(), repoAbi, "book", [repoId, buyer, security, quantity, cash, purchasePrice, repurchasePrice, tradeHash]);
+  bookRepo(repoId: Hex, buyer: Address, security: Address, quantity: bigint, cash: Address, purchasePrice: bigint, repurchasePrice: bigint, tradeHash: Hex, buySellBack = false) {
+    return this.send(this.repoContract(), repoAbi, buySellBack ? "bookBuySellBack" : "book", [repoId, buyer, security, quantity, cash, purchasePrice, repurchasePrice, tradeHash]);
   }
 
   affirmRepo(repoId: Hex, tradeHash: Hex) {
@@ -1071,7 +1077,9 @@ export class BesuAdapter implements LedgerAdapter {
     const [rollSeller, rollBuyer] = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getInstructions", args: [repoId, RepoPhase.roll] })) as readonly [Hex, Hex];
     const [pairOffSeller, pairOffBuyer] = (await this.pub.readContract({ address, abi: repoAbi, functionName: "getInstructions", args: [repoId, RepoPhase.pairOff] })) as readonly [Hex, Hex];
     const pairOffWith = (await this.pub.readContract({ address, abi: repoAbi, functionName: "pairOffWith", args: [repoId] })) as Hex;
-    return { ...r, repoId, state: RepoStateName[state] ?? String(state), instructed: { seller, buyer }, reprice: { seller: repriceSeller, buyer: repriceBuyer }, adjustment: { seller: adjustSeller, buyer: adjustBuyer }, substitution: { seller: substituteSeller, buyer: substituteBuyer }, interimInterest: { seller: interimSeller, buyer: interimBuyer }, income: { seller: incomeSeller, buyer: incomeBuyer }, roll: { seller: rollSeller, buyer: rollBuyer }, pairOff: { seller: pairOffSeller, buyer: pairOffBuyer }, pairOffWith };
+    const buySellBack = (await this.pub.readContract({ address, abi: repoAbi, functionName: "isBuySellBack", args: [repoId] })) as boolean;
+    const incomeDeduction = (await this.pub.readContract({ address, abi: repoAbi, functionName: "incomeDeduction", args: [repoId] })) as bigint;
+    return { ...r, repoId, state: RepoStateName[state] ?? String(state), instructed: { seller, buyer }, reprice: { seller: repriceSeller, buyer: repriceBuyer }, adjustment: { seller: adjustSeller, buyer: adjustBuyer }, substitution: { seller: substituteSeller, buyer: substituteBuyer }, interimInterest: { seller: interimSeller, buyer: interimBuyer }, income: { seller: incomeSeller, buyer: incomeBuyer }, roll: { seller: rollSeller, buyer: rollBuyer }, pairOff: { seller: pairOffSeller, buyer: pairOffBuyer }, pairOffWith, buySellBack, incomeDeduction };
   }
 
   async listRepos(party: Address) {

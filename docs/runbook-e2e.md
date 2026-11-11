@@ -340,6 +340,14 @@ one repo in the "Repos" card. The other party sees the net amount it receives or
 repo with the higher Repurchase Price pays the difference in tUSD. The rules are the assumptions listed in
 `docs/analysis/sme-question-ledger.md` (POF-1 to POF-7).
 
+Buy/sell-back (`flow-repo-buy-sell-back`): in the "Repos" card A sets `Type` to `Buy/sell-back` and clicks `Book
+buy/sell-back: sell to B`; the trade carries CDM's trade type `BuySellBack` and settles like a repo. During the term B,
+the Buyer, enters the income per unit and date and clicks `Enter income`; A sees how far the Sell Back Price falls (the
+income plus interest at the repo rate to the Repurchase Date) and agrees or refuses. No cash moves: on the Repurchase Date
+A pays the lower Sell Back Price. A buy/sell-back has no interim interest, a roll nets the income against the interest,
+and it pairs off only with another buy/sell-back. The rules are the assumptions listed in
+`docs/analysis/sme-question-ledger.md` (BSB-1 to BSB-8).
+
 Repo purchase and repurchase (`flow-repo-purchase-repurchase`): in the "Repos" card A picks the security, enters the
 Purchase Price in tUSD, the repo rate and the term and clicks `Book repo: sell to B`. A's service computes the quantity
 from the feed price and the Margin Ratio (the GMRA default unless entered), builds the repo `TradeState` with CDM's
@@ -421,7 +429,7 @@ The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flo
 which the top-up before each run restores), `flow-repo-margin-maintenance` (it restores the tUST price and both
 business dates, and the seller calls the margin back after the repurchase) and `flow-repo-reprice` (it restores the tUST
 price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
-and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll` and `flow-repo-pair-off` (the same).
+and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll`, `flow-repo-pair-off` and `flow-repo-buy-sell-back` (the same).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

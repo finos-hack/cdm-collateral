@@ -124,10 +124,10 @@ class PairOffTest {
         assertEquals(0, BigDecimal.valueOf(1_000_875).compareTo(fn(RepoRepurchasePrice.class).evaluate(a, 0).getValue()));
         assertEquals(0, BigDecimal.valueOf(1_000_778).compareTo(fn(RepoRepurchasePrice.class).evaluate(b, 0).getValue()));
         var net = fn(RepoPairOffNetAmount.class);
-        assertEquals(0, BigDecimal.valueOf(97).compareTo(net.evaluate(a, b, 0)));
-        assertEquals(0, BigDecimal.valueOf(-97).compareTo(net.evaluate(b, a, 0)));
+        assertEquals(0, BigDecimal.valueOf(97).compareTo(net.evaluate(a, b, BigDecimal.ZERO, BigDecimal.ZERO, 0)));
+        assertEquals(0, BigDecimal.valueOf(-97).compareTo(net.evaluate(b, a, BigDecimal.ZERO, BigDecimal.ZERO, 0)));
         TradeState sameRate = repo("REPO-3", "BANK-B", "BANK-A", 10_366, "0.045", "2026-11-16");
-        assertEquals(0, BigDecimal.ZERO.compareTo(net.evaluate(a, sameRate, 0)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(net.evaluate(a, sameRate, BigDecimal.ZERO, BigDecimal.ZERO, 0)));
     }
 
     @Test

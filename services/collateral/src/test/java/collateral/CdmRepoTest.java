@@ -357,4 +357,59 @@ class CdmRepoTest {
         CdmRepo.PairedOff p = CdmRepo.pairOff(paid.booking().trade(), CdmRepo.book(reverse("0xdef", "0.04")).trade(), DAY.plusDays(7));
         assertEquals(1_000_875 - 250 - 1_000_778, p.netAmount());
     }
+
+    // ---- buy/sell-back (task-repo-buy-sell-back, wp-adr-repo-buy-sell-back) ----
+
+    static CdmRepo.Terms bsb(String id, boolean aSells, String rate) {
+        CdmRepo.Terms t = terms(1_000_000);
+        return new CdmRepo.Terms(id, aSells ? t.seller() : t.buyer(), aSells ? t.buyer() : t.seller(), t.isin(), t.quantity(), t.price(),
+                t.purchasePrice(), new BigDecimal(rate), t.marginRatio(), t.tradeDate(), t.purchaseDate(), t.repurchaseDate(), true);
+    }
+
+    @Test
+    void aBuySellBackCarriesItsTradeTypeThroughTheBuyersCheck() {
+        CdmRepo.Booking b = CdmRepo.book(bsb("0xabc", true, "0.045"));
+        assertTrue(CdmRepo.isBuySellBack(b.trade()));
+        assertTrue(CdmRepo.terms(b.trade()).buySellBack());
+        assertFalse(CdmRepo.terms(CdmRepo.book(terms(1_000_000)).trade()).buySellBack());
+        assertEquals(b.hash(), CdmRepo.verify(b.json()).hash());
+        assertNotEquals(b.hash(), CdmRepo.book(terms(1_000_000)).hash());
+        assertEquals(1_000_875, b.repurchasePrice());
+    }
+
+    @Test
+    void buySellBackIncomeLowersTheSellBackPriceAndBothPartiesBuildTheSameRecord() {
+        CdmRepo.Booking b = CdmRepo.book(bsb("0xabc", true, "0.045"));
+        // 10,366 x 0.5 = 5,183 on 2026-11-12, plus 5,183 x 4.5% x 4 / 360 = 2.59: 5,186
+        CdmRepo.BuySellBackIncomeRecord i = CdmRepo.buySellBackIncome("0xabc", b.hash(), b.trade(), new BigDecimal("0.5"), DAY.plusDays(3));
+        assertEquals(5_186, i.deduction());
+        assertEquals(0, new BigDecimal(5_183).compareTo(i.income().getIncomeAmount()));
+        assertEquals(i.hash(), CdmRepo.verifyBuySellBackIncome(i.json(), "0xabc", b.hash(), b.trade()).hash());
+        String tampered = i.json().replace("5186", "5000");
+        assertThrows(IllegalStateException.class, () -> CdmRepo.verifyBuySellBackIncome(tampered, "0xabc", b.hash(), b.trade()));
+        assertEquals(995_689, CdmRepo.sellBackPrice(b.trade(), i.deduction()));
+        var cash = CdmRepo.repurchase(b.trade(), i.deduction()).settlement().getCashTransfer();
+        assertEquals(995_689, cash.getQuantity().getValue().longValueExact());
+    }
+
+    @Test
+    void aBuySellBackHasNoManufacturedIncomeOrInterimInterestAndARepoNoIncomeDeduction() {
+        CdmRepo.Booking b = CdmRepo.book(bsb("0xabc", true, "0.045"));
+        assertThrows(IllegalStateException.class, () -> CdmRepo.income("0xabc", b.hash(), b.trade(), new BigDecimal("0.5"), DAY.plusDays(3)));
+        assertThrows(IllegalStateException.class, () -> CdmRepo.interimInterest(b.trade(), DAY.plusDays(3)));
+        CdmRepo.Booking repo = CdmRepo.book(terms(1_000_000));
+        assertThrows(IllegalStateException.class, () -> CdmRepo.buySellBackIncome("0xabc", repo.hash(), repo.trade(), new BigDecimal("0.5"), DAY.plusDays(3)));
+    }
+
+    @Test
+    void buySellBacksPairOffOnlyWithEachOtherAndNetTheSellBackPrices() {
+        CdmRepo.Booking a = CdmRepo.book(bsb("0xabc", true, "0.045"));
+        assertThrows(IllegalArgumentException.class, () -> CdmRepo.pairOff(a.trade(), CdmRepo.book(reverse("0xdef", "0.04")).trade(), DAY.plusDays(7)));
+        CdmRepo.Booking b = CdmRepo.book(bsb("0xdef", false, "0.04"));
+        // 995,689 against 1,000,778: the Seller of the second (BANK-B) pays 5,089, in either order of the arguments
+        CdmRepo.PairedOff p = CdmRepo.pairOff(a.trade(), b.trade(), DAY.plusDays(7), 5_186, 0);
+        assertEquals(-5_089, p.netAmount());
+        assertEquals(p.hash(), CdmRepo.pairOff(b.trade(), a.trade(), DAY.plusDays(7), 0, 5_186).hash());
+        assertEquals("BANK-B", p.settlement().getNetCashTransfer().getPayerReceiver().getPayerPartyReference().getValue().getName().getValue());
+    }
 }

@@ -188,7 +188,8 @@ export const api = {
   /** This party's repos and the service's business date (wp-adr-repo-purchase-repurchase). */
   repos: (p: LiveParty) => req<LiveRepos>(p, "GET", "/repos"),
   /** The seller books a term repo with the counterparty; the quantity follows from the feed price. */
-  bookRepo: (p: LiveParty, terms: { security: string; purchasePrice: number; ratePercent: string; termDays: number; marginRatio?: string | null }) =>
+  /** buySellBack books a buy/sell-back (wp-adr-repo-buy-sell-back): the same terms, CDM's trade type BuySellBack. */
+  bookRepo: (p: LiveParty, terms: { security: string; purchasePrice: number; ratePercent: string; termDays: number; marginRatio?: string | null; buySellBack?: boolean }) =>
     req<{ repoId: string; tradeHash: string; quantity: number; repurchasePrice: number; bookTx: string }>(p, "POST", "/repos", terms),
   affirmRepo: (p: LiveParty, repoId: string) => req<{ repoId: string; tradeHash: string; affirmTx: string }>(p, "POST", `/repos/${repoId}/affirm`, {}),
   /** Approve this party's leg and instruct the purchase or the repurchase; the second instruction settles both legs. */
@@ -315,6 +316,11 @@ export interface LiveRepo {
   quantity: string;
   purchasePrice: string;
   repurchasePrice: string;
+  /** A buy/sell-back (wp-adr-repo-buy-sell-back): its agreed income deductions and the Sell Back Price the Seller pays
+   *  (the Repurchase Price less the deductions; the Repurchase Price for a repo). */
+  buySellBack?: boolean;
+  incomeDeduction?: string;
+  sellBackPrice?: string;
   tradeHash: string;
   purchaseHash: string | null;
   repurchaseHash: string | null;
@@ -341,6 +347,8 @@ export interface LiveRepo {
   incomeAmount?: string;
   incomePerUnit?: string;
   incomeDate?: string;
+  /** A buy/sell-back's pending income: the amount the Sell Back Price falls by, the income plus interest. */
+  incomeSellBackDeduction?: string;
   /** A pending roll: proposed by this party, or for this party to decide. */
   rollPending?: "requested" | "toDecide";
   rollToDate?: string;

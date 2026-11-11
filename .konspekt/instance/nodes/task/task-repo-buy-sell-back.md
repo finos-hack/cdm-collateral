@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-11T01:42:28Z
+updatedAt: 2026-11-11T02:10:00Z
 ```
 # Task: buy/sell-back
 
@@ -35,3 +35,8 @@ check, repurchase, reprice, adjust, substitute, interim interest, roll, pair-off
 and the trade type, and qualifies as a buy/sell-back (`Qualify_BuySellBack`) and not as a repo. CDM's event qualifications do
 not test the product type. CDM has no buy/sell-back economics: the enum's definition says the income on the securities
 reduces the repurchase price, with interest from the income date, and no CDM function computes it.
+
+**Built 2026-11-11:** `cdm-ext` (`RepoIsBuySellBack`, `BuySellBackIncome`, `BuySellBackIncomeDeduction`,
+`BuySellBackSellBackPrice`; `RepoPairOffMatches` and `RepoPairOffNetAmount` extended), `bookBuySellBack`, the income deduction
+and the Sell Back Price in `RepoSettlement`, the gateway, service and console, and the live spec `flow-repo-buy-sell-back`,
+which passes on a local stack.
