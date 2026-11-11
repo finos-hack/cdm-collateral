@@ -362,3 +362,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-gmslarbt-smerbt | links | node:task-gmsla-rebate | node:task-sme-gmsla-rebate-rules |  | accepted |
 | e-lnk-rbtadr-gmslafee | links | waypoint:wp-adr-gmsla-rebate | node:task-gmsla-lending-fee |  | accepted |
 | e-mrk-besugenesis-livespecweb | marks | waypoint:wp-dec-besu-genesis-entrypoint | node:investigation-live-spec-in-claude-web |  | proposed |
+| e-dec-e2eflow-ciminutes | decomposes | node:goal-end-to-end-flow | node:task-ci-actions-minutes |  | accepted |
+| e-lnk-ciminutes-cirunsspecs | links | node:task-ci-actions-minutes | waypoint:wp-adr-ci-runs-live-specs |  | accepted |

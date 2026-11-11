@@ -1235,3 +1235,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2eflow-livespecweb | review | proposed | accepted | 2026-11-09T00:49:00Z | e765ec4d7d239f00f16330ce6c7b942512cd3359 | denisurusov |
 | waypoint:wp-dec-besu-genesis-entrypoint | review |  | proposed | 2026-11-09T00:49:00Z |  |  |
 | edge:e-mrk-besugenesis-livespecweb | review |  | proposed | 2026-11-09T00:49:00Z |  |  |
+| node:task-ci-actions-minutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
+| node:task-ci-actions-minutes | status |  | resolved | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
+| edge:e-dec-e2eflow-ciminutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
+| edge:e-lnk-ciminutes-cirunsspecs | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |

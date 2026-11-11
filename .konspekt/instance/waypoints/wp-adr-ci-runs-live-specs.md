@@ -9,7 +9,7 @@ provenance:
   contentHash: db38e95ee8c10dee9650ada2a61e3c4905116a3a
   timestamp: 2026-11-03T17:05:51Z
 createdAt: 2026-11-03T17:05:51Z
-updatedAt: 2026-11-06T21:52:57Z
+updatedAt: 2026-11-11T23:11:59Z
 ```
 # Decision: CI runs the Playwright live specs for every CALM flow against the live stack
 
@@ -40,3 +40,7 @@ fresh chain all six pass locally, and the runner chain is always fresh.
   (`docs/runbook-e2e.md` §10). Pledgor balance depletion does not occur on a fresh chain.
 
 Accepted by the project owner on 2026-11-03 ("Run specs in CI", the recommended option).
+
+**Suspended 2026-11-11** by the project owner (source `23cb42d62c48a430012c9c96c6f18443f9941fbf`: "1a for now"), to save GitHub Actions minutes
+([[task-ci-actions-minutes]]): `e2e-live-stack` runs only on demand (`workflow_dispatch`); the full live suite runs
+locally before every pull request instead.
