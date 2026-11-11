@@ -3,7 +3,7 @@ id: wp-adr-gmsla-loan-delivery-return
 kind: decision
 subtype: adr
 timestamp: 2026-11-11T16:38:28Z
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-loan-delivery-return
   sourceRef: 0459d62f952baa979a166c76641c678927e782b0
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T16:38:28Z
   confidence: 0.55
 createdAt: 2026-11-11T16:38:28Z
-updatedAt: 2026-11-11T16:38:28Z
+updatedAt: 2026-11-11T16:46:56Z
 ```
 # ADR: a securities loan is a CDM trade booked by the lender and affirmed by the borrower; delivery and each return swap the loaned securities and the collateral atomically on a new SecuritiesLoan contract
 

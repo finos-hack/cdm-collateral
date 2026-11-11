@@ -3,7 +3,7 @@ id: task-sme-gmsla-loan-delivery-return-rules
 type: task
 title: Confirm with a business SME the rules for securities loan delivery and return under the GMSLA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-loan-delivery-return
   sourceRef: 0459d62f952baa979a166c76641c678927e782b0
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T16:38:28Z
   confidence: 0.55
 createdAt: 2026-11-11T16:38:28Z
-updatedAt: 2026-11-11T16:38:28Z
+updatedAt: 2026-11-11T16:46:56Z
 ```
 # Task: confirm the rules for securities loan delivery and return under the GMSLA
 

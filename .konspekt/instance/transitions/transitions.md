@@ -1157,3 +1157,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
 | edge:e-dec-cdmdev-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
 | edge:e-lnk-gmslaldr-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
+| waypoint:wp-adr-gmsla-loan-delivery-return | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
+| node:task-sme-gmsla-loan-delivery-return-rules | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
+| edge:e-mrk-ldradr-gmslaldr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
+| edge:e-drv-cdmdata-ldradr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
+| edge:e-drv-finality-ldradr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
+| edge:e-dec-cdmdev-smeldr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
+| edge:e-lnk-gmslaldr-smeldr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |

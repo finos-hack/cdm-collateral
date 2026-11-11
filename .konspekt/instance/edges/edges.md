@@ -335,8 +335,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-gmslatermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-terms |  | accepted |
 | e-dec-cdmdev-smegmslaterms | decomposes | node:goal-cdm-development | node:task-sme-gmsla-terms-baseline |  | accepted |
 | e-lnk-gmslaterms-smegmslaterms | links | node:task-gmsla-terms | node:task-sme-gmsla-terms-baseline |  | accepted |
-| e-mrk-ldradr-gmslaldr | marks | waypoint:wp-adr-gmsla-loan-delivery-return | node:task-gmsla-loan-delivery-return |  | proposed |
-| e-drv-cdmdata-ldradr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-loan-delivery-return |  | proposed |
-| e-drv-finality-ldradr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-loan-delivery-return |  | proposed |
-| e-dec-cdmdev-smeldr | decomposes | node:goal-cdm-development | node:task-sme-gmsla-loan-delivery-return-rules |  | proposed |
-| e-lnk-gmslaldr-smeldr | links | node:task-gmsla-loan-delivery-return | node:task-sme-gmsla-loan-delivery-return-rules |  | proposed |
+| e-mrk-ldradr-gmslaldr | marks | waypoint:wp-adr-gmsla-loan-delivery-return | node:task-gmsla-loan-delivery-return |  | accepted |
+| e-drv-cdmdata-ldradr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-loan-delivery-return |  | accepted |
+| e-drv-finality-ldradr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-loan-delivery-return |  | accepted |
+| e-dec-cdmdev-smeldr | decomposes | node:goal-cdm-development | node:task-sme-gmsla-loan-delivery-return-rules |  | accepted |
+| e-lnk-gmslaldr-smeldr | links | node:task-gmsla-loan-delivery-return | node:task-sme-gmsla-loan-delivery-return-rules |  | accepted |
