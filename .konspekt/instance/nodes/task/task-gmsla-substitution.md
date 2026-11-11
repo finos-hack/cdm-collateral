@@ -2,7 +2,7 @@
 id: task-gmsla-substitution
 type: task
 title: Substitution of non-cash collateral
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T20:05:16Z
+updatedAt: 2026-11-11T22:30:25Z
 ```
 # Task: substitution of non-cash collateral
 
@@ -45,3 +45,5 @@ BANK-A to BANK-B against 1,037 tUST, margin 1.02, open term), replacing the tUST
 
 **Design chosen 2026-11-11** (source `48fe886bd6db13fa671e8e91d418ed0f300f1833`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in [[wp-adr-gmsla-substitution]]
 (proposed); the rules are questions for an SME in [[task-sme-gmsla-substitution-rules]].
+
+**Resolved 2026-11-11**: PR #63 merged (source `344bcc1695e32a485b57a758d9d1685040f127a9`).
