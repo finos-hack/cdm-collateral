@@ -2885,3 +2885,118 @@ test("flow-gmsla-marking: the tMMF price rises -> the lender calls the shortfall
     }
   }
 });
+
+// --- flow-gmsla-recall ---
+// The lender recalls all or part of an open loan by an anchored cdm-ext notice due two business days later
+// (wp-adr-gmsla-recall); the borrower settles it through the return. A recalls part in its console, B returns it and A
+// agrees, which clears the recall. A recalls the rest; past the due date both consoles show it overdue; B returns the
+// rest. A recall on a second loan is withdrawn and moves nothing.
+test("flow-gmsla-recall: A recalls part -> B returns it, the recall clears -> A recalls the rest, overdue past the due date -> returned -> a withdrawn recall moves nothing; every balance restored", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const tMMF = p.tokens.tMMF, tUSD = p.tokens.tUSD;
+  const iso = (d: Date) => d.toLocaleDateString("en-CA");
+  const today = iso(new Date());
+  // The notice date plus n business days, weekends skipped (cdm-ext GmslaRecallSettlementDate).
+  const addBusinessDays = (date: string, n: number) => {
+    const d = new Date(`${date}T12:00:00`);
+    while (n > 0) {
+      d.setDate(d.getDate() + 1);
+      if (d.getDay() !== 0 && d.getDay() !== 6) n--;
+    }
+    return iso(d);
+  };
+  const setDate = async (date: string) => {
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: date });
+  };
+  const bal = async () => ({
+    aMmf: await balanceOf(GATEWAY.A, tMMF, p.a), bMmf: await balanceOf(GATEWAY.A, tMMF, p.b),
+    aUsd: await balanceOf(GATEWAY.A, tUSD, p.a), bUsd: await balanceOf(GATEWAY.A, tUSD, p.b),
+  });
+  type RecallView = { quantity: string; intendedSettlementDate: string; overdue: boolean; verified: boolean; recalledQuantity?: string };
+  const loanOf = async (svc: string, id: string) => (await call<{ loans: (Loan & { recall?: RecallView })[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id)!;
+  const openLoan = async (quantity: number) => {
+    const { loanId } = await call<{ loanId: string }>(`${SERVICE.A}/loans`, "POST", { security: "tMMF", quantity, collateral: "tUSD", ratePercent: "4" });
+    await call(`${SERVICE.B}/loans/${loanId}/affirm`, "POST", {});
+    await call(`${SERVICE.A}/loans/${loanId}/deliver`, "POST", {});
+    await call(`${SERVICE.B}/loans/${loanId}/deliver`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.B, loanId))?.state, { timeout: STEP_TIMEOUT }).toBe("open");
+    return loanId;
+  };
+  const returnAll = async (id: string) => {
+    const l = await loanOf(SERVICE.A, id);
+    if (l?.state !== "open") return;
+    await call(`${SERVICE.B}/loans/${id}/return`, "POST", { quantity: Number(l.quantity) });
+    await call(`${SERVICE.A}/loans/${id}/return`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.A, id))?.state, { timeout: STEP_TIMEOUT }).toBe("returned");
+  };
+
+  // Setup: both business dates on today; A lends 100,000 tMMF to B against tUSD (the UI path is
+  // flow-gmsla-loan-delivery-return).
+  await setDate(today);
+  const start = await bal();
+  const id = await openLoan(100_000);
+  const ids = [id];
+  try {
+    // 1. A recalls 40,000 in its console; the notice is due two business days later and B's service verifies it.
+    const due = addBusinessDays(today, 2);
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`loan-${id}`);
+    await rowA.getByLabel("Recall quantity").fill("40000", { timeout: STEP_TIMEOUT });
+    await rowA.getByRole("button", { name: "Recall part" }).click();
+    await expect(page.getByTestId(`loan-recall-${id}`)).toHaveText(`recall of 40,000 due ${due}`, { timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await loanOf(SERVICE.B, id)).recall, { timeout: 30_000 })
+      .toMatchObject({ quantity: "40000", intendedSettlementDate: due, overdue: false, verified: true, recalledQuantity: "40000" });
+    await expect(call(`${SERVICE.A}/loans/${id}/recall`, "POST", { quantity: 1 })).rejects.toThrow("already pending");
+    await expect(call(`${SERVICE.B}/loans/${id}/recall`, "POST", { quantity: 1 })).rejects.toThrow("only the lender");
+    // Nothing moves at the notice.
+    const delivered = await bal();
+    expect(start.aMmf - delivered.aMmf).toBe(100_000n);
+
+    // 2. B returns the 40,000 recalled in its console (the entry starts at the recalled quantity); A agrees; the recall clears.
+    await page.goto("/#/live/B");
+    const rowB = page.getByTestId(`loan-${id}`);
+    await expect(page.getByTestId(`loan-recall-${id}`)).toHaveText(`recall of 40,000 due ${due}`, { timeout: STEP_TIMEOUT });
+    await rowB.getByRole("button", { name: "Return part" }).click({ timeout: STEP_TIMEOUT });
+    await page.goto("/#/live/A");
+    await rowA.getByRole("button", { name: /^Agree return of 40,000 tMMF/ }).click({ timeout: STEP_TIMEOUT });
+    await expect(page.getByTestId(`loan-quantity-${id}`)).toContainText("60,000 tMMF", { timeout: STEP_TIMEOUT });
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await loanOf(svc, id)).recall ?? null, { timeout: 30_000 }).toBeNull();
+    await expect(rowA.getByLabel("Recall quantity")).toBeVisible();
+
+    // 3. A recalls the rest; past the due date both services and B's console show it overdue.
+    const rest = await call<{ intendedSettlementDate: string }>(`${SERVICE.A}/loans/${id}/recall`, "POST", {});
+    expect(rest.intendedSettlementDate).toBe(due);
+    const late = addBusinessDays(due, 1);
+    await setDate(late);
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await loanOf(svc, id)).recall?.overdue, { timeout: 30_000 }).toBe(true);
+    await page.goto("/#/live/B");
+    await expect(page.getByTestId(`loan-recall-${id}`)).toHaveText(`recall of 60,000 due ${due} (overdue)`, { timeout: STEP_TIMEOUT });
+    // B returns the rest, on the same business date as A; the loan is returned and the recall cleared.
+    await returnAll(id);
+    expect((await loanOf(SERVICE.A, id)).recall ?? null).toBeNull();
+    await setDate(today);
+    expect(await bal()).toEqual(start);
+
+    // 4. A recalls a second loan in full and withdraws the recall in its console: nothing moves, the loan stays open.
+    const id2 = await openLoan(50_000);
+    ids.push(id2);
+    const before = await bal();
+    await call(`${SERVICE.A}/loans/${id2}/recall`, "POST", {});
+    await page.goto("/#/live/A");
+    await expect(page.getByTestId(`loan-recall-${id2}`)).toHaveText(`recall of 50,000 due ${due}`, { timeout: STEP_TIMEOUT });
+    await page.getByTestId(`loan-${id2}`).getByRole("button", { name: "Withdraw recall" }).click();
+    for (const svc of [SERVICE.A, SERVICE.B]) await expect.poll(async () => (await loanOf(svc, id2)).recall ?? null, { timeout: 30_000 }).toBeNull();
+    expect((await loanOf(SERVICE.B, id2)).state).toBe("open");
+    expect(await bal()).toEqual(before);
+    await expect(call(`${SERVICE.A}/loans/${id2}/recall/withdraw`, "POST", {})).rejects.toThrow("no recall");
+    await returnAll(id2);
+    expect(await bal()).toEqual(start);
+    expect(errors).toEqual([]);
+  } finally {
+    await setDate(today);
+    for (const l of ids) await returnAll(l).catch(() => undefined);
+  }
+});

@@ -1,0 +1,51 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.base.datetime.*
+import cdm.event.common.*
+
+func GmslaRecallSettlementDate: <"The intended settlement date of a recall (wp-adr-gmsla-recall): the notice date plus the offset in business days, by CDM's AddBusinessDays with no business centre, so only weekends are skipped.">
+    inputs:
+        noticeDate date (1..1)
+        offset int (1..1)
+    output:
+        settlementDate date (1..1)
+
+    condition PositiveOffset:
+        offset > 0
+
+    set settlementDate: AddBusinessDays(noticeDate, offset, empty)
+
+func GmslaRecallOffset: <"The business days from a recall notice to its intended settlement date, from the loan's CDM RecallProvision; absent when the loan is not recallable.">
+    inputs:
+        tradeState TradeState (1..1)
+    output:
+        offset int (0..1)
+
+    alias recall: tradeState -> trade -> product -> economicTerms -> terminationProvision -> recallProvision
+
+    set offset:
+        if recall -> isRecallable = True
+        then recall -> intendedSettlementDate -> periodMultiplier
+
+func GmslaRecallOverdue: <"Whether a pending recall is overdue: the business date is after its intended settlement date.">
+    inputs:
+        intendedSettlementDate date (1..1)
+        businessDate date (1..1)
+    output:
+        overdue boolean (1..1)
+
+    set overdue: businessDate > intendedSettlementDate
+
+func GmslaRecallRemaining: <"The quantity still recalled after a settled return: none when the return is at least the quantity recalled.">
+    inputs:
+        recalled number (1..1)
+        returned number (1..1)
+    output:
+        remaining number (1..1)
+
+    condition NotNegative:
+        recalled >= 0 and returned >= 0
+
+    set remaining:
+        if returned >= recalled then 0 else recalled - returned

@@ -218,6 +218,9 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "LoanDelivered(bytes32,bytes32)",
     "LoanReturnInstructed(bytes32,address,uint256,uint256,bytes32)",
     "LoanReturned(bytes32,uint256,uint256,bytes32,bool)",
+    "LoanRecalled(bytes32,uint256,uint32,bytes32)",
+    "LoanRecallWithdrawn(bytes32,bytes32,bytes32)",
+    "LoanRecallReduced(bytes32,bytes32,uint256)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),
@@ -410,6 +413,9 @@ const loanAbi = parseAbi([
   "function getDeliveryInstructions(bytes32 loanId) view returns (bytes32 lender, bytes32 borrower)",
   "function getReturnInstructions(bytes32 loanId) view returns (bytes32 lender, bytes32 borrower, uint256 quantity, uint256 collateralAmount)",
   "function loansOf(address party) view returns (bytes32[])",
+  "function recall(bytes32 loanId, uint256 quantity, uint32 settlementDate, bytes32 noticeHash)",
+  "function withdrawRecall(bytes32 loanId, bytes32 withdrawalHash)",
+  "function getRecall(bytes32 loanId) view returns (uint256 quantity, uint32 settlementDate, bytes32 noticeHash)",
 ]);
 
 export const LoanStateName = ["none", "booked", "affirmed", "open", "returned"];
@@ -432,6 +438,9 @@ export interface OnChainLoan {
   delivery: { lender: Hex; borrower: Hex };
   /** The pending return: each party's hash, the quantity and the collateral (zeros: none pending). */
   pendingReturn: { lender: Hex; borrower: Hex; quantity: bigint; collateralAmount: bigint };
+  /** The pending recall (wp-adr-gmsla-recall): the quantity still recalled, the intended settlement date as YYYYMMDD and
+   *  the notice hash (zeros: none). */
+  recall: { quantity: bigint; settlementDate: number; noticeHash: Hex };
 }
 
 /** A GMRA default close-out on RepoSettlement (wp-adr-repo-default-close-out). */
@@ -584,6 +593,8 @@ export interface LedgerAdapter {
   instructLoanDelivery(loanId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   instructLoanReturn(loanId: Hex, quantity: bigint, collateralAmount: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getLoan(loanId: Hex): Promise<OnChainLoan>;
+  recallLoan(loanId: Hex, quantity: bigint, settlementDate: number, noticeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  withdrawLoanRecall(loanId: Hex, withdrawalHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   listLoans(party: Address): Promise<OnChainLoan[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
@@ -1095,13 +1106,22 @@ export class BesuAdapter implements LedgerAdapter {
     return this.send(this.loanContract(), loanAbi, "instructReturn", [loanId, quantity, collateralAmount, cdmHash]);
   }
 
+  recallLoan(loanId: Hex, quantity: bigint, settlementDate: number, noticeHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "recall", [loanId, quantity, settlementDate, noticeHash]);
+  }
+
+  withdrawLoanRecall(loanId: Hex, withdrawalHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "withdrawRecall", [loanId, withdrawalHash]);
+  }
+
   async getLoan(loanId: Hex): Promise<OnChainLoan> {
     const address = this.loanContract();
-    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn"> & { state: number };
+    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall"> & { state: number };
+    const [cq, cd, cn] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getRecall", args: [loanId] })) as readonly [bigint, number, Hex];
     const [dl, db] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getDeliveryInstructions", args: [loanId] })) as readonly [Hex, Hex];
     const [rl, rb, rq, rc] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getReturnInstructions", args: [loanId] })) as readonly [Hex, Hex, bigint, bigint];
     const state = Number(l.state);
-    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc } };
+    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn } };
   }
 
   async listLoans(party: Address) {

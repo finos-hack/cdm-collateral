@@ -328,6 +328,15 @@ full only if it rebuilds the same statement. It delivers tUSD or tUST covering t
 raises the tMMF price to 1.10 so that A calls B for 510,000, then restores it so that B calls the 510,000 back, and
 returns the loan. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (MRK-1 to MRK-6).
 
+Recalls (`flow-gmsla-recall`): in the "Securities loans (GMSLA)" card, the lender enters a quantity in the Recall column
+of an open loan and clicks `Recall part` (or `Recall in full`). Its service builds the cdm-ext `GmslaRecallNotice`, due
+two business days after the business date (weekends skipped; the loan's CDM `RecallProvision`), and A's gateway calls
+`recall` on `SecuritiesLoan`. Both consoles show `recall of … due …`, and `(overdue)` once the business date is after the
+due date. The borrower returns through the loan's return entry, which starts at the quantity recalled, and the lender
+agrees as for any return. A settled return reduces the recall and clears it when it returns as much. The lender clicks
+`Withdraw recall` to withdraw a pending recall. Loans booked before this deployment have no `RecallProvision` and cannot
+be recalled. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (RCL-1 to RCL-6).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -476,7 +485,8 @@ and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-
 offsets a repo with a buy/sell-back of the same size so no securities drain, and restores A's default status as it found it),
 and `flow-gmsla-terms` (it restores the baseline notification time), and `flow-gmsla-loan-delivery-return` (every loan
 it books is returned in full, so every balance ends where it started), and `flow-gmsla-marking` (it restores the tMMF
-price, the borrower calls the margin back, and the loan is returned).
+price, the borrower calls the margin back, and the loan is returned), and `flow-gmsla-recall` (it restores both
+business dates, and every loan it books is returned in full).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

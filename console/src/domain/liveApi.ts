@@ -253,6 +253,11 @@ export const api = {
   /** Call the net figure as a GMSLA VM call by title transfer; its IssueCall step carries the mark statement's hash. */
   callGmslaMargin: (p: LiveParty) =>
     req<{ callId: string; cdmHash: string; statementHash: string; amountUsd: number }>(p, "POST", "/gmsla-marking/calls", {}),
+  /** The lender recalls all or part of an open loan; the borrower returns it by the intended settlement date. */
+  recallLoan: (p: LiveParty, loanId: string, quantity?: number) =>
+    req<{ loanId: string; noticeHash: string; quantity: number; intendedSettlementDate: string; recallTx: string }>(p, "POST", `/loans/${loanId}/recall`, quantity === undefined ? {} : { quantity }),
+  withdrawLoanRecall: (p: LiveParty, loanId: string) =>
+    req<{ loanId: string; withdrawalHash: string; withdrawTx: string }>(p, "POST", `/loans/${loanId}/recall/withdraw`, {}),
   /** This party's securities loans (wp-adr-gmsla-loan-delivery-return). */
   loans: (p: LiveParty) => req<LiveLoans>(p, "GET", "/loans"),
   /** The lender books a loan; the collateral follows from the feed prices and the margin (default: the GMSLA default margin). */
@@ -467,6 +472,8 @@ export interface LiveLoan {
   deliveryInstructedByMe: boolean;
   deliveryInstructedByCounterparty: boolean;
   pendingReturn?: { quantity: string; collateralAmount: string; instructedByMe: boolean; instructedByCounterparty: boolean };
+  /** The pending recall (wp-adr-gmsla-recall): the quantity still recalled, the due date, and the checked notice. */
+  recall?: { quantity: string; intendedSettlementDate: string; overdue: boolean; noticeHash: string; recalledQuantity?: string; noticeDate?: string; verified: boolean; problem?: string };
   lastReturn?: LiveLoanReturn;
   verified: boolean;
   problem?: string | null;

@@ -144,6 +144,10 @@ and checking the price and collateral), `POST /loans/{id}/deliver` (either party
 approving what it delivers), `POST /loans/{id}/return` (either party, on the business date: body `quantity`, or none to
 agree the counterparty's pending return; CDM's return event with the collateral reduced, `Qualify_GmslaReturn`, and the
 collateral redelivered by `GmslaReturnCollateral`),
+`POST /loans/{id}/recall` (the lender, on the business date: body `quantity`, default all outstanding; cdm-ext
+`GmslaRecallNotice` due `GmslaRecallSettlementDate` business days later by the loan's CDM `RecallProvision`, anchored on
+`SecuritiesLoan`; `GET /loans` shows a pending `recall` with its due date, `overdue` and whether the notice rebuilds,
+`verified`; wp-adr-gmsla-recall), `POST /loans/{id}/recall/withdraw` (the lender: cdm-ext `GmslaRecallWithdrawal`),
 `GET /gmsla-marking` (the aggregated mark of the pair's open loans stated for this party, cdm-ext `GmslaMarkStatement`
 built by `CdmGmslaMark`: each loan's requirement, collateral value and exposure at the feed prices, the margin held net
 from settled GMSLA calls, the net figure, the minimum transfer amount, `callableUsd`, `statementHash` and `callOpen`;

@@ -965,7 +965,29 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
           Agree return of {Number(pr.quantity).toLocaleString("en-US")} {l.security} (collateral back {Number(pr.collateralAmount).toLocaleString("en-US")} {l.collateral})
         </button>
       );
-    return <LoanReturnEntry disabled={busy} outstanding={Number(l.quantity)} onReturn={(q) => run(() => api.returnLoan(party, l.loanId, q))} />;
+    const recalled = l.recall ? Number(l.recall.quantity) : undefined;
+    return <LoanReturnEntry key={recalled ?? "none"} disabled={busy} outstanding={Number(l.quantity)} initial={recalled} onReturn={(q) => run(() => api.returnLoan(party, l.loanId, q))} />;
+  };
+  // The recall (wp-adr-gmsla-recall): its status for both parties; the lender recalls or withdraws.
+  const recall = (l: LiveLoan) => {
+    if (!l.verified || l.state !== "open") return "—";
+    const rc = l.recall;
+    if (rc) {
+      const status = (
+        <span data-testid={`loan-recall-${l.loanId}`} className={rc.verified ? (rc.overdue ? "bad" : undefined) : "bad"}>
+          {rc.verified
+            ? `recall of ${Number(rc.quantity).toLocaleString("en-US")} due ${rc.intendedSettlementDate}${rc.overdue ? " (overdue)" : ""}`
+            : rc.problem ?? "recall not verified"}
+        </span>
+      );
+      return l.role === "lender" ? (
+        <>
+          {status} <button disabled={busy} onClick={() => run(() => api.withdrawLoanRecall(party, l.loanId))}>Withdraw recall</button>
+        </>
+      ) : status;
+    }
+    if (l.role !== "lender" || l.pendingReturn) return "—";
+    return <LoanRecallEntry disabled={busy} outstanding={Number(l.quantity)} onRecall={(q) => run(() => api.recallLoan(party, l.loanId, q))} />;
   };
   return (
     <div className="card" data-testid="loans">
@@ -1009,7 +1031,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       {r.loans.length > 0 && (
         <table className="tbl">
           <thead>
-            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th></th></tr>
+            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th></th></tr>
           </thead>
           <tbody>
             {r.loans.map((l) => (
@@ -1027,6 +1049,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
                 <td data-testid={`loan-state-${l.loanId}`}>
                   {l.verified ? <span className="ok">{l.state} ✓</span> : <span className="bad">{l.problem ?? "not verified"}</span>}
                 </td>
+                <td>{recall(l)}</td>
                 <td>{action(l)}</td>
               </tr>
             ))}
@@ -1037,9 +1060,23 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
   );
 }
 
-/** Either party instructs a return of an open loan: part of the outstanding quantity, or all of it. */
-function LoanReturnEntry(props: { disabled: boolean; outstanding: number; onReturn: (quantity: number) => void }) {
+/** The lender recalls part of the outstanding quantity of an open loan, or all of it. */
+function LoanRecallEntry(props: { disabled: boolean; outstanding: number; onRecall: (quantity: number) => void }) {
   const [quantity, setQuantity] = useState(props.outstanding);
+  return (
+    <>
+      <input aria-label="Recall quantity" type="number" value={quantity} min={1} max={props.outstanding} onChange={(ev) => setQuantity(Number(ev.target.value))} style={{ width: 110 }} />
+      <button disabled={props.disabled || quantity < 1 || quantity > props.outstanding} onClick={() => props.onRecall(quantity)}>
+        {quantity === props.outstanding ? "Recall in full" : "Recall part"}
+      </button>
+    </>
+  );
+}
+
+/** Either party instructs a return of an open loan: part of the outstanding quantity, or all of it. With a recall
+ *  pending, the entry starts at the quantity recalled. */
+function LoanReturnEntry(props: { disabled: boolean; outstanding: number; initial?: number; onReturn: (quantity: number) => void }) {
+  const [quantity, setQuantity] = useState(props.initial ?? props.outstanding);
   return (
     <>
       <input aria-label="Return quantity" type="number" value={quantity} min={1} max={props.outstanding} onChange={(ev) => setQuantity(Number(ev.target.value))} style={{ width: 110 }} />
