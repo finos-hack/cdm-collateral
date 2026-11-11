@@ -1291,3 +1291,4 @@ excluded.
 | task-gmsla-recall | 51dfeb02f32e22f07c80808e4ebcc5721385b8d5 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T20:43:23Z |
 | task-gmsla-substitution | bda49e1d7ed0f3892f5d312fee7a4d98bd2f41a0 | contracts/scripts/deploy.ts | 2026-11-11T21:02:26Z |
 | task-gmsla-substitution | bda49e1d7ed0f3892f5d312fee7a4d98bd2f41a0 | services/collateral/src/main/java/collateral/App.java | 2026-11-11T21:02:26Z |
+| task-gmsla-rebate | d13ad64b899ca62323b4ec3e0c61a693797ff5f8 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T20:36:45Z |
