@@ -926,6 +926,40 @@ describe("flow-gmsla-recall", () => {
   });
 });
 
+describe("flow-gmsla-substitution", () => {
+  const loan = (over: Record<string, unknown>) => ({
+    loanId: "0xl1", role: "borrower", counterparty: "A", state: "open", security: "tMMF", quantity: "100000", collateral: "tUST",
+    collateralAmount: "1037", tradeHash: "0x01", price: "1", marginPercent: "102", feeRatePercent: "0.5", termDate: null,
+    deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
+  });
+
+  it("the borrower substitutes tAGY for tUST; a cash loan offers no substitution", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-11-12", loans: [loan({}), loan({ loanId: "0xl2", collateral: "tUSD", collateralAmount: "102000", feeRatePercent: undefined, rebateRatePercent: "4" })] },
+    });
+    const row = await screen.findByTestId("loan-0xl1");
+    expect(within(row).queryByRole("button", { name: "Substitute tUST" })).toBeNull();
+    expect(within(screen.getByTestId("loan-0xl2")).queryByRole("button", { name: /Substitute/ })).toBeNull();
+    await user.click(within(row).getByRole("button", { name: "Substitute tAGY" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/substitute", body: { collateral: "tAGY" } }]));
+  });
+
+  it("the lender agrees to or refuses a pending substitution; no return meanwhile", async () => {
+    const user = userEvent.setup();
+    const pending = { collateral: "tAGY", collateralAmount: "1029", requestedByMe: false, returned: "1037", date: "2026-11-12", verified: true };
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-11-12", loans: [loan({ role: "lender", counterparty: "B", substitution: pending })] },
+    });
+    expect((await screen.findByTestId("loan-substitution-0xl1")).textContent).toBe("1,029 tAGY for 1,037 tUST requested");
+    const row = screen.getByTestId("loan-0xl1");
+    expect(within(row).queryByRole("button", { name: /Return/ })).toBeNull();
+    await user.click(within(row).getByRole("button", { name: "Agree substitution" }));
+    await user.click(within(row).getByRole("button", { name: "Refuse substitution" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/substitute/agree", body: {} }, { path: "/loans/0xl1/substitute/refuse", body: {} }]));
+  });
+});
+
 describe("flow-gmsla-marking", () => {
   const mark = (over: Record<string, unknown>) => ({
     party: "BANK-A", businessDate: "2026-11-11",

@@ -1,0 +1,29 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdmx.collateral.gmsla.functions.*
+
+type GmslaLoanSubstitution: <"The borrower's substitution of all the non-cash collateral of a securities loan (wp-adr-gmsla-substitution): CDM's substitution event, the substitute moving to the lender and the collateral held moving back to the borrower in one on-chain transaction. The borrower publishes it and requests with its hash; the lender's service rebuilds it from the chain, the loan's trade, the feed and its business date, and agrees with the same hash, which becomes the trade hash.">
+    [rootType]
+    trade TradeState (1..1) <"The loan as in force before the substitution.">
+    terms GmslaLoanTerms (1..1) <"The loan's terms, unchanged by the substitution.">
+    loanedPrice number (1..1) <"The feed price of one loaned security on the substitution date.">
+    substitutePrice number (1..1) <"The feed price of one unit of the substitute on the substitution date.">
+    substitutionEvent BusinessEvent (1..1) <"CDM's business event from Create_SubstitutionPrimitiveInstruction and Create_BusinessEvent, with the loaned lot restated and the loan's effective date kept.">
+    collateralIn ScheduledTransfer (1..1) <"The substitute, from the borrower to the lender.">
+    collateralOut ScheduledTransfer (1..1) <"All the collateral held, from the lender back to the borrower.">
+
+    condition NonCash: <"Only non-cash collateral is substituted: the loan states a fee rate.">
+        terms -> feeRate exists
+
+    condition Qualifies: <"The event substitutes the loan's collateral.">
+        GmslaIsSubstitution(substitutionEvent)
+
+    condition OppositeDirections: <"The substitute and the original collateral move between the same two parties, in opposite directions.">
+        collateralIn -> payerReceiver -> payerPartyReference = collateralOut -> payerReceiver -> receiverPartyReference
+            and collateralIn -> payerReceiver -> receiverPartyReference = collateralOut -> payerReceiver -> payerPartyReference
+
+    condition RequiredCollateral: <"The substitute meets the loan's required collateral at the substitution date's prices: GmslaRequiredCollateral.">
+        collateralIn -> quantity -> value
+            = GmslaRequiredCollateral(GmslaLoanedQuantity(trade), loanedPrice, terms -> margin, substitutePrice)

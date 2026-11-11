@@ -957,6 +957,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
     if (l.state === "affirmed")
       return l.deliveryInstructedByMe ? `delivery instructed, awaiting ${other}` : <button disabled={busy} onClick={() => run(() => api.deliverLoan(party, l.loanId))}>Settle delivery</button>;
     if (l.state !== "open") return null;
+    if (l.substitution) return "substitution pending";
     const pr = l.pendingReturn;
     if (pr?.instructedByMe) return <span data-testid={`loan-return-pending-${l.loanId}`}>return of {Number(pr.quantity).toLocaleString("en-US")} instructed, awaiting {other}</span>;
     if (pr?.instructedByCounterparty)
@@ -988,6 +989,43 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
     }
     if (l.role !== "lender" || l.pendingReturn) return "—";
     return <LoanRecallEntry disabled={busy} outstanding={Number(l.quantity)} onRecall={(q) => run(() => api.recallLoan(party, l.loanId, q))} />;
+  };
+  // The substitution of non-cash collateral (wp-adr-gmsla-substitution): the borrower requests one, the lender agrees or
+  // refuses; the last substitution stays shown.
+  const substitution = (l: LiveLoan) => {
+    if (!l.verified || l.state !== "open") return "—";
+    const sb = l.substitution;
+    if (sb) {
+      const status = (
+        <span data-testid={`loan-substitution-${l.loanId}`} className={sb.verified ? undefined : "bad"}>
+          {sb.verified
+            ? `${Number(sb.collateralAmount).toLocaleString("en-US")} ${sb.collateral} for ${Number(sb.returned ?? l.collateralAmount).toLocaleString("en-US")} ${l.collateral} requested`
+            : sb.problem ?? "substitution not verified"}
+        </span>
+      );
+      if (l.role === "borrower") return <>{status}, awaiting {other}</>;
+      return (
+        <>
+          {status}{" "}
+          <button disabled={busy || !sb.verified} onClick={() => run(() => api.agreeLoanSubstitution(party, l.loanId))}>Agree substitution</button>{" "}
+          <button disabled={busy} onClick={() => run(() => api.refuseLoanSubstitution(party, l.loanId))}>Refuse substitution</button>
+        </>
+      );
+    }
+    const last = l.lastSubstitution ? (
+      <span data-testid={`loan-last-substitution-${l.loanId}`}>
+        substituted {Number(l.lastSubstitution.quantity).toLocaleString("en-US")} {l.collateral} on {l.lastSubstitution.date} (CDM Qualify_Substitution: {String(l.lastSubstitution.cdmQualifySubstitution)})
+      </span>
+    ) : null;
+    if (l.role !== "borrower" || l.collateral === "tUSD" || l.pendingReturn) return last ?? "—";
+    return (
+      <>
+        {last}{last ? " " : null}
+        {SUBSTITUTES.filter((s) => s !== l.collateral && s !== l.security).map((s) => (
+          <button key={s} disabled={busy} onClick={() => run(() => api.substituteLoanCollateral(party, l.loanId, s))}>Substitute {s}</button>
+        ))}
+      </>
+    );
   };
   return (
     <div className="card" data-testid="loans">
@@ -1031,7 +1069,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       {r.loans.length > 0 && (
         <table className="tbl">
           <thead>
-            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th></th></tr>
+            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th>Substitution</th><th></th></tr>
           </thead>
           <tbody>
             {r.loans.map((l) => (
@@ -1050,6 +1088,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
                   {l.verified ? <span className="ok">{l.state} ✓</span> : <span className="bad">{l.problem ?? "not verified"}</span>}
                 </td>
                 <td>{recall(l)}</td>
+                <td>{substitution(l)}</td>
                 <td>{action(l)}</td>
               </tr>
             ))}
@@ -1059,6 +1098,10 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
     </div>
   );
 }
+
+/** The securities a loan's non-cash collateral can be substituted with (wp-adr-gmsla-substitution); tAGY is loan
+ *  collateral only. */
+const SUBSTITUTES = ["tUST", "tAGY"];
 
 /** The lender recalls part of the outstanding quantity of an open loan, or all of it. */
 function LoanRecallEntry(props: { disabled: boolean; outstanding: number; onRecall: (quantity: number) => void }) {

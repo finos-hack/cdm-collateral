@@ -148,6 +148,11 @@ collateral redelivered by `GmslaReturnCollateral`),
 `GmslaRecallNotice` due `GmslaRecallSettlementDate` business days later by the loan's CDM `RecallProvision`, anchored on
 `SecuritiesLoan`; `GET /loans` shows a pending `recall` with its due date, `overdue` and whether the notice rebuilds,
 `verified`; wp-adr-gmsla-recall), `POST /loans/{id}/recall/withdraw` (the lender: cdm-ext `GmslaRecallWithdrawal`),
+`POST /loans/{id}/substitute` (the borrower of a loan against securities: body `collateral`, a token symbol; cdm-ext
+`GmslaLoanSubstitution` with CDM's substitution event, the substitute quantity `GmslaRequiredCollateral` at the feed prices
+on the business date, qualified by `GmslaIsSubstitution`; `GET /loans` shows a pending `substitution` and the
+`lastSubstitution`; wp-adr-gmsla-substitution), `POST /loans/{id}/substitute/agree` (the lender: rebuilds the document
+from its trade, feed and business date) and `POST /loans/{id}/substitute/refuse` (the lender),
 `GET /gmsla-marking` (the aggregated mark of the pair's open loans stated for this party, cdm-ext `GmslaMarkStatement`
 built by `CdmGmslaMark`: each loan's requirement, collateral value and exposure at the feed prices, the margin held net
 from settled GMSLA calls, the net figure, the minimum transfer amount, `callableUsd`, `statementHash` and `callOpen`;

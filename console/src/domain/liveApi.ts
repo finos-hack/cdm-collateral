@@ -258,6 +258,14 @@ export const api = {
     req<{ loanId: string; noticeHash: string; quantity: number; intendedSettlementDate: string; recallTx: string }>(p, "POST", `/loans/${loanId}/recall`, quantity === undefined ? {} : { quantity }),
   withdrawLoanRecall: (p: LiveParty, loanId: string) =>
     req<{ loanId: string; withdrawalHash: string; withdrawTx: string }>(p, "POST", `/loans/${loanId}/recall/withdraw`, {}),
+  /** The borrower asks to substitute all the loan's non-cash collateral with another security (wp-adr-gmsla-substitution). */
+  substituteLoanCollateral: (p: LiveParty, loanId: string, collateral: string) =>
+    req<{ loanId: string; cdmHash: string; quantity: string; requestTx: string }>(p, "POST", `/loans/${loanId}/substitute`, { collateral }),
+  /** The lender agrees to the pending substitution, or refuses it. */
+  agreeLoanSubstitution: (p: LiveParty, loanId: string) =>
+    req<{ loanId: string; cdmHash: string; agreeTx: string }>(p, "POST", `/loans/${loanId}/substitute/agree`, {}),
+  refuseLoanSubstitution: (p: LiveParty, loanId: string) =>
+    req<{ loanId: string; refuseTx: string }>(p, "POST", `/loans/${loanId}/substitute/refuse`, {}),
   /** This party's securities loans (wp-adr-gmsla-loan-delivery-return). */
   loans: (p: LiveParty) => req<LiveLoans>(p, "GET", "/loans"),
   /** The lender books a loan; the collateral follows from the feed prices and the margin (default: the GMSLA default margin). */
@@ -475,6 +483,10 @@ export interface LiveLoan {
   /** The pending recall (wp-adr-gmsla-recall): the quantity still recalled, the due date, and the checked notice. */
   recall?: { quantity: string; intendedSettlementDate: string; overdue: boolean; noticeHash: string; recalledQuantity?: string; noticeDate?: string; verified: boolean; problem?: string };
   lastReturn?: LiveLoanReturn;
+  /** The pending substitution (wp-adr-gmsla-substitution): the substitute and its quantity, and the checked document. */
+  substitution?: { collateral: string; collateralAmount: string; requestedByMe: boolean; returned?: string; date?: string; verified: boolean; problem?: string };
+  /** The substitution the trade in force comes from, if any. */
+  lastSubstitution?: { isin: string; quantity: string; returned: string; date: string; qualification: string; cdmQualifySubstitution: boolean };
   verified: boolean;
   problem?: string | null;
 }

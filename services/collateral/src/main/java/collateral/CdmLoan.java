@@ -269,11 +269,11 @@ public final class CdmLoan {
         return null;
     }
 
-    private static Object tree(Object cdm) {
+    static Object tree(Object cdm) {
         return CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(cdm), Map.class);
     }
 
-    private static Map<String, Object> transfer(long value, Map<String, Object> unit, Map<String, Object> asset, String payer, String receiver, LocalDate date) {
+    static Map<String, Object> transfer(long value, Map<String, Object> unit, Map<String, Object> asset, String payer, String receiver, LocalDate date) {
         return o("quantity", o("value", value, "unit", unit), "asset", asset,
                 "settlementDate", o("adjustedDate", o("@data", date.toString())),
                 "payerReceiver", o("payerPartyReference", CdmRepo.party(payer), "receiverPartyReference", CdmRepo.party(receiver)),

@@ -19,6 +19,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// quantity, the intended settlement date and the hash of the CDM recall notice (cdm-ext GmslaRecallNotice); the borrower
 /// settles it through the return, and a settled return reduces the quantity still recalled. The contract does not
 /// enforce the date: the services show a recall overdue.
+/// The borrower may substitute all the collateral of an open loan with another security (task-gmsla-substitution,
+/// wp-adr-gmsla-substitution): the request records the substitute token, its quantity and the hash of the CDM
+/// substitution document (cdm-ext GmslaLoanSubstitution); the lender's agreement with the same hash moves the substitute
+/// to the lender and the collateral held back to the borrower, and makes the hash the trade hash, in one transaction.
+/// No return can be instructed while a substitution is pending, and no substitution while a return is pending.
 contract SecuritiesLoan {
     using SafeERC20 for IERC20;
 
@@ -66,6 +71,15 @@ contract SecuritiesLoan {
 
     mapping(bytes32 => Recall) private _recall;
 
+    /// @dev A loan's pending substitution: the substitute collateral token, its quantity and the CDM document's hash.
+    struct Substitution {
+        address collateral;
+        uint256 collateralAmount;
+        bytes32 cdmHash;
+    }
+
+    mapping(bytes32 => Substitution) private _substitution;
+
     event LoanBooked(bytes32 indexed loanId, address indexed lender, address indexed borrower, bytes32 tradeHash);
     event LoanAffirmed(bytes32 indexed loanId, address indexed borrower, bytes32 tradeHash);
     event LoanDeliveryInstructed(bytes32 indexed loanId, address indexed party, bytes32 cdmHash);
@@ -77,6 +91,10 @@ contract SecuritiesLoan {
     event LoanRecallWithdrawn(bytes32 indexed loanId, bytes32 noticeHash, bytes32 withdrawalHash);
     /// @dev A settled return reduced the recall; quantity is what is still recalled (zero: the recall is cleared).
     event LoanRecallReduced(bytes32 indexed loanId, bytes32 noticeHash, uint256 quantity);
+    event LoanSubstitutionRequested(bytes32 indexed loanId, address collateral, uint256 collateralAmount, bytes32 cdmHash);
+    /// @dev The substitution settled: the new collateral and amount held, and the trade hash.
+    event LoanSubstituted(bytes32 indexed loanId, address collateral, uint256 collateralAmount, bytes32 cdmHash);
+    event LoanSubstitutionRefused(bytes32 indexed loanId, bytes32 cdmHash);
 
     error LoanExists(bytes32 loanId);
     error NoLoan(bytes32 loanId);
@@ -93,6 +111,10 @@ contract SecuritiesLoan {
     error NotTheLender();
     error RecallPending();
     error NoRecall();
+    error SubstitutionPending();
+    error ReturnPending();
+    error NoSubstitution();
+    error SameCollateral();
 
     /// @notice The lender books a loan to the borrower: the loaned securities and quantity, the collateral token and the
     /// amount delivered at the delivery, and the hash of the CDM trade.
@@ -153,6 +175,7 @@ contract SecuritiesLoan {
         if (l.state != LoanState.Open) revert WrongState(l.state);
         if (quantity == 0 || cdmHash == bytes32(0)) revert ZeroAmount();
         if (quantity > l.quantity || collateralAmount > l.collateralAmount) revert TooMuch();
+        if (_substitution[loanId].cdmHash != bytes32(0)) revert SubstitutionPending();
         bool full = quantity == l.quantity;
         if (full && collateralAmount != l.collateralAmount) revert FullReturnKeepsCollateral();
         Instructions storage ins = _return[loanId];
@@ -220,6 +243,57 @@ contract SecuritiesLoan {
     function getRecall(bytes32 loanId) external view returns (uint256 quantity, uint32 settlementDate, bytes32 noticeHash) {
         Recall storage r = _recall[loanId];
         return (r.quantity, r.settlementDate, r.noticeHash);
+    }
+
+    /// @notice The borrower asks to replace all the collateral of an open loan with `collateralAmount` of `collateral`,
+    /// with the hash of the CDM substitution document. One substitution per loan may be pending, and none while a return
+    /// is pending.
+    function requestSubstitution(bytes32 loanId, address collateral, uint256 collateralAmount, bytes32 cdmHash) external {
+        Loan storage l = _load(loanId);
+        if (l.state != LoanState.Open) revert WrongState(l.state);
+        if (msg.sender != l.borrower) revert NotTheBorrower();
+        if (_substitution[loanId].cdmHash != bytes32(0)) revert SubstitutionPending();
+        Instructions storage ret = _return[loanId];
+        if (ret.lender != bytes32(0) || ret.borrower != bytes32(0)) revert ReturnPending();
+        if (collateralAmount == 0 || cdmHash == bytes32(0) || collateral == address(0)) revert ZeroAmount();
+        if (collateral == l.collateral || collateral == l.security) revert SameCollateral();
+        _substitution[loanId] = Substitution(collateral, collateralAmount, cdmHash);
+        emit LoanSubstitutionRequested(loanId, collateral, collateralAmount, cdmHash);
+    }
+
+    /// @notice The lender agrees to the pending substitution with the same hash: the substitute moves from the borrower
+    /// to the lender, all the collateral held moves back to the borrower, and the hash becomes the trade hash.
+    function agreeSubstitution(bytes32 loanId, bytes32 cdmHash) external {
+        Loan storage l = _load(loanId);
+        if (msg.sender != l.lender) revert NotTheLender();
+        Substitution memory sub = _substitution[loanId];
+        if (sub.cdmHash == bytes32(0)) revert NoSubstitution();
+        if (cdmHash != sub.cdmHash) revert HashMismatch(sub.cdmHash, cdmHash);
+        delete _substitution[loanId];
+        address old = l.collateral;
+        uint256 oldAmount = l.collateralAmount;
+        l.collateral = sub.collateral;
+        l.collateralAmount = sub.collateralAmount;
+        l.tradeHash = cdmHash;
+        IERC20(sub.collateral).safeTransferFrom(l.borrower, l.lender, sub.collateralAmount);
+        IERC20(old).safeTransferFrom(l.lender, l.borrower, oldAmount);
+        emit LoanSubstituted(loanId, sub.collateral, sub.collateralAmount, cdmHash);
+    }
+
+    /// @notice The lender refuses the pending substitution, which clears it.
+    function refuseSubstitution(bytes32 loanId) external {
+        Loan storage l = _load(loanId);
+        if (msg.sender != l.lender) revert NotTheLender();
+        bytes32 h = _substitution[loanId].cdmHash;
+        if (h == bytes32(0)) revert NoSubstitution();
+        delete _substitution[loanId];
+        emit LoanSubstitutionRefused(loanId, h);
+    }
+
+    /// @notice The pending substitution (zeros: none).
+    function getSubstitution(bytes32 loanId) external view returns (address collateral, uint256 collateralAmount, bytes32 cdmHash) {
+        Substitution storage sub = _substitution[loanId];
+        return (sub.collateral, sub.collateralAmount, sub.cdmHash);
     }
 
     /// @dev Records the caller's instruction hash; true when the other party has instructed the same hash already.
