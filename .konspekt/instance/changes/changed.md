@@ -1241,3 +1241,4 @@ excluded.
 | task-gmsla-marking | abc4b791a2cd900e0624e539d5705fca8aec3236 | services/collateral/src/main/java/collateral/Cdm.java | 2026-11-11T18:37:58Z |
 | task-gmsla-marking | abc4b791a2cd900e0624e539d5705fca8aec3236 | services/collateral/src/main/java/collateral/CdmGmslaMark.java | 2026-11-11T18:37:58Z |
 | task-gmsla-marking | abc4b791a2cd900e0624e539d5705fca8aec3236 | services/collateral/src/test/java/collateral/CdmGmslaMarkTest.java | 2026-11-11T18:37:58Z |
+| task-gmsla-recall | edb6fd701ca786a344c4a5ed854642d4755cbf26 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T19:15:13Z |
