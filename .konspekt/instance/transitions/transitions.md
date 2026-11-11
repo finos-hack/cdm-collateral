@@ -1213,3 +1213,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
 | edge:e-lnk-gmslasub-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
 | node:task-gmsla-recall | status | open | resolved | 2026-11-11T20:43:22Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
+| waypoint:wp-adr-gmsla-rebate | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| node:task-sme-gmsla-rebate-rules | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| node:task-sme-gmsla-rebate-rules | status |  | open | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| edge:e-mrk-rbtadr-gmslarbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| edge:e-drv-cdmdata-rbtadr | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| edge:e-drv-finality-rbtadr | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| edge:e-dec-cdmdev-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| edge:e-lnk-gmslarbt-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
+| edge:e-lnk-rbtadr-gmslafee | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |

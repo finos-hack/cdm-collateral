@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T20:36:45Z
+updatedAt: 2026-11-11T20:39:13Z
 ```
 # Task: rebate on cash collateral
 
@@ -45,3 +45,6 @@ the period 2026-11-11 to 2026-12-11:
   borrower, through `Create_BusinessEvent`, passes validation and qualifies as `CashTransfer` (not `SecurityTransfer`).
   It adds one entry to the transfer history and leaves the loaned quantity, the collateral and the trade unchanged.
 - CDM has no rebate amount function for a loan, no invoice agreement and no record of which periods are billed.
+
+**Design chosen 2026-11-11** (source `7aad715d9ef96f8f93b411878275c88a846e99a8`: "1a 2a 3a 4a 5a 6a 7a 8a 9a 10a"), recorded in [[wp-adr-gmsla-rebate]]
+(proposed); the rules are questions for an SME in [[task-sme-gmsla-rebate-rules]].

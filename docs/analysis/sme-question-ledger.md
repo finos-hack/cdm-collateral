@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 136 questions in 25 tasks, all open.
+Status of the ledger: 142 questions in 26 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -276,3 +276,14 @@ Status of the ledger: 136 questions in 25 tasks, all open.
 | LSB-4 | A substitution replaces all the collateral of one loan. Are partial substitutions, giving a loan with mixed collateral, usual under the GMSLA? | open | |
 | LSB-5 | The loan's fee is unchanged by a substitution. Is the fee repriced when the collateral changes, for example to a lower-grade security? | open | |
 | LSB-6 | A substitution is allowed while a recall is pending. Is that right, or does a recall freeze the collateral until the return? | open | |
+
+### `task-sme-gmsla-rebate-rules`: billing and paying the rebate on cash collateral under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| RBT-1 | The rebate is billed from the last billed date to the business date, at any time the borrower chooses. Under GMSLA 2010 practice, is the rebate settled monthly, and on which day (e.g. the first business days of the next month)? | open | |
+| RBT-2 | The rebate accrues daily on the cash collateral actually held, ACT/360, the start day counted and the end day not. Is that the usual accrual convention for a USD cash rebate? | open | |
+| RBT-3 | The borrower issues the invoice and the lender pays on agreement. In practice, who issues the rebate statement, and how is a disputed amount handled? | open | |
+| RBT-4 | The invoice total is the sum of the daily accruals per sub-period, rounded half-up to the cent once. Is rounding per invoice the usual practice, or per day? | open | |
+| RBT-5 | Negative rebate rates are refused. Are negative rebates (the borrower pays) used for USD cash collateral, and should the prototype support them? | open | |
+| RBT-6 | A returned loan can still be billed for the period up to its return date. Is the final rebate usually settled with the return, or billed with the next periodic statement? | open | |
