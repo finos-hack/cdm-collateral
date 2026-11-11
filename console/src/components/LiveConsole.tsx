@@ -905,8 +905,38 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
           <button disabled={busy} onClick={() => run(() => api.refuseRepoRoll(party, p.repoId))}>Refuse roll</button>
         </>
       );
-    if (p.repurchaseDate !== r.businessDate || p.instructedByMe || p.instructedByCounterparty || p.substitutionPending || p.interimPending || p.incomePending) return null;
+    if (p.repurchaseDate !== r.businessDate || p.instructedByMe || p.instructedByCounterparty || p.substitutionPending || p.interimPending || p.incomePending || p.pairOffPending) return null;
     return <RepoRollEntry disabled={busy} ratePercent={p.ratePercent ?? ""} onRoll={(roll) => run(() => api.proposeRepoRoll(party, p.repoId, roll))} />;
+  };
+  const pairOffNet = (net?: string) => (net === undefined ? "" : net.startsWith("-") ? `, pay ${usd(net.slice(1))}` : net === "0" ? ", no cash" : `, receive ${usd(net)}`);
+  const pairOffAction = (p: LiveRepo) => {
+    if (!p.verified || p.state !== "purchased") return null;
+    if (p.pairOffPending === "requested")
+      return <span data-testid={`repo-pairoff-${p.repoId}`}>pair-off with {short(p.pairOffWith ?? "")} proposed{pairOffNet(p.pairOffNet)}{p.pairOffProblem ? ` (${p.pairOffProblem})` : ""}</span>;
+    if (p.pairOffPending === "toDecide")
+      return (
+        <>
+          {p.pairOffProblem ? (
+            <span className="bad" data-testid={`repo-pairoff-${p.repoId}`}>{p.pairOffProblem}</span>
+          ) : (
+            <button disabled={busy} onClick={() => run(() => api.agreeRepoPairOff(party, p.repoId))}>Agree pair-off with {short(p.pairOffWith ?? "")}{pairOffNet(p.pairOffNet)}</button>
+          )}
+          <button disabled={busy} onClick={() => run(() => api.refuseRepoPairOff(party, p.repoId))}>Refuse pair-off</button>
+        </>
+      );
+    if (p.repurchaseDate !== r.businessDate || p.instructedByMe || p.instructedByCounterparty || p.substitutionPending || p.interimPending || p.incomePending || p.rollPending) return null;
+    // Full pair-off only (wp-adr-repo-pair-off): the same pair in the opposite direction, security, quantity and Repurchase Date.
+    const offsetting = r.repos.filter(
+      (q) => q.repoId !== p.repoId && q.verified && q.state === "purchased" && q.role !== p.role && q.counterparty === p.counterparty
+        && q.security === p.security && q.quantity === p.quantity && q.repurchaseDate === p.repurchaseDate && !q.pairOffPending && !q.rollPending,
+    );
+    return (
+      <>
+        {offsetting.map((q) => (
+          <button key={q.repoId} disabled={busy} onClick={() => run(() => api.proposeRepoPairOff(party, p.repoId, q.repoId))}>Pair off with {short(q.repoId)}</button>
+        ))}
+      </>
+    );
   };
   return (
     <div className="card" data-testid="repos">
@@ -962,7 +992,7 @@ function ReposCard(props: { party: LiveParty; other: LiveParty; repos: LiveRepos
                 <td data-testid={`repo-state-${p.repoId}`}>
                   {p.verified ? <span className="ok">{p.state} ✓</span> : <span className="bad">{p.problem ?? "not verified"}</span>}
                 </td>
-                <td>{action(p)} {substitution(p)} {payment(p)} {rollAction(p)}</td>
+                <td>{action(p)} {substitution(p)} {payment(p)} {rollAction(p)} {pairOffAction(p)}</td>
               </tr>
             ))}
           </tbody>

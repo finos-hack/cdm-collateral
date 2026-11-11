@@ -3,7 +3,7 @@ id: task-collateral-service-unit-tests
 type: task
 title: Add unit tests to the collateral service (services/collateral)
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: e2e-remaining-flows
   sourceRef: 6ffb4961a1429b5c0e5559ecd5f9decc0c2a1086
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:01:12Z
   confidence: 0.8
 createdAt: 2026-11-03T14:01:12Z
-updatedAt: 2026-11-03T14:01:12Z
+updatedAt: 2026-11-09T00:28:03Z
 ```
 # Task: add unit tests to the collateral service
 

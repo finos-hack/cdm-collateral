@@ -1,0 +1,136 @@
+namespace cdmx.collateral.repo : <"Local CDM extension: the pair-off of two offsetting repos on their common Repurchase Date (wp-adr-repo-pair-off, defect D24).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.identifier.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdm.base.staticdata.asset.common.*
+import cdm.product.collateral.*
+import cdm.product.template.*
+
+func RepoPairOffMatches: <"Whether two repos can pair off in full (wp-adr-repo-pair-off): both open, between the same two parties in opposite directions, with the same security, quantity, cash currency and Repurchase Date. Equal quantities only; partial pair-off is not covered.">
+    inputs:
+        repoA TradeState (1..1)
+        repoB TradeState (1..1)
+    output:
+        matches boolean (1..1)
+
+    alias firstTerms: repoA -> trade -> product -> economicTerms
+    alias secondTerms: repoB -> trade -> product -> economicTerms
+    alias firstSeller: repoA -> trade -> counterparty filter item -> role = CounterpartyRoleEnum -> Party1 then only-element then extract item -> partyReference
+    alias firstBuyer: repoA -> trade -> counterparty filter item -> role = CounterpartyRoleEnum -> Party2 then only-element then extract item -> partyReference
+    alias secondSeller: repoB -> trade -> counterparty filter item -> role = CounterpartyRoleEnum -> Party1 then only-element then extract item -> partyReference
+    alias secondBuyer: repoB -> trade -> counterparty filter item -> role = CounterpartyRoleEnum -> Party2 then only-element then extract item -> partyReference
+    alias firstPosition: firstTerms -> collateral -> collateralPortfolio only-element -> collateralPosition only-element
+    alias secondPosition: secondTerms -> collateral -> collateralPortfolio only-element -> collateralPosition only-element
+    alias firstCash: repoA -> trade -> tradeLot only-element -> priceQuantity filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then only-element then extract item -> quantity -> unit -> currency
+    alias secondCash: repoB -> trade -> tradeLot only-element -> priceQuantity filter item -> price -> priceType any = PriceTypeEnum -> InterestRate then only-element then extract item -> quantity -> unit -> currency
+
+    set matches:
+        repoA -> state -> closedState is absent
+            and repoB -> state -> closedState is absent
+            and firstSeller exists
+            and firstBuyer exists
+            and firstSeller = secondBuyer
+            and firstBuyer = secondSeller
+            and RepoPositionAsset(firstPosition) exists
+            and RepoPositionAsset(firstPosition) = RepoPositionAsset(secondPosition)
+            and firstPosition -> priceQuantity -> quantity -> value exists
+            and firstPosition -> priceQuantity -> quantity -> value = secondPosition -> priceQuantity -> quantity -> value
+            and firstCash exists
+            and firstCash = secondCash
+            and firstTerms -> terminationDate exists
+            and firstTerms -> terminationDate = secondTerms -> terminationDate
+
+func RepoPositionAsset: <"The asset of a repo's collateral position: the securities purchased.">
+    inputs:
+        position CollateralPosition (1..1)
+    output:
+        asset Asset (0..1)
+
+    set asset:
+        position -> product switch
+            TransferableProduct then item -> asset,
+            default empty
+
+func RepoWithPackage: <"A repo trade with CDM's package reference added to its execution details, and nothing else changed.">
+    inputs:
+        tradeState TradeState (1..1)
+        listId Identifier (1..1)
+        componentId Identifier (2..*)
+    output:
+        after TradeState (1..1)
+
+    set after: tradeState
+    set after -> trade -> executionDetails:
+        Create_PackageExecutionDetails(tradeState -> trade -> executionDetails, listId, componentId)
+
+func RepoPairOffEvent: <"Defect D24: the pair-off of two repos as a BusinessEvent. CDM's Create_PairOffInstruction gives each instruction both a before trade state and an execution, which CDM's Instruction condition NewTrade forbids. Here each instruction carries only its before trade state, and the after trade states are the same trades with CDM's package reference: the pair reference as list identifier and the two trade identifiers as components (CDM's Create_PackageExecutionDetails). The trades stay open; the net settlement is RepoPairOffSettlement.">
+    inputs:
+        repoA TradeState (1..1)
+        repoB TradeState (1..1)
+        pairReference Identifier (1..1)
+        eventDate date (1..1)
+    output:
+        businessEvent BusinessEvent (1..1)
+
+    alias componentId: [repoA -> trade -> tradeIdentifier only-element, repoB -> trade -> tradeIdentifier only-element]
+
+    condition Matches:
+        RepoPairOffMatches(repoA, repoB)
+
+    set businessEvent -> eventDate: eventDate
+    add businessEvent -> instruction:
+        Instruction {
+            before: repoA,
+            ...
+        }
+    add businessEvent -> instruction:
+        Instruction {
+            before: repoB,
+            ...
+        }
+    add businessEvent -> after: RepoWithPackage(repoA, pairReference, componentId)
+    add businessEvent -> after: RepoWithPackage(repoB, pairReference, componentId)
+
+func RepoIsPairOff: <"Whether a BusinessEvent pairs off two repos (wp-adr-repo-pair-off, defect D24): two instructions with a before trade state and no primitive instruction, two open after trade states that match the befores in everything but the execution details, one package reference on both naming the two trades, and repos that RepoPairOffMatches. CDM's Qualify_PairOff is not used: it accepts only CDM's own instructions, which fail validation.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias firstBefore: businessEvent -> instruction first -> before
+    alias secondBefore: businessEvent -> instruction last -> before
+    alias firstAfter: businessEvent -> after first
+    alias secondAfter: businessEvent -> after last
+    alias firstPackage: firstAfter -> trade -> executionDetails -> packageReference
+    alias secondPackage: secondAfter -> trade -> executionDetails -> packageReference
+
+    set is_event:
+        businessEvent -> instruction count = 2
+            and businessEvent -> instruction -> primitiveInstruction is absent
+            and businessEvent -> after count = 2
+            and FilterOpenTradeStates(businessEvent -> after) count = 2
+            and firstBefore exists
+            and secondBefore exists
+            and RepoPairOffMatches(firstBefore, secondBefore)
+            and TradeNoExecutionDetails(firstAfter -> trade) = TradeNoExecutionDetails(firstBefore -> trade)
+            and TradeNoExecutionDetails(secondAfter -> trade) = TradeNoExecutionDetails(secondBefore -> trade)
+            and firstPackage exists
+            and firstPackage = secondPackage
+            and firstPackage -> componentId count = 2
+            and firstPackage -> componentId contains firstBefore -> trade -> tradeIdentifier only-element
+            and firstPackage -> componentId contains secondBefore -> trade -> tradeIdentifier only-element
+
+func RepoPairOffNetAmount: <"The net cash of a pair-off (wp-adr-repo-pair-off): the first repo's Repurchase Price less the second's. Positive: the Seller of the first repo pays its Buyer; negative: the Seller of the second repo pays its Buyer; zero: no cash moves. The securities returns cancel.">
+    inputs:
+        repoA TradeState (1..1)
+        repoB TradeState (1..1)
+        decimals int (1..1)
+    output:
+        amount number (1..1)
+
+    set amount:
+        RepoRepurchasePrice(repoA, decimals) -> value - RepoRepurchasePrice(repoB, decimals) -> value

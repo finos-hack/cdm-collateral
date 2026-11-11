@@ -156,6 +156,9 @@ public final class App {
         app.post("/api/v1/repos/{id}/roll", this::proposeRoll);
         app.post("/api/v1/repos/{id}/roll/agree", this::agreeRoll);
         app.post("/api/v1/repos/{id}/roll/refuse", this::refuseRoll);
+        app.post("/api/v1/repos/{id}/pair-off", this::proposePairOff);
+        app.post("/api/v1/repos/{id}/pair-off/agree", this::agreePairOff);
+        app.post("/api/v1/repos/{id}/pair-off/refuse", this::refusePairOff);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/substitutions", this::substitutions);
         app.post("/api/v1/substitutions", this::requestSubstitution);
@@ -824,6 +827,7 @@ public final class App {
         }
         addPendingPayments(m, r, seller, state);
         addPendingRoll(m, r, seller, state);
+        addPendingPairOff(m, r, seller, state);
         try {
             CdmRepo.Booking b = repoBooking(r);
             if (b == null) {
@@ -961,9 +965,12 @@ public final class App {
         out.put("tradeStateHash", CdmRepo.tradeHash(b.trade()));
         String rh = r.get("repurchaseHash").asText();
         if (!rh.equals(ZERO_HASH)) {
-            CdmRepo.Settlement s = CdmRepo.repurchase(b.trade());
-            if (!s.hash().equalsIgnoreCase(rh)) throw new RuntimeException("the anchored repurchase is not the one this service builds");
-            var closed = s.settlement().getRepurchase().getAfter().get(0);
+            var closed = pairedOffClosedTrade(id, rh);
+            if (closed == null) {
+                CdmRepo.Settlement s = CdmRepo.repurchase(b.trade());
+                if (!s.hash().equalsIgnoreCase(rh)) throw new RuntimeException("the anchored repurchase is not the one this service builds");
+                closed = s.settlement().getRepurchase().getAfter().get(0);
+            }
             out.put("closedTradeStateHash", CdmRepo.tradeHash(closed));
             out.put("closedState", closed.getState().getClosedState().getState().toString());
         }
@@ -1408,6 +1415,122 @@ public final class App {
         JsonNode r = purchasedRepo(ctx);
         requireRole(r, role, "refuse this payment");
         ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/refuse-payment", Map.of("phase", phase)).path("txHash").asText()));
+    }
+
+    // ---- repo pair-off (wp-adr-repo-pair-off) ----
+    // Either party proposes the pair-off of two offsetting purchased repos on their common Repurchase Date; the other agrees
+    // or refuses. Only the party paying the net cash approves an amount. Rules to confirm in task-sme-repo-pair-off-rules.
+
+    private void addPendingPairOff(Map<String, Object> m, JsonNode r, boolean seller, String state) {
+        if (!state.equals("purchased")) return;
+        String with = r.path("pairOffWith").asText(ZERO_HASH);
+        if (with.equals(ZERO_HASH)) return;
+        String mine = pendingHash(r, "pairOff", seller), theirs = pendingHash(r, "pairOff", !seller);
+        m.put("pairOffPending", mine.equals(ZERO_HASH) ? "toDecide" : "requested");
+        m.put("pairOffWith", with);
+        try {
+            JsonNode other = gw.get("/repos/" + with);
+            CdmRepo.PairedOff p = pairOffOf(r, other);
+            long pay = myPairOffPayment(p, r, other);
+            m.put("pairOffNet", String.valueOf(pay > 0 ? -pay : Math.abs(p.netAmount())));
+            if (!p.hash().equalsIgnoreCase(mine.equals(ZERO_HASH) ? theirs : mine))
+                m.put("pairOffProblem", "the proposed pair-off is not the one this service builds at the business date " + businessDate);
+        } catch (RuntimeException ex) {
+            m.put("pairOffProblem", String.valueOf(ex.getMessage()));
+        }
+    }
+
+    /** The pair-off of two purchased repos at this service's business date, from the bookings it holds and has checked. */
+    private CdmRepo.PairedOff pairOffOf(JsonNode r, JsonNode other) {
+        List<CdmRepo.Booking> bookings = new ArrayList<>();
+        for (JsonNode x : List.of(r, other)) {
+            String id = x.get("repoId").asText();
+            if (!x.get("state").asText().equals("purchased")) throw new RuntimeException("repo " + id + " is not purchased");
+            CdmRepo.Booking b = repoBooking(x);
+            if (b == null) throw new RuntimeException("the booked document of repo " + id + " is not in the payload store");
+            String problem = repoProblem(x, b);
+            if (problem != null) throw new RuntimeException("repo " + id + ": " + problem);
+            bookings.add(b);
+        }
+        return CdmRepo.pairOff(bookings.get(0).trade(), bookings.get(1).trade(), businessDate);
+    }
+
+    /** What this party pays in a pair-off: the net amount if it is the Seller of the repo with the higher Repurchase Price. */
+    private long myPairOffPayment(CdmRepo.PairedOff p, JsonNode r, JsonNode other) {
+        if (p.netAmount() == 0) return 0;
+        String payingRepo = p.netAmount() > 0 ? p.first() : p.second();
+        JsonNode paying = r.get("repoId").asText().equalsIgnoreCase(payingRepo) ? r : other;
+        return paying.get("seller").asText().equalsIgnoreCase(cfg.myAddress) ? Math.abs(p.netAmount()) : 0;
+    }
+
+    private Map<String, Object> instructPairOff(JsonNode r, JsonNode other, CdmRepo.PairedOff p) {
+        String id = r.get("repoId").asText(), otherId = other.get("repoId").asText();
+        store.recordDocument(id, "RepoPairOffSettlement", "out", p.hash(), p.json());
+        store.recordDocument(otherId, "RepoPairOffSettlement", "out", p.hash(), p.json());
+        payloads.put(p.hash(), p.json(), callParties);
+        long pay = myPairOffPayment(p, r, other);
+        List<Map<String, String>> approvals = pay > 0 ? List.of(Map.of("token", r.get("cash").asText(), "amount", String.valueOf(pay))) : List.of();
+        JsonNode tx = gw.post("/repos/" + id + "/pair-off", Map.of("otherRepoId", otherId, "cdmHash", p.hash(), "approvals", approvals));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("repoId", id);
+        out.put("otherRepoId", otherId);
+        out.put("cdmHash", p.hash());
+        out.put("netAmount", String.valueOf(p.netAmount()));
+        out.put("myPayment", String.valueOf(pay));
+        out.put("instructTx", tx.path("txHash").asText());
+        return out;
+    }
+
+    /** A party proposes the pair-off of a purchased repo with another of the same pair in the opposite direction. */
+    private void proposePairOff(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!seller && !r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("not a party to repo " + ctx.pathParam("id"));
+        if (!pendingHash(r, "pairOff", !seller).equals(ZERO_HASH)) throw new RuntimeException("the counterparty has proposed a pair-off: agree or refuse it");
+        Object otherId = body(ctx).get("otherRepoId");
+        if (otherId == null) throw new RuntimeException("otherRepoId is required");
+        JsonNode other = gw.get("/repos/" + otherId);
+        ctx.json(instructPairOff(r, other, pairOffOf(r, other)));
+    }
+
+    /** The other party agrees only if this service builds the same pair-off document from the two repos it holds. */
+    private void agreePairOff(Context ctx) {
+        JsonNode r = purchasedRepo(ctx);
+        boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        String offered = pendingHash(r, "pairOff", !seller);
+        if (offered.equals(ZERO_HASH)) throw new RuntimeException("no pair-off is proposed");
+        JsonNode other = gw.get("/repos/" + r.get("pairOffWith").asText());
+        CdmRepo.PairedOff p = pairOffOf(r, other);
+        if (!p.hash().equalsIgnoreCase(offered))
+            throw new RuntimeException("the pair-off proposed for repo " + r.get("repoId").asText() + " is not the one this service builds at the business date " + businessDate);
+        ctx.json(instructPairOff(r, other, p));
+    }
+
+    /** The party that did not propose the pair-off refuses it; the contract checks which party that is. */
+    private void refusePairOff(Context ctx) {
+        purchasedRepo(ctx);
+        ctx.json(Map.of("refuseTx", gw.post("/repos/" + ctx.pathParam("id") + "/pair-off/refuse", Map.of()).path("txHash").asText()));
+    }
+
+    /** The closed cdm.event.common.TradeState of a repo settled by a pair-off: the anchored document must be the one this service builds
+     *  from the two bookings it holds; null when the anchored repurchase is not a pair-off. */
+    private cdm.event.common.TradeState pairedOffClosedTrade(String repoId, String repurchaseHash) {
+        String doc = payloads.get(repurchaseHash);
+        if (doc == null) return null;
+        JsonNode d;
+        try {
+            d = CdmRuntime.JSON.readTree(doc);
+        } catch (Exception e) {
+            return null;
+        }
+        if (!d.has("pairOff")) return null;
+        String[] ids = d.at("/pairOff/after/0/trade/executionDetails/packageReference/listId/assignedIdentifier/0/identifier/@data").asText().split("/");
+        if (ids.length != 2) throw new RuntimeException("the anchored pair-off names no pair of repos");
+        CdmRepo.Booking a = repoBooking(gw.get("/repos/" + ids[0])), b = repoBooking(gw.get("/repos/" + ids[1]));
+        if (a == null || b == null) throw new RuntimeException("a booked document of the pair-off is not in the payload store");
+        CdmRepo.PairedOff p = CdmRepo.pairOff(a.trade(), b.trade(), CdmRepo.terms(a.trade()).repurchaseDate());
+        if (!p.hash().equalsIgnoreCase(repurchaseHash)) throw new RuntimeException("the anchored pair-off is not the one this service builds");
+        return p.settlement().getRepurchase().get(p.first().equalsIgnoreCase(repoId) ? 0 : 1).getAfter().get(0);
     }
 
     // ---- repo roll (wp-adr-repo-roll) ----

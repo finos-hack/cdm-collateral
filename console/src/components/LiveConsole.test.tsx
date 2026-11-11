@@ -644,6 +644,52 @@ describe("flow-repo-margin-maintenance", () => {
     await waitFor(() => expect(posts[1]).toEqual({ path: "/repos/0xr1/roll/refuse", body: {} }));
   });
 
+  it("a party proposes a pair-off only with an offsetting repo on their common Repurchase Date", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      substitutionRepo({ repurchaseDue: true }),
+      substitutionRepo({ repoId: "0xr2", role: "buyer", repurchasePrice: "1000778", ratePercent: "4", repurchaseDue: true }),
+      substitutionRepo({ repoId: "0xr3", repurchaseDue: true }), // the same direction as 0xr1
+      substitutionRepo({ repoId: "0xr4", role: "buyer", quantity: "5000", repurchaseDue: true }), // another quantity
+    ] } });
+    const row = await screen.findByTestId("repo-0xr1");
+    expect(within(row).queryByRole("button", { name: "Pair off with 0xr3" })).toBeNull();
+    expect(within(row).queryByRole("button", { name: "Pair off with 0xr4" })).toBeNull();
+    await user.click(within(row).getByRole("button", { name: "Pair off with 0xr2" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/pair-off", body: { otherRepoId: "0xr2" } }]));
+  });
+
+  it("no pair-off is offered before the Repurchase Date", async () => {
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-15", repos: [
+      substitutionRepo({}),
+      substitutionRepo({ repoId: "0xr2", role: "buyer" }),
+    ] } });
+    const row = await screen.findByTestId("repo-0xr1");
+    expect(within(row).queryByRole("button", { name: "Pair off with 0xr2" })).toBeNull();
+  });
+
+  it("the other party agrees to or refuses a proposed pair-off, and sees what it pays", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      substitutionRepo({ role: "buyer", counterparty: "A", repurchaseDue: true, pairOffPending: "toDecide", pairOffWith: "0xr2", pairOffNet: "97" }),
+    ] } });
+    const card = await screen.findByTestId("repos");
+    expect(within(card).queryByRole("button", { name: "Roll repo" })).toBeNull();
+    await user.click(within(card).getByRole("button", { name: /^Agree pair-off with 0xr2, receive/ }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/repos/0xr1/pair-off/agree", body: {} }]));
+    await user.click(within(card).getByRole("button", { name: "Refuse pair-off" }));
+    await waitFor(() => expect(posts[1]).toEqual({ path: "/repos/0xr1/pair-off/refuse", body: {} }));
+  });
+
+  it("a pair-off this service cannot rebuild shows the problem instead of an agree button", async () => {
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repos": { businessDate: "2026-11-16", repos: [
+      substitutionRepo({ role: "buyer", counterparty: "A", repurchaseDue: true, pairOffPending: "toDecide", pairOffWith: "0xr2", pairOffProblem: "repos 0xr1 and 0xr2 do not offset" }),
+    ] } });
+    const card = await screen.findByTestId("repos");
+    expect(within(card).queryByRole("button", { name: /^Agree pair-off/ })).toBeNull();
+    expect((await screen.findByTestId("repo-pairoff-0xr1")).textContent).toContain("do not offset");
+  });
+
   it("no margin action is available while a substitution is pending", async () => {
     serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/repo-margin": margin({ substitutionsPending: 1 }) });
     const card = await screen.findByTestId("repo-margin");

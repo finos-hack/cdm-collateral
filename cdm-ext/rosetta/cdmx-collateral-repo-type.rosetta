@@ -40,3 +40,16 @@ type RepoManufacturedIncome: <"Income on the purchased securities that the Buyer
 
     condition PositiveAmounts:
         incomePerUnit > 0 and amount > 0
+
+type RepoPairOffSettlement: <"The pair-off of two offsetting repos on their common Repurchase Date (wp-adr-repo-pair-off): the pair-off event, CDM's Repurchase event of each paired trade, and the net cash. No securities move: the two returns cancel.">
+    [rootType]
+    pairOff BusinessEvent (1..1) <"The pair-off event from RepoPairOffEvent: the two trades with CDM's package reference.">
+    repurchase BusinessEvent (2..2) <"CDM's Repurchase business event of each paired trade, after the pair-off, in the order of the pair-off event.">
+    netAmount number (1..1) <"RepoPairOffNetAmount: the first repo's Repurchase Price less the second's.">
+    netCashTransfer ScheduledTransfer (0..1) <"The net cash: from the Seller of the first repo to its Buyer when netAmount is positive, from the Seller of the second repo to its Buyer when negative; absent when zero.">
+
+    condition RepurchaseEvents: <"Each paired trade is repurchased.">
+        repurchase -> intent all = EventIntentEnum -> Repurchase
+
+    condition NetCash: <"The cash moves only when the Repurchase Prices differ.">
+        if netAmount = 0 then netCashTransfer is absent else netCashTransfer exists

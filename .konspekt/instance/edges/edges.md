@@ -128,7 +128,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-remainingflows-depletion | notes | node:task-e2e-remaining-flows | noteworthy:nw-live-spec-balance-depletion |  | accepted |
 | e-note-livecheckout-depletion | notes | node:task-live-flow-checkout-script | noteworthy:nw-live-spec-balance-depletion |  | accepted |
 | e-note-balanceaware-depletion | notes | node:task-live-spec-balance-aware-amounts | noteworthy:nw-live-spec-balance-depletion |  | accepted |
-| e-dec-e2eflow-collateralunittests | decomposes | node:goal-end-to-end-flow | node:task-collateral-service-unit-tests |  | proposed |
+| e-dec-e2eflow-collateralunittests | decomposes | node:goal-end-to-end-flow | node:task-collateral-service-unit-tests |  | accepted |
 | e-dec-e2eflow-workflowtaskmap | decomposes | node:goal-end-to-end-flow | node:investigation-cdm-workflow-task-map |  | accepted |
 | e-prod-workflowtaskmap-map | produces | node:investigation-cdm-workflow-task-map | artifact:artifact-cdm-workflow-task-map |  | accepted |
 | e-dec-e2eflow-csaextensions | decomposes | node:goal-end-to-end-flow | node:task-csa-workflow-extensions |  | accepted |
@@ -304,3 +304,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-adoption-presentation | decomposes | node:goal-adoption | node:task-presentation |  | proposed |
 | e-note-workflowtaskmap-defermapping | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-defer-message-standard-mapping |  | accepted |
 | e-note-businesscase-defermapping | notes | node:goal-business-case | noteworthy:nw-defer-message-standard-mapping |  | accepted |
+| e-mrk-pofadr-pairoff | marks | waypoint:wp-adr-repo-pair-off | node:task-repo-pair-off |  | accepted |
+| e-drv-cdmdata-pofadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-repo-pair-off |  | accepted |
+| e-drv-finality-pofadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-repo-pair-off |  | accepted |
+| e-dec-cdmdev-smepairoff | decomposes | node:goal-cdm-development | node:task-sme-repo-pair-off-rules |  | accepted |
+| e-lnk-pairoff-smepairoff | links | node:task-repo-pair-off | node:task-sme-repo-pair-off-rules |  | accepted |

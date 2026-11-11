@@ -1025,6 +1025,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-roll-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
 | node:investigation-live-spec-in-claude-web | review |  | proposed | 2026-11-09T00:17:00Z |  |  |
 | node:investigation-live-spec-in-claude-web | status |  | active | 2026-11-09T00:17:00Z |  |  |
+| node:task-repo-roll | status | open | resolved | 2026-11-09T00:27:02Z | a1623dde2b68f67b0223a996e80a0a8c5410a2bd | denisurusov |
+| node:task-collateral-service-unit-tests | review | proposed | accepted | 2026-11-09T00:28:03Z | e81a8365f9239b98d4403e15226c5f0ed9c53baa | denisurusov |
+| edge:e-dec-e2eflow-collateralunittests | review | proposed | accepted | 2026-11-09T00:28:03Z | e81a8365f9239b98d4403e15226c5f0ed9c53baa | denisurusov |
 | edge:e-dec-e2eflow-livespecweb | review |  | proposed | 2026-11-09T00:43:47Z |  |  |
 | node:goal-adoption | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
 | node:goal-adoption | status |  | open | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
@@ -1034,3 +1037,18 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-defer-message-standard-mapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
 | edge:e-note-workflowtaskmap-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
 | edge:e-note-businesscase-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
+| waypoint:wp-adr-repo-pair-off | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| node:task-sme-repo-pair-off-rules | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| node:task-sme-repo-pair-off-rules | status |  | open | 2026-11-10T23:26:13Z |  |  |
+| edge:e-mrk-pofadr-pairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-drv-cdmdata-pofadr | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-drv-finality-pofadr | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-dec-cdmdev-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| edge:e-lnk-pairoff-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| waypoint:wp-adr-repo-pair-off | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| node:task-sme-repo-pair-off-rules | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-mrk-pofadr-pairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-drv-cdmdata-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-drv-finality-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-dec-cdmdev-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-lnk-pairoff-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |

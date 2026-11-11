@@ -67,6 +67,11 @@ const shortId = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
  */
 async function pledgeThroughServices(amountUsd: number, qty: number, token = "tUST"): Promise<string> {
   const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  // B's gateway returns once B's node has the issuing block; A's node may import it later, and A's response then reads a
+  // call A's node does not hold yet (MarginCall NoSuchCall; CI runs 42515444660 and 42929679573). Wait until A's gateway reads it.
+  await expect
+    .poll(async () => (await fetch(`${GATEWAY.A}/calls/${callId}`).catch(() => null))?.ok ?? false, { timeout: 30_000 })
+    .toBe(true);
   await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token, qty }] });
   await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
@@ -1857,8 +1862,8 @@ const repoAdjustFixture = async () => {
         .toBe(String(BigInt(Math.round(price * 100)) * 1_000_000n));
     }
   };
-  const open = async (seller: string, buyer: string, purchasePrice: number) => {
-    const { repoId } = await call<{ repoId: string }>(`${seller}/repos`, "POST", { security: "tUST", purchasePrice, ratePercent: "4.5", termDays: 7, marginRatio: null });
+  const open = async (seller: string, buyer: string, purchasePrice: number, ratePercent = "4.5") => {
+    const { repoId } = await call<{ repoId: string }>(`${seller}/repos`, "POST", { security: "tUST", purchasePrice, ratePercent, termDays: 7, marginRatio: null });
     await expect.poll(async () => (await repo(buyer, repoId))?.state, { timeout: 30_000 }).toBe("booked");
     await call(`${buyer}/repos/${repoId}/affirm`, "POST", {});
     await expect.poll(async () => (await repo(seller, repoId))?.state, { timeout: 30_000 }).toBe("affirmed");
@@ -2243,5 +2248,89 @@ test("flow-repo-roll: a roll needs the Repurchase Date -> the buyer proposes -> 
   } finally {
     done = await close([r]);
     expect(done).toBe(1);
+  }
+});
+
+// --- flow-repo-pair-off ---
+// Two offsetting repos between A and B pair off on their common Repurchase Date (wp-adr-repo-pair-off): either party
+// proposes, the other agrees, both repos are repurchased, no securities move and only the net cash is paid.
+type PairOffRow = { pairOffPending?: string; pairOffWith?: string; pairOffNet?: string; state: string; verified: boolean; repurchaseHash: string | null };
+
+test("flow-repo-pair-off: A sells to B and B sells the same securities back -> on the Repurchase Date A proposes the pair-off -> B agrees -> both repos close, no securities move, A pays only the net", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUST, tUSD, today, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setDate(today);
+  await setPrice(PRICE_TUST);
+  const r1 = await open(SERVICE.A, SERVICE.B, 1_000_000); // 4.5%: Repurchase Price 1,000,875
+  const r2 = await open(SERVICE.B, SERVICE.A, 1_000_000, "4"); // 4%: Repurchase Price 1,000,778
+  const row = async (svc: string, id: string) => (await repo(svc, id)) as unknown as PairOffRow;
+  let paired = false;
+  try {
+    await setDate(inDays(7));
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.B, tUSD, p.b);
+    const aSec = await balanceOf(GATEWAY.A, tUST, p.a), bSec = await balanceOf(GATEWAY.B, tUST, p.b);
+
+    await page.goto("/#/live/A");
+    const rowA = page.getByTestId(`repo-${r1.repoId}`);
+    await rowA.getByRole("button", { name: `Pair off with ${shortId(r2.repoId)}` }).click({ timeout: STEP_TIMEOUT });
+    await expect(rowA.getByTestId(`repo-pairoff-${r1.repoId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+    await expect.poll(async () => (await row(SERVICE.B, r2.repoId)).pairOffPending, { timeout: 30_000 }).toBe("toDecide");
+    expect((await row(SERVICE.B, r2.repoId)).pairOffNet).toBe("97");
+
+    await page.goto("/#/live/B");
+    await page.getByTestId(`repo-${r2.repoId}`).getByRole("button", { name: /^Agree pair-off with .*, receive/ }).click({ timeout: STEP_TIMEOUT });
+    for (const id of [r1.repoId, r2.repoId])
+      await expect.poll(async () => (await row(SERVICE.A, id)).state, { timeout: 30_000 }).toBe("repurchased");
+    paired = true;
+
+    // 1,000,875 - 1,000,778 = 97 from A (the Seller of the repo with the higher Repurchase Price) to B.
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd - 97n);
+    expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bUsd + 97n);
+    expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(aSec);
+    expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(bSec);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      const one = await row(svc, r1.repoId), two = await row(svc, r2.repoId);
+      expect(one.verified && two.verified).toBe(true);
+      expect(one.repurchaseHash).toBe(two.repurchaseHash);
+      expect(one.pairOffPending).toBeUndefined();
+      // Each service rebuilds the anchored pair-off from the trades it holds and reports the closed trade.
+      for (const id of [r1.repoId, r2.repoId])
+        expect((await call<{ closedState: string }>(`${svc}/repos/${id}/trade`)).closedState).toBe("Terminated");
+    }
+  } finally {
+    if (!paired) await close([r1, r2]);
+    await setDate(today);
+  }
+});
+
+test("flow-repo-pair-off: only on the common Repurchase Date -> B proposes -> A refuses and nothing moves -> both repos repurchase normally", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const { p, tUSD, inDays, repo, setDate, setPrice, open, close } = await repoAdjustFixture();
+  await setPrice(PRICE_TUST);
+  const r1 = await open(SERVICE.A, SERVICE.B, 1_000_000);
+  const r2 = await open(SERVICE.B, SERVICE.A, 1_000_000, "4");
+  const row = async (svc: string, id: string) => (await repo(svc, id)) as unknown as PairOffRow;
+  let done = 0;
+  try {
+    await setDate(inDays(2));
+    await expect(call(`${SERVICE.B}/repos/${r2.repoId}/pair-off`, "POST", { otherRepoId: r1.repoId })).rejects.toThrow("common Repurchase Date");
+
+    await setDate(inDays(7));
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a);
+    await call(`${SERVICE.B}/repos/${r2.repoId}/pair-off`, "POST", { otherRepoId: r1.repoId });
+    await expect.poll(async () => (await row(SERVICE.A, r1.repoId)).pairOffPending, { timeout: 30_000 }).toBe("toDecide");
+    expect((await row(SERVICE.A, r1.repoId)).pairOffNet).toBe("-97");
+    await expect(call(`${SERVICE.A}/repos/${r1.repoId}/pair-off`, "POST", { otherRepoId: r2.repoId })).rejects.toThrow("agree or refuse");
+
+    await page.goto("/#/live/A");
+    await page.getByTestId(`repo-${r1.repoId}`).getByRole("button", { name: "Refuse pair-off" }).click({ timeout: STEP_TIMEOUT });
+    for (const id of [r1.repoId, r2.repoId])
+      await expect.poll(async () => (await row(SERVICE.B, id)).pairOffPending, { timeout: 30_000 }).toBeUndefined();
+    expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd);
+    expect((await row(SERVICE.A, r1.repoId)).state).toBe("purchased");
+  } finally {
+    done = await close([r1, r2]);
+    expect(done).toBe(2);
   }
 });

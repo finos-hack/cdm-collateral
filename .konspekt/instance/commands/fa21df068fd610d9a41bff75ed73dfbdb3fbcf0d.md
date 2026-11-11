@@ -1,0 +1,1 @@
+cd services/collateral && mvn -q -o test -Dtest=TmpPairOffProbeTest   # temporary probe for task-repo-pair-off (CDM Create_PairOffInstruction over two offsetting CdmRepo repos, and CDM's pair-off-output.json), test file deleted afterwards

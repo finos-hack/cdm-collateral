@@ -306,4 +306,55 @@ class CdmRepoTest {
         assertEquals("BANK-A", r1.settlement().getCashTransfer().getPayerReceiver().getPayerPartyReference().getValue().getName().getValue());
         assertEquals("Repurchase", r1.settlement().getRepurchase().getIntent().toString());
     }
+
+    // ---- pair-off (wp-adr-repo-pair-off) ----
+
+    static CdmRepo.Terms reverse(String id, String rate) {
+        CdmRepo.Terms t = terms(1_000_000);
+        return new CdmRepo.Terms(id, t.buyer(), t.seller(), t.isin(), t.quantity(), t.price(), t.purchasePrice(),
+                new BigDecimal(rate), t.marginRatio(), t.tradeDate(), t.purchaseDate(), t.repurchaseDate());
+    }
+
+    @Test
+    void twoOffsettingReposPairOffWithTheNetCashAndBothPartiesBuildTheSameDocument() {
+        CdmRepo.Booking a = CdmRepo.book(terms(1_000_000));          // 0xabc: BANK-A sells, 4.5%: Repurchase Price 1,000,875
+        CdmRepo.Booking b = CdmRepo.book(reverse("0xdef", "0.04"));  // 0xdef: BANK-B sells, 4%: Repurchase Price 1,000,778
+        CdmRepo.PairedOff p = CdmRepo.pairOff(a.trade(), b.trade(), DAY.plusDays(7));
+        assertEquals(97, p.netAmount());
+        assertEquals("0xabc", p.first());
+        assertEquals("0xdef", p.second());
+        assertEquals(p.hash(), CdmRepo.pairOff(b.trade(), a.trade(), DAY.plusDays(7)).hash());
+        var cash = p.settlement().getNetCashTransfer();
+        assertEquals(97, cash.getQuantity().getValue().longValueExact());
+        assertEquals("BANK-A", cash.getPayerReceiver().getPayerPartyReference().getValue().getName().getValue());
+        assertEquals("BANK-B", cash.getPayerReceiver().getReceiverPartyReference().getValue().getName().getValue());
+        assertEquals(2, p.settlement().getRepurchase().size());
+        for (var after : p.settlement().getPairOff().getAfter())
+            assertEquals("0xabc/0xdef", after.getTrade().getExecutionDetails().getPackageReference().getListId().getAssignedIdentifier().get(0).getIdentifier().getValue());
+    }
+
+    @Test
+    void equalRepurchasePricesPairOffWithNoCash() {
+        CdmRepo.PairedOff p = CdmRepo.pairOff(CdmRepo.book(terms(1_000_000)).trade(), CdmRepo.book(reverse("0xdef", "0.045")).trade(), DAY.plusDays(7));
+        assertEquals(0, p.netAmount());
+        assertNull(p.settlement().getNetCashTransfer());
+    }
+
+    @Test
+    void aPairOffNeedsOffsettingReposAndTheRepurchaseDate() {
+        CdmRepo.Booking a = CdmRepo.book(terms(1_000_000));
+        CdmRepo.Booking sameWay = CdmRepo.book(new CdmRepo.Terms("0xdef", "BANK-A", "BANK-B", "US912810TM60", CdmRepo.terms(a.trade()).quantity(),
+                new BigDecimal("98.4"), 1_000_000, new BigDecimal("0.04"), new BigDecimal("1.02"), DAY, DAY, DAY.plusDays(7)));
+        assertFalse(CdmRepo.pairOffMatches(a.trade(), sameWay.trade()));
+        assertThrows(IllegalArgumentException.class, () -> CdmRepo.pairOff(a.trade(), sameWay.trade(), DAY.plusDays(7)));
+        CdmRepo.Booking b = CdmRepo.book(reverse("0xdef", "0.04"));
+        assertThrows(IllegalArgumentException.class, () -> CdmRepo.pairOff(a.trade(), b.trade(), DAY.plusDays(6)));
+    }
+
+    @Test
+    void aPairOffAfterInterimInterestNetsTheReducedRepurchasePrice() {
+        CdmRepo.InterimPaid paid = CdmRepo.interimInterest(CdmRepo.book(terms(1_000_000)).trade(), DAY.plusDays(2)); // 250 paid
+        CdmRepo.PairedOff p = CdmRepo.pairOff(paid.booking().trade(), CdmRepo.book(reverse("0xdef", "0.04")).trade(), DAY.plusDays(7));
+        assertEquals(1_000_875 - 250 - 1_000_778, p.netAmount());
+    }
 }

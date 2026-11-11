@@ -450,3 +450,12 @@ at execution time.
 | investigation-live-spec-in-claude-web | 16bb98c9b45453e2cc320a59471084cf2f11f6c6 |
 | investigation-cdm-workflow-task-map | 6817f401c5d11b256d3350f67f5c4e15579d6fdb |
 | investigation-cdm-workflow-task-map | 4c09fb60cc5f0cbeeccf61f740812b3a168d278d |
+| task-repo-pair-off | fa21df068fd610d9a41bff75ed73dfbdb3fbcf0d |
+| task-repo-pair-off | fa21df068fd610d9a41bff75ed73dfbdb3fbcf0d |
+| task-repo-pair-off | fa21df068fd610d9a41bff75ed73dfbdb3fbcf0d |
+| task-repo-pair-off | 4623424d6d3cb527a53b0ab37425bd5d6cae99ac |
+| task-repo-pair-off | f0b5d7de0deae2de7295791f1d45a12031fae7bf |
+| task-repo-pair-off | 5e09be6cf25906d3890df28d6b7e65331b3fc2fe |
+| task-repo-pair-off | 5e09be6cf25906d3890df28d6b7e65331b3fc2fe |
+| task-repo-pair-off | 7fbbd06081b033230500707cf97a9c070323a564 |
+| task-repo-pair-off | 1adcc60205e3fbb4ea77488cdb8d8673ec5b8377 |
