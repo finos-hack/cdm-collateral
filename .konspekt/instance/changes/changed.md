@@ -1329,3 +1329,14 @@ excluded.
 | task-gmsla-lending-fee | 13707955649d8b7620d165605e739d006364ac5e | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T23:21:49Z |
 | task-gmsla-lending-fee | 0292cedcb60f328d30f45ffd2dc1ae07f4e2453c | architecture/prototype.architecture.json | 2026-11-11T23:29:32Z |
 | task-gmsla-lending-fee | 0292cedcb60f328d30f45ffd2dc1ae07f4e2453c | docs/analysis/sme-question-ledger.md | 2026-11-11T23:29:32Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | cdm-ext/rosetta/cdmx-collateral-gmsla-invoice-type.rosetta | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | console/e2e/live.spec.ts | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | console/src/components/LiveConsole.test.tsx | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | console/src/components/LiveConsole.tsx | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | console/src/domain/liveApi.ts | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | docs/runbook-e2e.md | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | services/collateral/README.md | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | services/collateral/src/main/java/collateral/App.java | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | services/collateral/src/main/java/collateral/CdmLoanInvoice.java | 2026-11-11T23:44:30Z |
+| task-gmsla-lending-fee | fe8091d5cf8ff56c31be847a2af92701e762d295 | services/collateral/src/test/java/collateral/CdmLoanInvoiceTest.java | 2026-11-11T23:44:30Z |
