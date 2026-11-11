@@ -62,16 +62,23 @@ async function call<T = any>(url: string, method = "GET", body?: unknown): Promi
 const shortId = (h: string) => `${h.slice(0, 8)}…${h.slice(-4)}`;
 
 /**
+ * Waits until A's gateway reads a call B just issued. B's gateway returns once B's node has the issuing block; A's node
+ * may import it later, and A's response then reads a call A's node does not hold yet (MarginCall NoSuchCall; CI runs
+ * 42515444660, 42929679573 and 43061438276).
+ */
+async function seenByA(callId: string) {
+  await expect
+    .poll(async () => (await fetch(`${GATEWAY.A}/calls/${callId}`).catch(() => null))?.ok ?? false, { timeout: 30_000 })
+    .toBe(true);
+}
+
+/**
  * Setup for the return and enforcement specs: an IM call settled into escrow, driven through the same service API the
  * consoles call (the UI path of this flow is covered by the flow-im-margin-call-pledge spec). Returns the callId.
  */
 async function pledgeThroughServices(amountUsd: number, qty: number, token = "tUST"): Promise<string> {
   const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
-  // B's gateway returns once B's node has the issuing block; A's node may import it later, and A's response then reads a
-  // call A's node does not hold yet (MarginCall NoSuchCall; CI runs 42515444660 and 42929679573). Wait until A's gateway reads it.
-  await expect
-    .poll(async () => (await fetch(`${GATEWAY.A}/calls/${callId}`).catch(() => null))?.ok ?? false, { timeout: 30_000 })
-    .toBe(true);
+  await seenByA(callId);
   await call(`${SERVICE.A}/calls/${callId}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${callId}/proposal`, "POST", { assets: [{ token, qty }] });
   await call(`${SERVICE.B}/calls/${callId}/decision`, "POST", { proposalId, accept: true });
@@ -763,6 +770,7 @@ test("flow-settlement-netting: VM call, VM return and held interest due the same
 
   // 1. B calls VM from A; A agrees and proposes tUSD; B accepts. Not settled: it waits for the netting.
   const { callId: vm } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "VM", toParty: "A", amountUsd: vmUsd, deadlineDays: 1 });
+  await seenByA(vm);
   await call(`${SERVICE.A}/calls/${vm}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${vm}/proposal`, "POST", { assets: [{ token: "tUSD", qty: vmUsd }] });
   await call(`${SERVICE.B}/calls/${vm}/decision`, "POST", { proposalId, accept: true });
@@ -883,6 +891,7 @@ test("flow-call-cancellation: secured party withdraws an unanswered call; reques
   const amount2 = amountUsd + 5;
   const qty = Math.ceil(amount2 / TUST_VALUE);
   const { callId: c } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd: amount2, deadlineDays: 1 });
+  await seenByA(c);
   await call(`${SERVICE.A}/calls/${c}/response`, "POST", { response: "full" });
   const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${c}/proposal`, "POST", { assets: [{ token: "tUST", qty }] });
   await call(`${SERVICE.B}/calls/${c}/decision`, "POST", { proposalId, accept: true });

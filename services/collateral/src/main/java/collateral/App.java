@@ -85,6 +85,10 @@ public final class App {
     }
 
     public static void main(String[] args) {
+        // Node's HTTP servers (gateway, payload store) close an idle keep-alive connection after 5 s. Java's HttpClient
+        // keeps pooled connections longer and can send a request on one the server has just closed ("header parser
+        // received no bytes", CI run 43061438276). Drop idle connections after 3 s, before any client is built.
+        System.setProperty("jdk.httpclient.keepalive.timeout", "3");
         Config cfg = Config.fromEnv();
         new App(cfg).start();
     }
