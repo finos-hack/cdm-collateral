@@ -1078,3 +1078,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-dcoadr | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
 | edge:e-dec-cdmdev-smedco | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
 | edge:e-lnk-dco-smedco | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
+| waypoint:wp-adr-repo-default-close-out | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| node:task-sme-repo-default-close-out-rules | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| edge:e-mrk-dcoadr-defaultcloseout | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| edge:e-drv-cdmdata-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| edge:e-drv-finality-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| edge:e-dec-cdmdev-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
+| edge:e-lnk-dco-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
