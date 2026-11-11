@@ -330,3 +330,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-slgmsla-rebate | decomposes | node:task-securities-lending-gmsla-workflows | node:task-gmsla-rebate |  | accepted |
 | e-dec-slgmsla-lendingfee | decomposes | node:task-securities-lending-gmsla-workflows | node:task-gmsla-lending-fee |  | accepted |
 | e-dec-slgmsla-defaultcloseout | decomposes | node:task-securities-lending-gmsla-workflows | node:task-gmsla-default-close-out |  | accepted |
+| e-mrk-gmslatermsadr-gmslaterms | marks | waypoint:wp-adr-gmsla-terms | node:task-gmsla-terms |  | proposed |
+| e-drv-cdmdata-gmslatermsadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-terms |  | proposed |
+| e-drv-finality-gmslatermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-terms |  | proposed |
+| e-dec-cdmdev-smegmslaterms | decomposes | node:goal-cdm-development | node:task-sme-gmsla-terms-baseline |  | proposed |
+| e-lnk-gmslaterms-smegmslaterms | links | node:task-gmsla-terms | node:task-sme-gmsla-terms-baseline |  | proposed |

@@ -1134,3 +1134,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-slgmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
 | edge:e-dec-slgmsla-lendingfee | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
 | edge:e-dec-slgmsla-defaultcloseout | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
+| waypoint:wp-adr-gmsla-terms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| node:task-sme-gmsla-terms-baseline | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| node:task-sme-gmsla-terms-baseline | status |  | open | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| edge:e-mrk-gmslatermsadr-gmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| edge:e-drv-cdmdata-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| edge:e-drv-finality-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| edge:e-dec-cdmdev-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
+| edge:e-lnk-gmslaterms-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |

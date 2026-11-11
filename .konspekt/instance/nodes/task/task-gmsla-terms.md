@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T15:18:59Z
+updatedAt: 2026-11-11T15:30:34Z
 ```
 # Task: GMSLA agreement terms and their amendment
 
@@ -42,3 +42,6 @@ The details are decided when the task starts, after a temporary test of CDM's fu
   fee rate and the recall terms (`RecallProvision`) sit on each loan.
 - On-chain: `CollateralControl`'s terms amendment chain is keyed by agreement kind and unordered pair
   (`wp-adr-repo-gmra-terms`), so a GMSLA chain needs no contract change.
+
+**Design chosen 2026-11-11** (source `0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95`: "1a 2a 3a 4a 5a"), recorded in [[wp-adr-gmsla-terms]] (proposed); the
+baseline elections are questions for an SME in [[task-sme-gmsla-terms-baseline]].
