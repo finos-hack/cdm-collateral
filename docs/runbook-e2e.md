@@ -303,6 +303,20 @@ amendment`; B's service verifies the document against the terms in force and B's
 The pair's GMSLA terms hash moves on-chain and both services fold the amendment. The GMRA chain does not change. The
 baseline elections are the assumptions listed in `docs/analysis/sme-question-ledger.md` (GST-1 to GST-6).
 
+Securities loans (`flow-gmsla-loan-delivery-return`): in the "Securities loans (GMSLA)" card, A enters the loaned
+security and quantity, the collateral (tUSD for cash, or tUST) and the rate (the rebate rate against cash, the fee rate
+against tUST), and clicks `Book loan: lend to B`. The margin defaults to the GMSLA default margin. A's service computes
+the collateral with cdm-ext `GmslaRequiredCollateral` (Market Value at the feed price × margin, rounded up), builds CDM's
+execution event and the cdm-ext `GmslaLoan`, and A's gateway calls `book` on `SecuritiesLoan`. B clicks `Affirm loan`
+after its service rebuilds the event and checks the price and the collateral. Each party clicks `Settle delivery`; the
+second instruction moves the securities to B and the collateral to A by title transfer. B enters a quantity and clicks
+`Return part` (or `Return in full`), and A clicks `Agree return of …`. Each return is CDM's `Create_BusinessEvent` over
+a quantity change, with the collateral position reduced to what A keeps, qualified by cdm-ext `Qualify_GmslaReturn`.
+The lender redelivers the collateral in proportion to the quantity returned (cdm-ext `GmslaReturnCollateral`). The card
+shows the last return's qualification beside CDM's (defect D4). Both services must be on the same business date. The
+rules are the assumptions in `docs/analysis/sme-question-ledger.md` (LDR-1 to LDR-6). BANK-B's test balance holds
+5,000 tUST so that it can post tUST as collateral.
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -449,7 +463,8 @@ business dates, and the seller calls the margin back after the repurchase) and `
 price and both business dates after the repurchase; the seller pays the Price Differential, which the top-up restores)
 and `flow-repo-adjustment`, `flow-repo-substitution`, `flow-repo-income`, `flow-repo-roll`, `flow-repo-pair-off`, `flow-repo-buy-sell-back` and `flow-repo-default-close-out` (the same; the default close-out
 offsets a repo with a buy/sell-back of the same size so no securities drain, and restores A's default status as it found it),
-and `flow-gmsla-terms` (it restores the baseline notification time).
+and `flow-gmsla-terms` (it restores the baseline notification time), and `flow-gmsla-loan-delivery-return` (every loan
+it books is returned in full, so every balance ends where it started).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

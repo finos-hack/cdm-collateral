@@ -31,6 +31,8 @@ export interface Registry {
     portfolioReconciliation?: `0x${string}`;
     /** Absent in a deployment made before flow-repo-purchase-repurchase. */
     repoSettlement?: `0x${string}`;
+    /** Absent in a deployment made before flow-gmsla-loan-delivery-return. */
+    securitiesLoan?: `0x${string}`;
   };
   priceScale: string;
   tokens: Record<string, TokenInfo>;

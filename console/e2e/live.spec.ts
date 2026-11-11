@@ -2638,3 +2638,109 @@ function otherTransactions(s: CloseOutStatementView, ids: string[]): number {
   return s.transactions.filter((t) => !ids.includes(t.repoId))
     .reduce((sum, t) => sum + ((t as unknown as { buyer: string }).buyer === nd ? Number(t.repurchasePrice) - Number(t.defaultMarketValue) : Number(t.defaultMarketValue) - Number(t.repurchasePrice)), 0);
 }
+
+// Securities loan delivery and return under the GMSLA (task-gmsla-loan-delivery-return, wp-adr-gmsla-loan-delivery-return).
+// The rules are assumptions awaiting task-sme-gmsla-loan-delivery-return-rules.
+type Loan = {
+  loanId: string; role: string; state: string; quantity: string; collateral: string; collateralAmount: string; price?: string;
+  marginPercent?: string; verified: boolean; problem?: string | null;
+  lastReturn?: { qualification?: string; quantity: string; collateralAmount: string; cdmQualifications?: string[] };
+};
+
+test("flow-gmsla-loan-delivery-return: A lends tMMF to B against tUSD -> B affirms -> delivery settles -> B returns part, then the rest -> a loan against tUST returns in full; every balance restored", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const tMMF = p.tokens.tMMF, tUSD = p.tokens.tUSD, tUST = p.tokens.tUST;
+  const today = new Date().toLocaleDateString("en-CA");
+  // Setup: both business dates on today, so both services build the same return documents.
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  const bal = async () => ({
+    aMmf: await balanceOf(GATEWAY.A, tMMF, p.a), bMmf: await balanceOf(GATEWAY.A, tMMF, p.b),
+    aUsd: await balanceOf(GATEWAY.A, tUSD, p.a), bUsd: await balanceOf(GATEWAY.A, tUSD, p.b),
+    aUst: await balanceOf(GATEWAY.A, tUST, p.a), bUst: await balanceOf(GATEWAY.A, tUST, p.b),
+  });
+  const loanOf = async (svc: string, id: string) => (await call<{ loans: Loan[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id)!;
+  const known = new Set((await call<{ loans: Loan[] }>(`${SERVICE.A}/loans`)).loans.map((l) => l.loanId));
+  const start = await bal();
+
+  // 1. A books 100,000 tMMF to B against tUSD at a 4% rebate in its console; the margin is the GMSLA default.
+  await page.goto("/#/live/A");
+  const cardA = page.getByTestId("loans");
+  await expect(cardA).toBeVisible({ timeout: STEP_TIMEOUT });
+  await cardA.getByLabel("Loan quantity").fill("100000");
+  await cardA.getByLabel("Loan collateral").selectOption("tUSD");
+  await cardA.getByLabel("Loan rate (% p.a.)").fill("4");
+  await cardA.getByRole("button", { name: "Book loan: lend to B" }).click();
+  await expect.poll(async () => (await call<{ loans: Loan[] }>(`${SERVICE.A}/loans`)).loans.filter((l) => !known.has(l.loanId)).length, { timeout: STEP_TIMEOUT }).toBe(1);
+  const id = (await call<{ loans: Loan[] }>(`${SERVICE.A}/loans`)).loans.find((l) => !known.has(l.loanId))!.loanId;
+  const booked = await loanOf(SERVICE.A, id);
+  expect(booked.verified).toBe(true);
+  const collateral = BigInt(booked.collateralAmount);
+  expect(Number(collateral)).toBe(Math.ceil(100_000 * Number(booked.price) * Number(booked.marginPercent) / 100 - 1e-9));
+
+  // 2. B affirms after rebuilding the CDM execution; 3. both instruct the delivery, which swaps securities and collateral.
+  await page.goto("/#/live/B");
+  const rowB = page.getByTestId(`loan-${id}`);
+  await rowB.getByRole("button", { name: "Affirm loan" }).click({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-state-${id}`)).toHaveText("affirmed ✓", { timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Settle delivery" }).click({ timeout: STEP_TIMEOUT });
+  await expect(rowB).toContainText("delivery instructed, awaiting A", { timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  const rowA = page.getByTestId(`loan-${id}`);
+  await rowA.getByRole("button", { name: "Settle delivery" }).click({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-state-${id}`)).toHaveText("open ✓", { timeout: STEP_TIMEOUT });
+  let now = await bal();
+  expect(now.bMmf - start.bMmf).toBe(100_000n);
+  expect(start.aMmf - now.aMmf).toBe(100_000n);
+  expect(now.aUsd - start.aUsd).toBe(collateral); // title transfer to the lender
+  expect(start.bUsd - now.bUsd).toBe(collateral);
+
+  // 4. B returns 40,000 in its console; A agrees; the lender redelivers collateral pro rata, rounded down.
+  const part = (collateral * 40_000n) / 100_000n;
+  await page.goto("/#/live/B");
+  await rowB.getByLabel("Return quantity").fill("40000", { timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Return part" }).click();
+  await expect(page.getByTestId(`loan-return-pending-${id}`)).toContainText("return of 40,000 instructed", { timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await rowA.getByRole("button", { name: /^Agree return of 40,000 tMMF/ }).click({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-last-return-${id}`)).toContainText("PartialReturn of 40,000", { timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-last-return-${id}`)).toContainText("PartialTermination");
+  await expect(page.getByTestId(`loan-quantity-${id}`)).toContainText("60,000 tMMF");
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    const l = await loanOf(svc, id);
+    expect([l.state, l.verified, l.quantity, l.collateralAmount]).toEqual(["open", true, "60000", String(collateral - part)]);
+  }
+  now = await bal();
+  expect(start.bMmf + 60_000n).toBe(now.bMmf);
+  expect(start.bUsd - collateral + part).toBe(now.bUsd);
+
+  // 5. B returns the rest; A agrees; all the collateral comes back and the loan is returned.
+  await page.goto("/#/live/B");
+  await rowB.getByRole("button", { name: "Return in full" }).click({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await rowA.getByRole("button", { name: /^Agree return of 60,000 tMMF/ }).click({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-state-${id}`)).toHaveText("returned ✓", { timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-last-return-${id}`)).toContainText("FullReturn of 60,000");
+  await expect(page.getByTestId(`loan-last-return-${id}`)).toContainText("Termination");
+  expect(await bal()).toEqual(start);
+
+  // 6. A second loan against tUST, set up through the services, returned in full: CDM also qualifies it as FullReturn (D4).
+  const { loanId: id2, collateralAmount: ust } = await call<{ loanId: string; collateralAmount: number }>(`${SERVICE.A}/loans`, "POST",
+    { security: "tMMF", quantity: 50_000, collateral: "tUST", ratePercent: "0.5" });
+  await call(`${SERVICE.B}/loans/${id2}/affirm`, "POST", {});
+  await call(`${SERVICE.A}/loans/${id2}/deliver`, "POST", {});
+  await call(`${SERVICE.B}/loans/${id2}/deliver`, "POST", {});
+  await expect.poll(async () => (await loanOf(SERVICE.B, id2)).state, { timeout: STEP_TIMEOUT }).toBe("open");
+  now = await bal();
+  expect(now.aUst - start.aUst).toBe(BigInt(ust));
+  await call(`${SERVICE.B}/loans/${id2}/return`, "POST", { quantity: 50_000 });
+  await page.goto("/#/live/A");
+  await page.getByTestId(`loan-${id2}`).getByRole("button", { name: new RegExp(`^Agree return of 50,000 tMMF \\(collateral back ${ust.toLocaleString("en-US")} tUST\\)`) }).click({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-state-${id2}`)).toHaveText("returned ✓", { timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`loan-last-return-${id2}`)).toContainText("FullReturn of 50,000");
+  await expect(page.getByTestId(`loan-last-return-${id2}`)).toContainText("CDM: FullReturn, Termination");
+  expect(await bal()).toEqual(start);
+  expect(errors).toEqual([]);
+});

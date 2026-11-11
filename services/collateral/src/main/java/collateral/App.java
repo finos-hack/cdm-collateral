@@ -140,6 +140,11 @@ public final class App {
         app.post("/api/v1/gmsla/amendments/{id}/decision", this::decideGmslaAmendment);
         app.get("/api/v1/business-date", ctx -> ctx.json(Map.of("businessDate", businessDate.toString())));
         app.post("/api/v1/business-date", this::setBusinessDate);
+        app.get("/api/v1/loans", this::loans);
+        app.post("/api/v1/loans", this::bookLoan);
+        app.post("/api/v1/loans/{id}/affirm", this::affirmLoan);
+        app.post("/api/v1/loans/{id}/deliver", this::deliverLoan);
+        app.post("/api/v1/loans/{id}/return", this::returnLoan);
         app.get("/api/v1/repos", this::repos);
         app.post("/api/v1/repos", this::bookRepo);
         app.post("/api/v1/repos/{id}/affirm", this::affirmRepo);
@@ -909,6 +914,237 @@ public final class App {
         payloads.put(dHash, decision, callParties);
         JsonNode tx = gw.post("/terms-amendments/" + id + "/decision", Map.of("consent", consent, "cdmHash", dHash));
         ctx.json(Map.of("amendmentId", id, "consent", consent, "decisionHash", dHash, "decisionTx", tx.path("txHash").asText()));
+    }
+
+    // --- securities loans under the GMSLA (task-gmsla-loan-delivery-return, wp-adr-gmsla-loan-delivery-return) ---
+    // The booked document is a cdm-ext GmslaLoan (CDM's execution event and the loan's terms), published by the lender and
+    // anchored on-chain by its hash; the borrower rebuilds and checks it before affirming. The delivery and each return are
+    // a cdm-ext GmslaLoanSettlement both services build; a return's hash becomes the on-chain trade hash, so the document at
+    // the trade hash is the booking until the first return and the last return after it.
+
+    /** A loan's trade in force: the trade state, the loan's terms, and the booking or the last return it comes from. */
+    private record LoanCurrent(cdm.event.common.TradeState trade, cdmx.collateral.gmsla.GmslaLoanTerms terms, CdmLoan.Booking booking, CdmLoan.Settlement lastReturn) {}
+
+    /** Loan documents checked by this service, by hash (a document never changes). */
+    private final Map<String, LoanCurrent> loanDocs = new ConcurrentHashMap<>();
+
+    /** The document at a loan's trade hash, checked by this service; null if not in the store. */
+    private LoanCurrent loanCurrent(JsonNode l) {
+        String hash = l.get("tradeHash").asText();
+        LoanCurrent c = loanDocs.get(hash);
+        if (c != null) return c;
+        String doc = payloads.get(hash);
+        if (doc == null) return null;
+        if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the loan document does not hash to the on-chain trade hash");
+        if (doc.contains("\"returnEvent\"")) {
+            CdmLoan.Settlement s = CdmLoan.verifyReturn(doc);
+            c = new LoanCurrent(s.after(), s.settlement().getTerms(), null, s);
+        } else {
+            CdmLoan.Booking b = CdmLoan.verify(doc);
+            c = new LoanCurrent(b.trade(), b.loan().getTerms(), b, null);
+        }
+        loanDocs.put(hash, c);
+        return c;
+    }
+
+    /** What is wrong between an on-chain loan and its trade, or null. */
+    private String loanProblem(JsonNode l, LoanCurrent c) {
+        CdmLoan.Terms t = CdmLoan.terms(c.trade(), c.terms());
+        String sec = symbolByAddress.get(l.get("security").asText().toLowerCase());
+        String col = symbolByAddress.get(l.get("collateral").asText().toLowerCase());
+        if (!l.get("loanId").asText().equalsIgnoreCase(t.loanId())) return "the trade identifier is not the loan id";
+        if (!cfg.bankName(partyIdOf(l.get("lender").asText())).equals(t.lender())) return "the lender is not Party1 of the trade";
+        if (!cfg.bankName(partyIdOf(l.get("borrower").asText())).equals(t.borrower())) return "the borrower is not Party2 of the trade";
+        if (sec == null || !cfg.isin(sec).equals(t.isin())) return "the loaned token is not the trade's security";
+        if (t.cash() ? !"tUSD".equals(col) : col == null || !cfg.isin(col).equals(t.collateralIsin())) return "the collateral token is not the trade's collateral";
+        if (l.get("quantity").asLong() != t.quantity()) return "the on-chain quantity is not the trade's loaned quantity";
+        if (l.get("collateralAmount").asLong() != t.collateralAmount()) return "the on-chain collateral is not the trade's collateral position";
+        return null;
+    }
+
+    /** The feed price of a token, by symbol. */
+    private BigDecimal loanFeedPrice(String sym) {
+        return feedPrice(cfg.tokenAddress(sym)).stripTrailingZeros();
+    }
+
+    private Map<String, Object> loanView(JsonNode l) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        boolean lender = l.get("lender").asText().equalsIgnoreCase(cfg.myAddress);
+        String state = l.get("state").asText();
+        m.put("loanId", l.get("loanId").asText());
+        m.put("role", lender ? "lender" : "borrower");
+        m.put("counterparty", partyIdOf(lender ? l.get("borrower").asText() : l.get("lender").asText()));
+        m.put("state", state);
+        m.put("security", symbolByAddress.get(l.get("security").asText().toLowerCase()));
+        m.put("quantity", l.get("quantity").asText());
+        m.put("collateral", symbolByAddress.get(l.get("collateral").asText().toLowerCase()));
+        m.put("collateralAmount", l.get("collateralAmount").asText());
+        m.put("tradeHash", l.get("tradeHash").asText());
+        JsonNode d = l.get("delivery");
+        m.put("deliveryInstructedByMe", !d.get(lender ? "lender" : "borrower").asText().equals(ZERO_HASH));
+        m.put("deliveryInstructedByCounterparty", !d.get(lender ? "borrower" : "lender").asText().equals(ZERO_HASH));
+        JsonNode r = l.get("pendingReturn");
+        boolean mine = !r.get(lender ? "lender" : "borrower").asText().equals(ZERO_HASH);
+        boolean theirs = !r.get(lender ? "borrower" : "lender").asText().equals(ZERO_HASH);
+        if (mine || theirs) {
+            m.put("pendingReturn", Map.of("quantity", r.get("quantity").asText(), "collateralAmount", r.get("collateralAmount").asText(),
+                    "instructedByMe", mine, "instructedByCounterparty", theirs));
+        }
+        try {
+            LoanCurrent c = loanCurrent(l);
+            if (c == null) {
+                m.put("verified", false);
+                m.put("problem", "the loan document is not in the payload store");
+                return m;
+            }
+            CdmLoan.Terms t = CdmLoan.terms(c.trade(), c.terms());
+            m.put("price", t.price().stripTrailingZeros().toPlainString());
+            m.put("marginPercent", t.margin().movePointRight(2).stripTrailingZeros().toPlainString());
+            if (c.terms().getRebateRate() != null) m.put("rebateRatePercent", c.terms().getRebateRate().movePointRight(2).stripTrailingZeros().toPlainString());
+            if (c.terms().getFeeRate() != null) m.put("feeRatePercent", c.terms().getFeeRate().movePointRight(2).stripTrailingZeros().toPlainString());
+            m.put("termDate", c.terms().getTermDate() == null ? null : c.terms().getTermDate().toString());
+            m.put("tradeStateHash", CdmRepo.tradeHash(c.trade()));
+            if (c.lastReturn() != null) {
+                m.put("lastReturn", CdmLoan.view(c.lastReturn()));
+            }
+            String problem = loanProblem(l, c);
+            m.put("verified", problem == null);
+            m.put("problem", problem);
+        } catch (Exception ex) {
+            m.put("verified", false);
+            m.put("problem", ex.getMessage());
+        }
+        return m;
+    }
+
+    /** This party's loans, newest first, with the business date. */
+    private void loans(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress))) out.add(0, loanView(l));
+        ctx.json(Map.of("businessDate", businessDate.toString(), "loans", out));
+    }
+
+    /** The lender books a loan to the counterparty: the loaned security (tMMF or tUST) and quantity, the collateral (tUSD
+     *  or tUST, not the loaned security), the rate in percent per annum (the rebate rate against tUSD, the fee rate
+     *  against tUST), optionally the margin (default: the GMSLA default margin) and a term in days (default: open). The
+     *  collateral follows from the feed prices: cdm-ext GmslaRequiredCollateral. */
+    private void bookLoan(Context ctx) {
+        Map<String, Object> b = body(ctx);
+        String sym = String.valueOf(b.getOrDefault("security", "tMMF"));
+        String col = String.valueOf(b.getOrDefault("collateral", "tUSD"));
+        if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new RuntimeException("not a security token: " + sym);
+        if (col.equals(sym) || !cfg.registry.get("tokens").has(col)) throw new RuntimeException("not a collateral token for " + sym + ": " + col);
+        long quantity = Long.parseLong(String.valueOf(b.get("quantity")));
+        if (quantity < 1) throw new RuntimeException("the quantity is at least one");
+        BigDecimal rate = new BigDecimal(String.valueOf(b.get("ratePercent"))).movePointLeft(2);
+        Object mg = b.get("margin");
+        BigDecimal margin = mg == null || String.valueOf(mg).isBlank()
+                ? gmslaFold().terms().terms().getElections().getDefaultMargin() : new BigDecimal(String.valueOf(mg));
+        Object term = b.get("termDays");
+        LocalDate termDate = term == null || String.valueOf(term).isBlank() ? null : businessDate.plusDays(Integer.parseInt(String.valueOf(term)));
+        boolean cash = col.equals("tUSD");
+        BigDecimal price = loanFeedPrice(sym);
+        long collateralAmount = CdmLoan.requiredCollateral(quantity, price, margin, cash ? BigDecimal.ONE : loanFeedPrice(col));
+        String loanId = Cdm.onChainId("loan-" + cfg.partyId + "-" + System.nanoTime());
+        CdmLoan.Terms t = new CdmLoan.Terms(loanId, cfg.bankName(cfg.partyId), cfg.bankName(counterparty()), cfg.isin(sym), quantity, price,
+                cash ? null : cfg.isin(col), collateralAmount, margin, cash ? rate : null, cash ? null : rate, businessDate, termDate);
+        CdmLoan.Booking booking = CdmLoan.book(t);
+        store.recordDocument(loanId, "GmslaLoan", "out", booking.hash(), booking.json());
+        payloads.put(booking.hash(), booking.json(), callParties);
+        loanDocs.put(booking.hash(), new LoanCurrent(booking.trade(), booking.loan().getTerms(), booking, null));
+        JsonNode tx = gw.post("/loans", Map.of("loanId", loanId, "borrower", cfg.partyAddress(counterparty()), "security", cfg.tokenAddress(sym),
+                "quantity", String.valueOf(quantity), "collateral", cfg.tokenAddress(col), "collateralAmount", String.valueOf(collateralAmount),
+                "tradeHash", booking.hash()));
+        ctx.json(Map.of("loanId", loanId, "tradeHash", booking.hash(), "collateralAmount", collateralAmount, "bookTx", tx.path("txHash").asText()));
+    }
+
+    /** The borrower affirms: the booked loan rebuilds, matches the on-chain amounts, its price is the feed price, and the
+     *  collateral is GmslaRequiredCollateral at the feed prices. */
+    private void affirmLoan(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        if (!l.get("state").asText().equals("booked")) throw new RuntimeException("loan " + id + " is not booked");
+        if (!l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the borrower affirms a loan");
+        LoanCurrent c = loanCurrent(l);
+        if (c == null || c.booking() == null) throw new RuntimeException("the booked document is not in the payload store");
+        String problem = loanProblem(l, c);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmLoan.Terms t = CdmLoan.terms(c.trade(), c.terms());
+        String sym = symbolByAddress.get(l.get("security").asText().toLowerCase());
+        String col = symbolByAddress.get(l.get("collateral").asText().toLowerCase());
+        if (loanFeedPrice(sym).compareTo(t.price()) != 0) throw new RuntimeException("the trade's price is not the feed price");
+        long required = CdmLoan.requiredCollateral(t.quantity(), t.price(), t.margin(), t.cash() ? BigDecimal.ONE : loanFeedPrice(col));
+        if (required != t.collateralAmount()) throw new RuntimeException("the collateral is not GmslaRequiredCollateral at the feed prices: " + required);
+        store.recordDocument(id, "GmslaLoan", "in", c.booking().hash(), c.booking().json());
+        JsonNode tx = gw.post("/loans/" + id + "/affirm", Map.of("tradeHash", c.booking().hash()));
+        ctx.json(Map.of("loanId", id, "tradeHash", c.booking().hash(), "affirmTx", tx.path("txHash").asText()));
+    }
+
+    /** Instruct the delivery of an affirmed loan: build the GmslaLoanSettlement, approve what this party delivers (the
+     *  lender the securities, the borrower the collateral) and instruct with its hash. */
+    private void deliverLoan(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode l = gw.get("/loans/" + id);
+        boolean lender = l.get("lender").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!lender && !l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("not a party to loan " + id);
+        if (!l.get("state").asText().equals("affirmed")) throw new RuntimeException("loan " + id + " is not affirmed");
+        if (!l.get("delivery").get(lender ? "lender" : "borrower").asText().equals(ZERO_HASH)) throw new RuntimeException("already instructed");
+        LoanCurrent c = loanCurrent(l);
+        if (c == null || c.booking() == null) throw new RuntimeException("the booked document is not in the payload store");
+        String problem = loanProblem(l, c);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmLoan.Settlement s = CdmLoan.delivery(c.booking(), businessDate);
+        store.recordDocument(id, "GmslaLoanSettlement", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), callParties);
+        String token = lender ? l.get("security").asText() : l.get("collateral").asText();
+        long amount = lender ? s.quantity() : s.collateralAmount();
+        JsonNode tx = gw.post("/loans/" + id + "/deliver", Map.of("cdmHash", s.hash(), "token", token, "amount", String.valueOf(amount)));
+        ctx.json(Map.of("loanId", id, "cdmHash", s.hash(), "instructTx", tx.path("txHash").asText()));
+    }
+
+    /** Instruct a return of an open loan on the business date: the quantity is the pending return's when the other party
+     *  has instructed one, otherwise the body's. Builds the GmslaLoanSettlement (CDM's return event with the collateral
+     *  reduced, Qualify_GmslaReturn), approves what this party delivers (the borrower the securities, the lender the
+     *  collateral it redelivers) and instructs with its hash. */
+    private void returnLoan(Context ctx) {
+        String id = ctx.pathParam("id");
+        Map<String, Object> b = body(ctx);
+        JsonNode l = gw.get("/loans/" + id);
+        boolean lender = l.get("lender").asText().equalsIgnoreCase(cfg.myAddress);
+        if (!lender && !l.get("borrower").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("not a party to loan " + id);
+        if (!l.get("state").asText().equals("open")) throw new RuntimeException("loan " + id + " is not open");
+        JsonNode r = l.get("pendingReturn");
+        if (!r.get(lender ? "lender" : "borrower").asText().equals(ZERO_HASH)) throw new RuntimeException("already instructed");
+        boolean pending = !r.get(lender ? "borrower" : "lender").asText().equals(ZERO_HASH);
+        long quantity;
+        if (pending) {
+            quantity = r.get("quantity").asLong();
+            Object q = b.get("quantity");
+            if (q != null && !String.valueOf(q).isBlank() && Long.parseLong(String.valueOf(q)) != quantity)
+                throw new RuntimeException("the counterparty instructed a return of " + quantity);
+        } else {
+            Object q = b.get("quantity");
+            quantity = q == null || String.valueOf(q).isBlank() ? l.get("quantity").asLong() : Long.parseLong(String.valueOf(q));
+        }
+        LoanCurrent c = loanCurrent(l);
+        if (c == null) throw new RuntimeException("the loan document is not in the payload store");
+        String problem = loanProblem(l, c);
+        if (problem != null) throw new RuntimeException(problem);
+        CdmLoan.Settlement s = CdmLoan.returnOf(c.trade(), c.terms(), quantity, businessDate);
+        if (pending && !s.hash().equalsIgnoreCase(r.get(lender ? "borrower" : "lender").asText()))
+            throw new RuntimeException("the counterparty's return is not the one this service builds (business date " + businessDate + ")");
+        store.recordDocument(id, "GmslaLoanSettlement", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), callParties);
+        loanDocs.put(s.hash(), new LoanCurrent(s.after(), s.settlement().getTerms(), null, s));
+        String token = lender ? l.get("collateral").asText() : l.get("security").asText();
+        long amount = lender ? s.collateralAmount() : s.quantity();
+        JsonNode tx = gw.post("/loans/" + id + "/return", Map.of("quantity", String.valueOf(s.quantity()), "collateralAmount", String.valueOf(s.collateralAmount()),
+                "cdmHash", s.hash(), "token", token, "amount", String.valueOf(amount)));
+        Map<String, Object> out = new LinkedHashMap<>(CdmLoan.view(s));
+        out.put("loanId", id);
+        out.put("cdmHash", s.hash());
+        out.put("instructTx", tx.path("txHash").asText());
+        ctx.json(out);
     }
 
     // --- repo purchase and repurchase (task-repo-purchase-repurchase, wp-adr-repo-purchase-repurchase) ---

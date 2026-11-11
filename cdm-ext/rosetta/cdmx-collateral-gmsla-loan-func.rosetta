@@ -1,0 +1,73 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.event.common.*
+import cdm.product.qualification.*
+
+func GmslaRequiredCollateral: <"The collateral delivered with a loan (wp-adr-gmsla-loan-delivery-return): the Market Value of the loaned securities (quantity x price) times the loan's margin, over the price of one unit of the collateral, rounded up to whole units. For cash collateral the unit price is 1.">
+    inputs:
+        quantity number (1..1) <"The loaned quantity.">
+        price number (1..1) <"The price of one loaned security.">
+        margin number (1..1) <"The loan's margin.">
+        collateralPrice number (1..1) <"The price of one unit of the collateral.">
+    output:
+        amount number (1..1)
+
+    condition PositiveQuantity:
+        quantity > 0
+    condition PositivePrices:
+        price > 0 and collateralPrice > 0
+    condition MarginAtLeastOne: <"CDM 7.7.0 requires marginPercentage to be at least 1.">
+        margin >= 1
+
+    set amount: RoundToNearest(quantity * price * margin / collateralPrice, 1, RoundingModeEnum -> Up)
+
+func GmslaReturnCollateral: <"The collateral the lender redelivers on a return (wp-adr-gmsla-loan-delivery-return): all it holds on a full return; on a partial return the collateral held times the quantity returned over the quantity outstanding, rounded down to whole units.">
+    inputs:
+        held number (1..1) <"The collateral the lender holds.">
+        returned number (1..1) <"The loaned quantity returned.">
+        outstanding number (1..1) <"The loaned quantity outstanding before the return.">
+    output:
+        amount number (1..1)
+
+    condition ReturnsSome:
+        returned > 0 and held >= 0
+    condition NoMoreThanOutstanding:
+        returned <= outstanding
+
+    set amount:
+        if returned = outstanding
+        then held
+        else RoundToNearest(held * returned / outstanding, 1, RoundingModeEnum -> Down)
+
+func GmslaLoanedQuantity: <"The loaned quantity of a loan's trade state: the quantity of its one trade lot.">
+    inputs:
+        tradeState TradeState (1..1)
+    output:
+        quantity number (1..1)
+
+    set quantity:
+        tradeState -> trade -> tradeLot only-element -> priceQuantity only-element -> quantity only-element -> value
+
+func Qualify_GmslaReturn: <"Qualifies a business event as the return of a securities loan (wp-adr-gmsla-loan-delivery-return): one quantity-change instruction that decreases a securities lending trade. A full return when the loaned quantity after is zero, otherwise a partial return. Absent for any other event.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        qualification GmslaReturnEnum (0..1)
+
+    alias instruction: businessEvent -> instruction only-element
+    alias change: instruction -> primitiveInstruction -> quantityChange
+
+    set qualification:
+        if businessEvent -> instruction count = 1
+            and change exists
+            and change -> direction = QuantityChangeDirectionEnum -> Decrease
+            and instruction -> primitiveInstruction -> execution is absent
+            and Qualify_SecurityLending(instruction -> before -> trade -> product -> economicTerms)
+            and businessEvent -> after count = 1
+        then (
+            if GmslaLoanedQuantity(businessEvent -> after only-element) = 0
+            then GmslaReturnEnum -> FullReturn
+            else GmslaReturnEnum -> PartialReturn
+        )

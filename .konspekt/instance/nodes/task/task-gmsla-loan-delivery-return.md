@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T16:46:56Z
+updatedAt: 2026-11-11T17:12:22Z
 ```
 # Task: securities loan delivery against collateral, and full and partial return
 
@@ -52,4 +52,11 @@ tMMF lent by BANK-A (Party1, Lender) to BANK-B (Party2, Borrower), against cash 
 **Design chosen 2026-11-11** (source `0459d62f952baa979a166c76641c678927e782b0`: "1a 2a 3a 4a 5a 6a 7a 8a"), recorded in
 [[wp-adr-gmsla-loan-delivery-return]] (accepted 2026-11-11); the rules are questions for an SME in
 [[task-sme-gmsla-loan-delivery-return-rules]].
+
+**Built 2026-11-11** to [[wp-adr-gmsla-loan-delivery-return]]: cdm-ext `GmslaLoan`, `GmslaLoanTerms`,
+`GmslaLoanSettlement`, `GmslaRequiredCollateral`, `GmslaReturnCollateral` and `Qualify_GmslaReturn`; the
+`SecuritiesLoan` contract (new deployment); gateway `/ledger/v1/loans`; service `CdmLoan` and `/api/v1/loans`; the
+console's "Securities loans (GMSLA)" card; live spec `flow-gmsla-loan-delivery-return`, which passes locally. Both kinds
+of loan pass CDM validation through booking, delivery, a partial return and a full return. CDM qualifies the full return
+of the tUST loan as both `FullReturn` and `Termination` (D4). BANK-B's test balance now holds 5,000 tUST.
 

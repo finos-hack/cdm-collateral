@@ -291,6 +291,26 @@ route("POST", "/ledger/v1/repo-default/close-outs/:id/pay", async (p, b) => {
 });
 route("GET", "/ledger/v1/repo-default/close-outs", async (_p, _b, url) => J(await adapter.listRepoCloseOuts(getAddress(url.searchParams.get("party")!))));
 
+// --- securities loans under the GMSLA (flow-gmsla-loan-delivery-return, wp-adr-gmsla-loan-delivery-return) ---
+// The lender books, the borrower affirms with the same trade hash. For the delivery and each return a party's gateway
+// approves the loan contract for what that party delivers (the token and amount the service names; none for a lender
+// that redelivers no collateral), then instructs; the second instruction moves both.
+route("POST", "/ledger/v1/loans", async (_p, b) =>
+  J(await adapter.bookLoan(b.loanId as Hex, getAddress(b.borrower), getAddress(b.security), BigInt(b.quantity),
+    getAddress(b.collateral), BigInt(b.collateralAmount), b.tradeHash as Hex)),
+);
+route("POST", "/ledger/v1/loans/:id/affirm", async (p, b) => J(await adapter.affirmLoan(p.id as Hex, b.tradeHash as Hex)));
+route("POST", "/ledger/v1/loans/:id/deliver", async (p, b) => {
+  const approval = await adapter.approve(getAddress(b.token), adapter.loanContract(), BigInt(b.amount));
+  return J({ approvalTx: approval.txHash, ...(await adapter.instructLoanDelivery(p.id as Hex, b.cdmHash as Hex)) });
+});
+route("POST", "/ledger/v1/loans/:id/return", async (p, b) => {
+  if (BigInt(b.amount) > 0n) await adapter.approve(getAddress(b.token), adapter.loanContract(), BigInt(b.amount));
+  return J(await adapter.instructLoanReturn(p.id as Hex, BigInt(b.quantity), BigInt(b.collateralAmount), b.cdmHash as Hex));
+});
+route("GET", "/ledger/v1/loans/:id", async (p) => J(await adapter.getLoan(p.id as Hex)));
+route("GET", "/ledger/v1/loans", async (_p, _b, url) => J(await adapter.listLoans(getAddress(url.searchParams.get("party")!))));
+
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));
 
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---

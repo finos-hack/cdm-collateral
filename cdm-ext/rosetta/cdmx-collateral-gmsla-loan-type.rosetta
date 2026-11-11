@@ -1,0 +1,52 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: GMSLA terms and their amendment.">
+version "${project.version}"
+
+import cdm.event.common.*
+
+enum GmslaReturnEnum: <"How a return ends a securities loan (wp-adr-gmsla-loan-delivery-return). CDM qualifies a return as PartialTermination, Termination or FullReturn, and on a loan against non-cash collateral as both of the last two (defect D4).">
+    FullReturn <"The borrower returns all the loaned securities outstanding; the loan ends.">
+    PartialReturn <"The borrower returns part of the loaned securities; the loan stays open on the rest.">
+
+enum GmslaLoanSettlementPhaseEnum: <"Which settlement of a securities loan a document is for.">
+    Delivery <"The lender delivers the loaned securities and the borrower delivers the collateral, in one on-chain transaction.">
+    Return <"The borrower returns loaned securities and the lender redelivers collateral, in one on-chain transaction.">
+
+type GmslaLoanTerms: <"The loan's own terms that CDM's trade does not hold in one place (wp-adr-gmsla-loan-delivery-return): its margin, its rate and its optional term date. Rows 17 and 18 bill and pay the rates.">
+    loanId string (1..1) <"The loan's on-chain identifier, the trade identifier.">
+    margin number (1..1) <"The loan's margin: the collateral's value over the Market Value of the loaned securities. The GMSLA default margin unless the lender states one.">
+    rebateRate number (0..1) <"Against cash collateral: the rebate rate the lender pays on the cash, as a decimal per annum. CDM's trade holds it in the collateral's InterestRatePayout.">
+    feeRate number (0..1) <"Against non-cash collateral: the lending fee the borrower pays, as a decimal per annum. CDM's trade has no place for it.">
+    termDate date (0..1) <"The date the loan ends, for a term loan. Absent for an open loan.">
+
+    condition OneRate: <"A loan states either a rebate rate (cash collateral) or a fee rate (non-cash collateral).">
+        (rebateRate exists and feeRate is absent) or (feeRate exists and rebateRate is absent)
+
+    condition MarginAtLeastOne: <"CDM 7.7.0 requires marginPercentage to be at least 1.">
+        margin >= 1
+
+type GmslaLoan: <"A securities loan as booked (wp-adr-gmsla-loan-delivery-return): CDM's execution event, whose trade is the loan, and the loan's own terms. The lender publishes it, and its hash is the on-chain trade hash.">
+    [rootType]
+    execution BusinessEvent (1..1) <"CDM's execution business event from Create_BusinessEvent.">
+    terms GmslaLoanTerms (1..1) <"The loan's margin, rate and term date.">
+
+type GmslaLoanSettlement: <"One settlement of a securities loan (wp-adr-gmsla-loan-delivery-return): the loaned securities one way and the collateral the other, both in one on-chain transaction. Both parties build it from the trade, so both instruct the same hash.">
+    [rootType]
+    phase GmslaLoanSettlementPhaseEnum (1..1) <"Delivery or return.">
+    trade TradeState (1..1) <"The loan the settlement acts on: as booked for the delivery, as in force before a return.">
+    terms GmslaLoanTerms (1..1) <"The loan's terms, unchanged by a return.">
+    securityTransfer ScheduledTransfer (1..1) <"The loaned securities: from the lender at the delivery, back from the borrower at a return.">
+    collateralTransfer ScheduledTransfer (0..1) <"The collateral: from the borrower at the delivery, back from the lender at a return. Absent on a partial return that redelivers none.">
+    returnEvent BusinessEvent (0..1) <"CDM's return business event from Create_BusinessEvent, with the collateral position reduced to the collateral the lender keeps. Present for a return only.">
+    returnQualification GmslaReturnEnum (0..1) <"Qualify_GmslaReturn over the return event. Present for a return only.">
+
+    condition ReturnEvent: <"A return carries its event and qualification; the delivery carries neither, and moves collateral.">
+        if phase = GmslaLoanSettlementPhaseEnum -> Return
+        then returnEvent exists and returnQualification exists
+        else returnEvent is absent and returnQualification is absent and collateralTransfer exists
+
+    condition OppositeDirections: <"The collateral moves against the securities.">
+        if collateralTransfer exists
+        then securityTransfer -> payerReceiver -> payerPartyReference
+                = collateralTransfer -> payerReceiver -> receiverPartyReference
+            and securityTransfer -> payerReceiver -> receiverPartyReference
+                = collateralTransfer -> payerReceiver -> payerPartyReference
