@@ -2,7 +2,7 @@
 id: task-repo-buy-sell-back
 type: task
 title: Buy/sell-back
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
 createdAt: 2026-11-07T22:35:17Z
-updatedAt: 2026-11-11T02:10:00Z
+updatedAt: 2026-11-11T12:56:08Z
 ```
 # Task: buy/sell-back
 
