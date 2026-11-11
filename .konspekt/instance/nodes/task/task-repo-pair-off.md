@@ -26,7 +26,7 @@ Row 9 of the repo workflows (section C of the workflow map), split from [[task-r
 - **Prototype:** the pair-off event and its net settlement on-chain; a live spec.
 
 The details are decided when the task starts. Design chosen 2026-11-10 (source `2733275ab3cc72d223729efa4a32ccae2f360c80`):
-the paired repurchase legs settle net, full pair-off only ([[wp-adr-repo-pair-off]], proposed); the rules are
+the paired repurchase legs settle net, full pair-off only ([[wp-adr-repo-pair-off]], accepted 2026-11-11); the rules are
 assumptions in [[task-sme-repo-pair-off-rules]].
 
 **Check for gap G30 (defect D7) when the task starts:** CDM's repo qualification accepts one `InterestRatePayout` only. Run a

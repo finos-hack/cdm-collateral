@@ -3,7 +3,7 @@ id: wp-adr-repo-pair-off
 kind: decision
 subtype: adr
 timestamp: 2026-11-10T23:26:13Z
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-pair-off
   sourceRef: 2733275ab3cc72d223729efa4a32ccae2f360c80
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-10T23:26:13Z
   confidence: 0.6
 createdAt: 2026-11-10T23:26:13Z
-updatedAt: 2026-11-10T23:26:13Z
+updatedAt: 2026-11-11T00:12:48Z
 ```
 
 # ADR: two offsetting repos pair off on their common Repurchase Date with one net cash payment, through a cdm-ext pair-off event

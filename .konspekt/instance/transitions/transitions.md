@@ -1045,3 +1045,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-pofadr | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
 | edge:e-dec-cdmdev-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
 | edge:e-lnk-pairoff-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
+| waypoint:wp-adr-repo-pair-off | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| node:task-sme-repo-pair-off-rules | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-mrk-pofadr-pairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-drv-cdmdata-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-drv-finality-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-dec-cdmdev-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
+| edge:e-lnk-pairoff-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |

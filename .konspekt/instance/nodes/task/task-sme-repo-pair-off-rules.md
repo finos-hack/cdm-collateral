@@ -3,7 +3,7 @@ id: task-sme-repo-pair-off-rules
 type: task
 title: Confirm with a business SME the rules for a repo pair-off under the GMRA
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: repo-pair-off
   sourceRef: 2733275ab3cc72d223729efa4a32ccae2f360c80
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-10T23:26:13Z
   confidence: 0.6
 createdAt: 2026-11-10T23:26:13Z
-updatedAt: 2026-11-10T23:26:13Z
+updatedAt: 2026-11-11T00:12:48Z
 ```
 # Task: confirm the rules for a repo pair-off under the GMRA
 
