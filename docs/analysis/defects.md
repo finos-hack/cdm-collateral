@@ -42,6 +42,8 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D22 | `Qualify_Substitution` cannot be true during a repo's term, and the quantity change of `Create_SubstitutionPrimitiveInstruction` leaves the old security as the lot's `observable` *(added 2026-11-08)* | qualification, function logic | CDM 7.7.0 `rosetta/event-qualification-func.rosetta` 821; `rosetta/product-common-settlement-func.rosetta` 35 |
 | D23 | `Create_RollPrimitiveInstruction` gives the closing leg of a roll the new termination date instead of the roll date *(added 2026-11-08)* | event | `rosetta/event-common-func.rosetta` 1466; `functions/repo-and-bond/roll-output.json` |
 | D24 | `Create_PairOffInstruction` builds instructions with both a `before` trade state and an `execution`, which CDM's `Instruction` condition `NewTrade` forbids, so every pair-off event fails CDM's own validation, CDM's sample output included; it also only tags the trades with a package and settles nothing *(added 2026-11-10)* | event / validation | `rosetta/event-common-func.rosetta` 1656; `rosetta/event-common-type.rosetta` 41; `functions/repo-and-bond/pair-off-output.json` |
+| D26 | CDM's securities lending return settlement workflow (`RunReturnSettlementWorkflow`) builds the return event with no `instruction`, so no event qualification can hold for it; every step of CDM's three lending settlement workflows fails CDM validation on CDM's own samples, and only the execution step qualifies *(added 2026-11-11)* | event / qualification / validation | `cdm.security.lending.functions.SettlementFunctionHelper`; `functions/sec-lending/full-return-settlement-workflow-func-output.json`, `part-return-settlement-workflow-func-output.json`, `new-settlement-workflow-func-output.json` |
+| D27 | `ResolveSecurityFinanceBillingAmount` reads the lending fee from an `InterestRatePayout` and the lent security from the collateral path, and CDM's own lending trade has neither, so every billing record of CDM's invoice sample has no amount and the invoice has no `billingSummary`, which is required *(added 2026-11-11)* | function / sample | `rosetta/event-common-func.rosetta` 1254–1345; `functions/sec-lending/create-security-lending-invoice-func-output.json` |
 
 ## Details
 
@@ -390,3 +392,34 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   `ResolveRepurchaseTransferInstruction`.
 - **Effect:** every repurchase the prototype settles since `wp-adr-repo-purchase-repurchase` carries an event CDM does not
   qualify as a repurchase. The settlement is unaffected: the cash and securities are the prototype's own transfers.
+
+### D26 — CDM's lending return event has no instruction *(added 2026-11-11)*
+
+- `RunReturnSettlementWorkflow` (Java, `cdm.security.lending.functions`) gives the return step an event with only
+  `eventDate` and `after`: no `instruction`. CDM's expected outputs `full-return-settlement-workflow-func-output.json` and
+  `part-return-settlement-workflow-func-output.json` have the same shape.
+- `Qualify_FullReturn` requires a `quantityChange` instruction, so it cannot hold for this event (D4 is a second reason:
+  it looks for the `AssetPayout` on the collateral path). CDM has no partial return qualification, and
+  `Qualify_PartialTermination` is false.
+- Observed 2026-11-11 with a temporary test that ran CDM's three lending settlement workflows on CDM's own samples
+  (`RunNewSettlementWorkflow`, `RunReturnSettlementWorkflow` full and part): every step fails CDM validation (for
+  example `AssetPayoutSettlementCentreRequired`, `Security` without `assetType`, `ScheduledTransfer` without `asset` and
+  `transferType`, `StateClosedStateExists` on the full return); the execution step qualifies as `Execution`; the return
+  and the settlement steps qualify as no event (`FullReturn`, `Termination`, `PartialTermination`, `SecurityTransfer`,
+  `Substitution` and `Reprice` all false). `Qualify_SecurityLending` holds for the trade. The workflows also need a
+  `PostProcessor` binding that CDM's runtime module does not provide. No CDM issue mentions these functions.
+
+### D27 — CDM's lending invoice has no amounts *(added 2026-11-11)*
+
+- `Create_BillingRecord` (`event-common-func.rosetta` line 1254) sets the record's transfer from
+  `ResolveSecurityFinanceBillingAmount` (line 1280). That function reads the lending fee from
+  `payout as InterestRatePayout only-element` and the securities from
+  `collateral -> collateralPortfolio -> collateralPosition -> product ->> economicTerms -> payout as AssetPayout`.
+- CDM's lending trade (the invoice sample input, and the trade `RunNewSettlementWorkflow` books) has one payout, the
+  `AssetPayout` of the lent security, and cash collateral in the collateral portfolio: no `InterestRatePayout` and no
+  `AssetPayout` on the collateral path.
+- **Effect:** observed 2026-11-11 with the same temporary test: `Create_SecurityLendingInvoice` on CDM's sample gives
+  three billing records whose transfer carries only a settlement date (no quantity, no payer or receiver), and no
+  `billingSummary`, which `SecurityLendingInvoice` requires. CDM's expected output
+  `create-security-lending-invoice-func-output.json` is the same. CDM issues #3640 and #3871 (closed) change lending fee
+  and rebate rate types; neither covers this.
