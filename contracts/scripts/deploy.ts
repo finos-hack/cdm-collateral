@@ -115,7 +115,7 @@ async function main() {
 
   // Deploy with an explicit nonce; the address follows from the deployer and the nonce, so no lookup of the transaction
   // is needed before the receipt.
-  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan" | "TripartySettlement">(name: N, args: readonly unknown[]) {
+  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan" | "TripartySettlement" | "CcpClearing">(name: N, args: readonly unknown[]) {
     const { abi, bytecode } = await hre.artifacts.readArtifact(name);
     let address: `0x${string}` | undefined;
     await send(`deploy ${name}`, (nonce) => {
@@ -142,8 +142,10 @@ async function main() {
   const tripartySettlement = await deploy("TripartySettlement", []);
   console.log("TripartySettlement   ", tripartySettlement.address);
   // The CCP's books (task-ccp-membership): the rulebook, the members' default fund shares and BANK-C's capital.
-  const ccpClearing = await deploy("CcpClearing", []);
+  // Clearing (task-ccp-clearing): CcpClearing novates repos on RepoSettlement, which accepts novate only from it.
+  const ccpClearing = await deploy("CcpClearing", [repoSettlement.address]);
   console.log("CcpClearing          ", ccpClearing.address);
+  await send("RepoSettlement.setClearingHouse", (nonce) => repoSettlement.write.setClearingHouse([ccpClearing.address], { nonce }));
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean }> = {};
   for (const t of TOKENS) {

@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import cdm.event.common.TradeState;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -548,6 +549,12 @@ public final class App {
         app.post("/api/v1/ccp/rulebook", this::publishCcpRulebook);
         app.post("/api/v1/ccp/join", ctx -> ctx.json(ccpMemberStep("join")));
         app.post("/api/v1/ccp/leave", ctx -> ctx.json(ccpMemberStep("leave")));
+        app.get("/api/v1/ccp/clearings", this::ccpClearings);
+        app.post("/api/v1/ccp/clearings", this::submitCcpClearing);
+        app.post("/api/v1/ccp/clearings/{id}/affirm", this::affirmCcpClearing);
+        app.post("/api/v1/ccp/clearings/{id}/accept", this::acceptCcpClearing);
+        app.post("/api/v1/ccp/clearings/{id}/refuse", this::refuseCcpClearing);
+        app.post("/api/v1/ccp/clearings/{id}/instruct", this::instructCcpCleared);
     }
 
     private List<String> ccpParties() {
@@ -658,6 +665,194 @@ public final class App {
         }
         JsonNode tx = gw.post("/ccp/rulebook/" + r.get("rulebookHash").asText() + "/" + step, Map.of());
         return tx;
+    }
+
+    // --- CCP clearing (task-ccp-clearing, wp-adr-ccp-clearing) ---
+    // The seller of an affirmed repo builds the cdm-ext CcpNovation (CDM's clearing split into a leg with the CCP for
+    // each member) under the CCP's rulebook, stores it for the three parties and submits its hash. The buyer rebuilds it
+    // from its own booking and affirms; the CCP rebuilds it from the bilateral trade the event carries, checks it against
+    // the repo on chain, the rulebook and its eligible securities, and accepts or refuses. Each member then instructs the
+    // settlement document of its own leg for the purchase and, on the Repurchase Date, the repurchase.
+
+    /** Novations that checked, by hash; a failed check is not kept, so it is retried. */
+    private final Map<String, CdmCcp.Novation> ccpNovations = new ConcurrentHashMap<>();
+
+    /** The bilateral trade this party checks a novation against: its own booking for a member, the carried trade for the CCP. */
+    private TradeState ccpBilateralTrade(JsonNode repo, String novationJson) {
+        if (cfg.isCcp()) return CdmCcp.bilateralOf(CdmCcp.parseNovation(novationJson));
+        CdmRepo.Booking b = repoBooking(repo);
+        if (b == null) throw new IllegalStateException("the booked document is not in the payload store");
+        return b.trade();
+    }
+
+    /** What is wrong between the bilateral repo on chain and the trade the novation clears, or null. */
+    private String ccpTradeProblem(JsonNode repo, TradeState trade) {
+        CdmRepo.Terms t = CdmRepo.terms(trade);
+        if (!repo.get("repoId").asText().equalsIgnoreCase(t.tradeId())) return "the trade identifier is not the repo id";
+        if (!bankOf(repo.get("seller").asText()).equals(t.seller()) || !bankOf(repo.get("buyer").asText()).equals(t.buyer())) return "the parties are not the repo's";
+        String sym = symbolByAddress.get(repo.get("security").asText().toLowerCase());
+        if (sym == null || !cfg.isin(sym).equals(t.isin())) return "the security token is not the trade's security";
+        if (!"tUSD".equals(symbolByAddress.get(repo.get("cash").asText().toLowerCase()))) return "the cash token is not tUSD";
+        if (repo.get("quantity").asLong() != t.quantity() || repo.get("purchasePrice").asLong() != t.purchasePrice()) return "the on-chain amounts are not the trade's";
+        long rp = CdmRuntime.fn(cdmx.collateral.repo.functions.RepoRepurchasePrice.class).evaluate(trade, CdmRepo.CASH_PRECISION).getValue().longValueExact();
+        if (repo.get("repurchasePrice").asLong() != rp) return "the on-chain Repurchase Price is not RepoRepurchasePrice over the trade";
+        if (repo.path("buySellBack").asBoolean(false)) return "a buy/sell-back is not cleared";
+        return null;
+    }
+
+    /** Check a clearing's novation against this party's own build; returns the novation, or throws with the reason. */
+    private CdmCcp.Novation ccpNovation(JsonNode c) {
+        String hash = c.get("novationHash").asText();
+        CdmCcp.Novation cached = ccpNovations.get(hash);
+        if (cached != null) return cached;
+        String doc = payloads.get(hash);
+        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the novation is not in the payload store or its hash differs");
+        JsonNode repo = gw.get("/repos/" + c.get("repoId").asText());
+        TradeState bilateral = ccpBilateralTrade(repo, doc);
+        String problem = ccpTradeProblem(repo, bilateral);
+        if (problem != null) throw new IllegalStateException(problem);
+        JsonNode rb = gw.get("/ccp/rulebook/" + c.get("rulebookHash").asText()).get("rulebook");
+        if (rb == null || rb.isNull()) throw new IllegalStateException("the rulebook is not on chain");
+        Optional<String> rbProblem = ccpProblem(rb);
+        if (rbProblem.isPresent()) throw new IllegalStateException("the rulebook does not check: " + rbProblem.get());
+        CdmCcp.Novation n = CdmCcp.verifyNovation(doc, bilateral, c.get("rulebookHash").asText(), repo.get("tradeHash").asText(), bankOf(c.get("ccp").asText()));
+        ccpNovations.put(hash, n);
+        return n;
+    }
+
+    private JsonNode ccpClearingOnChain(String repoId) {
+        JsonNode c = gw.get("/ccp/clearings/" + repoId).get("clearing");
+        if (c == null || c.isNull()) throw new IllegalArgumentException("repo " + repoId + " is not submitted for clearing");
+        return c;
+    }
+
+    /** The clearings this party is named in, newest first, with the novation checked and the steps open to it. */
+    private void ccpClearings(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        JsonNode all = cfg.registry.get("parties").has("ccp") ? gw.getQuery("/ccp/clearings", Map.of("party", cfg.myAddress)) : null;
+        if (all != null) for (JsonNode c : all) out.add(0, ccpClearingView(c));
+        ctx.json(Map.of("businessDate", businessDate.toString(), "clearings", out));
+    }
+
+    private Map<String, Object> ccpClearingView(JsonNode c) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        String state = c.get("state").asText();
+        boolean seller = c.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        boolean buyer = c.get("buyer").asText().equalsIgnoreCase(cfg.myAddress);
+        boolean ccp = c.get("ccp").asText().equalsIgnoreCase(cfg.myAddress);
+        m.put("repoId", c.get("repoId").asText());
+        m.put("state", state);
+        m.put("role", seller ? "seller" : buyer ? "buyer" : ccp ? "ccp" : "");
+        m.put("seller", partyIdOf(c.get("seller").asText()));
+        m.put("buyer", partyIdOf(c.get("buyer").asText()));
+        m.put("ccp", partyIdOf(c.get("ccp").asText()));
+        m.put("security", symbolByAddress.get(c.get("security").asText().toLowerCase()));
+        m.put("quantity", c.get("quantity").asLong());
+        m.put("purchasePrice", c.get("purchasePrice").asLong());
+        m.put("repurchasePrice", c.get("repurchasePrice").asLong());
+        m.put("novationHash", c.get("novationHash").asText());
+        boolean sellerInstructed = !c.get("sellerLegHash").asText().equals(ZERO_HASH), buyerInstructed = !c.get("buyerLegHash").asText().equals(ZERO_HASH);
+        m.put("sellerInstructed", sellerInstructed);
+        m.put("buyerInstructed", buyerInstructed);
+        String problem = null;
+        CdmCcp.Novation n = null;
+        try {
+            n = ccpNovation(c);
+            if (ccp) {
+                String isin = CdmRepo.terms(n.sellerLeg()).isin();
+                if (!CdmCcp.eligible(cfg.isin("tUST"), cfg.isin("tAGY")).contains(isin)) problem = "the security is not eligible at the CCP";
+            }
+        } catch (Exception e) {
+            problem = String.valueOf(e.getMessage());
+        }
+        m.put("verified", problem == null);
+        m.put("problem", problem);
+        if (n != null) {
+            CdmRepo.Terms s = CdmRepo.terms(n.sellerLeg()), b = CdmRepo.terms(n.buyerLeg());
+            m.put("legs", List.of(
+                    Map.of("tradeId", s.tradeId(), "seller", s.seller(), "buyer", s.buyer()),
+                    Map.of("tradeId", b.tradeId(), "seller", b.seller(), "buyer", b.buyer())));
+            m.put("repurchaseDate", s.repurchaseDate().toString());
+            m.put("repurchaseDue", !businessDate.isBefore(s.repurchaseDate()));
+            m.put("cleared", CdmRuntime.fn(cdm.event.qualification.functions.Qualify_ClearedTrade.class).evaluate(n.novation().getClearing()));
+        }
+        boolean ok = problem == null;
+        m.put("canAffirm", buyer && state.equals("submitted") && ok);
+        m.put("canAccept", ccp && state.equals("affirmed") && ok);
+        m.put("canRefuse", ccp && (state.equals("submitted") || state.equals("affirmed")));
+        boolean mineInstructed = seller ? sellerInstructed : buyerInstructed;
+        boolean due = state.equals("cleared") || (state.equals("purchased") && Boolean.TRUE.equals(m.get("repurchaseDue")));
+        m.put("canInstruct", (seller || buyer) && due && !mineInstructed && ok);
+        m.put("phase", state.equals("purchased") ? "repurchase" : "purchase");
+        return m;
+    }
+
+    /** The seller submits its affirmed repo to the CCP BANK-C under the CCP's rulebook in effect. */
+    private void submitCcpClearing(Context ctx) {
+        String id = String.valueOf(body(ctx).get("repoId"));
+        JsonNode repo = gw.get("/repos/" + id);
+        if (!repo.get("seller").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the seller submits repo " + id);
+        if (!repo.get("state").asText().equals("affirmed")) throw new IllegalStateException("repo " + id + " is not affirmed");
+        JsonNode rb = ccpRulebookOnChain();
+        if (rb == null || !rb.get("state").asText().equals("Effective")) throw new IllegalStateException("the CCP's rulebook is not in effect");
+        Optional<String> rbProblem = ccpProblem(rb);
+        if (rbProblem.isPresent()) throw new IllegalStateException("the rulebook does not check: " + rbProblem.get());
+        CdmRepo.Booking b = repoBooking(repo);
+        if (b == null) throw new IllegalStateException("the booked document is not in the payload store");
+        String problem = ccpTradeProblem(repo, b.trade());
+        if (problem != null) throw new IllegalStateException(problem);
+        CdmCcp.Novation n = CdmCcp.novation(rb.get("rulebookHash").asText(), b.trade(), b.hash(), cfg.bankName("C"));
+        store.recordDocument(id, "CcpNovation", "out", n.hash(), n.json());
+        payloads.put(n.hash(), n.json(), ccpParties());
+        ccpNovations.put(n.hash(), n);
+        JsonNode tx = gw.post("/ccp/clearings", Map.of("repoId", id, "ccp", cfg.partyAddress("C"), "novationHash", n.hash()));
+        ctx.json(Map.of("repoId", id, "novationHash", n.hash(), "txHash", tx.path("txHash").asText()));
+    }
+
+    /** The buyer affirms the seller's submission after rebuilding the novation from its own booking. */
+    private void affirmCcpClearing(Context ctx) {
+        JsonNode c = ccpClearingOnChain(ctx.pathParam("id"));
+        if (!c.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the buyer affirms the submission");
+        if (!c.get("state").asText().equals("submitted")) throw new IllegalStateException("the clearing is not submitted");
+        CdmCcp.Novation n = ccpNovation(c);
+        ctx.json(gw.post("/ccp/clearings/" + ctx.pathParam("id") + "/affirm", Map.of("novationHash", n.hash())));
+    }
+
+    /** The CCP accepts an affirmed submission after its checks. */
+    private void acceptCcpClearing(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP accepts a clearing");
+        JsonNode c = ccpClearingOnChain(ctx.pathParam("id"));
+        Map<String, Object> v = ccpClearingView(c);
+        if (!Boolean.TRUE.equals(v.get("canAccept"))) throw new IllegalStateException("the clearing cannot be accepted: " + (v.get("problem") != null ? v.get("problem") : "it is " + v.get("state")));
+        ctx.json(gw.post("/ccp/clearings/" + ctx.pathParam("id") + "/accept", Map.of()));
+    }
+
+    /** The CCP refuses a submission with a reason, stored for the three parties; the repo stays bilateral. */
+    private void refuseCcpClearing(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP refuses a clearing");
+        String id = ctx.pathParam("id");
+        ccpClearingOnChain(id);
+        String reason = String.valueOf(body(ctx).getOrDefault("reason", "refused by the CCP"));
+        String json = CdmRuntime.toJson(Map.of("repoId", id, "reason", reason));
+        String hash = Cdm.keccakHex(json);
+        payloads.put(hash, json, ccpParties());
+        ctx.json(gw.post("/ccp/clearings/" + id + "/refuse", Map.of("reasonHash", hash)));
+    }
+
+    /** A member instructs its own leg: the purchase once cleared, the repurchase on or after the Repurchase Date. */
+    private void instructCcpCleared(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode c = ccpClearingOnChain(id);
+        Map<String, Object> v = ccpClearingView(c);
+        if (!Boolean.TRUE.equals(v.get("canInstruct")))
+            throw new IllegalStateException("leg not open to instruct: " + (v.get("problem") != null ? v.get("problem") : "the clearing is " + v.get("state")));
+        CdmCcp.Novation n = ccpNovation(c);
+        TradeState leg = c.get("seller").asText().equalsIgnoreCase(cfg.myAddress) ? n.sellerLeg() : n.buyerLeg();
+        CdmRepo.Settlement s = v.get("phase").equals("purchase") ? CdmRepo.purchase(leg) : CdmRepo.repurchase(leg);
+        store.recordDocument(id, "RepoSettlement", "out", s.hash(), s.json());
+        payloads.put(s.hash(), s.json(), ccpParties());
+        JsonNode tx = gw.post("/ccp/clearings/" + id + "/instruct", Map.of("legHash", s.hash()));
+        ctx.json(Map.of("repoId", id, "phase", v.get("phase"), "legHash", s.hash(), "txHash", tx.path("txHash").asText()));
     }
 
     // --- triparty trade start (task-triparty-trade-start, wp-adr-triparty-trade-start) ---

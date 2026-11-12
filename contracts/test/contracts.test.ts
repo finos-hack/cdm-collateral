@@ -2197,13 +2197,15 @@ describe("CDM collateral contracts", async () => {
 
   describe("CCP membership: rulebook, capital and default fund (task-ccp-membership)", () => {
     const R = keccak256(toHex("ccp-rulebook"));
-    let ccp: any, ccpAddr: `0x${string}`, tUSD: any, clearing: any;
+    let ccp: any, ccpAddr: `0x${string}`, tUSD: any, clearing: any, repo: any;
     beforeEach(async () => {
       const wallets = await viem.getWalletClients();
       ccp = wallets[4];
       ccpAddr = getAddress(ccp.account.address);
       tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "", "", ""]);
-      clearing = await viem.deployContract("CcpClearing", []);
+      repo = await viem.deployContract("RepoSettlement", [oracle.address]);
+      clearing = await viem.deployContract("CcpClearing", [repo.address]);
+      await repo.write.setClearingHouse([clearing.address]);
       await tUSD.write.mint([ccpAddr, 250n]);
       await tUSD.write.mint([aAddr, 500n]);
       await tUSD.write.mint([bAddr, 500n]);
@@ -2265,6 +2267,82 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(clearing.write.join([R], { account: bankA.account })); // AlreadyPaid
       await assert.rejects(clearing.write.join([zeroHash], { account: bankA.account })); // UnknownRulebook
       await assert.rejects(clearing.write.leave([zeroHash], { account: bankA.account }));
+    });
+
+    describe("clearing by novation to the CCP (task-ccp-clearing)", () => {
+      const REPO = keccak256(toHex("repo-1"));
+      const N = keccak256(toHex("novation"));
+      const PURCHASE = 0;
+      beforeEach(async () => {
+        await publish();
+        await join(bankA);
+        await join(bankB);
+        await tUSD.write.mint([aAddr, 1000n]); // the seller pays the Price Differential out of its own cash
+        await tUSD.write.mint([bAddr, 10000n]);
+        await repo.write.book([REPO, bAddr, tUST.address, 103n, tUSD.address, 10000n, 10009n, keccak256(toHex("trade"))], { account: bankA.account });
+      });
+      const affirmRepo = () => repo.write.affirm([REPO, keccak256(toHex("trade"))], { account: bankB.account });
+      const submitted = async () => {
+        await affirmRepo();
+        await clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account });
+        await clearing.write.affirmClearing([REPO, N], { account: bankB.account });
+      };
+
+      it("novates the affirmed repo on acceptance, settles the purchase and the repurchase through the CCP, and blocks leaving meanwhile", async () => {
+        await assert.rejects(clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account })); // RepoNotAffirmed
+        await submitted();
+        await assert.rejects(clearing.write.acceptClearing([REPO], { account: bankA.account })); // NotTheCcp
+        await clearing.write.acceptClearing([REPO], { account: ccp.account });
+        assert.equal((await repo.read.getRepo([REPO])).state, 6); // Novated
+        assert.equal(await repo.read.novationHash([REPO]), N);
+        await assert.rejects(repo.write.instruct([REPO, PURCHASE, keccak256(toHex("p"))], { account: bankA.account })); // bilateral purchase closed
+        assert.equal(await clearing.read.clearedCount([R, aAddr]), 1n);
+        await assert.rejects(clearing.write.leave([R], { account: bankA.account })); // StillClearing
+
+        const usdA = await tUSD.read.balanceOf([aAddr]), usdB = await tUSD.read.balanceOf([bAddr]);
+        await tUST.write.approve([clearing.address, 103n], { account: bankA.account });
+        await tUSD.write.approve([clearing.address, 10000n], { account: bankB.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("seller-leg-purchase"))], { account: bankA.account });
+        await assert.rejects(clearing.write.instructCleared([REPO, keccak256(toHex("again"))], { account: bankA.account })); // AlreadyInstructed
+        await clearing.write.instructCleared([REPO, keccak256(toHex("buyer-leg-purchase"))], { account: bankB.account });
+        let c = await clearing.read.clearing([REPO]);
+        assert.equal(c.state, 5); // Purchased
+        assert.equal(await tUST.read.balanceOf([bAddr]), 103n);
+        assert.equal(await tUSD.read.balanceOf([aAddr]), usdA + 10000n);
+        assert.equal(await tUSD.read.balanceOf([bAddr]), usdB - 10000n);
+        assert.equal(await tUSD.read.balanceOf([ccpAddr]), 0n); // the CCP nets to zero
+
+        await tUST.write.approve([clearing.address, 103n], { account: bankB.account });
+        await tUSD.write.approve([clearing.address, 10009n], { account: bankA.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("buyer-leg-repurchase"))], { account: bankB.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("seller-leg-repurchase"))], { account: bankA.account });
+        c = await clearing.read.clearing([REPO]);
+        assert.equal(c.state, 6); // Repurchased
+        assert.equal(await tUST.read.balanceOf([aAddr]), 1000n);
+        assert.equal(await tUSD.read.balanceOf([bAddr]), usdB + 9n);
+        assert.equal(await clearing.read.clearedCount([R, bAddr]), 0n);
+        await clearing.write.leave([R], { account: bankA.account });
+        assert.deepEqual(await clearing.read.clearingsOfParty([ccpAddr]), [REPO]);
+      });
+
+      it("refuses another submitter, a wrong hash, an unpaid member and the bilateral novate path; a refused repo stays bilateral and may be submitted again", async () => {
+        await affirmRepo();
+        await assert.rejects(clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankB.account })); // NotTheSeller
+        await assert.rejects(repo.write.novate([REPO, N], { account: bankA.account })); // NotTheClearingHouse
+        await assert.rejects(repo.write.setClearingHouse([bAddr])); // ClearingHouseSet
+        await clearing.write.leave([R], { account: bankB.account });
+        await assert.rejects(clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account })); // MemberNotPaid
+        await join(bankB);
+        await clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account });
+        await assert.rejects(clearing.write.affirmClearing([REPO, keccak256(toHex("other"))], { account: bankB.account })); // HashMismatch
+        await clearing.write.refuseClearing([REPO, keccak256(toHex("reason"))], { account: ccp.account });
+        assert.equal((await clearing.read.clearing([REPO])).state, 4); // Refused
+        assert.equal((await repo.read.getRepo([REPO])).state, 2); // still Affirmed, bilateral
+        await clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account });
+        await clearing.write.affirmClearing([REPO, N], { account: bankB.account });
+        await clearing.write.acceptClearing([REPO], { account: ccp.account });
+        assert.equal((await clearing.read.clearing([REPO])).state, 3); // Cleared
+      });
     });
   });
 });

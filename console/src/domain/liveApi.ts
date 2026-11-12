@@ -337,6 +337,35 @@ export interface LiveCcp {
   rulebook: LiveCcpRulebook | null;
 }
 
+/** A repo submitted to the CCP (wp-adr-ccp-clearing), with the novation checked by the reading party. */
+export interface LiveCcpClearing {
+  repoId: string;
+  state: "submitted" | "affirmed" | "cleared" | "refused" | "purchased" | "repurchased" | string;
+  role: "seller" | "buyer" | "ccp" | "";
+  seller: string;
+  buyer: string;
+  ccp: string;
+  security: string;
+  quantity: number;
+  purchasePrice: number;
+  repurchasePrice: number;
+  novationHash: string;
+  sellerInstructed: boolean;
+  buyerInstructed: boolean;
+  verified: boolean;
+  problem: string | null;
+  legs?: { tradeId: string; seller: string; buyer: string }[];
+  repurchaseDate?: string;
+  repurchaseDue?: boolean;
+  /** CDM's Qualify_ClearedTrade over the clearing event. */
+  cleared?: boolean;
+  canAffirm: boolean;
+  canAccept: boolean;
+  canRefuse: boolean;
+  canInstruct: boolean;
+  phase: "purchase" | "repurchase";
+}
+
 export const ccpApi = {
   health: (p: ServiceParty) => req<{ party: string; role: string; address: string; ok: boolean }>(p, "GET", "/health"),
   ccp: (p: ServiceParty) => req<LiveCcp>(p, "GET", "/ccp"),
@@ -346,6 +375,16 @@ export const ccpApi = {
   join: (p: ServiceParty) => req<unknown>(p, "POST", "/ccp/join", {}),
   /** A member that clears no repo: leave and get its share back. */
   leave: (p: ServiceParty) => req<unknown>(p, "POST", "/ccp/leave", {}),
+  clearings: (p: ServiceParty) => req<{ businessDate: string; clearings: LiveCcpClearing[] }>(p, "GET", "/ccp/clearings"),
+  /** The seller: submit an affirmed repo to BANK-C for clearing. */
+  submitClearing: (p: ServiceParty, repoId: string) => req<{ repoId: string; novationHash: string }>(p, "POST", "/ccp/clearings", { repoId }),
+  /** The buyer: affirm the submission after rebuilding the novation. */
+  affirmClearing: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/affirm`, {}),
+  /** The CCP: accept an affirmed submission, or refuse it with a reason. */
+  acceptClearing: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/accept`, {}),
+  refuseClearing: (p: ServiceParty, repoId: string, reason: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/refuse`, { reason }),
+  /** A member: instruct its own leg's purchase or repurchase. */
+  instructCleared: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/instruct`, {}),
 };
 
 export const tripartyApi = {
@@ -633,7 +672,7 @@ export interface LiveRepo {
   repoId: string;
   role: "seller" | "buyer";
   counterparty: LiveParty;
-  state: "booked" | "affirmed" | "purchased" | "repurchased" | "closedOut";
+  state: "booked" | "affirmed" | "purchased" | "repurchased" | "closedOut" | "novated";
   security: string;
   quantity: string;
   purchasePrice: string;

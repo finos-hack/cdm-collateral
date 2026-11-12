@@ -3,7 +3,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CcpCard, CcpConsole } from "./CcpConsole";
-import type { LiveCcp, LiveCcpRulebook } from "../domain/liveApi";
+import type { LiveCcp, LiveCcpClearing, LiveCcpRulebook } from "../domain/liveApi";
 
 class StubEventSource {
   addEventListener() {}
@@ -81,4 +81,62 @@ it("lets a paid member leave and shows a rulebook that does not check", async ()
   expect(screen.queryByText(/Affirm the rulebook/)).toBeNull();
   await userEvent.click(screen.getByText("Leave and get the share back"));
   await waitFor(() => expect(posts).toEqual(["/ccp/leave"]));
+});
+
+const CLEARING: LiveCcpClearing = {
+  repoId: "0x" + "77".repeat(32),
+  state: "submitted",
+  role: "buyer",
+  seller: "A",
+  buyer: "B",
+  ccp: "C",
+  security: "tUST",
+  quantity: 1020,
+  purchasePrice: 98400,
+  repurchasePrice: 98486,
+  novationHash: "0x" + "88".repeat(32),
+  sellerInstructed: false,
+  buyerInstructed: false,
+  verified: true,
+  problem: null,
+  legs: [{ tradeId: "x-SC", seller: "BANK-A", buyer: "BANK-C" }, { tradeId: "x-CB", seller: "BANK-C", buyer: "BANK-B" }],
+  repurchaseDate: "2026-11-19",
+  repurchaseDue: false,
+  cleared: true,
+  canAffirm: true,
+  canAccept: false,
+  canRefuse: false,
+  canInstruct: false,
+  phase: "purchase",
+};
+
+it("lets the seller submit an affirmed repo and the buyer affirm the submission, with both legs shown", async () => {
+  const run = async (fn: () => Promise<unknown>) => { await fn(); };
+  const effective = { ...RULEBOOK, state: "Effective" };
+  render(<CcpCard party="A" ccp={{ party: "A", bank: "BANK-A", ccp: false, canPublish: false, rulebook: effective }}
+    clearable={[{ repoId: "0x" + "99".repeat(32), security: "tUST", purchasePrice: "98400" }]} busy={false} run={run} />);
+  await userEvent.click(screen.getByText("Submit to BANK-C for clearing"));
+  await waitFor(() => expect(posts).toEqual(["/ccp/clearings"]));
+  cleanup();
+  render(<CcpCard party="B" ccp={{ party: "B", bank: "BANK-B", ccp: false, canPublish: false, rulebook: effective }} clearings={[CLEARING]} busy={false} run={run} />);
+  const row = screen.getByTestId(`ccp-clearing-${CLEARING.repoId}`);
+  expect(row.textContent).toContain("novation checked");
+  expect(screen.getByTestId("ccp-clearing-legs").textContent).toContain("BANK-A → BANK-C, BANK-C → BANK-B");
+  expect(screen.getByTestId("ccp-clearing-legs").textContent).toContain("CDM cleared trade: yes");
+  await userEvent.click(screen.getByText("Affirm the submission"));
+  await waitFor(() => expect(posts).toEqual(["/ccp/clearings", `/ccp/clearings/${CLEARING.repoId}/affirm`]));
+});
+
+it("lets the CCP accept and a member instruct its leg", async () => {
+  const run = async (fn: () => Promise<unknown>) => { await fn(); };
+  const effective = { ...RULEBOOK, state: "Effective" };
+  render(<CcpCard party="C" ccp={{ party: "C", bank: "BANK-C", ccp: true, canPublish: false, rulebook: effective }}
+    clearings={[{ ...CLEARING, state: "affirmed", role: "ccp", canAffirm: false, canAccept: true, canRefuse: true }]} busy={false} run={run} />);
+  await userEvent.click(screen.getByText("Accept for clearing"));
+  cleanup();
+  render(<CcpCard party="A" ccp={{ party: "A", bank: "BANK-A", ccp: false, canPublish: false, rulebook: effective }}
+    clearings={[{ ...CLEARING, state: "cleared", role: "seller", canAffirm: false, canInstruct: true, buyerInstructed: true }]} busy={false} run={run} />);
+  expect(screen.getByText(/BANK-B instructed/)).toBeTruthy();
+  await userEvent.click(screen.getByText("Instruct the purchase of my leg"));
+  await waitFor(() => expect(posts).toEqual([`/ccp/clearings/${CLEARING.repoId}/accept`, `/ccp/clearings/${CLEARING.repoId}/instruct`]));
 });

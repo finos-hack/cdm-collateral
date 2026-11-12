@@ -427,3 +427,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdata-ccpmemadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-membership |  | accepted |
 | e-dec-cdmdev-smeccpmem | decomposes | node:goal-cdm-development | node:task-sme-ccp-membership |  | accepted |
 | e-lnk-ccpmem-smeccpmem | links | node:task-ccp-membership | node:task-sme-ccp-membership |  | accepted |
+| e-mrk-ccpclradr-ccpclr | marks | waypoint:wp-adr-ccp-clearing | node:task-ccp-clearing |  | proposed |
+| e-drv-cdmdata-ccpclradr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-clearing |  | proposed |
+| e-dec-cdmdev-smeccpclr | decomposes | node:goal-cdm-development | node:task-sme-ccp-clearing |  | proposed |
+| e-lnk-ccpclr-smeccpclr | links | node:task-ccp-clearing | node:task-sme-ccp-clearing |  | proposed |

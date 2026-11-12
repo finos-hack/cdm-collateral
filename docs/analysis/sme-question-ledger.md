@@ -394,3 +394,14 @@ Status of the ledger: 196 questions in 34 tasks, all open.
 | CCM-4 | The CCP's own capital (skin in the game) is paid in once, when the rulebook is published. Where does the CCP's capital sit in the default waterfall, and is it held with the default fund? | open | |
 | CCM-5 | The rulebook is in effect once every named member has paid, and stays in effect when a member leaves. What are the CCP's admission conditions, and is the service suspended when a member's contribution falls short? | open | |
 | CCM-6 | A member that clears no repo may leave and get its contribution back at once. What notice period and conditions apply to a member's resignation and the return of its contribution? | open | |
+
+### `task-sme-ccp-clearing`: clearing a bilateral repo by novation to the CCP
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| CCC-1 | The repo is submitted after both parties affirm it and before the purchase settles. Do repo CCPs accept trades for clearing before the start leg settles, after it, or both (for example forward-starting repos)? | open | |
+| CCC-2 | The seller submits and the buyer affirms the submission. Do both members submit, does a trading venue or matching service submit, or does one party give up the trade? | open | |
+| CCC-3 | The CCP checks only that both are paid members and the security is eligible. Which further checks does a CCP make at acceptance (credit limits, initial margin posted first, settlement eligibility)? | open | |
+| CCC-4 | The purchase and the repurchase settle in one transaction between the members, the CCP netting to zero. Do CCPs settle each leg against the CCP's own accounts, or net members' obligations and settle once per day? | open | |
+| CCC-5 | A refused repo stays bilateral and may be submitted again. What happens to a trade the CCP rejects under the members' agreements? | open | |
+

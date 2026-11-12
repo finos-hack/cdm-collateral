@@ -421,6 +421,17 @@ route("GET", "/ledger/v1/ccp/rulebook/:hash", async (p, _b, url) => {
 route("POST", "/ledger/v1/ccp/rulebook/:hash/join", async (p) => J(await adapter.joinCcp(p.hash as Hex)));
 route("POST", "/ledger/v1/ccp/rulebook/:hash/leave", async (p) => J(await adapter.leaveCcp(p.hash as Hex)));
 
+// CCP clearing (wp-adr-ccp-clearing): the seller submits an affirmed repo, the buyer affirms, the CCP accepts or refuses;
+// each member then instructs its own leg's purchase and repurchase.
+route("POST", "/ledger/v1/ccp/clearings", async (_p, b) =>
+  J(await adapter.submitCcpClearing(b.repoId as Hex, getAddress(b.ccp), b.novationHash as Hex)));
+route("GET", "/ledger/v1/ccp/clearings", async (_p, _b, url) => J(await adapter.listCcpClearings(getAddress(url.searchParams.get("party")!))));
+route("GET", "/ledger/v1/ccp/clearings/:id", async (p) => J({ clearing: await adapter.getCcpClearing(p.id as Hex) }));
+route("POST", "/ledger/v1/ccp/clearings/:id/affirm", async (p, b) => J(await adapter.affirmCcpClearing(p.id as Hex, b.novationHash as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/accept", async (p) => J(await adapter.acceptCcpClearing(p.id as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/refuse", async (p, b) => J(await adapter.refuseCcpClearing(p.id as Hex, b.reasonHash as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/instruct", async (p, b) => J(await adapter.instructCcpCleared(p.id as Hex, b.legHash as Hex)));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

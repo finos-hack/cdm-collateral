@@ -58,7 +58,17 @@ export interface LedgerEvent {
     | "RepoAffirmed"
     | "RepoInstructed"
     | "RepoSettled"
-    | "SettlementNetted";
+    | "SettlementNetted"
+    | "RulebookPublished"
+    | "MemberJoined"
+    | "MemberLeft"
+    | "RulebookEffective"
+    | "ClearingSubmitted"
+    | "ClearingAffirmed"
+    | "ClearingAccepted"
+    | "ClearingRefused"
+    | "ClearedLegInstructed"
+    | "ClearedRepoSettled";
   /** RepoBooked, RepoAffirmed, RepoInstructed, RepoSettled (flow-repo-purchase-repurchase). */
   repoId?: Hex;
   callId?: Hex;
@@ -408,7 +418,7 @@ const repoAbi = parseAbi([
   "function closeOutsOf(address party) view returns (bytes32[])",
 ]);
 
-export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased", "closedOut"];
+export const RepoStateName = ["none", "booked", "affirmed", "purchased", "repurchased", "closedOut", "novated"];
 
 const loanAbi = parseAbi([
   "function book(bytes32 loanId, address borrower, address security, uint256 quantity, address collateral, uint256 collateralAmount, bytes32 tradeHash)",
@@ -603,7 +613,46 @@ const ccpAbi = parseAbi([
   "function members(bytes32 rulebookHash) view returns (address[] member, uint256[] share, bool[] hasPaid)",
   "function rulebookOf(address ccp) view returns (bytes32)",
   "function clearedCount(bytes32 rulebookHash, address member) view returns (uint256)",
+  "struct ClearedRepo { address ccp; bytes32 rulebookHash; address seller; address buyer; address security; uint256 quantity; address cash; uint256 purchasePrice; uint256 repurchasePrice; bytes32 novationHash; uint8 state; bytes32 reasonHash; bytes32 sellerLegHash; bytes32 buyerLegHash; }",
+  "function submitClearing(bytes32 repoId, address ccp, bytes32 novationHash)",
+  "function affirmClearing(bytes32 repoId, bytes32 novationHash)",
+  "function acceptClearing(bytes32 repoId)",
+  "function refuseClearing(bytes32 repoId, bytes32 reasonHash)",
+  "function instructCleared(bytes32 repoId, bytes32 legHash)",
+  "function clearing(bytes32 repoId) view returns (ClearedRepo)",
+  "function clearingsOfParty(address party) view returns (bytes32[])",
+  "event RulebookPublished(bytes32 indexed rulebookHash, address indexed ccp, address token, uint256 capital)",
+  "event MemberJoined(bytes32 indexed rulebookHash, address indexed member, uint256 share)",
+  "event MemberLeft(bytes32 indexed rulebookHash, address indexed member, uint256 share)",
+  "event RulebookEffective(bytes32 indexed rulebookHash)",
+  "event ClearingSubmitted(bytes32 indexed repoId, address indexed ccp, address indexed seller, bytes32 novationHash)",
+  "event ClearingAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 novationHash)",
+  "event ClearingAccepted(bytes32 indexed repoId, address indexed ccp, bytes32 novationHash)",
+  "event ClearingRefused(bytes32 indexed repoId, address indexed ccp, bytes32 reasonHash)",
+  "event ClearedLegInstructed(bytes32 indexed repoId, address indexed member, uint8 state, bytes32 legHash)",
+  "event ClearedRepoSettled(bytes32 indexed repoId, uint8 state, bytes32 sellerLegHash, bytes32 buyerLegHash)",
 ]);
+
+export const CcpClearingStateName = ["none", "submitted", "affirmed", "cleared", "refused", "purchased", "repurchased"] as const;
+
+/** A repo submitted to a CCP on CcpClearing (wp-adr-ccp-clearing), with each member's pending leg instruction. */
+export interface OnChainCcpClearing {
+  repoId: Hex;
+  ccp: Address;
+  rulebookHash: Hex;
+  seller: Address;
+  buyer: Address;
+  security: Address;
+  quantity: bigint;
+  cash: Address;
+  purchasePrice: bigint;
+  repurchasePrice: bigint;
+  novationHash: Hex;
+  state: string;
+  reasonHash: Hex;
+  sellerLegHash: Hex;
+  buyerLegHash: Hex;
+}
 
 export const CcpRulebookStateName = ["None", "Published", "Effective"] as const;
 
@@ -786,6 +835,14 @@ export interface LedgerAdapter {
   leaveCcp(rulebookHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** The rulebook with this hash, or the CCP's own rulebook when the hash is omitted; null when there is none. */
   getCcpRulebook(rulebookHash: Hex | null, ccp?: Address, block?: bigint): Promise<OnChainCcpRulebook | null>;
+  /** CCP clearing (wp-adr-ccp-clearing): submission, affirmation, acceptance or refusal, and each leg's instruction. */
+  submitCcpClearing(repoId: Hex, ccp: Address, novationHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  affirmCcpClearing(repoId: Hex, novationHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  acceptCcpClearing(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  refuseCcpClearing(repoId: Hex, reasonHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  instructCcpCleared(repoId: Hex, legHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getCcpClearing(repoId: Hex): Promise<OnChainCcpClearing | null>;
+  listCcpClearings(party: Address): Promise<OnChainCcpClearing[]>;
   /** Wait until this gateway's node has the highest block a peer node reports (task-live-spec-node-read-after-write). */
   catchUpWithPeers(maxWaitMs?: number): Promise<void>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
@@ -1924,10 +1981,27 @@ export class BesuAdapter implements LedgerAdapter {
           onError,
         })
       : () => undefined;
+    // CCP membership and clearing (wp-adr-ccp-membership, wp-adr-ccp-clearing): relayed so the consoles refresh.
+    const ccp = this.reg.contracts.ccpClearing;
+    const unwatchCcp = ccp
+      ? this.ws.watchContractEvent({
+          address: ccp,
+          abi: ccpAbi,
+          onLogs: (logs) => {
+            for (const log of logs) {
+              const a = ((log as any).args ?? {}) as { repoId?: Hex; novationHash?: Hex; rulebookHash?: Hex; member?: Address; ccp?: Address };
+              onEvent({ event: (log as any).eventName as LedgerEvent["event"], repoId: a.repoId, cdmHash: a.novationHash ?? a.rulebookHash,
+                party: a.member ?? a.ccp, ...meta(log) });
+            }
+          },
+          onError,
+        })
+      : () => undefined;
     return () => {
       unwatchControl();
       unwatchOracle();
       unwatchRepo();
+      unwatchCcp();
     };
   }
 
@@ -2007,5 +2081,43 @@ export class BesuAdapter implements LedgerAdapter {
       state: CcpRulebookStateName[r.state] ?? String(r.state), publishedAt: r.publishedAt, effectiveAt: r.effectiveAt,
       members: member.map((m, i) => ({ member: m, share: share[i], paid: hasPaid[i] })),
     };
+  }
+
+  submitCcpClearing(repoId: Hex, ccp: Address, novationHash: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "submitClearing", [repoId, ccp, novationHash]);
+  }
+
+  affirmCcpClearing(repoId: Hex, novationHash: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "affirmClearing", [repoId, novationHash]);
+  }
+
+  acceptCcpClearing(repoId: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "acceptClearing", [repoId]);
+  }
+
+  refuseCcpClearing(repoId: Hex, reasonHash: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "refuseClearing", [repoId, reasonHash]);
+  }
+
+  /** A member instructs its leg. For the purchase the seller approves the securities and the buyer the Purchase Price;
+   *  for the repurchase the buyer approves the securities and the seller the Repurchase Price, all to CcpClearing. */
+  async instructCcpCleared(repoId: Hex, legHash: Hex) {
+    const c = await this.getCcpClearing(repoId);
+    if (!c) throw new Error(`repo ${repoId} is not submitted for clearing`);
+    const seller = c.seller === this.account;
+    if (c.state === "cleared") await this.approve(seller ? c.security : c.cash, this.ccpContract(), seller ? c.quantity : c.purchasePrice);
+    else if (c.state === "purchased") await this.approve(seller ? c.cash : c.security, this.ccpContract(), seller ? c.repurchasePrice : c.quantity);
+    return this.send(this.ccpContract(), ccpAbi, "instructCleared", [repoId, legHash]);
+  }
+
+  async getCcpClearing(repoId: Hex): Promise<OnChainCcpClearing | null> {
+    const c = (await this.pub.readContract({ address: this.ccpContract(), abi: ccpAbi, functionName: "clearing", args: [repoId] })) as Omit<OnChainCcpClearing, "repoId" | "state"> & { state: number };
+    if (Number(c.state) === 0) return null;
+    return { repoId, ...c, state: CcpClearingStateName[Number(c.state)] ?? String(c.state) };
+  }
+
+  async listCcpClearings(party: Address) {
+    const ids = (await this.pub.readContract({ address: this.ccpContract(), abi: ccpAbi, functionName: "clearingsOfParty", args: [party] })) as readonly Hex[];
+    return (await Promise.all(ids.map((id) => this.getCcpClearing(id)))).filter((c): c is OnChainCcpClearing => c !== null);
   }
 }

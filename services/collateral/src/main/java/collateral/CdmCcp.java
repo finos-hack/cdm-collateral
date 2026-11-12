@@ -1,7 +1,17 @@
 package collateral;
 
+import cdm.event.common.BusinessEvent;
+import cdm.event.common.EventIntentEnum;
+import cdm.event.common.Instruction;
+import cdm.event.common.PrimitiveInstruction;
+import cdm.event.common.TradeState;
+import cdm.event.common.functions.Create_BusinessEvent;
 import cdmx.collateral.ccp.CcpMember;
+import cdmx.collateral.ccp.CcpNovation;
 import cdmx.collateral.ccp.CcpRulebook;
+import com.regnosys.rosetta.common.hashing.GlobalKeyProcessStep;
+import com.regnosys.rosetta.common.hashing.NonNullHashCollector;
+import com.rosetta.model.lib.records.Date;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static collateral.CdmRuntime.l;
 import static collateral.CdmRuntime.o;
@@ -112,5 +123,99 @@ final class CdmCcp {
                     "agreement", m.getAgreement().getLegalAgreementIdentification().getAgreementName().getOtherAgreement()));
         v.put("members", ms);
         return v;
+    }
+
+    // --- clearing (task-ccp-clearing, wp-adr-ccp-clearing) ---
+
+    /** The ISINs the CCP clears: the deployment's tUST and tAGY. */
+    static Set<String> eligible(String ustIsin, String agyIsin) {
+        return Set.of(ustIsin, agyIsin);
+    }
+
+    /** A novation: the cdm-ext CcpNovation, its Rune JSON and hash, and the two cleared trades, each reloaded from its
+     *  JSON with references resolved (straight out of Create_BusinessEvent CDM's Purchase Price over them reads 0). The
+     *  seller's leg is the seller against the CCP, the buyer's leg the CCP against the buyer. */
+    record Novation(CcpNovation novation, String json, String hash, TradeState sellerLeg, TradeState buyerLeg) {}
+
+    private static Map<String, Object> partyChange(String ccp, String role, String tradeId) {
+        return o("partyChange", o("counterparty", o("role", role, "partyReference", party(ccp)),
+                "partyRole", o("partyReference", party(ccp), "role", "ClearingOrganization"),
+                "tradeId", l(o("issuer", o("@data", ccp), "assignedIdentifier", l(o("identifier", o("@data", tradeId)))))));
+    }
+
+    /** CDM's clearing event over the bilateral trade on its trade date: a split, intent Clearing, keyed by CDM's
+     *  GlobalKeyProcessStep, of a party change of Party2 to the CCP, a party change of Party1 to the CCP, and a quantity
+     *  change of the cash and the securities to zero that closes the bilateral trade. */
+    static BusinessEvent clearingEvent(TradeState bilateral, String ccp) {
+        CdmRepo.Terms t = CdmRepo.terms(bilateral);
+        Object close = o("quantityChange", o("direction", "Replace", "change", l(
+                o("quantity", o("value", 0, "unit", o("currency", o("@data", "USD")))),
+                o("quantity", o("value", 0, "unit", o("financialUnit", "Share"))))));
+        PrimitiveInstruction pi = CdmRuntime.load(PrimitiveInstruction.class, o("split", o("breakdown", l(
+                partyChange(ccp, "Party2", t.tradeId() + "-SC"), partyChange(ccp, "Party1", t.tradeId() + "-CB"), close))));
+        var ib = Instruction.builder().setBeforeValue(bilateral).setPrimitiveInstruction(pi);
+        new GlobalKeyProcessStep(NonNullHashCollector::new).runProcessStep(Instruction.class, ib);
+        Date on = Date.of(t.tradeDate());
+        BusinessEvent ev = CdmRepo.resolved(BusinessEvent.class, CdmRuntime.fn(Create_BusinessEvent.class)
+                .evaluate(new ArrayList<>(List.of(ib.build())), EventIntentEnum.CLEARING, on, null));
+        var b = ev.toBuilder();
+        for (var a : b.getAfter())
+            if (a.getState() != null && a.getState().getClosedState() != null) a.getState().getClosedState().setActivityDate(on);
+        return b.build();
+    }
+
+    static TradeState reloaded(TradeState ts) {
+        try {
+            return CdmRepo.resolved(TradeState.class, CdmRuntime.JSON.readValue(CdmRuntime.toJson(ts), TradeState.class));
+        } catch (Exception e) {
+            throw new IllegalStateException("a cleared trade does not reload: " + e.getMessage(), e);
+        }
+    }
+
+    /** The novation of a bilateral repo under a rulebook: built by the seller, rebuilt by the buyer and the CCP. */
+    static Novation novation(String rulebookHash, TradeState bilateral, String bilateralTradeHash, String ccp) {
+        BusinessEvent ev = clearingEvent(bilateral, ccp);
+        Map<String, Object> doc = o("rulebookHash", rulebookHash, "bilateralTradeHash", bilateralTradeHash,
+                "ccp", o("partyReference", party(ccp), "role", "ClearingOrganization"),
+                "clearing", CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(ev), Map.class));
+        CcpNovation n = CdmRuntime.load(CcpNovation.class, doc);
+        CdmRuntime.validate(n);
+        String json = CdmRuntime.toJson(n);
+        TradeState sellerLeg = null, buyerLeg = null;
+        String seller = CdmRepo.terms(bilateral).seller();
+        for (TradeState a : ev.getAfter()) {
+            if (a.getState() != null && a.getState().getClosedState() != null) continue;
+            TradeState leg = reloaded(a);
+            if (seller.equals(CdmRepo.terms(leg).seller())) sellerLeg = leg;
+            else buyerLeg = leg;
+        }
+        if (sellerLeg == null || buyerLeg == null) throw new IllegalStateException("the clearing does not give a leg for each member");
+        return new Novation(n, json, Cdm.keccakHex(json), sellerLeg, buyerLeg);
+    }
+
+    static CcpNovation parseNovation(String json) {
+        try {
+            return CdmRuntime.JSON.readValue(json, CcpNovation.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a CcpNovation document: " + e.getMessage(), e);
+        }
+    }
+
+    /** The bilateral trade a novation carries: its clearing event's before state. */
+    static TradeState bilateralOf(CcpNovation n) {
+        var before = n.getClearing().getInstruction().get(0).getBefore();
+        if (before == null || before.getValue() == null) throw new IllegalStateException("the clearing names no bilateral trade");
+        return CdmRepo.resolved(TradeState.class, before.getValue());
+    }
+
+    /** Check a novation: it parses and validates, and equals the one this party builds from the bilateral trade (its own
+     *  booking for a member; the trade the event carries for the CCP), the rulebook hash and the CCP. */
+    static Novation verifyNovation(String json, TradeState bilateral, String rulebookHash, String bilateralTradeHash, String ccp) {
+        CcpNovation p = parseNovation(json);
+        var failures = CdmRuntime.failures(p);
+        if (!failures.isEmpty()) throw new IllegalStateException("the novation fails CDM validation: " + failures.get(0));
+        Novation again = novation(rulebookHash, bilateral, bilateralTradeHash, ccp);
+        if (!again.json().equals(json)) throw new IllegalStateException("the novation differs from the novation this party builds");
+        return again;
     }
 }

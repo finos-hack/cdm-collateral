@@ -1457,3 +1457,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
 | edge:e-lnk-ccpmem-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
 | node:task-live-spec-node-read-after-write | status | open | resolved | 2026-11-12T22:45:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf |  |
+| waypoint:wp-adr-ccp-clearing | review |  | accepted | 2026-11-12T22:50:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 | denisurusov |
+| edge:e-mrk-ccpclradr-ccpclr | review |  | proposed | 2026-11-12T22:50:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
+| edge:e-drv-cdmdata-ccpclradr | review |  | proposed | 2026-11-12T22:50:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
+| node:task-sme-ccp-clearing | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
+| node:task-sme-ccp-clearing | status |  | open | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
+| edge:e-dec-cdmdev-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
+| edge:e-lnk-ccpclr-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |

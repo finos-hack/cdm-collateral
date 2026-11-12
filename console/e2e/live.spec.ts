@@ -4193,3 +4193,115 @@ test("flow-ccp-membership: BANK-C publishes its CDM rulebook in its console and 
   await expect.poll(async () => (await ccpOf(SERVICE_C)).rulebook?.fund ?? null, { timeout: 60_000 }).toBe(1_000_000);
   await expect(cardB.getByTestId("ccp-member-B")).toContainText("yes", { timeout: STEP_TIMEOUT });
 });
+
+// --- flow-ccp-clearing (task-ccp-clearing, wp-adr-ccp-clearing) ---
+
+type ClearingView = {
+  repoId: string; state: string; role: string; verified: boolean; problem: string | null; novationHash: string;
+  legs?: { tradeId: string; seller: string; buyer: string }[]; cleared?: boolean; repurchaseDate?: string;
+  canAffirm: boolean; canAccept: boolean; canInstruct: boolean; sellerInstructed: boolean; buyerInstructed: boolean;
+};
+const clearingOf = async (svc: string, id: string) =>
+  (await call<{ clearings: ClearingView[] }>(`${svc}/ccp/clearings`)).clearings.find((c) => c.repoId === id);
+
+test("flow-ccp-clearing: A books and B affirms a repo of tUST -> A submits it to BANK-C in its console, B affirms, BANK-C accepts -> the bilateral repo is novated into A–C and C–B by CDM's clearing split -> the purchase settles through BANK-C -> A cannot leave while it clears -> on the Repurchase Date the repurchase settles through BANK-C -> A can leave and rejoin", async ({ page }) => {
+  test.setTimeout(2 * TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tUSD = p.tokens.tUSD;
+  const ccpAddr = (await call<{ address: string }>(`${SERVICE_C}/health`)).address;
+  const today = new Date().toLocaleDateString("en-CA");
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+
+  // Setup: the rulebook in effect with A and B paid (flow-ccp-membership shows these steps in the consoles).
+  if ((await ccpOf(SERVICE_C)).canPublish) await call(`${SERVICE_C}/ccp/rulebook`, "POST", {});
+  await expect.poll(async () => (await ccpOf(SERVICE.A)).rulebook?.verified ?? false, { timeout: 60_000 }).toBe(true);
+  for (const party of ["A", "B"] as const) {
+    if (!(await paidOf(party))) {
+      await call(`${SERVICE[party]}/ccp/join`, "POST", {});
+      await expect.poll(() => paidOf(party), { timeout: 60_000 }).toBe(true);
+    }
+  }
+  await expect.poll(async () => (await ccpOf(SERVICE_C)).rulebook?.state, { timeout: 60_000 }).toBe("Effective");
+
+  // A books and B affirms a bilateral repo through the services (flow-repo-purchase-repurchase shows it in the consoles).
+  const { repoId: id } = await call<{ repoId: string }>(`${SERVICE.A}/repos`, "POST", { security: "tUST", purchasePrice: 100000, ratePercent: "4", termDays: 7 });
+  await expect.poll(async () => {
+    const r = (await call<{ repos: Repo[] }>(`${SERVICE.B}/repos`)).repos.find((x) => x.repoId === id);
+    return r ? (r.verified ? r.state : r.problem) : null;
+  }, { timeout: 60_000 }).toBe("booked");
+  await call(`${SERVICE.B}/repos/${id}/affirm`, "POST", {});
+  await expect.poll(async () => (await call<{ repos: Repo[] }>(`${SERVICE.A}/repos`)).repos.find((x) => x.repoId === id)?.state, { timeout: 60_000 }).toBe("affirmed");
+  const repo = (await call<{ repos: Repo[] }>(`${SERVICE.A}/repos`)).repos.find((x) => x.repoId === id)!;
+  const qty = BigInt(repo.quantity), pp = BigInt(repo.purchasePrice), rp = BigInt(repo.repurchasePrice);
+  const bal = async () => ({
+    aUST: await balanceOf(GATEWAY.A, tUST, p.a), bUST: await balanceOf(GATEWAY.A, tUST, p.b),
+    aUSD: await balanceOf(GATEWAY.A, tUSD, p.a), bUSD: await balanceOf(GATEWAY.A, tUSD, p.b), cUSD: await balanceOf(GATEWAY.A, tUSD, ccpAddr),
+  });
+  const before = await bal();
+
+  // 1. A, the seller, submits the repo to BANK-C in its console.
+  await page.goto("/#/live/A");
+  const cardA = page.getByTestId("ccp-card");
+  await cardA.getByTestId(`ccp-clearable-${id}`).getByRole("button", { name: "Submit to BANK-C for clearing" }).click({ timeout: STEP_TIMEOUT });
+  await expect.poll(async () => (await clearingOf(SERVICE.B, id))?.state ?? null, { timeout: 60_000 }).toBe("submitted");
+
+  // 2. B, the buyer, rebuilds the novation from its own booking and affirms in its console.
+  await page.goto("/#/live/B");
+  const rowB = page.getByTestId(`ccp-clearing-${id}`);
+  await expect(rowB.getByText("novation checked")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowB.getByTestId("ccp-clearing-legs")).toContainText("BANK-A → BANK-C, BANK-C → BANK-B");
+  await expect(rowB.getByTestId("ccp-clearing-legs")).toContainText("CDM cleared trade: yes");
+  await rowB.getByRole("button", { name: "Affirm the submission" }).click();
+  await expect.poll(async () => (await clearingOf(SERVICE_C, id))?.state ?? null, { timeout: 60_000 }).toBe("affirmed");
+
+  // 3. BANK-C rebuilds the novation from the trade the clearing event carries and accepts in its console.
+  await page.goto("/#/live/C");
+  const rowC = page.getByTestId(`ccp-clearing-${id}`);
+  await expect(rowC.getByText("novation checked")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowC.getByRole("button", { name: "Accept for clearing" }).click();
+  await expect(rowC.getByTestId("ccp-clearing-state")).toHaveText("cleared", { timeout: STEP_TIMEOUT });
+
+  // The bilateral repo is novated; the three services hold the same checked novation.
+  await expect.poll(async () => (await call<{ repos: Repo[] }>(`${SERVICE.B}/repos`)).repos.find((x) => x.repoId === id)?.state, { timeout: 60_000 }).toBe("novated");
+  const views: ClearingView[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B, SERVICE_C]) {
+    await expect.poll(async () => { const c = await clearingOf(svc, id); return c?.state === "cleared" && c.verified ? true : (c?.problem ?? c?.state ?? null); }, { timeout: 60_000 }).toBe(true);
+    views.push((await clearingOf(svc, id))!);
+  }
+  expect(new Set(views.map((v) => v.novationHash)).size).toBe(1);
+  expect(views[0].legs!.map((l) => [l.seller, l.buyer])).toEqual([["BANK-A", "BANK-C"], ["BANK-C", "BANK-B"]]);
+  expect(views[0].cleared).toBe(true);
+  // A clears a repo, so it cannot leave.
+  await expect(call(`${SERVICE.A}/ccp/leave`, "POST", {})).rejects.toThrow();
+
+  // 4. The purchase: B instructs its leg, then A; the second instruction moves the securities and the cash.
+  await page.goto("/#/live/B");
+  await page.getByTestId(`ccp-clearing-${id}`).getByRole("button", { name: "Instruct the purchase of my leg" }).click({ timeout: STEP_TIMEOUT });
+  await expect.poll(async () => (await clearingOf(SERVICE.A, id))?.buyerInstructed ?? false, { timeout: 60_000 }).toBe(true);
+  expect(await bal()).toEqual(before);
+  await page.goto("/#/live/A");
+  await page.getByTestId(`ccp-clearing-${id}`).getByRole("button", { name: "Instruct the purchase of my leg" }).click({ timeout: STEP_TIMEOUT });
+  await expect.poll(async () => (await clearingOf(SERVICE.A, id))?.state ?? null, { timeout: 60_000 }).toBe("purchased");
+  expect(await bal()).toEqual({ ...before, aUST: before.aUST - qty, bUST: before.bUST + qty, aUSD: before.aUSD + pp, bUSD: before.bUSD - pp });
+
+  // 5. On the Repurchase Date: A instructs its leg's repurchase, then B; BANK-C's cash is unchanged throughout.
+  const due = views[0].repurchaseDate!;
+  for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: due });
+  try {
+    await page.reload();
+    await page.getByTestId(`ccp-clearing-${id}`).getByRole("button", { name: "Instruct the repurchase of my leg" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await clearingOf(SERVICE.B, id))?.sellerInstructed ?? false, { timeout: 60_000 }).toBe(true);
+    await page.goto("/#/live/B");
+    await page.getByTestId(`ccp-clearing-${id}`).getByRole("button", { name: "Instruct the repurchase of my leg" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(async () => (await clearingOf(SERVICE_C, id))?.state ?? null, { timeout: 60_000 }).toBe("repurchased");
+    expect(await bal()).toEqual({ ...before, aUSD: before.aUSD - (rp - pp), bUSD: before.bUSD + (rp - pp) });
+  } finally {
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: today });
+  }
+
+  // 6. A clears nothing now: it leaves and gets its share back, then rejoins.
+  await call(`${SERVICE.A}/ccp/leave`, "POST", {});
+  await expect.poll(() => paidOf("A"), { timeout: 60_000 }).toBe(false);
+  await call(`${SERVICE.A}/ccp/join`, "POST", {});
+  await expect.poll(() => paidOf("A"), { timeout: 60_000 }).toBe(true);
+});

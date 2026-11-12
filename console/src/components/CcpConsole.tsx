@@ -2,14 +2,55 @@
 // CcpRulebook) and pays its capital from its own console (route #/live/C); BANK-A and BANK-B see the same card in their
 // live consoles, check the rulebook against their own build, and join by paying their default fund share or leave.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ccpApi, serviceUrl, type LiveCcp, type ServiceParty } from "../domain/liveApi";
+import { ccpApi, serviceUrl, type LiveCcp, type LiveCcpClearing, type ServiceParty } from "../domain/liveApi";
 
 const usd = (n: number) => n.toLocaleString("en-US");
 const short = (h: string) => (h.length > 14 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 
-export function CcpCard({ party, ccp, busy, run }: {
+/** One repo submitted for clearing, with the steps open to the reading party (wp-adr-ccp-clearing). */
+function ClearingRow({ party, c, busy, run }: { party: ServiceParty; c: LiveCcpClearing; busy: boolean; run: (fn: () => Promise<unknown>) => Promise<void> }) {
+  const mine = c.role === "seller" ? c.sellerInstructed : c.role === "buyer" ? c.buyerInstructed : false;
+  return (
+    <div className="subcard" data-testid={`ccp-clearing-${c.repoId}`}>
+      <div className="small">
+        <span className="mono">{short(c.repoId)}</span> · BANK-{c.seller} sells {c.quantity.toLocaleString("en-US")} {c.security} to BANK-{c.buyer} for{" "}
+        {usd(c.purchasePrice)} tUSD · <b data-testid="ccp-clearing-state">{c.state}</b> ·{" "}
+        {c.verified ? <span className="ok">novation checked</span> : <span className="bad" data-testid="ccp-clearing-problem">{c.problem}</span>}
+      </div>
+      {c.legs && (
+        <div className="small" data-testid="ccp-clearing-legs">
+          legs: {c.legs.map((l) => `${l.seller} → ${l.buyer}`).join(", ")}
+          {c.cleared !== undefined && <> · CDM cleared trade: {c.cleared ? "yes" : "no"}</>}
+          {c.repurchaseDate && <> · Repurchase Date {c.repurchaseDate}</>}
+        </div>
+      )}
+      {(c.state === "cleared" || c.state === "purchased") && (
+        <div className="small">
+          {c.phase}: BANK-{c.seller} {c.sellerInstructed ? "instructed" : "not instructed"}, BANK-{c.buyer} {c.buyerInstructed ? "instructed" : "not instructed"}
+          {mine && " · waiting for the other member"}
+        </div>
+      )}
+      <div className="row">
+        {c.canAffirm && <button disabled={busy} onClick={() => run(() => ccpApi.affirmClearing(party, c.repoId))}>Affirm the submission</button>}
+        {c.canAccept && <button disabled={busy} onClick={() => run(() => ccpApi.acceptClearing(party, c.repoId))}>Accept for clearing</button>}
+        {c.canRefuse && <button disabled={busy} onClick={() => run(() => ccpApi.refuseClearing(party, c.repoId, "refused by the CCP"))}>Refuse</button>}
+        {c.canInstruct && (
+          <button disabled={busy} onClick={() => run(() => ccpApi.instructCleared(party, c.repoId))}>
+            Instruct the {c.phase} of my leg
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CcpCard({ party, ccp, clearings = [], clearable = [], busy, run }: {
   party: ServiceParty;
   ccp: LiveCcp;
+  /** The clearings this party is named in. */
+  clearings?: LiveCcpClearing[];
+  /** This party's affirmed repos as seller that it may submit for clearing. */
+  clearable?: { repoId: string; security: string; purchasePrice: string }[];
   busy: boolean;
   run: (fn: () => Promise<unknown>) => Promise<void>;
 }) {
@@ -55,6 +96,22 @@ export function CcpCard({ party, ccp, busy, run }: {
               ))}
             </tbody>
           </table>
+          {r.state === "Effective" && clearable.length > 0 && (
+            <div className="small">
+              {clearable.map((x) => (
+                <div className="row" key={x.repoId} data-testid={`ccp-clearable-${x.repoId}`}>
+                  <span className="mono">{short(x.repoId)}</span> {x.security} for {usd(Number(x.purchasePrice))} tUSD
+                  <button disabled={busy} onClick={() => run(() => ccpApi.submitClearing(party, x.repoId))}>Submit to BANK-C for clearing</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {clearings.length > 0 && (
+            <div>
+              <h4>Clearing</h4>
+              {clearings.map((c) => <ClearingRow key={c.repoId} party={party} c={c} busy={busy} run={run} />)}
+            </div>
+          )}
           <div className="row">
             {r.canJoin && <button disabled={busy} onClick={() => run(() => ccpApi.join(party))}>Affirm the rulebook and pay the share</button>}
             {r.canLeave && <button disabled={busy} onClick={() => run(() => ccpApi.leave(party))}>Leave and get the share back</button>}
@@ -69,6 +126,7 @@ export function CcpCard({ party, ccp, busy, run }: {
 export function CcpConsole() {
   const [health, setHealth] = useState<{ address: string; role: string } | null>(null);
   const [ccp, setCcp] = useState<LiveCcp | null>(null);
+  const [clearings, setClearings] = useState<LiveCcpClearing[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = useRef(true);
@@ -76,8 +134,10 @@ export function CcpConsole() {
   const refresh = useCallback(async () => {
     try {
       const c = await ccpApi.ccp("C");
+      const cl = await ccpApi.clearings("C").catch(() => ({ clearings: [] as LiveCcpClearing[] }));
       if (live.current) {
         setCcp(c);
+        setClearings(Array.isArray(cl?.clearings) ? cl.clearings : []);
         setError(null);
       }
     } catch (e) {
@@ -122,7 +182,7 @@ export function CcpConsole() {
         <div className="mono small">{health.address}</div>
         {error && <div className="bad" data-testid="ccp-error">{error}</div>}
       </div>
-      {ccp && <CcpCard party="C" ccp={ccp} busy={busy} run={run} />}
+      {ccp && <CcpCard party="C" ccp={ccp} clearings={clearings} busy={busy} run={run} />}
     </div>
   );
 }

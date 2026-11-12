@@ -1,0 +1,34 @@
+namespace cdmx.collateral.ccp : <"Local CDM extension: the novation of a bilateral repo to the CCP (gap G23, task-ccp-clearing, wp-adr-ccp-clearing). CDM 7.7.0 has the clearing event itself (a split with intent Clearing, qualified by Qualify_ClearedTrade) and no record tying it to a CCP rulebook and the bilateral trade it clears.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.event.qualification.*
+
+type CcpNovation: <"The clearing of a bilateral repo at the CCP: the rulebook it is cleared under, the hash of the bilateral trade, the CCP, and CDM's clearing event. The event is a split with intent Clearing in three branches: a party change of Party2 to the CCP (the seller sells to the CCP), a party change of Party1 to the CCP (the CCP sells to the buyer), each adding the CCP's ClearingOrganization role, and a quantity change to zero that closes the bilateral trade.">
+    [rootType]
+    rulebookHash string (1..1) <"The keccak-256 hash of the cdm-ext CcpRulebook the repo is cleared under.">
+    bilateralTradeHash string (1..1) <"The keccak-256 hash of the booked bilateral trade (CDM's execution event) that the clearing replaces.">
+    ccp PartyRole (1..1) <"The CCP, in CDM's ClearingOrganization role.">
+    clearing BusinessEvent (1..1) <"CDM's clearing event over the bilateral trade.">
+
+    condition CcpRole: <"The CCP acts in CDM's clearing organization role.">
+        ccp -> role = PartyRoleEnum -> ClearingOrganization
+
+    condition ClearingIntent: <"The event's intent is Clearing.">
+        clearing -> intent = EventIntentEnum -> Clearing
+
+    condition ClearedTrade: <"CDM qualifies the event as a cleared trade: the bilateral trade closed and two open trades, each with the clearing organization's role.">
+        Qualify_ClearedTrade(clearing)
+
+    condition CcpOnBothTrades: <"The CCP is a party to both open trades (Qualify_ClearedTrade checks it holds the clearing organization role and the counterparties changed).">
+        CcpTradesWithoutTheCcp(FilterOpenTradeStates(clearing -> after), ccp -> partyReference -> name) = 0
+
+func CcpTradesWithoutTheCcp: <"The number of trades that do not list the CCP among their parties.">
+    inputs:
+        trades TradeState (0..*)
+        ccpName string (1..1)
+    output:
+        result int (1..1)
+    set result:
+        trades filter (item -> trade -> party -> name contains ccpName) = False then count

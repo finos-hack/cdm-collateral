@@ -37,4 +37,36 @@ class CdmCcpTest {
         String changed = r.json().replace("0.05", "0.04");
         assertThrows(IllegalStateException.class, () -> CdmCcp.verify(changed, CdmCcp.CCP, MEMBERS));
     }
+
+    static final String RULEBOOK = "0x" + "44".repeat(32);
+
+    /** The clearing of BANK-A's repo to BANK-B (task-ccp-clearing, wp-adr-ccp-clearing). */
+    @Test
+    void theSellerBuildsANovationWithALegForEachMemberAtTheBilateralPrices() {
+        CdmRepo.Booking b = CdmRepo.book(CdmRepoTest.terms(98_400));
+        var n = CdmCcp.novation(RULEBOOK, b.trade(), b.hash(), CdmCcp.CCP);
+        assertTrue(CdmRuntime.failures(n.novation()).isEmpty());
+        CdmRepo.Terms bilateral = CdmRepo.terms(b.trade()), s = CdmRepo.terms(n.sellerLeg()), u = CdmRepo.terms(n.buyerLeg());
+        assertEquals(List.of("BANK-A", "BANK-C"), List.of(s.seller(), s.buyer()));
+        assertEquals(List.of("BANK-C", "BANK-B"), List.of(u.seller(), u.buyer()));
+        for (CdmRepo.Terms leg : List.of(s, u)) {
+            assertEquals(bilateral.purchasePrice(), leg.purchasePrice());
+            assertEquals(bilateral.quantity(), leg.quantity());
+            assertEquals(bilateral.repurchaseDate(), leg.repurchaseDate());
+        }
+        assertEquals(CdmRepo.repurchase(b.trade()).settlement().getCashTransfer().getQuantity().getValue(),
+                CdmRepo.repurchase(n.sellerLeg()).settlement().getCashTransfer().getQuantity().getValue());
+        assertNotEquals(CdmRepo.purchase(n.sellerLeg()).hash(), CdmRepo.purchase(n.buyerLeg()).hash());
+    }
+
+    @Test
+    void theBuyerAndTheCcpRebuildTheSameNovation() {
+        CdmRepo.Booking b = CdmRepo.book(CdmRepoTest.terms(98_400));
+        var n = CdmCcp.novation(RULEBOOK, b.trade(), b.hash(), CdmCcp.CCP);
+        assertEquals(n.hash(), CdmCcp.verifyNovation(n.json(), b.trade(), RULEBOOK, b.hash(), CdmCcp.CCP).hash());
+        var carried = CdmCcp.bilateralOf(CdmCcp.parseNovation(n.json()));
+        assertEquals(n.hash(), CdmCcp.verifyNovation(n.json(), carried, RULEBOOK, b.hash(), CdmCcp.CCP).hash());
+        assertThrows(IllegalStateException.class, () -> CdmCcp.verifyNovation(n.json(), b.trade(), "0x" + "66".repeat(32), b.hash(), CdmCcp.CCP));
+        assertThrows(IllegalStateException.class, () -> CdmCcp.verifyNovation(n.json(), CdmRepo.book(CdmRepoTest.terms(50_000)).trade(), RULEBOOK, b.hash(), CdmCcp.CCP));
+    }
 }
