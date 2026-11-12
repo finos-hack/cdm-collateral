@@ -1395,3 +1395,4 @@ excluded.
 | task-triparty-workflows | 315d8e20c2445606591efbcb87c28707eaec604e | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T01:07:20Z |
 | task-triparty-terms-profile | 0ece52a4e45162ef704d602420364298fa0b428c | docs/analysis/defects.md | 2026-11-12T01:08:20Z |
 | task-triparty-terms-profile | 0ece52a4e45162ef704d602420364298fa0b428c | architecture/prototype.architecture.json | 2026-11-12T01:08:20Z |
+| task-triparty-trade-start | 4918492052580373387f9aa89c0d2f10178fd533 | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T01:11:35Z |
