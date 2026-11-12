@@ -236,7 +236,7 @@ export interface LiveTripartySubstitution {
 /** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start). */
 export interface LiveTripartyRepo {
   repoId: string;
-  state: "requested" | "affirmed" | "allocated" | "settled" | "cancelled";
+  state: "requested" | "affirmed" | "allocated" | "settled" | "cancelled" | "repurchased";
   purchasePrice: number;
   requestHash: string;
   tradeId?: string;
@@ -264,6 +264,17 @@ export interface LiveTripartyRepo {
   canRequestSubstitution?: boolean;
   canSubstitute?: boolean;
   excess?: { token: string; units: number }[];
+  /** Trade end (wp-adr-triparty-trade-end): the agent's prepared trade end with this party's check, and the next steps. */
+  tradeEnd?: {
+    tradeEndHash: string;
+    repurchasePrice: number;
+    repurchaseDate?: string;
+    releases?: { isin: string; token?: string; units: number }[];
+    verified: boolean;
+    problem: string | null;
+  };
+  canPrepareTradeEnd?: boolean;
+  canSettleRepurchase?: boolean;
 }
 
 export interface LiveTriparty {
@@ -315,6 +326,11 @@ export const tripartyApi = {
   /** The agent: ask back and substitute the units of an asset over its limit. */
   rebalanceTripartyRepo: (p: TripartyParty, repoId: string, token: string) =>
     req<{ outcome: string; substitutionHash: string; substitution: LiveTripartySubstitutionDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/rebalance`, { token }),
+  /** The agent: prepare the trade end on the Repurchase Date. */
+  prepareTripartyTradeEnd: (p: TripartyParty, repoId: string) =>
+    req<{ tradeEndHash: string; repurchasePrice: number; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/trade-end`, {}),
+  /** The giver: pay the Repurchase Price to the receiver against the release of the whole holding. */
+  settleTripartyRepurchase: (p: TripartyParty, repoId: string) => req<{ txHash: string }>(p, "POST", `/triparty/repos/${repoId}/repurchase`, {}),
   revalueTripartyRepo: (p: TripartyParty, repoId: string) =>
     req<{ outcome: string; revaluationHash: string; revaluation: LiveTripartyRevaluationDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/revalue`, {}),
 };

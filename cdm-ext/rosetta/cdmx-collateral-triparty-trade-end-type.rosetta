@@ -1,0 +1,33 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the end of a triparty repo through the agent, the release of its whole holding against the Repurchase Price (task-triparty-trade-end, wp-adr-triparty-trade-end). CDM 7.7.0's repurchase event closes the repo and leaves its collateral portfolio as it was, and CDM has no settlement through an agent (T9).">
+version "${project.version}"
+
+import cdm.base.staticdata.asset.common.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdm.product.common.settlement.*
+import cdm.product.template.*
+
+type TripartyTradeEnd: <"The agent's trade end of a triparty repo on its Repurchase Date: CDM's repurchase event, the release of each held asset from the receiver to the giver and the Repurchase Price from the giver to the receiver, settled in one transaction.">
+    [rootType]
+    basisHash string (1..1) <"The hash of the TripartyAllocation, TripartyRevaluation or TripartySubstitution whose holding this ends.">
+    repurchaseDate date (1..1)
+    repurchasePrice Money (1..1) <"cdm-ext RepoRepurchasePrice of the repo, in whole units of the currency.">
+    repurchase BusinessEvent (1..1) <"CDM's repurchase event over the repo (ResolveRepurchaseTransferInstruction; Qualify_Repurchase is false, D25).">
+    releases ScheduledTransfer (1..*) <"One per held asset: its units from the receiver back to the giver.">
+    cashTransfer ScheduledTransfer (1..1) <"The Repurchase Price from the giver to the receiver.">
+
+    condition RepurchaseEvent: <"CDM's repurchase event of the repo.">
+        repurchase -> intent = EventIntentEnum -> Repurchase
+
+    condition ReleaseCoversHolding: <"The release is the repo's whole collateral portfolio, unit for unit.">
+        TripartyReleaseCoversHolding(repurchase -> instruction only-element -> before -> trade -> product -> economicTerms, releases) = True
+
+    condition CashAgainstRelease: <"The cash moves against every release.">
+        releases -> payerReceiver -> payerPartyReference all = cashTransfer -> payerReceiver -> receiverPartyReference
+            and releases -> payerReceiver -> receiverPartyReference all = cashTransfer -> payerReceiver -> payerPartyReference
+
+    condition CashIsTheRepurchasePrice: <"The cash transfer is the Repurchase Price.">
+        cashTransfer -> quantity -> value = repurchasePrice -> value
+
+    condition OnTheRepurchaseDate: <"Every transfer settles on the Repurchase Date.">
+        [ releases, cashTransfer ] extract t [ t -> settlementDate -> adjustedDate ] all = repurchaseDate

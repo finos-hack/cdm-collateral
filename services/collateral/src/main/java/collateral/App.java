@@ -401,6 +401,8 @@ public final class App {
         app.post("/api/v1/triparty/repos/{id}/substitution/withdraw", this::withdrawTripartySubstitution);
         app.post("/api/v1/triparty/repos/{id}/substitute", this::substituteTripartyRepo);
         app.post("/api/v1/triparty/repos/{id}/rebalance", this::rebalanceTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/trade-end", this::prepareTripartyTradeEnd);
+        app.post("/api/v1/triparty/repos/{id}/repurchase", this::settleTripartyRepurchase);
     }
 
     private List<String> tripartyParties() {
@@ -684,8 +686,16 @@ public final class App {
             } else if (tripartyShortfalls.containsKey(repoId) && state.equals("affirmed")) {
                 m.put("allocation", tripartyShortfalls.get(repoId));
             }
-            if (state.equals("settled")) tripartyChangesView(m, terms, r, giver, agent);
-            m.put("canRevalue", agent && state.equals("settled") && allocationProblem.isEmpty());
+            if (state.equals("settled") || state.equals("repurchased")) {
+                tripartyChangesView(m, terms, r, giver, agent);
+                tripartyTradeEndView(m, terms, r, giver, agent);
+            }
+            if (!state.equals("settled") || m.containsKey("tradeEnd")) {
+                m.put("canRequestSubstitution", false);
+                m.put("canSubstitute", m.containsKey("pendingSubstitution") && agent && state.equals("settled"));
+                m.put("excess", List.of());
+            }
+            m.put("canRevalue", agent && state.equals("settled") && allocationProblem.isEmpty() && !m.containsKey("tradeEnd"));
             m.put("canAffirm", receiver && state.equals("requested") && requestProblem.isEmpty());
             m.put("canAllocate", agent && state.equals("affirmed") && requestProblem.isEmpty());
             m.put("canRefuseAllocation", receiver && state.equals("allocated"));
@@ -1016,6 +1026,114 @@ public final class App {
         if (units == null || units <= 0) throw new IllegalStateException("the repo's latest holding has no breach in this asset");
         recordSubstitutionRequest(r, isin, units, true);
         ctx.json(substitutePending(repoId));
+    }
+
+    // --- triparty trade end (task-triparty-trade-end, wp-adr-triparty-trade-end) ---
+
+    /** The Repurchase Date of a repo, from its request document. */
+    private LocalDate repurchaseDateOf(JsonNode r) {
+        String reqDoc = payloads.get(r.get("requestHash").asText());
+        if (reqDoc == null) throw new IllegalStateException("the repo request is not in the payload store");
+        return CdmTriparty.parseRequest(reqDoc).getRepurchaseDate().toLocalDate();
+    }
+
+    /** The agent prepares the trade end on the repo's Repurchase Date and records its hash and the Repurchase Price. */
+    private void prepareTripartyTradeEnd(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        LocalDate repurchaseDate = repurchaseDateOf(r);
+        if (!businessDate.equals(repurchaseDate)) throw new IllegalStateException("the trade end is on the Repurchase Date " + repurchaseDate + "; the business date is " + businessDate);
+        JsonNode pending = gw.get("/triparty/repos/" + repoId + "/substitution").get("pending");
+        if (pending != null && !pending.isNull()) throw new IllegalStateException("a substitution request is pending");
+        JsonNode changes = tripartyChanges(repoId);
+        RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+        CdmTriparty.TradeEnd e = CdmTriparty.tradeEnd(basis.trade(), basis.hash(), onChainAllocation(r), bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()));
+        payloads.put(e.hash(), e.json(), tripartyParties());
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/trade-end", Map.of("tradeEndHash", e.hash(), "repurchasePrice", String.valueOf(e.repurchasePrice())));
+        tradeEndChecked.add(e.hash());
+        signalConsoles("triparty");
+        ctx.json(Map.of("tradeEndHash", e.hash(), "repurchasePrice", e.repurchasePrice(), "txHash", tx.get("txHash").asText()));
+    }
+
+    /** The giver pays the Repurchase Price against the release, once it has rebuilt the agent's trade end. */
+    private void settleTripartyRepurchase(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("giver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the giver repurchases");
+        JsonNode te = gw.get("/triparty/repos/" + repoId + "/trade-end").get("tradeEnd");
+        if (te == null || te.isNull()) throw new IllegalStateException("the agent has not prepared the trade end");
+        Optional<String> problem = tripartyTradeEndProblem(t, r, te);
+        if (problem.isPresent()) throw new IllegalStateException("the trade end does not check: " + problem.get());
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/repurchase", Map.of("tradeEndHash", te.get("tradeEndHash").asText()));
+        signalConsoles("triparty");
+        ctx.json(Map.of("txHash", tx.get("txHash").asText()));
+    }
+
+    private final Set<String> tradeEndChecked = ConcurrentHashMap.newKeySet();
+
+    /** The giver's or the receiver's check of a prepared trade end: rebuilt from the basis document and the holding on-chain
+     *  at the block before the preparation. */
+    private Optional<String> tripartyTradeEndProblem(JsonNode terms, JsonNode r, JsonNode te) {
+        String hash = te.get("tradeEndHash").asText();
+        if (tradeEndChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the trade end is not in the payload store or its hash differs");
+            String repoId = r.get("repoId").asText();
+            JsonNode changes = tripartyChanges(repoId);
+            RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+            long block = Long.parseLong(te.get("block").asText());
+            JsonNode at = gw.get("/triparty/repos/" + repoId + "/at?block=" + (block - 1));
+            CdmTriparty.TradeEnd e = CdmTriparty.verifyTradeEnd(doc, basis.trade(), basis.hash(), onChainAllocation(at),
+                    bankOf(terms.get("giver").asText()), bankOf(terms.get("receiver").asText()));
+            if (e.repurchasePrice() != new BigInteger(te.get("repurchasePrice").asText()).longValueExact()) return Optional.of("the Repurchase Price on-chain differs");
+            tradeEndChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** A settled or repurchased repo's trade end, if prepared, with this party's check and the next step. */
+    private void tripartyTradeEndView(Map<String, Object> m, JsonNode terms, JsonNode r, boolean giver, boolean agent) {
+        String state = r.get("state").asText();
+        JsonNode te = gw.get("/triparty/repos/" + r.get("repoId").asText() + "/trade-end").get("tradeEnd");
+        boolean prepared = te != null && !te.isNull();
+        if (prepared) {
+            Map<String, Object> v = new LinkedHashMap<>();
+            v.put("tradeEndHash", te.get("tradeEndHash").asText());
+            v.put("repurchasePrice", new BigInteger(te.get("repurchasePrice").asText()).longValueExact());
+            String doc = payloads.get(te.get("tradeEndHash").asText());
+            if (doc != null) {
+                try {
+                    Map<String, Object> view = CdmTriparty.tradeEndView(CdmTriparty.parseTradeEnd(doc));
+                    @SuppressWarnings("unchecked") List<Map<String, Object>> rs = (List<Map<String, Object>>) view.get("releases");
+                    for (Map<String, Object> x : rs) x.put("token", symbolOfIsin(String.valueOf(x.get("isin"))));
+                    v.put("releases", rs);
+                    v.put("repurchaseDate", view.get("repurchaseDate"));
+                } catch (Exception ignored) {
+                    // shown without the document's fields
+                }
+            }
+            Optional<String> problem = agent || state.equals("repurchased") ? Optional.empty() : tripartyTradeEndProblem(terms, r, te);
+            v.put("verified", problem.isEmpty());
+            v.put("problem", problem.orElse(null));
+            m.put("tradeEnd", v);
+            m.put("canSettleRepurchase", giver && state.equals("settled") && problem.isEmpty());
+        } else {
+            m.put("canSettleRepurchase", false);
+        }
+        boolean pending = m.containsKey("pendingSubstitution");
+        boolean onDate;
+        try {
+            onDate = businessDate.equals(repurchaseDateOf(r));
+        } catch (Exception e) {
+            onDate = false;
+        }
+        m.put("canPrepareTradeEnd", agent && state.equals("settled") && !prepared && !pending && onDate);
     }
 
     /** Holding-change documents that checked, by hash; a failed check is not kept, so it is retried. */

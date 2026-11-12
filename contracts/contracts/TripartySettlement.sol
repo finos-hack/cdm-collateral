@@ -31,6 +31,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// Substitution (task-triparty-substitution, wp-adr-triparty-substitution). The giver records the hash of a request for
 /// collateral back (or the agent, to remove an excess over a limit); the agent then substitutes it, replacing the
 /// holding as a revaluation does, or declines it. Revaluations, substitutions and declines form one history per repo.
+///
+/// Trade end (task-triparty-trade-end, wp-adr-triparty-trade-end). On the Repurchase Date the agent records the hash of
+/// its cdm-ext TripartyTradeEnd and the Repurchase Price; the giver then pays it to the receiver and the whole holding
+/// returns to the giver's free account in one transaction, and the repo ends Repurchased.
 contract TripartySettlement {
     using SafeERC20 for IERC20;
 
@@ -71,7 +75,8 @@ contract TripartySettlement {
         Affirmed,
         Allocated,
         Settled,
-        Cancelled
+        Cancelled,
+        Repurchased
     }
 
     struct Repo {
@@ -134,6 +139,19 @@ contract TripartySettlement {
 
     mapping(bytes32 => Change[]) private changes; // repo id => the agent's changes, oldest first
     mapping(bytes32 => PendingSubstitution) private pending; // repo id => the substitution request awaiting the agent
+
+    event TradeEndPrepared(bytes32 indexed repoId, bytes32 tradeEndHash, uint256 repurchasePrice);
+    event RepurchaseSettled(bytes32 indexed repoId, bytes32 tradeEndHash);
+
+    /// The agent's trade end of a repo (wp-adr-triparty-trade-end): the hash of its cdm-ext TripartyTradeEnd, the
+    /// Repurchase Price the giver pays, and the block it was prepared in.
+    struct TradeEnd {
+        bytes32 tradeEndHash;
+        uint256 repurchasePrice;
+        uint64 blockNumber;
+    }
+
+    mapping(bytes32 => TradeEnd) private tradeEnds; // repo id => the prepared trade end
 
     function _trio(address giver, address receiver, address agent) private pure returns (bytes32) {
         return keccak256(abi.encode(giver, receiver, agent));
@@ -311,6 +329,7 @@ contract TripartySettlement {
         require(msg.sender == t.giver || msg.sender == t.agent, "TripartySettlement: only the giver or the agent");
         require(requestHash != bytes32(0), "TripartySettlement: no request hash");
         require(pending[repoId].requestHash == bytes32(0), "TripartySettlement: a substitution is pending");
+        require(tradeEnds[repoId].tradeEndHash == bytes32(0), "TripartySettlement: trade end prepared");
         pending[repoId] = PendingSubstitution(requestHash, msg.sender);
         emit SubstitutionRequested(repoId, requestHash, msg.sender);
     }
@@ -344,6 +363,34 @@ contract TripartySettlement {
         r = repos[repoId];
         require(r.state == RepoState.Settled, "TripartySettlement: not settled");
         require(msg.sender == terms[r.termsId].agent, "TripartySettlement: only the agent");
+        require(tradeEnds[repoId].tradeEndHash == bytes32(0), "TripartySettlement: trade end prepared");
+    }
+
+    /// The agent prepares the trade end on the Repurchase Date; no substitution may be pending.
+    function prepareTradeEnd(bytes32 repoId, bytes32 tradeEndHash, uint256 repurchasePrice) external {
+        agentsSettledRepo(repoId);
+        require(tradeEndHash != bytes32(0) && repurchasePrice > 0, "TripartySettlement: no trade end");
+        require(pending[repoId].requestHash == bytes32(0), "TripartySettlement: a substitution is pending");
+        tradeEnds[repoId] = TradeEnd(tradeEndHash, repurchasePrice, uint64(block.number));
+        emit TradeEndPrepared(repoId, tradeEndHash, repurchasePrice);
+    }
+
+    /// The giver pays the Repurchase Price to the receiver and the whole holding returns to its free account.
+    function settleRepurchase(bytes32 repoId, bytes32 tradeEndHash) external {
+        Repo storage r = repos[repoId];
+        require(r.state == RepoState.Settled, "TripartySettlement: not settled");
+        Terms storage t = terms[r.termsId];
+        require(msg.sender == t.giver, "TripartySettlement: only the giver repurchases");
+        TradeEnd storage e = tradeEnds[repoId];
+        require(e.tradeEndHash != bytes32(0), "TripartySettlement: trade end not prepared");
+        require(e.tradeEndHash == tradeEndHash, "TripartySettlement: trade end hash differs");
+        address[] storage held = allocTokens[repoId];
+        uint256[] storage amounts = allocAmounts[repoId];
+        for (uint256 i = 0; i < held.length; i++) free[r.termsId][held[i]] += amounts[i];
+        r.state = RepoState.Repurchased;
+        openRepos[r.termsId] -= 1;
+        IERC20(r.cash).safeTransferFrom(t.giver, t.receiver, e.repurchasePrice);
+        emit RepurchaseSettled(repoId, tradeEndHash);
     }
 
     function takePending(bytes32 repoId, bytes32 substitutionHash) private returns (bytes32 requestHash) {
@@ -400,6 +447,11 @@ contract TripartySettlement {
     /// The agent's changes of a repo's holding, oldest first, each with its block and kind.
     function changesOf(bytes32 repoId) external view returns (Change[] memory) {
         return changes[repoId];
+    }
+
+    /// The prepared trade end of a repo, if any (a zero hash otherwise).
+    function tradeEndOf(bytes32 repoId) external view returns (TradeEnd memory) {
+        return tradeEnds[repoId];
     }
 
     /// The substitution request awaiting the agent, if any (a zero hash otherwise).

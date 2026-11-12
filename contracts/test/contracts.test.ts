@@ -2153,6 +2153,32 @@ describe("CDM collateral contracts", async () => {
           const cs = await tri.read.changesOf([repo]);
           assert.deepEqual(cs.map((c: any) => [c.hash, c.kind]), [[H("sub"), 2], [H("declined"), 3]]);
         });
+
+        it("ends a repo: the agent prepares, the giver pays the Repurchase Price against the release, and the terms can end (task-triparty-trade-end)", async () => {
+          const repo = await settled();
+          await assert.rejects(tri.write.settleRepurchase([repo, H("end")], { account: bankB.account })); // not prepared
+          await assert.rejects(tri.write.prepareTradeEnd([repo, H("end"), 500486n], { account: bankB.account })); // only the agent
+          await tri.write.requestSubstitution([repo, H("req")], { account: bankB.account });
+          await assert.rejects(tri.write.prepareTradeEnd([repo, H("end"), 500486n], { account: agent.account })); // a substitution is pending
+          await tri.write.withdrawSubstitution([repo], { account: bankB.account });
+          await tri.write.prepareTradeEnd([repo, H("end"), 500486n], { account: agent.account });
+          assert.equal((await tri.read.tradeEndOf([repo])).repurchasePrice, 500486n);
+          await assert.rejects(tri.write.revalue([repo, H("r"), [tUST.address], [3000n]], { account: agent.account })); // prepared
+          await assert.rejects(tri.write.requestSubstitution([repo, H("req2")], { account: bankB.account }));
+          await assert.rejects(tri.write.settleRepurchase([repo, H("other")], { account: bankB.account })); // hash differs
+          await assert.rejects(tri.write.settleRepurchase([repo, H("end")], { account: bankA.account })); // only the giver
+          const a0 = await cash.read.balanceOf([bankA.account.address]);
+          await cash.write.mint([bankB.account.address, 486n]); // B received 500,000 at the purchase
+          await cash.write.approve([tri.address, 500486n], { account: bankB.account });
+          await tri.write.settleRepurchase([repo, H("end")], { account: bankB.account });
+          assert.equal((await cash.read.balanceOf([bankA.account.address])) - a0, 500486n);
+          assert.equal((await tri.read.getRepo([repo])).state, 6); // Repurchased
+          assert.deepEqual((await tri.read.freeOf([id])).map((h: any) => h.amount), [3000n, 4000n]);
+          await assert.rejects(tri.write.settleRepurchase([repo, H("end")], { account: bankB.account }));
+          await tri.write.withdraw([id, tUST.address, 3000n], { account: bankB.account });
+          await tri.write.withdraw([id, tAGY.address, 4000n], { account: bankB.account });
+          await tri.write.terminateTerms([id], { account: bankB.account });
+        });
       });
     });
   });

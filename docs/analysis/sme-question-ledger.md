@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 185 questions in 32 tasks, all open.
+Status of the ledger: 191 questions in 33 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -362,3 +362,14 @@ Status of the ledger: 185 questions in 32 tasks, all open.
 | TPU-5 | The receiver does not affirm a substitution. Is the receiver notified or asked to consent under the triparty agreement? | open | |
 | TPU-6 | One substitution request may be pending per repo. Do agents process several recalls on one repo at once, or across a giver's repos together? | open | |
 | TPU-7 | The substitution takes effect when the agent records it. What cut-off times and settlement timing do agents apply to recalls? | open | |
+
+### `task-sme-triparty-trade-end`: the triparty trade end through the agent
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPE-1 | The agent prepares the trade end on the Repurchase Date and the giver settles it. Does the agent settle the close-out on its own, or does it wait for the giver's cash? | open | |
+| TPE-2 | Trade end happens on the Repurchase Date only. How do agents handle open (on-demand) repos and early terminations? | open | |
+| TPE-3 | The giver pays the Repurchase Price directly to the receiver in the same step as the release. Does the cash move through the agent's books, or through a separate cash agent or payment system? | open | |
+| TPE-4 | The released collateral returns to the giver's free account at the agent. Is released collateral kept at the agent for the next repo, or delivered back to the giver's custody? | open | |
+| TPE-5 | A pending substitution blocks the trade end. How do agents handle a recall that is pending at the Repurchase Date? | open | |
+| TPE-6 | The receiver does not confirm the trade end. Is the receiver's confirmation of the repayment needed before the agent releases? | open | |

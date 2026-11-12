@@ -562,6 +562,69 @@ final class CdmTriparty {
         return m;
     }
 
+    // --- trade end (task-triparty-trade-end, wp-adr-triparty-trade-end) ---
+
+    /** The agent's trade end, its Rune JSON and hash, and the Repurchase Price in whole units. */
+    record TradeEnd(cdmx.collateral.triparty.TripartyTradeEnd tradeEnd, String json, String hash, long repurchasePrice) {}
+
+    private static Map<String, Object> scheduled(Number value, Map<String, Object> unit, Map<String, Object> asset, String payer, String receiver, LocalDate date) {
+        return o("quantity", o("value", value, "unit", unit), "asset", asset,
+                "settlementDate", o("adjustedDate", o("@data", date.toString())),
+                "payerReceiver", o("payerPartyReference", CdmRepo.party(payer), "receiverPartyReference", CdmRepo.party(receiver)),
+                "transferType", "Principal");
+    }
+
+    /** The agent's trade end of a settled repo on its Repurchase Date: CDM's repurchase event over the repo as the basis
+     *  document left it, one release per asset of {@code held} (the holding on-chain) from the receiver to the giver, and
+     *  the Repurchase Price from the giver to the receiver. cdm-ext's conditions require the release to be the repo's
+     *  collateral portfolio unit for unit. */
+    static TradeEnd tradeEnd(TradeState basisTrade, String basisHash, Map<String, Long> held, String giver, String receiver) {
+        TradeState trade = CdmRepo.resolved(TradeState.class, basisTrade);
+        LocalDate repurchaseDate = trade.getTrade().getProduct().getEconomicTerms().getTerminationDate().getAdjustableDate().getUnadjustedDate().toLocalDate();
+        long price = CdmRuntime.fn(cdmx.collateral.repo.functions.RepoRepurchasePrice.class).evaluate(trade, 0).getValue().longValueExact();
+        List<Object> releases = new ArrayList<>();
+        held.forEach((isin, units) -> releases.add(scheduled(units, o("financialUnit", "Share"), CdmRepo.security(isin), receiver, giver, repurchaseDate)));
+        Map<String, Object> cash = o("@type", "cdm.base.staticdata.asset.common.Cash",
+                "identifier", l(o("identifier", o("@data", "USD"), "identifierType", "CurrencyCode")), "assetType", "Cash");
+        var doc = CdmRuntime.load(cdmx.collateral.triparty.TripartyTradeEnd.class, o("basisHash", basisHash, "repurchaseDate", repurchaseDate.toString(),
+                "repurchasePrice", o("value", price, "unit", usd()),
+                "repurchase", CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(CdmRepo.repurchaseEvent(trade, repurchaseDate)), Map.class),
+                "releases", releases, "cashTransfer", scheduled(price, usd(), cash, giver, receiver, repurchaseDate)));
+        CdmRuntime.validate(doc);
+        String json = CdmRuntime.toJson(doc);
+        return new TradeEnd(doc, json, Cdm.keccakHex(json), price);
+    }
+
+    static cdmx.collateral.triparty.TripartyTradeEnd parseTradeEnd(String json) {
+        try {
+            return CdmRuntime.JSON.readValue(json, cdmx.collateral.triparty.TripartyTradeEnd.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a TripartyTradeEnd document: " + e.getMessage(), e);
+        }
+    }
+
+    /** The giver's or the receiver's check of a trade end: the same document from the same basis and holding. */
+    static TradeEnd verifyTradeEnd(String json, TradeState basisTrade, String basisHash, Map<String, Long> held, String giver, String receiver) {
+        TradeEnd again = tradeEnd(basisTrade, basisHash, held, giver, receiver);
+        if (!again.json().equals(json)) throw new IllegalStateException("the trade end differs from the trade end this party computes");
+        return again;
+    }
+
+    /** The trade end for the console. */
+    static Map<String, Object> tradeEndView(cdmx.collateral.triparty.TripartyTradeEnd t) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("repurchaseDate", t.getRepurchaseDate().toString());
+        m.put("repurchasePrice", t.getRepurchasePrice().getValue().longValueExact());
+        List<Map<String, Object>> rs = new ArrayList<>();
+        for (var r : t.getReleases()) {
+            String isin = ((cdm.base.staticdata.asset.common.Instrument) r.getAsset().getInstrument()).getSecurity() != null
+                    ? r.getAsset().getInstrument().getSecurity().getIdentifier().get(0).getIdentifier().getValue() : null;
+            rs.add(new LinkedHashMap<>(Map.of("isin", String.valueOf(isin), "units", r.getQuantity().getValue().longValueExact())));
+        }
+        m.put("releases", rs);
+        return m;
+    }
+
     static TripartyAllocation parseAllocation(String json) {
         try {
             return CdmRuntime.JSON.readValue(json, TripartyAllocation.class);

@@ -43,3 +43,29 @@ The details are decided when the task starts, after a temporary test of CDM's fu
 - **Transfers.** A CDM `ScheduledTransfer` per held asset (`Principal`, from the Buyer to the Seller on the Repurchase
   Date) validates. `DeliveryMethodEnum` has `DeliveryVersusPayment`, `FreeOfPayment`, `PreDelivery` and `PrePayment`,
   none through an agent (T9).
+
+**Design chosen 2026-11-12** (source `baffa673bcccdc9dd2a5d617bd8963a25cdd4e41`: "1. All a"), recorded in
+[[wp-adr-triparty-trade-end]]; the trade-end rules are questions for an SME in [[task-sme-triparty-trade-end]].
+
+**Built 2026-11-12** to [[wp-adr-triparty-trade-end]]:
+
+- **cdm-ext** (`cdmx.collateral.triparty`): `TripartyTradeEnd` (conditions `RepurchaseEvent`, `ReleaseCoversHolding`,
+  `CashAgainstRelease`, `CashIsTheRepurchasePrice`, `OnTheRepurchaseDate`) and `TripartyReleaseCoversHolding`.
+- **Contract** `TripartySettlement`: `RepoState.Repurchased`; `prepareTradeEnd` (the agent; no substitution pending;
+  afterwards no revaluation, substitution or request), `settleRepurchase` (the giver: the Repurchase Price to the
+  receiver and the holding to its free account in one transaction; the repo no longer counts as open), `tradeEndOf`.
+  1 new hardhat test (127 pass).
+- **Gateway** routes `/ledger/v1/triparty/repos/:id/trade-end` (GET, POST) and `/repurchase`; the state name
+  `repurchased`.
+- **Service** `CdmTriparty.tradeEnd`, `verifyTradeEnd`, `tradeEndView`; the agent's preparation on its business date
+  equal to the Repurchase Date; the giver settles only a trade end it rebuilt from the chain at the block before; the
+  receiver checks it the same way. `CdmTripartyTradeEndTest`, 2 tests.
+- **Console**: `Prepare trade end` in `#/live/T`, `Settle repurchase (N tUSD)` in the giver's repo row, the trade end
+  with its check, and `repurchased on-chain ✓`.
+- **Live spec** `flow-triparty-trade-end`, which also ends the other settled repos under the B-giver terms and
+  terminates the terms, so open triparty repos no longer accumulate across runs. The five triparty specs passed
+  together on a new deployment (chain reset), 3.9 min.
+
+**Full run 2026-11-12** on that deployment: `cdm-ext` 313 tests, collateral service 132, 127 contract tests, gateway and
+console typechecks, 138 console tests, and the live suite, 47 of 47 in 29.6 min (the triparty specs a second time on the
+same chain, after the first run had terminated the B-giver terms).

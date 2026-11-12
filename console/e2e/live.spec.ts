@@ -3941,3 +3941,100 @@ test("flow-triparty-substitution: B repos 500,000 tUSD to A through BANK-T and d
   await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: "tAGY" });
   expect([await freeOf(tUST), await freeOf(tAGY)]).toEqual(["0", "0"]);
 });
+
+// --- flow-triparty-trade-end (task-triparty-trade-end, wp-adr-triparty-trade-end) ---
+// On the Repurchase Date the agent prepares the trade end and the giver pays the Repurchase Price to the receiver against
+// the release of the whole holding to its free account, in one transaction. The spec then ends every other settled repo
+// under the B-giver terms the same way, each at its own Repurchase Date, and B terminates the terms, so the runs do not
+// accumulate open repos. The agent's business date is restored at the end.
+
+type TripartyTradeEndRepo = {
+  repoId: string; state: string; repurchaseDate?: string; canPrepareTradeEnd?: boolean; canSettleRepurchase?: boolean;
+  tradeEnd?: { tradeEndHash: string; repurchasePrice: number; verified: boolean; problem: string | null };
+  pendingSubstitution?: { mine: boolean; requestedBy?: string };
+};
+
+test("flow-triparty-trade-end: B repos 500,000 tUSD to A through BANK-T -> on the Repurchase Date T prepares the trade end -> A and B rebuild it -> B pays A 500,486 tUSD against the release of 3,000 tUST and 2,190 tAGY to its free account in one transaction -> B withdraws them -> every other settled repo under the terms ends the same way -> B terminates the terms", async ({ page }) => {
+  test.setTimeout(3 * TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tAGY = p.tokens.tAGY, tUSD = p.tokens.tUSD;
+
+  // Setup through the services, as in flow-triparty-revaluation: B-giver terms in effect, a settled trade-start repo.
+  const giverTerms = async () => (await call<{ terms: TripartyTradeTermsView[] }>(`${SERVICE.B}/triparty`)).terms.filter((t) => t.giver === "B");
+  for (const t of await giverTerms()) if (t.state === "proposed") await call(`${SERVICE.B}/triparty/terms/${t.termsId}/refuse`, "POST", {});
+  let id = (await giverTerms()).find((t) => t.state === "effective")?.termsId ?? "";
+  if (!id) {
+    ({ termsId: id } = await call<{ termsId: string }>(`${SERVICE.B}/triparty/terms`, "POST", {}));
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await tripartyTermsOf(svc, id))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+      await call(`${svc}/triparty/terms/${id}/affirm`, "POST", {});
+    }
+    await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`)).state, { timeout: 60_000 }).toBe("effective");
+  }
+  for (const r of (await tripartyTermsOf(SERVICE.B, id))?.repos ?? []) if (r.canCancel) await call(`${SERVICE.B}/triparty/repos/${r.repoId}/cancel`, "POST", {});
+  for (const h of (await tripartyTermsOf(SERVICE.B, id))?.free ?? []) if (h.amount > 0) await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: h.token });
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tUST", amount: 3000, rank: 1 });
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tAGY", amount: 4000, rank: 2 });
+  const { repoId } = await call<{ repoId: string }>(`${SERVICE.B}/triparty/terms/${id}/repos`, "POST", { purchasePrice: 500000 });
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE.A, id, repoId))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE.A}/triparty/repos/${repoId}/affirm`, "POST", {});
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE_T, id, repoId))?.canAllocate ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE_T}/triparty/repos/${repoId}/allocate`, "POST", {});
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE.A, id, repoId))?.canSettle ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE.A}/triparty/repos/${repoId}/settle`, "POST", {});
+  await expect.poll(async () => (await call<{ state: string }>(`${GATEWAY.A}/triparty/repos/${repoId}`)).state, { timeout: 60_000 }).toBe("settled");
+  const freeOf = async (token: string) => String((await call<{ token: string; amount: string }[]>(`${GATEWAY.B}/triparty/terms/${id}/free`))
+    .find((h) => h.token.toLowerCase() === token.toLowerCase())?.amount ?? "0");
+  expect([await freeOf(tUST), await freeOf(tAGY)]).toEqual(["0", "1810"]);
+  const repoOf = async (svc: string, r: string) => (await tripartyRepoOf(svc, id, r)) as unknown as TripartyTradeEndRepo;
+  const repurchaseDate = (await repoOf(SERVICE.B, repoId)).repurchaseDate!;
+  const agentDate = (await call<{ businessDate: string }>(`${SERVICE_T}/business-date`)).businessDate;
+  try {
+    // 1. The day before the Repurchase Date the agent cannot prepare; on it, it prepares in its console.
+    const dayBefore = new Date(Date.parse(`${repurchaseDate}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: dayBefore });
+    expect((await repoOf(SERVICE_T, repoId)).canPrepareTradeEnd).toBe(false);
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: repurchaseDate });
+    await page.goto("/#/live/T");
+    const repoT = page.getByTestId(`triparty-repo-${repoId}`);
+    await repoT.getByRole("button", { name: "Prepare trade end" }).click({ timeout: STEP_TIMEOUT });
+    await expect(repoT.getByTestId("triparty-trade-end")).toContainText("500,486 tUSD from the giver to the receiver against the release of 3000 tUST and 2190 tAGY", { timeout: STEP_TIMEOUT });
+
+    // 2. A and B rebuild the trade end from the chain; B settles in its console: 500,486 tUSD to A, the holding to its free account.
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => { const t = (await repoOf(svc, repoId)).tradeEnd; return t?.verified ? true : (t?.problem ?? "none"); }, { timeout: 60_000 }).toBe(true);
+    }
+    const aBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+    await page.goto("/#/live/B");
+    const repoB = page.getByTestId(`triparty-repo-${repoId}`);
+    await expect(repoB.getByTestId("triparty-trade-end-verified")).toContainText("rebuilt by this party ✓", { timeout: STEP_TIMEOUT });
+    await repoB.getByRole("button", { name: "Settle repurchase (500,486 tUSD)" }).click();
+    await expect(repoB.getByTestId("triparty-repo-state")).toContainText("repurchased on-chain ✓", { timeout: STEP_TIMEOUT });
+    expect((await balanceOf(GATEWAY.A, tUSD, p.a)) - aBefore).toBe(500_486n);
+    expect([await freeOf(tUST), await freeOf(tAGY)]).toEqual(["3000", "4000"]);
+    expect((await call<{ state: string }>(`${GATEWAY.A}/triparty/repos/${repoId}`)).state).toBe("repurchased");
+    await page.goto("/#/live/A");
+    await expect(page.getByTestId(`triparty-repo-${repoId}`).getByTestId("triparty-repo-state")).toContainText("repurchased on-chain ✓", { timeout: STEP_TIMEOUT });
+
+    // 3. Every other settled repo under the terms ends the same way, each at its own Repurchase Date.
+    for (const r of (await tripartyTermsOf(SERVICE.B, id))?.repos ?? []) {
+      if (r.state !== "settled") continue;
+      let other = await repoOf(SERVICE.B, r.repoId);
+      if (other.pendingSubstitution) {
+        await call(`${other.pendingSubstitution.requestedBy === "Agent" ? SERVICE_T : SERVICE.B}/triparty/repos/${r.repoId}/substitution/withdraw`, "POST", {});
+      }
+      await call(`${SERVICE_T}/business-date`, "POST", { businessDate: other.repurchaseDate });
+      if (!other.tradeEnd) await call(`${SERVICE_T}/triparty/repos/${r.repoId}/trade-end`, "POST", {});
+      await expect.poll(async () => (await repoOf(SERVICE.B, r.repoId)).canSettleRepurchase ?? false, { timeout: 60_000 }).toBe(true);
+      await call(`${SERVICE.B}/triparty/repos/${r.repoId}/repurchase`, "POST", {});
+      other = await repoOf(SERVICE.B, r.repoId);
+      expect(other.state).toBe("repurchased");
+    }
+  } finally {
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: agentDate });
+  }
+  // 4. B withdraws everything free and terminates the terms: no repo is open under them.
+  for (const h of (await tripartyTermsOf(SERVICE.B, id))?.free ?? []) if (h.amount > 0) await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: h.token });
+  await call(`${SERVICE.B}/triparty/terms/${id}/terminate`, "POST", {});
+  await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`)).state, { timeout: 60_000 }).toBe("terminated");
+});

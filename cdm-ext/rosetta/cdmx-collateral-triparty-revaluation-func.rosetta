@@ -7,6 +7,7 @@ import cdm.event.common.*
 import cdm.observable.asset.*
 import cdm.product.collateral.*
 import cdm.product.template.*
+import cdm.product.common.settlement.*
 import cdmx.collateral.repo.*
 
 // The required value is the Repurchase Price accrued to the revaluation date; the haircuts take the place of the GMRA
@@ -426,3 +427,18 @@ func SubstituteTriparty: <"The agent's substitution of a request: the units aske
             proposed: empty,
             accepted: empty
         }
+
+// Trade end (task-triparty-trade-end, wp-adr-triparty-trade-end).
+
+func TripartyReleaseCoversHolding: <"Whether a set of transfers releases exactly a repo's collateral portfolio: one transfer per held asset, each for the asset's units.">
+    inputs:
+        terms EconomicTerms (0..1)
+        releases ScheduledTransfer (1..*)
+    output:
+        covers boolean (1..1)
+
+    alias heldAssets: terms -> collateral -> collateralPortfolio -> collateralPosition extract p [ (p -> product as TransferableProduct) -> asset ]
+
+    set covers:
+        (heldAssets count) = (releases count)
+            and (heldAssets extract a [ (releases filter r [ r -> asset = a ] then extract r [ r -> quantity -> value ] then sum) = RepoCollateralUnits(terms, a) ]) all = True

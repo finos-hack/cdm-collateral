@@ -184,3 +184,28 @@ it("lets the giver recall collateral and the agent substitute it, and shows each
   await userEvent.click(screen.getByText("Substitute collateral"));
   await waitFor(() => expect(posts).toEqual([`/triparty/repos/${base.repoId}/substitute`]));
 });
+
+it("lets the agent prepare the trade end and the giver settle the repurchase, and shows the repo repurchased (task-triparty-trade-end)", async () => {
+  const run = (fn: () => Promise<unknown>) => void fn();
+  const base: LiveTripartyRepo = {
+    repoId: "0x" + "44".repeat(32), state: "settled", purchasePrice: 500000, requestHash: "0x" + "55".repeat(32), tradeId: "TP-B-1",
+    requestVerified: true, requestProblem: null, allocationHash: "0x" + "66".repeat(32), allocationVerified: true, allocationProblem: null,
+    canAffirm: false, canAllocate: false, canRefuseAllocation: false, canSettle: false, canCancel: false,
+  };
+  const terms = (r: LiveTripartyRepo) => ({ ...TERMS, state: "effective" as const, giver: "B" as const, receiver: "A" as const, agentAffirmed: true, canAffirm: false, canRefuse: false, repos: [r] });
+  const tradeEnd = { tradeEndHash: "0x" + "99".repeat(32), repurchasePrice: 500486, repurchaseDate: "2026-11-19", verified: true, problem: null,
+    releases: [{ isin: "US912810TM60", token: "tUST", units: 3000 }, { isin: "US3137EAGY10", token: "tAGY", units: 2190 }] };
+  const first = render(<TripartyTermsCard party="T" triparty={{ party: "T", bank: "BANK-T", agent: true, canPropose: false, terms: [terms({ ...base, canPrepareTradeEnd: true })] }} busy={false} run={run} />);
+  await userEvent.click(screen.getByText("Prepare trade end"));
+  await waitFor(() => expect(posts).toEqual([`/triparty/repos/${base.repoId}/trade-end`]));
+  first.unmount();
+  posts.length = 0;
+  const second = render(<TripartyTermsCard party="B" triparty={{ party: "B", bank: "BANK-B", agent: false, canPropose: true, terms: [terms({ ...base, tradeEnd, canSettleRepurchase: true })] }} busy={false} run={run} />);
+  expect(screen.getByTestId("triparty-trade-end").textContent).toContain("against the release of 3000 tUST and 2190 tAGY to the giver's free account");
+  expect(screen.getByTestId("triparty-trade-end-verified").textContent).toContain("rebuilt by this party ✓");
+  await userEvent.click(screen.getByText(/Settle repurchase/));
+  await waitFor(() => expect(posts).toEqual([`/triparty/repos/${base.repoId}/repurchase`]));
+  second.unmount();
+  render(<TripartyTermsCard party="A" triparty={{ party: "A", bank: "BANK-A", agent: false, canPropose: true, terms: [terms({ ...base, state: "repurchased", tradeEnd })] }} busy={false} run={run} />);
+  expect(screen.getByTestId("triparty-repo-state").textContent).toContain("repurchased on-chain ✓");
+});

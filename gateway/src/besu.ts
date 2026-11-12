@@ -469,10 +469,13 @@ const tripartyAbi = parseAbi([
   "function withdrawSubstitution(bytes32 repoId)",
   "function substitute(bytes32 repoId, bytes32 substitutionHash, address[] tokens, uint256[] amounts)",
   "function declineSubstitution(bytes32 repoId, bytes32 substitutionHash)",
+  "function prepareTradeEnd(bytes32 repoId, bytes32 tradeEndHash, uint256 repurchasePrice)",
+  "function settleRepurchase(bytes32 repoId, bytes32 tradeEndHash)",
+  "function tradeEndOf(bytes32 repoId) view returns ((bytes32 tradeEndHash, uint256 repurchasePrice, uint64 blockNumber))",
 ]);
 
 export const TripartyTermsStateName = ["none", "proposed", "effective", "refused", "terminated"];
-export const TripartyRepoStateName = ["none", "requested", "affirmed", "allocated", "settled", "cancelled"];
+export const TripartyRepoStateName = ["none", "requested", "affirmed", "allocated", "settled", "cancelled", "repurchased"];
 
 /** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start), with the tokens allocated to it. */
 export interface OnChainTripartyRepo {
@@ -723,6 +726,10 @@ export interface LedgerAdapter {
   refuseTripartyAllocation(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** The receiver approves TripartySettlement for the Purchase Price, then settles. */
   settleTripartyPurchase(repoId: Hex, allocationHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** Trade end (wp-adr-triparty-trade-end): the agent prepares; the giver pays the Repurchase Price against the release. */
+  prepareTripartyTradeEnd(repoId: Hex, tradeEndHash: Hex, repurchasePrice: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  settleTripartyRepurchase(repoId: Hex, tradeEndHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  tripartyTradeEnd(repoId: Hex): Promise<{ tradeEndHash: Hex; repurchasePrice: bigint; block: bigint } | null>;
   cancelTripartyRepo(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo>;
   listTripartyRepos(termsId: Hex): Promise<OnChainTripartyRepo[]>;
@@ -1400,6 +1407,23 @@ export class BesuAdapter implements LedgerAdapter {
 
   cancelTripartyRepo(repoId: Hex) {
     return this.send(this.tripartyContract(), tripartyAbi, "cancelRepo", [repoId]);
+  }
+
+  prepareTripartyTradeEnd(repoId: Hex, tradeEndHash: Hex, repurchasePrice: bigint) {
+    return this.send(this.tripartyContract(), tripartyAbi, "prepareTradeEnd", [repoId, tradeEndHash, repurchasePrice]);
+  }
+
+  async settleTripartyRepurchase(repoId: Hex, tradeEndHash: Hex) {
+    const r = await this.getTripartyRepo(repoId);
+    const e = await this.tripartyTradeEnd(repoId);
+    if (!e) throw new Error("no trade end prepared");
+    await this.approve(r.cash, this.tripartyContract(), e.repurchasePrice);
+    return this.send(this.tripartyContract(), tripartyAbi, "settleRepurchase", [repoId, tradeEndHash]);
+  }
+
+  async tripartyTradeEnd(repoId: Hex) {
+    const e = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "tradeEndOf", args: [repoId] })) as { tradeEndHash: Hex; repurchasePrice: bigint; blockNumber: bigint };
+    return /^0x0+$/.test(e.tradeEndHash) ? null : { tradeEndHash: e.tradeEndHash, repurchasePrice: e.repurchasePrice, block: e.blockNumber };
   }
 
   async getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo> {

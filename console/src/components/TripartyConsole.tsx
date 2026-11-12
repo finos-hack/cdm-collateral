@@ -173,7 +173,10 @@ function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boole
   return (
     <div className="card" data-testid={`triparty-repo-${r.repoId}`} data-state={r.state}>
       <div className="row">
-        <span data-testid="triparty-repo-state">{r.state === "settled" ? <span className="ok">purchase settled on-chain ✓</span> : r.state}</span>
+        <span data-testid="triparty-repo-state">
+          {r.state === "settled" ? <span className="ok">purchase settled on-chain ✓</span>
+            : r.state === "repurchased" ? <span className="ok">repurchased on-chain ✓</span> : r.state}
+        </span>
         <span>{r.tradeId ?? short(r.repoId)} · Purchase Price {usd(r.purchasePrice)} tUSD{r.ratePercent ? ` · ${r.ratePercent}%` : ""}
           {r.purchaseDate ? ` · ${r.purchaseDate} to ${r.repurchaseDate}` : ""}</span>
         <span data-testid="triparty-request-verified">
@@ -211,6 +214,15 @@ function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boole
       )}
       {r.revaluations && r.revaluations.length > 0 && <Revaluations rs={r.revaluations} />}
       {r.substitutions && r.substitutions.length > 0 && <Substitutions ss={r.substitutions} />}
+      {r.tradeEnd && (
+        <div className="small" data-testid="triparty-trade-end">
+          Trade end {r.tradeEnd.repurchaseDate ?? ""}: {usd(r.tradeEnd.repurchasePrice)} tUSD from the giver to the receiver against the release of{" "}
+          {(r.tradeEnd.releases ?? []).map((x) => `${x.units} ${x.token ?? x.isin}`).join(" and ")} to the giver's free account{" "}
+          <span data-testid="triparty-trade-end-verified">
+            {r.tradeEnd.verified ? <span className="ok">rebuilt by this party ✓</span> : <span className="bad">{r.tradeEnd.problem ?? "trade end does not check"}</span>}
+          </span>
+        </div>
+      )}
       {r.pendingSubstitution && (
         <div className="small" data-testid="triparty-substitution-pending">
           Substitution requested{r.pendingSubstitution.requestedBy === "Agent" ? " by the agent" : " by the giver"}: {r.pendingSubstitution.units}{" "}
@@ -218,6 +230,12 @@ function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boole
         </div>
       )}
       <div className="row">
+        {r.canPrepareTradeEnd && <button disabled={busy} onClick={() => run(() => tripartyApi.prepareTripartyTradeEnd(party, r.repoId))}>Prepare trade end</button>}
+        {r.canSettleRepurchase && r.tradeEnd && (
+          <button disabled={busy} onClick={() => run(() => tripartyApi.settleTripartyRepurchase(party, r.repoId))}>
+            Settle repurchase ({usd(r.tradeEnd.repurchasePrice)} tUSD)
+          </button>
+        )}
         {r.canRequestSubstitution && <RecallForm party={party} r={r} busy={busy} run={run} />}
         {r.pendingSubstitution?.mine && <button disabled={busy} onClick={() => run(() => tripartyApi.withdrawTripartySubstitution(party, r.repoId))}>Withdraw substitution request</button>}
         {r.canSubstitute && <button disabled={busy} onClick={() => run(() => tripartyApi.substituteTripartyRepo(party, r.repoId))}>Substitute collateral</button>}

@@ -392,6 +392,11 @@ route("POST", "/ledger/v1/triparty/repos/:id/substitution/withdraw", async (p) =
 route("POST", "/ledger/v1/triparty/repos/:id/substitute", async (p, b) =>
   J(await adapter.substituteTriparty(p.id as Hex, b.substitutionHash as Hex, (b.tokens as string[]).map((t) => getAddress(t)),
     (b.amounts as (string | number)[]).map((a) => BigInt(a)))));
+// Triparty trade end (wp-adr-triparty-trade-end): the agent prepares on the Repurchase Date; the giver settles.
+route("GET", "/ledger/v1/triparty/repos/:id/trade-end", async (p) => J({ tradeEnd: await adapter.tripartyTradeEnd(p.id as Hex) }));
+route("POST", "/ledger/v1/triparty/repos/:id/trade-end", async (p, b) =>
+  J(await adapter.prepareTripartyTradeEnd(p.id as Hex, b.tradeEndHash as Hex, BigInt(b.repurchasePrice as string | number))));
+route("POST", "/ledger/v1/triparty/repos/:id/repurchase", async (p, b) => J(await adapter.settleTripartyRepurchase(p.id as Hex, b.tradeEndHash as Hex)));
 route("POST", "/ledger/v1/triparty/repos/:id/substitution/decline", async (p, b) => J(await adapter.declineTripartySubstitution(p.id as Hex, b.substitutionHash as Hex)));
 route("GET", "/ledger/v1/triparty/repos/:id/at", async (p, _b, url) => J(await adapter.tripartyRepoAt(p.id as Hex, BigInt(url.searchParams.get("block")!))));
 
