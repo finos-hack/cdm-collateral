@@ -1341,3 +1341,5 @@ excluded.
 | task-gmsla-lending-fee | 83ab4ddd88955c496be28bbf6faac969fb76d610 | services/collateral/src/main/java/collateral/CdmLoanInvoice.java | 2026-11-11T23:44:30Z |
 | task-gmsla-lending-fee | 83ab4ddd88955c496be28bbf6faac969fb76d610 | services/collateral/src/test/java/collateral/CdmLoanInvoiceTest.java | 2026-11-11T23:44:30Z |
 | task-gmsla-default-close-out | c1f6a97399434e3e6de9e24e2ea8ab5d9849944c | docs/analysis/cdm-workflow-task-map.md | 2026-11-11T23:49:14Z |
+| task-gmsla-default-close-out | 9b631df6b65983cf6d5d65c339d34b6e4fd52b7e | docs/analysis/sme-question-ledger.md | 2026-11-12T00:05:02Z |
+| task-gmsla-default-close-out | 9b631df6b65983cf6d5d65c339d34b6e4fd52b7e | architecture/prototype.architecture.json | 2026-11-12T00:05:02Z |
