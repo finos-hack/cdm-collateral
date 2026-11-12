@@ -1065,6 +1065,44 @@ describe("flow-gmsla-marking", () => {
   });
 });
 
+describe("flow-gmsla-default-close-out", () => {
+  const statement = {
+    earlyTerminationDate: "2026-11-21", automaticEarlyTermination: false, nonDefaultingParty: "BANK-B", defaultingParty: "BANK-A",
+    loans: [{ loanId: "0xl1", lender: "BANK-A", borrower: "BANK-B", quantity: "100000", price: "1.1", defaultMarketValue: "110000",
+      collateral: "US9128100000", collateralQuantity: "1037", collateralPrice: "100", collateralValue: "103700", rateType: "Fee",
+      accruedFrom: "2026-11-11", accruedAmount: "15" }],
+    heldMargin: [], netAmount: "-6315", balance: "6315", payer: "BANK-B", receiver: "BANK-A",
+  };
+  const view = (over: Record<string, unknown>) => ({
+    businessDate: "2026-11-21", counterparty: "A", counterpartyInDefault: false, inDefault: false, automaticEarlyTermination: false,
+    baseCurrency: "USD", openLoans: 1, preview: statement, closeOuts: [], ...over,
+  });
+
+  it("the non-defaulting party declares the default and closes out with the balance shown", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: [] }, NO_SHORTFALL, { "/loan-default": view({}) });
+    const button = await screen.findByTestId("loan-default-close-out");
+    expect(button.textContent).toBe("Declare A's default and close out: BANK-B pays USD 6315");
+    expect(screen.getByTestId("loan-default-status").textContent).toBe("no default recorded");
+    await user.click(button);
+    await waitFor(() => expect(posts).toEqual([{ path: "/loan-default/close-out", body: {} }]));
+  });
+
+  it("the defaulting party is offered no close-out; the payer pays a verified balance", async () => {
+    const user = userEvent.setup();
+    const closeOut = { closeOutId: "0xc0ffee0001", cdmHash: "0x01", nonDefaulting: "B", defaulting: "A", amount: "6315", paid: false, payer: "B",
+      toPay: true, noticeServed: true, verified: true, statement };
+    serve("A", { calls: [], balances: [] }, NO_SHORTFALL, { "/loan-default": view({ counterparty: "B", inDefault: true, openLoans: 0, preview: undefined, closeOuts: [{ ...closeOut, toPay: false }] }) });
+    expect((await screen.findByTestId("loan-default-status")).textContent).toBe("this party is in default");
+    expect(screen.queryByTestId("loan-default-close-out")).toBeNull();
+    expect(screen.getByTestId("loan-closeout-balance").textContent).toBe("B pays USD 6315");
+    cleanup();
+    serve("B", { calls: [], balances: [] }, NO_SHORTFALL, { "/loan-default": view({ counterpartyInDefault: true, openLoans: 0, preview: undefined, closeOuts: [closeOut] }) });
+    await user.click(await screen.findByRole("button", { name: "Pay USD 6315" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loan-default/close-outs/0xc0ffee0001/pay", body: {} }]));
+  });
+});
+
 describe("flow-repo-default-close-out", () => {
   const statement = {
     earlyTerminationDate: "2026-11-12", automaticEarlyTermination: true, nonDefaultingParty: "BANK-A", defaultingParty: "BANK-B",

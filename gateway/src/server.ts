@@ -335,6 +335,21 @@ route("GET", "/ledger/v1/loans", async (_p, _b, url) => J(await adapter.listLoan
 
 route("GET", "/ledger/v1/repos", async (_p, _b, url) => J(await adapter.listRepos(getAddress(url.searchParams.get("party")!))));
 
+// A GMSLA default close-out (wp-adr-gmsla-default-close-out): the non-defaulting party serves a Default Notice (unless
+// automatic early termination applies) and closes out every open loan of the pair; the party owing the balance pays.
+route("POST", "/ledger/v1/loan-default/notice", async (_p, b) =>
+  J(await adapter.serveLoanDefaultNotice(getAddress(b.defaulting), b.noticeHash as Hex)));
+route("GET", "/ledger/v1/loan-default/notice", async (_p, _b, url) =>
+  J({ noticeHash: await adapter.loanDefaultNotice(getAddress(url.searchParams.get("nonDefaulting")!), getAddress(url.searchParams.get("defaulting")!)) }));
+route("POST", "/ledger/v1/loan-default/close-outs", async (_p, b) =>
+  J(await adapter.closeOutLoanDefault(b.closeOutId as Hex, getAddress(b.defaulting), b.noticeHash as Hex, b.cdmHash as Hex,
+    getAddress(b.cash), getAddress(b.payer), BigInt(b.amount))));
+route("POST", "/ledger/v1/loan-default/close-outs/:id/pay", async (p, b) => {
+  await adapter.approve(getAddress(b.token), adapter.loanContract(), BigInt(b.amount));
+  return J(await adapter.payLoanCloseOut(p.id as Hex));
+});
+route("GET", "/ledger/v1/loan-default/close-outs", async (_p, _b, url) => J(await adapter.listLoanCloseOuts(getAddress(url.searchParams.get("party")!))));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

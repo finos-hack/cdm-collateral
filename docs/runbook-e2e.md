@@ -351,6 +351,16 @@ console shows `fee … tUSD for … to … at <price>` with each part, and `Pay 
 borrower's service refuses an invoice whose price is not its own feed price. The rules are the assumptions in
 `docs/analysis/sme-question-ledger.md` (FEE-1 to FEE-6).
 
+Securities lending default (`flow-gmsla-default-close-out`): in the "Securities lending default (GMSLA)" card of the
+non-defaulting party B clicks `Declare A's default and close out` (or `Close out A's default` when the oracle feed
+already shows it). B's service notifies the default to the oracle service if needed, serves the Default Notice on-chain
+(the baseline GMSLA has automatic early termination not applicable) and records the close-out statement: every open
+loan of the pair closes out at once, valued at the Default Market Value of the loaned securities against the collateral
+the lender holds, both at the feed prices, with the fee or rebate accrued since the billed-through date and any margin
+held under the pair's GMSLA calls; one balance in tUSD remains. No securities or collateral move. Both services show the
+statement as verified, and the party that owes the balance clicks `Pay USD …`. The rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (DFL-1 to DFL-9).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -503,7 +513,9 @@ price, the borrower calls the margin back, and the loan is returned), and `flow-
 business dates, and every loan it books is returned in full), and `flow-gmsla-substitution` (the return after the
 substitution redelivers the tAGY, so every balance ends where it started), and `flow-gmsla-rebate` (it restores both business
 dates and returns its loan; the lender's tUSD falls by the rebates it pays), and `flow-gmsla-lending-fee` (the
-same, with the borrower paying the fees).
+same, with the borrower paying the fees), and `flow-gmsla-default-close-out` (two loans of the same tMMF against
+tUST in opposite directions offset, so the close-out leaves every holding where it was and only the difference of the
+fees moves; it restores A's default status as it found it).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

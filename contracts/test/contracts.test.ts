@@ -1,7 +1,7 @@
 import { describe, it, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { network } from "hardhat";
-import { keccak256, toHex, zeroHash, getAddress } from "viem";
+import { keccak256, toHex, zeroHash, zeroAddress, getAddress } from "viem";
 
 // Contract unit + property tests (architecture/testing.md, Smart contracts — unit / property). Runs on the in-memory
 // EDR network. Enum numeric values follow CollateralTypes.sol: CallKind {IM:0, VM:1, Return:2};
@@ -1649,7 +1649,7 @@ describe("CDM collateral contracts", async () => {
     const L = H("LOAN-1");
     const bal = async (t: any, a: `0x${string}`) => t.read.balanceOf([a]);
     beforeEach(async () => {
-      loans = await viem.deployContract("SecuritiesLoan", []);
+      loans = await viem.deployContract("SecuritiesLoan", [oracle.address]);
       tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "US0000000USD", "000000USD", "QUSD00000"]);
       bankC = (await viem.getWalletClients())[3];
       await tUSD.write.mint([bAddr, 10000n]);
@@ -1862,6 +1862,80 @@ describe("CDM collateral contracts", async () => {
       assert.equal((await loans.read.getLoan([L])).tradeHash, H("trade"));
       await loans.write.instructReturn([L, 10n, 510n, H("r")], { account: bankB.account });
       await assert.rejects(loans.write.requestSubstitution([L, tAGY.address, 52n, H("s2")], { account: bankB.account }));
+    });
+
+    describe("default close-out (task-gmsla-default-close-out)", () => {
+      const L2 = H("LOAN-2"), L3 = H("LOAN-3"), CO = H("LCO-1");
+      const CLOSED_OUT = 5;
+      const defaultB = () => oracle.write.setDefault([bAddr, true], { account: operator.account });
+      // LOAN-1 (A lends 100 tMMF to B) and LOAN-2 (B lends 50 tMMF to A against 2,550 tUSD) open; LOAN-3 booked only.
+      const opened = async () => {
+        await deliver();
+        await tUSD.write.mint([aAddr, 3000n]);
+        await loans.write.book([L2, aAddr, tMMF.address, 50n, tUSD.address, 2550n, H("t2")], { account: bankB.account });
+        await loans.write.affirm([L2, H("t2")], { account: bankA.account });
+        await tMMF.write.approve([loans.address, 50n], { account: bankB.account });
+        await tUSD.write.approve([loans.address, 2550n], { account: bankA.account });
+        await loans.write.instructDelivery([L2, H("d2")], { account: bankB.account });
+        await loans.write.instructDelivery([L2, H("d2")], { account: bankA.account });
+        await loans.write.book([L3, bAddr, tMMF.address, 1n, tUSD.address, 51n, H("t3")], { account: bankA.account });
+      };
+
+      it("needs the oracle's default record, and the non-defaulting party may not be in default", async () => {
+        await opened();
+        await assert.rejects(loans.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+        await assert.rejects(loans.write.serveDefaultNotice([bAddr, H("n")], { account: bankA.account }));
+        await defaultB();
+        await assert.rejects(loans.write.closeOutDefault([CO, aAddr, zeroHash, H("st"), tUSD.address, aAddr, 7n], { account: bankB.account }));
+        await oracle.write.setDefault([aAddr, true], { account: operator.account });
+        await assert.rejects(loans.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+        await oracle.write.setDefault([aAddr, false], { account: operator.account });
+      });
+
+      it("closes out every open loan of the pair, lapses what is pending, moves nothing, and the payer pays the balance", async () => {
+        await opened();
+        await loans.write.recall([L, 10n, 20261201, H("rc")], { account: bankA.account });
+        await loans.write.bill([L, tUSD.address, 20261201, 3n, H("i")], { account: bankA.account });
+        await defaultB();
+        const before = [await bal(tMMF, aAddr), await bal(tMMF, bAddr), await bal(tUSD, aAddr), await bal(tUSD, bAddr)];
+        await assert.rejects(loans.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 0n], { account: bankA.account }));
+        await assert.rejects(loans.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bankC.account.address, 7n], { account: bankA.account }));
+        await loans.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account });
+        for (const id of [L, L2]) {
+          assert.equal((await loans.read.getLoan([id])).state, CLOSED_OUT);
+          assert.equal(await loans.read.closeOutOf([id]), CO);
+        }
+        assert.equal((await loans.read.getLoan([L3])).state, 1); // still Booked
+        assert.equal((await loans.read.getRecall([L]))[0], 0n);
+        assert.equal((await loans.read.getBill([L]))[4], zeroHash);
+        assert.deepEqual([await bal(tMMF, aAddr), await bal(tMMF, bAddr), await bal(tUSD, aAddr), await bal(tUSD, bAddr)], before);
+        assert.deepEqual(await loans.read.closeOutsOf([aAddr]), [CO]);
+        assert.deepEqual(await loans.read.closeOutsOf([bAddr]), [CO]);
+        await assert.rejects(loans.write.closeOutDefault([CO, bAddr, zeroHash, H("st"), tUSD.address, bAddr, 7n], { account: bankA.account }));
+        await assert.rejects(loans.write.closeOutDefault([H("LCO-2"), bAddr, zeroHash, H("st2"), tUSD.address, bAddr, 7n], { account: bankA.account })); // nothing left
+        await assert.rejects(loans.write.instructReturn([L, 10n, 510n, H("r")], { account: bankB.account }));
+        await assert.rejects(loans.write.bill([L, tUSD.address, 20261231, 3n, H("i2")], { account: bankA.account }));
+        await assert.rejects(loans.write.payCloseOut([CO], { account: bankA.account })); // not the payer
+        await tUSD.write.approve([loans.address, 7n], { account: bankB.account });
+        await loans.write.payCloseOut([CO], { account: bankB.account });
+        assert.equal(await bal(tUSD, aAddr), before[2] + 7n);
+        assert.equal((await loans.read.getCloseOut([CO])).paid, true);
+        await assert.rejects(loans.write.payCloseOut([CO], { account: bankB.account }));
+        await oracle.write.setDefault([bAddr, false], { account: operator.account });
+      });
+
+      it("a served Default Notice must be the one recorded; a zero balance is paid at once", async () => {
+        await opened();
+        await defaultB();
+        await loans.write.serveDefaultNotice([bAddr, H("n")], { account: bankA.account });
+        assert.equal(await loans.read.defaultNotice([aAddr, bAddr]), H("n"));
+        await assert.rejects(loans.write.closeOutDefault([CO, bAddr, H("other"), H("st"), tUSD.address, zeroAddress, 0n], { account: bankA.account }));
+        await loans.write.closeOutDefault([CO, bAddr, H("n"), H("st"), tUSD.address, zeroAddress, 0n], { account: bankA.account });
+        const c = await loans.read.getCloseOut([CO]);
+        assert.equal(c.noticeHash, H("n"));
+        assert.equal(c.paid, true);
+        await oracle.write.setDefault([bAddr, false], { account: operator.account });
+      });
     });
   });
 });

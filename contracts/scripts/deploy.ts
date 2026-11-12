@@ -133,7 +133,7 @@ async function main() {
   console.log("PortfolioReconciliation", reconciliation.address);
   const repoSettlement = await deploy("RepoSettlement", [oracle.address]);
   console.log("RepoSettlement       ", repoSettlement.address);
-  const securitiesLoan = await deploy("SecuritiesLoan", []);
+  const securitiesLoan = await deploy("SecuritiesLoan", [oracle.address]);
   console.log("SecuritiesLoan       ", securitiesLoan.address);
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean }> = {};

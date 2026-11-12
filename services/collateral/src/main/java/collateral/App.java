@@ -184,6 +184,9 @@ public final class App {
         app.post("/api/v1/repos/{id}/pair-off/refuse", this::refusePairOff);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/repo-default", this::repoDefault);
+        app.get("/api/v1/loan-default", this::loanDefault);
+        app.post("/api/v1/loan-default/close-out", this::closeOutLoanDefault);
+        app.post("/api/v1/loan-default/close-outs/{id}/pay", this::payLoanCloseOut);
         app.post("/api/v1/repo-default/close-out", this::closeOutRepoDefault);
         app.post("/api/v1/repo-default/close-outs/{id}/pay", this::payRepoCloseOut);
         app.get("/api/v1/substitutions", this::substitutions);
@@ -1017,7 +1020,8 @@ public final class App {
         if (rc.path("quantity").asLong(0) > 0) m.put("recall", recallView(l, rc));
         JsonNode sb = l.path("substitution");
         if (!sb.path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) m.put("substitution", substitutionView(l, sb, lender));
-        if (!state.equals("booked") && !state.equals("affirmed")) {
+        if (state.equals("closedOut")) m.put("closeOutId", l.path("closeOutId").asText());
+        else if (!state.equals("booked") && !state.equals("affirmed")) {
             try {
                 m.put("billing", billingView(l, lender));
             } catch (Exception ex) {
@@ -2014,11 +2018,13 @@ public final class App {
     private GmslaMarginHeld gmslaMarginHeld() {
         BigDecimal held = BigDecimal.ZERO;
         List<String> calls = new ArrayList<>();
+        Set<String> closedOut = loanCloseOutSettledCalls();
         for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
             JsonNode c = entry.get("call");
             int state = c.get("state").asInt();
             String callId = entry.get("callId").asText();
             if (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmslaCall(callId)) continue;
+            if (closedOut.contains(callId.toLowerCase())) continue;
             boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
             long pid = c.get("activeProposal").asLong() - 1;
             for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
@@ -3891,6 +3897,278 @@ public final class App {
         if (problem != null) throw new RuntimeException("close-out " + id + ": " + problem);
         store.recordDocument(id, "GmraCloseOutStatement", "in", hash, doc);
         JsonNode tx = gw.post("/repo-default/close-outs/" + id + "/pay", Map.of("token", c.get("cash").asText(), "amount", c.get("amount").asText()));
+        ctx.json(Map.of("closeOutId", id, "amount", c.get("amount").asText(), "payTx", tx.path("txHash").asText()));
+    }
+
+    // ---- GMSLA default close-out (task-gmsla-default-close-out, wp-adr-gmsla-default-close-out) ----
+    // As the GMRA close-out above: the non-defaulting party's service builds the cdm-ext GmslaCloseOutStatement over every
+    // open loan of the pair and the margin held under the pair's settled GMSLA calls, at the feed prices on its business
+    // date, and records it on SecuritiesLoan; the other party's service rebuilds it from its own loan documents, the
+    // chain's billed-through dates and margin, and the prices the statement states. Rules: task-sme-gmsla-default-rules.
+
+    private final Map<String, cdmx.collateral.gmsla.GmslaCloseOutStatement> loanCloseOutDocs = new ConcurrentHashMap<>();
+
+    /** The statement of an on-chain loan close-out from the payload store, parsed once; null if not in the store. */
+    private cdmx.collateral.gmsla.GmslaCloseOutStatement loanCloseOutStatement(String hash) {
+        var known = loanCloseOutDocs.get(hash);
+        if (known != null) return known;
+        String doc = payloads.get(hash);
+        if (doc == null) return null;
+        if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the close-out document does not hash to the on-chain hash");
+        var s = CdmLoanDefault.parse(doc);
+        loanCloseOutDocs.put(hash, s);
+        return s;
+    }
+
+    /** The GMSLA calls whose margin a recorded loan close-out of this party settled: margin views no longer count them. */
+    private Set<String> loanCloseOutSettledCalls() {
+        Set<String> out = new java.util.HashSet<>();
+        for (JsonNode c : gw.getQuery("/loan-default/close-outs", Map.of("party", cfg.myAddress))) {
+            var s = loanCloseOutStatement(c.get("cdmHash").asText());
+            if (s != null) for (String id : CdmLoanDefault.settledCalls(s)) out.add(id.toLowerCase());
+        }
+        return out;
+    }
+
+    /** This party's open loans with the counterparty, as the contract closes them out. */
+    private List<JsonNode> openLoansWithCounterparty() {
+        String other = cfg.partyAddress(counterparty());
+        List<JsonNode> out = new ArrayList<>();
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress))) {
+            if (!l.get("state").asText().equals("open")) continue;
+            if (l.get("lender").asText().equalsIgnoreCase(other) || l.get("borrower").asText().equalsIgnoreCase(other)) out.add(l);
+        }
+        return out;
+    }
+
+    /** The loans to close out, from this service's own checked documents, priced by `prices` (the loaned security's
+     *  price and the collateral's). */
+    private List<CdmLoanDefault.LoanInput> closeOutLoans(List<JsonNode> loans, java.util.function.Function<JsonNode, BigDecimal[]> prices) {
+        List<CdmLoanDefault.LoanInput> out = new ArrayList<>();
+        for (JsonNode l : loans) {
+            String id = l.get("loanId").asText();
+            LoanCurrent c = loanCurrent(l);
+            if (c == null) throw new RuntimeException("the document of loan " + id + " is not in the payload store");
+            String problem = loanProblem(l, c);
+            if (problem != null) throw new RuntimeException("loan " + id + ": " + problem);
+            var timeline = loanTimeline(l);
+            int through = l.path("bill").path("billedThrough").asInt(0);
+            LocalDate from = through == 0 ? timeline.get(0).date() : CdmRecall.fromYyyymmdd(through);
+            BigDecimal[] p = prices.apply(l);
+            out.add(new CdmLoanDefault.LoanInput(id, c.trade(), c.terms(), timeline, from, p[0], p[1]));
+        }
+        return out;
+    }
+
+    /** The feed prices of a loan's security and collateral (1 for tUSD). */
+    private BigDecimal[] loanFeedPrices(JsonNode l) {
+        String col = symbolByAddress.get(l.get("collateral").asText().toLowerCase());
+        return new BigDecimal[]{loanFeedPrice(symbolByAddress.get(l.get("security").asText().toLowerCase())),
+                "tUSD".equals(col) ? BigDecimal.ONE : loanFeedPrice(col)};
+    }
+
+    /** The margin each party holds net per asset under the pair's settled GMSLA calls, priced by `price` (asset code:
+     *  the Base Currency for tUSD, the ISIN otherwise). `only` null: every call not yet closed out; otherwise just those
+     *  calls (to check the close-out that settled them). */
+    private List<CdmLoanDefault.MarginInput> closeOutGmslaMargin(String baseCurrency, java.util.function.Function<String, BigDecimal> price, Set<String> only) {
+        Set<String> closedOut = only == null ? loanCloseOutSettledCalls() : Set.of();
+        Map<String, Long> net = new LinkedHashMap<>();
+        Map<String, List<String>> calls = new LinkedHashMap<>();
+        String tUsd = cfg.tokenAddress("tUSD");
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            String callId = entry.get("callId").asText();
+            if (only != null ? !only.contains(callId.toLowerCase())
+                    : (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmslaCall(callId) || closedOut.contains(callId.toLowerCase()))) continue;
+            boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
+            long pid = c.get("activeProposal").asLong() - 1;
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
+                String token = a.get("token").asText();
+                String asset = token.equalsIgnoreCase(tUsd) ? baseCurrency : cfg.isin(symbolByAddress.get(token.toLowerCase()));
+                net.merge(asset, received ? a.get("qty").asLong() : -a.get("qty").asLong(), Long::sum);
+                calls.computeIfAbsent(asset, k -> new ArrayList<>());
+                if (!calls.get(asset).contains(callId)) calls.get(asset).add(callId);
+            }
+        }
+        List<CdmLoanDefault.MarginInput> out = new ArrayList<>();
+        for (var e : net.entrySet()) {
+            if (e.getValue() == 0) continue;
+            boolean mine = e.getValue() > 0;
+            out.add(new CdmLoanDefault.MarginInput(mine ? myBank() : counterpartyBank(), mine ? counterpartyBank() : myBank(), e.getKey(),
+                    e.getKey().equals(baseCurrency), Math.abs(e.getValue()), price.apply(e.getKey()), calls.get(e.getKey())));
+        }
+        return out;
+    }
+
+    /** Whether the GMSLA terms elect automatic early termination for the counterparty's default. */
+    private boolean gmslaAutomaticFor(String partyId) {
+        var role = partyId.equals("A") ? cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_1 : cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_2;
+        return CdmGmsla.automaticEarlyTermination(gmslaFold().terms().terms(), role);
+    }
+
+    private String gmslaBaseCurrency() {
+        return CdmGmsla.gmsla(gmslaFold().terms().terms()).getBaseCurrency().getBaseCurrency().toDisplayString();
+    }
+
+    /** The close-out statement this party would record now as the non-defaulting party, at the feed prices. */
+    private CdmLoanDefault.Statement loanCloseOutPreview(CdmLoanDefault.Notice notice) {
+        String ccy = gmslaBaseCurrency();
+        List<JsonNode> loans = openLoansWithCounterparty();
+        if (loans.isEmpty()) throw new RuntimeException("no open loan with " + counterparty() + " to close out");
+        return CdmLoanDefault.statement(notice.notice(), ccy, businessDate, closeOutLoans(loans, this::loanFeedPrices),
+                closeOutGmslaMargin(ccy, a -> feedPriceOfAsset(a, ccy), null));
+    }
+
+    /** Whether a recorded loan close-out's statement is the one this party rebuilds from its own loan documents, the
+     *  chain's billed-through dates and margin, and the prices the statement states; and the on-chain record matches. */
+    private String loanCloseOutProblem(JsonNode c, cdmx.collateral.gmsla.GmslaCloseOutStatement s, String json) {
+        String hash = c.get("cdmHash").asText();
+        if (!Cdm.keccakHex(json).equalsIgnoreCase(hash)) return "the statement does not hash to the on-chain hash";
+        String closeOutId = c.get("closeOutId").asText();
+        List<JsonNode> loans = new ArrayList<>();
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress)))
+            if (l.get("state").asText().equals("closedOut") && l.path("closeOutId").asText().equalsIgnoreCase(closeOutId)) loans.add(l);
+        if (loans.size() != s.getLoanValue().size()) return "the statement values " + s.getLoanValue().size() + " loans; the contract closed out " + loans.size();
+        String ccy = s.getBaseCurrency();
+        Set<String> own = new java.util.HashSet<>();
+        for (String id : CdmLoanDefault.settledCalls(s)) own.add(id.toLowerCase());
+        Map<String, BigDecimal> statedMarginPrice = new HashMap<>();
+        for (var m : CdmLoanDefault.heldMargin(s)) statedMarginPrice.put(m.getAsset(), m.getPrice());
+        List<CdmLoanDefault.MarginInput> margin = closeOutGmslaMargin(ccy, a -> statedMarginPrice.getOrDefault(a, BigDecimal.ONE), own);
+        if (margin.size() != CdmLoanDefault.heldMargin(s).size()) return "the statement's margin is not the margin held under its calls";
+        CdmLoanDefault.Statement rebuilt;
+        try {
+            rebuilt = CdmLoanDefault.statement(s.getNotice(), ccy, s.getValuationDate().toLocalDate(),
+                    closeOutLoans(loans, l -> CdmLoanDefault.statedPrices(s, l.get("loanId").asText())), margin);
+        } catch (RuntimeException ex) {
+            return "the statement does not rebuild: " + ex.getMessage();
+        }
+        if (!rebuilt.hash().equalsIgnoreCase(hash)) return "the statement rebuilt from this party's loans differs";
+        long amount = c.get("amount").asLong();
+        if (amount != rebuilt.balance()) return "the on-chain balance is not the statement's";
+        if (amount != 0 && !cfg.bankName(partyIdOf(c.get("payer").asText())).equals(rebuilt.payer())) return "the on-chain payer is not the statement's";
+        return null;
+    }
+
+    /** The GMSLA default close-out view: the default status of both parties, the election, a preview when this party may
+     *  close out, and the recorded close-outs with their verification and payment. */
+    private void loanDefault(Context ctx) {
+        String other = cfg.partyAddress(counterparty());
+        boolean counterpartyInDefault = gw.get("/defaults/" + other).get("inDefault").asBoolean();
+        boolean inDefault = gw.get("/defaults/" + cfg.myAddress).get("inDefault").asBoolean();
+        boolean automatic = gmslaAutomaticFor(counterparty());
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("businessDate", businessDate.toString());
+        m.put("counterparty", counterparty());
+        m.put("counterpartyInDefault", counterpartyInDefault);
+        m.put("inDefault", inDefault);
+        m.put("automaticEarlyTermination", automatic);
+        m.put("baseCurrency", gmslaBaseCurrency());
+        int open = openLoansWithCounterparty().size();
+        m.put("openLoans", open);
+        if (!inDefault && open > 0) {
+            try {
+                var n = CdmLoanDefault.notice(myBank(), counterpartyBank(), businessDate, businessDate, automatic);
+                m.put("preview", CdmLoanDefault.view(loanCloseOutPreview(n).statement()));
+            } catch (RuntimeException ex) {
+                m.put("previewProblem", ex.getMessage());
+            }
+        }
+        List<Map<String, Object>> closeOuts = new ArrayList<>();
+        for (JsonNode c : gw.getQuery("/loan-default/close-outs", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> v = new LinkedHashMap<>();
+            String hash = c.get("cdmHash").asText();
+            v.put("closeOutId", c.get("closeOutId").asText());
+            v.put("cdmHash", hash);
+            v.put("nonDefaulting", partyIdOf(c.get("nonDefaulting").asText()));
+            v.put("defaulting", partyIdOf(c.get("defaulting").asText()));
+            v.put("amount", c.get("amount").asText());
+            v.put("paid", c.get("paid").asBoolean());
+            boolean owed = c.get("amount").asLong() > 0;
+            v.put("payer", owed ? partyIdOf(c.get("payer").asText()) : null);
+            v.put("toPay", owed && c.get("payer").asText().equalsIgnoreCase(cfg.myAddress) && !c.get("paid").asBoolean());
+            v.put("noticeServed", !c.get("noticeHash").asText().equals(ZERO_HASH));
+            String doc = payloads.get(hash);
+            if (doc == null) {
+                v.put("verified", false);
+                v.put("problem", "the statement is not in the payload store");
+            } else {
+                try {
+                    var s = loanCloseOutStatement(hash);
+                    v.put("statement", CdmLoanDefault.view(s));
+                    String problem = loanCloseOutProblem(c, s, doc);
+                    v.put("verified", problem == null);
+                    v.put("problem", problem);
+                } catch (RuntimeException ex) {
+                    v.put("verified", false);
+                    v.put("problem", ex.getMessage());
+                }
+            }
+            closeOuts.add(0, v);
+        }
+        m.put("closeOuts", closeOuts);
+        ctx.json(m);
+    }
+
+    /** The non-defaulting party closes out every open loan with the counterparty. The default goes to the oracle
+     *  service first when the feed does not show it. Without automatic early termination this service serves the
+     *  Default Notice on-chain; the Early Termination Date and the prices are its business date's. */
+    private void closeOutLoanDefault(Context ctx) {
+        String other = cfg.partyAddress(counterparty());
+        if (gw.get("/defaults/" + cfg.myAddress).get("inDefault").asBoolean())
+            throw new RuntimeException("the oracle feed records this party in default; only the non-defaulting party closes out");
+        if (openLoansWithCounterparty().isEmpty()) throw new RuntimeException("no open loan with " + counterparty() + " to close out");
+        String defaultTx = null;
+        if (!gw.get("/defaults/" + other).get("inDefault").asBoolean()) {
+            JsonNode notified = oracle.post("/defaults", Map.of("party", other, "inDefault", true, "notifiedBy", myBank()));
+            defaultTx = notified.path("tx").path("txHash").asText(null);
+        }
+        boolean automatic = gmslaAutomaticFor(counterparty());
+        CdmLoanDefault.Notice notice = CdmLoanDefault.notice(myBank(), counterpartyBank(), businessDate, businessDate, automatic);
+        CdmLoanDefault.Statement st = loanCloseOutPreview(notice);
+        String noticeHash = ZERO_HASH, noticeTx = null;
+        String closeOutId = Cdm.onChainId("loan-close-out-" + cfg.partyId + "-" + System.nanoTime());
+        if (!automatic) {
+            store.recordDocument(closeOutId, "GmslaDefaultNotice", "out", notice.hash(), notice.json());
+            payloads.put(notice.hash(), notice.json(), callParties);
+            noticeTx = gw.post("/loan-default/notice", Map.of("defaulting", other, "noticeHash", notice.hash())).path("txHash").asText();
+            noticeHash = notice.hash();
+        }
+        store.recordDocument(closeOutId, "GmslaCloseOutStatement", "out", st.hash(), st.json());
+        payloads.put(st.hash(), st.json(), callParties);
+        loanCloseOutDocs.put(st.hash(), st.statement());
+        String payer = st.balance() == 0 ? "0x0000000000000000000000000000000000000000"
+                : (st.payer().equals(myBank()) ? cfg.myAddress : other);
+        JsonNode tx = gw.post("/loan-default/close-outs", Map.of("closeOutId", closeOutId, "defaulting", other, "noticeHash", noticeHash,
+                "cdmHash", st.hash(), "cash", cfg.tokenAddress("tUSD"), "payer", payer, "amount", String.valueOf(st.balance())));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("closeOutId", closeOutId);
+        out.put("cdmHash", st.hash());
+        out.put("noticeHash", noticeHash.equals(ZERO_HASH) ? null : noticeHash);
+        out.put("statement", CdmLoanDefault.view(st.statement()));
+        out.put("defaultTx", defaultTx);
+        out.put("noticeTx", noticeTx);
+        out.put("closeOutTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The party that owes a loan close-out balance pays it, after checking the statement. */
+    private void payLoanCloseOut(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode c = null;
+        for (JsonNode x : gw.getQuery("/loan-default/close-outs", Map.of("party", cfg.myAddress)))
+            if (x.get("closeOutId").asText().equalsIgnoreCase(id)) c = x;
+        if (c == null) throw new RuntimeException("no loan close-out " + id + " of this party");
+        if (c.get("paid").asBoolean()) throw new RuntimeException("close-out " + id + " is paid");
+        if (!c.get("payer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("this party does not owe the balance of close-out " + id);
+        String hash = c.get("cdmHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null) throw new RuntimeException("the statement is not in the payload store");
+        String problem = loanCloseOutProblem(c, loanCloseOutStatement(hash), doc);
+        if (problem != null) throw new RuntimeException("close-out " + id + ": " + problem);
+        store.recordDocument(id, "GmslaCloseOutStatement", "in", hash, doc);
+        JsonNode tx = gw.post("/loan-default/close-outs/" + id + "/pay", Map.of("token", c.get("cash").asText(), "amount", c.get("amount").asText()));
         ctx.json(Map.of("closeOutId", id, "amount", c.get("amount").asText(), "payTx", tx.path("txHash").asText()));
     }
 

@@ -4,6 +4,11 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/// @notice The default record of the oracle feed (OracleFeed).
+interface ILoanDefaultFeed {
+    function isDefaulted(address party) external view returns (bool);
+}
+
 /// @title Securities loan settlement under the GMSLA
 /// @notice Settles the delivery and the returns of a securities loan (task-gmsla-loan-delivery-return,
 /// wp-adr-gmsla-loan-delivery-return). The loan is CDM's TradeState, held by both parties' services; only its hash is
@@ -29,6 +34,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// of the CDM invoice (cdm-ext GmslaLoanInvoice); the other party's payment with the same hash moves the amount in the
 /// cash token to the biller and sets the loan's billed-through date, or it refuses. The services check the period and
 /// the amount; a returned loan can still be billed.
+/// After the oracle feed records a party's default (task-gmsla-default-close-out, wp-adr-gmsla-default-close-out), the
+/// non-defaulting party may serve a Default Notice and close out every open loan of the pair under the hash of the CDM
+/// close-out statement (cdm-ext GmslaCloseOutStatement): the loans close, pending returns, recalls, substitutions and
+/// invoices lapse, and no securities or collateral move. The party owing the net balance pays it in the cash token.
 contract SecuritiesLoan {
     using SafeERC20 for IERC20;
 
@@ -37,7 +46,8 @@ contract SecuritiesLoan {
         Booked,
         Affirmed,
         Open,
-        Returned
+        Returned,
+        ClosedOut
     }
 
     struct Loan {
@@ -99,6 +109,29 @@ contract SecuritiesLoan {
     /// @dev The date (YYYYMMDD) a loan's rate is billed and paid through; zero: never billed.
     mapping(bytes32 => uint32) private _billedThrough;
 
+    /// @notice A GMSLA default close-out (wp-adr-gmsla-default-close-out): the net balance of every open loan of the
+    /// pair, payable by `payer` to the other party in the cash token. `noticeHash` is zero under automatic early
+    /// termination.
+    struct CloseOut {
+        address nonDefaulting;
+        address defaulting;
+        address payer;
+        address cash;
+        uint256 amount;
+        bytes32 noticeHash;
+        bytes32 cdmHash;
+        bool paid;
+    }
+
+    /// @notice The default feed: the oracle's record of which parties are in default.
+    ILoanDefaultFeed public immutable oracle;
+    /// @dev The Default Notice the non-defaulting party served on the defaulting party, by hash of the CDM record.
+    mapping(address => mapping(address => bytes32)) private _defaultNotice;
+    mapping(bytes32 => CloseOut) private _closeOuts;
+    mapping(address => bytes32[]) private _closeOutsOf;
+    /// @dev The close-out that closed a loan (zero: none).
+    mapping(bytes32 => bytes32) private _closeOutOf;
+
     event LoanBooked(bytes32 indexed loanId, address indexed lender, address indexed borrower, bytes32 tradeHash);
     event LoanAffirmed(bytes32 indexed loanId, address indexed borrower, bytes32 tradeHash);
     event LoanDeliveryInstructed(bytes32 indexed loanId, address indexed party, bytes32 cdmHash);
@@ -117,6 +150,11 @@ contract SecuritiesLoan {
     event LoanBilled(bytes32 indexed loanId, address indexed biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash);
     event LoanBillPaid(bytes32 indexed loanId, address indexed payer, uint32 periodEnd, uint256 amount, bytes32 invoiceHash);
     event LoanBillRefused(bytes32 indexed loanId, bytes32 invoiceHash);
+    event LoanDefaultNoticeServed(address indexed nonDefaulting, address indexed defaulting, bytes32 noticeHash);
+    event LoanClosedOut(bytes32 indexed loanId, bytes32 indexed closeOutId);
+    event LoanCloseOutRecorded(bytes32 indexed closeOutId, address indexed nonDefaulting, address indexed defaulting,
+        bytes32 cdmHash, address payer, uint256 amount);
+    event LoanCloseOutPaid(bytes32 indexed closeOutId, address indexed payer, uint256 amount);
 
     error LoanExists(bytes32 loanId);
     error NoLoan(bytes32 loanId);
@@ -141,6 +179,18 @@ contract SecuritiesLoan {
     error NoBill();
     error NotThePayer();
     error PeriodNotAfterBilled();
+    error NoDefault(address party);
+    error InDefault(address party);
+    error CloseOutExists();
+    error NoNotice();
+    error NothingToCloseOut();
+    error WrongPayer();
+    error NoCloseOut();
+    error AlreadyPaid();
+
+    constructor(address oracle_) {
+        oracle = ILoanDefaultFeed(oracle_);
+    }
 
     /// @notice The lender books a loan to the borrower: the loaned securities and quantity, the collateral token and the
     /// amount delivered at the delivery, and the hash of the CDM trade.
@@ -380,6 +430,88 @@ contract SecuritiesLoan {
         if (isLender) ins.lender = cdmHash;
         else ins.borrower = cdmHash;
         return other != bytes32(0);
+    }
+
+    // ---- default and close-out (wp-adr-gmsla-default-close-out, GMSLA 2010 paragraph 11) ----
+
+    /// @notice The non-defaulting party serves a Default Notice on a party the oracle feed records in default, with the
+    /// hash of the CDM record (GmslaDefaultNotice), which names the Early Termination Date. A later notice replaces it.
+    function serveDefaultNotice(address defaulting, bytes32 noticeHash) external {
+        if (noticeHash == bytes32(0)) revert ZeroAmount();
+        if (defaulting == msg.sender) revert SelfCounterparty();
+        if (!oracle.isDefaulted(defaulting)) revert NoDefault(defaulting);
+        if (oracle.isDefaulted(msg.sender)) revert InDefault(msg.sender);
+        _defaultNotice[msg.sender][defaulting] = noticeHash;
+        emit LoanDefaultNoticeServed(msg.sender, defaulting, noticeHash);
+    }
+
+    /// @notice The non-defaulting party closes out every open loan with the defaulting party: each is marked closed out
+    /// under `closeOutId`, and its pending return, recall, substitution and invoice lapse. No securities or collateral
+    /// move. `payer` (either party, or zero when `amount` is zero) owes `amount` of `cash` to the other. `noticeHash` is
+    /// the served Default Notice, or zero under automatic early termination. The contract checks no amounts: both
+    /// services compute the statement (`cdmHash`) from the loans, the billed-through dates, the margin and the prices.
+    function closeOutDefault(
+        bytes32 closeOutId,
+        address defaulting,
+        bytes32 noticeHash,
+        bytes32 cdmHash,
+        address cash,
+        address payer,
+        uint256 amount
+    ) external {
+        if (_closeOuts[closeOutId].cdmHash != bytes32(0) || cdmHash == bytes32(0)) revert CloseOutExists();
+        if (!oracle.isDefaulted(defaulting)) revert NoDefault(defaulting);
+        if (oracle.isDefaulted(msg.sender)) revert InDefault(msg.sender);
+        if (noticeHash != bytes32(0) && noticeHash != _defaultNotice[msg.sender][defaulting]) revert NoNotice();
+        if (amount == 0 ? payer != address(0) : (payer != msg.sender && payer != defaulting)) revert WrongPayer();
+        uint256 closed;
+        bytes32[] storage ids = _loansOf[msg.sender];
+        for (uint256 i = 0; i < ids.length; i++) {
+            Loan storage l = _loans[ids[i]];
+            if (l.state != LoanState.Open || (l.lender != defaulting && l.borrower != defaulting)) continue;
+            delete _return[ids[i]];
+            delete _recall[ids[i]];
+            delete _substitution[ids[i]];
+            delete _bill[ids[i]];
+            l.state = LoanState.ClosedOut;
+            _closeOutOf[ids[i]] = closeOutId;
+            closed++;
+            emit LoanClosedOut(ids[i], closeOutId);
+        }
+        if (closed == 0) revert NothingToCloseOut();
+        _closeOuts[closeOutId] = CloseOut(msg.sender, defaulting, payer, cash, amount, noticeHash, cdmHash, amount == 0);
+        _closeOutsOf[msg.sender].push(closeOutId);
+        _closeOutsOf[defaulting].push(closeOutId);
+        emit LoanCloseOutRecorded(closeOutId, msg.sender, defaulting, cdmHash, payer, amount);
+    }
+
+    /// @notice The party that owes a close-out balance pays it in the cash token (approve this contract first).
+    function payCloseOut(bytes32 closeOutId) external {
+        CloseOut storage c = _closeOuts[closeOutId];
+        if (c.cdmHash == bytes32(0)) revert NoCloseOut();
+        if (c.paid) revert AlreadyPaid();
+        if (msg.sender != c.payer) revert NotThePayer();
+        c.paid = true;
+        address receiver = c.payer == c.nonDefaulting ? c.defaulting : c.nonDefaulting;
+        IERC20(c.cash).safeTransferFrom(c.payer, receiver, c.amount);
+        emit LoanCloseOutPaid(closeOutId, c.payer, c.amount);
+    }
+
+    function defaultNotice(address nonDefaulting, address defaulting) external view returns (bytes32) {
+        return _defaultNotice[nonDefaulting][defaulting];
+    }
+
+    function getCloseOut(bytes32 closeOutId) external view returns (CloseOut memory) {
+        return _closeOuts[closeOutId];
+    }
+
+    function closeOutsOf(address party) external view returns (bytes32[] memory) {
+        return _closeOutsOf[party];
+    }
+
+    /// @notice The close-out that closed a loan (zero: none).
+    function closeOutOf(bytes32 loanId) external view returns (bytes32) {
+        return _closeOutOf[loanId];
     }
 
     function getLoan(bytes32 loanId) external view returns (Loan memory) {

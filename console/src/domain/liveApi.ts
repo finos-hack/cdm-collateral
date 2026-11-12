@@ -205,6 +205,13 @@ export const api = {
     req<{ closeOutId: string; cdmHash: string; statement: LiveGmraCloseOutStatement; closeOutTx: string }>(p, "POST", "/repo-default/close-out", {}),
   /** The party that owes a close-out balance pays it. */
   payRepoCloseOut: (p: LiveParty, id: string) => req<{ closeOutId: string; amount: string; payTx: string }>(p, "POST", `/repo-default/close-outs/${id}/pay`, {}),
+  /** GMSLA default close-out (wp-adr-gmsla-default-close-out): the default status, a preview and the recorded close-outs. */
+  loanDefault: (p: LiveParty) => req<LiveLoanDefault>(p, "GET", "/loan-default"),
+  /** The non-defaulting party closes out every open loan with the counterparty; notifies the default first if needed. */
+  closeOutLoanDefault: (p: LiveParty) =>
+    req<{ closeOutId: string; cdmHash: string; statement: LiveGmslaCloseOutStatement; closeOutTx: string }>(p, "POST", "/loan-default/close-out", {}),
+  /** The party that owes a loan close-out balance pays it. */
+  payLoanCloseOut: (p: LiveParty, id: string) => req<{ closeOutId: string; amount: string; payTx: string }>(p, "POST", `/loan-default/close-outs/${id}/pay`, {}),
   /** The party with the Net Exposure calls it; the service computes the amount. */
   callRepoMargin: (p: LiveParty) => req<{ callId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/calls", {}),
   /** Reprice every purchased repo instead of calling margin (wp-adr-repo-reprice); the other party agrees. */
@@ -454,6 +461,39 @@ export interface LiveRepoDefault {
   closeOuts: LiveRepoCloseOut[];
 }
 
+/** A GMSLA close-out statement (cdm-ext GmslaCloseOutStatement, wp-adr-gmsla-default-close-out). */
+export interface LiveGmslaCloseOutStatement {
+  earlyTerminationDate: string;
+  automaticEarlyTermination: boolean;
+  nonDefaultingParty: string;
+  defaultingParty: string;
+  loans: {
+    loanId: string; lender: string; borrower: string; quantity: string; price: string; defaultMarketValue: string;
+    collateral: string; collateralQuantity: string; collateralPrice: string; collateralValue: string;
+    rateType: string | null; accruedFrom: string | null; accruedAmount: string;
+  }[];
+  heldMargin: { holder: string; asset: string; quantity: string; value: string }[];
+  netAmount: string;
+  balance: string;
+  payer: string | null;
+  receiver: string | null;
+}
+
+export type LiveLoanCloseOut = Omit<LiveRepoCloseOut, "statement"> & { statement?: LiveGmslaCloseOutStatement };
+
+export interface LiveLoanDefault {
+  businessDate: string;
+  counterparty: LiveParty;
+  counterpartyInDefault: boolean;
+  inDefault: boolean;
+  automaticEarlyTermination: boolean;
+  baseCurrency: string;
+  openLoans: number;
+  preview?: LiveGmslaCloseOutStatement;
+  previewProblem?: string;
+  closeOuts: LiveLoanCloseOut[];
+}
+
 export interface LiveRepos {
   businessDate: string;
   repos: LiveRepo[];
@@ -474,7 +514,9 @@ export interface LiveLoan {
   loanId: string;
   role: "lender" | "borrower";
   counterparty: string;
-  state: "booked" | "affirmed" | "open" | "returned" | string;
+  state: "booked" | "affirmed" | "open" | "returned" | "closedOut" | string;
+  /** The GMSLA default close-out that closed the loan (wp-adr-gmsla-default-close-out). */
+  closeOutId?: string;
   security: string;
   quantity: string;
   collateral: string;

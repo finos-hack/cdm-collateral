@@ -1,0 +1,49 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: the amounts of a GMSLA default close-out (paragraph 11, wp-adr-gmsla-default-close-out).">
+version "${project.version}"
+
+func GmslaDefaultLoanAmount: <"What one loan contributes to a party's net amount: the lender is owed the Default Market Value of the loaned securities and a fee accrued, and owes the collateral's value and a rebate accrued; the borrower the reverse. Positive when the other party owes this party.">
+    inputs:
+        loanValue GmslaDefaultLoanValue (1..1)
+        party string (1..1)
+    output:
+        amount number (1..1)
+
+    alias rate: <"The accrued rate from the lender's side: a fee is owed to it, a rebate by it.">
+        if loanValue -> accrual -> rateType = GmslaRateTypeEnum -> Fee
+        then loanValue -> accruedAmount
+        else 0 - loanValue -> accruedAmount
+
+    alias lenderSide:
+        loanValue -> defaultMarketValue - loanValue -> collateralValue + rate
+
+    condition AParty:
+        party = loanValue -> lender or party = loanValue -> borrower
+
+    set amount:
+        if party = loanValue -> lender then lenderSide else 0 - lenderSide
+
+func GmslaDefaultMarginAmount: <"What held margin contributes to a party's net amount: the holder owes its value back. Positive when the other party owes this party.">
+    inputs:
+        heldMargin GmslaDefaultHeldMargin (1..1)
+        party string (1..1)
+    output:
+        amount number (1..1)
+
+    set amount:
+        if party = heldMargin -> holder then 0 - heldMargin -> value else heldMargin -> value
+
+func GmslaCloseOutNetAmount: <"The set-off of a GMSLA close-out: every value, from one party's side, summed to one amount in the Base Currency. Positive when the other party pays this party.">
+    inputs:
+        loanValue GmslaDefaultLoanValue (0..*)
+        heldMargin GmslaDefaultHeldMargin (0..*)
+        party string (1..1)
+    output:
+        netAmount number (1..1)
+
+    alias loans:
+        if loanValue exists then (loanValue extract GmslaDefaultLoanAmount(item, party) then sum) else 0
+    alias margin:
+        if heldMargin exists then (heldMargin extract GmslaDefaultMarginAmount(item, party) then sum) else 0
+
+    set netAmount:
+        loans + margin

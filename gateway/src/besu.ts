@@ -430,9 +430,17 @@ const loanAbi = parseAbi([
   "function payBill(bytes32 loanId, bytes32 invoiceHash)",
   "function refuseBill(bytes32 loanId)",
   "function getBill(bytes32 loanId) view returns (address biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash, uint32 billedThrough)",
+  // GMSLA default close-out (wp-adr-gmsla-default-close-out)
+  "function serveDefaultNotice(address defaulting, bytes32 noticeHash)",
+  "function closeOutDefault(bytes32 closeOutId, address defaulting, bytes32 noticeHash, bytes32 cdmHash, address cash, address payer, uint256 amount)",
+  "function payCloseOut(bytes32 closeOutId)",
+  "function defaultNotice(address nonDefaulting, address defaulting) view returns (bytes32)",
+  "function getCloseOut(bytes32 closeOutId) view returns ((address nonDefaulting, address defaulting, address payer, address cash, uint256 amount, bytes32 noticeHash, bytes32 cdmHash, bool paid))",
+  "function closeOutsOf(address party) view returns (bytes32[])",
+  "function closeOutOf(bytes32 loanId) view returns (bytes32)",
 ]);
 
-export const LoanStateName = ["none", "booked", "affirmed", "open", "returned"];
+export const LoanStateName = ["none", "booked", "affirmed", "open", "returned", "closedOut"];
 
 /** A securities loan on SecuritiesLoan (wp-adr-gmsla-loan-delivery-return). */
 export interface OnChainLoan {
@@ -461,6 +469,8 @@ export interface OnChainLoan {
   /** The pending invoice of the loan's rate (wp-adr-gmsla-rebate) and the date (YYYYMMDD) it is billed through (zeros:
    *  none, never billed). */
   bill: { biller: Address; cashToken: Address; periodEnd: number; amount: bigint; invoiceHash: Hex; billedThrough: number };
+  /** The GMSLA default close-out that closed the loan (wp-adr-gmsla-default-close-out; zero hash: none). */
+  closeOutId: Hex;
 }
 
 /** A GMRA default close-out on RepoSettlement (wp-adr-repo-default-close-out). */
@@ -622,6 +632,12 @@ export interface LedgerAdapter {
   payLoanBill(loanId: Hex, invoiceHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   refuseLoanBill(loanId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   listLoans(party: Address): Promise<OnChainLoan[]>;
+  /** GMSLA default close-out (wp-adr-gmsla-default-close-out); the record has the shape of a GMRA close-out. */
+  serveLoanDefaultNotice(defaulting: Address, noticeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  closeOutLoanDefault(closeOutId: Hex, defaulting: Address, noticeHash: Hex, cdmHash: Hex, cash: Address, payer: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  payLoanCloseOut(closeOutId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  loanDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex>;
+  listLoanCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1166,19 +1182,48 @@ export class BesuAdapter implements LedgerAdapter {
 
   async getLoan(loanId: Hex): Promise<OnChainLoan> {
     const address = this.loanContract();
-    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall" | "substitution" | "bill"> & { state: number };
+    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall" | "substitution" | "bill" | "closeOutId"> & { state: number };
     const [cq, cd, cn] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getRecall", args: [loanId] })) as readonly [bigint, number, Hex];
     const [bb, bt, be, ba, bh, bth] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getBill", args: [loanId] })) as readonly [Address, Address, number, bigint, Hex, number];
     const [sc, sa, sh] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getSubstitution", args: [loanId] })) as readonly [Address, bigint, Hex];
     const [dl, db] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getDeliveryInstructions", args: [loanId] })) as readonly [Hex, Hex];
     const [rl, rb, rq, rc] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getReturnInstructions", args: [loanId] })) as readonly [Hex, Hex, bigint, bigint];
+    const closeOutId = (await this.pub.readContract({ address, abi: loanAbi, functionName: "closeOutOf", args: [loanId] })) as Hex;
     const state = Number(l.state);
-    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn }, substitution: { collateral: sc, collateralAmount: sa, cdmHash: sh }, bill: { biller: bb, cashToken: bt, periodEnd: Number(be), amount: ba, invoiceHash: bh, billedThrough: Number(bth) } };
+    return { ...l, loanId, closeOutId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn }, substitution: { collateral: sc, collateralAmount: sa, cdmHash: sh }, bill: { biller: bb, cashToken: bt, periodEnd: Number(be), amount: ba, invoiceHash: bh, billedThrough: Number(bth) } };
   }
 
   async listLoans(party: Address) {
     const ids = (await this.pub.readContract({ address: this.loanContract(), abi: loanAbi, functionName: "loansOf", args: [party] })) as readonly Hex[];
     return Promise.all(ids.map((id) => this.getLoan(id)));
+  }
+
+  /** The non-defaulting party serves a GMSLA Default Notice (wp-adr-gmsla-default-close-out) with its CDM record's hash. */
+  serveLoanDefaultNotice(defaulting: Address, noticeHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "serveDefaultNotice", [defaulting, noticeHash]);
+  }
+
+  /** The non-defaulting party closes out every open loan with the defaulting party under the statement hash. */
+  closeOutLoanDefault(closeOutId: Hex, defaulting: Address, noticeHash: Hex, cdmHash: Hex, cash: Address, payer: Address, amount: bigint) {
+    return this.send(this.loanContract(), loanAbi, "closeOutDefault", [closeOutId, defaulting, noticeHash, cdmHash, cash, payer, amount]);
+  }
+
+  /** The party that owes a GMSLA close-out balance pays it (after approving the loan contract for the amount). */
+  payLoanCloseOut(closeOutId: Hex) {
+    return this.send(this.loanContract(), loanAbi, "payCloseOut", [closeOutId]);
+  }
+
+  async loanDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex> {
+    return (await this.pub.readContract({ address: this.loanContract(), abi: loanAbi, functionName: "defaultNotice", args: [nonDefaulting, defaulting] })) as Hex;
+  }
+
+  async listLoanCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]> {
+    const address = this.loanContract();
+    const ids = (await this.pub.readContract({ address, abi: loanAbi, functionName: "closeOutsOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map(async (closeOutId) => ({
+      closeOutId,
+      ...((await this.pub.readContract({ address, abi: loanAbi, functionName: "getCloseOut", args: [closeOutId] })) as Omit<OnChainRepoCloseOut, "closeOutId">),
+    })));
   }
 
   /** The RepoSettlement address, which each party approves for its leg. */

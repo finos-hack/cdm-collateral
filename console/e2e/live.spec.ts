@@ -3343,3 +3343,133 @@ test("flow-gmsla-lending-fee: A lends tMMF to B against tUST -> B returns part m
     if (l?.state === "open") await returnPart(id, Number(l.quantity)).catch(() => undefined);
   }
 });
+
+// --- flow-gmsla-default-close-out ---
+// A GMSLA default close-out (wp-adr-gmsla-default-close-out, GMSLA 2010 paragraph 11). B is the non-defaulting party, as
+// in flow-repo-default-close-out. A lends 100,000 tMMF to B against tUST at a 0.5% fee, then B lends the same 100,000
+// tMMF to A against tUST at 0.8%: the loans offset in tMMF and in tUST, so the close-out, which moves no securities or
+// collateral, leaves both parties' holdings where they were, and the net balance is the difference of the fees accrued.
+// The spec restores A's default status as it found it.
+type LoanCloseOutView = { earlyTerminationDate: string; nonDefaultingParty: string; loans: { loanId: string; lender: string; borrower: string;
+  quantity: string; defaultMarketValue: string; collateralValue: string; rateType: string | null; accruedAmount: string }[];
+  heldMargin: { holder: string; value: string }[]; netAmount: string; balance: string; payer: string | null };
+type LoanDefaultView = { counterpartyInDefault: boolean; inDefault: boolean; automaticEarlyTermination: boolean; openLoans: number;
+  preview?: LoanCloseOutView; closeOuts: { closeOutId: string; amount: string; paid: boolean; payer: string | null; toPay: boolean;
+  noticeServed: boolean; verified: boolean; problem?: string; statement?: LoanCloseOutView }[] };
+
+test("flow-gmsla-default-close-out: B declares A's default in the console -> Default Notice -> every open loan of the pair closes out at its Default Market Value against the collateral, with the fees accrued; nothing moves -> the party owing the net balance pays it", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const tMMF = p.tokens.tMMF, tUST = p.tokens.tUST, tUSD = p.tokens.tUSD;
+  const iso = (d: Date) => d.toLocaleDateString("en-CA");
+  const today = iso(new Date());
+  const d10 = (() => { const d = new Date(`${today}T12:00:00`); d.setDate(d.getDate() + 10); return iso(d); })();
+  const setDate = async (date: string) => {
+    for (const svc of [SERVICE.A, SERVICE.B]) await call(`${svc}/business-date`, "POST", { businessDate: date });
+  };
+  const view = (svc: string) => call<LoanDefaultView>(`${svc}/loan-default`);
+  const loanOf = async (svc: string, id: string) => (await call<{ loans: Loan[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id)!;
+  const held = async () => ({
+    aMmf: await balanceOf(GATEWAY.A, tMMF, p.a), bMmf: await balanceOf(GATEWAY.A, tMMF, p.b),
+    aUst: await balanceOf(GATEWAY.A, tUST, p.a), bUst: await balanceOf(GATEWAY.A, tUST, p.b),
+  });
+  // The fee: quantity x price x rate x days / 360, rounded half-up to whole tUSD; the feed price is scaled by 1e8.
+  const fee = (price: bigint, rateBp: bigint, days: bigint) => {
+    const n = 100_000n * days * price * rateBp, d = 10_000n * 360n * 100_000_000n;
+    return (2n * n + d) / (2n * d);
+  };
+  const lend = async (lender: string, borrower: string, ratePercent: string) => {
+    const { loanId } = await call<{ loanId: string }>(`${lender}/loans`, "POST", { security: "tMMF", quantity: 100_000, collateral: "tUST", ratePercent });
+    await call(`${borrower}/loans/${loanId}/affirm`, "POST", {});
+    await call(`${lender}/loans/${loanId}/deliver`, "POST", {});
+    await call(`${borrower}/loans/${loanId}/deliver`, "POST", {});
+    await expect.poll(async () => (await loanOf(lender, loanId))?.state, { timeout: STEP_TIMEOUT }).toBe("open");
+    return loanId;
+  };
+  const returnAll = async (id: string, borrower: string, lender: string) => {
+    await call(`${borrower}/loans/${id}/return`, "POST", { quantity: 100_000 }).catch(() => undefined);
+    await call(`${lender}/loans/${id}/return`, "POST", {}).catch(() => undefined);
+  };
+
+  const aWasInDefault = (await call<{ inDefault: boolean }>(`${GATEWAY.B}/defaults/${p.a}`)).inDefault;
+  expect((await call<{ inDefault: boolean }>(`${GATEWAY.A}/defaults/${p.b}`)).inDefault).toBe(false);
+  await setDate(today);
+  const start = await held();
+  const l1 = await lend(SERVICE.A, SERVICE.B, "0.5"); // A lends to B
+  let l2: string | undefined, closedOut = false;
+  try {
+    l2 = await lend(SERVICE.B, SERVICE.A, "0.8"); // B lends the same tMMF to A
+    await setDate(d10);
+    const price = await scaledPrice(tMMF);
+    const before = await view(SERVICE.B);
+    expect(before.inDefault).toBe(false);
+    expect(before.automaticEarlyTermination).toBe(false); // the baseline GMSLA: a Default Notice is served
+    const preview = before.preview!;
+    const value = (s: LoanCloseOutView, id: string) => s.loans.find((l) => l.loanId === id)!;
+    const v1 = value(preview, l1), v2 = value(preview, l2);
+    expect(v1).toMatchObject({ lender: "BANK-A", borrower: "BANK-B", quantity: "100000", rateType: "Fee", accruedAmount: String(fee(price, 50n, 10n)) });
+    expect(v2).toMatchObject({ lender: "BANK-B", borrower: "BANK-A", quantity: "100000", rateType: "Fee", accruedAmount: String(fee(price, 80n, 10n)) });
+    expect(v2.defaultMarketValue).toBe(v1.defaultMarketValue);
+    expect(v2.collateralValue).toBe(v1.collateralValue);
+    // From B's side: loan 1 gives -(DMV - collateral + fee 1), loan 2 +(DMV - collateral + fee 2); margin held is owed back
+    // by its holder; loans left open by an interrupted earlier run are closed out too.
+    const nd = preview.nonDefaultingParty;
+    const side = (l: LoanCloseOutView["loans"][number]) => {
+      const lenderSide = Number(l.defaultMarketValue) - Number(l.collateralValue) + (l.rateType === "Fee" ? 1 : -1) * Number(l.accruedAmount);
+      return l.lender === nd ? lenderSide : -lenderSide;
+    };
+    const margin = preview.heldMargin.reduce((sum, m) => sum + (m.holder === nd ? -Number(m.value) : Number(m.value)), 0);
+    const others = preview.loans.filter((l) => l.loanId !== l1 && l.loanId !== l2).reduce((sum, l) => sum + side(l), 0);
+    expect(side(v1) + side(v2)).toBe(Number(fee(price, 80n, 10n) - fee(price, 50n, 10n)));
+    expect(Number(preview.netAmount)).toBe(side(v1) + side(v2) + margin + others);
+    const opened = await held();
+    const aUsd = await balanceOf(GATEWAY.A, tUSD, p.a), bUsd = await balanceOf(GATEWAY.A, tUSD, p.b);
+
+    // 1. B declares A's default and closes out in its console: the oracle records the default (if not already), B serves
+    // the Default Notice on-chain, then records the statement and the balance; both loans close out, nothing moves.
+    await page.goto("/#/live/B");
+    await page.getByTestId("loan-default-close-out").click({ timeout: STEP_TIMEOUT });
+    for (const id of [l1, l2]) await expect.poll(async () => (await loanOf(SERVICE.A, id))?.state, { timeout: 60_000 }).toBe("closedOut");
+    closedOut = true;
+    for (const gw of [GATEWAY.A, GATEWAY.B]) expect((await call<{ inDefault: boolean }>(`${gw}/defaults/${p.a}`)).inDefault).toBe(true);
+    expect(await held()).toEqual(opened);
+
+    // 2. Both services rebuild the statement from their own loan documents and agree; the defaulting party is offered no close-out.
+    await expect.poll(async () => (await view(SERVICE.A)).closeOuts[0]?.verified, { timeout: 30_000 }).toBe(true);
+    const a = await view(SERVICE.A), b = await view(SERVICE.B);
+    expect(a.inDefault).toBe(true);
+    expect(a.preview).toBeUndefined();
+    const coA = a.closeOuts[0], coB = b.closeOuts[0];
+    expect(coA.closeOutId).toBe(coB.closeOutId);
+    expect(coB.verified).toBe(true);
+    expect(coB.noticeServed).toBe(true);
+    expect(coB.statement!.balance).toBe(preview.balance);
+    expect(coB.amount).toBe(preview.balance);
+
+    // 3. The party owing the balance pays it in its console.
+    const amount = BigInt(coB.amount);
+    if (amount > 0n) {
+      const payerSvc = coB.payer === "A" ? "A" : "B";
+      await page.goto(`/#/live/${payerSvc}`);
+      await page.getByTestId(`loan-closeout-${coB.closeOutId}`).getByRole("button", { name: `Pay USD ${coB.amount}` }).click({ timeout: STEP_TIMEOUT });
+      await expect.poll(async () => (await view(SERVICE.B)).closeOuts[0].paid, { timeout: 60_000 }).toBe(true);
+      const sign = payerSvc === "A" ? -1n : 1n;
+      expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aUsd + sign * amount);
+      expect(await balanceOf(GATEWAY.A, tUSD, p.b)).toBe(bUsd - sign * amount);
+    } else {
+      expect(coB.paid).toBe(true);
+    }
+    // The two loans offset: each party holds the tMMF and tUST it held before the spec.
+    expect(await held()).toEqual(start);
+    expect(errors).toEqual([]);
+  } finally {
+    if (!closedOut) {
+      if (l2) await returnAll(l2, SERVICE.A, SERVICE.B);
+      await returnAll(l1, SERVICE.B, SERVICE.A);
+    }
+    if (!aWasInDefault) await call(`${ORACLE}/defaults`, "POST", { party: p.a, inDefault: false, notifiedBy: "e2e restore" });
+    await setDate(today);
+  }
+});

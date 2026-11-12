@@ -219,7 +219,15 @@ elected, and records a cdm-ext `GmraCloseOutStatement` that closes out every pur
 termination event, values each at the Repurchase Price to the Early Termination Date against the Default Market Value at
 the feed price, adds the margin held under the pair's GMRA calls, and sets it all off into one tUSD balance; no
 securities move; the other party's service rebuilds the statement from its own trades and the stated prices, and the
-party owing the balance pays it), and
+party owing the balance pays it),
+`GET /api/v1/loan-default`, `POST /api/v1/loan-default/close-out` and `POST /api/v1/loan-default/close-outs/{id}/pay`
+(GMSLA 2010 paragraph 11, wp-adr-gmsla-default-close-out, built by `CdmLoanDefault`: as for the GMRA, the
+non-defaulting party serves a cdm-ext `GmslaDefaultNotice` unless the defaulting party's GMSLA election applies
+automatic early termination, and records a cdm-ext `GmslaCloseOutStatement` that closes out every open loan of the pair
+on `SecuritiesLoan` with CDM's termination event, values each at the Default Market Value of the loaned securities
+against the collateral held (cash at par) at the feed prices, adds the fee or rebate accrued from the billed-through
+date as a `GmslaLoanInvoice` and the margin held under the pair's settled GMSLA calls, and sets it all off into one
+tUSD balance; no securities or collateral move; the GMSLA marking no longer counts the margin it settled), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
