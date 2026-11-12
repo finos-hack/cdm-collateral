@@ -1493,3 +1493,4 @@ excluded.
 | task-triparty-reporting | 1e0282590185c35213b83a5361f360c30ff34cad | services/collateral/src/main/java/collateral/App.java | 2026-11-12T14:42:12Z |
 | task-triparty-reporting | 1e0282590185c35213b83a5361f360c30ff34cad | services/collateral/src/main/java/collateral/CdmTriparty.java | 2026-11-12T14:42:12Z |
 | task-triparty-reporting | 1e0282590185c35213b83a5361f360c30ff34cad | services/collateral/src/test/java/collateral/CdmTripartyReportTest.java | 2026-11-12T14:42:12Z |
+| task-ccp-workflows | d046d86636a1bc324e2db67f3fb512fbbde744e9 | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T18:29:03Z |
