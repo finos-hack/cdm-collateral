@@ -1418,3 +1418,6 @@ excluded.
 | task-triparty-trade-start | ec1bc65b6950031ab10903d22522d08b2cb471f1 | services/collateral/src/main/java/collateral/CdmRepo.java | 2026-11-12T01:45:47Z |
 | task-triparty-trade-start | ec1bc65b6950031ab10903d22522d08b2cb471f1 | services/collateral/src/main/java/collateral/CdmTriparty.java | 2026-11-12T01:45:47Z |
 | task-triparty-trade-start | ec1bc65b6950031ab10903d22522d08b2cb471f1 | services/collateral/src/test/java/collateral/CdmTripartyTradeStartTest.java | 2026-11-12T01:45:47Z |
+| investigation-live-spec-in-claude-web | 00078bbaa67a3004b2cbd496f650ecc3a0543632 | docs/setup/claude-code-cloud-setup.sh | 2026-11-12T02:29:40Z |
+| investigation-live-spec-in-claude-web | 00078bbaa67a3004b2cbd496f650ecc3a0543632 | docs/setup/claude-code-cloud.md | 2026-11-12T02:29:40Z |
+| investigation-live-spec-in-claude-web | 00078bbaa67a3004b2cbd496f650ecc3a0543632 | docs/runbook-e2e.md | 2026-11-12T02:29:40Z |

@@ -123,7 +123,8 @@ The steps below are the same sequence done by hand.
 
 A claude.ai web session gives the agent a Linux workspace with Docker, JDK 21, Maven, Node 22 and a preinstalled
 Chromium. The stack builds, starts and passes `check` there (section 10, 2026-11-08), with these differences from a
-developer machine:
+developer machine. For a Claude Code cloud session (claude.ai/code), the environment settings and setup script in
+[`setup/claude-code-cloud.md`](setup/claude-code-cloud.md) cover the same differences.
 
 - **Network allowlist.** Outbound HTTPS goes through a proxy that admits package managers by default. Add these
   entries under claude.ai Settings > Capabilities > Allowed websites (Pro and Max plans; on Team and Enterprise an
