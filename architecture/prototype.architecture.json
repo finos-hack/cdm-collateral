@@ -52,6 +52,7 @@
     ".konspekt/instance/waypoints/wp-adr-repo-buy-sell-back.md",
     ".konspekt/instance/waypoints/wp-adr-repo-default-close-out.md",
     ".konspekt/instance/waypoints/wp-adr-securities-lending-gmsla-scope.md",
+    ".konspekt/instance/waypoints/wp-adr-triparty-scope.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-terms.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-loan-delivery-return.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-marking.md",

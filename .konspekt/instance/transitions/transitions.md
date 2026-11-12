@@ -1289,3 +1289,25 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
 | edge:e-dec-cdmdev-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
 | edge:e-lnk-gmsladfl-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| waypoint:wp-adr-triparty-scope | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-terms-profile | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-terms-profile | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-trade-start | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-trade-start | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-revaluation | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-revaluation | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-substitution | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-substitution | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-trade-end | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-trade-end | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-reporting | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| node:task-triparty-reporting | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-mrk-tpscope-tp | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-drv-cdmdata-tpscope | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-drv-finality-tpscope | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-dec-tp-terms | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-dec-tp-tradestart | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-dec-tp-reval | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-dec-tp-subst | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-dec-tp-tradeend | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| edge:e-dec-tp-report | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |

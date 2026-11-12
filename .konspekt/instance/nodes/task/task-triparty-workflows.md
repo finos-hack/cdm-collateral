@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.75
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-12T00:31:05Z
+updatedAt: 2026-11-12T00:36:54Z
 ```
 # Task: implement the triparty collateral workflows
 
@@ -38,3 +38,13 @@ tUST, BANK-A selling to BANK-B) and its collateral schedule functions:
   (FullAmount, SettledAmount, InTransitAmount) and `CollateralPortfolio` can hold the agent's allocation as data (T10).
 - **The prototype has two parties.** BANK-A and BANK-B, each with a gateway, a service and a Besu account; there is no
   third party in the live stack.
+
+**Scope chosen 2026-11-11** (source `41bdcccfd2c7410720f06a21f0e5ff20ae297d3c`), recorded in [[wp-adr-triparty-scope]] (proposed): six workflows of a
+triparty repo under the GMRA, one task each:
+
+1. [[task-triparty-terms-profile]]: Triparty terms and the collateral profile.
+2. [[task-triparty-trade-start]]: Triparty trade start: allocation by the agent and DvP of the cash.
+3. [[task-triparty-revaluation]]: Triparty daily revaluation by the agent, with top-up or release.
+4. [[task-triparty-substitution]]: Triparty substitution by the agent.
+5. [[task-triparty-trade-end]]: Triparty trade end: release of the collateral against repayment.
+6. [[task-triparty-reporting]]: The triparty agent's report to both parties.

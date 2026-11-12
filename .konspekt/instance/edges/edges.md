@@ -376,3 +376,12 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-dfladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-default-close-out |  | accepted |
 | e-dec-cdmdev-smedfl | decomposes | node:goal-cdm-development | node:task-sme-gmsla-default-rules |  | accepted |
 | e-lnk-gmsladfl-smedfl | links | node:task-gmsla-default-close-out | node:task-sme-gmsla-default-rules |  | accepted |
+| e-mrk-tpscope-tp | marks | waypoint:wp-adr-triparty-scope | node:task-triparty-workflows |  | proposed |
+| e-drv-cdmdata-tpscope | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-scope |  | proposed |
+| e-drv-finality-tpscope | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-scope |  | proposed |
+| e-dec-tp-terms | decomposes | node:task-triparty-workflows | node:task-triparty-terms-profile |  | proposed |
+| e-dec-tp-tradestart | decomposes | node:task-triparty-workflows | node:task-triparty-trade-start |  | proposed |
+| e-dec-tp-reval | decomposes | node:task-triparty-workflows | node:task-triparty-revaluation |  | proposed |
+| e-dec-tp-subst | decomposes | node:task-triparty-workflows | node:task-triparty-substitution |  | proposed |
+| e-dec-tp-tradeend | decomposes | node:task-triparty-workflows | node:task-triparty-trade-end |  | proposed |
+| e-dec-tp-report | decomposes | node:task-triparty-workflows | node:task-triparty-reporting |  | proposed |
