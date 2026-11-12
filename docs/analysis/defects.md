@@ -46,6 +46,7 @@ modelling gaps (something CDM does not cover) are in [`findings.md`](findings.md
 | D27 | `ResolveSecurityFinanceBillingAmount` reads the lending fee from an `InterestRatePayout` and the lent security from the collateral path, and CDM's own lending trade has neither, so every billing record of CDM's invoice sample has no amount and the invoice has no `billingSummary`, which is required; `Create_BillingSummary` is a `codeImplementation` function with no implementation, so it returns nothing *(added 2026-11-11)* | function / sample | `rosetta/event-common-func.rosetta` 1254–1345; `functions/sec-lending/create-security-lending-invoice-func-output.json` |
 | D29 | `SecurityFinanceCashSettlementAmount` returns a transfer whose payer and receiver are the reverse of the `PayerReceiver` it is given, and it values the loan only at the trade's own price, with no price input *(added 2026-11-11)* | function | `SecurityFinanceCashSettlementAmount` (cdm-java 7.7.0, `cdm.event.common.functions`) |
 | D28 | `LegalAgreement`'s condition `AgreementVerification` checks the agreement type for security, credit support, collateral transfer and master agreement schedule elections, but not for `masterAgreementElections`, so a GMSLA (or GMRA or ISDA) election block under a legal agreement of any type validates *(added 2026-11-11)* | validation | `rosetta/legaldocumentation-common-type.rosetta` 78–88 |
+| D30 | `CheckCriteria` has no case for an `AssetIdentifier` criterion, which `CollateralCriteria` offers: its switch falls to `default False`, so `CheckEligibilityByDetails` never finds an ISIN-identified asset eligible and a concentration check built on it applies no limit to one *(added 2026-11-12)* | function | `cdm/rosetta/product-collateral-func.rosetta` 80–119 (cdm-java 7.7.0); `product-collateral-type.rosetta` 215–230 |
 
 ## Details
 
@@ -462,3 +463,20 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   - The function has no price input: it values the loan at the price booked in the trade, so it cannot mark a loan to
     a later price.
 - **Effect:** the prototype does not use it for marking; `cdm-ext` computes the marked requirement.
+
+### D30 — CDM's criteria check does not match an asset identified by ISIN *(added 2026-11-12)*
+
+- `CollateralCriteria` (`product-collateral-type.rosetta` lines 215–230 in the cdm-java 7.7.0 jar) offers
+  `AssetIdentifier`, "a specifically identified asset", as one of its criteria.
+- `CheckCriteria` (`product-collateral-func.rosetta` lines 80–119) switches on the criterion type and has no case for
+  `AssetIdentifier`; it falls to `default False`. `EligibilityQuery` has no asset identifier to compare with either.
+- Observed 2026-11-12 with CDM 7.7.0 Java (`TripartyTermsTest.cdmsCriteriaCheckDoesNotMatchTheProfilesIsinCriteria`,
+  task-triparty-terms-profile): a triparty profile of tUST at 2% and tAGY at 3% with a 50% limit on tAGY, both by ISIN;
+  `cdm-ext`'s `ConcentrationLimitBreaches`, which checks each criterion with `CheckCriteria`, finds no breach for an
+  allocation of 60% tAGY.
+- **Effect:** a schedule or profile that names its assets by identifier (as the prototype's CSA schedule and triparty
+  profile do) cannot be checked for eligibility or concentration with CDM's functions. `cdm-ext`'s `HaircutFor`
+  matches the same criteria by identifier.
+- **Fix:** add an `AssetIdentifier` case to `CheckCriteria` and an asset identifier to `EligibilityQuery`.
+- **Local extension:** a per-ISIN concentration check in `cdm-ext` (task-triparty-trade-start, the project owner's choice
+  of 2026-11-12). Not reported (project owner's instruction).

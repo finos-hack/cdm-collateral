@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T01:07:01Z
+updatedAt: 2026-11-12T01:08:09Z
 ```
 # Task: Triparty trade start: allocation by the agent and DvP of the cash
 
@@ -24,3 +24,7 @@ Row 21 of section C of the workflow map, split from [[task-triparty-workflows]] 
 - **Prototype:** the giver deposits into `TripartySettlement`; BANK-T's service allocates; the contract delivers the cash against the allocation; a live spec.
 
 The details are decided when the task starts, after a temporary test of CDM's functions over the prototype's repo.
+
+**Carried from [[task-triparty-terms-profile]]** (the project owner's choice of 2026-11-12, source `1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e`): CDM's
+`CheckCriteria` does not match the profile's ISIN criteria (defect D30), so the allocation's concentration limit is
+checked by a per-ISIN concentration function in `cdm-ext`, built in this task.

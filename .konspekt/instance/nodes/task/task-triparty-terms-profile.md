@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T01:07:01Z
+updatedAt: 2026-11-12T01:08:09Z
 ```
 # Task: Triparty terms and the collateral profile
 
@@ -43,3 +43,8 @@ The details are decided when the task starts, after a temporary test of CDM's fu
   (`TripartyTermsTest.cdmsCriteriaCheckDoesNotMatchTheProfilesIsinCriteria`). `cdm-ext`'s `HaircutFor` matches the
   same criterion by ISIN. Allocation against the limit needs either a per-ISIN concentration check in `cdm-ext` or the
   profile's criteria stated by asset type and issuer.
+
+The project owner chose on 2026-11-12 (source `1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e`: "1a 1a 2. add them"): the observation is recorded as defect
+D30 in `docs/analysis/defects.md`; the fix is a per-ISIN concentration check in `cdm-ext`, built in
+[[task-triparty-trade-start]]; the architecture description gains the securities loan and triparty settlement
+contracts and the triparty agent's actor.
