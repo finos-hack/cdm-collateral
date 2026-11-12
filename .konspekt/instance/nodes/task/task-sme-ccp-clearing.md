@@ -3,7 +3,7 @@ id: task-sme-ccp-clearing
 type: task
 title: Confirm with a business SME the clearing of a bilateral repo by novation to the CCP
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: ccp-clearing
   sourceRef: 0072e61cda902e466726ca3c65c8c1ad61b3f089
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T23:30:00Z
   confidence: 0.5
 createdAt: 2026-11-12T23:30:00Z
-updatedAt: 2026-11-12T23:30:00Z
+updatedAt: 2026-11-12T23:43:46Z
 ```
 # Task: confirm the clearing of a bilateral repo by novation to the CCP
 

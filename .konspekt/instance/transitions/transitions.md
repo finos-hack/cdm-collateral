@@ -1464,3 +1464,8 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-ccp-clearing | status |  | open | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
 | edge:e-dec-cdmdev-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
 | edge:e-lnk-ccpclr-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
+| node:task-sme-ccp-clearing | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
+| edge:e-mrk-ccpclradr-ccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
+| edge:e-drv-cdmdata-ccpclradr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
+| edge:e-dec-cdmdev-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
+| edge:e-lnk-ccpclr-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
