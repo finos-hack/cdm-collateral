@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T01:11:35Z
+updatedAt: 2026-11-12T01:20:36Z
 ```
 # Task: Triparty trade start: allocation by the agent and DvP of the cash
 
@@ -49,3 +49,7 @@ days, BANK-A selling to BANK-B, `CdmRepo.execution`):
   at the profile's haircuts covers 1,000,000 with 10,371 tUST when the giver holds 20,000 tUST, and with 6,000 tUST and
   4,380 tAGY when it holds 6,000 tUST; it takes no concentration limit, and the second basket is 42% tAGY.
 - **Settlement through the agent:** absent, as recorded in [[task-triparty-workflows]] (T7, T9).
+
+**Design chosen 2026-11-12** (source `dfc25e3ca5487c53cf915b0e61638c428cd4e377`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in
+[[wp-adr-triparty-trade-start]] (proposed); the allocation rules are questions for an SME in
+[[task-sme-triparty-trade-start]].

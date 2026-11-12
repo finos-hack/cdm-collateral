@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 163 questions in 29 tasks, all open.
+Status of the ledger: 170 questions in 30 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -325,3 +325,15 @@ Status of the ledger: 163 questions in 29 tasks, all open.
 | TPT-4 | Either the giver or the receiver may propose the terms, and the agent affirms them. Is the agent a party to the triparty agreement that consents to its terms, or only its operator? | open | |
 | TPT-5 | The terms are set once and only terminated, not amended. How are changes to a profile agreed in practice, and do they apply to repos already allocated? | open | |
 | TPT-6 | The giver or the receiver can terminate the triparty terms while nothing is allocated. What notice does termination take, and can the agent terminate? | open | |
+
+### `task-sme-triparty-trade-start`: the triparty allocation and the purchase through the agent
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPS-1 | The profile's haircuts take the place of the GMRA margin ratio: the allocated value after haircuts covers the Purchase Price. Is that how triparty repo margin is applied, or is a margin ratio applied on top of the haircuts? | open | |
+| TPS-2 | The agent allocates in the giver's own ranking of its assets. Do agents allocate in the giver's ranking, by their own optimisation (cheapest to deliver), or by a rule in the triparty agreement? | open | |
+| TPS-3 | A concentration limit is measured as a share of the Purchase Price the allocation covers. Do agents measure limits against the exposure, the total allocated value, or the giver's whole allocation across repos? | open | |
+| TPS-4 | When the giver's deposit cannot cover the Purchase Price within the profile, the agent allocates nothing. Do agents allocate partially and report a shortfall, or hold the trade unsettled? | open | |
+| TPS-5 | The allocated collateral stays in the agent's books in an account per repo, held by the receiver by title. Is the receiver's account at the agent per repo, or one account per giver and receiver? | open | |
+| TPS-6 | The receiver affirms the agent's allocation before the purchase settles. Does the receiver confirm allocations in practice, or is the agent's allocation binding on both parties? | open | |
+| TPS-7 | The agent values the collateral at the oracle feed price. Which price sources and times do agents use for the allocation? | open | |

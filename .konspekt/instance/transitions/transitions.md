@@ -1342,3 +1342,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
 | edge:e-dec-cdmdev-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
 | edge:e-lnk-tpterms-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| waypoint:wp-adr-triparty-trade-start | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| node:task-sme-triparty-trade-start | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| node:task-sme-triparty-trade-start | status |  | open | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| edge:e-mrk-tpstartadr-tpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| edge:e-drv-cdmdata-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| edge:e-drv-finality-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| edge:e-dec-cdmdev-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| edge:e-lnk-tpstart-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
