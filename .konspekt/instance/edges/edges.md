@@ -423,7 +423,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-ccp-default | decomposes | node:task-ccp-workflows | node:task-ccp-default |  | accepted |
 | e-dec-ccp-porting | decomposes | node:task-ccp-workflows | node:task-ccp-porting |  | accepted |
 | e-dec-e2eflow-readafterwrite | decomposes | node:goal-end-to-end-flow | node:task-live-spec-node-read-after-write |  | accepted |
-| e-mrk-ccpmemadr-ccpmem | marks | waypoint:wp-adr-ccp-membership | node:task-ccp-membership |  | proposed |
-| e-drv-cdmdata-ccpmemadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-membership |  | proposed |
-| e-dec-cdmdev-smeccpmem | decomposes | node:goal-cdm-development | node:task-sme-ccp-membership |  | proposed |
-| e-lnk-ccpmem-smeccpmem | links | node:task-ccp-membership | node:task-sme-ccp-membership |  | proposed |
+| e-mrk-ccpmemadr-ccpmem | marks | waypoint:wp-adr-ccp-membership | node:task-ccp-membership |  | accepted |
+| e-drv-cdmdata-ccpmemadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-membership |  | accepted |
+| e-dec-cdmdev-smeccpmem | decomposes | node:goal-cdm-development | node:task-sme-ccp-membership |  | accepted |
+| e-lnk-ccpmem-smeccpmem | links | node:task-ccp-membership | node:task-sme-ccp-membership |  | accepted |

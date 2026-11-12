@@ -576,6 +576,9 @@ const server = http.createServer((req, res) => {
   req.on("end", async () => {
     try {
       const body = raw ? JSON.parse(raw) : {};
+      // Every request but the health check first waits for this node to reach the peers' head, so it sees a record
+      // another party has just written on its own node (task-live-spec-node-read-after-write).
+      if (url.pathname !== "/ledger/v1/health") await adapter.catchUpWithPeers();
       const out = await match.handler(params, body, url);
       res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(out));
     } catch (e) {
@@ -585,4 +588,5 @@ const server = http.createServer((req, res) => {
   });
 });
 
+adapter.catchUpWithPeers(0).catch(() => undefined); // start the head subscriptions before the first request
 server.listen(PORT, () => console.log(`ledger gateway for ${NODE} (${adapter.account}) on http://localhost:${PORT}/ledger/v1`));

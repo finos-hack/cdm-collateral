@@ -1449,3 +1449,11 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-ccp-membership | status |  | open | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
 | edge:e-dec-cdmdev-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
 | edge:e-lnk-ccpmem-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
+| node:task-sme-ccp-membership | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| node:task-sme-triparty-reporting | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| waypoint:wp-adr-triparty-reporting | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| edge:e-mrk-ccpmemadr-ccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| edge:e-drv-cdmdata-ccpmemadr | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| edge:e-dec-cdmdev-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| edge:e-lnk-ccpmem-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
+| node:task-live-spec-node-read-after-write | status | open | resolved | 2026-11-12T22:45:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf |  |

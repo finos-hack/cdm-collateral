@@ -786,6 +786,8 @@ export interface LedgerAdapter {
   leaveCcp(rulebookHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** The rulebook with this hash, or the CCP's own rulebook when the hash is omitted; null when there is none. */
   getCcpRulebook(rulebookHash: Hex | null, ccp?: Address, block?: bigint): Promise<OnChainCcpRulebook | null>;
+  /** Wait until this gateway's node has the highest block a peer node reports (task-live-spec-node-read-after-write). */
+  catchUpWithPeers(maxWaitMs?: number): Promise<void>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -800,8 +802,11 @@ export class BesuAdapter implements LedgerAdapter {
   private readonly wallet: WalletClient;
   private readonly reg: Registry;
 
+  private readonly node: string;
+
   constructor(node: string, reg: Registry = loadRegistry()) {
     this.reg = reg;
+    this.node = node;
     const rpc = reg.rpc[node];
     if (!rpc) throw new Error(`no RPC URL for node ${node} in the registry`);
     const chain = defineChain({
@@ -831,6 +836,52 @@ export class BesuAdapter implements LedgerAdapter {
   private latestBlock(): Promise<bigint> {
     return this.pub.getBlockNumber({ cacheTime: 0 });
   }
+
+  /**
+   * Wait until this node has the highest block any node reports (task-live-spec-node-read-after-write). A party's
+   * service reads, or writes against, a record the other party has just written on its own node; under QBFT this node
+   * can be a block behind, so the read reverted or came back empty as for an unknown record ("repo … is not booked",
+   * "loan … is not affirmed", an unknown call in flow-settlement-netting). The gateway subscribes to new heads on every
+   * node in the registry (WebSocket, eth_subscribe newHeads) and keeps the highest; a request waits only while this
+   * node is below it, polling every 25 ms for at most maxWaitMs, and costs no RPC call otherwise. A head pushed by the
+   * writer's node reaches this gateway before the writer's HTTP response reaches this party's service in the cases
+   * observed; that ordering is not guaranteed.
+   */
+  async catchUpWithPeers(maxWaitMs = 10_000): Promise<void> {
+    this.watchHeads();
+    if (this.localHead >= this.networkHead) return;
+    const target = this.networkHead;
+    const deadline = Date.now() + maxWaitMs;
+    while (this.localHead < target && Date.now() < deadline) {
+      const n = await this.latestBlock();
+      if (n > this.localHead) this.localHead = n;
+      if (this.localHead >= target) break;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+  }
+
+  private localHead = 0n;
+  private networkHead = 0n;
+  private headWatchers: (() => void)[] | null = null;
+
+  /** Subscribe once to new heads on this node and on every other node in the registry. */
+  private watchHeads(): void {
+    if (this.headWatchers) return;
+    this.headWatchers = [];
+    const seen = (n: bigint, local: boolean) => {
+      if (local && n > this.localHead) this.localHead = n;
+      if (n > this.networkHead) this.networkHead = n;
+    };
+    this.headWatchers.push(this.ws.watchBlockNumber({ emitOnBegin: true, onBlockNumber: (n) => seen(n, true), onError: () => undefined }));
+    for (const [n, url] of Object.entries(this.reg.rpc)) {
+      if (n === this.node) continue;
+      const wsUrl = (this.reg as { wsRpc?: Record<string, string> }).wsRpc?.[n]
+        ?? url.replace(/^http/, "ws").replace(/:(\d+)(?=\/|$)/, (_m, p) => ":" + (Number(p) + 1));
+      const peer = createPublicClient({ transport: webSocket(wsUrl) });
+      this.headWatchers.push(peer.watchBlockNumber({ emitOnBegin: true, onBlockNumber: (b) => seen(b, false), onError: () => undefined }));
+    }
+  }
+
 
   // One key per gateway: sends run one at a time, and the gateway tracks the next nonce itself. Right after a receipt
   // (now polled every 250 ms) the node's pending nonce can still be the used one, and viem reused it ("Nonce provided

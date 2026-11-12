@@ -3,7 +3,7 @@ id: task-sme-triparty-reporting
 type: task
 title: Confirm with a business SME the triparty agent's report to both parties
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-reporting
   sourceRef: 8816e213ab23a58fce8e77558228fcd381a4d8f5
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T13:55:00Z
   confidence: 0.55
 createdAt: 2026-11-12T13:55:00Z
-updatedAt: 2026-11-12T13:55:00Z
+updatedAt: 2026-11-12T20:48:00Z
 ```
 # Task: confirm the triparty agent's report to both parties
 

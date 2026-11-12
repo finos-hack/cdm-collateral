@@ -3,7 +3,7 @@ id: task-sme-ccp-membership
 type: task
 title: Confirm with a business SME CCP membership, the rulebook and the default fund
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: ccp-membership
   sourceRef: 041be7509af8f3a7990e6b1056c58cb4967eb42a
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T19:40:00Z
   confidence: 0.5
 createdAt: 2026-11-12T19:40:00Z
-updatedAt: 2026-11-12T19:40:00Z
+updatedAt: 2026-11-12T20:48:00Z
 ```
 # Task: confirm CCP membership, the rulebook and the default fund
 
