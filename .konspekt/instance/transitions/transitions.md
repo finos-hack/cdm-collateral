@@ -1311,3 +1311,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-tp-subst | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
 | edge:e-dec-tp-tradeend | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
 | edge:e-dec-tp-report | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
+| waypoint:wp-adr-triparty-terms-profile | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| node:task-sme-triparty-terms-profile | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| node:task-sme-triparty-terms-profile | status |  | open | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| edge:e-mrk-tptermsadr-tpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| edge:e-drv-cdmdata-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| edge:e-drv-finality-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| edge:e-dec-cdmdev-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| edge:e-lnk-tpterms-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |

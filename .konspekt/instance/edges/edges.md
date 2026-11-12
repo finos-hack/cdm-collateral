@@ -385,3 +385,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-tp-subst | decomposes | node:task-triparty-workflows | node:task-triparty-substitution |  | proposed |
 | e-dec-tp-tradeend | decomposes | node:task-triparty-workflows | node:task-triparty-trade-end |  | proposed |
 | e-dec-tp-report | decomposes | node:task-triparty-workflows | node:task-triparty-reporting |  | proposed |
+| e-mrk-tptermsadr-tpterms | marks | waypoint:wp-adr-triparty-terms-profile | node:task-triparty-terms-profile |  | proposed |
+| e-drv-cdmdata-tptermsadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-terms-profile |  | proposed |
+| e-drv-finality-tptermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-terms-profile |  | proposed |
+| e-dec-cdmdev-smetpterms | decomposes | node:goal-cdm-development | node:task-sme-triparty-terms-profile |  | proposed |
+| e-lnk-tpterms-smetpterms | links | node:task-triparty-terms-profile | node:task-sme-triparty-terms-profile |  | proposed |

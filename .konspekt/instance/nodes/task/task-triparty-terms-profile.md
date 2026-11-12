@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T00:36:54Z
+updatedAt: 2026-11-12T00:45:37Z
 ```
 # Task: Triparty terms and the collateral profile
 
@@ -24,3 +24,6 @@ Row 20 of section C of the workflow map, split from [[task-triparty-workflows]] 
 - **Prototype:** BANK-T: a Besu account and a third collateral service and gateway started by `live-e2e.sh`; the terms held by the three services and their hash on a new `TripartySettlement` contract; a live spec.
 
 The details are decided when the task starts, after a temporary test of CDM's functions over the prototype's repo.
+
+**Design chosen 2026-11-11** (source `6d0f24d02ec0a2e8263d04901b8f42e3e7519c33`: "1a 2a 3a 4a 5a 6a 7a"), recorded in [[wp-adr-triparty-terms-profile]]
+(proposed); the terms and the profile are questions for an SME in [[task-sme-triparty-terms-profile]].

@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 157 questions in 28 tasks, all open.
+Status of the ledger: 163 questions in 29 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -312,3 +312,16 @@ Status of the ledger: 157 questions in 28 tasks, all open.
 | DFL-7 | A returned loan with a period not yet billed is not in the close-out and can still be billed. Should its unpaid rate enter the balance? | open | |
 | DFL-8 | The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply under paragraph 11? | open | |
 | DFL-9 | The GMSLA and GMRA close-outs between the same pair are separate statements. Is cross-agreement set-off (for example under a master netting agreement) expected? | open | |
+
+## Triparty repo
+
+### `task-sme-triparty-terms-profile`: the triparty terms and the collateral profile
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPT-1 | A triparty repo has a triparty agreement between the giver, the receiver and the agent, beside the GMRA between the giver and the receiver. Which terms does the triparty agreement hold that the prototype's terms leave out (the agent's fees, its liability, the cut-off times, the accounts)? | open | |
+| TPT-2 | The prototype's profile reuses the CSA schedule: US Treasuries at a 2% haircut and agency debt at 3%. Is that a usual triparty repo profile, or do agents' profiles usually state margin as a ratio per asset class? | open | |
+| TPT-3 | The profile limits agency debt to 50% of the allocated value after haircuts. Are concentration limits in triparty profiles usually per asset class, per issuer, or both, and measured before or after haircuts? | open | |
+| TPT-4 | Either the giver or the receiver may propose the terms, and the agent affirms them. Is the agent a party to the triparty agreement that consents to its terms, or only its operator? | open | |
+| TPT-5 | The terms are set once and only terminated, not amended. How are changes to a profile agreed in practice, and do they apply to repos already allocated? | open | |
+| TPT-6 | The giver or the receiver can terminate the triparty terms while nothing is allocated. What notice does termination take, and can the agent terminate? | open | |
