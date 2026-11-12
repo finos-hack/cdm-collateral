@@ -1396,3 +1396,5 @@ excluded.
 | task-triparty-terms-profile | 0ece52a4e45162ef704d602420364298fa0b428c | docs/analysis/defects.md | 2026-11-12T01:08:20Z |
 | task-triparty-terms-profile | 0ece52a4e45162ef704d602420364298fa0b428c | architecture/prototype.architecture.json | 2026-11-12T01:08:20Z |
 | task-triparty-trade-start | 4918492052580373387f9aa89c0d2f10178fd533 | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T01:11:35Z |
+| task-triparty-trade-start | 9d8c3730dd765ac1bb7f58c65269563ad9af1f07 | architecture/prototype.architecture.json | 2026-11-12T01:20:36Z |
+| task-triparty-trade-start | 9d8c3730dd765ac1bb7f58c65269563ad9af1f07 | docs/analysis/sme-question-ledger.md | 2026-11-12T01:20:36Z |
