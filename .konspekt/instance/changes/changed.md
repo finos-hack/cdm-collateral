@@ -1392,3 +1392,4 @@ excluded.
 | task-triparty-terms-profile | 621b6e8166bf3ce8063a4112060955e67c1765bf | services/collateral/src/main/java/collateral/CdmTriparty.java | 2026-11-12T01:04:54Z |
 | task-triparty-terms-profile | 621b6e8166bf3ce8063a4112060955e67c1765bf | services/collateral/src/main/java/collateral/Config.java | 2026-11-12T01:04:54Z |
 | task-triparty-terms-profile | 621b6e8166bf3ce8063a4112060955e67c1765bf | services/collateral/src/test/java/collateral/CdmTripartyTest.java | 2026-11-12T01:04:54Z |
+| task-triparty-workflows | 315d8e20c2445606591efbcb87c28707eaec604e | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T01:07:20Z |
