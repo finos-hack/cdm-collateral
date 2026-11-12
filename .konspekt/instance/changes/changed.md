@@ -1525,3 +1525,5 @@ excluded.
 | task-ccp-membership | d57db97197b3647985148e6b6d578698bf5fd978 | services/collateral/src/main/java/collateral/CdmCcp.java | 2026-11-12T20:12:12Z |
 | task-ccp-membership | d57db97197b3647985148e6b6d578698bf5fd978 | services/collateral/src/main/java/collateral/Config.java | 2026-11-12T20:12:12Z |
 | task-ccp-membership | d57db97197b3647985148e6b6d578698bf5fd978 | services/collateral/src/test/java/collateral/CdmCcpTest.java | 2026-11-12T20:12:12Z |
+| task-live-spec-node-read-after-write | 2497b3be84fc07e4483393e1fe3d13758421f9ef | gateway/src/besu.ts | 2026-11-12T22:23:51Z |
+| task-live-spec-node-read-after-write | 2497b3be84fc07e4483393e1fe3d13758421f9ef | gateway/src/server.ts | 2026-11-12T22:23:51Z |
