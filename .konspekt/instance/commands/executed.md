@@ -487,3 +487,7 @@ at execution time.
 | investigation-live-spec-in-claude-web | a81fbb3dd501cfceff1498016cde9bbaf37d1e2e |
 | investigation-live-spec-in-claude-web | 0014c29c47593bd011dff7c948f0a7af23e92499 |
 | investigation-live-spec-in-claude-web | 37d50a9f0fafcf8318744f65f8368d424d8b4cf6 |
+| investigation-live-spec-in-claude-web | b675b6d98aeaef2507f96b4798fa2c77fececec2 |
+| investigation-live-spec-in-claude-web | 1e9930da054e83fedfce43ba5ea27f787e7c2d6b |
+| investigation-live-spec-in-claude-web | 149d60e62d0a46345f2bd259bbab25ac445c6cf1 |
+| investigation-live-spec-in-claude-web | 388f46fcd69ed7353598663cce10942e67425c82 |

@@ -1326,3 +1326,6 @@ excluded.
 | task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | .github/workflows/konspekt-conformance.yml | 2026-11-11T23:12:00Z |
 | task-ci-actions-minutes | 824cce0c6810fe0476912d664486b60e01eab734 | docs/runbook-e2e.md | 2026-11-11T23:12:00Z |
 | goal-test-konspekt-adoption | 40ee16fd66197011360568a4995058af5a444101 | docs/project-narrative.md | 2026-11-04T02:34:39Z |
+| investigation-live-spec-in-claude-web | 00078bbaa67a3004b2cbd496f650ecc3a0543632 | docs/setup/claude-code-cloud-setup.sh | 2026-11-12T02:29:40Z |
+| investigation-live-spec-in-claude-web | 00078bbaa67a3004b2cbd496f650ecc3a0543632 | docs/setup/claude-code-cloud.md | 2026-11-12T02:29:40Z |
+| investigation-live-spec-in-claude-web | 00078bbaa67a3004b2cbd496f650ecc3a0543632 | docs/runbook-e2e.md | 2026-11-12T02:29:40Z |

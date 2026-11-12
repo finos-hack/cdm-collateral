@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-09T00:17:00Z
   confidence: 0.9
 createdAt: 2026-11-09T00:17:00Z
-updatedAt: 2026-11-09T00:49:00Z
+updatedAt: 2026-11-12T02:29:51Z
 ```
 # Investigation: run the live spec tests in a claude.ai web session
 
@@ -63,3 +63,9 @@ JDK 21.0.12, Maven 3.9.11, Node 22.23.4. Outbound HTTPS goes through an allowlis
    `3a99cb9` plus the fix: `build` exit 0 (61 s), `reset` exit 0, `up` exit 0 (125 s) with no
    `Output directory already exists`, `check` 29 passed, 0 failed (15.2 min), which covers the PR #52 specs. The
    runbook's manual first-run steps were removed.
+9. Claude Code cloud environment (2026-11-11, requested by the project owner): `docs/setup/claude-code-cloud-setup.sh`
+   (setup script) and `docs/setup/claude-code-cloud.md` (network access, allowed domains,
+   `CHROMIUM_PATH=/usr/local/bin/cdm-chromium`, session commands), commit `00078bb`. Tested in this workspace at
+   `05b165e`: the script exited 0 in 97 s with every step passing; a copy outside the repository found the clone;
+   `--docker` exited 0; `up` exit 0 and `check --grep flow-return` passed through the symlinked Chromium. Not yet run
+   in a Claude Code cloud environment.
