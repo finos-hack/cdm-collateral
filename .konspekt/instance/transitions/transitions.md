@@ -1267,3 +1267,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
 | edge:e-dec-cdmdev-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
 | edge:e-lnk-gmslafee-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
+| node:task-gmsla-rebate | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| node:task-gmsla-lending-fee | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| node:task-repo-gmra-workflows | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| node:task-live-spec-duration | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| node:task-konspekt-checkpoint-adoption | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| node:task-ci-deploy-dropped-tx | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| node:task-live-spec-balance-aware-amounts | status | open | abandoned | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |

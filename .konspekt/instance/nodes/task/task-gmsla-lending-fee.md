@@ -2,7 +2,7 @@
 id: task-gmsla-lending-fee
 type: task
 title: Lending fee on loans against non-cash collateral
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T23:29:22Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: lending fee on loans against non-cash collateral
 
@@ -52,3 +52,5 @@ lent by BANK-A to BANK-B against 1,037 tUST, margin 1.02, fee 0.5% in cdm-ext `G
 
 **Design chosen 2026-11-11** (source `1577efddfacbb1f2fedacd57705e2f766a8b44bc`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in [[wp-adr-gmsla-lending-fee]]
 (proposed); the rules are questions for an SME in [[task-sme-gmsla-fee-rules]].
+
+The project owner resolved the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "1. resolve them"): row 18 is built and `flow-gmsla-lending-fee` passes (branch `gmsla-lending-fee`).

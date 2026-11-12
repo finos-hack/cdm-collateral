@@ -2,7 +2,7 @@
 id: task-konspekt-checkpoint-adoption
 type: task
 title: Re-seed the konspekt kit from the local standard to adopt checkpoint and resume
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-checkpoint
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T22:13:30Z
   confidence: 0.8
 createdAt: 2026-11-07T22:13:30Z
-updatedAt: 2026-11-07T22:31:16Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: re-seed the konspekt kit from the local standard to adopt checkpoint and resume
 
@@ -28,3 +28,5 @@ of the `AGENTS.md` stanza, and an empty `instance/checkpoints/checkpoints.md`. A
 match their templates and the instance validates.
 
 **Accepted 2026-11-07** under [[goal-test-konspekt-adoption]] by the project owner (source `22bd8364ab05ce0184ff96fe2006969da7db8dea`: "2. accept under goal-test-konspekt-adoption").
+
+The project owner resolved the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "4. b"): the re-seeded kit is in use; `checkpoints/checkpoints.md` has rows.

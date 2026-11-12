@@ -2,7 +2,7 @@
 id: task-ci-deploy-dropped-tx
 type: task
 title: Diagnose a deploy transaction that is never mined in the CI live stack
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-06T21:19:41Z
   confidence: 0.7
 createdAt: 2026-11-06T21:19:41Z
-updatedAt: 2026-11-06T21:53:01Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: diagnose a deploy transaction that is never mined in the CI live stack
 
@@ -50,3 +50,5 @@ until a CI run shows the diagnostics or the owner closes it. Pushed on branch `d
 
 PR #29 merged. The project owner keeps the task open until a failed CI run shows what happens to the transaction
 (2026-11-06: "5. b").
+
+The project owner resolved the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "4. b"): the diagnostics (`contracts/scripts/deploy.ts` nonces, receipt timeout, resend; the CI Besu log step) are on main. The cause of the dropped transaction was not found; a recurrence is a new task with the diagnostics' output.
