@@ -371,3 +371,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-feeadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-lending-fee |  | accepted |
 | e-dec-cdmdev-smefee | decomposes | node:goal-cdm-development | node:task-sme-gmsla-fee-rules |  | accepted |
 | e-lnk-gmslafee-smefee | links | node:task-gmsla-lending-fee | node:task-sme-gmsla-fee-rules |  | accepted |
+| e-mrk-dfladr-gmsladfl | marks | waypoint:wp-adr-gmsla-default-close-out | node:task-gmsla-default-close-out |  | proposed |
+| e-drv-cdmdata-dfladr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-gmsla-default-close-out |  | proposed |
+| e-drv-finality-dfladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-gmsla-default-close-out |  | proposed |
+| e-dec-cdmdev-smedfl | decomposes | node:goal-cdm-development | node:task-sme-gmsla-default-rules |  | proposed |
+| e-lnk-gmsladfl-smedfl | links | node:task-gmsla-default-close-out | node:task-sme-gmsla-default-rules |  | proposed |

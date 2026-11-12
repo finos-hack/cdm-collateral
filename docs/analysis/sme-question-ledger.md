@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 148 questions in 27 tasks, all open.
+Status of the ledger: 157 questions in 28 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -298,3 +298,17 @@ Status of the ledger: 148 questions in 27 tasks, all open.
 | FEE-4 | The lender issues the fee invoice and the borrower pays on agreement, in USD cash. In practice, who issues the fee statement, how often, and how is a disputed amount handled? | open | |
 | FEE-5 | A substitution of the collateral does not change the fee. Is that right, or does the fee depend on the type of collateral held? | open | |
 | FEE-6 | A returned loan can still be billed for the period up to its return date. Is the final fee usually settled with the return, or billed with the next periodic statement? | open | |
+
+### `task-sme-gmsla-default-rules`: a GMSLA default and close-out
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| DFL-1 | Each loan enters as the Default Market Value of the Equivalent Securities, owed to the lender, against the value of the Equivalent Collateral the lender holds, owed to the borrower. Is that GMSLA 2010 paragraph 11, and is cash collateral owed back at its amount? | open | |
+| DFL-2 | The prototype values securities at one oracle price on the Early Termination Date. Under paragraph 11 the non-defaulting party may use the proceeds of a sale or purchase, or quotations, at the Default Valuation Time. Which method applies when, and on which day? | open | |
+| DFL-3 | The fee or rebate accrued from the billed-through date to the Early Termination Date, and any invoice still unpaid, enter the balance. Is that right, and does interest run on unpaid amounts? | open | |
+| DFL-4 | Margin held under the pair's GMSLA calls is set off at its value, cash at par and securities at their Default Market Value. With aggregated marking, is that margin treated as collateral of all the loans? | open | |
+| DFL-5 | Automatic early termination follows the defaulting party's election, and the oracle does not record the kind of default. Should only an Act of Insolvency terminate without notice? | open | |
+| DFL-6 | Loans booked and affirmed but not delivered stay open after the close-out. Does the Event of Default terminate them too, and at what value? | open | |
+| DFL-7 | A returned loan with a period not yet billed is not in the close-out and can still be billed. Should its unpaid rate enter the balance? | open | |
+| DFL-8 | The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply under paragraph 11? | open | |
+| DFL-9 | The GMSLA and GMRA close-outs between the same pair are separate statements. Is cross-agreement set-off (for example under a master netting agreement) expected? | open | |

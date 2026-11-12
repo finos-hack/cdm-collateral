@@ -1274,3 +1274,11 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-checkpoint-adoption | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
 | node:task-ci-deploy-dropped-tx | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
 | node:task-live-spec-balance-aware-amounts | status | open | abandoned | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
+| waypoint:wp-adr-gmsla-default-close-out | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| node:task-sme-gmsla-default-rules | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| node:task-sme-gmsla-default-rules | status |  | open | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| edge:e-mrk-dfladr-gmsladfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| edge:e-drv-cdmdata-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| edge:e-drv-finality-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| edge:e-dec-cdmdev-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| edge:e-lnk-gmsladfl-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
