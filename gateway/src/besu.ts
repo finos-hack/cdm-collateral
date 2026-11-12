@@ -462,6 +462,8 @@ const tripartyAbi = parseAbi([
   "function reposOf(bytes32 termsId) view returns (bytes32[])",
   "function allocationOf(bytes32 repoId) view returns (address[] tokens, uint256[] amounts)",
   "function freeOf(bytes32 termsId) view returns ((address token, uint256 amount, uint256 rank)[])",
+  "function revalue(bytes32 repoId, bytes32 revaluationHash, address[] tokens, uint256[] amounts)",
+  "function revaluationsOf(bytes32 repoId) view returns ((bytes32 revaluationHash, uint64 blockNumber)[])",
 ]);
 
 export const TripartyTermsStateName = ["none", "proposed", "effective", "refused", "terminated"];
@@ -720,6 +722,11 @@ export interface LedgerAdapter {
   getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo>;
   listTripartyRepos(termsId: Hex): Promise<OnChainTripartyRepo[]>;
   tripartyFree(termsId: Hex): Promise<TripartyHolding[]>;
+  /** Revaluation (wp-adr-triparty-revaluation): the agent replaces a settled repo's holding; the hash is kept with its block. */
+  revalueTriparty(repoId: Hex, revaluationHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  tripartyRevaluations(repoId: Hex): Promise<{ revaluationHash: Hex; block: bigint }[]>;
+  /** A repo's holding, its terms' free account and the feed prices of those tokens at the end of a block. */
+  tripartyRepoAt(repoId: Hex, block: bigint): Promise<{ allocation: { token: Address; amount: bigint }[]; free: TripartyHolding[]; prices: { token: Address; price: bigint | null }[] }>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1397,6 +1404,32 @@ export class BesuAdapter implements LedgerAdapter {
 
   async tripartyFree(termsId: Hex) {
     return [...((await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "freeOf", args: [termsId] })) as readonly TripartyHolding[])];
+  }
+
+  revalueTriparty(repoId: Hex, revaluationHash: Hex, tokens: Address[], amounts: bigint[]) {
+    return this.send(this.tripartyContract(), tripartyAbi, "revalue", [repoId, revaluationHash, tokens, amounts]);
+  }
+
+  async tripartyRevaluations(repoId: Hex) {
+    const rs = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "revaluationsOf", args: [repoId] })) as readonly { revaluationHash: Hex; blockNumber: bigint }[];
+    return rs.map((r) => ({ revaluationHash: r.revaluationHash, block: r.blockNumber }));
+  }
+
+  /** The chain as a revaluation's check reads it (wp-adr-triparty-revaluation): the repo's holding, the free account of
+   *  its terms and the feed price of each of those tokens, at the end of the block (the block before a revaluation). */
+  async tripartyRepoAt(repoId: Hex, block: bigint) {
+    const tri = this.tripartyContract();
+    const feed = this.reg.contracts.oracleFeed;
+    const r = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "getRepo", args: [repoId], blockNumber: block })) as { termsId: Hex };
+    const [tokens, amounts] = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "allocationOf", args: [repoId], blockNumber: block })) as readonly [readonly Address[], readonly bigint[]];
+    const free = [...((await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "freeOf", args: [r.termsId], blockNumber: block })) as readonly TripartyHolding[])];
+    const prices = [];
+    for (const token of new Set([...tokens, ...free.map((h) => h.token)].map((t) => getAddress(t)))) {
+      const has = (await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "hasPrice", args: [token], blockNumber: block })) as boolean;
+      const price = has ? ((await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "price", args: [token], blockNumber: block })) as bigint) : null;
+      prices.push({ token, price });
+    }
+    return { allocation: tokens.map((token, i) => ({ token: getAddress(token), amount: amounts[i] })), free, prices };
   }
 
   /** The RepoSettlement address, which each party approves for its leg. */

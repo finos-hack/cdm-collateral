@@ -1,0 +1,64 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the triparty agent's revaluation of a settled repo with its top-up or release (task-triparty-revaluation, wp-adr-triparty-revaluation). CDM 7.7.0 has no value the agent requires (T6), no valuation of an allocation after haircuts (T4 is generic) and no qualification of a top-up or a release.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+enum TripartyRevaluationOutcomeEnum: <"What a revaluation did.">
+    Unchanged <"The held collateral is worth the required value, or the excess is less than one unit of the asset to release: nothing moves.">
+    TopUp <"The held collateral is short and the giver's free account covers the shortfall: units move from the free account to the repo.">
+    Release <"The held collateral exceeds the required value: units move from the repo to the free account.">
+    Uncovered <"The held collateral is short and the free account cannot cover the shortfall within the profile: nothing moves.">
+
+enum TripartyMovementDirectionEnum: <"The direction of one movement of a revaluation.">
+    TopUp <"From the giver's free account to the repo's account.">
+    Release <"From the repo's account to the giver's free account.">
+
+type TripartyMovement: <"Units of one asset moved by a revaluation.">
+    isin string (1..1) <"The ISIN of the asset.">
+    units number (1..1) <"The whole units moved.">
+    direction TripartyMovementDirectionEnum (1..1)
+
+    condition PositiveUnits: <"A movement moves at least one unit.">
+        units > 0
+
+type TripartyRevaluation: <"The agent's revaluation of one settled triparty repo on a date: its inputs as read from the chain, the held collateral valued before and after, the movements, and the CDM events over the repo.">
+    [rootType]
+    basisHash string (1..1) <"The keccak-256 hash of the TripartyAllocation the repo settled against, or of the repo's previous TripartyRevaluation, whose holding this revalues.">
+    revaluationDate date (1..1)
+    requiredValue Money (1..1) <"The Purchase Price plus the Price Differential accrued to the revaluation date, rounded to the cent.">
+    held TripartyDeposit (1..*) <"The agent's input: the repo's held assets with the giver's ranks and the feed prices.">
+    free TripartyDeposit (0..*) <"The agent's input: the giver's free account under the terms, with its ranks and the feed prices.">
+    heldBefore TripartyValuedPosition (1..*) <"The held assets valued at the feed prices after haircuts.">
+    valueBefore Money (1..1) <"Value after haircuts of heldBefore.">
+    movements TripartyMovement (0..*) <"The units moved; absent when nothing moves.">
+    heldAfter TripartyValuedPosition (1..*) <"The held assets after the movements, at the same prices.">
+    valueAfter Money (1..1) <"Value after haircuts of heldAfter.">
+    outcome TripartyRevaluationOutcomeEnum (1..1)
+    breaches TripartyConcentrationBreach (0..*) <"The held assets after the movements that exceed the profile's limits, measured against the required value. A breach caused by prices alone is recorded and left to substitution.">
+    valuation BusinessEvent (0..1) <"CDM's valuation update over the repo: the collateral at valueBefore and the trade at the required value. Added by the caller.">
+    adjustment BusinessEvent (0..1) <"CDM's terms change of the repo's collateral portfolio to heldAfter, with the trade's own Purchase Date; present when units move. Added by the caller.">
+
+    condition NothingMovesUnlessToppedUpOrReleased: <"Units move only in a top-up or a release.">
+        if outcome = TripartyRevaluationOutcomeEnum -> Unchanged or outcome = TripartyRevaluationOutcomeEnum -> Uncovered
+        then movements is absent
+
+    condition MovementsWhenToppedUpOrReleased: <"A top-up or a release moves units.">
+        if outcome = TripartyRevaluationOutcomeEnum -> TopUp or outcome = TripartyRevaluationOutcomeEnum -> Release
+        then movements exists
+
+    condition CoveredAfterTopUpOrRelease: <"After a top-up or a release the held collateral is worth at least the required value.">
+        if outcome = TripartyRevaluationOutcomeEnum -> TopUp or outcome = TripartyRevaluationOutcomeEnum -> Release
+        then valueAfter -> value >= requiredValue -> value
+
+    condition TopUpOnlyTopsUp: <"A top-up only moves units to the repo.">
+        if outcome = TripartyRevaluationOutcomeEnum -> TopUp
+        then movements -> direction all = TripartyMovementDirectionEnum -> TopUp
+
+    condition ReleaseOnlyReleases: <"A release only moves units back to the free account.">
+        if outcome = TripartyRevaluationOutcomeEnum -> Release
+        then movements -> direction all = TripartyMovementDirectionEnum -> Release
+
+    condition AdjustmentWhenUnitsMove: <"The CDM terms change is present exactly when units move.">
+        if valuation exists
+        then (movements exists) = (adjustment exists)

@@ -9,6 +9,21 @@ import cdmx.collateral.triparty.TripartyTerms;
 import cdmx.collateral.triparty.TripartyValuedPosition;
 import cdmx.collateral.triparty.functions.AllocateTriparty;
 import cdmx.collateral.triparty.functions.TripartyConcentrationBreaches;
+import cdmx.collateral.triparty.TripartyMovement;
+import cdmx.collateral.triparty.TripartyRevaluation;
+import cdmx.collateral.triparty.TripartyRevaluationOutcomeEnum;
+import cdmx.collateral.triparty.functions.RepoIsCollateralRelease;
+import cdmx.collateral.triparty.functions.RepoIsCollateralTopUp;
+import cdmx.collateral.triparty.functions.RevalueTriparty;
+import cdmx.collateral.triparty.functions.TripartyRequiredValue;
+import cdm.event.common.BusinessEvent;
+import cdm.event.common.CollateralPortfolio;
+import cdm.event.common.Instruction;
+import cdm.event.common.PrimitiveInstruction;
+import cdm.event.common.ValuationInstruction;
+import cdm.event.common.functions.Create_BusinessEvent;
+import cdm.event.common.functions.Create_SubstitutionInstruction;
+import com.rosetta.model.lib.records.Date;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -229,6 +244,147 @@ final class CdmTriparty {
         CdmRuntime.validate(a);
         String json = CdmRuntime.toJson(a);
         return new Allocation(a, json, Cdm.keccakHex(json), trade);
+    }
+
+    // --- revaluation (task-triparty-revaluation, wp-adr-triparty-revaluation) ---
+
+    /** The agent's revaluation, its Rune JSON and hash, and the repo after it (the trade state the next revaluation reads). */
+    record Revaluation(TripartyRevaluation revaluation, String json, String hash, TradeState trade) {
+        TripartyRevaluationOutcomeEnum outcome() {
+            return revaluation.getOutcome();
+        }
+
+        /** ISIN to held units after the revaluation, in the order of heldAfter. */
+        Map<String, Long> units() {
+            Map<String, Long> m = new LinkedHashMap<>();
+            for (TripartyValuedPosition p : revaluation.getHeldAfter()) m.put(p.getIsin(), p.getUnits().longValueExact());
+            return m;
+        }
+    }
+
+    private static List<TripartyDeposit> deposits(List<Deposit> ds) {
+        List<TripartyDeposit> out = new ArrayList<>();
+        for (Deposit d : ds) out.add(CdmRuntime.load(TripartyDeposit.class, o("rank", d.rank(), "isin", d.isin(), "units", d.units(),
+                "unitPrice", o("value", d.price(), "unit", usd()))));
+        return out;
+    }
+
+    private static Map<String, Object> money(BigDecimal v) {
+        return o("value", v, "unit", usd());
+    }
+
+    /** The repo after a revaluation: the open trade of the terms change when units moved, otherwise the valuation's. */
+    static TradeState tradeAfter(TripartyRevaluation r) {
+        BusinessEvent ev = r.getAdjustment() != null ? r.getAdjustment() : r.getValuation();
+        return ev.getAfter().stream().filter(s -> s.getState() == null || s.getState().getClosedState() == null).findFirst()
+                .orElseThrow(() -> new IllegalStateException("the revaluation leaves no open trade"));
+    }
+
+    private static BusinessEvent event(TradeState before, PrimitiveInstruction pi, LocalDate date) {
+        Instruction i = Instruction.builder().setBeforeValue(before).setPrimitiveInstruction(pi).build();
+        return CdmRepo.resolved(BusinessEvent.class, CdmRuntime.fn(Create_BusinessEvent.class).evaluate(new ArrayList<>(List.of(i)), null, Date.of(date), null));
+    }
+
+    /** The agent revalues a settled repo on a date (cdm-ext RevalueTriparty) from its held assets and the giver's free
+     *  account, both ranked and at the feed prices, and adds the CDM events over the repo: the valuation update (the
+     *  collateral at its value before, the trade at the required value) and, when units move, the terms change of the
+     *  collateral portfolio with the trade's own Purchase Date, qualified by cdm-ext RepoIsCollateralTopUp or
+     *  RepoIsCollateralRelease. {@code trade} is the repo as the basis document left it. */
+    static Revaluation revalue(TripartyTerms terms, TradeState basisTrade, String basisHash, LocalDate date, List<Deposit> held, List<Deposit> free) {
+        // A repo read back from a stored document has its scoped references (the cash quantity and the rate) unresolved.
+        TradeState trade = CdmRepo.resolved(TradeState.class, basisTrade);
+        var required = CdmRuntime.fn(TripartyRequiredValue.class).evaluate(trade, Date.of(date));
+        TripartyRevaluation r = CdmRuntime.fn(RevalueTriparty.class).evaluate(basisHash, Date.of(date), required, deposits(held), deposits(free), terms.getProfile());
+        String at = date + "T17:00:00Z";
+        ValuationInstruction vi = CdmRuntime.load(ValuationInstruction.class, o("replace", false, "valuation", l(
+                o("amount", money(r.getValueBefore().getValue()), "timestamp", at, "method", "MarkToMarket", "scope", "Collateral"),
+                o("amount", money(r.getRequiredValue().getValue()), "timestamp", at, "method", "MarkToMarket", "scope", "Trade"))));
+        BusinessEvent valuation = event(trade, PrimitiveInstruction.builder().setValuation(vi).build(), date);
+        var b = r.toBuilder().setValuation(valuation);
+        if (r.getMovements() != null && !r.getMovements().isEmpty()) {
+            TradeState valued = valuation.getAfter().get(0);
+            LocalDate purchase = valued.getTrade().getProduct().getEconomicTerms().getEffectiveDate().getAdjustableDate().getUnadjustedDate().toLocalDate();
+            LocalDate repurchase = valued.getTrade().getProduct().getEconomicTerms().getTerminationDate().getAdjustableDate().getUnadjustedDate().toLocalDate();
+            List<Object> positions = new ArrayList<>();
+            for (TripartyValuedPosition p : r.getHeldAfter()) positions.add(position(p.getIsin(), p.getUnits().longValueExact(), purchase, repurchase));
+            CollateralPortfolio portfolio = CdmRuntime.load(CollateralPortfolio.class, o("collateralPosition", positions));
+            var tc = CdmRuntime.fn(Create_SubstitutionInstruction.class).evaluate(valued.getTrade().getProduct(),
+                    CdmRuntime.load(cdm.base.datetime.AdjustableOrRelativeDate.class, date(purchase)), portfolio);
+            BusinessEvent adjustment = event(valued, PrimitiveInstruction.builder().setTermsChange(tc).build(), date);
+            boolean qualified = r.getOutcome() == TripartyRevaluationOutcomeEnum.TOP_UP
+                    ? CdmRuntime.fn(RepoIsCollateralTopUp.class).evaluate(adjustment)
+                    : CdmRuntime.fn(RepoIsCollateralRelease.class).evaluate(adjustment);
+            if (!qualified) throw new IllegalStateException("the collateral change does not qualify as a " + r.getOutcome());
+            b.setAdjustment(adjustment);
+        }
+        TripartyRevaluation doc = b.build();
+        CdmRuntime.validate(doc);
+        String json = CdmRuntime.toJson(doc);
+        return new Revaluation(doc, json, Cdm.keccakHex(json), tradeAfter(doc));
+    }
+
+    static TripartyRevaluation parseRevaluation(String json) {
+        try {
+            return CdmRuntime.JSON.readValue(json, TripartyRevaluation.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a TripartyRevaluation document: " + e.getMessage(), e);
+        }
+    }
+
+    /** The giver's or the receiver's check of a revaluation: the one this party computes from the same terms, repo,
+     *  basis, date, holding, free account and prices is the same document. Returns it; throws otherwise. */
+    static Revaluation verifyRevaluation(String json, TripartyTerms terms, TradeState trade, String basisHash, LocalDate date, List<Deposit> held, List<Deposit> free) {
+        Revaluation again = revalue(terms, trade, basisHash, date, held, free);
+        if (!again.json().equals(json)) throw new IllegalStateException("the revaluation differs from the revaluation this party computes");
+        return again;
+    }
+
+    private static String plain(BigDecimal v) {
+        return v.stripTrailingZeros().toPlainString();
+    }
+
+    private static List<Map<String, Object>> positionsView(List<? extends TripartyValuedPosition> ps, BigDecimal required) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (ps != null) for (TripartyValuedPosition p : ps) {
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put("isin", p.getIsin());
+            e.put("units", p.getUnits().longValueExact());
+            e.put("unitPrice", plain(p.getUnitPrice().getValue()));
+            e.put("valueAfterHaircuts", plain(p.getValueAfterHaircuts().getValue()));
+            e.put("share", p.getValueAfterHaircuts().getValue().divide(required, 4, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
+            out.add(e);
+        }
+        return out;
+    }
+
+    /** The revaluation for the console: the date, the values, the movements, the holdings and the breaches. */
+    static Map<String, Object> revaluationView(TripartyRevaluation r) {
+        BigDecimal required = r.getRequiredValue().getValue();
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("revaluationDate", r.getRevaluationDate().toString());
+        m.put("outcome", switch (r.getOutcome()) {
+            case TOP_UP -> "TopUp";
+            case RELEASE -> "Release";
+            case UNCOVERED -> "Uncovered";
+            case UNCHANGED -> "Unchanged";
+        });
+        m.put("requiredValue", plain(required));
+        m.put("valueBefore", plain(r.getValueBefore().getValue()));
+        m.put("valueAfter", plain(r.getValueAfter().getValue()));
+        List<Map<String, Object>> moves = new ArrayList<>();
+        if (r.getMovements() != null) for (TripartyMovement mv : r.getMovements())
+            moves.add(new LinkedHashMap<>(Map.of("isin", mv.getIsin(), "units", mv.getUnits().longValueExact(),
+                    "direction", mv.getDirection() == cdmx.collateral.triparty.TripartyMovementDirectionEnum.TOP_UP ? "TopUp" : "Release")));
+        m.put("movements", moves);
+        m.put("heldBefore", positionsView(r.getHeldBefore(), required));
+        m.put("heldAfter", positionsView(r.getHeldAfter(), required));
+        List<Map<String, Object>> breaches = new ArrayList<>();
+        if (r.getBreaches() != null) for (var x : r.getBreaches())
+            breaches.add(new LinkedHashMap<>(Map.of("isin", x.getIsin(), "limit", plain(x.getLimit()),
+                    "percentage", x.getPercentage().setScale(4, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString())));
+        m.put("breaches", breaches);
+        m.put("cdmEvents", (r.getValuation() != null ? 1 : 0) + (r.getAdjustment() != null ? 1 : 0));
+        return m;
     }
 
     static TripartyAllocation parseAllocation(String json) {

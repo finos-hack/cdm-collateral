@@ -21,6 +21,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// the receiver to the giver and the allocated tokens move from the giver's free account to the repo's account, which
 /// the receiver holds by title. The receiver may refuse an allocation instead, and the agent allocates again. Any of the
 /// three may cancel a repo before it settles.
+///
+/// Revaluation (task-triparty-revaluation, wp-adr-triparty-revaluation). The agent revalues a settled repo with the
+/// hash of its cdm-ext TripartyRevaluation and the repo's new holding: the old holding returns to the giver's free
+/// account and the new one is taken from it in the same transaction, so a top-up moves free tokens to the repo and a
+/// release moves them back. An unchanged or uncovered revaluation passes the holding unchanged and only records its
+/// hash. Each revaluation's hash and block are kept, so the giver and the receiver can read the chain as it was before.
 contract TripartySettlement {
     using SafeERC20 for IERC20;
 
@@ -99,6 +105,14 @@ contract TripartySettlement {
     event AllocationRefused(bytes32 indexed repoId, bytes32 allocationHash);
     event PurchaseSettled(bytes32 indexed repoId, bytes32 allocationHash);
     event RepoCancelled(bytes32 indexed repoId, address indexed by);
+    event RepoRevalued(bytes32 indexed repoId, bytes32 revaluationHash, uint256 index);
+
+    struct Revaluation {
+        bytes32 revaluationHash;
+        uint64 blockNumber;
+    }
+
+    mapping(bytes32 => Revaluation[]) private revaluations; // repo id => the agent's revaluations, oldest first
 
     function _trio(address giver, address receiver, address agent) private pure returns (bytes32) {
         return keccak256(abi.encode(giver, receiver, agent));
@@ -260,6 +274,27 @@ contract TripartySettlement {
         emit PurchaseSettled(repoId, allocationHash);
     }
 
+    function revalue(bytes32 repoId, bytes32 revaluationHash, address[] calldata tokens, uint256[] calldata amounts) external {
+        Repo storage r = repos[repoId];
+        require(r.state == RepoState.Settled, "TripartySettlement: not settled");
+        require(msg.sender == terms[r.termsId].agent, "TripartySettlement: only the agent revalues");
+        require(revaluationHash != bytes32(0), "TripartySettlement: no revaluation hash");
+        require(tokens.length > 0 && tokens.length == amounts.length, "TripartySettlement: no holding");
+        address[] storage held = allocTokens[repoId];
+        uint256[] storage heldAmounts = allocAmounts[repoId];
+        for (uint256 i = 0; i < held.length; i++) free[r.termsId][held[i]] += heldAmounts[i];
+        for (uint256 i = 0; i < tokens.length; i++) {
+            require(amounts[i] > 0 && rankOf[r.termsId][tokens[i]] > 0, "TripartySettlement: not a deposited token");
+            for (uint256 j = 0; j < i; j++) require(tokens[j] != tokens[i], "TripartySettlement: token repeated");
+            require(free[r.termsId][tokens[i]] >= amounts[i], "TripartySettlement: not free");
+            free[r.termsId][tokens[i]] -= amounts[i];
+        }
+        allocTokens[repoId] = tokens;
+        allocAmounts[repoId] = amounts;
+        revaluations[repoId].push(Revaluation(revaluationHash, uint64(block.number)));
+        emit RepoRevalued(repoId, revaluationHash, revaluations[repoId].length - 1);
+    }
+
     function cancelRepo(bytes32 repoId) external {
         Repo storage r = repos[repoId];
         require(r.state == RepoState.Requested || r.state == RepoState.Affirmed || r.state == RepoState.Allocated,
@@ -286,6 +321,11 @@ contract TripartySettlement {
     /// The tokens and amounts of a repo: proposed by the agent while Allocated, held for the receiver once Settled.
     function allocationOf(bytes32 repoId) external view returns (address[] memory tokens, uint256[] memory amounts) {
         return (allocTokens[repoId], allocAmounts[repoId]);
+    }
+
+    /// The agent's revaluations of a repo, oldest first, each with the block it was recorded in.
+    function revaluationsOf(bytes32 repoId) external view returns (Revaluation[] memory) {
+        return revaluations[repoId];
     }
 
     /// The giver's free account under the terms, with its ranks.

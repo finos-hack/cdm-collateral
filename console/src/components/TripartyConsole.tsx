@@ -13,6 +13,7 @@ import {
   type LiveParty,
   type LiveTriparty,
   type LiveTripartyRepo,
+  type LiveTripartyRevaluation,
   type LiveTripartyTerms,
   type TripartyParty,
 } from "../domain/liveApi";
@@ -71,6 +72,50 @@ function TermsRow(props: { party: TripartyParty; t: LiveTripartyTerms; busy: boo
 
 const usd = (v: string | number) => Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
+const OUTCOME: Record<string, string> = {
+  TopUp: "topped up from the giver's free account",
+  Release: "excess released to the giver's free account",
+  Unchanged: "worth the required value: nothing moved",
+  Uncovered: "short, and the free account cannot cover it: nothing moved",
+};
+
+/** The agent's revaluations of a settled repo (wp-adr-triparty-revaluation), newest first. */
+function Revaluations(props: { rs: LiveTripartyRevaluation[] }) {
+  const latest = [...props.rs].reverse();
+  return (
+    <div data-testid="triparty-revaluations">
+      {latest.map((x, i) => {
+        const v = x.revaluation;
+        return (
+          <div className="small" key={x.revaluationHash} data-testid={i === 0 ? "triparty-revaluation-latest" : `triparty-revaluation-${x.revaluationHash}`}>
+            {v ? (
+              <>
+                <span data-testid="triparty-revaluation-outcome">Revaluation {v.revaluationDate}: {OUTCOME[v.outcome] ?? v.outcome}</span>
+                {" · "}{usd(v.valueBefore)} after haircuts for {usd(v.requiredValue)} required
+                {v.movements.map((m) => (
+                  <span key={m.isin} data-testid={`triparty-revaluation-move-${m.token ?? m.isin}`}>
+                    {" · "}{m.direction === "TopUp" ? "+" : "−"}{m.units} {m.token ?? m.isin}
+                  </span>
+                ))}
+                {v.movements.length > 0 && <> {" · "}now {usd(v.valueAfter)}</>}
+                {v.breaches.map((b) => (
+                  <span key={b.isin} className="bad" data-testid={`triparty-revaluation-breach-${b.token ?? b.isin}`}>
+                    {" · "}{b.token ?? b.isin} at {(Number(b.percentage) * 100).toFixed(2)}%, over its {(Number(b.limit) * 100).toFixed(0)}% limit
+                  </span>
+                ))}
+              </>
+            ) : <span>revaluation {short(x.revaluationHash)}</span>}
+            {" "}
+            <span data-testid="triparty-revaluation-verified">
+              {x.verified ? <span className="ok">recomputed from the chain ✓</span> : <span className="bad">{x.problem ?? "revaluation does not check"}</span>}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, r, busy, run } = props;
   const a = r.allocation;
@@ -113,7 +158,9 @@ function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boole
           {r.allocationVerified ? <span className="ok">allocation recomputed by this party ✓</span> : <span className="bad">{r.allocationProblem ?? "allocation does not check"}</span>}
         </div>
       )}
+      {r.revaluations && r.revaluations.length > 0 && <Revaluations rs={r.revaluations} />}
       <div className="row">
+        {r.canRevalue && <button disabled={busy} onClick={() => run(() => tripartyApi.revalueTripartyRepo(party, r.repoId))}>Revalue collateral</button>}
         {r.canAffirm && <button disabled={busy} onClick={() => run(() => tripartyApi.affirmTripartyRequest(party, r.repoId))}>Affirm triparty repo request</button>}
         {r.canAllocate && <button disabled={busy} onClick={() => run(() => tripartyApi.allocateTripartyRepo(party, r.repoId))}>Allocate collateral</button>}
         {r.canSettle && <button disabled={busy} onClick={() => run(() => tripartyApi.settleTripartyPurchase(party, r.repoId))}>Settle purchase against the allocation</button>}

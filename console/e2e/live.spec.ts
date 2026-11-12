@@ -3704,3 +3704,123 @@ test("flow-triparty-trade-start: B deposits 2,000 tUST and 4,000 tAGY with BANK-
   // The terms cannot be terminated while the repo is open (trade end, task-triparty-trade-end, closes it).
   await expect(call(`${SERVICE.B}/triparty/terms/${id}/terminate`, "POST", {})).rejects.toThrow(/repos open/);
 });
+
+// --- flow-triparty-revaluation (task-triparty-revaluation, wp-adr-triparty-revaluation) ---
+// The agent revalues a settled triparty repo at the feed prices against the Repurchase Price accrued to its business
+// date, and moves the difference between the giver's free account and the repo on TripartySettlement in one
+// transaction. The giver and the receiver recompute each revaluation from the chain at the block before it. The tUST
+// and tAGY prices and the agent's business date are restored at the end either way.
+
+type TripartyRevaluationView = {
+  revaluationHash: string; block: string; verified: boolean; problem: string | null;
+  revaluation?: { outcome: string; requiredValue: string; valueBefore: string; valueAfter: string; movements: { token?: string; units: number; direction: string }[] };
+};
+
+test("flow-triparty-revaluation: B repos 500,000 tUSD to A through BANK-T with 1,810 tAGY left free -> three days on tUST falls to 96 and tAGY to 97 -> T revalues and tops up 127 tAGY from B's free account -> A and B recompute it from the chain -> tAGY rises to 101 and tUST returns to 98.40 -> T releases 164 tAGY -> both recompute it", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tAGY = p.tokens.tAGY;
+  expect([await scaledPrice(tUST), await scaledPrice(tAGY)]).toEqual([9_840_000_000n, 9_920_000_000n]);
+  const scaled = (usd: string) => BigInt(Math.round(Number(usd) * 100)) * 1_000_000n;
+  const setPrice = async (symbol: "tUST" | "tAGY", usd: string) => {
+    await call(`${ORACLE}/market-data/${symbol}`, "PUT", { price: usd });
+    for (const gw of [GATEWAY.A, GATEWAY.B]) {
+      await expect.poll(async () => (await call<{ price: string | null }>(`${gw}/prices/${p.tokens[symbol]}`)).price, { timeout: 30_000 }).toBe(String(scaled(usd)));
+    }
+  };
+
+  // Setup through the services (flow-triparty-trade-start shows these steps in the consoles): B-giver terms in effect,
+  // repos a failed run left before settlement cancelled, free deposits withdrawn; then the trade-start repo, settled.
+  const giverTerms = async () => (await call<{ terms: TripartyTradeTermsView[] }>(`${SERVICE.B}/triparty`)).terms.filter((t) => t.giver === "B");
+  for (const t of await giverTerms()) if (t.state === "proposed") await call(`${SERVICE.B}/triparty/terms/${t.termsId}/refuse`, "POST", {});
+  let id = (await giverTerms()).find((t) => t.state === "effective")?.termsId ?? "";
+  if (!id) {
+    ({ termsId: id } = await call<{ termsId: string }>(`${SERVICE.B}/triparty/terms`, "POST", {}));
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await tripartyTermsOf(svc, id))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+      await call(`${svc}/triparty/terms/${id}/affirm`, "POST", {});
+    }
+    await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`)).state, { timeout: 60_000 }).toBe("effective");
+  }
+  for (const r of (await tripartyTermsOf(SERVICE.B, id))?.repos ?? []) if (r.canCancel) await call(`${SERVICE.B}/triparty/repos/${r.repoId}/cancel`, "POST", {});
+  for (const h of (await tripartyTermsOf(SERVICE.B, id))?.free ?? []) if (h.amount > 0) await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: h.token });
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tUST", amount: 3000, rank: 1 });
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tAGY", amount: 4000, rank: 2 });
+  const { repoId } = await call<{ repoId: string }>(`${SERVICE.B}/triparty/terms/${id}/repos`, "POST", { purchasePrice: 500000 });
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE.A, id, repoId))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE.A}/triparty/repos/${repoId}/affirm`, "POST", {});
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE_T, id, repoId))?.canAllocate ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE_T}/triparty/repos/${repoId}/allocate`, "POST", {});
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE.A, id, repoId))?.canSettle ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE.A}/triparty/repos/${repoId}/settle`, "POST", {});
+  await expect.poll(async () => (await call<{ state: string }>(`${GATEWAY.A}/triparty/repos/${repoId}`)).state, { timeout: 60_000 }).toBe("settled");
+  const held = async () => (await call<{ allocation: { token: string; amount: string }[] }>(`${GATEWAY.B}/triparty/repos/${repoId}`)).allocation
+    .map((a) => [a.token.toLowerCase(), String(a.amount)]);
+  const freeAgy = async () => String((await call<{ token: string; amount: string }[]>(`${GATEWAY.B}/triparty/terms/${id}/free`))
+    .find((h) => h.token.toLowerCase() === tAGY.toLowerCase())!.amount);
+  expect(await held()).toEqual([[tUST.toLowerCase(), "3000"], [tAGY.toLowerCase(), "2190"]]);
+  expect(await freeAgy()).toBe("1810");
+  const revaluationsOf = async (svc: string) => ((await tripartyRepoOf(svc, id, repoId)) as unknown as { revaluations?: TripartyRevaluationView[] })?.revaluations ?? [];
+  const recomputed = async (n: number) => {
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect
+        .poll(async () => {
+          const rs = await revaluationsOf(svc);
+          return rs.length === n && rs[n - 1].verified ? true : (rs[n - 1]?.problem ?? rs.length);
+        }, { timeout: 60_000 })
+        .toBe(true);
+    }
+  };
+
+  const purchaseDate = (await tripartyRepoOf(SERVICE.B, id, repoId) as unknown as { purchaseDate: string }).purchaseDate;
+  const agentDate = (await call<{ businessDate: string }>(`${SERVICE_T}/business-date`)).businessDate;
+  const day3 = new Date(Date.parse(`${purchaseDate}T00:00:00Z`) + 3 * 86_400_000).toISOString().slice(0, 10);
+  try {
+    // 1. Three days on, tUST falls to 96.00 and tAGY to 97.00. The required value is 500,208.33; the holding is worth
+    //    488,297.10 after haircuts. The agent revalues in its console and tops up 127 of B's free tAGY.
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: day3 });
+    await setPrice("tUST", "96.0");
+    await setPrice("tAGY", "97.0");
+    await page.goto("/#/live/T");
+    const repoT = page.getByTestId(`triparty-repo-${repoId}`);
+    await repoT.getByRole("button", { name: "Revalue collateral" }).click({ timeout: STEP_TIMEOUT });
+    const latestT = repoT.getByTestId("triparty-revaluation-latest");
+    await expect(latestT.getByTestId("triparty-revaluation-outcome")).toContainText("topped up from the giver's free account", { timeout: STEP_TIMEOUT });
+    await expect(latestT.getByTestId("triparty-revaluation-move-tAGY")).toContainText("+127 tAGY");
+    await expect(latestT).toContainText("488,297.1 after haircuts for 500,208.33 required");
+    expect(await held()).toEqual([[tUST.toLowerCase(), "3000"], [tAGY.toLowerCase(), "2317"]]);
+    expect(await freeAgy()).toBe("1683");
+
+    // 2. A and B each recompute the revaluation from the chain at the block before it; A's console shows it checked.
+    await recomputed(1);
+    await page.goto("/#/live/A");
+    const latestA = page.getByTestId(`triparty-repo-${repoId}`).getByTestId("triparty-revaluation-latest");
+    await expect(latestA.getByTestId("triparty-revaluation-verified")).toContainText("recomputed from the chain ✓", { timeout: STEP_TIMEOUT });
+    const first = (await revaluationsOf(SERVICE.A))[0];
+    expect(first.revaluation).toMatchObject({ outcome: "TopUp", requiredValue: "500208.33", valueBefore: "488297.1", valueAfter: "500246.53" });
+
+    // 3. tAGY rises to 101.00 and tUST returns to 98.40: 516,292.49 after haircuts, 16,084.16 above the required
+    //    value. The agent revalues again and releases 164 tAGY to B's free account.
+    await setPrice("tUST", "98.4");
+    await setPrice("tAGY", "101.0");
+    await page.goto("/#/live/T");
+    await repoT.getByRole("button", { name: "Revalue collateral" }).click({ timeout: STEP_TIMEOUT });
+    await expect(latestT.getByTestId("triparty-revaluation-outcome")).toContainText("excess released to the giver's free account", { timeout: STEP_TIMEOUT });
+    await expect(latestT.getByTestId("triparty-revaluation-move-tAGY")).toContainText("−164 tAGY");
+    expect(await held()).toEqual([[tUST.toLowerCase(), "3000"], [tAGY.toLowerCase(), "2153"]]);
+    expect(await freeAgy()).toBe("1847");
+    await recomputed(2);
+    const both = await revaluationsOf(SERVICE.B);
+    expect(both.map((r) => r.revaluation?.outcome)).toEqual(["TopUp", "Release"]);
+    expect(Number(both[1].block)).toBeGreaterThan(Number(both[0].block));
+    const onChain = await call<{ revaluationHash: string }[]>(`${GATEWAY.A}/triparty/repos/${repoId}/revaluations`);
+    expect(onChain.map((r) => r.revaluationHash)).toEqual(both.map((r) => r.revaluationHash));
+  } finally {
+    await setPrice("tUST", "98.4");
+    await setPrice("tAGY", "99.2");
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: agentDate });
+  }
+  // B withdraws its free tAGY; the repo stays open with the agent until trade end (task-triparty-trade-end).
+  await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: "tAGY" });
+  expect(await freeAgy()).toBe("0");
+});

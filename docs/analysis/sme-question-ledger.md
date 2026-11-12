@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 170 questions in 30 tasks, all open.
+Status of the ledger: 178 questions in 31 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -337,3 +337,16 @@ Status of the ledger: 170 questions in 30 tasks, all open.
 | TPS-5 | The allocated collateral stays in the agent's books in an account per repo, held by the receiver by title. Is the receiver's account at the agent per repo, or one account per giver and receiver? | open | |
 | TPS-6 | The receiver affirms the agent's allocation before the purchase settles. Does the receiver confirm allocations in practice, or is the agent's allocation binding on both parties? | open | |
 | TPS-7 | The agent values the collateral at the oracle feed price. Which price sources and times do agents use for the allocation? | open | |
+
+### `task-sme-triparty-revaluation`: the triparty agent's daily revaluation, top-up and release
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPR-1 | The agent's required value is the Purchase Price plus the repo interest accrued to the day. Do agents use the accrued Repurchase Price, the Purchase Price, or a value the parties report (the "exposure")? | open | |
+| TPR-2 | There is no threshold: any shortfall is topped up and any excess released. Do agents apply a minimum movement, a tolerance band, or a percentage of the exposure? | open | |
+| TPR-3 | A top-up comes from the giver's free collateral in the giver's ranking. Do agents top up by the same rule as the initial allocation, or by a separate one? | open | |
+| TPR-4 | An excess is released from the asset the giver ranked last. Do agents release from a particular asset, pro rata, or by the giver's instruction? | open | |
+| TPR-5 | When the giver's free collateral cannot cover a shortfall, nothing moves and the shortfall is recorded. Do agents move what they can, notify the parties, or treat it as a margin call between them? | open | |
+| TPR-6 | A concentration breach caused by price moves alone is recorded and left to substitution. Do agents rebalance during the daily revaluation? | open | |
+| TPR-7 | The agent revalues on request in the prototype. When and how often do agents revalue, and at which prices (closing, intraday)? | open | |
+| TPR-8 | The revaluation moves collateral without either party's affirmation. Is the agent's daily reallocation binding on both parties under the triparty agreement? | open | |

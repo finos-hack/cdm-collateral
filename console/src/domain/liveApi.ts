@@ -180,6 +180,33 @@ export interface LiveTripartyAllocation {
   cdmRepo: boolean;
 }
 
+/** One asset of a revaluation's holding, at the agent's price after haircuts. */
+export interface LiveTripartyValued { isin: string; token?: string; units: number; unitPrice: string; valueAfterHaircuts: string; share: string }
+
+/** The agent's revaluation of a settled repo (cdm-ext TripartyRevaluation, wp-adr-triparty-revaluation). */
+export interface LiveTripartyRevaluationDoc {
+  revaluationDate: string;
+  outcome: "TopUp" | "Release" | "Unchanged" | "Uncovered";
+  requiredValue: string;
+  valueBefore: string;
+  valueAfter: string;
+  movements: { isin: string; token?: string; units: number; direction: "TopUp" | "Release" }[];
+  heldBefore: LiveTripartyValued[];
+  heldAfter: LiveTripartyValued[];
+  breaches: { isin: string; token?: string; limit: string; percentage: string }[];
+  /** The CDM events over the repo: the valuation, and the terms change when units moved. */
+  cdmEvents: number;
+}
+
+/** A revaluation on-chain, oldest first, with this party's check (always true for the agent). */
+export interface LiveTripartyRevaluation {
+  revaluationHash: string;
+  block: string;
+  revaluation?: LiveTripartyRevaluationDoc;
+  verified: boolean;
+  problem: string | null;
+}
+
 /** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start). */
 export interface LiveTripartyRepo {
   repoId: string;
@@ -202,6 +229,9 @@ export interface LiveTripartyRepo {
   canRefuseAllocation: boolean;
   canSettle: boolean;
   canCancel: boolean;
+  /** Revaluation (wp-adr-triparty-revaluation): on a settled repo, oldest first; the agent revalues. */
+  revaluations?: LiveTripartyRevaluation[];
+  canRevalue?: boolean;
 }
 
 export interface LiveTriparty {
@@ -242,6 +272,9 @@ export const tripartyApi = {
   /** The receiver: settle the purchase against the agent's allocation. */
   settleTripartyPurchase: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/settle`, {}),
   cancelTripartyRepo: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/cancel`, {}),
+  /** The agent: revalue a settled repo at its business date; tops up, releases, or records it unchanged or uncovered. */
+  revalueTripartyRepo: (p: TripartyParty, repoId: string) =>
+    req<{ outcome: string; revaluationHash: string; revaluation: LiveTripartyRevaluationDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/revalue`, {}),
 };
 
 export const api = {

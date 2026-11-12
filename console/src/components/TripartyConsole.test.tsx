@@ -109,3 +109,38 @@ it("lets the giver deposit and request, shows the allocation, and lets the recei
   await userEvent.click(screen.getByText("Settle purchase against the allocation"));
   await waitFor(() => expect(posts).toEqual([`/triparty/repos/${repo.repoId}/settle`]));
 });
+
+it("lets the agent revalue a settled repo and shows each revaluation with its check (task-triparty-revaluation)", async () => {
+  const run = (fn: () => Promise<unknown>) => void fn();
+  const held = (agy: number, value: string) => [
+    { isin: "US912810TM60", token: "tUST", units: 3000, unitPrice: "96", valueAfterHaircuts: "282240", share: "0.5642" },
+    { isin: "US3137EAGY10", token: "tAGY", units: agy, unitPrice: "97", valueAfterHaircuts: value, share: "0.4358" },
+  ];
+  const repo = {
+    repoId: "0x" + "44".repeat(32), state: "settled" as const, purchasePrice: 500000, requestHash: "0x" + "55".repeat(32), tradeId: "TP-B-1",
+    requestVerified: true, requestProblem: null, allocationHash: "0x" + "66".repeat(32), allocationVerified: true, allocationProblem: null,
+    canAffirm: false, canAllocate: false, canRefuseAllocation: false, canSettle: false, canCancel: false, canRevalue: true,
+    revaluations: [
+      { revaluationHash: "0x" + "77".repeat(32), block: "10", verified: true, problem: null, revaluation: {
+        revaluationDate: "2026-11-15", outcome: "TopUp" as const, requiredValue: "500208.33", valueBefore: "488297.1", valueAfter: "500246.53",
+        movements: [{ isin: "US3137EAGY10", token: "tAGY", units: 127, direction: "TopUp" as const }],
+        heldBefore: held(2190, "206057.1"), heldAfter: held(2317, "218006.53"), breaches: [], cdmEvents: 2 } },
+      { revaluationHash: "0x" + "88".repeat(32), block: "12", verified: false, problem: "the revaluation differs from the revaluation this party computes", revaluation: {
+        revaluationDate: "2026-11-15", outcome: "Uncovered" as const, requiredValue: "500208.33", valueBefore: "490116", valueAfter: "490116",
+        movements: [], heldBefore: held(2190, "254916"), heldAfter: held(2190, "254916"),
+        breaches: [{ isin: "US3137EAGY10", token: "tAGY", limit: "0.5", percentage: "0.5096" }], cdmEvents: 1 } },
+    ],
+  };
+  const terms = { ...TERMS, state: "effective" as const, giver: "B" as const, receiver: "A" as const, agentAffirmed: true, canAffirm: false, canRefuse: false, repos: [repo] };
+  render(<TripartyTermsCard party="T" triparty={{ party: "T", bank: "BANK-T", agent: true, canPropose: false, terms: [terms] }} busy={false} run={run} />);
+  const latest = screen.getByTestId("triparty-revaluation-latest");
+  expect(latest.textContent).toContain("cannot cover it: nothing moved");
+  expect(latest.textContent).toContain("tAGY at 50.96%, over its 50% limit");
+  expect(latest.textContent).toContain("differs from the revaluation this party computes");
+  const first = screen.getByTestId(`triparty-revaluation-0x${"77".repeat(32)}`);
+  expect(first.textContent).toContain("topped up from the giver's free account");
+  expect(screen.getByTestId("triparty-revaluation-move-tAGY").textContent).toContain("+127 tAGY");
+  expect(first.textContent).toContain("recomputed from the chain ✓");
+  await userEvent.click(screen.getByText("Revalue collateral"));
+  await waitFor(() => expect(posts).toEqual([`/triparty/repos/${repo.repoId}/revalue`]));
+});

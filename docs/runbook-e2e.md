@@ -391,6 +391,19 @@ free account to the repo's account. B then clicks `Withdraw free tAGY`. The repo
 terminated until trade end (task-triparty-trade-end). The allocation rules are the assumptions in
 `docs/analysis/sme-question-ledger.md` (TPS-1 to TPS-7).
 
+Triparty revaluation (`flow-triparty-revaluation`): with a settled trade-start repo (3,000 tUST and 2,190 tAGY held,
+1,810 tAGY free) and the agent's business date three days after the Purchase Date, the operator lowers tUST to 96.00
+and tAGY to 97.00. In `#/live/T` the agent clicks `Revalue collateral` on the repo: its service runs cdm-ext
+`RevalueTriparty` over the holding and B's free account at the feed prices against the Repurchase Price accrued to the
+date (500,208.33); the holding is worth 488,297.10 after haircuts, so 127 free tAGY are topped up and the card shows
+`topped up from the giver's free account` and `+127 tAGY`. The cdm-ext `TripartyRevaluation` carries CDM's valuation
+update and the terms change of the repo's collateral; `TripartySettlement.revalue` replaces the holding in one
+transaction and keeps the hash with its block. A's and B's services each recompute the revaluation from the chain at
+the block before it (`recomputed from the chain ✓`). The operator raises tAGY to 101.00 and returns tUST to 98.40; the
+agent revalues again and 164 tAGY are released to B's free account. The prices and the agent's business date are
+restored at the end. The revaluation rules are the assumptions in `docs/analysis/sme-question-ledger.md` (TPR-1 to
+TPR-8).
+
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
 party's minimum transfer amount, `Call margin` issues a `VM` call whose CDM issuance names the GMRA. The called party's
@@ -547,9 +560,9 @@ same, with the borrower paying the fees), and `flow-gmsla-default-close-out` (tw
 tUST in opposite directions offset, so the close-out leaves every holding where it was and only the difference of the
 fees moves; it restores A's default status as it found it), and `flow-triparty-terms` (it terminates the terms it
 makes effective and leaves the second proposal refused). `flow-triparty-trade-start` leaves one open triparty repo per
-run, with 3,000 tUST and 2,190 tAGY of B's at the agent, and the B-giver terms in effect, until trade end exists; the
-top-up before each run restores B's free balances (`contracts/scripts/test-balances.json`, 8,000 tUST and 8,000 tAGY
-for bank-b).
+run, with 3,000 tUST and 2,190 tAGY of B's at the agent, and `flow-triparty-revaluation` another, with 3,000 tUST and
+2,153 tAGY, and the B-giver terms stay in effect, until trade end exists; the top-up before each run restores B's free
+balances (`contracts/scripts/test-balances.json`, 11,000 tUST and 12,000 tAGY for bank-b).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

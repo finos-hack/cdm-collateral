@@ -379,6 +379,13 @@ route("POST", "/ledger/v1/triparty/repos/:id/refuse-allocation", async (p) => J(
 route("POST", "/ledger/v1/triparty/repos/:id/settle", async (p, b) => J(await adapter.settleTripartyPurchase(p.id as Hex, b.allocationHash as Hex)));
 route("POST", "/ledger/v1/triparty/repos/:id/cancel", async (p) => J(await adapter.cancelTripartyRepo(p.id as Hex)));
 route("GET", "/ledger/v1/triparty/repos/:id", async (p) => J(await adapter.getTripartyRepo(p.id as Hex)));
+// Triparty revaluation (wp-adr-triparty-revaluation): the agent replaces a settled repo's holding with the hash of its
+// cdm-ext TripartyRevaluation; the giver and the receiver read the chain at the block before it to recompute it.
+route("POST", "/ledger/v1/triparty/repos/:id/revalue", async (p, b) =>
+  J(await adapter.revalueTriparty(p.id as Hex, b.revaluationHash as Hex, (b.tokens as string[]).map((t) => getAddress(t)),
+    (b.amounts as (string | number)[]).map((a) => BigInt(a)))));
+route("GET", "/ledger/v1/triparty/repos/:id/revaluations", async (p) => J(await adapter.tripartyRevaluations(p.id as Hex)));
+route("GET", "/ledger/v1/triparty/repos/:id/at", async (p, _b, url) => J(await adapter.tripartyRepoAt(p.id as Hex, BigInt(url.searchParams.get("block")!))));
 
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 

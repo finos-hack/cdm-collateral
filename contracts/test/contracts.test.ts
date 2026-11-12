@@ -2076,6 +2076,57 @@ describe("CDM collateral contracts", async () => {
         await assert.rejects(tri.write.deposit([id, tUST.address, 1n, 1n], { account: bankB.account })); // not in effect
         await assert.rejects(request());
       });
+
+      describe("revaluation (task-triparty-revaluation)", () => {
+        // The trade-start repo: 3,000 tUST and 2,190 tAGY held, 1,810 tAGY left free.
+        const settled = async () => {
+          await tri.write.deposit([id, tUST.address, 3000n, 1n], { account: bankB.account });
+          await tri.write.deposit([id, tAGY.address, 4000n, 2n], { account: bankB.account });
+          const repo = await request();
+          await tri.write.affirmRequest([repo, H("request")], { account: bankA.account });
+          await tri.write.allocate([repo, H("alloc"), [tUST.address, tAGY.address], [3000n, 2190n]], { account: agent.account });
+          await cash.write.approve([tri.address, 500000n], { account: bankA.account });
+          await tri.write.settlePurchase([repo, H("alloc")], { account: bankA.account });
+          return repo;
+        };
+        const holding = async (repo: `0x${string}`) => {
+          const [tokens, amounts] = await tri.read.allocationOf([repo]);
+          return [tokens.map((t: string) => getAddress(t)), amounts];
+        };
+
+        it("tops up from the free account and releases back to it, in one transaction each, and keeps each hash with its block", async () => {
+          const repo = await settled();
+          await assert.rejects(tri.write.revalue([repo, H("up"), [tUST.address, tAGY.address], [3000n, 2317n]], { account: bankA.account })); // only the agent
+          await assert.rejects(tri.write.revalue([repo, H("up"), [tUST.address, tAGY.address], [3000n, 4001n]], { account: agent.account })); // not free
+          await tri.write.revalue([repo, H("up"), [tUST.address, tAGY.address], [3000n, 2317n]], { account: agent.account });
+          assert.deepEqual(await holding(repo), [[getAddress(tUST.address), getAddress(tAGY.address)], [3000n, 2317n]]);
+          assert.deepEqual((await tri.read.freeOf([id])).map((h: any) => h.amount), [0n, 1683n]);
+          await tri.write.revalue([repo, H("down"), [tUST.address, tAGY.address], [3000n, 2105n]], { account: agent.account });
+          assert.deepEqual((await tri.read.freeOf([id])).map((h: any) => h.amount), [0n, 1895n]);
+          // An uncovered or unchanged revaluation moves nothing and records its hash.
+          await tri.write.revalue([repo, H("same"), [tUST.address, tAGY.address], [3000n, 2105n]], { account: agent.account });
+          const rs = await tri.read.revaluationsOf([repo]);
+          assert.deepEqual(rs.map((r: any) => r.revaluationHash), [H("up"), H("down"), H("same")]);
+          assert.ok(rs[0].blockNumber > 0n && rs[1].blockNumber > rs[0].blockNumber);
+          // The tokens stay with the contract throughout; only the accounts change.
+          assert.equal(await tAGY.read.balanceOf([tri.address]), 4000n);
+          // A release frees tokens the giver can withdraw.
+          await tri.write.withdraw([id, tAGY.address, 1895n], { account: bankB.account });
+        });
+
+        it("refuses a repo not settled, a token not deposited under the terms, a repeated token and an empty holding", async () => {
+          const repo = await request();
+          await assert.rejects(tri.write.revalue([repo, H("r"), [tUST.address], [3000n]], { account: agent.account })); // not settled
+          const s = await settled();
+          await assert.rejects(tri.write.revalue([s, H("r"), [cash.address], [1n]], { account: agent.account }));
+          await assert.rejects(tri.write.revalue([s, H("r"), [tUST.address, tUST.address], [1n, 1n]], { account: agent.account }));
+          await assert.rejects(tri.write.revalue([s, H("r"), [], []], { account: agent.account }));
+          await assert.rejects(tri.write.revalue([s, zeroHash, [tUST.address], [3000n]], { account: agent.account }));
+          // A release of a whole asset drops it from the holding.
+          await tri.write.revalue([s, H("r"), [tUST.address], [3000n]], { account: agent.account });
+          assert.deepEqual(await holding(s), [[getAddress(tUST.address)], [3000n]]);
+        });
+      });
     });
   });
 });
