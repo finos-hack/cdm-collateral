@@ -3,7 +3,7 @@ id: task-sme-gmsla-default-rules
 type: task
 title: Confirm with a business SME the rules for a GMSLA default and close-out
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-default-close-out
   sourceRef: 7959b57674d67db7e8b0388d158596713d079aea
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:05:02Z
   confidence: 0.55
 createdAt: 2026-11-12T00:05:02Z
-updatedAt: 2026-11-12T00:05:02Z
+updatedAt: 2026-11-12T00:17:36Z
 ```
 # Task: confirm the rules for a GMSLA default and close-out
 

@@ -3,7 +3,7 @@ id: wp-adr-gmsla-default-close-out
 kind: decision
 subtype: adr
 timestamp: 2026-11-12T00:05:02Z
-review: proposed
+review: accepted
 provenance:
   conversationId: gmsla-default-close-out
   sourceRef: 7959b57674d67db7e8b0388d158596713d079aea
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:05:02Z
   confidence: 0.55
 createdAt: 2026-11-12T00:05:02Z
-updatedAt: 2026-11-12T00:05:02Z
+updatedAt: 2026-11-12T00:17:36Z
 ```
 # ADR: a GMSLA default closes out every delivered loan of the pair at its Default Market Value against the collateral held, and settles one net balance in tUSD
 

@@ -1282,3 +1282,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
 | edge:e-dec-cdmdev-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
 | edge:e-lnk-gmsladfl-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
+| waypoint:wp-adr-gmsla-default-close-out | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| node:task-sme-gmsla-default-rules | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| edge:e-mrk-dfladr-gmsladfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| edge:e-drv-cdmdata-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| edge:e-drv-finality-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| edge:e-dec-cdmdev-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
+| edge:e-lnk-gmsladfl-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
