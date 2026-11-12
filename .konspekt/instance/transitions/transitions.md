@@ -1407,3 +1407,29 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-tprepadr | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
 | edge:e-dec-cdmdev-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
 | edge:e-lnk-tprep-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| edge:e-mrk-tprepadr-tprep | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| edge:e-drv-cdmdata-tprepadr | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| edge:e-dec-cdmdev-smetprep | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| edge:e-lnk-tprep-smetprep | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| waypoint:wp-adr-ccp-scope | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-ccp-membership | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-ccp-membership | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| node:task-ccp-clearing | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-ccp-clearing | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| node:task-ccp-margin | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-ccp-margin | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| node:task-ccp-default | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-ccp-default | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| node:task-ccp-porting | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-ccp-porting | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| node:task-live-spec-node-read-after-write | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
+| node:task-live-spec-node-read-after-write | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-mrk-ccpscope-ccp | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-drv-cdmdata-ccpscope | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-drv-finality-ccpscope | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-dec-ccp-membership | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-dec-ccp-clearing | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-dec-ccp-margin | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-dec-ccp-default | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-dec-ccp-porting | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-dec-e2eflow-readafterwrite | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
