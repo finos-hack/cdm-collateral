@@ -3,7 +3,7 @@ id: wp-adr-triparty-trade-start
 kind: decision
 subtype: adr
 timestamp: 2026-11-12T01:20:36Z
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-trade-start
   sourceRef: dfc25e3ca5487c53cf915b0e61638c428cd4e377
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T01:20:36Z
   confidence: 0.55
 createdAt: 2026-11-12T01:20:36Z
-updatedAt: 2026-11-12T01:20:36Z
+updatedAt: 2026-11-12T02:16:12Z
 ```
 # ADR: a triparty repo starts with the giver's deposit at the agent and the pair's request; the agent allocates by the giver's ranking within the profile's haircuts and per-ISIN limits and builds the CDM repo; the purchase settles the cash against the allocation on TripartySettlement
 

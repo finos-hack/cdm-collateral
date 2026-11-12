@@ -3,7 +3,7 @@ id: task-sme-triparty-trade-start
 type: task
 title: Confirm with a business SME the triparty allocation and the purchase through the agent
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-trade-start
   sourceRef: dfc25e3ca5487c53cf915b0e61638c428cd4e377
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T01:20:36Z
   confidence: 0.6
 createdAt: 2026-11-12T01:20:36Z
-updatedAt: 2026-11-12T01:20:36Z
+updatedAt: 2026-11-12T02:16:12Z
 ```
 # Task: confirm the triparty allocation and the purchase through the agent
 

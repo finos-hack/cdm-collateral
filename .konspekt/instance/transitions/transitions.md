@@ -1350,3 +1350,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
 | edge:e-dec-cdmdev-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
 | edge:e-lnk-tpstart-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
+| waypoint:wp-adr-triparty-trade-start | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| node:task-sme-triparty-trade-start | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| edge:e-mrk-tpstartadr-tpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| edge:e-drv-cdmdata-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| edge:e-drv-finality-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| edge:e-dec-cdmdev-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| edge:e-lnk-tpstart-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |

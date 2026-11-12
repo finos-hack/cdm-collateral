@@ -390,8 +390,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-tptermsadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-terms-profile |  | accepted |
 | e-dec-cdmdev-smetpterms | decomposes | node:goal-cdm-development | node:task-sme-triparty-terms-profile |  | accepted |
 | e-lnk-tpterms-smetpterms | links | node:task-triparty-terms-profile | node:task-sme-triparty-terms-profile |  | accepted |
-| e-mrk-tpstartadr-tpstart | marks | waypoint:wp-adr-triparty-trade-start | node:task-triparty-trade-start |  | proposed |
-| e-drv-cdmdata-tpstartadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-trade-start |  | proposed |
-| e-drv-finality-tpstartadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-trade-start |  | proposed |
-| e-dec-cdmdev-smetpstart | decomposes | node:goal-cdm-development | node:task-sme-triparty-trade-start |  | proposed |
-| e-lnk-tpstart-smetpstart | links | node:task-triparty-trade-start | node:task-sme-triparty-trade-start |  | proposed |
+| e-mrk-tpstartadr-tpstart | marks | waypoint:wp-adr-triparty-trade-start | node:task-triparty-trade-start |  | accepted |
+| e-drv-cdmdata-tpstartadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-trade-start |  | accepted |
+| e-drv-finality-tpstartadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-trade-start |  | accepted |
+| e-dec-cdmdev-smetpstart | decomposes | node:goal-cdm-development | node:task-sme-triparty-trade-start |  | accepted |
+| e-lnk-tpstart-smetpstart | links | node:task-triparty-trade-start | node:task-sme-triparty-trade-start |  | accepted |
