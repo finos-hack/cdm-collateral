@@ -2,8 +2,20 @@
 // their live console; the agent BANK-T has its own console (route #/live/T) with the same card. The giver proposes the
 // baseline terms with the counterparty as the receiver and BANK-T as the agent; the receiver and the agent each affirm
 // them after their service has checked the document; the giver or the receiver terminates terms in effect.
+//
+// Trade start (task-triparty-trade-start, wp-adr-triparty-trade-start): under terms in effect the giver deposits tokens
+// with the agent, each with its rank, and requests a repo; the receiver affirms the request; the agent allocates in its
+// console; the receiver settles the purchase against the allocation, or refuses it; the giver withdraws free collateral.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { serviceUrl, tripartyApi, type LiveTriparty, type LiveTripartyTerms, type TripartyParty } from "../domain/liveApi";
+import {
+  serviceUrl,
+  tripartyApi,
+  type LiveParty,
+  type LiveTriparty,
+  type LiveTripartyRepo,
+  type LiveTripartyTerms,
+  type TripartyParty,
+} from "../domain/liveApi";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const bank = (p: TripartyParty) => (p === "T" ? "BANK-T" : `BANK-${p}`);
@@ -40,7 +52,7 @@ function TermsRow(props: { party: TripartyParty; t: LiveTripartyTerms; busy: boo
                   <td>{e.token ?? ""} <span className="mono small">{e.isin}</span></td>
                   <td>{e.eligible ? "yes" : "no"}</td>
                   <td>{e.haircutBps === null ? "—" : `${(e.haircutBps / 100).toFixed(2)}%`}</td>
-                  <td>{e.concentrationLimit === null ? "none" : `at most ${Math.round(Number(e.concentrationLimit) * 100)}% of the allocated value`}</td>
+                  <td>{e.concentrationLimit === null ? "none" : `at most ${Math.round(Number(e.concentrationLimit) * 100)}% of the Purchase Price`}</td>
                 </tr>
               ))}
             </tbody>
@@ -52,6 +64,116 @@ function TermsRow(props: { party: TripartyParty; t: LiveTripartyTerms; busy: boo
         {t.canRefuse && <button disabled={busy} onClick={() => run(() => tripartyApi.refuseTripartyTerms(party, t.termsId))}>{party === t.giver ? "Withdraw triparty terms" : "Refuse triparty terms"}</button>}
         {t.canTerminate && <button disabled={busy} onClick={() => run(() => tripartyApi.terminateTripartyTerms(party, t.termsId))}>Terminate triparty terms</button>}
       </div>
+      {t.state === "effective" && <TradeStart party={party} t={t} busy={busy} run={run} />}
+    </div>
+  );
+}
+
+const usd = (v: string | number) => Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, r, busy, run } = props;
+  const a = r.allocation;
+  return (
+    <div className="card" data-testid={`triparty-repo-${r.repoId}`} data-state={r.state}>
+      <div className="row">
+        <span data-testid="triparty-repo-state">{r.state === "settled" ? <span className="ok">purchase settled on-chain ✓</span> : r.state}</span>
+        <span>{r.tradeId ?? short(r.repoId)} · Purchase Price {usd(r.purchasePrice)} tUSD{r.ratePercent ? ` · ${r.ratePercent}%` : ""}
+          {r.purchaseDate ? ` · ${r.purchaseDate} to ${r.repurchaseDate}` : ""}</span>
+        <span data-testid="triparty-request-verified">
+          {r.requestVerified ? <span className="ok">request checked ✓</span> : <span className="bad">{r.requestProblem ?? "request does not check"}</span>}
+        </span>
+      </div>
+      {a && (
+        <>
+          <div className="small" data-testid="triparty-allocation-covers">
+            {a.covers
+              ? <span className="ok">allocation covers the Purchase Price after haircuts ✓ ({usd(a.allocatedValue)} for {usd(a.requiredValue)}{a.cdmRepo ? "; CDM repo booked" : ""})</span>
+              : <span className="bad">the deposit cannot cover the Purchase Price within the profile: nothing allocated</span>}
+          </div>
+          {a.positions.length > 0 && (
+            <table className="tbl" data-testid="triparty-allocation">
+              <thead>
+                <tr><th>Allocated</th><th>Units</th><th>Price</th><th>Haircut</th><th>Value after haircut</th><th>Share of Purchase Price</th></tr>
+              </thead>
+              <tbody>
+                {a.positions.map((p) => (
+                  <tr key={p.isin} data-testid={`triparty-allocation-${p.token ?? p.isin}`}>
+                    <td>{p.token ?? p.isin}</td><td>{p.units}</td><td>{p.unitPrice}</td><td>{(p.haircutBps / 100).toFixed(2)}%</td>
+                    <td>{usd(p.valueAfterHaircuts)}</td><td>{(Number(p.share) * 100).toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+      {r.allocationVerified !== undefined && (
+        <div className="small" data-testid="triparty-allocation-verified">
+          {r.allocationVerified ? <span className="ok">allocation recomputed by this party ✓</span> : <span className="bad">{r.allocationProblem ?? "allocation does not check"}</span>}
+        </div>
+      )}
+      <div className="row">
+        {r.canAffirm && <button disabled={busy} onClick={() => run(() => tripartyApi.affirmTripartyRequest(party, r.repoId))}>Affirm triparty repo request</button>}
+        {r.canAllocate && <button disabled={busy} onClick={() => run(() => tripartyApi.allocateTripartyRepo(party, r.repoId))}>Allocate collateral</button>}
+        {r.canSettle && <button disabled={busy} onClick={() => run(() => tripartyApi.settleTripartyPurchase(party, r.repoId))}>Settle purchase against the allocation</button>}
+        {r.canRefuseAllocation && <button disabled={busy} onClick={() => run(() => tripartyApi.refuseTripartyAllocation(party, r.repoId))}>Refuse allocation</button>}
+        {r.canCancel && <button disabled={busy} onClick={() => run(() => tripartyApi.cancelTripartyRepo(party, r.repoId))}>Cancel triparty repo</button>}
+      </div>
+    </div>
+  );
+}
+
+/** Deposits, the giver's free account and the repos under terms in effect. */
+function TradeStart(props: { party: TripartyParty; t: LiveTripartyTerms; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, t, busy, run } = props;
+  const [token, setToken] = useState("tUST");
+  const [amount, setAmount] = useState("1000");
+  const [rank, setRank] = useState("1");
+  const [price, setPrice] = useState("500000");
+  const [rate, setRate] = useState("5");
+  const [days, setDays] = useState("7");
+  const giver = party as LiveParty;
+  const free = t.free ?? [];
+  return (
+    <div data-testid="triparty-trade-start">
+      <table className="tbl" data-testid="triparty-free">
+        <thead>
+          <tr><th>Free at the agent</th><th>Units</th><th>Giver's rank</th><th></th></tr>
+        </thead>
+        <tbody>
+          {free.length === 0 && <tr><td colSpan={4} className="small">nothing deposited</td></tr>}
+          {free.map((h) => (
+            <tr key={h.token} data-testid={`triparty-free-${h.token}`}>
+              <td>{h.token}</td><td>{h.amount}</td><td>{h.rank}</td>
+              <td>{t.canDeposit && h.amount > 0 && (
+                <button disabled={busy} onClick={() => run(() => tripartyApi.withdrawTriparty(giver, t.termsId, h.token))}>Withdraw free {h.token}</button>
+              )}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {t.canDeposit && (
+        <div className="row">
+          <select data-testid="triparty-deposit-token" value={token} onChange={(e) => setToken(e.target.value)}>
+            <option value="tUST">tUST</option>
+            <option value="tAGY">tAGY</option>
+            <option value="tMMF">tMMF</option>
+          </select>
+          <input data-testid="triparty-deposit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} size={8} />
+          <label className="small">rank <input data-testid="triparty-deposit-rank" value={rank} onChange={(e) => setRank(e.target.value)} size={2} /></label>
+          <button disabled={busy} onClick={() => run(() => tripartyApi.depositTriparty(giver, t.termsId, token, Number(amount), Number(rank)))}>Deposit with BANK-T</button>
+        </div>
+      )}
+      {t.canRequest && (
+        <div className="row">
+          <label className="small">Purchase Price <input data-testid="triparty-request-price" value={price} onChange={(e) => setPrice(e.target.value)} size={9} /></label>
+          <label className="small">rate % <input data-testid="triparty-request-rate" value={rate} onChange={(e) => setRate(e.target.value)} size={4} /></label>
+          <label className="small">days <input data-testid="triparty-request-days" value={days} onChange={(e) => setDays(e.target.value)} size={3} /></label>
+          <button disabled={busy} onClick={() => run(() => tripartyApi.requestTripartyRepo(giver, t.termsId, Number(price), rate, Number(days)))}>Request triparty repo</button>
+        </div>
+      )}
+      {(t.repos ?? []).filter((r) => r.state !== "cancelled").map((r) => <RepoRow key={r.repoId} party={party} r={r} busy={busy} run={run} />)}
     </div>
   );
 }

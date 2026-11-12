@@ -360,6 +360,26 @@ route("POST", "/ledger/v1/triparty/terms/:id/terminate", async (p) => J(await ad
 route("GET", "/ledger/v1/triparty/terms/:id", async (p) => J(await adapter.getTripartyTerms(p.id as Hex)));
 route("GET", "/ledger/v1/triparty/terms", async (_p, _b, url) => J(await adapter.listTripartyTerms(getAddress(url.searchParams.get("party")!))));
 
+// Triparty trade start (wp-adr-triparty-trade-start): the giver deposits and withdraws free collateral and requests a
+// repo; the receiver affirms the request; the agent allocates; the receiver refuses the allocation or settles the
+// purchase against it; any of the three cancels a repo before it settles.
+route("POST", "/ledger/v1/triparty/terms/:id/deposit", async (p, b) =>
+  J(await adapter.depositTriparty(p.id as Hex, getAddress(b.token), BigInt(b.amount), BigInt(b.rank))));
+route("POST", "/ledger/v1/triparty/terms/:id/withdraw", async (p, b) =>
+  J(await adapter.withdrawTriparty(p.id as Hex, getAddress(b.token), BigInt(b.amount))));
+route("GET", "/ledger/v1/triparty/terms/:id/free", async (p) => J(await adapter.tripartyFree(p.id as Hex)));
+route("POST", "/ledger/v1/triparty/terms/:id/repos", async (p, b) =>
+  J(await adapter.requestTripartyRepo(p.id as Hex, b.requestHash as Hex, getAddress(b.cash), BigInt(b.purchasePrice))));
+route("GET", "/ledger/v1/triparty/terms/:id/repos", async (p) => J(await adapter.listTripartyRepos(p.id as Hex)));
+route("POST", "/ledger/v1/triparty/repos/:id/affirm", async (p, b) => J(await adapter.affirmTripartyRequest(p.id as Hex, b.requestHash as Hex)));
+route("POST", "/ledger/v1/triparty/repos/:id/allocate", async (p, b) =>
+  J(await adapter.allocateTriparty(p.id as Hex, b.allocationHash as Hex, (b.tokens as string[]).map((t) => getAddress(t)),
+    (b.amounts as (string | number)[]).map((a) => BigInt(a)))));
+route("POST", "/ledger/v1/triparty/repos/:id/refuse-allocation", async (p) => J(await adapter.refuseTripartyAllocation(p.id as Hex)));
+route("POST", "/ledger/v1/triparty/repos/:id/settle", async (p, b) => J(await adapter.settleTripartyPurchase(p.id as Hex, b.allocationHash as Hex)));
+route("POST", "/ledger/v1/triparty/repos/:id/cancel", async (p) => J(await adapter.cancelTripartyRepo(p.id as Hex)));
+route("GET", "/ledger/v1/triparty/repos/:id", async (p) => J(await adapter.getTripartyRepo(p.id as Hex)));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

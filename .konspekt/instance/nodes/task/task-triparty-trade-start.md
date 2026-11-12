@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T01:20:36Z
+updatedAt: 2026-11-12T01:45:39Z
 ```
 # Task: Triparty trade start: allocation by the agent and DvP of the cash
 
@@ -53,3 +53,27 @@ days, BANK-A selling to BANK-B, `CdmRepo.execution`):
 **Design chosen 2026-11-12** (source `dfc25e3ca5487c53cf915b0e61638c428cd4e377`: "1a 2a 3a 4a 5a 6a 7a 8a 9a"), recorded in
 [[wp-adr-triparty-trade-start]] (proposed); the allocation rules are questions for an SME in
 [[task-sme-triparty-trade-start]].
+
+**Built 2026-11-12** to [[wp-adr-triparty-trade-start]]:
+
+- **cdm-ext** (`cdmx.collateral.triparty`): `TripartyRepoRequest`, `TripartyDeposit`, `TripartyValuedPosition`,
+  `TripartyConcentrationBreach`, `TripartyAllocation` (conditions `NothingWhenUncovered`, `CoversWhenAllocated`);
+  `ProfileCriterion`, `ProfileEligible`, `ProfileHaircut`, `ProfileLimit` find an asset's criterion by ISIN;
+  `AllocateTriparty` caps an asset under a limit at the whole units within its share of the Purchase Price;
+  `TripartyConcentrationBreaches` is the per-ISIN check (local fix for D30). `TripartyAllocationTest`, 7 tests.
+- **Contract** `TripartySettlement`: deposit with the giver's rank, withdrawal of free collateral, request, affirmation,
+  allocation by the agent, refusal of an allocation, cancellation, and `settlePurchase`, which moves the Purchase Price
+  to the giver and the allocated tokens from the free account to the repo's account in one transaction; termination
+  refuses while a repo is open or collateral is deposited. 2 new hardhat tests (123 pass).
+- **Gateway** routes under `/ledger/v1/triparty/terms/:id/` (deposit, withdraw, free, repos) and
+  `/ledger/v1/triparty/repos/:id/` (affirm, allocate, refuse-allocation, settle, cancel).
+- **Service** `CdmTriparty.request`, `verifyRequest`, `allocate` (the CDM repo built with one collateral position per
+  allocated asset, the agent in the `TripartyAgent` role and the profile as the eligible collateral, through
+  `CdmRepo.bookExecution`), `verifyAllocation`; `CdmRepo.collateralPositions` reads the allocated form. The giver and
+  the receiver recompute a proposed allocation from the free account and the feed prices; a settled allocation is
+  checked on its own (validation, request hash, chain amounts, CDM positions, limits). `canPropose` now counts only
+  terms where the party is the giver. `CdmTripartyTradeStartTest`, 4 tests.
+- **Console**: deposit, withdraw, request, affirm, settle, refuse and cancel in the terms card; allocate in `#/live/T`.
+  The profile's limit now reads "of the Purchase Price".
+- **Live spec** `flow-triparty-trade-start` passes (twice on the redeployed chain, with `flow-triparty-terms`). bank-b's
+  test balance targets are now 8,000 tUST and 8,000 tAGY, since each run leaves 3,000 tUST and 2,190 tAGY at the agent.

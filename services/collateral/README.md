@@ -238,5 +238,15 @@ receiver also against its GMRA terms in force, and affirm the hash; the terms ta
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
 
+Triparty trade start (wp-adr-triparty-trade-start, `CdmTriparty`): `POST /api/v1/triparty/terms/{id}/deposit` and
+`.../withdraw` (the giver deposits a token with its rank, or withdraws free collateral), `POST
+/api/v1/triparty/terms/{id}/repos` (the giver requests a repo with a cdm-ext `TripartyRepoRequest`), `POST
+/api/v1/triparty/repos/{id}/affirm` (the receiver, after checking the request against the chain), `.../allocate` (the
+agent: cdm-ext `AllocateTriparty` over the giver's free account at the feed prices in the giver's ranking, capped per
+ISIN at the profile's limits, then the CDM repo with one collateral position per allocated asset in a cdm-ext
+`TripartyAllocation`; nothing is allocated on-chain when the deposit cannot cover the Purchase Price),
+`.../refuse-allocation` and `.../settle` (the receiver, after recomputing the allocation), and `.../cancel`. `GET
+/api/v1/triparty` adds each set of terms in effect's free account and repos.
+
 With `PARTY_ID=T` the service acts for the triparty agent BANK-T on the `bank-c` node (port 8003, gateway 8203). It
 registers only `/api/v1/health`, the triparty routes and `/api/v1/events`; the console's `#/live/T` route calls them.

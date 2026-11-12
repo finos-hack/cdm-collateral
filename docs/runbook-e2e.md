@@ -369,11 +369,27 @@ statement as verified, and the party that owes the balance clicks `Pay USD …`.
 
 Triparty terms (`flow-triparty-terms`): in the "Triparty terms" card A clicks `Propose triparty terms (giver BANK-A,
 agent BANK-T)`. A's service builds the cdm-ext `TripartyTerms` (A as the giver, B as the receiver, BANK-T as the agent,
-the hash of the GMRA terms in force, and the profile: tUST at a 2% haircut, tAGY at 3% up to half of the allocated
-value) and records its hash on `TripartySettlement`. B, and then BANK-T in its own console (`#/live/T`), each see
+the hash of the GMRA terms in force, and the profile: tUST at a 2% haircut, tAGY at 3% up to half of the Purchase
+Price) and records its hash on `TripartySettlement`. B, and then BANK-T in its own console (`#/live/T`), each see
 `terms checked against this party's own build ✓` and click `Affirm triparty terms`; after both the terms show
 `in effect on-chain ✓`. The giver or the receiver can `Terminate triparty terms`; any of the three can refuse a
 proposal. The terms and the profile are the assumptions in `docs/analysis/sme-question-ledger.md` (TPT-1 to TPT-6).
+
+Triparty trade start (`flow-triparty-trade-start`): under B-giver terms in effect (B gives, A receives), B deposits
+2,000 tUST ranked 1 and 4,000 tAGY ranked 2 with `Deposit with BANK-T` in the terms card; the "Free at the agent" table
+shows them held on `TripartySettlement`. B enters a Purchase Price of 500,000 and clicks `Request triparty repo`: B's
+service builds the cdm-ext `TripartyRepoRequest` and records its hash. A sees `request checked ✓` and clicks `Affirm
+triparty repo request`. In `#/live/T` the agent clicks `Allocate collateral`: its service runs cdm-ext
+`AllocateTriparty` over B's free account at the feed prices, in B's ranking, with tAGY capped at half of the Purchase
+Price after haircuts; 2,000 tUST and at most 2,598 tAGY cannot cover 500,000, so the card shows `the deposit cannot
+cover the Purchase Price within the profile: nothing allocated` and nothing is written on-chain. B deposits 1,000 tUST
+more; the agent allocates again: 3,000 tUST and 2,190 tAGY (42.15% of the Purchase Price), books the CDM repo with one
+collateral position per asset in the cdm-ext `TripartyAllocation`, and records its hash with the tokens and amounts.
+A's and B's services each recompute the allocation (`allocation recomputed by this party ✓`); A clicks `Settle purchase
+against the allocation`, and in one transaction 500,000 tUSD moves from A to B and the allocated tokens move from B's
+free account to the repo's account. B then clicks `Withdraw free tAGY`. The repo stays open, so the terms cannot be
+terminated until trade end (task-triparty-trade-end). The allocation rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (TPS-1 to TPS-7).
 
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
@@ -530,7 +546,10 @@ dates and returns its loan; the lender's tUSD falls by the rebates it pays), and
 same, with the borrower paying the fees), and `flow-gmsla-default-close-out` (two loans of the same tMMF against
 tUST in opposite directions offset, so the close-out leaves every holding where it was and only the difference of the
 fees moves; it restores A's default status as it found it), and `flow-triparty-terms` (it terminates the terms it
-makes effective and leaves the second proposal refused).
+makes effective and leaves the second proposal refused). `flow-triparty-trade-start` leaves one open triparty repo per
+run, with 3,000 tUST and 2,190 tAGY of B's at the agent, and the B-giver terms in effect, until trade end exists; the
+top-up before each run restores B's free balances (`contracts/scripts/test-balances.json`, 8,000 tUST and 8,000 tAGY
+for bank-b).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

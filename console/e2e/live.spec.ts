@@ -3489,8 +3489,9 @@ type TripartyView = { party: string; agent: boolean; canPropose: boolean; terms:
 test("flow-triparty-terms: A proposes triparty terms in its console naming B and the agent BANK-T -> B and T each check the document and affirm -> the terms are in effect on-chain and in all three services -> A terminates them; a proposal the agent refuses never takes effect", async ({ page }) => {
   test.setTimeout(TEST_TIMEOUT);
 
-  // Setup: close terms a failed earlier run left open, so A can propose.
-  for (const t of (await call<TripartyView>(`${SERVICE.A}/triparty`)).terms) {
+  // Setup: close A-giver terms a failed earlier run left open, so A can propose. (A also receives under the B-giver
+  // terms of flow-triparty-trade-start, which stay in effect while their repo is open.)
+  for (const t of (await call<TripartyView>(`${SERVICE.A}/triparty`)).terms.filter((x) => x.giver === "A")) {
     if (t.state === "proposed") await call(`${SERVICE.A}/triparty/terms/${t.termsId}/refuse`, "POST", {});
     if (t.state === "effective") await call(`${SERVICE.A}/triparty/terms/${t.termsId}/terminate`, "POST", {});
   }
@@ -3523,7 +3524,7 @@ test("flow-triparty-terms: A proposes triparty terms in its console naming B and
   const rowT = page.getByTestId(`triparty-terms-${id}`);
   await expect(page.getByText("BANK-T · Triparty Agent")).toBeVisible({ timeout: STEP_TIMEOUT });
   await expect(rowT.getByText("terms checked against this party's own build ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
-  await expect(rowT.getByTestId("triparty-profile-tAGY")).toContainText("at most 50% of the allocated value");
+  await expect(rowT.getByTestId("triparty-profile-tAGY")).toContainText("at most 50% of the Purchase Price");
   await rowT.getByRole("button", { name: "Affirm triparty terms" }).click();
   await expect(rowT.getByText("in effect on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
 
@@ -3545,15 +3546,14 @@ test("flow-triparty-terms: A proposes triparty terms in its console naming B and
   expect(views[0]).toMatchObject({ giver: "A", receiver: "B", agent: "T" });
   const onChain = await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`);
   expect(onChain).toMatchObject({ state: "effective", termsHash: views[0].termsHash, receiverAffirmed: true, agentAffirmed: true });
-  // One set in effect: neither A nor B can propose another.
+  // One set in effect per giver, receiver and agent: A cannot propose another.
   expect((await call<TripartyView>(`${SERVICE.A}/triparty`)).canPropose).toBe(false);
-  expect((await call<TripartyView>(`${SERVICE.B}/triparty`)).canPropose).toBe(false);
 
   // 4. A terminates the terms in its console; nothing is open again.
   await page.goto("/#/live/A");
   const rowA = page.getByTestId(`triparty-terms-${id}`);
   await rowA.getByRole("button", { name: "Terminate triparty terms" }).click({ timeout: STEP_TIMEOUT });
-  await expect(page.getByTestId("triparty").getByTestId("triparty-none")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId(`triparty-terms-${id}`)).toHaveCount(0, { timeout: STEP_TIMEOUT });
   expect((await call<TripartyTermsView>(`${GATEWAY.A}/triparty/terms/${id}`)).state).toBe("terminated");
 
   // 5. A proposal the agent refuses never takes effect, and A can propose again.
@@ -3563,4 +3563,144 @@ test("flow-triparty-terms: A proposes triparty terms in its console naming B and
   await expect(call(`${SERVICE.B}/triparty/terms/${termsId}/affirm`, "POST", {})).rejects.toThrow(/not proposed/);
   expect((await call<TripartyTermsView>(`${GATEWAY.A}/triparty/terms/${termsId}`)).state).toBe("refused");
   await expect.poll(async () => (await call<TripartyView>(`${SERVICE.A}/triparty`)).canPropose, { timeout: 60_000 }).toBe(true);
+});
+
+// --- flow-triparty-trade-start (task-triparty-trade-start, wp-adr-triparty-trade-start) ---
+
+type TripartyAllocationView = {
+  covers: boolean; requiredValue: string; allocatedValue: string; cdmRepo: boolean;
+  positions: { isin: string; token?: string; units: number; unitPrice: string; haircutBps: number; valueAfterHaircuts: string; share: string }[];
+};
+type TripartyRepoView = {
+  repoId: string; state: string; purchasePrice: number; requestHash: string; tradeId?: string; requestVerified: boolean; requestProblem: string | null;
+  allocationHash?: string; allocation?: TripartyAllocationView; allocationVerified?: boolean; allocationProblem?: string | null;
+  canAffirm: boolean; canAllocate: boolean; canRefuseAllocation: boolean; canSettle: boolean; canCancel: boolean;
+};
+type TripartyTradeTermsView = TripartyTermsView & {
+  canDeposit?: boolean; canRequest?: boolean; free?: { token: string; amount: number; rank: number }[]; repos?: TripartyRepoView[];
+};
+const tripartyTermsOf = async (svc: string, id: string) =>
+  (await call<{ terms: TripartyTradeTermsView[] }>(`${svc}/triparty`)).terms.find((x) => x.termsId === id);
+const tripartyRepoOf = async (svc: string, id: string, repoId: string) => (await tripartyTermsOf(svc, id))?.repos?.find((r) => r.repoId === repoId);
+
+test("flow-triparty-trade-start: B deposits 2,000 tUST and 4,000 tAGY with BANK-T and requests a 500,000 tUSD repo -> A affirms the request -> T cannot cover it within the 50% tAGY limit and allocates nothing -> B deposits 1,000 tUST more -> T allocates 3,000 tUST and 2,190 tAGY and books the CDM repo -> A and B each recompute the allocation and A settles the purchase in one transaction -> B withdraws its free tAGY", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tAGY = p.tokens.tAGY, tUSD = p.tokens.tUSD;
+  // The numbers below follow the feed prices the stack starts with (tUST 98.40, tAGY 99.20; 8 decimals).
+  expect([await scaledPrice(tUST), await scaledPrice(tAGY)]).toEqual([9_840_000_000n, 9_920_000_000n]);
+
+  // Setup: B-giver terms in effect (made through the services when an earlier run left none; flow-triparty-terms
+  // shows that path in the consoles); repos a failed run left before settlement are cancelled; free deposits withdrawn.
+  const giverTerms = async () => (await call<{ terms: TripartyTradeTermsView[] }>(`${SERVICE.B}/triparty`)).terms.filter((t) => t.giver === "B");
+  for (const t of await giverTerms()) if (t.state === "proposed") await call(`${SERVICE.B}/triparty/terms/${t.termsId}/refuse`, "POST", {});
+  let id = (await giverTerms()).find((t) => t.state === "effective")?.termsId ?? "";
+  if (!id) {
+    ({ termsId: id } = await call<{ termsId: string }>(`${SERVICE.B}/triparty/terms`, "POST", {}));
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await tripartyTermsOf(svc, id))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+      await call(`${svc}/triparty/terms/${id}/affirm`, "POST", {});
+    }
+    await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`)).state, { timeout: 60_000 }).toBe("effective");
+  }
+  for (const r of (await tripartyTermsOf(SERVICE.B, id))?.repos ?? []) if (r.canCancel) await call(`${SERVICE.B}/triparty/repos/${r.repoId}/cancel`, "POST", {});
+  for (const h of (await tripartyTermsOf(SERVICE.B, id))?.free ?? []) if (h.amount > 0) await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: h.token });
+  const known = new Set(((await tripartyTermsOf(SERVICE.B, id))?.repos ?? []).map((r) => r.repoId));
+  const before = {
+    bUst: await balanceOf(GATEWAY.B, tUST, p.b), bAgy: await balanceOf(GATEWAY.B, tAGY, p.b),
+    bUsd: await balanceOf(GATEWAY.B, tUSD, p.b), aUsd: await balanceOf(GATEWAY.A, tUSD, p.a),
+  };
+
+  // 1. B, the giver, deposits 2,000 tUST ranked first and 4,000 tAGY ranked second in its console, and requests the repo.
+  await page.goto("/#/live/B");
+  const rowB = page.getByTestId(`triparty-terms-${id}`);
+  const deposit = async (token: string, amount: number, rank: number, shown: string) => {
+    await rowB.getByTestId("triparty-deposit-token").selectOption(token, { timeout: STEP_TIMEOUT });
+    await rowB.getByTestId("triparty-deposit-amount").fill(String(amount));
+    await rowB.getByTestId("triparty-deposit-rank").fill(String(rank));
+    await rowB.getByRole("button", { name: "Deposit with BANK-T" }).click();
+    await expect(rowB.getByTestId(`triparty-free-${token}`).locator("td").nth(1)).toHaveText(shown, { timeout: STEP_TIMEOUT });
+  };
+  await deposit("tUST", 2_000, 1, "2000");
+  await deposit("tAGY", 4_000, 2, "4000");
+  await rowB.getByTestId("triparty-request-price").fill("500000");
+  await rowB.getByRole("button", { name: "Request triparty repo" }).click();
+  let repoId = "";
+  await expect
+    .poll(async () => {
+      const r = (await tripartyTermsOf(SERVICE.B, id))?.repos?.find((x) => !known.has(x.repoId));
+      repoId = r?.repoId ?? "";
+      return r?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("requested");
+
+  // 2. A, the receiver, checks the request against the chain and affirms it in its console.
+  await page.goto("/#/live/A");
+  const repoA = page.getByTestId(`triparty-repo-${repoId}`);
+  await expect(repoA.getByText("request checked ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await repoA.getByRole("button", { name: "Affirm triparty repo request" }).click();
+  await expect.poll(async () => (await call<{ state: string }>(`${GATEWAY.A}/triparty/repos/${repoId}`)).state, { timeout: 60_000 }).toBe("affirmed");
+
+  // 3. The agent allocates in its console. 2,000 tUST (192,864 after haircut) and tAGY capped at 2,598 units
+  //    (249,989.95, within 50% of the Purchase Price) cannot cover 500,000: nothing is allocated on-chain.
+  await page.goto("/#/live/T");
+  const repoT = page.getByTestId(`triparty-repo-${repoId}`);
+  await repoT.getByRole("button", { name: "Allocate collateral" }).click({ timeout: STEP_TIMEOUT });
+  await expect(repoT.getByTestId("triparty-allocation-covers")).toContainText("cannot cover the Purchase Price", { timeout: STEP_TIMEOUT });
+  const short = await call<{ state: string; allocation: unknown[] }>(`${GATEWAY.A}/triparty/repos/${repoId}`);
+  expect([short.state, short.allocation]).toEqual(["affirmed", []]);
+
+  // 4. B deposits 1,000 tUST more in its console.
+  await page.goto("/#/live/B");
+  await deposit("tUST", 1_000, 1, "3000");
+
+  // 5. The agent allocates again: 3,000 tUST (289,296) and 2,190 tAGY (210,730.56, 42.15% of the Purchase Price),
+  //    and books the CDM repo with one collateral position per asset.
+  await page.goto("/#/live/T");
+  await repoT.getByRole("button", { name: "Allocate collateral" }).click({ timeout: STEP_TIMEOUT });
+  await expect(repoT.getByTestId("triparty-allocation-covers")).toContainText("covers the Purchase Price after haircuts ✓", { timeout: STEP_TIMEOUT });
+  await expect(repoT.getByTestId("triparty-allocation-tUST")).toContainText("3000");
+  await expect(repoT.getByTestId("triparty-allocation-tAGY")).toContainText("2190");
+  await expect(repoT.getByTestId("triparty-allocation-tAGY")).toContainText("42.15%");
+  const allocated = await call<{ state: string; allocation: { token: string; amount: string }[] }>(`${GATEWAY.B}/triparty/repos/${repoId}`);
+  expect(allocated.state).toBe("allocated");
+  expect(allocated.allocation.map((a) => [a.token.toLowerCase(), String(a.amount)])).toEqual([[tUST.toLowerCase(), "3000"], [tAGY.toLowerCase(), "2190"]]);
+
+  // 6. A and B each recompute the allocation from the terms, the request, B's free account and the feed prices; A
+  //    settles the purchase in its console: 500,000 tUSD to B and the allocated tokens to the repo's account, at once.
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const r = await tripartyRepoOf(svc, id, repoId);
+        return r?.allocationVerified ? true : (r?.allocationProblem ?? r?.state ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  await page.goto("/#/live/A");
+  await repoA.getByRole("button", { name: "Settle purchase against the allocation" }).click({ timeout: STEP_TIMEOUT });
+  await expect(repoA.getByText("purchase settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(before.bUsd + 500_000n);
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(before.aUsd - 500_000n);
+  const free = await call<{ token: string; amount: string }[]>(`${GATEWAY.B}/triparty/terms/${id}/free`);
+  expect(free.map((h) => [h.token.toLowerCase(), String(h.amount)])).toEqual([[tUST.toLowerCase(), "0"], [tAGY.toLowerCase(), "1810"]]);
+
+  // The three services show the same settled repo with the same allocation; it carries the CDM repo.
+  const views: TripartyRepoView[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B, SERVICE_T]) {
+    await expect.poll(async () => (await tripartyRepoOf(svc, id, repoId))?.state, { timeout: 60_000 }).toBe("settled");
+    views.push((await tripartyRepoOf(svc, id, repoId))!);
+  }
+  expect(new Set(views.map((v) => v.allocationHash)).size).toBe(1);
+  expect(views[0].allocation).toEqual(views[2].allocation);
+  expect(views[0].allocation).toMatchObject({ covers: true, requiredValue: "500000", allocatedValue: "500026.56", cdmRepo: true });
+  expect(views[0].allocationVerified && views[1].allocationVerified).toBe(true);
+
+  // 7. B withdraws its free tAGY in its console; the allocated collateral stays with the agent for A.
+  await page.goto("/#/live/B");
+  await rowB.getByRole("button", { name: "Withdraw free tAGY" }).click({ timeout: STEP_TIMEOUT });
+  await expect(rowB.getByTestId("triparty-free-tAGY").locator("td").nth(1)).toHaveText("0", { timeout: STEP_TIMEOUT });
+  expect(await balanceOf(GATEWAY.B, tUST, p.b)).toBe(before.bUst - 3_000n);
+  expect(await balanceOf(GATEWAY.B, tAGY, p.b)).toBe(before.bAgy - 2_190n);
+  // The terms cannot be terminated while the repo is open (trade end, task-triparty-trade-end, closes it).
+  await expect(call(`${SERVICE.B}/triparty/terms/${id}/terminate`, "POST", {})).rejects.toThrow(/repos open/);
 });

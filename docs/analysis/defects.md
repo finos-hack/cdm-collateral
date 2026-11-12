@@ -479,4 +479,7 @@ CDM 7.7.0 Java jar (`cdm-java-7.7.0.jar`, `cdm/rosetta/`).
   matches the same criteria by identifier.
 - **Fix:** add an `AssetIdentifier` case to `CheckCriteria` and an asset identifier to `EligibilityQuery`.
 - **Local extension:** a per-ISIN concentration check in `cdm-ext` (task-triparty-trade-start, the project owner's choice
-  of 2026-11-12). Not reported (project owner's instruction).
+  of 2026-11-12): `cdmx.collateral.triparty` `ProfileCriterion` finds an asset's criterion by its ISIN, as `HaircutFor`
+  does; `TripartyConcentrationBreaches` checks an allocation against the profile's limits and `AllocateTriparty` caps
+  each limited asset at its limit (`TripartyAllocationTest.thePerIsinCheckFindsTheBreachCdmsCheckMisses` finds the 60%
+  tAGY breach). Not reported (project owner's instruction).

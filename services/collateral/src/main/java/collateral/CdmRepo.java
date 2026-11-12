@@ -208,6 +208,29 @@ public final class CdmRepo {
         return booking(create(List.of(i), Date.of(t.tradeDate())));
     }
 
+    /** Book a prepared execution instruction: the triparty repo with one collateral position per allocated asset
+     *  (CdmTriparty, wp-adr-triparty-trade-start). */
+    static Booking bookExecution(Map<String, Object> execution, LocalDate tradeDate) {
+        Instruction i = CdmRuntime.load(Instruction.class, o("primitiveInstruction", o("execution", execution)));
+        return booking(create(List.of(i), Date.of(tradeDate)));
+    }
+
+    /** The collateral positions of a repo, ISIN to units, in the trade's order. A bilateral repo has one; an allocated
+     *  triparty repo has one per allocated asset, each with its own quantity, and no security price quantity at trade
+     *  level, so {@link #terms} does not read it (wp-adr-triparty-trade-start). */
+    public static java.util.LinkedHashMap<String, Long> collateralPositions(TradeState ts) {
+        java.util.LinkedHashMap<String, Long> out = new java.util.LinkedHashMap<>();
+        JsonNode et = CdmRuntime.JSON.valueToTree(ts).path("trade").path("product").path("economicTerms");
+        for (JsonNode portfolio : et.path("collateral").path("collateralPortfolio")) {
+            for (JsonNode position : portfolio.path("collateralPosition")) {
+                String isin = position.path("product").path("asset").path("identifier").path(0).path("identifier").path("@data").asText();
+                JsonNode q = position.path("priceQuantity").path(0).path("quantity");
+                out.merge(isin, (q.isArray() ? q.path(0) : q).path("value").decimalValue().longValueExact(), Long::sum);
+            }
+        }
+        return out;
+    }
+
     /** The buyer's check of a booked document: it parses, and CDM's Create_BusinessEvent over its own instruction and
      *  event date gives the same event (so the same hash). Returns the booking; throws otherwise. */
     public static Booking verify(String json) {

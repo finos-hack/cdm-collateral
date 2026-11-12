@@ -1988,5 +1988,94 @@ describe("CDM collateral contracts", async () => {
       assert.equal((await tri.read.getTerms([second])).state, TERMINATED);
       await propose(H("third"));
     });
+
+    describe("trade start (task-triparty-trade-start)", () => {
+      const REQUESTED = 1, AFFIRMED = 2, ALLOCATED = 3, SETTLED = 4, CANCELLED = 5;
+      let id: `0x${string}`, tAGY: any, cash: any;
+      // B gives collateral to A through the agent, as in the live spec.
+      beforeEach(async () => {
+        tAGY = await viem.deployContract("TokenizedCollateral", ["Tokenized AGY", "tAGY", "US3137EAGY10", "3137EAGY1", "QAGY00000"]);
+        cash = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "", "", ""]);
+        await tUST.write.mint([bAddr, 5000n]);
+        await tAGY.write.mint([bAddr, 5000n]);
+        await cash.write.mint([aAddr, 1000000n]);
+        await tri.write.proposeTerms([aAddr, tAddr, H("terms")], { account: bankB.account });
+        id = (await tri.read.currentTerms([bAddr, aAddr, tAddr])) as `0x${string}`;
+        await tri.write.affirmTerms([id, H("terms")], { account: bankA.account });
+        await tri.write.affirmTerms([id, H("terms")], { account: agent.account });
+        await tUST.write.approve([tri.address, 5000n], { account: bankB.account });
+        await tAGY.write.approve([tri.address, 5000n], { account: bankB.account });
+      });
+      const request = async () => {
+        await tri.write.requestRepo([id, H("request"), cash.address, 500000n], { account: bankB.account });
+        const ids = (await tri.read.reposOf([id])) as `0x${string}`[];
+        return ids[ids.length - 1];
+      };
+
+      it("deposits with a rank, allocates from the free account and settles the purchase against the allocation", async () => {
+        await assert.rejects(tri.write.deposit([id, tUST.address, 2000n, 1n], { account: bankA.account })); // only the giver
+        await tri.write.deposit([id, tUST.address, 2000n, 1n], { account: bankB.account });
+        await tri.write.deposit([id, tAGY.address, 4000n, 2n], { account: bankB.account });
+        await assert.rejects(tri.write.deposit([id, tAGY.address, 1n, 1n], { account: bankB.account })); // rank taken
+        await tri.write.deposit([id, tUST.address, 1000n, 1n], { account: bankB.account });
+        const free = await tri.read.freeOf([id]);
+        assert.deepEqual(free.map((h: any) => [getAddress(h.token), h.amount, h.rank]),
+          [[getAddress(tUST.address), 3000n, 1n], [getAddress(tAGY.address), 4000n, 2n]]);
+
+        const repo = await request();
+        assert.equal((await tri.read.getRepo([repo])).state, REQUESTED);
+        await assert.rejects(tri.write.allocate([repo, H("alloc"), [tUST.address], [3000n]], { account: agent.account })); // not affirmed
+        await assert.rejects(tri.write.affirmRequest([repo, H("other")], { account: bankA.account }));
+        await tri.write.affirmRequest([repo, H("request")], { account: bankA.account });
+        assert.equal((await tri.read.getRepo([repo])).state, AFFIRMED);
+        await assert.rejects(tri.write.allocate([repo, H("alloc"), [tUST.address], [3000n]], { account: bankB.account })); // only the agent
+        await assert.rejects(tri.write.allocate([repo, H("alloc"), [tUST.address], [3001n]], { account: agent.account })); // not free
+        await tri.write.allocate([repo, H("first"), [tUST.address], [3000n]], { account: agent.account });
+        await tri.write.refuseAllocation([repo], { account: bankA.account });
+        assert.equal((await tri.read.getRepo([repo])).state, AFFIRMED);
+        await tri.write.allocate([repo, H("alloc"), [tUST.address, tAGY.address], [3000n, 2190n]], { account: agent.account });
+        assert.equal((await tri.read.getRepo([repo])).state, ALLOCATED);
+
+        await cash.write.approve([tri.address, 500000n], { account: bankA.account });
+        await assert.rejects(tri.write.settlePurchase([repo, H("first")], { account: bankA.account }));
+        await assert.rejects(tri.write.settlePurchase([repo, H("alloc")], { account: bankB.account }));
+        await tri.write.settlePurchase([repo, H("alloc")], { account: bankA.account });
+        const r = await tri.read.getRepo([repo]);
+        assert.equal(r.state, SETTLED);
+        assert.equal(await cash.read.balanceOf([bAddr]), 500000n);
+        assert.equal(await cash.read.balanceOf([aAddr]), 500000n);
+        const [tokens, amounts] = await tri.read.allocationOf([repo]);
+        assert.deepEqual([tokens.map((t: string) => getAddress(t)), amounts], [[getAddress(tUST.address), getAddress(tAGY.address)], [3000n, 2190n]]);
+        assert.deepEqual((await tri.read.freeOf([id])).map((h: any) => h.amount), [0n, 1810n]);
+
+        // the allocated collateral cannot be withdrawn; the free tAGY can
+        await assert.rejects(tri.write.withdraw([id, tUST.address, 1n], { account: bankB.account }));
+        await assert.rejects(tri.write.withdraw([id, tAGY.address, 1810n], { account: bankA.account }));
+        await tri.write.withdraw([id, tAGY.address, 1810n], { account: bankB.account });
+        assert.equal(await tAGY.read.balanceOf([bAddr]), 5000n - 2190n);
+        assert.equal(await tAGY.read.balanceOf([tri.address]), 2190n);
+        // terms with an open repo cannot be terminated
+        await assert.rejects(tri.write.terminateTerms([id], { account: bankB.account }));
+        await assert.rejects(tri.write.cancelRepo([repo], { account: bankA.account })); // settled
+      });
+
+      it("refuses a settlement when the giver has withdrawn the allocated collateral, and a cancelled repo frees the terms", async () => {
+        await tri.write.deposit([id, tUST.address, 5000n, 1n], { account: bankB.account });
+        const repo = await request();
+        await tri.write.affirmRequest([repo, H("request")], { account: bankA.account });
+        await tri.write.allocate([repo, H("alloc"), [tUST.address], [5000n]], { account: agent.account });
+        await tri.write.withdraw([id, tUST.address, 1n], { account: bankB.account });
+        await cash.write.approve([tri.address, 500000n], { account: bankA.account });
+        await assert.rejects(tri.write.settlePurchase([repo, H("alloc")], { account: bankA.account }));
+        await assert.rejects(tri.write.cancelRepo([repo], { account: operator.account }));
+        await tri.write.cancelRepo([repo], { account: agent.account });
+        assert.equal((await tri.read.getRepo([repo])).state, CANCELLED);
+        await assert.rejects(tri.write.terminateTerms([id], { account: bankA.account })); // collateral still deposited
+        await tri.write.withdraw([id, tUST.address, 4999n], { account: bankB.account });
+        await tri.write.terminateTerms([id], { account: bankA.account });
+        await assert.rejects(tri.write.deposit([id, tUST.address, 1n, 1n], { account: bankB.account })); // not in effect
+        await assert.rejects(request());
+      });
+    });
   });
 });

@@ -2,6 +2,8 @@ namespace cdmx.collateral.triparty : <"Local CDM extension: the terms of a tripa
 version "${project.version}"
 
 import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.observable.asset.*
 import cdm.product.collateral.*
 
 type TripartyTerms: <"The triparty terms of a repo under the GMRA between the giver and the receiver: the three parties, the GMRA terms the repos are traded under, and the collateral profile the agent allocates against.">
@@ -27,3 +29,60 @@ type TripartyTerms: <"The triparty terms of a repo under the GMRA between the gi
 
     condition ProfileIncludesAnAsset: <"The profile makes at least one asset eligible.">
         profile -> criteria filter item -> treatment -> isIncluded = True then count > 0
+
+// Trade start (task-triparty-trade-start, wp-adr-triparty-trade-start).
+
+type TripartyRepoRequest: <"The cash terms of a triparty repo that the giver proposes and the receiver affirms before the agent allocates. No CDM repo exists before the allocation: CDM's repo needs its collateral positions.">
+    [rootType]
+    termsHash string (1..1) <"The keccak-256 hash of the TripartyTerms the repo is traded under.">
+    tradeId string (1..1) <"The identifier the repo will carry.">
+    purchasePrice Money (1..1) <"The cash the receiver pays the giver, in the base currency of the terms.">
+    repoRate number (1..1) <"The repo rate, for example 0.05 for 5%.">
+    purchaseDate date (1..1) <"The Purchase Date.">
+    repurchaseDate date (1..1) <"The Repurchase Date.">
+
+    condition PositivePurchasePrice: <"The Purchase Price is positive.">
+        purchasePrice -> value > 0
+
+    condition RepurchaseAfterPurchase: <"The Repurchase Date is after the Purchase Date.">
+        repurchaseDate > purchaseDate
+
+type TripartyDeposit: <"One asset in the giver's free account at the agent, with the giver's rank and the agent's price.">
+    rank int (1..1) <"The giver's rank for the asset: a lower rank is allocated first.">
+    isin string (1..1) <"The ISIN of the asset.">
+    units number (1..1) <"The free units of the asset.">
+    unitPrice Money (1..1) <"The agent's price for one unit, in the base currency.">
+
+    condition NonNegativeUnits: <"Zero or more units are free.">
+        units >= 0
+
+    condition PositivePrice: <"A unit has a positive price.">
+        unitPrice -> value > 0
+
+type TripartyValuedPosition: <"One allocated asset with the price, the haircut and the value after haircuts the agent used.">
+    isin string (1..1) <"The ISIN of the asset.">
+    units number (1..1) <"The allocated whole units.">
+    unitPrice Money (1..1) <"The agent's price for one unit, in the base currency.">
+    haircutPercentage number (1..1) <"The profile's haircut for the asset, for example 0.02.">
+    valueAfterHaircuts Money (1..1) <"units x unitPrice x (1 - haircutPercentage).">
+
+type TripartyConcentrationBreach: <"An asset whose value after haircuts exceeds its concentration limit, measured as a share of the Purchase Price the allocation covers.">
+    isin string (1..1) <"The ISIN of the asset.">
+    limit number (1..1) <"The limit, for example 0.5 for 50%.">
+    valueAfterHaircuts Money (1..1) <"Value after haircuts of the asset in the allocation.">
+    percentage number (1..1) <"valueAfterHaircuts as a share of the Purchase Price.">
+
+type TripartyAllocation: <"The agent's allocation of the giver's deposit to one repo, and the CDM repo built with the allocation as its collateral.">
+    [rootType]
+    requestHash string (1..1) <"The keccak-256 hash of the TripartyRepoRequest the receiver affirmed.">
+    positions TripartyValuedPosition (0..*) <"The allocated assets, in the giver's ranking. Absent when the deposit cannot cover the Purchase Price within the profile.">
+    requiredValue Money (1..1) <"The value after haircuts the allocation must reach: the Purchase Price (the haircuts take the place of the GMRA margin ratio).">
+    allocatedValue Money (1..1) <"Value after haircuts of the positions; zero when nothing is allocated.">
+    coversPurchasePrice boolean (1..1) <"True if the deposit covers the Purchase Price within the profile's limits.">
+    trade TradeState (0..1) <"The CDM repo with one collateral position per allocated asset; present when the allocation covers the Purchase Price.">
+
+    condition NothingWhenUncovered: <"Nothing is allocated and no repo exists when the deposit cannot cover the Purchase Price.">
+        if coversPurchasePrice = False then positions is absent and trade is absent
+
+    condition CoversWhenAllocated: <"An allocation reaches the required value.">
+        if coversPurchasePrice = True then allocatedValue -> value >= requiredValue -> value and positions exists

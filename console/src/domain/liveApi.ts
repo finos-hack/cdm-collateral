@@ -161,6 +161,47 @@ export interface LiveTripartyTerms {
   canAffirm: boolean;
   canRefuse: boolean;
   canTerminate: boolean;
+  /** Trade start (wp-adr-triparty-trade-start): the giver deposits and requests while the terms are in effect. */
+  canDeposit?: boolean;
+  canRequest?: boolean;
+  /** The giver's free account at the agent, present while the terms are in effect. */
+  free?: { token: string; amount: number; rank: number }[];
+  /** The repos under the terms, newest first, present while the terms are in effect. */
+  repos?: LiveTripartyRepo[];
+}
+
+/** The agent's allocation of the giver's deposit to a repo (cdm-ext TripartyAllocation). */
+export interface LiveTripartyAllocation {
+  covers: boolean;
+  requiredValue: string;
+  allocatedValue: string;
+  positions: { isin: string; token?: string; units: number; unitPrice: string; haircutBps: number; valueAfterHaircuts: string; share: string }[];
+  /** The allocation carries the CDM repo. */
+  cdmRepo: boolean;
+}
+
+/** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start). */
+export interface LiveTripartyRepo {
+  repoId: string;
+  state: "requested" | "affirmed" | "allocated" | "settled" | "cancelled";
+  purchasePrice: number;
+  requestHash: string;
+  tradeId?: string;
+  ratePercent?: string;
+  purchaseDate?: string;
+  repurchaseDate?: string;
+  requestVerified: boolean;
+  requestProblem: string | null;
+  allocationHash?: string;
+  /** The allocation on-chain, or the agent's last allocation that could not cover the Purchase Price. */
+  allocation?: LiveTripartyAllocation;
+  allocationVerified?: boolean;
+  allocationProblem?: string | null;
+  canAffirm: boolean;
+  canAllocate: boolean;
+  canRefuseAllocation: boolean;
+  canSettle: boolean;
+  canCancel: boolean;
 }
 
 export interface LiveTriparty {
@@ -183,6 +224,24 @@ export const tripartyApi = {
   refuseTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/refuse`, {}),
   /** The giver or the receiver: terminate terms in effect. */
   terminateTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/terminate`, {}),
+  /** The giver: deposit a token with the agent, with its rank for the allocation. */
+  depositTriparty: (p: LiveParty, termsId: string, token: string, amount: number, rank: number) =>
+    req<unknown>(p, "POST", `/triparty/terms/${termsId}/deposit`, { token, amount, rank }),
+  /** The giver: withdraw free collateral (all that is free when the amount is left out). */
+  withdrawTriparty: (p: LiveParty, termsId: string, token: string, amount?: number) =>
+    req<unknown>(p, "POST", `/triparty/terms/${termsId}/withdraw`, amount === undefined ? { token } : { token, amount }),
+  /** The giver: request a repo for a Purchase Price in tUSD. */
+  requestTripartyRepo: (p: LiveParty, termsId: string, purchasePrice: number, ratePercent: string, termDays: number) =>
+    req<{ repoId: string; requestHash: string; tradeId: string; txHash: string }>(p, "POST", `/triparty/terms/${termsId}/repos`, { purchasePrice, ratePercent, termDays }),
+  /** The receiver: affirm the giver's request after checking it. */
+  affirmTripartyRequest: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/affirm`, {}),
+  /** The agent: allocate the giver's free deposit; nothing is allocated when it cannot cover the Purchase Price. */
+  allocateTripartyRepo: (p: TripartyParty, repoId: string) =>
+    req<{ covers: boolean; allocation: LiveTripartyAllocation; allocationHash?: string }>(p, "POST", `/triparty/repos/${repoId}/allocate`, {}),
+  refuseTripartyAllocation: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/refuse-allocation`, {}),
+  /** The receiver: settle the purchase against the agent's allocation. */
+  settleTripartyPurchase: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/settle`, {}),
+  cancelTripartyRepo: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/cancel`, {}),
 };
 
 export const api = {

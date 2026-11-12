@@ -450,9 +450,43 @@ const tripartyAbi = parseAbi([
   "function getTerms(bytes32 termsId) view returns ((address giver, address receiver, address agent, bytes32 termsHash, uint8 state, bool receiverAffirmed, bool agentAffirmed, uint64 proposedAt, uint64 effectiveAt))",
   "function currentTerms(address giver, address receiver, address agent) view returns (bytes32)",
   "function termsOf(address party) view returns (bytes32[])",
+  "function deposit(bytes32 termsId, address token, uint256 amount, uint256 rank)",
+  "function withdraw(bytes32 termsId, address token, uint256 amount)",
+  "function requestRepo(bytes32 termsId, bytes32 requestHash, address cash, uint256 purchasePrice) returns (bytes32)",
+  "function affirmRequest(bytes32 repoId, bytes32 requestHash)",
+  "function allocate(bytes32 repoId, bytes32 allocationHash, address[] tokens, uint256[] amounts)",
+  "function refuseAllocation(bytes32 repoId)",
+  "function settlePurchase(bytes32 repoId, bytes32 allocationHash)",
+  "function cancelRepo(bytes32 repoId)",
+  "function getRepo(bytes32 repoId) view returns ((bytes32 termsId, bytes32 requestHash, address cash, uint256 purchasePrice, uint8 state, bytes32 allocationHash, uint64 requestedAt, uint64 settledAt))",
+  "function reposOf(bytes32 termsId) view returns (bytes32[])",
+  "function allocationOf(bytes32 repoId) view returns (address[] tokens, uint256[] amounts)",
+  "function freeOf(bytes32 termsId) view returns ((address token, uint256 amount, uint256 rank)[])",
 ]);
 
 export const TripartyTermsStateName = ["none", "proposed", "effective", "refused", "terminated"];
+export const TripartyRepoStateName = ["none", "requested", "affirmed", "allocated", "settled", "cancelled"];
+
+/** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start), with the tokens allocated to it. */
+export interface OnChainTripartyRepo {
+  repoId: Hex;
+  termsId: Hex;
+  requestHash: Hex;
+  cash: Address;
+  purchasePrice: bigint;
+  state: string;
+  allocationHash: Hex;
+  requestedAt: bigint;
+  settledAt: bigint;
+  allocation: { token: Address; amount: bigint }[];
+}
+
+/** The giver's free account under a set of triparty terms. */
+export interface TripartyHolding {
+  token: Address;
+  amount: bigint;
+  rank: bigint;
+}
 
 /** Triparty terms on TripartySettlement (wp-adr-triparty-terms-profile). */
 export interface OnChainTripartyTerms {
@@ -673,6 +707,19 @@ export interface LedgerAdapter {
   terminateTripartyTerms(termsId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getTripartyTerms(termsId: Hex): Promise<OnChainTripartyTerms>;
   listTripartyTerms(party: Address): Promise<OnChainTripartyTerms[]>;
+  /** Trade start (wp-adr-triparty-trade-start). The deposit approves TripartySettlement for the amount first. */
+  depositTriparty(termsId: Hex, token: Address, amount: bigint, rank: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  withdrawTriparty(termsId: Hex, token: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  requestTripartyRepo(termsId: Hex, requestHash: Hex, cash: Address, purchasePrice: bigint): Promise<{ txHash: Hex; block: bigint; repoId: Hex }>;
+  affirmTripartyRequest(repoId: Hex, requestHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  allocateTriparty(repoId: Hex, allocationHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  refuseTripartyAllocation(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** The receiver approves TripartySettlement for the Purchase Price, then settles. */
+  settleTripartyPurchase(repoId: Hex, allocationHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  cancelTripartyRepo(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo>;
+  listTripartyRepos(termsId: Hex): Promise<OnChainTripartyRepo[]>;
+  tripartyFree(termsId: Hex): Promise<TripartyHolding[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1296,6 +1343,60 @@ export class BesuAdapter implements LedgerAdapter {
   async listTripartyTerms(party: Address) {
     const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "termsOf", args: [party] })) as readonly Hex[];
     return Promise.all(ids.map((id) => this.getTripartyTerms(id)));
+  }
+
+  async depositTriparty(termsId: Hex, token: Address, amount: bigint, rank: bigint) {
+    await this.approve(token, this.tripartyContract(), amount);
+    return this.send(this.tripartyContract(), tripartyAbi, "deposit", [termsId, token, amount, rank]);
+  }
+
+  withdrawTriparty(termsId: Hex, token: Address, amount: bigint) {
+    return this.send(this.tripartyContract(), tripartyAbi, "withdraw", [termsId, token, amount]);
+  }
+
+  /** The giver requests a repo; the id is the last repo under the terms. */
+  async requestTripartyRepo(termsId: Hex, requestHash: Hex, cash: Address, purchasePrice: bigint) {
+    const r = await this.send(this.tripartyContract(), tripartyAbi, "requestRepo", [termsId, requestHash, cash, purchasePrice]);
+    const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "reposOf", args: [termsId] })) as readonly Hex[];
+    return { ...r, repoId: ids[ids.length - 1] };
+  }
+
+  affirmTripartyRequest(repoId: Hex, requestHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "affirmRequest", [repoId, requestHash]);
+  }
+
+  allocateTriparty(repoId: Hex, allocationHash: Hex, tokens: Address[], amounts: bigint[]) {
+    return this.send(this.tripartyContract(), tripartyAbi, "allocate", [repoId, allocationHash, tokens, amounts]);
+  }
+
+  refuseTripartyAllocation(repoId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "refuseAllocation", [repoId]);
+  }
+
+  async settleTripartyPurchase(repoId: Hex, allocationHash: Hex) {
+    const r = await this.getTripartyRepo(repoId);
+    await this.approve(r.cash, this.tripartyContract(), r.purchasePrice);
+    return this.send(this.tripartyContract(), tripartyAbi, "settlePurchase", [repoId, allocationHash]);
+  }
+
+  cancelTripartyRepo(repoId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "cancelRepo", [repoId]);
+  }
+
+  async getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo> {
+    const r = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "getRepo", args: [repoId] })) as {
+      termsId: Hex; requestHash: Hex; cash: Address; purchasePrice: bigint; state: number; allocationHash: Hex; requestedAt: bigint; settledAt: bigint };
+    const [tokens, amounts] = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "allocationOf", args: [repoId] })) as readonly [readonly Address[], readonly bigint[]];
+    return { repoId, ...r, state: TripartyRepoStateName[r.state] ?? String(r.state), allocation: tokens.map((token, i) => ({ token, amount: amounts[i] })) };
+  }
+
+  async listTripartyRepos(termsId: Hex) {
+    const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "reposOf", args: [termsId] })) as readonly Hex[];
+    return Promise.all(ids.map((id) => this.getTripartyRepo(id)));
+  }
+
+  async tripartyFree(termsId: Hex) {
+    return [...((await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "freeOf", args: [termsId] })) as readonly TripartyHolding[])];
   }
 
   /** The RepoSettlement address, which each party approves for its leg. */

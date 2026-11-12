@@ -1,6 +1,9 @@
 package collateral;
 
 import cdmx.collateral.margincall.MarginCallState;
+import cdmx.collateral.triparty.TripartyAllocation;
+import cdmx.collateral.triparty.TripartyRepoRequest;
+import cdmx.collateral.triparty.TripartyTerms;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -382,6 +385,14 @@ public final class App {
         app.post("/api/v1/triparty/terms/{id}/affirm", this::affirmTripartyTerms);
         app.post("/api/v1/triparty/terms/{id}/refuse", ctx -> ctx.json(tripartyStep(ctx.pathParam("id"), "refuse")));
         app.post("/api/v1/triparty/terms/{id}/terminate", ctx -> ctx.json(tripartyStep(ctx.pathParam("id"), "terminate")));
+        app.post("/api/v1/triparty/terms/{id}/deposit", this::depositTriparty);
+        app.post("/api/v1/triparty/terms/{id}/withdraw", this::withdrawTriparty);
+        app.post("/api/v1/triparty/terms/{id}/repos", this::requestTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/affirm", this::affirmTripartyRequest);
+        app.post("/api/v1/triparty/repos/{id}/allocate", this::allocateTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/refuse-allocation", ctx -> ctx.json(tripartyRepoStep(ctx.pathParam("id"), "refuse-allocation")));
+        app.post("/api/v1/triparty/repos/{id}/settle", this::settleTripartyPurchase);
+        app.post("/api/v1/triparty/repos/{id}/cancel", ctx -> ctx.json(tripartyRepoStep(ctx.pathParam("id"), "cancel")));
     }
 
     private List<String> tripartyParties() {
@@ -438,7 +449,7 @@ public final class App {
             boolean giver = t.get("giver").asText().equalsIgnoreCase(cfg.myAddress);
             boolean receiver = t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress);
             boolean agent = t.get("agent").asText().equalsIgnoreCase(cfg.myAddress);
-            if (state.equals("proposed") || state.equals("effective")) open = true;
+            if (giver && (state.equals("proposed") || state.equals("effective"))) open = true;
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("termsId", t.get("termsId").asText());
             m.put("state", state);
@@ -466,6 +477,13 @@ public final class App {
             m.put("canAffirm", proposed && ((receiver && !t.get("receiverAffirmed").asBoolean()) || (agent && !t.get("agentAffirmed").asBoolean())) && problem.isEmpty());
             m.put("canRefuse", proposed && (giver || receiver || agent));
             m.put("canTerminate", state.equals("effective") && (giver || receiver));
+            boolean effective = state.equals("effective");
+            m.put("canDeposit", effective && giver && problem.isEmpty());
+            m.put("canRequest", effective && giver && problem.isEmpty());
+            if (effective) {
+                m.put("free", tripartyFreeView(t.get("termsId").asText()));
+                m.put("repos", tripartyRepos(t, problem.isEmpty()));
+            }
             terms.add(m);
         }
         Map<String, Object> out = new LinkedHashMap<>();
@@ -499,6 +517,290 @@ public final class App {
         Optional<String> problem = tripartyProblem(t);
         if (problem.isPresent()) throw new IllegalStateException("the triparty terms do not check: " + problem.get());
         ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/affirm", Map.of("termsHash", t.get("termsHash").asText())));
+    }
+
+    // --- triparty trade start (task-triparty-trade-start, wp-adr-triparty-trade-start) ---
+    // The giver deposits tokens with TripartySettlement under terms in effect, with its rank for each, and requests a
+    // repo with a cdm-ext TripartyRepoRequest; the receiver checks the request and affirms its hash. The agent allocates
+    // the free deposit in the giver's ranking within the profile (cdm-ext AllocateTriparty) and books the CDM repo with
+    // the allocation as its collateral; nothing is allocated on-chain when the deposit cannot cover the Purchase Price.
+    // The giver and the receiver each recompute the allocation from the terms, the request, the free account and the
+    // feed prices; the receiver settles the purchase against the allocation's hash.
+
+    /** Allocation documents that checked, by hash and this party; a failed check is not kept, so it is retried. */
+    private final Set<String> allocationChecked = ConcurrentHashMap.newKeySet();
+    /** The agent's last allocation that could not cover the Purchase Price, by repo id, for its console. */
+    private final Map<String, Map<String, Object>> tripartyShortfalls = new ConcurrentHashMap<>();
+
+    private TripartyTerms tripartyTermsDoc(JsonNode t) {
+        Optional<String> problem = tripartyProblem(t);
+        if (problem.isPresent()) throw new IllegalStateException("the triparty terms do not check: " + problem.get());
+        return CdmTriparty.parse(payloads.get(t.get("termsHash").asText()));
+    }
+
+    /** The giver's free account under the terms, priced at the feed: the agent's input to the allocation. */
+    private List<CdmTriparty.Deposit> tripartyDeposits(String termsId) {
+        List<CdmTriparty.Deposit> out = new ArrayList<>();
+        for (JsonNode h : gw.get("/triparty/terms/" + termsId + "/free")) {
+            long amount = new BigInteger(h.get("amount").asText()).longValueExact();
+            if (amount == 0) continue;
+            String sym = symbolOf(h.get("token").asText());
+            if (sym == null) throw new IllegalStateException("a deposited token is not in the registry: " + h.get("token").asText());
+            out.add(new CdmTriparty.Deposit(Integer.parseInt(h.get("rank").asText()), cfg.isin(sym), amount,
+                    feedPrice(h.get("token").asText()).stripTrailingZeros()));
+        }
+        return out;
+    }
+
+    private List<Map<String, Object>> tripartyFreeView(String termsId) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode h : gw.get("/triparty/terms/" + termsId + "/free")) {
+            out.add(new LinkedHashMap<>(Map.of("token", String.valueOf(symbolOf(h.get("token").asText())),
+                    "amount", new BigInteger(h.get("amount").asText()).longValueExact(), "rank", Integer.parseInt(h.get("rank").asText()))));
+        }
+        return out;
+    }
+
+    private JsonNode tripartyRepoOnChain(String repoId) {
+        JsonNode r = gw.get("/triparty/repos/" + repoId);
+        if (r.get("state").asText().equals("none")) throw new IllegalArgumentException("no triparty repo " + repoId);
+        return r;
+    }
+
+    /** The receiver's check of the giver's request against the chain: the terms, the Purchase Price and the cash token. */
+    private Optional<String> tripartyRequestProblem(JsonNode terms, JsonNode r) {
+        try {
+            String doc = payloads.get(r.get("requestHash").asText());
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(r.get("requestHash").asText()))
+                return Optional.of("the request is not in the payload store or its hash differs");
+            if (!r.get("cash").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) return Optional.of("the repo is not paid in tUSD");
+            CdmTriparty.verifyRequest(doc, terms.get("termsHash").asText(), new BigInteger(r.get("purchasePrice").asText()).longValueExact());
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** The on-chain allocation by ISIN. */
+    private Map<String, Long> onChainAllocation(JsonNode r) {
+        Map<String, Long> m = new LinkedHashMap<>();
+        for (JsonNode a : r.get("allocation")) m.put(cfg.isin(symbolOf(a.get("token").asText())), new BigInteger(a.get("amount").asText()).longValueExact());
+        return m;
+    }
+
+    /** The giver's or the receiver's check of the agent's allocation. While it is proposed the party recomputes it from
+     *  the terms, the request, the free account and the feed prices; once settled the free account has moved, so the
+     *  document is checked on its own: it validates, answers this request, matches the chain and is within the limits. */
+    private Optional<String> tripartyAllocationProblem(JsonNode terms, JsonNode r) {
+        String hash = r.get("allocationHash").asText();
+        if (allocationChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the allocation is not in the payload store or its hash differs");
+            TripartyTerms tt = tripartyTermsDoc(terms);
+            String requestHash = r.get("requestHash").asText();
+            TripartyRepoRequest request = CdmTriparty.parseRequest(payloads.get(requestHash));
+            TripartyAllocation a = CdmTriparty.parseAllocation(doc);
+            var failures = CdmRuntime.failures(a);
+            if (!failures.isEmpty()) return Optional.of("the allocation fails CDM validation: " + failures.get(0));
+            if (!requestHash.equalsIgnoreCase(a.getRequestHash())) return Optional.of("the allocation answers another request");
+            Map<String, Long> units = new LinkedHashMap<>();
+            for (var pos : a.getPositions()) units.put(pos.getIsin(), pos.getUnits().longValueExact());
+            if (!units.equals(onChainAllocation(r))) return Optional.of("the allocation differs from the tokens allocated on-chain");
+            if (!units.equals(CdmRepo.collateralPositions(a.getTrade()))) return Optional.of("the CDM repo's collateral differs from the allocation");
+            if (r.get("state").asText().equals("allocated")) {
+                CdmTriparty.verifyAllocation(doc, tt, request, requestHash, tripartyDeposits(r.get("termsId").asText()));
+            } else if (!CdmRuntime.fn(cdmx.collateral.triparty.functions.TripartyConcentrationBreaches.class)
+                    .evaluate(tt.getProfile(), new ArrayList<>(a.getPositions()), a.getRequiredValue()).isEmpty()) {
+                return Optional.of("the allocation breaches the profile's limits");
+            }
+            allocationChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    private Map<String, Object> withSymbols(Map<String, Object> allocationView) {
+        @SuppressWarnings("unchecked") List<Map<String, Object>> ps = (List<Map<String, Object>>) allocationView.get("positions");
+        for (Map<String, Object> e : ps) e.put("token", symbolOfIsin(String.valueOf(e.get("isin"))));
+        return allocationView;
+    }
+
+    /** The repos under a set of terms, newest first, with the documents checked and the steps open to this party. */
+    private List<Map<String, Object>> tripartyRepos(JsonNode terms, boolean termsChecked) {
+        boolean giver = terms.get("giver").asText().equalsIgnoreCase(cfg.myAddress);
+        boolean receiver = terms.get("receiver").asText().equalsIgnoreCase(cfg.myAddress);
+        boolean agent = terms.get("agent").asText().equalsIgnoreCase(cfg.myAddress);
+        JsonNode all = gw.get("/triparty/terms/" + terms.get("termsId").asText() + "/repos");
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (int i = all.size() - 1; i >= 0; i--) {
+            JsonNode r = all.get(i);
+            String state = r.get("state").asText();
+            String repoId = r.get("repoId").asText();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("repoId", repoId);
+            m.put("state", state);
+            m.put("purchasePrice", new BigInteger(r.get("purchasePrice").asText()).longValueExact());
+            m.put("requestHash", r.get("requestHash").asText());
+            String reqDoc = payloads.get(r.get("requestHash").asText());
+            if (reqDoc != null) {
+                try {
+                    TripartyRepoRequest q = CdmTriparty.parseRequest(reqDoc);
+                    m.put("tradeId", q.getTradeId());
+                    m.put("ratePercent", q.getRepoRate().movePointRight(2).stripTrailingZeros().toPlainString());
+                    m.put("purchaseDate", q.getPurchaseDate().toString());
+                    m.put("repurchaseDate", q.getRepurchaseDate().toString());
+                } catch (Exception ignored) {
+                    // shown without the request's fields
+                }
+            }
+            Optional<String> requestProblem = termsChecked ? tripartyRequestProblem(terms, r) : Optional.of("the triparty terms do not check");
+            m.put("requestVerified", requestProblem.isEmpty());
+            m.put("requestProblem", requestProblem.orElse(null));
+            boolean allocated = state.equals("allocated") || state.equals("settled");
+            Optional<String> allocationProblem = Optional.empty();
+            if (allocated) {
+                m.put("allocationHash", r.get("allocationHash").asText());
+                String doc = payloads.get(r.get("allocationHash").asText());
+                if (doc != null) {
+                    try {
+                        m.put("allocation", withSymbols(CdmTriparty.allocationView(CdmTriparty.parseAllocation(doc))));
+                    } catch (Exception ignored) {
+                        // shown without the allocation's fields
+                    }
+                }
+                allocationProblem = agent ? Optional.empty() : tripartyAllocationProblem(terms, r);
+                m.put("allocationVerified", allocationProblem.isEmpty());
+                m.put("allocationProblem", allocationProblem.orElse(null));
+            } else if (tripartyShortfalls.containsKey(repoId) && state.equals("affirmed")) {
+                m.put("allocation", tripartyShortfalls.get(repoId));
+            }
+            m.put("canAffirm", receiver && state.equals("requested") && requestProblem.isEmpty());
+            m.put("canAllocate", agent && state.equals("affirmed") && requestProblem.isEmpty());
+            m.put("canRefuseAllocation", receiver && state.equals("allocated"));
+            m.put("canSettle", receiver && state.equals("allocated") && allocationProblem.isEmpty());
+            m.put("canCancel", (giver || receiver || agent) && (state.equals("requested") || state.equals("affirmed") || state.equals("allocated")));
+            out.add(m);
+        }
+        return out;
+    }
+
+    private JsonNode tripartyTermsAsGiver(String termsId) {
+        JsonNode t = tripartyOnChain(termsId);
+        if (!t.get("giver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the giver deposits, withdraws or requests a repo");
+        return t;
+    }
+
+    /** The giver deposits a token with the agent, with its rank for the allocation. */
+    private void depositTriparty(Context ctx) {
+        JsonNode t = tripartyTermsAsGiver(ctx.pathParam("id"));
+        if (!t.get("state").asText().equals("effective")) throw new IllegalStateException("the triparty terms are not in effect");
+        Map<String, Object> b = body(ctx);
+        String sym = String.valueOf(b.get("token"));
+        if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new IllegalArgumentException("not a security token: " + sym);
+        long amount = Long.parseLong(String.valueOf(b.get("amount")));
+        int rank = Integer.parseInt(String.valueOf(b.get("rank")));
+        if (amount <= 0 || rank <= 0) throw new IllegalArgumentException("the amount and the rank are positive");
+        ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/deposit", Map.of("token", cfg.tokenAddress(sym),
+                "amount", String.valueOf(amount), "rank", String.valueOf(rank))));
+    }
+
+    /** The giver withdraws free collateral; the amount defaults to all that is free. */
+    private void withdrawTriparty(Context ctx) {
+        tripartyTermsAsGiver(ctx.pathParam("id"));
+        Map<String, Object> b = body(ctx);
+        String sym = String.valueOf(b.get("token"));
+        String token = cfg.tokenAddress(sym);
+        long amount;
+        Object a = b.get("amount");
+        if (a == null || String.valueOf(a).isBlank()) {
+            amount = 0;
+            for (Map<String, Object> h : tripartyFreeView(ctx.pathParam("id"))) if (sym.equals(h.get("token"))) amount = (Long) h.get("amount");
+        } else amount = Long.parseLong(String.valueOf(a));
+        if (amount <= 0) throw new IllegalArgumentException("no free " + sym + " to withdraw");
+        ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/withdraw", Map.of("token", token, "amount", String.valueOf(amount))));
+    }
+
+    /** The giver requests a repo: the cdm-ext TripartyRepoRequest for the Purchase Price, rate and term. */
+    private void requestTripartyRepo(Context ctx) {
+        JsonNode t = tripartyTermsAsGiver(ctx.pathParam("id"));
+        if (!t.get("state").asText().equals("effective")) throw new IllegalStateException("the triparty terms are not in effect");
+        tripartyTermsDoc(t);
+        Map<String, Object> b = body(ctx);
+        long purchasePrice = Long.parseLong(String.valueOf(b.get("purchasePrice")));
+        BigDecimal rate = new BigDecimal(String.valueOf(b.getOrDefault("ratePercent", "5"))).movePointLeft(2);
+        int termDays = Integer.parseInt(String.valueOf(b.getOrDefault("termDays", "7")));
+        if (termDays < 1) throw new IllegalArgumentException("the term is at least one day");
+        CdmTriparty.Request r = CdmTriparty.request(t.get("termsHash").asText(), "TP-" + cfg.partyId + "-" + System.nanoTime(), purchasePrice, rate,
+                businessDate, businessDate.plusDays(termDays));
+        payloads.put(r.hash(), r.json(), tripartyParties());
+        JsonNode tx = gw.post("/triparty/terms/" + ctx.pathParam("id") + "/repos", Map.of("requestHash", r.hash(),
+                "cash", cfg.tokenAddress("tUSD"), "purchasePrice", String.valueOf(purchasePrice)));
+        ctx.json(Map.of("repoId", tx.get("repoId").asText(), "requestHash", r.hash(), "tradeId", r.request().getTradeId(), "txHash", tx.get("txHash").asText()));
+    }
+
+    /** The receiver affirms the giver's request after checking it against the chain. */
+    private void affirmTripartyRequest(Context ctx) {
+        JsonNode r = tripartyRepoOnChain(ctx.pathParam("id"));
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the receiver affirms a triparty repo request");
+        if (!r.get("state").asText().equals("requested")) throw new IllegalStateException("the triparty repo is not requested");
+        tripartyTermsDoc(t);
+        Optional<String> problem = tripartyRequestProblem(t, r);
+        if (problem.isPresent()) throw new IllegalStateException("the request does not check: " + problem.get());
+        ctx.json(gw.post("/triparty/repos/" + ctx.pathParam("id") + "/affirm", Map.of("requestHash", r.get("requestHash").asText())));
+    }
+
+    /** The agent allocates the giver's free deposit to the repo. When the deposit cannot cover the Purchase Price within
+     *  the profile nothing is allocated on-chain and the shortfall is shown in the agent's console. */
+    private void allocateTripartyRepo(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent allocates");
+        if (!r.get("state").asText().equals("affirmed")) throw new IllegalStateException("the triparty repo request is not affirmed");
+        TripartyTerms tt = tripartyTermsDoc(t);
+        Optional<String> problem = tripartyRequestProblem(t, r);
+        if (problem.isPresent()) throw new IllegalStateException("the request does not check: " + problem.get());
+        String requestHash = r.get("requestHash").asText();
+        CdmTriparty.Allocation a = CdmTriparty.allocate(tt, CdmTriparty.parseRequest(payloads.get(requestHash)), requestHash,
+                tripartyDeposits(r.get("termsId").asText()));
+        Map<String, Object> view = withSymbols(CdmTriparty.allocationView(a.allocation()));
+        if (!a.covers()) {
+            tripartyShortfalls.put(repoId, view);
+            signalConsoles("triparty");
+            ctx.json(Map.of("covers", false, "allocation", view));
+            return;
+        }
+        tripartyShortfalls.remove(repoId);
+        payloads.put(a.hash(), a.json(), tripartyParties());
+        List<String> tokens = new ArrayList<>();
+        List<String> amounts = new ArrayList<>();
+        a.units().forEach((isin, n) -> {
+            tokens.add(cfg.tokenAddress(symbolOfIsin(isin)));
+            amounts.add(String.valueOf(n));
+        });
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/allocate", Map.of("allocationHash", a.hash(), "tokens", tokens, "amounts", amounts));
+        ctx.json(Map.of("covers", true, "allocationHash", a.hash(), "allocation", view, "txHash", tx.get("txHash").asText()));
+    }
+
+    /** The receiver settles the purchase against the agent's allocation after recomputing it. */
+    private void settleTripartyPurchase(Context ctx) {
+        JsonNode r = tripartyRepoOnChain(ctx.pathParam("id"));
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the receiver settles the purchase");
+        if (!r.get("state").asText().equals("allocated")) throw new IllegalStateException("the triparty repo is not allocated");
+        Optional<String> problem = tripartyAllocationProblem(t, r);
+        if (problem.isPresent()) throw new IllegalStateException("the allocation does not check: " + problem.get());
+        ctx.json(gw.post("/triparty/repos/" + ctx.pathParam("id") + "/settle", Map.of("allocationHash", r.get("allocationHash").asText())));
+    }
+
+    /** The receiver refuses an allocation, or any of the three cancels a repo before it settles. */
+    private JsonNode tripartyRepoStep(String repoId, String step) {
+        tripartyRepoOnChain(repoId);
+        tripartyShortfalls.remove(repoId);
+        return gw.post("/triparty/repos/" + repoId + "/" + step, Map.of());
     }
 
     /** Refuse proposed terms (any of the three) or terminate terms in effect (the giver or the receiver). */
