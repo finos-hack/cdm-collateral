@@ -1365,3 +1365,5 @@ excluded.
 | task-triparty-workflows | 8dd0a17ba93d5b1f7fd3eb50b5f49391c9f926fd | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T00:31:05Z |
 | task-triparty-workflows | 264dda6fb43330a8be94d436ca3b4c0bc3c0621c | architecture/prototype.architecture.json | 2026-11-12T00:37:05Z |
 | task-triparty-workflows | 264dda6fb43330a8be94d436ca3b4c0bc3c0621c | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T00:37:05Z |
+| task-triparty-terms-profile | 46e64a4b4c4eb4b173c023efea5fc84ec2dc1c6e | architecture/prototype.architecture.json | 2026-11-12T00:45:37Z |
+| task-triparty-terms-profile | 46e64a4b4c4eb4b173c023efea5fc84ec2dc1c6e | docs/analysis/sme-question-ledger.md | 2026-11-12T00:45:37Z |
