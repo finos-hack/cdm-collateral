@@ -1363,3 +1363,5 @@ excluded.
 | task-gmsla-default-close-out | e3652e8c97a24b96f2bad26c27d581eca8b3ff1f | services/collateral/src/main/java/collateral/CdmLoanDefault.java | 2026-11-12T00:30:31Z |
 | task-gmsla-default-close-out | e3652e8c97a24b96f2bad26c27d581eca8b3ff1f | services/collateral/src/test/java/collateral/CdmLoanDefaultTest.java | 2026-11-12T00:30:31Z |
 | task-triparty-workflows | 8dd0a17ba93d5b1f7fd3eb50b5f49391c9f926fd | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T00:31:05Z |
+| task-triparty-workflows | 264dda6fb43330a8be94d436ca3b4c0bc3c0621c | architecture/prototype.architecture.json | 2026-11-12T00:37:05Z |
+| task-triparty-workflows | 264dda6fb43330a8be94d436ca3b4c0bc3c0621c | docs/analysis/cdm-workflow-task-map.md | 2026-11-12T00:37:05Z |
