@@ -16,6 +16,19 @@ import cdmx.collateral.triparty.functions.RepoIsCollateralRelease;
 import cdmx.collateral.triparty.functions.RepoIsCollateralTopUp;
 import cdmx.collateral.triparty.functions.RevalueTriparty;
 import cdmx.collateral.triparty.functions.TripartyRequiredValue;
+import cdmx.collateral.triparty.TripartyRequesterEnum;
+import cdmx.collateral.triparty.TripartySubstitution;
+import cdmx.collateral.triparty.TripartySubstitutionOutcomeEnum;
+import cdmx.collateral.triparty.TripartySubstitutionRequest;
+import cdmx.collateral.triparty.functions.SubstituteTriparty;
+import cdmx.collateral.repo.functions.RepoIsSubstitution;
+import cdm.event.workflow.EventInstruction;
+import cdm.event.workflow.EventTimestamp;
+import cdm.event.workflow.WorkflowStep;
+import cdm.event.workflow.WorkflowStepApproval;
+import cdm.event.workflow.functions.Create_AcceptedWorkflowStep;
+import cdm.event.workflow.functions.Create_ProposedWorkflowStep;
+import cdm.base.staticdata.party.Party;
 import cdm.event.common.BusinessEvent;
 import cdm.event.common.CollateralPortfolio;
 import cdm.event.common.Instruction;
@@ -384,6 +397,168 @@ final class CdmTriparty {
                     "percentage", x.getPercentage().setScale(4, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString())));
         m.put("breaches", breaches);
         m.put("cdmEvents", (r.getValuation() != null ? 1 : 0) + (r.getAdjustment() != null ? 1 : 0));
+        return m;
+    }
+
+    // --- substitution (task-triparty-substitution, wp-adr-triparty-substitution) ---
+
+    /** A substitution request, its Rune JSON and hash. */
+    record SubstitutionRequest(TripartySubstitutionRequest request, String json, String hash) {}
+
+    /** The agent's substitution, its Rune JSON and hash, and the repo after it (the basis repo when declined). */
+    record Substitution(TripartySubstitution substitution, String json, String hash, TradeState trade) {
+        boolean substituted() {
+            return substitution.getOutcome() == TripartySubstitutionOutcomeEnum.SUBSTITUTED;
+        }
+
+        Map<String, Long> units() {
+            Map<String, Long> m = new LinkedHashMap<>();
+            for (TripartyValuedPosition p : substitution.getHeldAfter()) m.put(p.getIsin(), p.getUnits().longValueExact());
+            return m;
+        }
+    }
+
+    static SubstitutionRequest substitutionRequest(String tradeId, String isin, long units, boolean byAgent, LocalDate date) {
+        TripartySubstitutionRequest r = CdmRuntime.load(TripartySubstitutionRequest.class, o("tradeId", tradeId, "isin", isin, "units", units,
+                "requestedBy", byAgent ? "Agent" : "Giver", "requestDate", date.toString()));
+        CdmRuntime.validate(r);
+        String json = CdmRuntime.toJson(r);
+        return new SubstitutionRequest(r, json, Cdm.keccakHex(json));
+    }
+
+    static TripartySubstitutionRequest parseSubstitutionRequest(String json) {
+        try {
+            return CdmRuntime.JSON.readValue(json, TripartySubstitutionRequest.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a TripartySubstitutionRequest document: " + e.getMessage(), e);
+        }
+    }
+
+    static TripartySubstitution parseSubstitution(String json) {
+        try {
+            return CdmRuntime.JSON.readValue(json, TripartySubstitution.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a TripartySubstitution document: " + e.getMessage(), e);
+        }
+    }
+
+    /** The repo after a substitution that took effect: the open trade of its terms change. */
+    static TradeState tradeAfter(TripartySubstitution s) {
+        if (s.getAdjustment() == null) throw new IllegalStateException("a declined substitution changes no trade");
+        return s.getAdjustment().getAfter().stream().filter(t -> t.getState() == null || t.getState().getClosedState() == null).findFirst()
+                .orElseThrow(() -> new IllegalStateException("the substitution leaves no open trade"));
+    }
+
+    private static Party party(TradeState trade, String name) {
+        return trade.getTrade().getParty().stream().map(p -> (Party) p).filter(p -> p.getName() != null && p.getName().getValue().equals(name))
+                .findFirst().orElseThrow(() -> new IllegalStateException("the repo has no party " + name));
+    }
+
+    private static List<Object> identifiers(String issuer, String id) {
+        return l(o("issuer", o("@data", issuer), "assignedIdentifier", l(o("identifier", o("@data", id)))));
+    }
+
+    /** The agent substitutes a request on a settled repo (cdm-ext SubstituteTriparty) and, when it takes effect, adds the
+     *  terms change of the collateral portfolio with the trade's own Purchase Date, qualified by cdm-ext
+     *  RepoIsSubstitution (RepoIsCollateralRelease when nothing replaces the returned units), and CDM's proposed and
+     *  accepted workflow steps. {@code giver} is the giver's name in the repo; {@code basisTrade} the repo as the basis
+     *  document left it. */
+    static Substitution substitute(TripartyTerms terms, TradeState basisTrade, String basisHash, String requestHash, TripartySubstitutionRequest request,
+                                   String giver, LocalDate date, List<Deposit> held, List<Deposit> free) {
+        TradeState trade = CdmRepo.resolved(TradeState.class, basisTrade);
+        var required = CdmRuntime.fn(TripartyRequiredValue.class).evaluate(trade, Date.of(date));
+        TripartySubstitution s = CdmRuntime.fn(SubstituteTriparty.class).evaluate(requestHash, basisHash, Date.of(date), required, deposits(held), deposits(free),
+                request.getIsin(), request.getUnits(), terms.getProfile());
+        TradeState after = trade;
+        if (s.getOutcome() == TripartySubstitutionOutcomeEnum.SUBSTITUTED) {
+            LocalDate purchase = trade.getTrade().getProduct().getEconomicTerms().getEffectiveDate().getAdjustableDate().getUnadjustedDate().toLocalDate();
+            LocalDate repurchase = trade.getTrade().getProduct().getEconomicTerms().getTerminationDate().getAdjustableDate().getUnadjustedDate().toLocalDate();
+            List<Object> positions = new ArrayList<>();
+            for (TripartyValuedPosition p : s.getHeldAfter()) positions.add(position(p.getIsin(), p.getUnits().longValueExact(), purchase, repurchase));
+            CollateralPortfolio portfolio = CdmRuntime.load(CollateralPortfolio.class, o("collateralPosition", positions));
+            var tc = CdmRuntime.fn(Create_SubstitutionInstruction.class).evaluate(trade.getTrade().getProduct(),
+                    CdmRuntime.load(cdm.base.datetime.AdjustableOrRelativeDate.class, date(purchase)), portfolio);
+            Instruction instruction = Instruction.builder().setBeforeValue(trade).setPrimitiveInstruction(PrimitiveInstruction.builder().setTermsChange(tc).build()).build();
+            BusinessEvent adjustment = CdmRepo.resolved(BusinessEvent.class,
+                    CdmRuntime.fn(Create_BusinessEvent.class).evaluate(new ArrayList<>(List.of(instruction)), null, Date.of(date), null));
+            boolean replaced = s.getMovements().stream().anyMatch(m -> m.getDirection() == cdmx.collateral.triparty.TripartyMovementDirectionEnum.TOP_UP);
+            boolean qualified = replaced
+                    ? CdmRuntime.fn(RepoIsSubstitution.class).evaluate(adjustment) && !CdmRuntime.fn(RepoIsCollateralTopUp.class).evaluate(adjustment)
+                        && !CdmRuntime.fn(RepoIsCollateralRelease.class).evaluate(adjustment)
+                    : CdmRuntime.fn(RepoIsCollateralRelease.class).evaluate(adjustment);
+            if (!qualified) throw new IllegalStateException("the collateral change does not qualify as a substitution");
+            // CDM's workflow: the request as a proposed step (the requester, the instruction, the agent's approval) and the
+            // agent's accepted step with the event. Timestamps are the substitution date, so a recomputation is identical.
+            String requester = request.getRequestedBy() == TripartyRequesterEnum.AGENT ? AGENT : giver;
+            EventTimestamp stamp = CdmRuntime.load(EventTimestamp.class, o("dateTime", date + "T17:00:00Z", "qualification", "eventCreationDateTime"));
+            EventInstruction proposedEvent = CdmRuntime.load(EventInstruction.class, o("eventDate", date.toString())).toBuilder().addInstruction(instruction).build();
+            WorkflowStepApproval approval = WorkflowStepApproval.builder().setApproved(true).setPartyValue(party(trade, AGENT)).setTimestamp(stamp).build();
+            WorkflowStep proposed = CdmRuntime.fn(Create_ProposedWorkflowStep.class).evaluate(null, new ArrayList<>(List.of(stamp)),
+                    new ArrayList<>(idList(requester, requestHash)),
+                    new ArrayList<Party>(List.of(party(trade, requester))), new ArrayList<cdm.base.staticdata.party.Account>(), null,
+                    cdm.event.common.ActionEnum.NEW, proposedEvent, new ArrayList<>(List.of(approval)));
+            WorkflowStep accepted = CdmRuntime.fn(Create_AcceptedWorkflowStep.class).evaluate(null, new ArrayList<>(List.of(stamp)),
+                    new ArrayList<>(idList(AGENT, requestHash + "-substituted")), new ArrayList<Party>(List.of(party(trade, AGENT))),
+                    new ArrayList<cdm.base.staticdata.party.Account>(), proposed, adjustment);
+            s = s.toBuilder().setAdjustment(adjustment).setProposed(proposed).setAccepted(accepted).build();
+            after = tradeAfter(s);
+        }
+        CdmRuntime.validate(s);
+        String json = CdmRuntime.toJson(s);
+        return new Substitution(s, json, Cdm.keccakHex(json), after);
+    }
+
+    private static List<cdm.base.staticdata.identifier.Identifier> idList(String issuer, String id) {
+        return List.of(CdmRuntime.load(cdm.base.staticdata.identifier.Identifier.class, (Map<String, Object>) identifiers(issuer, id).get(0)));
+    }
+
+    /** The giver's or the receiver's check of a substitution: the same document from the same inputs. */
+    static Substitution verifySubstitution(String json, TripartyTerms terms, TradeState basisTrade, String basisHash, String requestHash,
+                                           TripartySubstitutionRequest request, String giver, LocalDate date, List<Deposit> held, List<Deposit> free) {
+        Substitution again = substitute(terms, basisTrade, basisHash, requestHash, request, giver, date, held, free);
+        if (!again.json().equals(json)) throw new IllegalStateException("the substitution differs from the substitution this party computes");
+        return again;
+    }
+
+    /** The units of each asset over its limit in a holding, rounded up: what the agent asks back to remove a breach. */
+    static Map<String, Long> excessUnits(List<? extends TripartyValuedPosition> heldAfter, List<? extends cdmx.collateral.triparty.TripartyConcentrationBreach> breaches, BigDecimal required) {
+        Map<String, Long> out = new LinkedHashMap<>();
+        if (breaches == null) return out;
+        for (var b : breaches) {
+            for (TripartyValuedPosition p : heldAfter) {
+                if (!p.getIsin().equals(b.getIsin())) continue;
+                BigDecimal unitValue = p.getValueAfterHaircuts().getValue().divide(p.getUnits(), java.math.MathContext.DECIMAL64);
+                BigDecimal excess = p.getValueAfterHaircuts().getValue().subtract(b.getLimit().multiply(required));
+                out.put(p.getIsin(), excess.divide(unitValue, 0, java.math.RoundingMode.CEILING).longValueExact());
+            }
+        }
+        return out;
+    }
+
+    /** The substitution for the console: the request, the values, the movements, the holdings and the breaches. */
+    static Map<String, Object> substitutionView(TripartySubstitution s) {
+        BigDecimal required = s.getRequiredValue().getValue();
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("substitutionDate", s.getSubstitutionDate().toString());
+        m.put("outcome", s.getOutcome() == TripartySubstitutionOutcomeEnum.SUBSTITUTED ? "Substituted" : "Declined");
+        m.put("isin", s.getIsin());
+        m.put("units", s.getUnits().longValueExact());
+        m.put("requiredValue", plain(required));
+        m.put("valueBefore", plain(s.getValueBefore().getValue()));
+        m.put("valueAfter", plain(s.getValueAfter().getValue()));
+        List<Map<String, Object>> moves = new ArrayList<>();
+        if (s.getMovements() != null) for (TripartyMovement mv : s.getMovements())
+            moves.add(new LinkedHashMap<>(Map.of("isin", mv.getIsin(), "units", mv.getUnits().longValueExact(),
+                    "direction", mv.getDirection() == cdmx.collateral.triparty.TripartyMovementDirectionEnum.TOP_UP ? "TopUp" : "Release")));
+        m.put("movements", moves);
+        m.put("heldBefore", positionsView(s.getHeldBefore(), required));
+        m.put("heldAfter", positionsView(s.getHeldAfter(), required));
+        List<Map<String, Object>> breaches = new ArrayList<>();
+        if (s.getBreaches() != null) for (var x : s.getBreaches())
+            breaches.add(new LinkedHashMap<>(Map.of("isin", x.getIsin(), "limit", plain(x.getLimit()),
+                    "percentage", x.getPercentage().setScale(4, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString())));
+        m.put("breaches", breaches);
+        m.put("workflowSteps", (s.getProposed() != null ? 1 : 0) + (s.getAccepted() != null ? 1 : 0));
         return m;
     }
 

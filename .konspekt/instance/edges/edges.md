@@ -400,3 +400,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-tprevaladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-revaluation |  | accepted |
 | e-dec-cdmdev-smetpreval | decomposes | node:goal-cdm-development | node:task-sme-triparty-revaluation |  | accepted |
 | e-lnk-tpreval-smetpreval | links | node:task-triparty-revaluation | node:task-sme-triparty-revaluation |  | accepted |
+| e-mrk-tpsubadr-tpsub | marks | waypoint:wp-adr-triparty-substitution | node:task-triparty-substitution |  | accepted |
+| e-drv-cdmdata-tpsubadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-substitution |  | accepted |
+| e-drv-finality-tpsubadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-substitution |  | accepted |
+| e-dec-cdmdev-smetpsub | decomposes | node:goal-cdm-development | node:task-sme-triparty-substitution |  | accepted |
+| e-lnk-tpsub-smetpsub | links | node:task-triparty-substitution | node:task-sme-triparty-substitution |  | accepted |

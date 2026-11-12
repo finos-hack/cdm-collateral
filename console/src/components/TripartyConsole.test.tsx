@@ -3,7 +3,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentConsole, TripartyTermsCard } from "./TripartyConsole";
-import type { LiveTriparty, LiveTripartyTerms } from "../domain/liveApi";
+import type { LiveTriparty, LiveTripartyRepo, LiveTripartyTerms } from "../domain/liveApi";
 
 class StubEventSource {
   addEventListener() {}
@@ -143,4 +143,44 @@ it("lets the agent revalue a settled repo and shows each revaluation with its ch
   expect(first.textContent).toContain("recomputed from the chain ✓");
   await userEvent.click(screen.getByText("Revalue collateral"));
   await waitFor(() => expect(posts).toEqual([`/triparty/repos/${repo.repoId}/revalue`]));
+});
+
+it("lets the giver recall collateral and the agent substitute it, and shows each substitution with its check (task-triparty-substitution)", async () => {
+  const run = (fn: () => Promise<unknown>) => void fn();
+  const held = [{ isin: "US912810TM60", token: "tUST", units: 3998, unitPrice: "98.4", valueAfterHaircuts: "385535.136", share: "0.7711" }];
+  const base = {
+    repoId: "0x" + "44".repeat(32), state: "settled" as const, purchasePrice: 500000, requestHash: "0x" + "55".repeat(32), tradeId: "TP-B-1",
+    requestVerified: true, requestProblem: null, allocationHash: "0x" + "66".repeat(32), allocationVerified: true, allocationProblem: null,
+    canAffirm: false, canAllocate: false, canRefuseAllocation: false, canSettle: false, canCancel: false, canRevalue: true,
+    substitutions: [
+      { substitutionHash: "0x" + "77".repeat(32), block: "10", verified: true, problem: null, substitution: {
+        substitutionDate: "2026-11-12", outcome: "Substituted" as const, isin: "US3137EAGY10", token: "tAGY", units: 1000, requiredValue: "500000",
+        valueBefore: "500026.56", valueAfter: "500041.696", movements: [
+          { isin: "US3137EAGY10", token: "tAGY", units: 1000, direction: "Release" as const },
+          { isin: "US912810TM60", token: "tUST", units: 998, direction: "TopUp" as const }],
+        heldBefore: held, heldAfter: held, breaches: [], workflowSteps: 2 } },
+      { substitutionHash: "0x" + "88".repeat(32), block: "12", verified: true, problem: null, substitution: {
+        substitutionDate: "2026-11-12", outcome: "Declined" as const, isin: "US3137EAGY10", token: "tAGY", units: 1190, requiredValue: "500000",
+        valueBefore: "500041.696", valueAfter: "500041.696", movements: [], heldBefore: held, heldAfter: held, breaches: [], workflowSteps: 0 } },
+    ],
+  };
+  const terms = (r: LiveTripartyRepo) => ({ ...TERMS, state: "effective" as const, giver: "B" as const, receiver: "A" as const, agentAffirmed: true, canAffirm: false, canRefuse: false, repos: [r] });
+  const { unmount } = render(<TripartyTermsCard party="B" triparty={{ party: "B", bank: "BANK-B", agent: false, canPropose: true,
+    terms: [terms({ ...base, canRevalue: false, canRequestSubstitution: true })] }} busy={false} run={run} />);
+  expect(screen.getByTestId("triparty-substitution-latest").textContent).toContain("declined: the free account cannot replace them");
+  const first = screen.getByTestId(`triparty-substitution-0x${"77".repeat(32)}`);
+  expect(first.textContent).toContain("1000 tAGY asked back, returned to the giver's free account");
+  expect(screen.getByTestId("triparty-substitution-in-tUST").textContent).toContain("+998 tUST in");
+  expect(first.textContent).toContain("CDM workflow: request and execution");
+  await userEvent.clear(screen.getByTestId("triparty-recall-units"));
+  await userEvent.type(screen.getByTestId("triparty-recall-units"), "250");
+  await userEvent.click(screen.getByText("Request substitution"));
+  await waitFor(() => expect(posts).toEqual([`/triparty/repos/${base.repoId}/substitution`]));
+  unmount();
+  posts.length = 0;
+  render(<TripartyTermsCard party="T" triparty={{ party: "T", bank: "BANK-T", agent: true, canPropose: false, terms: [terms({ ...base, canSubstitute: true,
+    pendingSubstitution: { requestHash: "0x" + "99".repeat(32), token: "tAGY", units: 250, requestedBy: "Giver", mine: false }, excess: [] })] }} busy={false} run={run} />);
+  expect(screen.getByTestId("triparty-substitution-pending").textContent).toContain("by the giver: 250 tAGY back, awaiting the agent");
+  await userEvent.click(screen.getByText("Substitute collateral"));
+  await waitFor(() => expect(posts).toEqual([`/triparty/repos/${base.repoId}/substitute`]));
 });

@@ -397,6 +397,10 @@ public final class App {
         app.post("/api/v1/triparty/repos/{id}/settle", this::settleTripartyPurchase);
         app.post("/api/v1/triparty/repos/{id}/cancel", ctx -> ctx.json(tripartyRepoStep(ctx.pathParam("id"), "cancel")));
         app.post("/api/v1/triparty/repos/{id}/revalue", this::revalueTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/substitution", this::requestTripartySubstitution);
+        app.post("/api/v1/triparty/repos/{id}/substitution/withdraw", this::withdrawTripartySubstitution);
+        app.post("/api/v1/triparty/repos/{id}/substitute", this::substituteTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/rebalance", this::rebalanceTripartyRepo);
     }
 
     private List<String> tripartyParties() {
@@ -680,7 +684,7 @@ public final class App {
             } else if (tripartyShortfalls.containsKey(repoId) && state.equals("affirmed")) {
                 m.put("allocation", tripartyShortfalls.get(repoId));
             }
-            if (state.equals("settled")) m.put("revaluations", tripartyRevaluationsView(terms, r, agent));
+            if (state.equals("settled")) tripartyChangesView(m, terms, r, giver, agent);
             m.put("canRevalue", agent && state.equals("settled") && allocationProblem.isEmpty());
             m.put("canAffirm", receiver && state.equals("requested") && requestProblem.isEmpty());
             m.put("canAllocate", agent && state.equals("affirmed") && requestProblem.isEmpty());
@@ -808,24 +812,27 @@ public final class App {
     // giver and the receiver recompute each revaluation from the chain at the block before it: the repo's holding, the
     // free account with its ranks and the feed prices, through the gateway.
 
-    /** Revaluation documents that checked, by hash; a failed check is not kept, so it is retried. */
-    private final Set<String> revaluationChecked = ConcurrentHashMap.newKeySet();
 
-    /** The document a revaluation follows, and the repo as that document left it. */
+    /** The document a holding change follows, and the repo as that document left it. */
     private record RevaluationBasis(String hash, cdm.event.common.TradeState trade) {}
 
-    /** The basis of the repo's revaluation number {@code index}: the allocation for the first, the one before otherwise. */
-    private RevaluationBasis tripartyBasis(JsonNode r, JsonNode revaluations, int index) {
-        if (index == 0) {
-            String hash = r.get("allocationHash").asText();
+    /** The basis of the repo's change number {@code index} in its history: the last change before it that is not a
+     *  declined substitution, or the allocation. */
+    private RevaluationBasis tripartyBasis(JsonNode r, JsonNode changes, int index) {
+        for (int j = index - 1; j >= 0; j--) {
+            String kind = changes.get(j).get("kind").asText();
+            if (kind.equals("declined")) continue;
+            String hash = changes.get(j).get("hash").asText();
             String doc = payloads.get(hash);
-            if (doc == null) throw new IllegalStateException("the allocation is not in the payload store");
-            return new RevaluationBasis(hash, CdmTriparty.parseAllocation(doc).getTrade());
+            if (doc == null) throw new IllegalStateException("the previous " + kind + " is not in the payload store");
+            return new RevaluationBasis(hash, kind.equals("revaluation")
+                    ? CdmTriparty.tradeAfter(CdmTriparty.parseRevaluation(doc))
+                    : CdmTriparty.tradeAfter(CdmTriparty.parseSubstitution(doc)));
         }
-        String hash = revaluations.get(index - 1).get("revaluationHash").asText();
+        String hash = r.get("allocationHash").asText();
         String doc = payloads.get(hash);
-        if (doc == null) throw new IllegalStateException("the previous revaluation is not in the payload store");
-        return new RevaluationBasis(hash, CdmTriparty.tradeAfter(CdmTriparty.parseRevaluation(doc)));
+        if (doc == null) throw new IllegalStateException("the allocation is not in the payload store");
+        return new RevaluationBasis(hash, CdmTriparty.parseAllocation(doc).getTrade());
     }
 
     /** The held and free assets as the revaluation reads them, ranked and priced: from the holding, the free account
@@ -857,92 +864,259 @@ public final class App {
         return new RevaluationInputs(held, out);
     }
 
+    /** The agent's inputs now: the repo's holding, the free account and the latest feed prices. */
+    private RevaluationInputs currentInputs(JsonNode r) {
+        Map<String, BigInteger> prices = new HashMap<>();
+        feedPrices().forEach((k, v) -> prices.put(k.toLowerCase(), v));
+        return revaluationInputs(r.get("allocation"), gw.get("/triparty/terms/" + r.get("termsId").asText() + "/free"), prices);
+    }
+
+    /** The checker's inputs: the chain at the end of a block (the block before a change). */
+    private RevaluationInputs inputsAt(String repoId, long block) {
+        JsonNode at = gw.get("/triparty/repos/" + repoId + "/at?block=" + block);
+        Map<String, BigInteger> prices = new HashMap<>();
+        for (JsonNode p : at.get("prices")) if (!p.get("price").isNull()) prices.put(p.get("token").asText().toLowerCase(), new BigInteger(p.get("price").asText()));
+        return revaluationInputs(at.get("allocation"), at.get("free"), prices);
+    }
+
+    private JsonNode tripartyChanges(String repoId) {
+        return gw.get("/triparty/repos/" + repoId + "/changes");
+    }
+
+    private void agentsSettledRepo(JsonNode r, JsonNode t) {
+        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent revalues or substitutes");
+        if (!r.get("state").asText().equals("settled")) throw new IllegalStateException("the triparty repo is not settled");
+    }
+
+    private List<String>[] holdingArgs(Map<String, Long> units) {
+        List<String> tokens = new ArrayList<>();
+        List<String> amounts = new ArrayList<>();
+        units.forEach((isin, n) -> {
+            tokens.add(cfg.tokenAddress(symbolOfIsin(isin)));
+            amounts.add(String.valueOf(n));
+        });
+        @SuppressWarnings("unchecked") List<String>[] out = new List[] { tokens, amounts };
+        return out;
+    }
+
     /** The agent revalues a settled repo at its business date and records the new holding on-chain. */
     private void revalueTripartyRepo(Context ctx) {
         String repoId = ctx.pathParam("id");
         JsonNode r = tripartyRepoOnChain(repoId);
         JsonNode t = tripartyOnChain(r.get("termsId").asText());
-        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent revalues");
-        if (!r.get("state").asText().equals("settled")) throw new IllegalStateException("the triparty repo is not settled");
-        TripartyTerms tt = tripartyTermsDoc(t);
-        JsonNode revaluations = gw.get("/triparty/repos/" + repoId + "/revaluations");
-        RevaluationBasis basis = tripartyBasis(r, revaluations, revaluations.size());
-        Map<String, BigInteger> prices = new HashMap<>();
-        feedPrices().forEach((k, v) -> prices.put(k.toLowerCase(), v));
-        RevaluationInputs in = revaluationInputs(r.get("allocation"), gw.get("/triparty/terms/" + r.get("termsId").asText() + "/free"), prices);
-        CdmTriparty.Revaluation rv = CdmTriparty.revalue(tt, basis.trade(), basis.hash(), businessDate, in.held(), in.free());
+        agentsSettledRepo(r, t);
+        JsonNode changes = tripartyChanges(repoId);
+        RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+        RevaluationInputs in = currentInputs(r);
+        CdmTriparty.Revaluation rv = CdmTriparty.revalue(tripartyTermsDoc(t), basis.trade(), basis.hash(), businessDate, in.held(), in.free());
         payloads.put(rv.hash(), rv.json(), tripartyParties());
-        List<String> tokens = new ArrayList<>();
-        List<String> amounts = new ArrayList<>();
-        rv.units().forEach((isin, n) -> {
-            tokens.add(cfg.tokenAddress(symbolOfIsin(isin)));
-            amounts.add(String.valueOf(n));
-        });
-        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/revalue", Map.of("revaluationHash", rv.hash(), "tokens", tokens, "amounts", amounts));
-        revaluationChecked.add(rv.hash());
+        var args = holdingArgs(rv.units());
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/revalue", Map.of("revaluationHash", rv.hash(), "tokens", args[0], "amounts", args[1]));
+        changeChecked.add(rv.hash());
         signalConsoles("triparty");
         ctx.json(Map.of("outcome", CdmTriparty.revaluationView(rv.revaluation()).get("outcome"), "revaluationHash", rv.hash(),
-                "revaluation", revaluationWithSymbols(CdmTriparty.revaluationView(rv.revaluation())), "txHash", tx.get("txHash").asText()));
+                "revaluation", withTokens(CdmTriparty.revaluationView(rv.revaluation())), "txHash", tx.get("txHash").asText()));
     }
 
-    /** The giver's or the receiver's check of revaluation number {@code index}: recomputed from the chain at the block
-     *  before it, from its basis document and its stated date; the latest one also matches the repo's holding now. */
-    private Optional<String> tripartyRevaluationProblem(JsonNode terms, JsonNode r, JsonNode revaluations, int index) {
-        String hash = revaluations.get(index).get("revaluationHash").asText();
-        if (revaluationChecked.contains(hash)) return Optional.empty();
+    // --- triparty substitution (task-triparty-substitution, wp-adr-triparty-substitution) ---
+
+    /** The giver recalls units of an asset of a settled repo: records the request's hash for the agent. */
+    private void requestTripartySubstitution(Context ctx) throws Exception {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("giver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the giver recalls collateral");
+        if (!r.get("state").asText().equals("settled")) throw new IllegalStateException("the triparty repo is not settled");
+        JsonNode body = CdmRuntime.JSON.readTree(ctx.body());
+        String symbol = body.get("token").asText();
+        long units = body.get("units").asLong();
+        String json = recordSubstitutionRequest(r, cfg.isin(symbol), units, false);
+        signalConsoles("triparty");
+        ctx.json(Map.of("requestHash", Cdm.keccakHex(json)));
+    }
+
+    private String recordSubstitutionRequest(JsonNode r, String isin, long units, boolean byAgent) {
+        String reqDoc = payloads.get(r.get("requestHash").asText());
+        if (reqDoc == null) throw new IllegalStateException("the repo request is not in the payload store");
+        CdmTriparty.SubstitutionRequest q = CdmTriparty.substitutionRequest(CdmTriparty.parseRequest(reqDoc).getTradeId(), isin, units, byAgent, businessDate);
+        payloads.put(q.hash(), q.json(), tripartyParties());
+        gw.post("/triparty/repos/" + r.get("repoId").asText() + "/substitution", Map.of("requestHash", q.hash()));
+        return q.json();
+    }
+
+    /** The requester withdraws its pending substitution request. */
+    private void withdrawTripartySubstitution(Context ctx) {
+        JsonNode tx = gw.post("/triparty/repos/" + ctx.pathParam("id") + "/substitution/withdraw", Map.of());
+        signalConsoles("triparty");
+        ctx.json(Map.of("txHash", tx.get("txHash").asText()));
+    }
+
+    /** The agent substitutes the pending request, or declines it, and records the outcome on-chain. */
+    private void substituteTripartyRepo(Context ctx) {
+        ctx.json(substitutePending(ctx.pathParam("id")));
+    }
+
+    private Map<String, Object> substitutePending(String repoId) {
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        JsonNode pending = gw.get("/triparty/repos/" + repoId + "/substitution").get("pending");
+        if (pending == null || pending.isNull()) throw new IllegalStateException("no substitution request is pending");
+        String requestHash = pending.get("requestHash").asText();
+        String reqJson = payloads.get(requestHash);
+        if (reqJson == null || !Cdm.keccakHex(reqJson).equalsIgnoreCase(requestHash)) throw new IllegalStateException("the substitution request is not in the payload store or its hash differs");
+        var request = CdmTriparty.parseSubstitutionRequest(reqJson);
+        boolean byAgent = request.getRequestedBy() == cdmx.collateral.triparty.TripartyRequesterEnum.AGENT;
+        String requester = pending.get("requester").asText();
+        if (!requester.equalsIgnoreCase(t.get(byAgent ? "agent" : "giver").asText())) throw new IllegalStateException("the request names another requester");
+        JsonNode changes = tripartyChanges(repoId);
+        RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+        RevaluationInputs in = currentInputs(r);
+        CdmTriparty.Substitution sub = CdmTriparty.substitute(tripartyTermsDoc(t), basis.trade(), basis.hash(), requestHash, request,
+                bankOf(t.get("giver").asText()), businessDate, in.held(), in.free());
+        payloads.put(sub.hash(), sub.json(), tripartyParties());
+        JsonNode tx;
+        if (sub.substituted()) {
+            var args = holdingArgs(sub.units());
+            tx = gw.post("/triparty/repos/" + repoId + "/substitute", Map.of("substitutionHash", sub.hash(), "tokens", args[0], "amounts", args[1]));
+        } else {
+            tx = gw.post("/triparty/repos/" + repoId + "/substitution/decline", Map.of("substitutionHash", sub.hash()));
+        }
+        changeChecked.add(sub.hash());
+        signalConsoles("triparty");
+        Map<String, Object> view = withTokens(CdmTriparty.substitutionView(sub.substitution()));
+        return Map.of("outcome", view.get("outcome"), "substitutionHash", sub.hash(), "substitution", view, "txHash", tx.get("txHash").asText());
+    }
+
+    /** The latest change's (or the allocation's) recorded breaches, as excess units per ISIN, for the agent's own request. */
+    private Map<String, Long> latestExcess(JsonNode r, JsonNode changes) {
+        for (int j = changes.size() - 1; j >= 0; j--) {
+            String kind = changes.get(j).get("kind").asText();
+            if (kind.equals("declined")) continue;
+            String doc = payloads.get(changes.get(j).get("hash").asText());
+            if (doc == null) return Map.of();
+            if (kind.equals("revaluation")) {
+                var x = CdmTriparty.parseRevaluation(doc);
+                return CdmTriparty.excessUnits(x.getHeldAfter(), x.getBreaches(), x.getRequiredValue().getValue());
+            }
+            var x = CdmTriparty.parseSubstitution(doc);
+            return CdmTriparty.excessUnits(x.getHeldAfter(), x.getBreaches(), x.getRequiredValue().getValue());
+        }
+        return Map.of();
+    }
+
+    /** The agent asks back the units of an asset over its limit (from the latest recorded breach) and substitutes them. */
+    private void rebalanceTripartyRepo(Context ctx) throws Exception {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        String isin = cfg.isin(CdmRuntime.JSON.readTree(ctx.body()).get("token").asText());
+        Long units = latestExcess(r, tripartyChanges(repoId)).get(isin);
+        if (units == null || units <= 0) throw new IllegalStateException("the repo's latest holding has no breach in this asset");
+        recordSubstitutionRequest(r, isin, units, true);
+        ctx.json(substitutePending(repoId));
+    }
+
+    /** Holding-change documents that checked, by hash; a failed check is not kept, so it is retried. */
+    private final Set<String> changeChecked = ConcurrentHashMap.newKeySet();
+
+    /** The giver's or the receiver's check of change number {@code index}: recomputed from the chain at the block before
+     *  it, from its basis document and its stated date; the latest one also matches the repo's holding now. */
+    private Optional<String> tripartyChangeProblem(JsonNode terms, JsonNode r, JsonNode changes, int index) {
+        String hash = changes.get(index).get("hash").asText();
+        String kind = changes.get(index).get("kind").asText();
+        if (changeChecked.contains(hash)) return Optional.empty();
         try {
             String doc = payloads.get(hash);
-            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the revaluation is not in the payload store or its hash differs");
-            var stated = CdmTriparty.parseRevaluation(doc);
-            RevaluationBasis basis = tripartyBasis(r, revaluations, index);
-            if (!basis.hash().equalsIgnoreCase(stated.getBasisHash())) return Optional.of("the revaluation follows another document");
-            long block = Long.parseLong(revaluations.get(index).get("block").asText());
-            JsonNode at = gw.get("/triparty/repos/" + r.get("repoId").asText() + "/at?block=" + (block - 1));
-            Map<String, BigInteger> prices = new HashMap<>();
-            for (JsonNode p : at.get("prices")) if (!p.get("price").isNull()) prices.put(p.get("token").asText().toLowerCase(), new BigInteger(p.get("price").asText()));
-            RevaluationInputs in = revaluationInputs(at.get("allocation"), at.get("free"), prices);
-            CdmTriparty.Revaluation rv = CdmTriparty.verifyRevaluation(doc, tripartyTermsDoc(terms), basis.trade(), basis.hash(),
-                    stated.getRevaluationDate().toLocalDate(), in.held(), in.free());
-            if (index == revaluations.size() - 1 && !rv.units().equals(onChainAllocation(r)))
-                return Optional.of("the revaluation differs from the tokens held on-chain");
-            revaluationChecked.add(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the document is not in the payload store or its hash differs");
+            RevaluationBasis basis = tripartyBasis(r, changes, index);
+            long block = Long.parseLong(changes.get(index).get("block").asText());
+            RevaluationInputs in = inputsAt(r.get("repoId").asText(), block - 1);
+            Map<String, Long> units;
+            if (kind.equals("revaluation")) {
+                var stated = CdmTriparty.parseRevaluation(doc);
+                if (!basis.hash().equalsIgnoreCase(stated.getBasisHash())) return Optional.of("the revaluation follows another document");
+                units = CdmTriparty.verifyRevaluation(doc, tripartyTermsDoc(terms), basis.trade(), basis.hash(),
+                        stated.getRevaluationDate().toLocalDate(), in.held(), in.free()).units();
+            } else {
+                var stated = CdmTriparty.parseSubstitution(doc);
+                if (!basis.hash().equalsIgnoreCase(stated.getBasisHash())) return Optional.of("the substitution follows another document");
+                String reqJson = payloads.get(stated.getRequestHash());
+                if (reqJson == null || !Cdm.keccakHex(reqJson).equalsIgnoreCase(stated.getRequestHash())) return Optional.of("the substitution request is not in the payload store");
+                var sub = CdmTriparty.verifySubstitution(doc, tripartyTermsDoc(terms), basis.trade(), basis.hash(), stated.getRequestHash(),
+                        CdmTriparty.parseSubstitutionRequest(reqJson), bankOf(terms.get("giver").asText()), stated.getSubstitutionDate().toLocalDate(), in.held(), in.free());
+                if (sub.substituted() != kind.equals("substitution")) return Optional.of("the substitution is recorded with another outcome");
+                units = sub.units();
+            }
+            boolean latest = true;
+            for (int j = index + 1; j < changes.size(); j++) if (!changes.get(j).get("kind").asText().equals("declined")) latest = false;
+            if (latest && !units.equals(onChainAllocation(r))) return Optional.of("the document differs from the tokens held on-chain");
+            changeChecked.add(hash);
             return Optional.empty();
         } catch (Exception e) {
             return Optional.of(String.valueOf(e.getMessage()));
         }
     }
 
-    private Map<String, Object> revaluationWithSymbols(Map<String, Object> view) {
+    private Map<String, Object> withTokens(Map<String, Object> view) {
         for (String key : List.of("movements", "heldBefore", "heldAfter", "breaches")) {
             @SuppressWarnings("unchecked") List<Map<String, Object>> xs = (List<Map<String, Object>>) view.get(key);
             for (Map<String, Object> e : xs) e.put("token", symbolOfIsin(String.valueOf(e.get("isin"))));
         }
+        if (view.containsKey("isin")) view.put("token", symbolOfIsin(String.valueOf(view.get("isin"))));
         return view;
     }
 
-    /** A settled repo's revaluations, oldest first, each with its document and, for the giver and the receiver, its check. */
-    private List<Map<String, Object>> tripartyRevaluationsView(JsonNode terms, JsonNode r, boolean agent) {
-        JsonNode revaluations = gw.get("/triparty/repos/" + r.get("repoId").asText() + "/revaluations");
-        List<Map<String, Object>> out = new ArrayList<>();
-        for (int i = 0; i < revaluations.size(); i++) {
-            String hash = revaluations.get(i).get("revaluationHash").asText();
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("revaluationHash", hash);
-            m.put("block", revaluations.get(i).get("block").asText());
+    /** A settled repo's revaluations and substitutions, oldest first, each with its document and, for the giver and the
+     *  receiver, its check; the pending substitution request; and the agent's possible own requests. */
+    private void tripartyChangesView(Map<String, Object> m, JsonNode terms, JsonNode r, boolean giver, boolean agent) {
+        String repoId = r.get("repoId").asText();
+        JsonNode changes = tripartyChanges(repoId);
+        List<Map<String, Object>> revaluations = new ArrayList<>();
+        List<Map<String, Object>> substitutions = new ArrayList<>();
+        for (int i = 0; i < changes.size(); i++) {
+            String hash = changes.get(i).get("hash").asText();
+            String kind = changes.get(i).get("kind").asText();
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put(kind.equals("revaluation") ? "revaluationHash" : "substitutionHash", hash);
+            e.put("block", changes.get(i).get("block").asText());
             String doc = payloads.get(hash);
             if (doc != null) {
                 try {
-                    m.put("revaluation", revaluationWithSymbols(CdmTriparty.revaluationView(CdmTriparty.parseRevaluation(doc))));
+                    if (kind.equals("revaluation")) e.put("revaluation", withTokens(CdmTriparty.revaluationView(CdmTriparty.parseRevaluation(doc))));
+                    else e.put("substitution", withTokens(CdmTriparty.substitutionView(CdmTriparty.parseSubstitution(doc))));
                 } catch (Exception ignored) {
                     // shown without the document's fields
                 }
             }
-            Optional<String> problem = agent ? Optional.empty() : tripartyRevaluationProblem(terms, r, revaluations, i);
-            m.put("verified", problem.isEmpty());
-            m.put("problem", problem.orElse(null));
-            out.add(m);
+            Optional<String> problem = agent ? Optional.empty() : tripartyChangeProblem(terms, r, changes, i);
+            e.put("verified", problem.isEmpty());
+            e.put("problem", problem.orElse(null));
+            (kind.equals("revaluation") ? revaluations : substitutions).add(e);
         }
-        return out;
+        m.put("revaluations", revaluations);
+        m.put("substitutions", substitutions);
+        JsonNode pending = gw.get("/triparty/repos/" + repoId + "/substitution").get("pending");
+        boolean isPending = pending != null && !pending.isNull();
+        if (isPending) {
+            Map<String, Object> p = new LinkedHashMap<>();
+            p.put("requestHash", pending.get("requestHash").asText());
+            String reqJson = payloads.get(pending.get("requestHash").asText());
+            if (reqJson != null) {
+                var q = CdmTriparty.parseSubstitutionRequest(reqJson);
+                p.put("token", symbolOfIsin(q.getIsin()));
+                p.put("units", q.getUnits().longValueExact());
+                p.put("requestedBy", q.getRequestedBy() == cdmx.collateral.triparty.TripartyRequesterEnum.AGENT ? "Agent" : "Giver");
+            }
+            p.put("mine", pending.get("requester").asText().equalsIgnoreCase(cfg.myAddress));
+            m.put("pendingSubstitution", p);
+        }
+        m.put("canRequestSubstitution", giver && !isPending);
+        m.put("canSubstitute", agent && isPending);
+        List<Map<String, Object>> excess = new ArrayList<>();
+        if (agent && !isPending) latestExcess(r, changes).forEach((isin, n) -> excess.add(new LinkedHashMap<>(Map.of("token", symbolOfIsin(isin), "units", n))));
+        m.put("excess", excess);
     }
 
     /** The receiver refuses an allocation, or any of the three cancels a repo before it settles. */

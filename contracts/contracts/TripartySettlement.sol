@@ -27,6 +27,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// account and the new one is taken from it in the same transaction, so a top-up moves free tokens to the repo and a
 /// release moves them back. An unchanged or uncovered revaluation passes the holding unchanged and only records its
 /// hash. Each revaluation's hash and block are kept, so the giver and the receiver can read the chain as it was before.
+///
+/// Substitution (task-triparty-substitution, wp-adr-triparty-substitution). The giver records the hash of a request for
+/// collateral back (or the agent, to remove an excess over a limit); the agent then substitutes it, replacing the
+/// holding as a revaluation does, or declines it. Revaluations, substitutions and declines form one history per repo.
 contract TripartySettlement {
     using SafeERC20 for IERC20;
 
@@ -106,13 +110,30 @@ contract TripartySettlement {
     event PurchaseSettled(bytes32 indexed repoId, bytes32 allocationHash);
     event RepoCancelled(bytes32 indexed repoId, address indexed by);
     event RepoRevalued(bytes32 indexed repoId, bytes32 revaluationHash, uint256 index);
+    event SubstitutionRequested(bytes32 indexed repoId, bytes32 requestHash, address indexed requester);
+    event SubstitutionWithdrawn(bytes32 indexed repoId, bytes32 requestHash);
+    event RepoSubstituted(bytes32 indexed repoId, bytes32 requestHash, bytes32 substitutionHash, uint256 index);
+    event SubstitutionDeclined(bytes32 indexed repoId, bytes32 requestHash, bytes32 substitutionHash, uint256 index);
 
-    struct Revaluation {
-        bytes32 revaluationHash;
+    uint8 public constant REVALUATION = 1;
+    uint8 public constant SUBSTITUTION = 2;
+    uint8 public constant DECLINED = 3;
+
+    /// One change of a settled repo's holding by the agent: a revaluation, a substitution, or a declined substitution
+    /// (which moves nothing). Each cdm-ext document names the one before it as its basis.
+    struct Change {
+        bytes32 hash;
         uint64 blockNumber;
+        uint8 kind;
     }
 
-    mapping(bytes32 => Revaluation[]) private revaluations; // repo id => the agent's revaluations, oldest first
+    struct PendingSubstitution {
+        bytes32 requestHash;
+        address requester;
+    }
+
+    mapping(bytes32 => Change[]) private changes; // repo id => the agent's changes, oldest first
+    mapping(bytes32 => PendingSubstitution) private pending; // repo id => the substitution request awaiting the agent
 
     function _trio(address giver, address receiver, address agent) private pure returns (bytes32) {
         return keccak256(abi.encode(giver, receiver, agent));
@@ -275,24 +296,77 @@ contract TripartySettlement {
     }
 
     function revalue(bytes32 repoId, bytes32 revaluationHash, address[] calldata tokens, uint256[] calldata amounts) external {
+        Repo storage r = agentsSettledRepo(repoId);
+        require(revaluationHash != bytes32(0), "TripartySettlement: no revaluation hash");
+        replaceHolding(repoId, r.termsId, tokens, amounts);
+        changes[repoId].push(Change(revaluationHash, uint64(block.number), REVALUATION));
+        emit RepoRevalued(repoId, revaluationHash, changes[repoId].length - 1);
+    }
+
+    /// The giver recalls collateral, or the agent asks to remove an excess over a limit (wp-adr-triparty-substitution).
+    function requestSubstitution(bytes32 repoId, bytes32 requestHash) external {
         Repo storage r = repos[repoId];
         require(r.state == RepoState.Settled, "TripartySettlement: not settled");
-        require(msg.sender == terms[r.termsId].agent, "TripartySettlement: only the agent revalues");
-        require(revaluationHash != bytes32(0), "TripartySettlement: no revaluation hash");
+        Terms storage t = terms[r.termsId];
+        require(msg.sender == t.giver || msg.sender == t.agent, "TripartySettlement: only the giver or the agent");
+        require(requestHash != bytes32(0), "TripartySettlement: no request hash");
+        require(pending[repoId].requestHash == bytes32(0), "TripartySettlement: a substitution is pending");
+        pending[repoId] = PendingSubstitution(requestHash, msg.sender);
+        emit SubstitutionRequested(repoId, requestHash, msg.sender);
+    }
+
+    function withdrawSubstitution(bytes32 repoId) external {
+        PendingSubstitution memory p = pending[repoId];
+        require(p.requestHash != bytes32(0), "TripartySettlement: nothing pending");
+        require(msg.sender == p.requester, "TripartySettlement: only the requester");
+        delete pending[repoId];
+        emit SubstitutionWithdrawn(repoId, p.requestHash);
+    }
+
+    /// The agent substitutes the pending request: the new holding replaces the old as in a revaluation.
+    function substitute(bytes32 repoId, bytes32 substitutionHash, address[] calldata tokens, uint256[] calldata amounts) external {
+        Repo storage r = agentsSettledRepo(repoId);
+        bytes32 requestHash = takePending(repoId, substitutionHash);
+        replaceHolding(repoId, r.termsId, tokens, amounts);
+        changes[repoId].push(Change(substitutionHash, uint64(block.number), SUBSTITUTION));
+        emit RepoSubstituted(repoId, requestHash, substitutionHash, changes[repoId].length - 1);
+    }
+
+    /// The agent declines the pending request; the declined document is kept and nothing moves.
+    function declineSubstitution(bytes32 repoId, bytes32 substitutionHash) external {
+        agentsSettledRepo(repoId);
+        bytes32 requestHash = takePending(repoId, substitutionHash);
+        changes[repoId].push(Change(substitutionHash, uint64(block.number), DECLINED));
+        emit SubstitutionDeclined(repoId, requestHash, substitutionHash, changes[repoId].length - 1);
+    }
+
+    function agentsSettledRepo(bytes32 repoId) private view returns (Repo storage r) {
+        r = repos[repoId];
+        require(r.state == RepoState.Settled, "TripartySettlement: not settled");
+        require(msg.sender == terms[r.termsId].agent, "TripartySettlement: only the agent");
+    }
+
+    function takePending(bytes32 repoId, bytes32 substitutionHash) private returns (bytes32 requestHash) {
+        requestHash = pending[repoId].requestHash;
+        require(requestHash != bytes32(0), "TripartySettlement: nothing pending");
+        require(substitutionHash != bytes32(0), "TripartySettlement: no substitution hash");
+        delete pending[repoId];
+    }
+
+    /// The old holding returns to the giver's free account and the new one is taken from it.
+    function replaceHolding(bytes32 repoId, bytes32 termsId, address[] calldata tokens, uint256[] calldata amounts) private {
         require(tokens.length > 0 && tokens.length == amounts.length, "TripartySettlement: no holding");
         address[] storage held = allocTokens[repoId];
         uint256[] storage heldAmounts = allocAmounts[repoId];
-        for (uint256 i = 0; i < held.length; i++) free[r.termsId][held[i]] += heldAmounts[i];
+        for (uint256 i = 0; i < held.length; i++) free[termsId][held[i]] += heldAmounts[i];
         for (uint256 i = 0; i < tokens.length; i++) {
-            require(amounts[i] > 0 && rankOf[r.termsId][tokens[i]] > 0, "TripartySettlement: not a deposited token");
+            require(amounts[i] > 0 && rankOf[termsId][tokens[i]] > 0, "TripartySettlement: not a deposited token");
             for (uint256 j = 0; j < i; j++) require(tokens[j] != tokens[i], "TripartySettlement: token repeated");
-            require(free[r.termsId][tokens[i]] >= amounts[i], "TripartySettlement: not free");
-            free[r.termsId][tokens[i]] -= amounts[i];
+            require(free[termsId][tokens[i]] >= amounts[i], "TripartySettlement: not free");
+            free[termsId][tokens[i]] -= amounts[i];
         }
         allocTokens[repoId] = tokens;
         allocAmounts[repoId] = amounts;
-        revaluations[repoId].push(Revaluation(revaluationHash, uint64(block.number)));
-        emit RepoRevalued(repoId, revaluationHash, revaluations[repoId].length - 1);
     }
 
     function cancelRepo(bytes32 repoId) external {
@@ -323,9 +397,14 @@ contract TripartySettlement {
         return (allocTokens[repoId], allocAmounts[repoId]);
     }
 
-    /// The agent's revaluations of a repo, oldest first, each with the block it was recorded in.
-    function revaluationsOf(bytes32 repoId) external view returns (Revaluation[] memory) {
-        return revaluations[repoId];
+    /// The agent's changes of a repo's holding, oldest first, each with its block and kind.
+    function changesOf(bytes32 repoId) external view returns (Change[] memory) {
+        return changes[repoId];
+    }
+
+    /// The substitution request awaiting the agent, if any (a zero hash otherwise).
+    function pendingSubstitutionOf(bytes32 repoId) external view returns (PendingSubstitution memory) {
+        return pending[repoId];
     }
 
     /// The giver's free account under the terms, with its ranks.

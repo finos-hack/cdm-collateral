@@ -384,7 +384,15 @@ route("GET", "/ledger/v1/triparty/repos/:id", async (p) => J(await adapter.getTr
 route("POST", "/ledger/v1/triparty/repos/:id/revalue", async (p, b) =>
   J(await adapter.revalueTriparty(p.id as Hex, b.revaluationHash as Hex, (b.tokens as string[]).map((t) => getAddress(t)),
     (b.amounts as (string | number)[]).map((a) => BigInt(a)))));
-route("GET", "/ledger/v1/triparty/repos/:id/revaluations", async (p) => J(await adapter.tripartyRevaluations(p.id as Hex)));
+route("GET", "/ledger/v1/triparty/repos/:id/changes", async (p) => J(await adapter.tripartyChanges(p.id as Hex)));
+// Triparty substitution (wp-adr-triparty-substitution): the giver's (or the agent's) request and the agent's answer.
+route("GET", "/ledger/v1/triparty/repos/:id/substitution", async (p) => J({ pending: await adapter.tripartyPendingSubstitution(p.id as Hex) }));
+route("POST", "/ledger/v1/triparty/repos/:id/substitution", async (p, b) => J(await adapter.requestTripartySubstitution(p.id as Hex, b.requestHash as Hex)));
+route("POST", "/ledger/v1/triparty/repos/:id/substitution/withdraw", async (p) => J(await adapter.withdrawTripartySubstitution(p.id as Hex)));
+route("POST", "/ledger/v1/triparty/repos/:id/substitute", async (p, b) =>
+  J(await adapter.substituteTriparty(p.id as Hex, b.substitutionHash as Hex, (b.tokens as string[]).map((t) => getAddress(t)),
+    (b.amounts as (string | number)[]).map((a) => BigInt(a)))));
+route("POST", "/ledger/v1/triparty/repos/:id/substitution/decline", async (p, b) => J(await adapter.declineTripartySubstitution(p.id as Hex, b.substitutionHash as Hex)));
 route("GET", "/ledger/v1/triparty/repos/:id/at", async (p, _b, url) => J(await adapter.tripartyRepoAt(p.id as Hex, BigInt(url.searchParams.get("block")!))));
 
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---

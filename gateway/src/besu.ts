@@ -463,7 +463,12 @@ const tripartyAbi = parseAbi([
   "function allocationOf(bytes32 repoId) view returns (address[] tokens, uint256[] amounts)",
   "function freeOf(bytes32 termsId) view returns ((address token, uint256 amount, uint256 rank)[])",
   "function revalue(bytes32 repoId, bytes32 revaluationHash, address[] tokens, uint256[] amounts)",
-  "function revaluationsOf(bytes32 repoId) view returns ((bytes32 revaluationHash, uint64 blockNumber)[])",
+  "function changesOf(bytes32 repoId) view returns ((bytes32 hash, uint64 blockNumber, uint8 kind)[])",
+  "function pendingSubstitutionOf(bytes32 repoId) view returns ((bytes32 requestHash, address requester))",
+  "function requestSubstitution(bytes32 repoId, bytes32 requestHash)",
+  "function withdrawSubstitution(bytes32 repoId)",
+  "function substitute(bytes32 repoId, bytes32 substitutionHash, address[] tokens, uint256[] amounts)",
+  "function declineSubstitution(bytes32 repoId, bytes32 substitutionHash)",
 ]);
 
 export const TripartyTermsStateName = ["none", "proposed", "effective", "refused", "terminated"];
@@ -724,7 +729,14 @@ export interface LedgerAdapter {
   tripartyFree(termsId: Hex): Promise<TripartyHolding[]>;
   /** Revaluation (wp-adr-triparty-revaluation): the agent replaces a settled repo's holding; the hash is kept with its block. */
   revalueTriparty(repoId: Hex, revaluationHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
-  tripartyRevaluations(repoId: Hex): Promise<{ revaluationHash: Hex; block: bigint }[]>;
+  /** The repo's holding changes, oldest first: revaluation, substitution or declined. */
+  tripartyChanges(repoId: Hex): Promise<{ hash: Hex; block: bigint; kind: "revaluation" | "substitution" | "declined" }[]>;
+  /** Substitution (wp-adr-triparty-substitution): the request awaiting the agent, the request, withdrawal, and the agent's answer. */
+  tripartyPendingSubstitution(repoId: Hex): Promise<{ requestHash: Hex; requester: Address } | null>;
+  requestTripartySubstitution(repoId: Hex, requestHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  withdrawTripartySubstitution(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  substituteTriparty(repoId: Hex, substitutionHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  declineTripartySubstitution(repoId: Hex, substitutionHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** A repo's holding, its terms' free account and the feed prices of those tokens at the end of a block. */
   tripartyRepoAt(repoId: Hex, block: bigint): Promise<{ allocation: { token: Address; amount: bigint }[]; free: TripartyHolding[]; prices: { token: Address; price: bigint | null }[] }>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
@@ -1410,9 +1422,31 @@ export class BesuAdapter implements LedgerAdapter {
     return this.send(this.tripartyContract(), tripartyAbi, "revalue", [repoId, revaluationHash, tokens, amounts]);
   }
 
-  async tripartyRevaluations(repoId: Hex) {
-    const rs = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "revaluationsOf", args: [repoId] })) as readonly { revaluationHash: Hex; blockNumber: bigint }[];
-    return rs.map((r) => ({ revaluationHash: r.revaluationHash, block: r.blockNumber }));
+  async tripartyChanges(repoId: Hex) {
+    const kinds = { 1: "revaluation", 2: "substitution", 3: "declined" } as const;
+    const cs = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "changesOf", args: [repoId] })) as readonly { hash: Hex; blockNumber: bigint; kind: number }[];
+    return cs.map((c) => ({ hash: c.hash, block: c.blockNumber, kind: kinds[c.kind as 1 | 2 | 3] }));
+  }
+
+  async tripartyPendingSubstitution(repoId: Hex) {
+    const p = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "pendingSubstitutionOf", args: [repoId] })) as { requestHash: Hex; requester: Address };
+    return /^0x0+$/.test(p.requestHash) ? null : { requestHash: p.requestHash, requester: getAddress(p.requester) };
+  }
+
+  requestTripartySubstitution(repoId: Hex, requestHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "requestSubstitution", [repoId, requestHash]);
+  }
+
+  withdrawTripartySubstitution(repoId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "withdrawSubstitution", [repoId]);
+  }
+
+  substituteTriparty(repoId: Hex, substitutionHash: Hex, tokens: Address[], amounts: bigint[]) {
+    return this.send(this.tripartyContract(), tripartyAbi, "substitute", [repoId, substitutionHash, tokens, amounts]);
+  }
+
+  declineTripartySubstitution(repoId: Hex, substitutionHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "declineSubstitution", [repoId, substitutionHash]);
   }
 
   /** The chain as a revaluation's check reads it (wp-adr-triparty-revaluation): the repo's holding, the free account of

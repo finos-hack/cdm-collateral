@@ -288,3 +288,141 @@ func RepoIsCollateralRelease: <"Whether a BusinessEvent releases part of a repo'
         RepoIsSubstitution(businessEvent) = True
             and (newAssets extract a [ RepoCollateralUnits(priorTerms, a) > 0 and RepoCollateralUnits(newTerms, a) <= RepoCollateralUnits(priorTerms, a) ]) all = True
             and (priorAssets extract a [ RepoCollateralUnits(newTerms, a) < RepoCollateralUnits(priorTerms, a) ]) any = True
+
+// Substitution (task-triparty-substitution, wp-adr-triparty-substitution). The returned units go back to the free
+// account; the rest of the holding is then topped up as a revaluation would, from the free account without the
+// returned asset, until it covers the required value.
+
+func TripartyLessUnits: <"A holding with some units of one asset taken out; an asset left with none is dropped.">
+    inputs:
+        held TripartyDeposit (0..*)
+        asset string (1..1) <"The ISIN.">
+        units number (1..1)
+    output:
+        remaining TripartyDeposit (0..*)
+
+    add remaining:
+        held
+            extract h [
+                TripartyDeposit {
+                    rank: h -> rank,
+                    isin: h -> isin,
+                    units: if h -> isin = asset then h -> units - units else h -> units,
+                    unitPrice: h -> unitPrice
+                }
+            ]
+            then filter r [ r -> units > 0 ]
+
+func SubstituteTriparty: <"The agent's substitution of a request: the units asked back returned, then the holding topped up from the free account in the giver's ranking without the returned asset until it covers the required value; declined when the free account cannot cover it or the repo holds fewer units. The caller adds the CDM records.">
+    inputs:
+        requestHash string (1..1)
+        basisHash string (1..1)
+        substitutionDate date (1..1)
+        requiredValue Money (1..1)
+        held TripartyDeposit (1..*)
+        free TripartyDeposit (0..*)
+        asset string (1..1) <"The ISIN asked back.">
+        units number (1..1) <"The units asked back.">
+        profile EligibleCollateralSpecification (1..1)
+    output:
+        substitution TripartySubstitution (1..1)
+
+    alias needed: requiredValue -> value
+
+    alias remaining: TripartyLessUnits(held, asset, units)
+
+    alias valueRemaining: remaining extract h [ h -> units * TripartyUnitValue(h, profile) ] then sum
+
+    alias shortfall: needed - valueRemaining
+
+    alias usable:
+        free
+            filter d [
+                d -> isin <> asset
+                    and ProfileEligible(profile, d -> isin) = True
+                    and ProfileHaircut(profile, d -> isin) < 1
+                    and TripartyTopUpUsable(d, remaining, profile, needed) > 0
+            ]
+            then sort [ item -> rank ]
+
+    alias capacity:
+        usable extract d [ TripartyTopUpUsable(d, remaining, profile, needed) * TripartyUnitValue(d, profile) ] then sum
+
+    alias covered: units <= TripartyUnitsOf(held, asset) and (shortfall <= 0 or capacity >= shortfall)
+
+    alias returned:
+        [ TripartyMovement { isin: asset, units: units, direction: TripartyMovementDirectionEnum -> Release } ]
+            filter m [ covered ]
+
+    alias replacements:
+        usable
+            filter d [ covered and shortfall > 0 and TripartyTopUpUnits(d, usable, remaining, profile, needed, shortfall) > 0 ]
+            then extract d [
+                TripartyMovement {
+                    isin: d -> isin,
+                    units: TripartyTopUpUnits(d, usable, remaining, profile, needed, shortfall),
+                    direction: TripartyMovementDirectionEnum -> TopUp
+                }
+            ]
+
+    alias movements: [ returned, replacements ]
+
+    alias keptOrTopped:
+        held
+            extract h [
+                TripartyValued(
+                    h,
+                    h -> units
+                        + TripartyMovedUnits(movements, h -> isin, TripartyMovementDirectionEnum -> TopUp)
+                        - TripartyMovedUnits(movements, h -> isin, TripartyMovementDirectionEnum -> Release),
+                    profile
+                )
+            ]
+            then filter p [ p -> units > 0 ]
+
+    alias added:
+        usable
+            filter d [ TripartyUnitsOf(held, d -> isin) = 0 and TripartyMovedUnits(movements, d -> isin, TripartyMovementDirectionEnum -> TopUp) > 0 ]
+            then extract d [ TripartyValued(d, TripartyMovedUnits(movements, d -> isin, TripartyMovementDirectionEnum -> TopUp), profile) ]
+
+    alias after: [ keptOrTopped, added ]
+
+    condition SameCurrency: <"Every price is in the currency of the required value.">
+        ([ held, free ] filter d [ d -> unitPrice -> unit -> currency <> requiredValue -> unit -> currency ] then count) = 0
+
+    condition DistinctRanks: <"Each asset of the free account has its own rank, and each held asset its own rank.">
+        (free extract rank then distinct then count) = free count
+            and (held extract rank then distinct then count) = held count
+
+    condition PositiveRequiredValue: <"The required value is positive.">
+        needed > 0
+
+    set substitution:
+        TripartySubstitution {
+            requestHash: requestHash,
+            basisHash: basisHash,
+            substitutionDate: substitutionDate,
+            requiredValue: requiredValue,
+            isin: asset,
+            units: units,
+            held: held,
+            free: free,
+            heldBefore: held extract h [ TripartyValued(h, h -> units, profile) ],
+            valueBefore: Money {
+                value: held extract h [ h -> units * TripartyUnitValue(h, profile) ] then sum,
+                unit: requiredValue -> unit,
+                ...
+            },
+            movements: movements,
+            heldAfter: after,
+            valueAfter: Money {
+                value: after extract p [ p -> valueAfterHaircuts -> value ] then sum,
+                unit: requiredValue -> unit,
+                ...
+            },
+            outcome: if covered then TripartySubstitutionOutcomeEnum -> Substituted else TripartySubstitutionOutcomeEnum -> Declined,
+            breaches: TripartyConcentrationBreaches(profile, after, requiredValue),
+            adjustment: empty,
+            proposed: empty,
+            accepted: empty
+        }

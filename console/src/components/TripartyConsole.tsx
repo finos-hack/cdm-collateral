@@ -14,6 +14,7 @@ import {
   type LiveTriparty,
   type LiveTripartyRepo,
   type LiveTripartyRevaluation,
+  type LiveTripartySubstitution,
   type LiveTripartyTerms,
   type TripartyParty,
 } from "../domain/liveApi";
@@ -116,6 +117,56 @@ function Revaluations(props: { rs: LiveTripartyRevaluation[] }) {
   );
 }
 
+/** The agent's substitutions of a settled repo (wp-adr-triparty-substitution), newest first. */
+function Substitutions(props: { ss: LiveTripartySubstitution[] }) {
+  const latest = [...props.ss].reverse();
+  return (
+    <div data-testid="triparty-substitutions">
+      {latest.map((x, i) => {
+        const v = x.substitution;
+        return (
+          <div className="small" key={x.substitutionHash} data-testid={i === 0 ? "triparty-substitution-latest" : `triparty-substitution-${x.substitutionHash}`}>
+            {v ? (
+              <>
+                <span data-testid="triparty-substitution-outcome">
+                  Substitution {v.substitutionDate}: {v.units} {v.token ?? v.isin} asked back,{" "}
+                  {v.outcome === "Substituted" ? "returned to the giver's free account" : "declined: the free account cannot replace them; nothing moved"}
+                </span>
+                {v.movements.filter((m) => m.direction === "TopUp").map((m) => (
+                  <span key={m.isin} data-testid={`triparty-substitution-in-${m.token ?? m.isin}`}>{" · "}+{m.units} {m.token ?? m.isin} in</span>
+                ))}
+                {v.outcome === "Substituted" && <> {" · "}now {usd(v.valueAfter)} for {usd(v.requiredValue)} required</>}
+                {v.workflowSteps > 0 && <> {" · "}CDM workflow: request and execution</>}
+              </>
+            ) : <span>substitution {short(x.substitutionHash)}</span>}
+            {" "}
+            <span data-testid="triparty-substitution-verified">
+              {x.verified ? <span className="ok">recomputed from the chain ✓</span> : <span className="bad">{x.problem ?? "substitution does not check"}</span>}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The giver's recall of collateral from a settled repo. */
+function RecallForm(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, r, busy, run } = props;
+  const [token, setToken] = useState("tAGY");
+  const [units, setUnits] = useState("1000");
+  return (
+    <span className="row">
+      <select data-testid="triparty-recall-token" value={token} onChange={(e) => setToken(e.target.value)}>
+        <option value="tUST">tUST</option>
+        <option value="tAGY">tAGY</option>
+      </select>
+      <input data-testid="triparty-recall-units" value={units} onChange={(e) => setUnits(e.target.value)} size={6} />
+      <button disabled={busy} onClick={() => run(() => tripartyApi.requestTripartySubstitution(party, r.repoId, token, Number(units)))}>Request substitution</button>
+    </span>
+  );
+}
+
 function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
   const { party, r, busy, run } = props;
   const a = r.allocation;
@@ -159,7 +210,20 @@ function RepoRow(props: { party: TripartyParty; r: LiveTripartyRepo; busy: boole
         </div>
       )}
       {r.revaluations && r.revaluations.length > 0 && <Revaluations rs={r.revaluations} />}
+      {r.substitutions && r.substitutions.length > 0 && <Substitutions ss={r.substitutions} />}
+      {r.pendingSubstitution && (
+        <div className="small" data-testid="triparty-substitution-pending">
+          Substitution requested{r.pendingSubstitution.requestedBy === "Agent" ? " by the agent" : " by the giver"}: {r.pendingSubstitution.units}{" "}
+          {r.pendingSubstitution.token} back, awaiting the agent
+        </div>
+      )}
       <div className="row">
+        {r.canRequestSubstitution && <RecallForm party={party} r={r} busy={busy} run={run} />}
+        {r.pendingSubstitution?.mine && <button disabled={busy} onClick={() => run(() => tripartyApi.withdrawTripartySubstitution(party, r.repoId))}>Withdraw substitution request</button>}
+        {r.canSubstitute && <button disabled={busy} onClick={() => run(() => tripartyApi.substituteTripartyRepo(party, r.repoId))}>Substitute collateral</button>}
+        {(r.excess ?? []).map((x) => (
+          <button key={x.token} disabled={busy} onClick={() => run(() => tripartyApi.rebalanceTripartyRepo(party, r.repoId, x.token))}>Swap out {x.units} excess {x.token}</button>
+        ))}
         {r.canRevalue && <button disabled={busy} onClick={() => run(() => tripartyApi.revalueTripartyRepo(party, r.repoId))}>Revalue collateral</button>}
         {r.canAffirm && <button disabled={busy} onClick={() => run(() => tripartyApi.affirmTripartyRequest(party, r.repoId))}>Affirm triparty repo request</button>}
         {r.canAllocate && <button disabled={busy} onClick={() => run(() => tripartyApi.allocateTripartyRepo(party, r.repoId))}>Allocate collateral</button>}

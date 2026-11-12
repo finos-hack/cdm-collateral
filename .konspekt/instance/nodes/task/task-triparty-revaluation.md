@@ -79,3 +79,8 @@ The details are decided when the task starts, after a temporary test of CDM's fu
 **Full run 2026-11-12**, in a Claude Code cloud session set up by `docs/setup/claude-code-cloud-setup.sh` (from `main`)
 on a fresh chain: `cdm-ext` 307 tests, collateral service 127, oracle service 13, 125 contract tests, gateway and
 console typechecks, 136 console tests, and the live suite, 45 of 45 in 27.6 min.
+
+**Changed 2026-11-12** by [[wp-adr-triparty-substitution]]: `TripartySettlement` keeps one history of holding changes
+per repo (`changesOf`, with each change's kind) in place of `revaluationsOf`, and the gateway route
+`/ledger/v1/triparty/repos/:id/changes` replaces `/revaluations`; a revaluation's basis is the last change before it
+that is not a declined substitution.

@@ -3813,8 +3813,9 @@ test("flow-triparty-revaluation: B repos 500,000 tUSD to A through BANK-T with 1
     const both = await revaluationsOf(SERVICE.B);
     expect(both.map((r) => r.revaluation?.outcome)).toEqual(["TopUp", "Release"]);
     expect(Number(both[1].block)).toBeGreaterThan(Number(both[0].block));
-    const onChain = await call<{ revaluationHash: string }[]>(`${GATEWAY.A}/triparty/repos/${repoId}/revaluations`);
-    expect(onChain.map((r) => r.revaluationHash)).toEqual(both.map((r) => r.revaluationHash));
+    const onChain = await call<{ hash: string; kind: string }[]>(`${GATEWAY.A}/triparty/repos/${repoId}/changes`);
+    expect(onChain.map((r) => r.kind)).toEqual(["revaluation", "revaluation"]);
+    expect(onChain.map((r) => r.hash)).toEqual(both.map((r) => r.revaluationHash));
   } finally {
     await setPrice("tUST", "98.4");
     await setPrice("tAGY", "99.2");
@@ -3823,4 +3824,120 @@ test("flow-triparty-revaluation: B repos 500,000 tUSD to A through BANK-T with 1
   // B withdraws its free tAGY; the repo stays open with the agent until trade end (task-triparty-trade-end).
   await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: "tAGY" });
   expect(await freeAgy()).toBe("0");
+});
+
+// --- flow-triparty-substitution (task-triparty-substitution, wp-adr-triparty-substitution) ---
+// The giver recalls units of an asset from a settled triparty repo; the agent returns them to the giver's free account
+// and replaces them from it, without the returned asset, until the repo is covered again, or declines. The giver and the
+// receiver recompute each substitution from the chain at the block before it. The agent's business date is set to the
+// Purchase Date (required value 500,000) and restored at the end.
+
+type TripartySubstitutionView = {
+  substitutionHash: string; block: string; verified: boolean; problem: string | null;
+  substitution?: { outcome: string; units: number; valueAfter: string; movements: { token?: string; units: number; direction: string }[]; workflowSteps: number };
+};
+
+test("flow-triparty-substitution: B repos 500,000 tUSD to A through BANK-T and deposits 1,500 tUST more -> B asks for 1,000 tAGY back in its console -> T substitutes 998 tUST from B's free account -> A and B recompute it from the chain -> B asks for the other 1,190 tAGY -> T declines: B's free tUST cannot replace them -> both recompute the decline", async ({ page }) => {
+  // Two requests on top of a settled repo; after a service restart each party also rechecks the earlier changes.
+  test.setTimeout(2 * TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens.tUST, tAGY = p.tokens.tAGY;
+  expect([await scaledPrice(tUST), await scaledPrice(tAGY)]).toEqual([9_840_000_000n, 9_920_000_000n]);
+
+  // Setup through the services, as in flow-triparty-revaluation: B-giver terms in effect, a settled trade-start repo.
+  const giverTerms = async () => (await call<{ terms: TripartyTradeTermsView[] }>(`${SERVICE.B}/triparty`)).terms.filter((t) => t.giver === "B");
+  for (const t of await giverTerms()) if (t.state === "proposed") await call(`${SERVICE.B}/triparty/terms/${t.termsId}/refuse`, "POST", {});
+  let id = (await giverTerms()).find((t) => t.state === "effective")?.termsId ?? "";
+  if (!id) {
+    ({ termsId: id } = await call<{ termsId: string }>(`${SERVICE.B}/triparty/terms`, "POST", {}));
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await tripartyTermsOf(svc, id))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+      await call(`${svc}/triparty/terms/${id}/affirm`, "POST", {});
+    }
+    await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`)).state, { timeout: 60_000 }).toBe("effective");
+  }
+  for (const r of (await tripartyTermsOf(SERVICE.B, id))?.repos ?? []) if (r.canCancel) await call(`${SERVICE.B}/triparty/repos/${r.repoId}/cancel`, "POST", {});
+  for (const h of (await tripartyTermsOf(SERVICE.B, id))?.free ?? []) if (h.amount > 0) await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: h.token });
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tUST", amount: 3000, rank: 1 });
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tAGY", amount: 4000, rank: 2 });
+  const { repoId } = await call<{ repoId: string }>(`${SERVICE.B}/triparty/terms/${id}/repos`, "POST", { purchasePrice: 500000 });
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE.A, id, repoId))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE.A}/triparty/repos/${repoId}/affirm`, "POST", {});
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE_T, id, repoId))?.canAllocate ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE_T}/triparty/repos/${repoId}/allocate`, "POST", {});
+  await expect.poll(async () => (await tripartyRepoOf(SERVICE.A, id, repoId))?.canSettle ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE.A}/triparty/repos/${repoId}/settle`, "POST", {});
+  await expect.poll(async () => (await call<{ state: string }>(`${GATEWAY.A}/triparty/repos/${repoId}`)).state, { timeout: 60_000 }).toBe("settled");
+  await call(`${SERVICE.B}/triparty/terms/${id}/deposit`, "POST", { token: "tUST", amount: 1500, rank: 1 });
+  const held = async () => (await call<{ allocation: { token: string; amount: string }[] }>(`${GATEWAY.B}/triparty/repos/${repoId}`)).allocation
+    .map((a) => [a.token.toLowerCase(), String(a.amount)]);
+  const freeOf = async (token: string) => String((await call<{ token: string; amount: string }[]>(`${GATEWAY.B}/triparty/terms/${id}/free`))
+    .find((h) => h.token.toLowerCase() === token.toLowerCase())!.amount);
+  expect(await held()).toEqual([[tUST.toLowerCase(), "3000"], [tAGY.toLowerCase(), "2190"]]);
+  expect([await freeOf(tUST), await freeOf(tAGY)]).toEqual(["1500", "1810"]);
+  const substitutionsOf = async (svc: string) => ((await tripartyRepoOf(svc, id, repoId)) as unknown as { substitutions?: TripartySubstitutionView[] })?.substitutions ?? [];
+  const recomputed = async (n: number) => {
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect
+        .poll(async () => {
+          const ss = await substitutionsOf(svc);
+          return ss.length === n && ss[n - 1].verified ? true : (ss[n - 1]?.problem ?? ss.length);
+        }, { timeout: 60_000 })
+        .toBe(true);
+    }
+  };
+
+  const purchaseDate = (await tripartyRepoOf(SERVICE.B, id, repoId) as unknown as { purchaseDate: string }).purchaseDate;
+  const agentDate = (await call<{ businessDate: string }>(`${SERVICE_T}/business-date`)).businessDate;
+  try {
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: purchaseDate });
+    // 1. B asks for 1,000 tAGY back in its console.
+    await page.goto("/#/live/B");
+    const repoB = page.getByTestId(`triparty-repo-${repoId}`);
+    await repoB.getByTestId("triparty-recall-token").selectOption("tAGY", { timeout: STEP_TIMEOUT });
+    await repoB.getByTestId("triparty-recall-units").fill("1000");
+    await repoB.getByRole("button", { name: "Request substitution" }).click();
+    await expect(repoB.getByTestId("triparty-substitution-pending")).toContainText("by the giver: 1000 tAGY back, awaiting the agent", { timeout: STEP_TIMEOUT });
+
+    // 2. The agent substitutes: 1,000 tAGY back leave the repo 96,197.44 short; 998 of B's free tUST replace them.
+    await page.goto("/#/live/T");
+    const repoT = page.getByTestId(`triparty-repo-${repoId}`);
+    await repoT.getByRole("button", { name: "Substitute collateral" }).click({ timeout: STEP_TIMEOUT });
+    const latestT = repoT.getByTestId("triparty-substitution-latest");
+    await expect(latestT.getByTestId("triparty-substitution-outcome")).toContainText("1000 tAGY asked back, returned to the giver's free account", { timeout: STEP_TIMEOUT });
+    await expect(latestT.getByTestId("triparty-substitution-in-tUST")).toContainText("+998 tUST in");
+    await expect(latestT).toContainText("CDM workflow: request and execution");
+    expect(await held()).toEqual([[tUST.toLowerCase(), "3998"], [tAGY.toLowerCase(), "1190"]]);
+    expect([await freeOf(tUST), await freeOf(tAGY)]).toEqual(["502", "2810"]);
+
+    // 3. A and B recompute it from the chain at the block before; A's console shows it checked.
+    await recomputed(1);
+    await page.goto("/#/live/A");
+    await expect(page.getByTestId(`triparty-repo-${repoId}`).getByTestId("triparty-substitution-latest").getByTestId("triparty-substitution-verified"))
+      .toContainText("recomputed from the chain ✓", { timeout: STEP_TIMEOUT });
+
+    // 4. B asks for the other 1,190 tAGY; 502 free tUST cannot replace them (free tAGY is the asset returned): declined.
+    await page.goto("/#/live/B");
+    await repoB.getByTestId("triparty-recall-token").selectOption("tAGY", { timeout: STEP_TIMEOUT });
+    await repoB.getByTestId("triparty-recall-units").fill("1190");
+    await repoB.getByRole("button", { name: "Request substitution" }).click();
+    await expect(repoB.getByTestId("triparty-substitution-pending")).toContainText("1190 tAGY back", { timeout: STEP_TIMEOUT });
+    await page.goto("/#/live/T");
+    await repoT.getByRole("button", { name: "Substitute collateral" }).click({ timeout: STEP_TIMEOUT });
+    await expect(latestT.getByTestId("triparty-substitution-outcome")).toContainText("declined: the free account cannot replace them; nothing moved", { timeout: STEP_TIMEOUT });
+    expect(await held()).toEqual([[tUST.toLowerCase(), "3998"], [tAGY.toLowerCase(), "1190"]]);
+    await recomputed(2);
+    const ss = await substitutionsOf(SERVICE.B);
+    expect(ss.map((s) => s.substitution?.outcome)).toEqual(["Substituted", "Declined"]);
+    expect(ss.map((s) => s.substitution?.workflowSteps)).toEqual([2, 0]);
+    const kinds = await call<{ hash: string; kind: string }[]>(`${GATEWAY.A}/triparty/repos/${repoId}/changes`);
+    expect(kinds.map((c) => c.kind)).toEqual(["substitution", "declined"]);
+    expect(kinds.map((c) => c.hash)).toEqual(ss.map((s) => s.substitutionHash));
+  } finally {
+    await call(`${SERVICE_T}/business-date`, "POST", { businessDate: agentDate });
+  }
+  // B withdraws its free tUST and tAGY; the repo stays open with the agent until trade end (task-triparty-trade-end).
+  await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: "tUST" });
+  await call(`${SERVICE.B}/triparty/terms/${id}/withdraw`, "POST", { token: "tAGY" });
+  expect([await freeOf(tUST), await freeOf(tAGY)]).toEqual(["0", "0"]);
 });

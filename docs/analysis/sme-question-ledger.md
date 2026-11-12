@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 178 questions in 31 tasks, all open.
+Status of the ledger: 185 questions in 32 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -350,3 +350,15 @@ Status of the ledger: 178 questions in 31 tasks, all open.
 | TPR-6 | A concentration breach caused by price moves alone is recorded and left to substitution. Do agents rebalance during the daily revaluation? | open | |
 | TPR-7 | The agent revalues on request in the prototype. When and how often do agents revalue, and at which prices (closing, intraday)? | open | |
 | TPR-8 | The revaluation moves collateral without either party's affirmation. Is the agent's daily reallocation binding on both parties under the triparty agreement? | open | |
+
+### `task-sme-triparty-substitution`: the triparty agent's substitution of collateral
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPU-1 | The giver asks for a number of units of one asset back. Do givers recall specific securities by quantity, whole positions, or a value? | open | |
+| TPU-2 | The agent replaces the returned units from the giver's free collateral in the giver's ranking until the repo is covered again. Do agents replace by the allocation rule, by equal value, or by the giver's instruction? | open | |
+| TPU-3 | When the free collateral cannot replace the returned units, the agent declines the whole request. Do agents return part of the request, or queue it until collateral arrives? | open | |
+| TPU-4 | The agent may start a substitution itself to bring an asset back within its concentration limit. Do agents rebalance breaches on their own, and how quickly? | open | |
+| TPU-5 | The receiver does not affirm a substitution. Is the receiver notified or asked to consent under the triparty agreement? | open | |
+| TPU-6 | One substitution request may be pending per repo. Do agents process several recalls on one repo at once, or across a giver's repos together? | open | |
+| TPU-7 | The substitution takes effect when the agent records it. What cut-off times and settlement timing do agents apply to recalls? | open | |

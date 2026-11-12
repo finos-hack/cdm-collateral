@@ -2105,8 +2105,9 @@ describe("CDM collateral contracts", async () => {
           assert.deepEqual((await tri.read.freeOf([id])).map((h: any) => h.amount), [0n, 1895n]);
           // An uncovered or unchanged revaluation moves nothing and records its hash.
           await tri.write.revalue([repo, H("same"), [tUST.address, tAGY.address], [3000n, 2105n]], { account: agent.account });
-          const rs = await tri.read.revaluationsOf([repo]);
-          assert.deepEqual(rs.map((r: any) => r.revaluationHash), [H("up"), H("down"), H("same")]);
+          const rs = await tri.read.changesOf([repo]);
+          assert.deepEqual(rs.map((r: any) => r.hash), [H("up"), H("down"), H("same")]);
+          assert.deepEqual(rs.map((r: any) => r.kind), [1, 1, 1]);
           assert.ok(rs[0].blockNumber > 0n && rs[1].blockNumber > rs[0].blockNumber);
           // The tokens stay with the contract throughout; only the accounts change.
           assert.equal(await tAGY.read.balanceOf([tri.address]), 4000n);
@@ -2125,6 +2126,32 @@ describe("CDM collateral contracts", async () => {
           // A release of a whole asset drops it from the holding.
           await tri.write.revalue([s, H("r"), [tUST.address], [3000n]], { account: agent.account });
           assert.deepEqual(await holding(s), [[getAddress(tUST.address)], [3000n]]);
+        });
+
+        it("substitutes the giver's pending request, or declines it, and keeps both in the repo's history (task-triparty-substitution)", async () => {
+          const repo = await settled();
+          await tri.write.deposit([id, tUST.address, 1500n, 1n], { account: bankB.account });
+          await assert.rejects(tri.write.substitute([repo, H("sub"), [tUST.address, tAGY.address], [3998n, 1190n]], { account: agent.account })); // nothing pending
+          await assert.rejects(tri.write.requestSubstitution([repo, H("req")], { account: bankA.account })); // only the giver or the agent
+          await tri.write.requestSubstitution([repo, H("req")], { account: bankB.account });
+          assert.equal((await tri.read.pendingSubstitutionOf([repo])).requestHash, H("req"));
+          await assert.rejects(tri.write.requestSubstitution([repo, H("req2")], { account: bankB.account })); // one pending
+          await assert.rejects(tri.write.substitute([repo, H("sub"), [tUST.address, tAGY.address], [3998n, 1190n]], { account: bankB.account })); // only the agent
+          await tri.write.substitute([repo, H("sub"), [tUST.address, tAGY.address], [3998n, 1190n]], { account: agent.account });
+          assert.deepEqual(await holding(repo), [[getAddress(tUST.address), getAddress(tAGY.address)], [3998n, 1190n]]);
+          assert.deepEqual((await tri.read.freeOf([id])).map((h: any) => h.amount), [502n, 2810n]);
+          assert.equal((await tri.read.pendingSubstitutionOf([repo])).requestHash, zeroHash);
+          // A second request the agent declines: nothing moves.
+          await tri.write.requestSubstitution([repo, H("req2")], { account: bankB.account });
+          await tri.write.declineSubstitution([repo, H("declined")], { account: agent.account });
+          assert.deepEqual(await holding(repo), [[getAddress(tUST.address), getAddress(tAGY.address)], [3998n, 1190n]]);
+          // The agent can request one itself; the requester can withdraw a pending request.
+          await tri.write.requestSubstitution([repo, H("excess")], { account: agent.account });
+          await assert.rejects(tri.write.withdrawSubstitution([repo], { account: bankB.account }));
+          await tri.write.withdrawSubstitution([repo], { account: agent.account });
+          await assert.rejects(tri.write.declineSubstitution([repo, H("x")], { account: agent.account })); // nothing pending
+          const cs = await tri.read.changesOf([repo]);
+          assert.deepEqual(cs.map((c: any) => [c.hash, c.kind]), [[H("sub"), 2], [H("declined"), 3]]);
         });
       });
     });

@@ -207,6 +207,32 @@ export interface LiveTripartyRevaluation {
   problem: string | null;
 }
 
+/** The agent's substitution of a request (cdm-ext TripartySubstitution, wp-adr-triparty-substitution). */
+export interface LiveTripartySubstitutionDoc {
+  substitutionDate: string;
+  outcome: "Substituted" | "Declined";
+  isin: string;
+  token?: string;
+  units: number;
+  requiredValue: string;
+  valueBefore: string;
+  valueAfter: string;
+  movements: { isin: string; token?: string; units: number; direction: "TopUp" | "Release" }[];
+  heldBefore: LiveTripartyValued[];
+  heldAfter: LiveTripartyValued[];
+  breaches: { isin: string; token?: string; limit: string; percentage: string }[];
+  /** CDM's proposed and accepted workflow steps, when substituted. */
+  workflowSteps: number;
+}
+
+export interface LiveTripartySubstitution {
+  substitutionHash: string;
+  block: string;
+  substitution?: LiveTripartySubstitutionDoc;
+  verified: boolean;
+  problem: string | null;
+}
+
 /** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start). */
 export interface LiveTripartyRepo {
   repoId: string;
@@ -232,6 +258,12 @@ export interface LiveTripartyRepo {
   /** Revaluation (wp-adr-triparty-revaluation): on a settled repo, oldest first; the agent revalues. */
   revaluations?: LiveTripartyRevaluation[];
   canRevalue?: boolean;
+  /** Substitution (wp-adr-triparty-substitution): oldest first; the request awaiting the agent; the agent's own requests. */
+  substitutions?: LiveTripartySubstitution[];
+  pendingSubstitution?: { requestHash: string; token?: string; units?: number; requestedBy?: "Giver" | "Agent"; mine: boolean };
+  canRequestSubstitution?: boolean;
+  canSubstitute?: boolean;
+  excess?: { token: string; units: number }[];
 }
 
 export interface LiveTriparty {
@@ -273,6 +305,16 @@ export const tripartyApi = {
   settleTripartyPurchase: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/settle`, {}),
   cancelTripartyRepo: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/cancel`, {}),
   /** The agent: revalue a settled repo at its business date; tops up, releases, or records it unchanged or uncovered. */
+  /** The giver: recall units of an asset of a settled repo. */
+  requestTripartySubstitution: (p: TripartyParty, repoId: string, token: string, units: number) =>
+    req<{ requestHash: string }>(p, "POST", `/triparty/repos/${repoId}/substitution`, { token, units }),
+  withdrawTripartySubstitution: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/substitution/withdraw`, {}),
+  /** The agent: substitute the pending request, or decline it. */
+  substituteTripartyRepo: (p: TripartyParty, repoId: string) =>
+    req<{ outcome: string; substitutionHash: string; substitution: LiveTripartySubstitutionDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/substitute`, {}),
+  /** The agent: ask back and substitute the units of an asset over its limit. */
+  rebalanceTripartyRepo: (p: TripartyParty, repoId: string, token: string) =>
+    req<{ outcome: string; substitutionHash: string; substitution: LiveTripartySubstitutionDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/rebalance`, { token }),
   revalueTripartyRepo: (p: TripartyParty, repoId: string) =>
     req<{ outcome: string; revaluationHash: string; revaluation: LiveTripartyRevaluationDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/revalue`, {}),
 };
