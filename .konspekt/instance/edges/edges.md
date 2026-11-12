@@ -301,7 +301,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeroll | decomposes | node:goal-cdm-development | node:task-sme-repo-roll-rules |  | accepted |
 | e-lnk-roll-smeroll | links | node:task-repo-roll | node:task-sme-repo-roll-rules |  | accepted |
 | e-dec-e2eflow-livespecweb | decomposes | node:goal-end-to-end-flow | node:investigation-live-spec-in-claude-web |  | accepted |
-| e-dec-adoption-presentation | decomposes | node:goal-adoption | node:task-presentation |  | proposed |
+| e-dec-adoption-presentation | decomposes | node:goal-adoption | node:task-presentation |  | accepted |
 | e-note-workflowtaskmap-defermapping | notes | node:investigation-cdm-workflow-task-map | noteworthy:nw-defer-message-standard-mapping |  | accepted |
 | e-note-businesscase-defermapping | notes | node:goal-business-case | noteworthy:nw-defer-message-standard-mapping |  | accepted |
 | e-mrk-pofadr-pairoff | marks | waypoint:wp-adr-repo-pair-off | node:task-repo-pair-off |  | accepted |
@@ -395,8 +395,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-tpstartadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-trade-start |  | accepted |
 | e-dec-cdmdev-smetpstart | decomposes | node:goal-cdm-development | node:task-sme-triparty-trade-start |  | accepted |
 | e-lnk-tpstart-smetpstart | links | node:task-triparty-trade-start | node:task-sme-triparty-trade-start |  | accepted |
-| e-mrk-tprevaladr-tpreval | marks | waypoint:wp-adr-triparty-revaluation | node:task-triparty-revaluation |  | proposed |
-| e-drv-cdmdata-tprevaladr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-revaluation |  | proposed |
-| e-drv-finality-tprevaladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-revaluation |  | proposed |
-| e-dec-cdmdev-smetpreval | decomposes | node:goal-cdm-development | node:task-sme-triparty-revaluation |  | proposed |
-| e-lnk-tpreval-smetpreval | links | node:task-triparty-revaluation | node:task-sme-triparty-revaluation |  | proposed |
+| e-mrk-tprevaladr-tpreval | marks | waypoint:wp-adr-triparty-revaluation | node:task-triparty-revaluation |  | accepted |
+| e-drv-cdmdata-tprevaladr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-revaluation |  | accepted |
+| e-drv-finality-tprevaladr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-revaluation |  | accepted |
+| e-dec-cdmdev-smetpreval | decomposes | node:goal-cdm-development | node:task-sme-triparty-revaluation |  | accepted |
+| e-lnk-tpreval-smetpreval | links | node:task-triparty-revaluation | node:task-sme-triparty-revaluation |  | accepted |
