@@ -392,6 +392,10 @@ route("POST", "/ledger/v1/triparty/repos/:id/substitution/withdraw", async (p) =
 route("POST", "/ledger/v1/triparty/repos/:id/substitute", async (p, b) =>
   J(await adapter.substituteTriparty(p.id as Hex, b.substitutionHash as Hex, (b.tokens as string[]).map((t) => getAddress(t)),
     (b.amounts as (string | number)[]).map((a) => BigInt(a)))));
+// Triparty reporting (wp-adr-triparty-reporting): the agent records a report; the parties read the terms at a block.
+route("POST", "/ledger/v1/triparty/terms/:id/report", async (p, b) => J(await adapter.recordTripartyReport(p.id as Hex, b.reportHash as Hex)));
+route("GET", "/ledger/v1/triparty/terms/:id/reports", async (p) => J(await adapter.tripartyReports(p.id as Hex)));
+route("GET", "/ledger/v1/triparty/terms/:id/at", async (p, _b, url) => J(await adapter.tripartyTermsAt(p.id as Hex, BigInt(url.searchParams.get("block")!))));
 // Triparty trade end (wp-adr-triparty-trade-end): the agent prepares on the Repurchase Date; the giver settles.
 route("GET", "/ledger/v1/triparty/repos/:id/trade-end", async (p) => J({ tradeEnd: await adapter.tripartyTradeEnd(p.id as Hex) }));
 route("POST", "/ledger/v1/triparty/repos/:id/trade-end", async (p, b) =>

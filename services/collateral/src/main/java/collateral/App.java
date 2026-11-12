@@ -402,6 +402,7 @@ public final class App {
         app.post("/api/v1/triparty/repos/{id}/substitute", this::substituteTripartyRepo);
         app.post("/api/v1/triparty/repos/{id}/rebalance", this::rebalanceTripartyRepo);
         app.post("/api/v1/triparty/repos/{id}/trade-end", this::prepareTripartyTradeEnd);
+        app.post("/api/v1/triparty/terms/{id}/report", this::sendTripartyReport);
         app.post("/api/v1/triparty/repos/{id}/repurchase", this::settleTripartyRepurchase);
     }
 
@@ -493,6 +494,8 @@ public final class App {
             if (effective) {
                 m.put("free", tripartyFreeView(t.get("termsId").asText()));
                 m.put("repos", tripartyRepos(t, problem.isEmpty()));
+                tripartyReportView(m, t, agent);
+                m.put("canSendReport", agent && problem.isEmpty());
             }
             terms.add(m);
         }
@@ -1134,6 +1137,104 @@ public final class App {
             onDate = false;
         }
         m.put("canPrepareTradeEnd", agent && state.equals("settled") && !prepared && !pending && onDate);
+    }
+
+    // --- triparty reporting (task-triparty-reporting, wp-adr-triparty-reporting) ---
+
+    /** The settled repos of the terms as a report reads them: from each repo's state and holding (now, or at a block),
+     *  its basis document as of that block, and the feed prices. */
+    private List<CdmTriparty.ReportedRepo> reportedRepos(JsonNode repos, Map<String, BigInteger> prices, JsonNode free, long beforeBlock) {
+        List<CdmTriparty.ReportedRepo> out = new ArrayList<>();
+        for (JsonNode at : repos) {
+            if (!at.get("state").asText().equals("settled")) continue;
+            String repoId = at.get("repoId").asText();
+            JsonNode r = tripartyRepoOnChain(repoId);
+            JsonNode changes = tripartyChanges(repoId);
+            int index = 0;
+            while (index < changes.size() && Long.parseLong(changes.get(index).get("block").asText()) < beforeBlock) index++;
+            RevaluationBasis basis = tripartyBasis(r, changes, index);
+            String reqDoc = payloads.get(r.get("requestHash").asText());
+            if (reqDoc == null) throw new IllegalStateException("the repo request is not in the payload store");
+            out.add(new CdmTriparty.ReportedRepo(repoId, CdmTriparty.parseRequest(reqDoc).getTradeId(), basis.trade(),
+                    revaluationInputs(at.get("allocation"), free, prices).held()));
+        }
+        return out;
+    }
+
+    /** The agent reports the settled repos and the giver's free collateral under the terms on its business date. */
+    private void sendTripartyReport(Context ctx) {
+        String termsId = ctx.pathParam("id");
+        JsonNode t = tripartyOnChain(termsId);
+        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent reports");
+        if (!t.get("state").asText().equals("effective")) throw new IllegalStateException("the triparty terms are not in effect");
+        Map<String, BigInteger> prices = new HashMap<>();
+        feedPrices().forEach((k, v) -> prices.put(k.toLowerCase(), v));
+        JsonNode free = gw.get("/triparty/terms/" + termsId + "/free");
+        JsonNode repos = gw.get("/triparty/terms/" + termsId + "/repos");
+        CdmTriparty.Report rep = CdmTriparty.report(tripartyTermsDoc(t), t.get("termsHash").asText(), businessDate,
+                reportedRepos(repos, prices, free, Long.MAX_VALUE), revaluationInputs(CdmRuntime.JSON.createArrayNode(), free, prices).free(),
+                bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()));
+        payloads.put(rep.hash(), rep.json(), tripartyParties());
+        JsonNode tx = gw.post("/triparty/terms/" + termsId + "/report", Map.of("reportHash", rep.hash()));
+        reportChecked.add(rep.hash());
+        signalConsoles("triparty");
+        ctx.json(Map.of("reportHash", rep.hash(), "txHash", tx.get("txHash").asText()));
+    }
+
+    private final Set<String> reportChecked = ConcurrentHashMap.newKeySet();
+
+    /** The giver's or the receiver's check of a report: rebuilt from the terms as the chain held them at the block before
+     *  it and the repo documents in this party's payload store, on the report's date. */
+    private Optional<String> tripartyReportProblem(JsonNode t, String hash, long block) {
+        if (reportChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the report is not in the payload store or its hash differs");
+            var stated = CdmTriparty.parseReport(doc);
+            String termsId = t.get("termsId").asText();
+            JsonNode at = gw.get("/triparty/terms/" + termsId + "/at?block=" + (block - 1));
+            Map<String, BigInteger> prices = new HashMap<>();
+            for (JsonNode p : at.get("prices")) if (!p.get("price").isNull()) prices.put(p.get("token").asText().toLowerCase(), new BigInteger(p.get("price").asText()));
+            CdmTriparty.verifyReport(doc, tripartyTermsDoc(t), t.get("termsHash").asText(), stated.getReportDate().toLocalDate(),
+                    reportedRepos(at.get("repos"), prices, at.get("free"), block), revaluationInputs(CdmRuntime.JSON.createArrayNode(), at.get("free"), prices).free(),
+                    bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()));
+            reportChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** The terms' latest report with this party's check. */
+    private void tripartyReportView(Map<String, Object> m, JsonNode t, boolean agent) {
+        JsonNode reports = gw.get("/triparty/terms/" + t.get("termsId").asText() + "/reports");
+        if (reports.size() == 0) return;
+        JsonNode last = reports.get(reports.size() - 1);
+        String hash = last.get("reportHash").asText();
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("reportHash", hash);
+        v.put("block", last.get("block").asText());
+        v.put("count", reports.size());
+        String doc = payloads.get(hash);
+        if (doc != null) {
+            try {
+                Map<String, Object> view = CdmTriparty.reportView(CdmTriparty.parseReport(doc));
+                @SuppressWarnings("unchecked") List<Map<String, Object>> rs = (List<Map<String, Object>>) view.get("repos");
+                for (Map<String, Object> r : rs) {
+                    @SuppressWarnings("unchecked") List<Map<String, Object>> hs = (List<Map<String, Object>>) r.get("held");
+                    for (Map<String, Object> h : hs) h.put("token", symbolOfIsin(String.valueOf(h.get("isin"))));
+                }
+                @SuppressWarnings("unchecked") List<Map<String, Object>> fs = (List<Map<String, Object>>) view.get("free");
+                for (Map<String, Object> f : fs) f.put("token", symbolOfIsin(String.valueOf(f.get("isin"))));
+                v.put("report", view);
+            } catch (Exception ignored) {
+                // shown without the document's fields
+            }
+        }
+        Optional<String> problem = agent ? Optional.empty() : tripartyReportProblem(t, hash, Long.parseLong(last.get("block").asText()));
+        v.put("verified", problem.isEmpty());
+        v.put("problem", problem.orElse(null));
+        m.put("report", v);
     }
 
     /** Holding-change documents that checked, by hash; a failed check is not kept, so it is retried. */

@@ -3,7 +3,7 @@ id: task-sme-triparty-trade-end
 type: task
 title: Confirm with a business SME the triparty trade end through the agent
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-trade-end
   sourceRef: baffa673bcccdc9dd2a5d617bd8963a25cdd4e41
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T12:42:00Z
   confidence: 0.6
 createdAt: 2026-11-12T12:42:00Z
-updatedAt: 2026-11-12T12:42:00Z
+updatedAt: 2026-11-12T13:49:00Z
 ```
 # Task: confirm the triparty trade end through the agent
 

@@ -209,3 +209,24 @@ it("lets the agent prepare the trade end and the giver settle the repurchase, an
   render(<TripartyTermsCard party="A" triparty={{ party: "A", bank: "BANK-A", agent: false, canPropose: true, terms: [terms({ ...base, state: "repurchased", tradeEnd })] }} busy={false} run={run} />);
   expect(screen.getByTestId("triparty-repo-state").textContent).toContain("repurchased on-chain ✓");
 });
+
+it("lets the agent send a report and shows the latest report with this party's check (task-triparty-reporting)", async () => {
+  const run = (fn: () => Promise<unknown>) => void fn();
+  const report = { reportHash: "0x" + "99".repeat(32), block: "40", count: 1, verified: true, problem: null, report: {
+    reportDate: "2026-11-12",
+    repos: [{ repoId: "0x" + "44".repeat(32), tradeId: "TP-B-1", exposure: "500000", valueAfterHaircuts: "500026.56", covered: true, breaches: 0,
+      held: [{ isin: "US912810TM60", token: "tUST", units: 3000, unitPrice: "98.4", valueAfterHaircuts: "289296" },
+        { isin: "US3137EAGY10", token: "tAGY", units: 2190, unitPrice: "99.2", valueAfterHaircuts: "210730.56" }] }],
+    free: [{ isin: "US3137EAGY10", token: "tAGY", units: 1810, valueAfterHaircuts: "174165.44" }] } };
+  const terms = { ...TERMS, state: "effective" as const, giver: "B" as const, receiver: "A" as const, agentAffirmed: true, canAffirm: false, canRefuse: false,
+    repos: [], report, canSendReport: true };
+  render(<TripartyTermsCard party="T" triparty={{ party: "T", bank: "BANK-T", agent: true, canPropose: false, terms: [terms] }} busy={false} run={run} />);
+  const row = screen.getByTestId(`triparty-report-repo-0x${"44".repeat(32)}`);
+  expect(row.textContent).toContain("500,026.56");
+  expect(row.textContent).toContain("3000 tUST, 2190 tAGY");
+  expect(row.textContent).toContain("covered");
+  expect(screen.getByTestId("triparty-report-free").textContent).toContain("1810 tAGY (174,165.44 after haircuts)");
+  expect(screen.getByTestId("triparty-report-verified").textContent).toContain("rebuilt from the chain ✓");
+  await userEvent.click(screen.getByText("Send report"));
+  await waitFor(() => expect(posts).toEqual([`/triparty/terms/${TERMS.termsId}/report`]));
+});

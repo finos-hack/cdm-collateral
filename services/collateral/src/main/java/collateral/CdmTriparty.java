@@ -41,6 +41,7 @@ import com.rosetta.model.lib.records.Date;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -622,6 +623,116 @@ final class CdmTriparty {
             rs.add(new LinkedHashMap<>(Map.of("isin", String.valueOf(isin), "units", r.getQuantity().getValue().longValueExact())));
         }
         m.put("releases", rs);
+        return m;
+    }
+
+    // --- reporting (task-triparty-reporting, wp-adr-triparty-reporting) ---
+
+    /** One settled repo as the report reads it: its ids, the repo as its last document left it, and its holding. */
+    record ReportedRepo(String repoId, String tradeId, TradeState basisTrade, List<Deposit> held) {}
+
+    /** The agent's report, its Rune JSON and hash. */
+    record Report(cdmx.collateral.triparty.TripartyReport report, String json, String hash) {}
+
+    private static TripartyValuedPosition valued(Deposit d, TripartyTerms terms) {
+        return CdmRuntime.fn(cdmx.collateral.triparty.functions.TripartyValued.class).evaluate(deposits(List.of(d)).get(0), BigDecimal.valueOf(d.units()), terms.getProfile());
+    }
+
+    /** The agent's report for one terms on a date (cdm-ext TripartyReport): each settled repo with its exposure, its
+     *  holding valued, its coverage and breaches and CDM's CollateralPortfolio of it, and the giver's free collateral in
+     *  eligible assets. */
+    static Report report(TripartyTerms terms, String termsHash, LocalDate date, List<ReportedRepo> repos, List<Deposit> free, String giver, String receiver) {
+        List<Object> repoReports = new ArrayList<>();
+        for (ReportedRepo rr : repos) {
+            TradeState trade = CdmRepo.resolved(TradeState.class, rr.basisTrade());
+            var exposure = CdmRuntime.fn(TripartyRequiredValue.class).evaluate(trade, Date.of(date));
+            List<TripartyValuedPosition> vs = new ArrayList<>();
+            BigDecimal after = BigDecimal.ZERO, before = BigDecimal.ZERO;
+            Map<String, BigDecimal> haircuts = new HashMap<>();
+            for (Deposit d : rr.held()) {
+                TripartyValuedPosition v = valued(d, terms);
+                vs.add(v);
+                after = after.add(v.getValueAfterHaircuts().getValue());
+                before = before.add(d.price().multiply(BigDecimal.valueOf(d.units())));
+                haircuts.put(d.isin(), v.getHaircutPercentage());
+            }
+            var tree = (com.fasterxml.jackson.databind.node.ObjectNode) CdmRuntime.JSON.valueToTree(trade).path("trade").path("product").path("economicTerms")
+                    .path("collateral").path("collateralPortfolio").path(0).deepCopy();
+            tree.set("portfolioIdentifier", CdmRuntime.JSON.valueToTree(identifiers(AGENT, rr.tradeId()).get(0)));
+            for (var pos : tree.path("collateralPosition")) {
+                String isin = pos.path("product").path("asset").path("identifier").path(0).path("identifier").path("@data").asText();
+                ((com.fasterxml.jackson.databind.node.ObjectNode) pos).put("collateralPositionStatus", "SettledAmount");
+                ((com.fasterxml.jackson.databind.node.ObjectNode) pos).set("treatment",
+                        CdmRuntime.JSON.valueToTree(o("valuationTreatment", o("haircutPercentage", haircuts.getOrDefault(isin, BigDecimal.ZERO)), "isIncluded", true)));
+            }
+            Map<String, Object> pr = o("payerPartyReference", CdmRepo.party(giver), "receiverPartyReference", CdmRepo.party(receiver));
+            tree.set("collateralBalance", CdmRuntime.JSON.valueToTree(l(
+                    o("collateralBalanceStatus", "SettledAmount", "haircutIndicator", "PostHaircut", "amountBaseCurrency", money(after), "payerReceiver", pr),
+                    o("collateralBalanceStatus", "SettledAmount", "haircutIndicator", "PreHaircut", "amountBaseCurrency", money(before), "payerReceiver", pr))));
+            repoReports.add(o("repoId", rr.repoId(), "tradeId", rr.tradeId(),
+                    "exposure", CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(exposure), Map.class),
+                    "valued", CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(vs), List.class),
+                    "valueAfterHaircuts", money(after),
+                    "covered", after.compareTo(exposure.getValue()) >= 0,
+                    "breaches", CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(
+                            CdmRuntime.fn(TripartyConcentrationBreaches.class).evaluate(terms.getProfile(), vs, exposure)), List.class),
+                    "portfolio", CdmRuntime.JSON.convertValue(tree, Map.class)));
+        }
+        List<Object> freeValued = new ArrayList<>();
+        List<Object> freePositions = new ArrayList<>();
+        for (Deposit d : free) {
+            if (!CdmRuntime.fn(cdmx.collateral.triparty.functions.ProfileEligible.class).evaluate(terms.getProfile(), d.isin())) continue;
+            freeValued.add(CdmRuntime.JSON.convertValue(CdmRuntime.JSON.valueToTree(valued(d, terms)), Map.class));
+            freePositions.add(position(d.isin(), d.units(), date, date));
+        }
+        Map<String, Object> doc = new LinkedHashMap<>(o("termsHash", termsHash, "reportDate", date.toString(), "repos", repoReports));
+        if (!freeValued.isEmpty()) {
+            doc.put("freeValued", freeValued);
+            doc.put("free", o("portfolioIdentifier", identifiers(AGENT, giver + "-free").get(0), "collateralPosition", freePositions));
+        }
+        var r = CdmRuntime.load(cdmx.collateral.triparty.TripartyReport.class, doc);
+        CdmRuntime.validate(r);
+        String json = CdmRuntime.toJson(r);
+        return new Report(r, json, Cdm.keccakHex(json));
+    }
+
+    static cdmx.collateral.triparty.TripartyReport parseReport(String json) {
+        try {
+            return CdmRuntime.JSON.readValue(json, cdmx.collateral.triparty.TripartyReport.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("not a TripartyReport document: " + e.getMessage(), e);
+        }
+    }
+
+    /** The giver's or the receiver's check of a report: the same document from the same inputs. */
+    static Report verifyReport(String json, TripartyTerms terms, String termsHash, LocalDate date, List<ReportedRepo> repos, List<Deposit> free, String giver, String receiver) {
+        Report again = report(terms, termsHash, date, repos, free, giver, receiver);
+        if (!again.json().equals(json)) throw new IllegalStateException("the report differs from the report this party computes");
+        return again;
+    }
+
+    /** The report for the console: per repo the exposure, value, coverage and holding; the free collateral. */
+    static Map<String, Object> reportView(cdmx.collateral.triparty.TripartyReport r) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("reportDate", r.getReportDate().toString());
+        List<Map<String, Object>> repos = new ArrayList<>();
+        if (r.getRepos() != null) for (var x : r.getRepos()) {
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put("repoId", x.getRepoId());
+            e.put("tradeId", x.getTradeId());
+            e.put("exposure", plain(x.getExposure().getValue()));
+            e.put("valueAfterHaircuts", plain(x.getValueAfterHaircuts().getValue()));
+            e.put("covered", x.getCovered());
+            e.put("held", positionsView(x.getValued(), x.getExposure().getValue()));
+            e.put("breaches", x.getBreaches() == null ? 0 : x.getBreaches().size());
+            repos.add(e);
+        }
+        m.put("repos", repos);
+        List<Map<String, Object>> free = new ArrayList<>();
+        if (r.getFreeValued() != null) for (var v : r.getFreeValued()) {
+            free.add(new LinkedHashMap<>(Map.of("isin", v.getIsin(), "units", v.getUnits().longValueExact(), "valueAfterHaircuts", plain(v.getValueAfterHaircuts().getValue()))));
+        }
+        m.put("free", free);
         return m;
     }
 

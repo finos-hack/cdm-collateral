@@ -405,8 +405,12 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-finality-tpsubadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-substitution |  | accepted |
 | e-dec-cdmdev-smetpsub | decomposes | node:goal-cdm-development | node:task-sme-triparty-substitution |  | accepted |
 | e-lnk-tpsub-smetpsub | links | node:task-triparty-substitution | node:task-sme-triparty-substitution |  | accepted |
-| e-mrk-tpendadr-tpend | marks | waypoint:wp-adr-triparty-trade-end | node:task-triparty-trade-end |  | proposed |
-| e-drv-cdmdata-tpendadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-trade-end |  | proposed |
-| e-drv-finality-tpendadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-trade-end |  | proposed |
-| e-dec-cdmdev-smetpend | decomposes | node:goal-cdm-development | node:task-sme-triparty-trade-end |  | proposed |
-| e-lnk-tpend-smetpend | links | node:task-triparty-trade-end | node:task-sme-triparty-trade-end |  | proposed |
+| e-mrk-tpendadr-tpend | marks | waypoint:wp-adr-triparty-trade-end | node:task-triparty-trade-end |  | accepted |
+| e-drv-cdmdata-tpendadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-trade-end |  | accepted |
+| e-drv-finality-tpendadr | drives | concept:concept-asr-settlement-finality | waypoint:wp-adr-triparty-trade-end |  | accepted |
+| e-dec-cdmdev-smetpend | decomposes | node:goal-cdm-development | node:task-sme-triparty-trade-end |  | accepted |
+| e-lnk-tpend-smetpend | links | node:task-triparty-trade-end | node:task-sme-triparty-trade-end |  | accepted |
+| e-mrk-tprepadr-tprep | marks | waypoint:wp-adr-triparty-reporting | node:task-triparty-reporting |  | proposed |
+| e-drv-cdmdata-tprepadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-triparty-reporting |  | proposed |
+| e-dec-cdmdev-smetprep | decomposes | node:goal-cdm-development | node:task-sme-triparty-reporting |  | proposed |
+| e-lnk-tprep-smetprep | links | node:task-triparty-reporting | node:task-sme-triparty-reporting |  | proposed |

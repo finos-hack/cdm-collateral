@@ -470,6 +470,8 @@ const tripartyAbi = parseAbi([
   "function substitute(bytes32 repoId, bytes32 substitutionHash, address[] tokens, uint256[] amounts)",
   "function declineSubstitution(bytes32 repoId, bytes32 substitutionHash)",
   "function prepareTradeEnd(bytes32 repoId, bytes32 tradeEndHash, uint256 repurchasePrice)",
+  "function recordReport(bytes32 termsId, bytes32 reportHash)",
+  "function reportsOf(bytes32 termsId) view returns ((bytes32 reportHash, uint64 blockNumber)[])",
   "function settleRepurchase(bytes32 repoId, bytes32 tradeEndHash)",
   "function tradeEndOf(bytes32 repoId) view returns ((bytes32 tradeEndHash, uint256 repurchasePrice, uint64 blockNumber))",
 ]);
@@ -730,6 +732,10 @@ export interface LedgerAdapter {
   prepareTripartyTradeEnd(repoId: Hex, tradeEndHash: Hex, repurchasePrice: bigint): Promise<{ txHash: Hex; block: bigint }>;
   settleTripartyRepurchase(repoId: Hex, tradeEndHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   tripartyTradeEnd(repoId: Hex): Promise<{ tradeEndHash: Hex; repurchasePrice: bigint; block: bigint } | null>;
+  /** Reporting (wp-adr-triparty-reporting): the agent records a report; the parties read the terms as they were at a block. */
+  recordTripartyReport(termsId: Hex, reportHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  tripartyReports(termsId: Hex): Promise<{ reportHash: Hex; block: bigint }[]>;
+  tripartyTermsAt(termsId: Hex, block: bigint): Promise<{ repos: { repoId: Hex; state: string; allocation: { token: Address; amount: bigint }[] }[]; free: TripartyHolding[]; prices: { token: Address; price: bigint | null }[] }>;
   cancelTripartyRepo(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo>;
   listTripartyRepos(termsId: Hex): Promise<OnChainTripartyRepo[]>;
@@ -1419,6 +1425,37 @@ export class BesuAdapter implements LedgerAdapter {
     if (!e) throw new Error("no trade end prepared");
     await this.approve(r.cash, this.tripartyContract(), e.repurchasePrice);
     return this.send(this.tripartyContract(), tripartyAbi, "settleRepurchase", [repoId, tradeEndHash]);
+  }
+
+  recordTripartyReport(termsId: Hex, reportHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "recordReport", [termsId, reportHash]);
+  }
+
+  async tripartyReports(termsId: Hex) {
+    const rs = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "reportsOf", args: [termsId] })) as readonly { reportHash: Hex; blockNumber: bigint }[];
+    return rs.map((r) => ({ reportHash: r.reportHash, block: r.blockNumber }));
+  }
+
+  /** The terms as a report's check reads them: each repo's state and holding, the free account and the feed prices of
+   *  all those tokens, at the end of the block. */
+  async tripartyTermsAt(termsId: Hex, block: bigint) {
+    const tri = this.tripartyContract();
+    const feed = this.reg.contracts.oracleFeed;
+    const ids = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "reposOf", args: [termsId], blockNumber: block })) as readonly Hex[];
+    const repos = [];
+    for (const repoId of ids) {
+      const r = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "getRepo", args: [repoId], blockNumber: block })) as { state: number };
+      const [tokens, amounts] = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "allocationOf", args: [repoId], blockNumber: block })) as readonly [readonly Address[], readonly bigint[]];
+      repos.push({ repoId, state: TripartyRepoStateName[r.state] ?? String(r.state), allocation: tokens.map((token, i) => ({ token: getAddress(token), amount: amounts[i] })) });
+    }
+    const free = [...((await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "freeOf", args: [termsId], blockNumber: block })) as readonly TripartyHolding[])];
+    const prices = [];
+    for (const token of new Set([...repos.flatMap((r) => r.allocation.map((a) => a.token)), ...free.map((h) => getAddress(h.token))])) {
+      const has = (await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "hasPrice", args: [token], blockNumber: block })) as boolean;
+      const price = has ? ((await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "price", args: [token], blockNumber: block })) as bigint) : null;
+      prices.push({ token, price });
+    }
+    return { repos, free, prices };
   }
 
   async tripartyTradeEnd(repoId: Hex) {

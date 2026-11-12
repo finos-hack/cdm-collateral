@@ -168,6 +168,21 @@ export interface LiveTripartyTerms {
   free?: { token: string; amount: number; rank: number }[];
   /** The repos under the terms, newest first, present while the terms are in effect. */
   repos?: LiveTripartyRepo[];
+  /** Reporting (wp-adr-triparty-reporting): the agent's latest report with this party's check; the agent sends one. */
+  report?: {
+    reportHash: string;
+    block: string;
+    count: number;
+    report?: {
+      reportDate: string;
+      repos: { repoId: string; tradeId: string; exposure: string; valueAfterHaircuts: string; covered: boolean; breaches: number;
+        held: { isin: string; token?: string; units: number; unitPrice: string; valueAfterHaircuts: string }[] }[];
+      free: { isin: string; token?: string; units: number; valueAfterHaircuts: string }[];
+    };
+    verified: boolean;
+    problem: string | null;
+  };
+  canSendReport?: boolean;
 }
 
 /** The agent's allocation of the giver's deposit to a repo (cdm-ext TripartyAllocation). */
@@ -326,6 +341,8 @@ export const tripartyApi = {
   /** The agent: ask back and substitute the units of an asset over its limit. */
   rebalanceTripartyRepo: (p: TripartyParty, repoId: string, token: string) =>
     req<{ outcome: string; substitutionHash: string; substitution: LiveTripartySubstitutionDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/rebalance`, { token }),
+  /** The agent: report the settled repos and the giver's free collateral under the terms. */
+  sendTripartyReport: (p: TripartyParty, termsId: string) => req<{ reportHash: string; txHash: string }>(p, "POST", `/triparty/terms/${termsId}/report`, {}),
   /** The agent: prepare the trade end on the Repurchase Date. */
   prepareTripartyTradeEnd: (p: TripartyParty, repoId: string) =>
     req<{ tradeEndHash: string; repurchasePrice: number; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/trade-end`, {}),

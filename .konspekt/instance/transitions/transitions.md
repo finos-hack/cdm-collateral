@@ -1357,3 +1357,53 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
 | edge:e-dec-cdmdev-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
 | edge:e-lnk-tpstart-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
+| waypoint:wp-adr-triparty-revaluation | review |  | accepted | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 | denisurusov |
+| node:task-sme-triparty-revaluation | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| node:task-sme-triparty-revaluation | status |  | open | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| edge:e-mrk-tprevaladr-tpreval | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| edge:e-drv-cdmdata-tprevaladr | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| edge:e-drv-finality-tprevaladr | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| edge:e-dec-cdmdev-smetpreval | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| edge:e-lnk-tpreval-smetpreval | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
+| node:task-sme-triparty-revaluation | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| edge:e-mrk-tprevaladr-tpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| edge:e-drv-cdmdata-tprevaladr | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| edge:e-drv-finality-tprevaladr | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| edge:e-dec-cdmdev-smetpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| edge:e-lnk-tpreval-smetpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| edge:e-dec-adoption-presentation | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
+| waypoint:wp-adr-triparty-substitution | review |  | accepted | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 | denisurusov |
+| node:task-sme-triparty-substitution | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| node:task-sme-triparty-substitution | status |  | open | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| edge:e-mrk-tpsubadr-tpsub | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| edge:e-drv-cdmdata-tpsubadr | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| edge:e-drv-finality-tpsubadr | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| edge:e-dec-cdmdev-smetpsub | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| edge:e-lnk-tpsub-smetpsub | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
+| edge:e-mrk-tpsubadr-tpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
+| edge:e-drv-cdmdata-tpsubadr | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
+| edge:e-drv-finality-tpsubadr | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
+| edge:e-dec-cdmdev-smetpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
+| edge:e-lnk-tpsub-smetpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
+| node:task-sme-triparty-substitution | review | proposed | accepted | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 | denisurusov |
+| waypoint:wp-adr-triparty-trade-end | review |  | accepted | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 | denisurusov |
+| node:task-sme-triparty-trade-end | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| node:task-sme-triparty-trade-end | status |  | open | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| edge:e-mrk-tpendadr-tpend | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| edge:e-drv-cdmdata-tpendadr | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| edge:e-drv-finality-tpendadr | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| edge:e-dec-cdmdev-smetpend | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| edge:e-lnk-tpend-smetpend | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
+| node:task-sme-triparty-trade-end | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
+| edge:e-mrk-tpendadr-tpend | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
+| edge:e-drv-cdmdata-tpendadr | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
+| edge:e-drv-finality-tpendadr | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
+| edge:e-dec-cdmdev-smetpend | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
+| edge:e-lnk-tpend-smetpend | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
+| waypoint:wp-adr-triparty-reporting | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| node:task-sme-triparty-reporting | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| node:task-sme-triparty-reporting | status |  | open | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| edge:e-mrk-tprepadr-tprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| edge:e-drv-cdmdata-tprepadr | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| edge:e-dec-cdmdev-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
+| edge:e-lnk-tprep-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |

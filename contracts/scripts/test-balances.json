@@ -1,4 +1,4 @@
 {
   "bank-a": { "tUST": 400000, "tMMF": 20000000, "tUSD": 15000000 },
-  "bank-b": { "tUST": 15000, "tMMF": 0, "tUSD": 7000000, "tAGY": 12000 }
+  "bank-b": { "tUST": 20000, "tMMF": 0, "tUSD": 7000000, "tAGY": 16000 }
 }

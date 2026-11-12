@@ -65,6 +65,7 @@ function TermsRow(props: { party: TripartyParty; t: LiveTripartyTerms; busy: boo
         {t.canAffirm && <button disabled={busy} onClick={() => run(() => tripartyApi.affirmTripartyTerms(party, t.termsId))}>Affirm triparty terms</button>}
         {t.canRefuse && <button disabled={busy} onClick={() => run(() => tripartyApi.refuseTripartyTerms(party, t.termsId))}>{party === t.giver ? "Withdraw triparty terms" : "Refuse triparty terms"}</button>}
         {t.canTerminate && <button disabled={busy} onClick={() => run(() => tripartyApi.terminateTripartyTerms(party, t.termsId))}>Terminate triparty terms</button>}
+        {t.canSendReport && <button disabled={busy} onClick={() => run(() => tripartyApi.sendTripartyReport(party, t.termsId))}>Send report</button>}
       </div>
       {t.state === "effective" && <TradeStart party={party} t={t} busy={busy} run={run} />}
     </div>
@@ -164,6 +165,42 @@ function RecallForm(props: { party: TripartyParty; r: LiveTripartyRepo; busy: bo
       <input data-testid="triparty-recall-units" value={units} onChange={(e) => setUnits(e.target.value)} size={6} />
       <button disabled={busy} onClick={() => run(() => tripartyApi.requestTripartySubstitution(party, r.repoId, token, Number(units)))}>Request substitution</button>
     </span>
+  );
+}
+
+/** The agent's latest report for the terms (wp-adr-triparty-reporting). */
+function Report(props: { r: NonNullable<LiveTripartyTerms["report"]> }) {
+  const { r } = props;
+  const v = r.report;
+  return (
+    <div className="card" data-testid="triparty-report">
+      <div className="row">
+        <span>Agent's report {v?.reportDate ?? ""} (report {r.count})</span>
+        <span data-testid="triparty-report-verified">
+          {r.verified ? <span className="ok">rebuilt from the chain ✓</span> : <span className="bad">{r.problem ?? "report does not check"}</span>}
+        </span>
+      </div>
+      {v && (
+        <table className="tbl">
+          <thead><tr><th>Repo</th><th>Exposure</th><th>Value after haircuts</th><th>Held</th><th></th></tr></thead>
+          <tbody>
+            {v.repos.map((x) => (
+              <tr key={x.repoId} data-testid={`triparty-report-repo-${x.repoId}`}>
+                <td>{x.tradeId}</td><td>{usd(x.exposure)}</td><td>{usd(x.valueAfterHaircuts)}</td>
+                <td>{x.held.map((h) => `${h.units} ${h.token ?? h.isin}`).join(", ")}</td>
+                <td>{x.covered ? <span className="ok">covered</span> : <span className="bad">short</span>}{x.breaches > 0 ? <span className="bad"> · over a limit</span> : null}</td>
+              </tr>
+            ))}
+            {v.repos.length === 0 && <tr><td colSpan={5} className="small">no settled repo</td></tr>}
+          </tbody>
+        </table>
+      )}
+      {v && v.free.length > 0 && (
+        <div className="small" data-testid="triparty-report-free">
+          Free at the agent: {v.free.map((f) => `${f.units} ${f.token ?? f.isin} (${usd(f.valueAfterHaircuts)} after haircuts)`).join(", ")}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -302,6 +339,7 @@ function TradeStart(props: { party: TripartyParty; t: LiveTripartyTerms; busy: b
           <button disabled={busy} onClick={() => run(() => tripartyApi.requestTripartyRepo(giver, t.termsId, Number(price), rate, Number(days)))}>Request triparty repo</button>
         </div>
       )}
+      {t.report && <Report r={t.report} />}
       {(t.repos ?? []).filter((r) => r.state !== "cancelled").map((r) => <RepoRow key={r.repoId} party={party} r={r} busy={busy} run={run} />)}
     </div>
   );

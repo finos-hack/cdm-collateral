@@ -426,6 +426,14 @@ services rebuild it from the chain at the block before (`rebuilt by this party �
 (500,486 tUSD)`: in one transaction the price moves from B to A and the 3,000 tUST and 2,190 tAGY return to B's free
 account; the repo shows `repurchased on-chain ✓` in every console. The spec then ends every other settled repo under
 the B-giver terms through the services, each at its own Repurchase Date, withdraws B's free collateral and terminates
+Triparty reporting (`flow-triparty-reporting`, which runs before trade end): with a settled trade-start repo, 1,810
+tAGY free and the agent's business date on the Purchase Date, the agent clicks `Send report` in the B-giver terms card
+in `#/live/T`: its service builds the cdm-ext `TripartyReport` (each settled repo under the terms with its exposure, its
+holding valued after haircuts and CDM's `CollateralPortfolio` of it, and B's free collateral) and records its hash on
+`TripartySettlement`. The card shows the repo at 500,026.56 after haircuts against 500,000, covered, and 1,810 tAGY
+free. A's and B's services rebuild the report from the chain at the block before (`rebuilt from the chain ✓`). The
+report's content is the assumption in `docs/analysis/sme-question-ledger.md` (TPP-1 to TPP-5).
+
 the terms. The trade-end rules are the assumptions in `docs/analysis/sme-question-ledger.md` (TPE-1 to TPE-6).
 
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
@@ -587,7 +595,7 @@ makes effective and leaves the second proposal refused). `flow-triparty-trade-st
 run, `flow-triparty-revaluation` and `flow-triparty-substitution` one each, until `flow-triparty-trade-end`
 ends every settled repo under the B-giver terms, returns B's collateral and terminates the terms; the next run's specs
 make new B-giver terms. The top-up before each run restores B's free balances
-(`contracts/scripts/test-balances.json`, 15,000 tUST and 12,000 tAGY for bank-b).
+(`contracts/scripts/test-balances.json`, 20,000 tUST and 16,000 tAGY for bank-b).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

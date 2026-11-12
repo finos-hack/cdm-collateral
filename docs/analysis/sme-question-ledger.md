@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 191 questions in 33 tasks, all open.
+Status of the ledger: 196 questions in 34 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -373,3 +373,13 @@ Status of the ledger: 191 questions in 33 tasks, all open.
 | TPE-4 | The released collateral returns to the giver's free account at the agent. Is released collateral kept at the agent for the next repo, or delivered back to the giver's custody? | open | |
 | TPE-5 | A pending substitution blocks the trade end. How do agents handle a recall that is pending at the Repurchase Date? | open | |
 | TPE-6 | The receiver does not confirm the trade end. Is the receiver's confirmation of the repayment needed before the agent releases? | open | |
+
+### `task-sme-triparty-reporting`: the triparty agent's report to both parties
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPP-1 | The agent reports all settled repos under one set of terms with the giver's free collateral in one report. Do agents report per repo, per terms, or per giver and receiver across their repos? | open | |
+| TPP-2 | The report states the exposure as the Repurchase Price accrued to the day. Is that the exposure agents report, or the value the parties gave them? | open | |
+| TPP-3 | The report states each asset's price, haircut and value after haircuts, and whether the repo is covered. Which fields do the giver and the receiver use to reconcile, and in which format (for example ISO 20022 colr messages)? | open | |
+| TPP-4 | The giver's free collateral is reported to both parties. Is the giver's unallocated inventory shown to the receiver? | open | |
+| TPP-5 | The agent reports on request in the prototype. How often and at which cut-offs do agents report? | open | |

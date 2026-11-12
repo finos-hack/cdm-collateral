@@ -2179,6 +2179,18 @@ describe("CDM collateral contracts", async () => {
           await tri.write.withdraw([id, tAGY.address, 4000n], { account: bankB.account });
           await tri.write.terminateTerms([id], { account: bankB.account });
         });
+
+        it("keeps the agent's reports for terms in effect, each with its block (task-triparty-reporting)", async () => {
+          await assert.rejects(tri.write.recordReport([id, H("report")], { account: bankB.account })); // only the agent
+          await assert.rejects(tri.write.recordReport([id, zeroHash], { account: agent.account }));
+          await tri.write.recordReport([id, H("report")], { account: agent.account });
+          await tri.write.recordReport([id, H("report2")], { account: agent.account });
+          const rs = await tri.read.reportsOf([id]);
+          assert.deepEqual(rs.map((r: any) => r.reportHash), [H("report"), H("report2")]);
+          assert.ok(rs[1].blockNumber > rs[0].blockNumber);
+          await tri.write.terminateTerms([id], { account: bankB.account });
+          await assert.rejects(tri.write.recordReport([id, H("report3")], { account: agent.account })); // not in effect
+        });
       });
     });
   });

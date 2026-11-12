@@ -35,6 +35,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// Trade end (task-triparty-trade-end, wp-adr-triparty-trade-end). On the Repurchase Date the agent records the hash of
 /// its cdm-ext TripartyTradeEnd and the Repurchase Price; the giver then pays it to the receiver and the whole holding
 /// returns to the giver's free account in one transaction, and the repo ends Repurchased.
+///
+/// Reporting (task-triparty-reporting, wp-adr-triparty-reporting). The agent records the hash of its cdm-ext
+/// TripartyReport for terms in effect; the giver and the receiver rebuild it from the chain at the block before.
 contract TripartySettlement {
     using SafeERC20 for IERC20;
 
@@ -152,6 +155,17 @@ contract TripartySettlement {
     }
 
     mapping(bytes32 => TradeEnd) private tradeEnds; // repo id => the prepared trade end
+
+    event ReportRecorded(bytes32 indexed termsId, bytes32 reportHash, uint256 index);
+
+    /// The agent's report to the giver and the receiver (wp-adr-triparty-reporting): the hash of its cdm-ext
+    /// TripartyReport and the block it was recorded in.
+    struct Report {
+        bytes32 reportHash;
+        uint64 blockNumber;
+    }
+
+    mapping(bytes32 => Report[]) private reports; // terms id => the agent's reports, oldest first
 
     function _trio(address giver, address receiver, address agent) private pure returns (bytes32) {
         return keccak256(abi.encode(giver, receiver, agent));
@@ -447,6 +461,21 @@ contract TripartySettlement {
     /// The agent's changes of a repo's holding, oldest first, each with its block and kind.
     function changesOf(bytes32 repoId) external view returns (Change[] memory) {
         return changes[repoId];
+    }
+
+    /// The agent records the hash of a report for terms in effect.
+    function recordReport(bytes32 termsId, bytes32 reportHash) external {
+        Terms storage t = terms[termsId];
+        require(t.state == TermsState.Effective, "TripartySettlement: not in effect");
+        require(msg.sender == t.agent, "TripartySettlement: only the agent reports");
+        require(reportHash != bytes32(0), "TripartySettlement: no report hash");
+        reports[termsId].push(Report(reportHash, uint64(block.number)));
+        emit ReportRecorded(termsId, reportHash, reports[termsId].length - 1);
+    }
+
+    /// The agent's reports for terms, oldest first.
+    function reportsOf(bytes32 termsId) external view returns (Report[] memory) {
+        return reports[termsId];
     }
 
     /// The prepared trade end of a repo, if any (a zero hash otherwise).
