@@ -27,10 +27,13 @@ import {
   type LiveAgreement,
   type LiveGmraTerms, type LiveGmslaMarking, type LiveLoanDefault, type LiveGmslaTerms, type LiveLoan, type LiveLoans, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
   type LiveParty,
+  type LiveTriparty,
+  tripartyApi,
   type LiveRevaluation,
   type LiveState,
   type LiveSubstitution,
 } from "../domain/liveApi";
+import { TripartyTermsCard } from "./TripartyConsole";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const usd = (s: string) => "USD " + Number(s).toLocaleString("en-US");
@@ -60,6 +63,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [gmslaMarking, setGmslaMarking] = useState<LiveGmslaMarking | null>(null);
   const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
   const [loanDefault, setLoanDefault] = useState<LiveLoanDefault | null>(null);
+  const [triparty, setTriparty] = useState<LiveTriparty | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -98,6 +102,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.gmslaMarking(party).then((m) => setGmslaMarking(m?.businessDate && Array.isArray(m?.loans) ? m : null)).catch(() => setGmslaMarking(null)),
         api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
         api.loanDefault(party).then((d) => setLoanDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setLoanDefault(null)),
+        tripartyApi.triparty(party).then((t) => setTriparty(Array.isArray(t?.terms) ? t : null)).catch(() => setTriparty(null)),
       );
       setState(await api.state(party));
       setError(null);
@@ -413,6 +418,7 @@ export function LiveConsole({ party }: { party: LiveParty }) {
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
+      {triparty && <TripartyTermsCard party={party} triparty={triparty} busy={busy} run={run} />}
       {repoDefault && <RepoDefaultCard party={party} other={other} d={repoDefault} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />

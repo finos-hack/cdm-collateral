@@ -1,15 +1,17 @@
 // Client for a participant's live collateral workflow service (/api/v1). In live mode the console drives the real
 // stack (service -> gateway -> Besu) instead of the in-browser engine mock. One service per party: A on 8001, B on
-// 8002 by default (override with VITE_SERVICE_A_URL / VITE_SERVICE_B_URL). This is the console-to-service connection
-// in architecture/prototype.architecture.json.
+// 8002 and the triparty agent T on 8003 by default (override with VITE_SERVICE_A_URL / VITE_SERVICE_B_URL /
+// VITE_SERVICE_T_URL). This is the console-to-service connection in architecture/prototype.architecture.json.
 export type LiveParty = "A" | "B";
+/** A party to triparty terms: A or B, or the triparty agent BANK-T (wp-adr-triparty-terms-profile). */
+export type TripartyParty = LiveParty | "T";
 
-const DEFAULT_URL: Record<LiveParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002" };
+const DEFAULT_URL: Record<TripartyParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002", T: "http://localhost:8003" };
 
 // Precedence: an explicit VITE_SERVICE_<P>_URL, then the same-origin proxy path when VITE_SERVICE_PROXY=1 (set in the
 // devcontainer; the dev/preview server forwards /svc/<P> to the service, vite.config.ts), then localhost.
-export function serviceUrl(party: LiveParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
-  const explicit = party === "A" ? env.VITE_SERVICE_A_URL : env.VITE_SERVICE_B_URL;
+export function serviceUrl(party: TripartyParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
+  const explicit = party === "A" ? env.VITE_SERVICE_A_URL : party === "B" ? env.VITE_SERVICE_B_URL : env.VITE_SERVICE_T_URL;
   if (explicit) return explicit;
   if (env.VITE_SERVICE_PROXY === "1") return `/svc/${party}`;
   return DEFAULT_URL[party];
@@ -72,7 +74,7 @@ export interface LiveState {
   defaults?: Partial<Record<LiveParty, boolean>>;
 }
 
-async function req<T>(party: LiveParty, method: string, path: string, body?: unknown): Promise<T> {
+async function req<T>(party: TripartyParty, method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(serviceUrl(party) + "/api/v1" + path, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -133,6 +135,55 @@ export interface LiveLedgerReconciliation {
   /** The pledgor's escrow by token: as the party's CDM records build it and as the control contract holds it. */
   escrow?: { record: string; recorded: Record<string, number>; ledger: Record<string, number> };
 }
+
+/** Triparty terms between a giver, a receiver and the agent BANK-T (wp-adr-triparty-terms-profile). */
+export interface LiveTripartyTerms {
+  termsId: string;
+  state: "proposed" | "effective" | "refused" | "terminated";
+  giver: TripartyParty;
+  receiver: TripartyParty;
+  agent: TripartyParty;
+  termsHash: string;
+  receiverAffirmed: boolean;
+  agentAffirmed: boolean;
+  /** The document checks against this party's own build (the receiver also checks the GMRA terms hash). */
+  verified: boolean;
+  problem: string | null;
+  terms?: {
+    giver: string;
+    receiver: string;
+    agent: string;
+    gmraTermsHash: string;
+    baseCurrency: string;
+    effectiveDate: string;
+    profile: { isin: string; token?: string; eligible: boolean; haircutBps: number | null; concentrationLimit: string | null }[];
+  };
+  canAffirm: boolean;
+  canRefuse: boolean;
+  canTerminate: boolean;
+}
+
+export interface LiveTriparty {
+  party: TripartyParty;
+  bank: string;
+  agent: boolean;
+  canPropose: boolean;
+  /** Newest first. */
+  terms: LiveTripartyTerms[];
+}
+
+/** The triparty calls, which the agent's console uses too. */
+export const tripartyApi = {
+  health: (p: TripartyParty) => req<{ party: string; role: string; address: string; ok: boolean }>(p, "GET", "/health"),
+  triparty: (p: TripartyParty) => req<LiveTriparty>(p, "GET", "/triparty"),
+  /** The giver (A or B): propose the baseline triparty terms with the counterparty and BANK-T. */
+  proposeTripartyTerms: (p: LiveParty) => req<{ termsId: string; termsHash: string; txHash: string }>(p, "POST", "/triparty/terms", {}),
+  /** The receiver or the agent: affirm proposed terms after checking them. */
+  affirmTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/affirm`, {}),
+  refuseTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/refuse`, {}),
+  /** The giver or the receiver: terminate terms in effect. */
+  terminateTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/terminate`, {}),
+};
 
 export const api = {
   context: (p: LiveParty) => req<LiveContext>(p, "GET", "/context"),

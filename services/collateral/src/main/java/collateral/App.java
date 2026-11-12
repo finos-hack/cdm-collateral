@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,6 +106,22 @@ public final class App {
         app.exception(Exception.class, (e, ctx) -> ctx.status(400).json(Map.of("error", String.valueOf(e.getMessage()))));
 
         app.get("/api/v1/health", ctx -> ctx.json(Map.of("party", cfg.partyId, "role", cfg.role, "address", cfg.myAddress, "ok", true)));
+        tripartyRoutes(app);
+        if (cfg.isAgent()) {
+            // The triparty agent BANK-T (wp-adr-triparty-terms-profile) runs only the triparty routes and the console
+            // event stream; the bilateral CSA, repo and lending workflows stay on A and B.
+            app.sse("/api/v1/events", client -> {
+                client.keepAlive();
+                client.sendComment("connected");
+                sseClients.add(client);
+                client.onClose(() -> sseClients.remove(client));
+            });
+            app.start(cfg.port);
+            startEventRelay();
+            System.out.printf("collateral service: triparty agent %s (%s) %s on http://localhost:%d/api/v1 -> gateway %s%n",
+                    cfg.bankName("T"), cfg.role, cfg.myAddress, cfg.port, cfg.gatewayUrl);
+            return;
+        }
         app.get("/api/v1/context", this::context);
         app.get("/api/v1/state", this::state);
         app.get("/api/v1/revaluation", this::revaluation);
@@ -228,7 +245,7 @@ public final class App {
                             String data = line.substring(5).trim();
                             // Record first (cheap), relay at once, and fold afterwards on the fold executor; a fold that
                             // changes what the console shows signals it again when done (task-live-read-latency).
-                            onLedgerEvent(data);
+                            if (!cfg.isAgent()) onLedgerEvent(data);
                             signalConsoles(data);
                         }
                     });
@@ -348,6 +365,146 @@ public final class App {
 
     private String counterparty() {
         return cfg.partyId.equals("B") ? "A" : "B";
+    }
+
+    // --- triparty terms (task-triparty-terms-profile, wp-adr-triparty-terms-profile) ---
+    // The giver (A or B) builds the cdm-ext TripartyTerms with the other party as the receiver and BANK-T as the agent,
+    // stores the document for the three parties and proposes its hash on TripartySettlement. The receiver and the agent
+    // each check the document against the terms they build themselves before affirming the hash; the receiver also
+    // checks the GMRA terms hash against its own GMRA terms in force. The terms take effect when both have affirmed.
+
+    /** Triparty documents that checked, by hash and this party's role; a failed check is not kept, so it is retried. */
+    private final Set<String> tripartyChecked = ConcurrentHashMap.newKeySet();
+
+    private void tripartyRoutes(Javalin app) {
+        app.get("/api/v1/triparty", this::triparty);
+        app.post("/api/v1/triparty/terms", this::proposeTripartyTerms);
+        app.post("/api/v1/triparty/terms/{id}/affirm", this::affirmTripartyTerms);
+        app.post("/api/v1/triparty/terms/{id}/refuse", ctx -> ctx.json(tripartyStep(ctx.pathParam("id"), "refuse")));
+        app.post("/api/v1/triparty/terms/{id}/terminate", ctx -> ctx.json(tripartyStep(ctx.pathParam("id"), "terminate")));
+    }
+
+    private List<String> tripartyParties() {
+        return List.of(cfg.partyAddress("A"), cfg.partyAddress("B"), cfg.partyAddress("T"));
+    }
+
+    /** The hash of the GMRA terms in force between A and B (cdm-ext GmraTerms), which the triparty terms name. */
+    private String gmraTermsHashInForce() {
+        return Cdm.keccakHex(CdmRuntime.toJson(gmraFold().terms().terms()));
+    }
+
+    private String bankOf(String address) {
+        return cfg.bankName(partyIdOf(address));
+    }
+
+    /** Check a proposed document against this party's own build; the receiver also checks the GMRA terms hash. */
+    private Optional<String> tripartyProblem(JsonNode t) {
+        String hash = t.get("termsHash").asText();
+        String role = t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress) ? "receiver" : "";
+        if (tripartyChecked.contains(hash + role)) return Optional.empty();
+        Optional<String> problem = checkTriparty(t, hash, role);
+        if (problem.isEmpty()) tripartyChecked.add(hash + role);
+        return problem;
+    }
+
+    private Optional<String> checkTriparty(JsonNode t, String hash, String role) {
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the terms are not in the payload store or their hash differs");
+            CdmTriparty.Terms v = CdmTriparty.verify(doc, bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()),
+                    bankOf(t.get("agent").asText()), cfg.isin("tUST"), cfg.isin("tAGY"));
+            if (!role.isEmpty() && !v.terms().getGmraTermsHash().equalsIgnoreCase(gmraTermsHashInForce()))
+                return Optional.of("the terms name GMRA terms other than those in force");
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    private JsonNode tripartyOnChain(String termsId) {
+        JsonNode t = gw.get("/triparty/terms/" + termsId);
+        if (t.get("state").asText().equals("none")) throw new IllegalArgumentException("no triparty terms " + termsId);
+        return t;
+    }
+
+    /** The triparty terms this party is named in, newest first, with the document checked and the steps open to it. */
+    private void triparty(Context ctx) {
+        JsonNode all = gw.getQuery("/triparty/terms", Map.of("party", cfg.myAddress));
+        List<Map<String, Object>> terms = new ArrayList<>();
+        boolean open = false;
+        for (int i = all.size() - 1; i >= 0; i--) {
+            JsonNode t = all.get(i);
+            String state = t.get("state").asText();
+            boolean giver = t.get("giver").asText().equalsIgnoreCase(cfg.myAddress);
+            boolean receiver = t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress);
+            boolean agent = t.get("agent").asText().equalsIgnoreCase(cfg.myAddress);
+            if (state.equals("proposed") || state.equals("effective")) open = true;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("termsId", t.get("termsId").asText());
+            m.put("state", state);
+            m.put("giver", partyIdOf(t.get("giver").asText()));
+            m.put("receiver", partyIdOf(t.get("receiver").asText()));
+            m.put("agent", partyIdOf(t.get("agent").asText()));
+            m.put("termsHash", t.get("termsHash").asText());
+            m.put("receiverAffirmed", t.get("receiverAffirmed").asBoolean());
+            m.put("agentAffirmed", t.get("agentAffirmed").asBoolean());
+            Optional<String> problem = tripartyProblem(t);
+            m.put("verified", problem.isEmpty());
+            m.put("problem", problem.orElse(null));
+            String doc = payloads.get(t.get("termsHash").asText());
+            if (doc != null) {
+                try {
+                    Map<String, Object> v = CdmTriparty.view(CdmTriparty.parse(doc));
+                    @SuppressWarnings("unchecked") List<Map<String, Object>> profile = (List<Map<String, Object>>) v.get("profile");
+                    for (Map<String, Object> e : profile) e.put("token", symbolOfIsin(String.valueOf(e.get("isin"))));
+                    m.put("terms", v);
+                } catch (Exception ignored) {
+                    // shown without the document's fields
+                }
+            }
+            boolean proposed = state.equals("proposed");
+            m.put("canAffirm", proposed && ((receiver && !t.get("receiverAffirmed").asBoolean()) || (agent && !t.get("agentAffirmed").asBoolean())) && problem.isEmpty());
+            m.put("canRefuse", proposed && (giver || receiver || agent));
+            m.put("canTerminate", state.equals("effective") && (giver || receiver));
+            terms.add(m);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("party", cfg.partyId);
+        out.put("bank", cfg.bankName(cfg.partyId));
+        out.put("agent", cfg.isAgent());
+        out.put("canPropose", !cfg.isAgent() && !open);
+        out.put("terms", terms);
+        ctx.json(out);
+    }
+
+    /** The giver proposes the baseline triparty terms with the counterparty as the receiver and BANK-T as the agent. */
+    private void proposeTripartyTerms(Context ctx) {
+        if (cfg.isAgent()) throw new IllegalArgumentException("the agent does not propose triparty terms");
+        GmraFold f = gmraFold();
+        if (!f.verified()) throw new IllegalStateException("the GMRA terms do not verify: " + f.problem());
+        String receiver = counterparty();
+        CdmTriparty.Terms t = CdmTriparty.build(cfg.bankName(cfg.partyId), cfg.bankName(receiver), CdmTriparty.AGENT,
+                gmraTermsHashInForce(), LocalDate.now(), cfg.isin("tUST"), cfg.isin("tAGY"));
+        payloads.put(t.hash(), t.json(), tripartyParties());
+        JsonNode r = gw.post("/triparty/terms", Map.of("receiver", cfg.partyAddress(receiver), "agent", cfg.partyAddress("T"), "termsHash", t.hash()));
+        ctx.json(Map.of("termsId", r.get("termsId").asText(), "termsHash", t.hash(), "txHash", r.get("txHash").asText()));
+    }
+
+    /** The receiver or the agent affirms proposed terms after checking the document against its own build. */
+    private void affirmTripartyTerms(Context ctx) {
+        JsonNode t = tripartyOnChain(ctx.pathParam("id"));
+        if (!t.get("state").asText().equals("proposed")) throw new IllegalStateException("the triparty terms are not proposed");
+        if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress) && !t.get("agent").asText().equalsIgnoreCase(cfg.myAddress))
+            throw new IllegalArgumentException("only the receiver or the agent affirms triparty terms");
+        Optional<String> problem = tripartyProblem(t);
+        if (problem.isPresent()) throw new IllegalStateException("the triparty terms do not check: " + problem.get());
+        ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/affirm", Map.of("termsHash", t.get("termsHash").asText())));
+    }
+
+    /** Refuse proposed terms (any of the three) or terminate terms in effect (the giver or the receiver). */
+    private JsonNode tripartyStep(String termsId, String step) {
+        tripartyOnChain(termsId);
+        return gw.post("/triparty/terms/" + termsId + "/" + step, Map.of());
     }
 
     // --- amendment of agreement terms (flow-agreement-amendment, task-csa-amendment) ---
@@ -2799,6 +2956,7 @@ public final class App {
         String a = address.toLowerCase();
         if (a.equals(cfg.partyAddress("A").toLowerCase())) return "A";
         if (a.equals(cfg.partyAddress("B").toLowerCase())) return "B";
+        if (a.equals(cfg.partyAddress("T").toLowerCase())) return "T";
         return address;
     }
 

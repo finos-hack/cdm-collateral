@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T00:45:37Z
+updatedAt: 2026-11-12T00:59:10Z
 ```
 # Task: Triparty terms and the collateral profile
 
@@ -27,3 +27,19 @@ The details are decided when the task starts, after a temporary test of CDM's fu
 
 **Design chosen 2026-11-11** (source `6d0f24d02ec0a2e8263d04901b8f42e3e7519c33`: "1a 2a 3a 4a 5a 6a 7a"), recorded in [[wp-adr-triparty-terms-profile]]
 (proposed); the terms and the profile are questions for an SME in [[task-sme-triparty-terms-profile]].
+
+**Build, 2026-11-11.**
+
+- `cdm-ext`: `TripartyTerms` (`cdmx.collateral.triparty`) with the conditions PartiesNamed, ThreeParties, AgentRole and
+  ProfileIncludesAnAsset; `TripartyTermsTest` (3 tests).
+- Contract: `TripartySettlement` (`proposeTerms`, `affirmTerms`, `refuseTerms`, `terminateTerms`, `getTerms`,
+  `currentTerms`, `termsOf`); 2 contract tests.
+- Gateway `/ledger/v1/triparty/terms...`; service `CdmTriparty` and `/api/v1/triparty...`; `PARTY_ID=T` runs only the
+  triparty routes; `orchestrate.mjs` and `live-e2e.sh` start gateway 8203 and service 8003 for BANK-T on `bank-c`.
+- Console: "Triparty terms" card for A and B, the agent's console at `#/live/T`; live spec `flow-triparty-terms`.
+- **Observation for `task-triparty-trade-start`.** CDM's `CheckCriteria` has no case for an `AssetIdentifier`
+  criterion: its switch falls to `default False`. `ConcentrationLimitBreaches`, which checks each criterion with it,
+  therefore finds no collateral under the profile's tAGY limit: 60% tAGY gives no breach
+  (`TripartyTermsTest.cdmsCriteriaCheckDoesNotMatchTheProfilesIsinCriteria`). `cdm-ext`'s `HaircutFor` matches the
+  same criterion by ISIN. Allocation against the limit needs either a per-ISIN concentration check in `cdm-ext` or the
+  profile's criteria stated by asset type and issuer.

@@ -228,6 +228,15 @@ on `SecuritiesLoan` with CDM's termination event, values each at the Default Mar
 against the collateral held (cash at par) at the feed prices, adds the fee or rebate accrued from the billed-through
 date as a `GmslaLoanInvoice` and the margin held under the pair's settled GMSLA calls, and sets it all off into one
 tUSD balance; no securities or collateral move; the GMSLA marking no longer counts the margin it settled), and
+`GET /api/v1/triparty`, `POST /api/v1/triparty/terms`, `POST /api/v1/triparty/terms/{id}/affirm`, `.../refuse` and
+`.../terminate` (triparty repo terms, wp-adr-triparty-terms-profile, built by `CdmTriparty`: the giver builds a cdm-ext
+`TripartyTerms` naming the giver, the receiver, the agent BANK-T in CDM's `TripartyAgent` role, the hash of the GMRA
+terms in force and the collateral profile as CDM's `EligibleCollateralSpecification`, and proposes its hash on
+`TripartySettlement`; the receiver and the agent each check the document against the terms they build themselves, the
+receiver also against its GMRA terms in force, and affirm the hash; the terms take effect when both have), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
+
+With `PARTY_ID=T` the service acts for the triparty agent BANK-T on the `bank-c` node (port 8003, gateway 8203). It
+registers only `/api/v1/health`, the triparty routes and `/api/v1/events`; the console's `#/live/T` route calls them.

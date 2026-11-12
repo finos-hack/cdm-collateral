@@ -11,11 +11,13 @@ import java.util.Map;
 /**
  * Per-participant configuration for one collateral workflow service instance. Reads the deployment registry
  * (contracts/deployments/besu.json) for token and party addresses, and the participant identity from the environment:
- * PARTY_ID (A|B), NODE (bank-a|bank-b), ROLE, PORT, GATEWAY_URL, ORACLE_URL. One service instance acts for exactly one party.
+ * PARTY_ID (A|B|T), NODE (bank-a|bank-b|bank-c), PORT, GATEWAY_URL, ORACLE_URL. One service instance acts for exactly one
+ * party. T is the triparty agent BANK-T on the bank-c node (wp-adr-triparty-terms-profile), whose service runs only the
+ * triparty routes.
  */
 public final class Config {
-    public final String partyId;      // console party id: "A" or "B"
-    public final String node;         // besu node id: "bank-a" or "bank-b"
+    public final String partyId;      // console party id: "A", "B" or "T" (the triparty agent)
+    public final String node;         // besu node id: "bank-a", "bank-b" or "bank-c"
     public final String role;         // the role on the default leg (A pledges): "Pledgor" for A, "Secured Party" for B (wp-adr-two-way-im)
     public final int port;
     public final String gatewayUrl;
@@ -49,11 +51,12 @@ public final class Config {
 
     public static Config fromEnv() {
         String partyId = env("PARTY_ID", "A");
-        String node = env("NODE", partyId.equals("B") ? "bank-b" : "bank-a");
+        boolean agent = partyId.equals("T");
+        String node = env("NODE", agent ? "bank-c" : partyId.equals("B") ? "bank-b" : "bank-a");
         // No ROLE setting: each party is the pledgor on one leg and the secured party on the other (wp-adr-two-way-im).
-        String role = partyId.equals("B") ? "Secured Party" : "Pledgor";
-        int port = Integer.parseInt(env("PORT", partyId.equals("B") ? "8002" : "8001"));
-        String gatewayUrl = env("GATEWAY_URL", partyId.equals("B") ? "http://localhost:8202" : "http://localhost:8201");
+        String role = agent ? "Triparty Agent" : partyId.equals("B") ? "Secured Party" : "Pledgor";
+        int port = Integer.parseInt(env("PORT", agent ? "8003" : partyId.equals("B") ? "8002" : "8001"));
+        String gatewayUrl = env("GATEWAY_URL", agent ? "http://localhost:8203" : partyId.equals("B") ? "http://localhost:8202" : "http://localhost:8201");
         String oracleUrl = env("ORACLE_URL", "http://localhost:8100");
         String storeUrl = env("STORE_URL", "http://localhost:8300/store/v1");
         String storeToken = env("STORE_TOKEN", "");
@@ -95,18 +98,23 @@ public final class Config {
         return registry.get("tokens").fieldNames().next();
     }
 
-    /** CDM party name for a console party id (the lifecycle documents name BANK-A / BANK-B). */
+    /** CDM party name for a console party id (the lifecycle documents name BANK-A / BANK-B; the agent is BANK-T). */
     public String bankName(String partyId) {
-        return partyId.equals("B") ? "BANK-B" : "BANK-A";
+        return partyId.equals("T") ? CdmTriparty.AGENT : partyId.equals("B") ? "BANK-B" : "BANK-A";
     }
 
-    /** Console party id for a CDM party name (BANK-B is B, BANK-A is A). */
+    /** Console party id for a CDM party name (BANK-B is B, BANK-T is T, BANK-A is A). */
     public String partyIdOfBank(String bankName) {
-        return "BANK-B".equals(bankName) ? "B" : "A";
+        return "BANK-B".equals(bankName) ? "B" : CdmTriparty.AGENT.equals(bankName) ? "T" : "A";
     }
 
     public String partyAddress(String partyId) {
-        return registry.get("parties").get(partyId.equals("B") ? "bank-b" : "bank-a").asText();
+        return registry.get("parties").get(partyId.equals("T") ? "bank-c" : partyId.equals("B") ? "bank-b" : "bank-a").asText();
+    }
+
+    /** True for the triparty agent's service (PARTY_ID=T). */
+    public boolean isAgent() {
+        return partyId.equals("T");
     }
 
     public Map<String, String> tokenSymbols() {

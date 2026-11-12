@@ -1938,4 +1938,55 @@ describe("CDM collateral contracts", async () => {
       });
     });
   });
+
+  describe("triparty terms (task-triparty-terms-profile)", () => {
+    let tri: any, agent: any, tAddr: `0x${string}`;
+    const H = (s: string) => keccak256(toHex(s));
+    const PROPOSED = 1, EFFECTIVE = 2, REFUSED = 3, TERMINATED = 4;
+    beforeEach(async () => {
+      tri = await viem.deployContract("TripartySettlement", []);
+      agent = (await viem.getWalletClients())[3];
+      tAddr = getAddress(agent.account.address);
+    });
+    const propose = async (h = H("terms")) => {
+      await tri.write.proposeTerms([bAddr, tAddr, h], { account: bankA.account });
+      return (await tri.read.currentTerms([aAddr, bAddr, tAddr])) as `0x${string}`;
+    };
+
+    it("takes effect when both the receiver and the agent affirm the giver's hash", async () => {
+      const id = await propose();
+      const t = await tri.read.getTerms([id]);
+      assert.equal(t.state, PROPOSED);
+      assert.equal(t.giver, aAddr);
+      assert.deepEqual(await tri.read.termsOf([tAddr]), [id]);
+      await assert.rejects(tri.write.affirmTerms([id, H("other")], { account: bankB.account }));
+      await assert.rejects(tri.write.affirmTerms([id, H("terms")], { account: bankA.account })); // the giver does not affirm
+      await tri.write.affirmTerms([id, H("terms")], { account: bankB.account });
+      await assert.rejects(tri.write.affirmTerms([id, H("terms")], { account: bankB.account }));
+      assert.equal((await tri.read.getTerms([id])).state, PROPOSED);
+      await tri.write.affirmTerms([id, H("terms")], { account: agent.account });
+      assert.equal((await tri.read.getTerms([id])).state, EFFECTIVE);
+      await assert.rejects(propose(H("again"))); // one set of terms in effect
+    });
+
+    it("refuses two parties, and a refused or terminated set can be proposed again", async () => {
+      await assert.rejects(tri.write.proposeTerms([bAddr, bAddr, H("terms")], { account: bankA.account }));
+      await assert.rejects(tri.write.proposeTerms([aAddr, tAddr, H("terms")], { account: bankA.account }));
+      await assert.rejects(tri.write.proposeTerms([bAddr, tAddr, zeroHash], { account: bankA.account }));
+      const first = await propose();
+      await assert.rejects(tri.write.refuseTerms([first], { account: operator.account }));
+      await tri.write.refuseTerms([first], { account: agent.account });
+      assert.equal((await tri.read.getTerms([first])).state, REFUSED);
+      await assert.rejects(tri.write.affirmTerms([first, H("terms")], { account: bankB.account }));
+      const second = await propose();
+      assert.notEqual(second, first);
+      await assert.rejects(tri.write.terminateTerms([second], { account: bankA.account })); // not in effect
+      await tri.write.affirmTerms([second, H("terms")], { account: agent.account });
+      await tri.write.affirmTerms([second, H("terms")], { account: bankB.account });
+      await assert.rejects(tri.write.terminateTerms([second], { account: agent.account }));
+      await tri.write.terminateTerms([second], { account: bankB.account });
+      assert.equal((await tri.read.getTerms([second])).state, TERMINATED);
+      await propose(H("third"));
+    });
+  });
 });

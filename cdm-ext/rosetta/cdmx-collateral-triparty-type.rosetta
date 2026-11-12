@@ -1,0 +1,29 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the terms of a triparty repo between a collateral giver, a collateral receiver and a triparty agent (gap G22, coverage rows T1 to T5; wp-adr-triparty-terms-profile). CDM 7.7.0 has the agent's party role (PartyRoleEnum TripartyAgent) and the collateral profile as an EligibleCollateralSpecification, and no triparty agreement type.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.product.collateral.*
+
+type TripartyTerms: <"The triparty terms of a repo under the GMRA between the giver and the receiver: the three parties, the GMRA terms the repos are traded under, and the collateral profile the agent allocates against.">
+    [rootType]
+    giver Party (1..1) <"The collateral giver: the seller of the repos, which deposits collateral with the agent.">
+    receiver Party (1..1) <"The collateral receiver: the buyer of the repos, for which the agent holds the allocated collateral.">
+    agent PartyRole (1..1) <"The triparty agent, in CDM's TripartyAgent role.">
+    gmraTermsHash string (1..1) <"The keccak-256 hash of the GMRA terms in force between the giver and the receiver (cdm-ext GmraTerms), which the repos are traded under.">
+    baseCurrency string (1..1) <"The currency the agent values the exposure and the collateral in.">
+    effectiveDate date (1..1) <"The date the terms take effect.">
+    profile EligibleCollateralSpecification (1..1) <"The collateral profile: the eligible assets with their haircuts and concentration limits.">
+
+    condition PartiesNamed: <"Each party has a name, which the other conditions compare.">
+        giver -> name exists and receiver -> name exists and agent -> partyReference -> name exists
+
+    condition ThreeParties: <"The giver, the receiver and the agent are three different parties.">
+        giver -> name <> receiver -> name
+            and giver -> name <> agent -> partyReference -> name
+            and receiver -> name <> agent -> partyReference -> name
+
+    condition AgentRole: <"The agent acts in CDM's triparty agent role.">
+        agent -> role = PartyRoleEnum -> TripartyAgent
+
+    condition ProfileIncludesAnAsset: <"The profile makes at least one asset eligible.">
+        profile -> criteria filter item -> treatment -> isIncluded = True then count > 0

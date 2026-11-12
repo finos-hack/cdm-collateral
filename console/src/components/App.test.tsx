@@ -18,6 +18,7 @@ beforeEach(() => {
 it("parses routes and falls back to the grid", () => {
   expect(parseRoute("#/s/im-call/free")).toEqual({ page: "scenario", id: "im-call", mode: "free" });
   expect(parseRoute("#/s/nope/guided")).toEqual({ page: "grid" });
+  expect(parseRoute("#/live/T")).toEqual({ page: "agent" });
   expect(parseRoute("#/live/B")).toEqual({ page: "live", party: "B" });
   expect(parseRoute("#/live/operator")).toEqual({ page: "operator" });
 });

@@ -3473,3 +3473,94 @@ test("flow-gmsla-default-close-out: B declares A's default in the console -> Def
     await setDate(today);
   }
 });
+
+// --- flow-triparty-terms (task-triparty-terms-profile, wp-adr-triparty-terms-profile) ---
+
+const SERVICE_T = "http://localhost:8003/api/v1";
+type TripartyTermsView = {
+  termsId: string; state: string; giver: string; receiver: string; agent: string; termsHash: string;
+  receiverAffirmed: boolean; agentAffirmed: boolean; verified: boolean; problem: string | null;
+  terms?: { giver: string; receiver: string; agent: string; gmraTermsHash: string; baseCurrency: string; effectiveDate: string;
+    profile: { isin: string; token?: string; eligible: boolean; haircutBps: number | null; concentrationLimit: string | null }[] };
+  canAffirm: boolean; canRefuse: boolean; canTerminate: boolean;
+};
+type TripartyView = { party: string; agent: boolean; canPropose: boolean; terms: TripartyTermsView[] };
+
+test("flow-triparty-terms: A proposes triparty terms in its console naming B and the agent BANK-T -> B and T each check the document and affirm -> the terms are in effect on-chain and in all three services -> A terminates them; a proposal the agent refuses never takes effect", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+
+  // Setup: close terms a failed earlier run left open, so A can propose.
+  for (const t of (await call<TripartyView>(`${SERVICE.A}/triparty`)).terms) {
+    if (t.state === "proposed") await call(`${SERVICE.A}/triparty/terms/${t.termsId}/refuse`, "POST", {});
+    if (t.state === "effective") await call(`${SERVICE.A}/triparty/terms/${t.termsId}/terminate`, "POST", {});
+  }
+  await expect.poll(async () => (await call<TripartyView>(`${SERVICE.A}/triparty`)).canPropose, { timeout: 60_000 }).toBe(true);
+  const known = new Set((await call<TripartyView>(`${SERVICE_T}/triparty`)).terms.map((t) => t.termsId));
+
+  // 1. A, the giver, proposes the baseline terms in its console.
+  await page.goto("/#/live/A");
+  const cardA = page.getByTestId("triparty");
+  await cardA.getByRole("button", { name: "Propose triparty terms (giver BANK-A, agent BANK-T)" }).click({ timeout: STEP_TIMEOUT });
+  let id = "";
+  await expect
+    .poll(async () => {
+      const t = (await call<TripartyView>(`${SERVICE_T}/triparty`)).terms.find((x) => !known.has(x.termsId));
+      id = t?.termsId ?? "";
+      return t?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("proposed");
+
+  // 2. B, the receiver, checks the document (and the GMRA terms it names) and affirms in its console.
+  await page.goto("/#/live/B");
+  const rowB = page.getByTestId(`triparty-terms-${id}`);
+  await expect(rowB.getByText("terms checked against this party's own build ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Affirm triparty terms" }).click();
+  await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.A}/triparty/terms/${id}`)).receiverAffirmed, { timeout: 60_000 }).toBe(true);
+  expect((await call<TripartyTermsView>(`${GATEWAY.A}/triparty/terms/${id}`)).state).toBe("proposed");
+
+  // 3. The agent BANK-T checks the document and affirms in its own console; the terms take effect.
+  await page.goto("/#/live/T");
+  const rowT = page.getByTestId(`triparty-terms-${id}`);
+  await expect(page.getByText("BANK-T · Triparty Agent")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowT.getByText("terms checked against this party's own build ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowT.getByTestId("triparty-profile-tAGY")).toContainText("at most 50% of the allocated value");
+  await rowT.getByRole("button", { name: "Affirm triparty terms" }).click();
+  await expect(rowT.getByText("in effect on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // All three services show the same terms in effect, checked, with the baseline profile; the chain agrees.
+  const views: TripartyTermsView[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B, SERVICE_T]) {
+    await expect
+      .poll(async () => {
+        const t = (await call<TripartyView>(`${svc}/triparty`)).terms.find((x) => x.termsId === id);
+        return t?.state === "effective" && t.verified ? true : (t?.problem ?? t?.state ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    views.push((await call<TripartyView>(`${svc}/triparty`)).terms.find((x) => x.termsId === id)!);
+  }
+  expect(new Set(views.map((v) => v.termsHash)).size).toBe(1);
+  expect(views[0].terms).toEqual(views[2].terms);
+  expect(views[0].terms).toMatchObject({ giver: "BANK-A", receiver: "BANK-B", agent: "BANK-T", baseCurrency: "USD" });
+  expect(views[0].terms!.profile.map((e) => [e.token, e.haircutBps, e.concentrationLimit])).toEqual([["tUST", 200, null], ["tAGY", 300, "0.5"]]);
+  expect(views[0]).toMatchObject({ giver: "A", receiver: "B", agent: "T" });
+  const onChain = await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`);
+  expect(onChain).toMatchObject({ state: "effective", termsHash: views[0].termsHash, receiverAffirmed: true, agentAffirmed: true });
+  // One set in effect: neither A nor B can propose another.
+  expect((await call<TripartyView>(`${SERVICE.A}/triparty`)).canPropose).toBe(false);
+  expect((await call<TripartyView>(`${SERVICE.B}/triparty`)).canPropose).toBe(false);
+
+  // 4. A terminates the terms in its console; nothing is open again.
+  await page.goto("/#/live/A");
+  const rowA = page.getByTestId(`triparty-terms-${id}`);
+  await rowA.getByRole("button", { name: "Terminate triparty terms" }).click({ timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId("triparty").getByTestId("triparty-none")).toBeVisible({ timeout: STEP_TIMEOUT });
+  expect((await call<TripartyTermsView>(`${GATEWAY.A}/triparty/terms/${id}`)).state).toBe("terminated");
+
+  // 5. A proposal the agent refuses never takes effect, and A can propose again.
+  const { termsId } = await call<{ termsId: string }>(`${SERVICE.A}/triparty/terms`, "POST", {});
+  await expect.poll(async () => (await call<TripartyView>(`${SERVICE_T}/triparty`)).terms.find((x) => x.termsId === termsId)?.canRefuse ?? false, { timeout: 60_000 }).toBe(true);
+  await call(`${SERVICE_T}/triparty/terms/${termsId}/refuse`, "POST", {});
+  await expect(call(`${SERVICE.B}/triparty/terms/${termsId}/affirm`, "POST", {})).rejects.toThrow(/not proposed/);
+  expect((await call<TripartyTermsView>(`${GATEWAY.A}/triparty/terms/${termsId}`)).state).toBe("refused");
+  await expect.poll(async () => (await call<TripartyView>(`${SERVICE.A}/triparty`)).canPropose, { timeout: 60_000 }).toBe(true);
+});

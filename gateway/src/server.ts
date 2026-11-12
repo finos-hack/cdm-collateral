@@ -350,6 +350,16 @@ route("POST", "/ledger/v1/loan-default/close-outs/:id/pay", async (p, b) => {
 });
 route("GET", "/ledger/v1/loan-default/close-outs", async (_p, _b, url) => J(await adapter.listLoanCloseOuts(getAddress(url.searchParams.get("party")!))));
 
+// Triparty terms (wp-adr-triparty-terms-profile): the giver proposes, the receiver and the agent affirm or refuse, the
+// giver or the receiver terminates terms in effect.
+route("POST", "/ledger/v1/triparty/terms", async (_p, b) =>
+  J(await adapter.proposeTripartyTerms(getAddress(b.receiver), getAddress(b.agent), b.termsHash as Hex)));
+route("POST", "/ledger/v1/triparty/terms/:id/affirm", async (p, b) => J(await adapter.affirmTripartyTerms(p.id as Hex, b.termsHash as Hex)));
+route("POST", "/ledger/v1/triparty/terms/:id/refuse", async (p) => J(await adapter.refuseTripartyTerms(p.id as Hex)));
+route("POST", "/ledger/v1/triparty/terms/:id/terminate", async (p) => J(await adapter.terminateTripartyTerms(p.id as Hex)));
+route("GET", "/ledger/v1/triparty/terms/:id", async (p) => J(await adapter.getTripartyTerms(p.id as Hex)));
+route("GET", "/ledger/v1/triparty/terms", async (_p, _b, url) => J(await adapter.listTripartyTerms(getAddress(url.searchParams.get("party")!))));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

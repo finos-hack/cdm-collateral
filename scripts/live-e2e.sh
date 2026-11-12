@@ -6,8 +6,9 @@
 #
 # Subcommands:
 #   up      (default) Stop any stack from a previous run (stop-and-replace), then start the Besu network, deploy the
-#           contracts if they are not deployed yet, start store + three gateways (bank-a, bank-b and the market
-#           operator mkt) + the oracle service + two collateral services + the console dev server, wait until all
+#           contracts if they are not deployed yet, start store + four gateways (bank-a, bank-b, the triparty
+#           agent BANK-T on bank-c and the market operator mkt) + the oracle service + three collateral services (A, B
+#           and the agent T) + the console dev server, wait until all
 #           health checks pass, print the URLs and leave everything running.
 #   down    Stop the store/gateways/services/console and stop the Besu containers. The Besu chain on disk is kept.
 #   reset   down, then delete the chain, the deployment and the off-chain state (runbook section 8). The next up
@@ -43,12 +44,14 @@ health=(
   "8200|/ledger/v1/health"
   "8201|/ledger/v1/health"
   "8202|/ledger/v1/health"
+  "8203|/ledger/v1/health"
   "8001|/api/v1/health"
   "8002|/api/v1/health"
+  "8003|/api/v1/health"
   "8100|/oracle/v1/health"
 )
-backend_ports=(8300 8200 8201 8202 8100 8001 8002)
-all_ports=(8300 8200 8201 8202 8100 8001 8002 5173 4173)
+backend_ports=(8300 8200 8201 8202 8203 8100 8001 8002 8003)
+all_ports=(8300 8200 8201 8202 8203 8100 8001 8002 8003 5173 4173)
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'live-e2e: %s\n' "$*" >&2; exit 1; }
@@ -168,6 +171,7 @@ cmd_up() {
     say "  drive the flow in the console:"
     say "    secured party (BANK-B)  http://localhost:5173/#/live/B"
     say "    pledgor      (BANK-A)  http://localhost:5173/#/live/A"
+    say "    triparty agent (BANK-T) http://localhost:5173/#/live/T"
     say ""
     say "  logs:  $stack_log"
     say "  stop:  scripts/live-e2e.sh down"

@@ -442,6 +442,33 @@ const loanAbi = parseAbi([
 
 export const LoanStateName = ["none", "booked", "affirmed", "open", "returned", "closedOut"];
 
+const tripartyAbi = parseAbi([
+  "function proposeTerms(address receiver, address agent, bytes32 termsHash) returns (bytes32)",
+  "function affirmTerms(bytes32 termsId, bytes32 termsHash)",
+  "function refuseTerms(bytes32 termsId)",
+  "function terminateTerms(bytes32 termsId)",
+  "function getTerms(bytes32 termsId) view returns ((address giver, address receiver, address agent, bytes32 termsHash, uint8 state, bool receiverAffirmed, bool agentAffirmed, uint64 proposedAt, uint64 effectiveAt))",
+  "function currentTerms(address giver, address receiver, address agent) view returns (bytes32)",
+  "function termsOf(address party) view returns (bytes32[])",
+]);
+
+export const TripartyTermsStateName = ["none", "proposed", "effective", "refused", "terminated"];
+
+/** Triparty terms on TripartySettlement (wp-adr-triparty-terms-profile). */
+export interface OnChainTripartyTerms {
+  termsId: Hex;
+  giver: Address;
+  receiver: Address;
+  agent: Address;
+  termsHash: Hex;
+  state: string;
+  receiverAffirmed: boolean;
+  agentAffirmed: boolean;
+  /** Block timestamps, seconds. */
+  proposedAt: bigint;
+  effectiveAt: bigint;
+}
+
 /** A securities loan on SecuritiesLoan (wp-adr-gmsla-loan-delivery-return). */
 export interface OnChainLoan {
   loanId: Hex;
@@ -638,6 +665,14 @@ export interface LedgerAdapter {
   payLoanCloseOut(closeOutId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   loanDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex>;
   listLoanCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]>;
+  /** Triparty terms between a giver, a receiver and an agent (wp-adr-triparty-terms-profile). */
+  tripartyContract(): Address;
+  proposeTripartyTerms(receiver: Address, agent: Address, termsHash: Hex): Promise<{ txHash: Hex; block: bigint; termsId: Hex }>;
+  affirmTripartyTerms(termsId: Hex, termsHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  refuseTripartyTerms(termsId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  terminateTripartyTerms(termsId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getTripartyTerms(termsId: Hex): Promise<OnChainTripartyTerms>;
+  listTripartyTerms(party: Address): Promise<OnChainTripartyTerms[]>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1224,6 +1259,43 @@ export class BesuAdapter implements LedgerAdapter {
       closeOutId,
       ...((await this.pub.readContract({ address, abi: loanAbi, functionName: "getCloseOut", args: [closeOutId] })) as Omit<OnChainRepoCloseOut, "closeOutId">),
     })));
+  }
+
+  /** The TripartySettlement address: the triparty agent's books. */
+  tripartyContract(): Address {
+    const a = this.reg.contracts.tripartySettlement;
+    if (!a) throw new Error("no TripartySettlement in the deployment registry; redeploy the contracts");
+    return a;
+  }
+
+  /** The giver proposes triparty terms; the id is the giver's current terms with the receiver and the agent. */
+  async proposeTripartyTerms(receiver: Address, agent: Address, termsHash: Hex) {
+    const r = await this.send(this.tripartyContract(), tripartyAbi, "proposeTerms", [receiver, agent, termsHash]);
+    const termsId = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "currentTerms", args: [this.account, receiver, agent] })) as Hex;
+    return { ...r, termsId };
+  }
+
+  affirmTripartyTerms(termsId: Hex, termsHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "affirmTerms", [termsId, termsHash]);
+  }
+
+  refuseTripartyTerms(termsId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "refuseTerms", [termsId]);
+  }
+
+  terminateTripartyTerms(termsId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "terminateTerms", [termsId]);
+  }
+
+  async getTripartyTerms(termsId: Hex): Promise<OnChainTripartyTerms> {
+    const t = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "getTerms", args: [termsId] })) as {
+      giver: Address; receiver: Address; agent: Address; termsHash: Hex; state: number; receiverAffirmed: boolean; agentAffirmed: boolean; proposedAt: bigint; effectiveAt: bigint };
+    return { termsId, ...t, state: TripartyTermsStateName[t.state] ?? String(t.state) };
+  }
+
+  async listTripartyTerms(party: Address) {
+    const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "termsOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map((id) => this.getTripartyTerms(id)));
   }
 
   /** The RepoSettlement address, which each party approves for its leg. */
