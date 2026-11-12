@@ -3,7 +3,7 @@ id: wp-adr-triparty-scope
 kind: decision
 subtype: adr
 timestamp: 2026-11-12T00:36:54Z
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-scope
   sourceRef: 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T00:36:54Z
+updatedAt: 2026-11-12T01:07:01Z
 ```
 # ADR: triparty covers six workflows of a triparty repo under the GMRA; a third test party BANK-T acts as the agent and a new TripartySettlement contract holds its books; the agent allocates by the CSA allocation rule
 

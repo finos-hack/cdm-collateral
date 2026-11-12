@@ -75,7 +75,7 @@ and CCP (P3). Repo has one row per workflow, in the build order of `wp-adr-repo-
 each with its own task under `task-repo-gmra-workflows`. Securities lending has one row per workflow, in the build
 order of `wp-adr-securities-lending-gmsla-scope` (accepted 2026-11-11), each with its own task under
 `task-securities-lending-gmsla-workflows`; the CDM check of 2026-11-11 is recorded in that task. Triparty has one row per
-workflow, in the build order of `wp-adr-triparty-scope` (proposed, 2026-11-11), each with its own task under
+workflow, in the build order of `wp-adr-triparty-scope` (accepted 2026-11-11), each with its own task under
 `task-triparty-workflows`; the CDM check of 2026-11-12 is recorded in that task. CCP lists
 the workflows the analysis covers in the Workflow column until its scope is decided.
 

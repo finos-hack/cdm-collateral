@@ -39,7 +39,7 @@ tUST, BANK-A selling to BANK-B) and its collateral schedule functions:
 - **The prototype has two parties.** BANK-A and BANK-B, each with a gateway, a service and a Besu account; there is no
   third party in the live stack.
 
-**Scope chosen 2026-11-11** (source `41bdcccfd2c7410720f06a21f0e5ff20ae297d3c`), recorded in [[wp-adr-triparty-scope]] (proposed): six workflows of a
+**Scope chosen 2026-11-11** (source `41bdcccfd2c7410720f06a21f0e5ff20ae297d3c`), recorded in [[wp-adr-triparty-scope]] (accepted 2026-11-11): six workflows of a
 triparty repo under the GMRA, one task each:
 
 1. [[task-triparty-terms-profile]]: Triparty terms and the collateral profile.

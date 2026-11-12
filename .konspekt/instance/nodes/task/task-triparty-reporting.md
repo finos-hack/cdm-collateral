@@ -3,7 +3,7 @@ id: task-triparty-reporting
 type: task
 title: The triparty agent's report to both parties
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-scope
   sourceRef: 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c
@@ -11,12 +11,12 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T00:36:54Z
+updatedAt: 2026-11-12T01:07:01Z
 ```
 # Task: The triparty agent's report to both parties
 
 Row 25 of section C of the workflow map, split from [[task-triparty-workflows]] within
-[[wp-adr-triparty-scope]] (proposed; the project owner's choices of 2026-11-11).
+[[wp-adr-triparty-scope]] (accepted; the project owner's choices of 2026-11-11).
 
 - **CDM status:** Absent: no report or reconciliation by an agent (T12, score 0); `CollateralStatusEnum` and `CollateralBalance` hold positions as data (T10).
 - **Scope:** The agent reports to the giver and the receiver the exposure, the collateral allocated with its values and haircuts, and the giver's unallocated balance; each party checks the report against its own records.

@@ -3,7 +3,7 @@ id: task-triparty-trade-end
 type: task
 title: Triparty trade end: release of the collateral against repayment
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-scope
   sourceRef: 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c
@@ -11,12 +11,12 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T00:36:54Z
+updatedAt: 2026-11-12T01:07:01Z
 ```
 # Task: Triparty trade end: release of the collateral against repayment
 
 Row 24 of section C of the workflow map, split from [[task-triparty-workflows]] within
-[[wp-adr-triparty-scope]] (proposed; the project owner's choices of 2026-11-11).
+[[wp-adr-triparty-scope]] (accepted; the project owner's choices of 2026-11-11).
 
 - **CDM status:** Absent: no settlement through the agent (T9, score 0); the repurchase event is CDM's (row 3, defect D25).
 - **Scope:** On the Repurchase Date the agent releases the allocated collateral to the giver's balance against the repurchase price paid to the receiver.

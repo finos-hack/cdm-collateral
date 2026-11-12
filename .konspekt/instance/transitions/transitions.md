@@ -1319,3 +1319,26 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
 | edge:e-dec-cdmdev-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
 | edge:e-lnk-tpterms-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
+| waypoint:wp-adr-triparty-scope | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| waypoint:wp-adr-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-triparty-trade-start | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-triparty-revaluation | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-triparty-substitution | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-triparty-trade-end | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-triparty-reporting | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| node:task-sme-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-mrk-tpscope-tp | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-drv-cdmdata-tpscope | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-drv-finality-tpscope | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-tp-terms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-tp-tradestart | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-tp-reval | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-tp-subst | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-tp-tradeend | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-tp-report | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-mrk-tptermsadr-tpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-drv-cdmdata-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-drv-finality-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-dec-cdmdev-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
+| edge:e-lnk-tpterms-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |

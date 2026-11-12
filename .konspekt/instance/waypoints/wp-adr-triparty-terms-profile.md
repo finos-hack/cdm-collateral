@@ -3,7 +3,7 @@ id: wp-adr-triparty-terms-profile
 kind: decision
 subtype: adr
 timestamp: 2026-11-12T00:45:37Z
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-terms-profile
   sourceRef: 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:45:37Z
   confidence: 0.55
 createdAt: 2026-11-12T00:45:37Z
-updatedAt: 2026-11-12T00:45:37Z
+updatedAt: 2026-11-12T01:07:01Z
 ```
 # ADR: the triparty terms are a cdm-ext TripartyTerms with the profile as CDM's EligibleCollateralSpecification, proposed by the giver and affirmed by the receiver and the agent BANK-T on a new TripartySettlement contract
 
