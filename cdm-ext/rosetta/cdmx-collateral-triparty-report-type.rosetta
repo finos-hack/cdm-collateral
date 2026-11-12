@@ -1,0 +1,41 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the triparty agent's report to the giver and the receiver (task-triparty-reporting, wp-adr-triparty-reporting). CDM 7.7.0 has no agent report or reconciliation (T12); its CollateralPortfolio and CollateralBalance hold the positions and balances as data (T10).">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.observable.asset.*
+
+type TripartyRepoReport: <"The agent's report of one settled triparty repo on a date.">
+    repoId string (1..1) <"The repo's id on TripartySettlement.">
+    tradeId string (1..1)
+    exposure Money (1..1) <"TripartyRequiredValue of the repo on the date: the Repurchase Price accrued to it.">
+    valued TripartyValuedPosition (1..*) <"Each held asset at the feed price less its haircut.">
+    valueAfterHaircuts Money (1..1)
+    covered boolean (1..1) <"Whether the value after haircuts covers the exposure.">
+    breaches TripartyConcentrationBreach (0..*)
+    portfolio CollateralPortfolio (1..1) <"CDM's form of the holding: the repo's collateral positions, settled, with their haircuts, and the balances after and before haircuts from the giver to the receiver.">
+
+    condition ValueIsTheSum: <"The value after haircuts is the sum of the valued positions.">
+        valueAfterHaircuts -> value = (valued extract v [ v -> valueAfterHaircuts -> value ] then sum)
+
+    condition CoveredMeansCovered: <"Covered exactly when the value after haircuts is at least the exposure.">
+        covered = (valueAfterHaircuts -> value >= exposure -> value)
+
+    condition OnePositionPerAsset: <"CDM's portfolio has one position per valued asset, each settled.">
+        (portfolio -> collateralPosition count) = (valued count)
+            and portfolio -> collateralPosition -> collateralPositionStatus all = CollateralStatusEnum -> SettledAmount
+
+    condition PostHaircutBalance: <"The portfolio's balance after haircuts is the value after haircuts.">
+        (portfolio -> collateralBalance filter b [ b -> haircutIndicator = HaircutIndicatorEnum -> PostHaircut ] then extract b [ b -> amountBaseCurrency -> value ]) all = valueAfterHaircuts -> value
+
+type TripartyReport: <"The agent's report for one set of triparty terms on a date: every settled repo and the giver's free collateral.">
+    [rootType]
+    termsHash string (1..1) <"The hash of the TripartyTerms.">
+    reportDate date (1..1)
+    repos TripartyRepoReport (0..*)
+    freeValued TripartyValuedPosition (0..*) <"The giver's free collateral in eligible assets, at the feed prices less the haircuts.">
+    free CollateralPortfolio (0..1) <"CDM's form of the free collateral: the positions, without a balance.">
+
+    condition FreeMatchesValued: <"The free portfolio has one position per free asset.">
+        if freeValued exists
+        then (free -> collateralPosition count) = (freeValued count)
+        else free is absent

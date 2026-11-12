@@ -8,10 +8,11 @@ enum GmslaRateTypeEnum: <"The rate a loan invoice bills (wp-adr-gmsla-rebate).">
     Rebate <"Against cash collateral: the lender pays the borrower the rebate on the cash held.">
     Fee <"Against non-cash collateral: the borrower pays the lender the lending fee (row 18).">
 
-type GmslaInvoicePeriod: <"A part of an invoice period during which the amount the rate applies to did not change: for a rebate, the cash collateral held.">
+type GmslaInvoicePeriod: <"A part of an invoice period during which the amount the rate applies to did not change: for a rebate, the cash collateral held; for a fee, the market value of the loaned securities outstanding (wp-adr-gmsla-lending-fee).">
     startDate date (1..1) <"The first day that accrues.">
     endDate date (1..1) <"The day after the last day that accrues.">
     notional number (1..1) <"The amount the rate applies to over the period.">
+    quantity number (0..1) <"For a fee: the loaned quantity outstanding over the period; the notional is it times the invoice's price.">
     accrual number (1..1) <"CDM FixedAmount over the period, unrounded.">
 
     condition Dates: <"A period has at least one day.">
@@ -25,12 +26,13 @@ type GmslaLoanInvoice: <"An invoice of a loan's rate for a period (wp-adr-gmsla-
     loanId string (1..1) <"The loan's on-chain identifier.">
     rateType GmslaRateTypeEnum (1..1)
     rate number (1..1) <"The rate per annum, as a decimal.">
+    price number (0..1) <"For a fee: the loaned security's feed price on the billing date, one price per invoice (wp-adr-gmsla-lending-fee 1a).">
     periodStart date (1..1) <"The billed-through date, or the delivery date for the first invoice.">
     periodEnd date (1..1) <"The business date of the invoice, or the return date of a returned loan.">
     period GmslaInvoicePeriod (1..*) <"The periods between changes, in date order.">
     precision int (1..1) <"The decimals of the cash paid: 0 for the prototype's tUSD.">
     amount number (1..1) <"The invoice total: GmslaInvoiceTotal.">
-    invoice SecurityLendingInvoice (1..1) <"CDM's invoice: one billing record per period and a GrandTotal summary.">
+    invoice SecurityLendingInvoice (1..1) <"CDM's invoice: one billing record per period and a ParentTotal summary (Create_BillingSummary has no implementation, D27).">
     paymentEvent BusinessEvent (1..1) <"CDM's payment: Create_BusinessEvent over a transfer of the amount, type InterestReturn, qualified CashTransfer.">
 
     condition PeriodBounds: <"The periods start at the invoice start and end at its end.">
@@ -44,6 +46,11 @@ type GmslaLoanInvoice: <"An invoice of a loan's rate for a period (wp-adr-gmsla-
 
     condition RebateNotNegative: <"A rebate rate is not negative (wp-adr-gmsla-rebate 6a).">
         if rateType = GmslaRateTypeEnum -> Rebate then rate >= 0
+
+    condition FeePrice: <"A fee invoice states the loaned security's price and each period's quantity; a rebate invoice neither.">
+        if rateType = GmslaRateTypeEnum -> Fee
+        then price exists and price > 0 and period -> quantity count = period count
+        else price is absent and period -> quantity is absent
 
     condition OneRecordPerPeriod:
         invoice -> billingRecord count = period count

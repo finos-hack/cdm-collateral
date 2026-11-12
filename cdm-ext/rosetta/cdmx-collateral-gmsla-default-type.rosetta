@@ -1,0 +1,104 @@
+namespace cdmx.collateral.gmsla : <"Local CDM extension: a GMSLA 2010 Event of Default and close-out (paragraph 11, wp-adr-gmsla-default-close-out). CDM 7.7.0 has the GMSLA's EventsOfDefault elections but no Default Market Value, set-off or net balance; each loan ends with CDM's termination event, and the values and the net balance are stated here.">
+version "${project.version}"
+
+import cdm.event.common.*
+import cdm.event.qualification.*
+import cdmx.collateral.gmsla.functions.*
+
+type GmslaDefaultNotice: <"The Event of Default and its Early Termination Date. The Event of Default is the oracle's default record of the defaulting party. Without automatic early termination the non-defaulting party serves this record as its Default Notice; with it no notice is served and the Early Termination Date is the date of the default.">
+    [rootType]
+    nonDefaultingParty string (1..1)
+    defaultingParty string (1..1)
+    eventOfDefaultDate date (1..1) <"The business date on which the non-defaulting party's service observed the oracle's default record.">
+    earlyTerminationDate date (1..1) <"The date on which the delivery and redelivery obligations of every loan are accelerated.">
+    automaticEarlyTermination boolean (1..1) <"The defaulting party's GMSLA election (EventsOfDefaultElection.automaticEarlyTerminationApplies is Applicable).">
+
+    condition TwoParties:
+        nonDefaultingParty <> defaultingParty
+
+    condition NotBeforeTheDefault:
+        earlyTerminationDate >= eventOfDefaultDate
+
+    condition AutomaticOnTheDefaultDate: <"Automatic early termination takes effect on the date of the default.">
+        if automaticEarlyTermination = True then earlyTerminationDate = eventOfDefaultDate
+
+type GmslaDefaultLoanValue: <"One loan in the close-out: the Default Market Value of the Equivalent Securities, owed to the lender, the value of the collateral the lender holds, owed to the borrower, and the loan's rate accrued and not yet paid, all as at the Early Termination Date.">
+    loanId string (1..1)
+    termination BusinessEvent (1..1) <"CDM's termination event of the loan on the Early Termination Date (Create_TerminationInstruction); it qualifies as Termination and not as a GMSLA return.">
+    lender string (1..1)
+    borrower string (1..1)
+    security string (1..1) <"The ISIN of the loaned securities.">
+    quantity number (1..1) <"The loaned quantity outstanding.">
+    price number (1..1) <"The price of one unit on the Early Termination Date: the oracle's price.">
+    defaultMarketValue number (1..1) <"GmraDefaultMarketValue: quantity x price.">
+    collateral string (1..1) <"The Base Currency for cash collateral, the ISIN for securities.">
+    collateralCash boolean (1..1)
+    collateralQuantity number (1..1) <"The collateral the lender holds.">
+    collateralPrice number (1..1) <"1 for cash; the oracle's price for securities.">
+    collateralValue number (1..1) <"GmraDefaultMarketValue: collateral quantity x collateral price.">
+    accrual GmslaLoanInvoice (0..1) <"The rebate or fee from the billed-through date, or the delivery, to the Early Termination Date, built as an invoice is; absent when no day is unbilled.">
+    accruedAmount number (1..1) <"The accrual's total; zero without one.">
+
+    condition Terminated: <"The event is CDM's termination of the loan, not a return.">
+        Qualify_Termination(termination) and Qualify_GmslaReturn(termination) is absent
+
+    condition CashAtPar:
+        if collateralCash = True then collateralPrice = 1
+
+    condition Accrued:
+        if accrual exists then accruedAmount = accrual -> amount and accrual -> loanId = loanId else accruedAmount = 0
+
+    condition NotNegative:
+        quantity >= 0 and price >= 0 and defaultMarketValue >= 0 and collateralQuantity >= 0 and collateralPrice >= 0
+            and collateralValue >= 0 and accruedAmount >= 0
+
+    condition TwoParties:
+        lender <> borrower
+
+type GmslaDefaultHeldMargin: <"Margin one party holds from the other under the pair's settled GMSLA calls (wp-adr-gmsla-marking): cash at its amount, securities at their Default Market Value. The holder owes the value back.">
+    holder string (1..1)
+    giver string (1..1)
+    asset string (1..1) <"The Base Currency for cash, the ISIN for securities.">
+    cash boolean (1..1)
+    quantity number (1..1)
+    price number (1..1) <"1 for cash; the oracle's price on the Early Termination Date for securities.">
+    value number (1..1)
+    callId string (1..*) <"The GMSLA calls the margin was transferred under, which the close-out settles: margin views after it no longer count them.">
+
+    condition CashAtPar:
+        if cash = True then price = 1
+
+    condition NotNegative:
+        quantity >= 0 and price >= 0 and value >= 0
+
+type GmslaCloseOutStatement: <"The close-out of every delivered loan between the pair after an Event of Default: the values each party owes, set off into one balance in the Base Currency payable by one party. No securities or collateral move.">
+    [rootType]
+    notice GmslaDefaultNotice (1..1)
+    baseCurrency string (1..1) <"The Base Currency, as an ISO 4217 code.">
+    valuationDate date (1..1) <"The day of the prices.">
+    loanValue GmslaDefaultLoanValue (1..*)
+    heldMargin GmslaDefaultHeldMargin (0..*)
+    netAmount number (1..1) <"GmslaCloseOutNetAmount from the non-defaulting party's side: positive when the defaulting party pays.">
+    balance number (1..1) <"The amount the payer pays.">
+    payer string (0..1)
+    receiver string (0..1)
+
+    condition NetAmount: <"The net amount is the set-off of every value in the statement.">
+        netAmount = GmslaCloseOutNetAmount(loanValue, heldMargin, notice -> nonDefaultingParty)
+
+    condition Balance: <"The balance is the net amount, paid by the party that owes it; no payer when it is zero.">
+        if netAmount > 0
+        then balance = netAmount and payer = notice -> defaultingParty and receiver = notice -> nonDefaultingParty
+        else if netAmount < 0
+        then balance = 0 - netAmount and payer = notice -> nonDefaultingParty and receiver = notice -> defaultingParty
+        else balance = 0 and payer is absent and receiver is absent
+
+    condition PairOnly: <"Every loan is between the two parties.">
+        [notice -> nonDefaultingParty, notice -> defaultingParty] contains loanValue -> lender
+            and [notice -> nonDefaultingParty, notice -> defaultingParty] contains loanValue -> borrower
+
+    condition ValuedOnTheTerminationDate:
+        valuationDate >= notice -> earlyTerminationDate
+
+    condition AccruedToTheTerminationDate: <"Every accrual ends on the Early Termination Date.">
+        if loanValue -> accrual exists then loanValue -> accrual -> periodEnd all = notice -> earlyTerminationDate

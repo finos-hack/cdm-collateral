@@ -2,7 +2,7 @@
 id: task-gmsla-rebate
 type: task
 title: Rebate on cash collateral
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T20:39:13Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: rebate on cash collateral
 
@@ -48,3 +48,5 @@ the period 2026-11-11 to 2026-12-11:
 
 **Design chosen 2026-11-11** (source `7aad715d9ef96f8f93b411878275c88a846e99a8`: "1a 2a 3a 4a 5a 6a 7a 8a 9a 10a"), recorded in [[wp-adr-gmsla-rebate]]
 (proposed); the rules are questions for an SME in [[task-sme-gmsla-rebate-rules]].
+
+The project owner resolved the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "1. resolve them"): row 17 is built and `flow-gmsla-rebate` passes (on main since 611c9ee).

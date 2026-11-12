@@ -146,6 +146,14 @@ public final class CdmGmsla {
         return new Terms(m.getAfter(), hash, current.amendments() + 1);
     }
 
+    /** Whether automatic early termination applies when the party in this role defaults (wp-adr-gmsla-default-close-out):
+     *  that party's EventsOfDefaultElection. */
+    public static boolean automaticEarlyTermination(GmslaTerms t, CounterpartyRoleEnum role) {
+        for (var e : gmsla(t).getEventsOfDefault().getPartyElection())
+            if (e.getParty() == role) return e.getAutomaticEarlyTerminationApplies().name().equals("APPLICABLE");
+        return false;
+    }
+
     private static String applies(Object enumValue) {
         return "Applicable".equals(String.valueOf(enumValue)) || "APPLICABLE".equals(String.valueOf(enumValue)) ? "applies" : "does not apply";
     }

@@ -52,12 +52,17 @@
     ".konspekt/instance/waypoints/wp-adr-repo-buy-sell-back.md",
     ".konspekt/instance/waypoints/wp-adr-repo-default-close-out.md",
     ".konspekt/instance/waypoints/wp-adr-securities-lending-gmsla-scope.md",
+    ".konspekt/instance/waypoints/wp-adr-triparty-scope.md",
+    ".konspekt/instance/waypoints/wp-adr-triparty-terms-profile.md",
+    ".konspekt/instance/waypoints/wp-adr-triparty-trade-start.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-terms.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-loan-delivery-return.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-marking.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-recall.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-substitution.md",
     ".konspekt/instance/waypoints/wp-adr-gmsla-rebate.md",
+    ".konspekt/instance/waypoints/wp-adr-gmsla-lending-fee.md",
+    ".konspekt/instance/waypoints/wp-adr-gmsla-default-close-out.md",
     ".konspekt/instance/waypoints/wp-adr-repo-purchase-repurchase.md",
     ".konspekt/instance/waypoints/wp-adr-revaluation-outstanding-im-from-calls.md",
     ".konspekt/instance/waypoints/wp-adr-settlement-netting-scope.md",
@@ -115,6 +120,12 @@
       "description": "User acting for the party that receives initial margin: issues margin calls, approves returns, declares a default and requests enforcement."
     },
     {
+      "unique-id": "triparty-agent-ops",
+      "node-type": "actor",
+      "name": "Triparty agent operations",
+      "description": "User acting for the triparty agent BANK-T (wp-adr-triparty-terms-profile): affirms or refuses triparty terms between a collateral giver and a collateral receiver, and in later tasks allocates, values and substitutes the giver's collateral against the profile."
+    },
+    {
       "unique-id": "dev-host",
       "node-type": "network",
       "name": "Development host",
@@ -131,7 +142,7 @@
       "name": "Participant stack",
       "description": "Per-participant deployment (ADR wp-adr-per-participant-services): each simulated participant runs its own party console, collateral workflow service, workflow store, ledger gateway and keystore, holding only its own books and its own signing key, and connected to its own Besu validator node. N stacks run side by side; the oracle service, mock market data and contracts are shared.",
       "metadata": {
-        "instances": "N, one per participant (pledgor, secured party, market operator)",
+        "instances": "N, one per participant (pledgor, secured party, triparty agent, market operator)",
         "isolation": "own process, own SQLite file, own key; no shared database"
       }
     },
@@ -375,6 +386,24 @@
       "metadata": {
         "language": "Solidity"
       }
+    },
+    {
+      "unique-id": "securities-loan-contract",
+      "node-type": "service",
+      "name": "Securities loan contract",
+      "description": "Securities loans under the GMSLA (flow-gmsla-loan-delivery-return and the lending rows): the lender books the loan's hash, the borrower affirms it, and the delivery and each return settle the loaned securities against the collateral by outright title transfer when the second party instructs with the same CDM hash; also recall, substitution of collateral, fee and rebate billing, and the default close-out (wp-adr-gmsla-default-close-out). Separate from the repo settlement contract (wp-adr-securities-lending-gmsla-scope).",
+      "metadata": {
+        "language": "Solidity"
+      }
+    },
+    {
+      "unique-id": "triparty-settlement-contract",
+      "node-type": "service",
+      "name": "Triparty settlement contract",
+      "description": "The triparty agent's books (flow-triparty-terms, wp-adr-triparty-terms-profile): the giver proposes the hash of the cdm-ext TripartyTerms, the receiver and the agent each affirm the same hash, and the terms take effect when both have; any of the three may refuse a proposal, and the giver or the receiver may terminate terms in effect. Deposits and allocation by the agent come in task-triparty-trade-start.",
+      "metadata": {
+        "language": "Solidity"
+      }
     }
   ],
   "relationships": [
@@ -421,7 +450,9 @@
             "margin-call-contract",
             "oracle-feed-contract",
             "portfolio-reconciliation-contract",
-            "repo-settlement-contract"
+            "repo-settlement-contract",
+            "securities-loan-contract",
+            "triparty-settlement-contract"
           ]
         }
       }
@@ -466,7 +497,9 @@
             "margin-call-contract",
             "oracle-feed-contract",
             "portfolio-reconciliation-contract",
-            "repo-settlement-contract"
+            "repo-settlement-contract",
+            "securities-loan-contract",
+            "triparty-settlement-contract"
           ]
         }
       }
@@ -501,6 +534,18 @@
       "relationship-type": {
         "interacts": {
           "actor": "market-operator",
+          "nodes": [
+            "party-console"
+          ]
+        }
+      }
+    },
+    {
+      "unique-id": "triparty-agent-uses-console",
+      "description": "Triparty agent operations affirms or refuses triparty terms in the agent's console instance (#/live/T).",
+      "relationship-type": {
+        "interacts": {
+          "actor": "triparty-agent-ops",
           "nodes": [
             "party-console"
           ]

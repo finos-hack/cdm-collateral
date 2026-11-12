@@ -430,9 +430,90 @@ const loanAbi = parseAbi([
   "function payBill(bytes32 loanId, bytes32 invoiceHash)",
   "function refuseBill(bytes32 loanId)",
   "function getBill(bytes32 loanId) view returns (address biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash, uint32 billedThrough)",
+  // GMSLA default close-out (wp-adr-gmsla-default-close-out)
+  "function serveDefaultNotice(address defaulting, bytes32 noticeHash)",
+  "function closeOutDefault(bytes32 closeOutId, address defaulting, bytes32 noticeHash, bytes32 cdmHash, address cash, address payer, uint256 amount)",
+  "function payCloseOut(bytes32 closeOutId)",
+  "function defaultNotice(address nonDefaulting, address defaulting) view returns (bytes32)",
+  "function getCloseOut(bytes32 closeOutId) view returns ((address nonDefaulting, address defaulting, address payer, address cash, uint256 amount, bytes32 noticeHash, bytes32 cdmHash, bool paid))",
+  "function closeOutsOf(address party) view returns (bytes32[])",
+  "function closeOutOf(bytes32 loanId) view returns (bytes32)",
 ]);
 
-export const LoanStateName = ["none", "booked", "affirmed", "open", "returned"];
+export const LoanStateName = ["none", "booked", "affirmed", "open", "returned", "closedOut"];
+
+const tripartyAbi = parseAbi([
+  "function proposeTerms(address receiver, address agent, bytes32 termsHash) returns (bytes32)",
+  "function affirmTerms(bytes32 termsId, bytes32 termsHash)",
+  "function refuseTerms(bytes32 termsId)",
+  "function terminateTerms(bytes32 termsId)",
+  "function getTerms(bytes32 termsId) view returns ((address giver, address receiver, address agent, bytes32 termsHash, uint8 state, bool receiverAffirmed, bool agentAffirmed, uint64 proposedAt, uint64 effectiveAt))",
+  "function currentTerms(address giver, address receiver, address agent) view returns (bytes32)",
+  "function termsOf(address party) view returns (bytes32[])",
+  "function deposit(bytes32 termsId, address token, uint256 amount, uint256 rank)",
+  "function withdraw(bytes32 termsId, address token, uint256 amount)",
+  "function requestRepo(bytes32 termsId, bytes32 requestHash, address cash, uint256 purchasePrice) returns (bytes32)",
+  "function affirmRequest(bytes32 repoId, bytes32 requestHash)",
+  "function allocate(bytes32 repoId, bytes32 allocationHash, address[] tokens, uint256[] amounts)",
+  "function refuseAllocation(bytes32 repoId)",
+  "function settlePurchase(bytes32 repoId, bytes32 allocationHash)",
+  "function cancelRepo(bytes32 repoId)",
+  "function getRepo(bytes32 repoId) view returns ((bytes32 termsId, bytes32 requestHash, address cash, uint256 purchasePrice, uint8 state, bytes32 allocationHash, uint64 requestedAt, uint64 settledAt))",
+  "function reposOf(bytes32 termsId) view returns (bytes32[])",
+  "function allocationOf(bytes32 repoId) view returns (address[] tokens, uint256[] amounts)",
+  "function freeOf(bytes32 termsId) view returns ((address token, uint256 amount, uint256 rank)[])",
+  "function revalue(bytes32 repoId, bytes32 revaluationHash, address[] tokens, uint256[] amounts)",
+  "function changesOf(bytes32 repoId) view returns ((bytes32 hash, uint64 blockNumber, uint8 kind)[])",
+  "function pendingSubstitutionOf(bytes32 repoId) view returns ((bytes32 requestHash, address requester))",
+  "function requestSubstitution(bytes32 repoId, bytes32 requestHash)",
+  "function withdrawSubstitution(bytes32 repoId)",
+  "function substitute(bytes32 repoId, bytes32 substitutionHash, address[] tokens, uint256[] amounts)",
+  "function declineSubstitution(bytes32 repoId, bytes32 substitutionHash)",
+  "function prepareTradeEnd(bytes32 repoId, bytes32 tradeEndHash, uint256 repurchasePrice)",
+  "function recordReport(bytes32 termsId, bytes32 reportHash)",
+  "function reportsOf(bytes32 termsId) view returns ((bytes32 reportHash, uint64 blockNumber)[])",
+  "function settleRepurchase(bytes32 repoId, bytes32 tradeEndHash)",
+  "function tradeEndOf(bytes32 repoId) view returns ((bytes32 tradeEndHash, uint256 repurchasePrice, uint64 blockNumber))",
+]);
+
+export const TripartyTermsStateName = ["none", "proposed", "effective", "refused", "terminated"];
+export const TripartyRepoStateName = ["none", "requested", "affirmed", "allocated", "settled", "cancelled", "repurchased"];
+
+/** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start), with the tokens allocated to it. */
+export interface OnChainTripartyRepo {
+  repoId: Hex;
+  termsId: Hex;
+  requestHash: Hex;
+  cash: Address;
+  purchasePrice: bigint;
+  state: string;
+  allocationHash: Hex;
+  requestedAt: bigint;
+  settledAt: bigint;
+  allocation: { token: Address; amount: bigint }[];
+}
+
+/** The giver's free account under a set of triparty terms. */
+export interface TripartyHolding {
+  token: Address;
+  amount: bigint;
+  rank: bigint;
+}
+
+/** Triparty terms on TripartySettlement (wp-adr-triparty-terms-profile). */
+export interface OnChainTripartyTerms {
+  termsId: Hex;
+  giver: Address;
+  receiver: Address;
+  agent: Address;
+  termsHash: Hex;
+  state: string;
+  receiverAffirmed: boolean;
+  agentAffirmed: boolean;
+  /** Block timestamps, seconds. */
+  proposedAt: bigint;
+  effectiveAt: bigint;
+}
 
 /** A securities loan on SecuritiesLoan (wp-adr-gmsla-loan-delivery-return). */
 export interface OnChainLoan {
@@ -461,6 +542,8 @@ export interface OnChainLoan {
   /** The pending invoice of the loan's rate (wp-adr-gmsla-rebate) and the date (YYYYMMDD) it is billed through (zeros:
    *  none, never billed). */
   bill: { biller: Address; cashToken: Address; periodEnd: number; amount: bigint; invoiceHash: Hex; billedThrough: number };
+  /** The GMSLA default close-out that closed the loan (wp-adr-gmsla-default-close-out; zero hash: none). */
+  closeOutId: Hex;
 }
 
 /** A GMRA default close-out on RepoSettlement (wp-adr-repo-default-close-out). */
@@ -622,6 +705,53 @@ export interface LedgerAdapter {
   payLoanBill(loanId: Hex, invoiceHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   refuseLoanBill(loanId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   listLoans(party: Address): Promise<OnChainLoan[]>;
+  /** GMSLA default close-out (wp-adr-gmsla-default-close-out); the record has the shape of a GMRA close-out. */
+  serveLoanDefaultNotice(defaulting: Address, noticeHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  closeOutLoanDefault(closeOutId: Hex, defaulting: Address, noticeHash: Hex, cdmHash: Hex, cash: Address, payer: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  payLoanCloseOut(closeOutId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  loanDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex>;
+  listLoanCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]>;
+  /** Triparty terms between a giver, a receiver and an agent (wp-adr-triparty-terms-profile). */
+  tripartyContract(): Address;
+  proposeTripartyTerms(receiver: Address, agent: Address, termsHash: Hex): Promise<{ txHash: Hex; block: bigint; termsId: Hex }>;
+  affirmTripartyTerms(termsId: Hex, termsHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  refuseTripartyTerms(termsId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  terminateTripartyTerms(termsId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getTripartyTerms(termsId: Hex): Promise<OnChainTripartyTerms>;
+  listTripartyTerms(party: Address): Promise<OnChainTripartyTerms[]>;
+  /** Trade start (wp-adr-triparty-trade-start). The deposit approves TripartySettlement for the amount first. */
+  depositTriparty(termsId: Hex, token: Address, amount: bigint, rank: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  withdrawTriparty(termsId: Hex, token: Address, amount: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  requestTripartyRepo(termsId: Hex, requestHash: Hex, cash: Address, purchasePrice: bigint): Promise<{ txHash: Hex; block: bigint; repoId: Hex }>;
+  affirmTripartyRequest(repoId: Hex, requestHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  allocateTriparty(repoId: Hex, allocationHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  refuseTripartyAllocation(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** The receiver approves TripartySettlement for the Purchase Price, then settles. */
+  settleTripartyPurchase(repoId: Hex, allocationHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** Trade end (wp-adr-triparty-trade-end): the agent prepares; the giver pays the Repurchase Price against the release. */
+  prepareTripartyTradeEnd(repoId: Hex, tradeEndHash: Hex, repurchasePrice: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  settleTripartyRepurchase(repoId: Hex, tradeEndHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  tripartyTradeEnd(repoId: Hex): Promise<{ tradeEndHash: Hex; repurchasePrice: bigint; block: bigint } | null>;
+  /** Reporting (wp-adr-triparty-reporting): the agent records a report; the parties read the terms as they were at a block. */
+  recordTripartyReport(termsId: Hex, reportHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  tripartyReports(termsId: Hex): Promise<{ reportHash: Hex; block: bigint }[]>;
+  tripartyTermsAt(termsId: Hex, block: bigint): Promise<{ repos: { repoId: Hex; state: string; allocation: { token: Address; amount: bigint }[] }[]; free: TripartyHolding[]; prices: { token: Address; price: bigint | null }[] }>;
+  cancelTripartyRepo(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo>;
+  listTripartyRepos(termsId: Hex): Promise<OnChainTripartyRepo[]>;
+  tripartyFree(termsId: Hex): Promise<TripartyHolding[]>;
+  /** Revaluation (wp-adr-triparty-revaluation): the agent replaces a settled repo's holding; the hash is kept with its block. */
+  revalueTriparty(repoId: Hex, revaluationHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  /** The repo's holding changes, oldest first: revaluation, substitution or declined. */
+  tripartyChanges(repoId: Hex): Promise<{ hash: Hex; block: bigint; kind: "revaluation" | "substitution" | "declined" }[]>;
+  /** Substitution (wp-adr-triparty-substitution): the request awaiting the agent, the request, withdrawal, and the agent's answer. */
+  tripartyPendingSubstitution(repoId: Hex): Promise<{ requestHash: Hex; requester: Address } | null>;
+  requestTripartySubstitution(repoId: Hex, requestHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  withdrawTripartySubstitution(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  substituteTriparty(repoId: Hex, substitutionHash: Hex, tokens: Address[], amounts: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  declineTripartySubstitution(repoId: Hex, substitutionHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** A repo's holding, its terms' free account and the feed prices of those tokens at the end of a block. */
+  tripartyRepoAt(repoId: Hex, block: bigint): Promise<{ allocation: { token: Address; amount: bigint }[]; free: TripartyHolding[]; prices: { token: Address; price: bigint | null }[] }>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1166,19 +1296,235 @@ export class BesuAdapter implements LedgerAdapter {
 
   async getLoan(loanId: Hex): Promise<OnChainLoan> {
     const address = this.loanContract();
-    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall" | "substitution" | "bill"> & { state: number };
+    const l = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getLoan", args: [loanId] })) as Omit<OnChainLoan, "loanId" | "state" | "delivery" | "pendingReturn" | "recall" | "substitution" | "bill" | "closeOutId"> & { state: number };
     const [cq, cd, cn] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getRecall", args: [loanId] })) as readonly [bigint, number, Hex];
     const [bb, bt, be, ba, bh, bth] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getBill", args: [loanId] })) as readonly [Address, Address, number, bigint, Hex, number];
     const [sc, sa, sh] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getSubstitution", args: [loanId] })) as readonly [Address, bigint, Hex];
     const [dl, db] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getDeliveryInstructions", args: [loanId] })) as readonly [Hex, Hex];
     const [rl, rb, rq, rc] = (await this.pub.readContract({ address, abi: loanAbi, functionName: "getReturnInstructions", args: [loanId] })) as readonly [Hex, Hex, bigint, bigint];
+    const closeOutId = (await this.pub.readContract({ address, abi: loanAbi, functionName: "closeOutOf", args: [loanId] })) as Hex;
     const state = Number(l.state);
-    return { ...l, loanId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn }, substitution: { collateral: sc, collateralAmount: sa, cdmHash: sh }, bill: { biller: bb, cashToken: bt, periodEnd: Number(be), amount: ba, invoiceHash: bh, billedThrough: Number(bth) } };
+    return { ...l, loanId, closeOutId, state: LoanStateName[state] ?? String(state), delivery: { lender: dl, borrower: db }, pendingReturn: { lender: rl, borrower: rb, quantity: rq, collateralAmount: rc }, recall: { quantity: cq, settlementDate: Number(cd), noticeHash: cn }, substitution: { collateral: sc, collateralAmount: sa, cdmHash: sh }, bill: { biller: bb, cashToken: bt, periodEnd: Number(be), amount: ba, invoiceHash: bh, billedThrough: Number(bth) } };
   }
 
   async listLoans(party: Address) {
     const ids = (await this.pub.readContract({ address: this.loanContract(), abi: loanAbi, functionName: "loansOf", args: [party] })) as readonly Hex[];
     return Promise.all(ids.map((id) => this.getLoan(id)));
+  }
+
+  /** The non-defaulting party serves a GMSLA Default Notice (wp-adr-gmsla-default-close-out) with its CDM record's hash. */
+  serveLoanDefaultNotice(defaulting: Address, noticeHash: Hex) {
+    return this.send(this.loanContract(), loanAbi, "serveDefaultNotice", [defaulting, noticeHash]);
+  }
+
+  /** The non-defaulting party closes out every open loan with the defaulting party under the statement hash. */
+  closeOutLoanDefault(closeOutId: Hex, defaulting: Address, noticeHash: Hex, cdmHash: Hex, cash: Address, payer: Address, amount: bigint) {
+    return this.send(this.loanContract(), loanAbi, "closeOutDefault", [closeOutId, defaulting, noticeHash, cdmHash, cash, payer, amount]);
+  }
+
+  /** The party that owes a GMSLA close-out balance pays it (after approving the loan contract for the amount). */
+  payLoanCloseOut(closeOutId: Hex) {
+    return this.send(this.loanContract(), loanAbi, "payCloseOut", [closeOutId]);
+  }
+
+  async loanDefaultNotice(nonDefaulting: Address, defaulting: Address): Promise<Hex> {
+    return (await this.pub.readContract({ address: this.loanContract(), abi: loanAbi, functionName: "defaultNotice", args: [nonDefaulting, defaulting] })) as Hex;
+  }
+
+  async listLoanCloseOuts(party: Address): Promise<OnChainRepoCloseOut[]> {
+    const address = this.loanContract();
+    const ids = (await this.pub.readContract({ address, abi: loanAbi, functionName: "closeOutsOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map(async (closeOutId) => ({
+      closeOutId,
+      ...((await this.pub.readContract({ address, abi: loanAbi, functionName: "getCloseOut", args: [closeOutId] })) as Omit<OnChainRepoCloseOut, "closeOutId">),
+    })));
+  }
+
+  /** The TripartySettlement address: the triparty agent's books. */
+  tripartyContract(): Address {
+    const a = this.reg.contracts.tripartySettlement;
+    if (!a) throw new Error("no TripartySettlement in the deployment registry; redeploy the contracts");
+    return a;
+  }
+
+  /** The giver proposes triparty terms; the id is the giver's current terms with the receiver and the agent. */
+  async proposeTripartyTerms(receiver: Address, agent: Address, termsHash: Hex) {
+    const r = await this.send(this.tripartyContract(), tripartyAbi, "proposeTerms", [receiver, agent, termsHash]);
+    const termsId = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "currentTerms", args: [this.account, receiver, agent] })) as Hex;
+    return { ...r, termsId };
+  }
+
+  affirmTripartyTerms(termsId: Hex, termsHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "affirmTerms", [termsId, termsHash]);
+  }
+
+  refuseTripartyTerms(termsId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "refuseTerms", [termsId]);
+  }
+
+  terminateTripartyTerms(termsId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "terminateTerms", [termsId]);
+  }
+
+  async getTripartyTerms(termsId: Hex): Promise<OnChainTripartyTerms> {
+    const t = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "getTerms", args: [termsId] })) as {
+      giver: Address; receiver: Address; agent: Address; termsHash: Hex; state: number; receiverAffirmed: boolean; agentAffirmed: boolean; proposedAt: bigint; effectiveAt: bigint };
+    return { termsId, ...t, state: TripartyTermsStateName[t.state] ?? String(t.state) };
+  }
+
+  async listTripartyTerms(party: Address) {
+    const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "termsOf", args: [party] })) as readonly Hex[];
+    return Promise.all(ids.map((id) => this.getTripartyTerms(id)));
+  }
+
+  async depositTriparty(termsId: Hex, token: Address, amount: bigint, rank: bigint) {
+    await this.approve(token, this.tripartyContract(), amount);
+    return this.send(this.tripartyContract(), tripartyAbi, "deposit", [termsId, token, amount, rank]);
+  }
+
+  withdrawTriparty(termsId: Hex, token: Address, amount: bigint) {
+    return this.send(this.tripartyContract(), tripartyAbi, "withdraw", [termsId, token, amount]);
+  }
+
+  /** The giver requests a repo; the id is the last repo under the terms. */
+  async requestTripartyRepo(termsId: Hex, requestHash: Hex, cash: Address, purchasePrice: bigint) {
+    const r = await this.send(this.tripartyContract(), tripartyAbi, "requestRepo", [termsId, requestHash, cash, purchasePrice]);
+    const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "reposOf", args: [termsId] })) as readonly Hex[];
+    return { ...r, repoId: ids[ids.length - 1] };
+  }
+
+  affirmTripartyRequest(repoId: Hex, requestHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "affirmRequest", [repoId, requestHash]);
+  }
+
+  allocateTriparty(repoId: Hex, allocationHash: Hex, tokens: Address[], amounts: bigint[]) {
+    return this.send(this.tripartyContract(), tripartyAbi, "allocate", [repoId, allocationHash, tokens, amounts]);
+  }
+
+  refuseTripartyAllocation(repoId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "refuseAllocation", [repoId]);
+  }
+
+  async settleTripartyPurchase(repoId: Hex, allocationHash: Hex) {
+    const r = await this.getTripartyRepo(repoId);
+    await this.approve(r.cash, this.tripartyContract(), r.purchasePrice);
+    return this.send(this.tripartyContract(), tripartyAbi, "settlePurchase", [repoId, allocationHash]);
+  }
+
+  cancelTripartyRepo(repoId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "cancelRepo", [repoId]);
+  }
+
+  prepareTripartyTradeEnd(repoId: Hex, tradeEndHash: Hex, repurchasePrice: bigint) {
+    return this.send(this.tripartyContract(), tripartyAbi, "prepareTradeEnd", [repoId, tradeEndHash, repurchasePrice]);
+  }
+
+  async settleTripartyRepurchase(repoId: Hex, tradeEndHash: Hex) {
+    const r = await this.getTripartyRepo(repoId);
+    const e = await this.tripartyTradeEnd(repoId);
+    if (!e) throw new Error("no trade end prepared");
+    await this.approve(r.cash, this.tripartyContract(), e.repurchasePrice);
+    return this.send(this.tripartyContract(), tripartyAbi, "settleRepurchase", [repoId, tradeEndHash]);
+  }
+
+  recordTripartyReport(termsId: Hex, reportHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "recordReport", [termsId, reportHash]);
+  }
+
+  async tripartyReports(termsId: Hex) {
+    const rs = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "reportsOf", args: [termsId] })) as readonly { reportHash: Hex; blockNumber: bigint }[];
+    return rs.map((r) => ({ reportHash: r.reportHash, block: r.blockNumber }));
+  }
+
+  /** The terms as a report's check reads them: each repo's state and holding, the free account and the feed prices of
+   *  all those tokens, at the end of the block. */
+  async tripartyTermsAt(termsId: Hex, block: bigint) {
+    const tri = this.tripartyContract();
+    const feed = this.reg.contracts.oracleFeed;
+    const ids = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "reposOf", args: [termsId], blockNumber: block })) as readonly Hex[];
+    const repos = [];
+    for (const repoId of ids) {
+      const r = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "getRepo", args: [repoId], blockNumber: block })) as { state: number };
+      const [tokens, amounts] = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "allocationOf", args: [repoId], blockNumber: block })) as readonly [readonly Address[], readonly bigint[]];
+      repos.push({ repoId, state: TripartyRepoStateName[r.state] ?? String(r.state), allocation: tokens.map((token, i) => ({ token: getAddress(token), amount: amounts[i] })) });
+    }
+    const free = [...((await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "freeOf", args: [termsId], blockNumber: block })) as readonly TripartyHolding[])];
+    const prices = [];
+    for (const token of new Set([...repos.flatMap((r) => r.allocation.map((a) => a.token)), ...free.map((h) => getAddress(h.token))])) {
+      const has = (await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "hasPrice", args: [token], blockNumber: block })) as boolean;
+      const price = has ? ((await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "price", args: [token], blockNumber: block })) as bigint) : null;
+      prices.push({ token, price });
+    }
+    return { repos, free, prices };
+  }
+
+  async tripartyTradeEnd(repoId: Hex) {
+    const e = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "tradeEndOf", args: [repoId] })) as { tradeEndHash: Hex; repurchasePrice: bigint; blockNumber: bigint };
+    return /^0x0+$/.test(e.tradeEndHash) ? null : { tradeEndHash: e.tradeEndHash, repurchasePrice: e.repurchasePrice, block: e.blockNumber };
+  }
+
+  async getTripartyRepo(repoId: Hex): Promise<OnChainTripartyRepo> {
+    const r = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "getRepo", args: [repoId] })) as {
+      termsId: Hex; requestHash: Hex; cash: Address; purchasePrice: bigint; state: number; allocationHash: Hex; requestedAt: bigint; settledAt: bigint };
+    const [tokens, amounts] = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "allocationOf", args: [repoId] })) as readonly [readonly Address[], readonly bigint[]];
+    return { repoId, ...r, state: TripartyRepoStateName[r.state] ?? String(r.state), allocation: tokens.map((token, i) => ({ token, amount: amounts[i] })) };
+  }
+
+  async listTripartyRepos(termsId: Hex) {
+    const ids = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "reposOf", args: [termsId] })) as readonly Hex[];
+    return Promise.all(ids.map((id) => this.getTripartyRepo(id)));
+  }
+
+  async tripartyFree(termsId: Hex) {
+    return [...((await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "freeOf", args: [termsId] })) as readonly TripartyHolding[])];
+  }
+
+  revalueTriparty(repoId: Hex, revaluationHash: Hex, tokens: Address[], amounts: bigint[]) {
+    return this.send(this.tripartyContract(), tripartyAbi, "revalue", [repoId, revaluationHash, tokens, amounts]);
+  }
+
+  async tripartyChanges(repoId: Hex) {
+    const kinds = { 1: "revaluation", 2: "substitution", 3: "declined" } as const;
+    const cs = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "changesOf", args: [repoId] })) as readonly { hash: Hex; blockNumber: bigint; kind: number }[];
+    return cs.map((c) => ({ hash: c.hash, block: c.blockNumber, kind: kinds[c.kind as 1 | 2 | 3] }));
+  }
+
+  async tripartyPendingSubstitution(repoId: Hex) {
+    const p = (await this.pub.readContract({ address: this.tripartyContract(), abi: tripartyAbi, functionName: "pendingSubstitutionOf", args: [repoId] })) as { requestHash: Hex; requester: Address };
+    return /^0x0+$/.test(p.requestHash) ? null : { requestHash: p.requestHash, requester: getAddress(p.requester) };
+  }
+
+  requestTripartySubstitution(repoId: Hex, requestHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "requestSubstitution", [repoId, requestHash]);
+  }
+
+  withdrawTripartySubstitution(repoId: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "withdrawSubstitution", [repoId]);
+  }
+
+  substituteTriparty(repoId: Hex, substitutionHash: Hex, tokens: Address[], amounts: bigint[]) {
+    return this.send(this.tripartyContract(), tripartyAbi, "substitute", [repoId, substitutionHash, tokens, amounts]);
+  }
+
+  declineTripartySubstitution(repoId: Hex, substitutionHash: Hex) {
+    return this.send(this.tripartyContract(), tripartyAbi, "declineSubstitution", [repoId, substitutionHash]);
+  }
+
+  /** The chain as a revaluation's check reads it (wp-adr-triparty-revaluation): the repo's holding, the free account of
+   *  its terms and the feed price of each of those tokens, at the end of the block (the block before a revaluation). */
+  async tripartyRepoAt(repoId: Hex, block: bigint) {
+    const tri = this.tripartyContract();
+    const feed = this.reg.contracts.oracleFeed;
+    const r = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "getRepo", args: [repoId], blockNumber: block })) as { termsId: Hex };
+    const [tokens, amounts] = (await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "allocationOf", args: [repoId], blockNumber: block })) as readonly [readonly Address[], readonly bigint[]];
+    const free = [...((await this.pub.readContract({ address: tri, abi: tripartyAbi, functionName: "freeOf", args: [r.termsId], blockNumber: block })) as readonly TripartyHolding[])];
+    const prices = [];
+    for (const token of new Set([...tokens, ...free.map((h) => h.token)].map((t) => getAddress(t)))) {
+      const has = (await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "hasPrice", args: [token], blockNumber: block })) as boolean;
+      const price = has ? ((await this.pub.readContract({ address: feed, abi: oracleAbi, functionName: "price", args: [token], blockNumber: block })) as bigint) : null;
+      prices.push({ token, price });
+    }
+    return { allocation: tokens.map((token, i) => ({ token: getAddress(token), amount: amounts[i] })), free, prices };
   }
 
   /** The RepoSettlement address, which each party approves for its leg. */

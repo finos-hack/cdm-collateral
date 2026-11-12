@@ -2,7 +2,7 @@
 id: task-live-spec-duration
 type: task
 title: Find out why each live spec takes 30 seconds to a minute
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: csa-section-b
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-07T18:27:28Z
   confidence: 0.7
 createdAt: 2026-11-07T18:27:28Z
-updatedAt: 2026-11-07T18:54:12Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: find out why each live spec takes 30 seconds to a minute
 
@@ -57,3 +57,5 @@ may explain the slower run. Candidate changes (estimated savings): a 250 ms rece
 one console refresh in flight at a time; relay first, then fold (3–8 s a settlement); a 1 s block period, worth it
 only after the receipt poll is fixed, and it needs a chain reset. The raw traces are outside the repo, in this
 session's scratchpad.
+
+The project owner resolved the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "4. b"): of its three parts, [[task-gateway-receipt-poll]] and [[task-live-read-latency]] are resolved; the deferred [[task-test-chain-block-period]] carries the rest.

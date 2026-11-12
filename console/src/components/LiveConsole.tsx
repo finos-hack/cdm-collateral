@@ -25,12 +25,15 @@ import {
   type LiveNetting,
   type LiveNettingCandidates,
   type LiveAgreement,
-  type LiveGmraTerms, type LiveGmslaMarking, type LiveGmslaTerms, type LiveLoan, type LiveLoans, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
+  type LiveGmraTerms, type LiveGmslaMarking, type LiveLoanDefault, type LiveGmslaTerms, type LiveLoan, type LiveLoans, type LiveRepo, type LiveRepoMargin, type LiveRepos, type LiveRepoDefault,
   type LiveParty,
+  type LiveTriparty,
+  tripartyApi,
   type LiveRevaluation,
   type LiveState,
   type LiveSubstitution,
 } from "../domain/liveApi";
+import { TripartyTermsCard } from "./TripartyConsole";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const usd = (s: string) => "USD " + Number(s).toLocaleString("en-US");
@@ -59,6 +62,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [repoMargin, setRepoMargin] = useState<LiveRepoMargin | null>(null);
   const [gmslaMarking, setGmslaMarking] = useState<LiveGmslaMarking | null>(null);
   const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
+  const [loanDefault, setLoanDefault] = useState<LiveLoanDefault | null>(null);
+  const [triparty, setTriparty] = useState<LiveTriparty | null>(null);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -96,6 +101,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.repoMargin(party).then((m) => setRepoMargin(m?.businessDate && Array.isArray(m?.exposures) ? m : null)).catch(() => setRepoMargin(null)),
         api.gmslaMarking(party).then((m) => setGmslaMarking(m?.businessDate && Array.isArray(m?.loans) ? m : null)).catch(() => setGmslaMarking(null)),
         api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
+        api.loanDefault(party).then((d) => setLoanDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setLoanDefault(null)),
+        tripartyApi.triparty(party).then((t) => setTriparty(Array.isArray(t?.terms) ? t : null)).catch(() => setTriparty(null)),
       );
       setState(await api.state(party));
       setError(null);
@@ -407,9 +414,11 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {gmsla && <GmslaTermsCard party={party} other={other} gmsla={gmsla} busy={busy} run={run} />}
       {loans && <LoansCard party={party} other={other} loans={loans} defaultMargin={gmsla?.elections.defaultMargin ?? "1.02"} busy={busy} run={run} />}
       {gmslaMarking && <GmslaMarkingCard party={party} other={other} mark={gmslaMarking} busy={busy} run={run} />}
+      {loanDefault && <LoanDefaultCard party={party} other={other} d={loanDefault} busy={busy} run={run} />}
 
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
+      {triparty && <TripartyTermsCard party={party} triparty={triparty} busy={busy} run={run} />}
       {repoDefault && <RepoDefaultCard party={party} other={other} d={repoDefault} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />
@@ -1027,8 +1036,9 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       </>
     );
   };
-  // The rebate of a cash loan (wp-adr-gmsla-rebate): the borrower bills the period since the billed-through date, the
-  // lender pays the checked invoice in tUSD or refuses it.
+  // The billing of the loan's rate: the rebate of a cash loan, billed by the borrower (wp-adr-gmsla-rebate), or the fee
+  // of a loan against securities, billed by the lender (wp-adr-gmsla-lending-fee), for the period since the
+  // billed-through date; the other party pays the checked invoice in tUSD or refuses it.
   const billing = (l: LiveLoan) => {
     const b = l.billing;
     if (!l.verified || !b || (l.state !== "open" && l.state !== "returned")) return "—";
@@ -1039,7 +1049,9 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       const parts = (p.periods ?? []).map((x) => `${Number(x.notional).toLocaleString("en-US")} ${x.startDate} to ${x.endDate}: ${x.accrual}`).join("; ");
       const status = (
         <span data-testid={`loan-bill-${l.loanId}`} className={p.verified ? undefined : "bad"}>
-          {p.verified ? `rebate ${Number(p.amount).toLocaleString("en-US")} tUSD for ${p.periodStart} to ${p.periodEnd} (${parts})` : p.problem ?? "invoice not verified"}
+          {p.verified
+            ? `${(p.rateType ?? b.rateType ?? "Rebate").toLowerCase()} ${Number(p.amount).toLocaleString("en-US")} tUSD for ${p.periodStart} to ${p.periodEnd}${p.price ? ` at ${p.price}` : ""} (${parts})`
+            : p.problem ?? "invoice not verified"}
         </span>
       );
       if (p.billedByMe) return <>{through}{through ? " " : null}{status}, awaiting {other}</>;
@@ -1051,11 +1063,11 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
         </>
       );
     }
-    if (b.rateType !== "Rebate" || !b.billedByMe || !b.billable) return through ?? "—";
+    if (!b.rateType || !b.billedByMe || !b.billable) return through ?? "—";
     return (
       <>
         {through}{through ? " " : null}
-        <button disabled={busy} onClick={() => run(() => api.billLoan(party, l.loanId))}>Bill rebate {b.billable.periodStart} to {b.billable.periodEnd}</button>
+        <button disabled={busy} onClick={() => run(() => api.billLoan(party, l.loanId))}>Bill {b.rateType === "Fee" ? "fee" : "rebate"} {b.billable.periodStart} to {b.billable.periodEnd}</button>
       </>
     );
   };
@@ -1101,7 +1113,7 @@ function LoansCard(props: { party: LiveParty; other: LiveParty; loans: LiveLoans
       {r.loans.length > 0 && (
         <table className="tbl">
           <thead>
-            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th>Substitution</th><th>Rebate</th><th></th></tr>
+            <tr><th>Loan</th><th>Role</th><th>Loaned</th><th>Collateral</th><th>Rate</th><th>Last return</th><th>State</th><th>Recall</th><th>Substitution</th><th>Rate billing</th><th></th></tr>
           </thead>
           <tbody>
             {r.loans.map((l) => (
@@ -1415,6 +1427,59 @@ function RepoDefaultCard(props: { party: LiveParty; other: LiveParty; d: LiveRep
                 <td>
                   {c.toPay && (
                     <button disabled={busy || !c.verified} onClick={() => run(() => api.payRepoCloseOut(party, c.closeOutId))}>
+                      Pay USD {c.amount}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/** GMSLA default close-out (wp-adr-gmsla-default-close-out): the non-defaulting party closes out every open loan of the
+ *  pair into one balance in the Base Currency; the party that owes it pays. No securities or collateral move. */
+function LoanDefaultCard(props: { party: LiveParty; other: LiveParty; d: LiveLoanDefault; busy: boolean; run: (fn: () => Promise<unknown>) => void }) {
+  const { party, other, d, busy, run } = props;
+  const p = d.preview;
+  const balanceText = (s: { balance: string; payer: string | null }) => (s.payer ? `${s.payer} pays USD ${s.balance}` : "no balance");
+  return (
+    <div className="card" data-testid="loan-default">
+      <h3>Securities lending default (GMSLA)</h3>
+      <div className="row">
+        <span data-testid="loan-default-status">
+          {d.inDefault ? "this party is in default" : d.counterpartyInDefault ? `${other} is in default` : "no default recorded"}
+        </span>
+        <span>{d.automaticEarlyTermination ? "automatic early termination" : "Default Notice required"}</span>
+        <span>{d.openLoans} open loan(s) with {other}</span>
+        {!d.inDefault && d.openLoans > 0 && (
+          <button data-testid="loan-default-close-out" disabled={busy || !p} onClick={() => run(() => api.closeOutLoanDefault(party))}>
+            {d.counterpartyInDefault ? `Close out ${other}'s default` : `Declare ${other}'s default and close out`}
+            {p ? `: ${balanceText(p)}` : ""}
+          </button>
+        )}
+        {d.previewProblem && <span className="bad">{d.previewProblem}</span>}
+      </div>
+      {d.closeOuts.length > 0 && (
+        <table>
+          <thead>
+            <tr><th>close-out</th><th>defaulting</th><th>Early Termination Date</th><th>loans</th><th>balance</th><th>verified</th><th></th></tr>
+          </thead>
+          <tbody>
+            {d.closeOuts.map((c) => (
+              <tr key={c.closeOutId} data-testid={`loan-closeout-${c.closeOutId}`}>
+                <td>{c.closeOutId.slice(0, 10)}…</td>
+                <td>{c.defaulting}</td>
+                <td>{c.statement?.earlyTerminationDate ?? ""}{c.noticeServed ? " (notice)" : ""}</td>
+                <td>{c.statement?.loans.length ?? ""}</td>
+                <td data-testid="loan-closeout-balance">{c.payer ? `${c.payer} pays USD ${c.amount}` : "none"}{c.paid ? " — paid" : ""}</td>
+                <td className={c.verified ? "" : "bad"}>{c.verified ? "yes" : c.problem ?? "no"}</td>
+                <td>
+                  {c.toPay && (
+                    <button disabled={busy || !c.verified} onClick={() => run(() => api.payLoanCloseOut(party, c.closeOutId))}>
                       Pay USD {c.amount}
                     </button>
                   )}

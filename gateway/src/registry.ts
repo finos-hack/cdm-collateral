@@ -33,6 +33,8 @@ export interface Registry {
     repoSettlement?: `0x${string}`;
     /** Absent in a deployment made before flow-gmsla-loan-delivery-return. */
     securitiesLoan?: `0x${string}`;
+    /** Absent in a deployment made before flow-triparty-terms. */
+    tripartySettlement?: `0x${string}`;
   };
   priceScale: string;
   tokens: Record<string, TokenInfo>;

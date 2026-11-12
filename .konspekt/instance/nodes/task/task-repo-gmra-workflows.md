@@ -2,7 +2,7 @@
 id: task-repo-gmra-workflows
 type: task
 title: Implement the repo (GMRA) collateral workflows
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.75
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-07T22:35:17Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: implement the repo (GMRA) collateral workflows
 
@@ -36,3 +36,5 @@ per workflow in build order:
 9. [[task-repo-pair-off]]: Repo pair-off.
 10. [[task-repo-buy-sell-back]]: Buy/sell-back.
 11. [[task-repo-default-close-out]]: repo default and close-out under GMRA paragraph 10 (added 2026-11-07, source `098fab36b2d91ff22a659917fbb8c77ca7aa4108`).
+
+The project owner resolved the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "1. resolve them"): repo rows 1 to 11 of section C are built and their specs pass.

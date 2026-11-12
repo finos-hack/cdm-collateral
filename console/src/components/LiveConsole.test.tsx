@@ -967,7 +967,7 @@ describe("flow-gmsla-rebate", () => {
     deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
   });
 
-  it("the borrower bills the rebate for the period to its business date; a loan against securities has no rebate to bill", async () => {
+  it("the borrower bills the rebate for the period to its business date; it does not bill the fee of a loan against securities", async () => {
     const user = userEvent.setup();
     serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
       "/loans": { businessDate: "2026-12-11", loans: [
@@ -994,6 +994,42 @@ describe("flow-gmsla-rebate", () => {
     expect(screen.getByTestId("loan-billed-through-0xl1").textContent).toBe("billed through 2026-12-11");
     const row = screen.getByTestId("loan-0xl1");
     await user.click(within(row).getByRole("button", { name: "Pay 68 tUSD" }));
+    await user.click(within(row).getByRole("button", { name: "Refuse invoice" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill/pay", body: {} }, { path: "/loans/0xl1/bill/refuse", body: {} }]));
+  });
+});
+
+describe("flow-gmsla-lending-fee", () => {
+  const loan = (over: Record<string, unknown>) => ({
+    loanId: "0xl1", role: "lender", counterparty: "B", state: "open", security: "tMMF", quantity: "60000", collateral: "tUST",
+    collateralAmount: "623", tradeHash: "0x01", price: "1", marginPercent: "102", feeRatePercent: "0.5", termDate: null,
+    deliveryInstructedByMe: false, deliveryInstructedByCounterparty: false, verified: true, problem: null, ...over,
+  });
+
+  it("the lender bills the fee for the period to its business date", async () => {
+    const user = userEvent.setup();
+    serve("A", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-12-11", loans: [loan({ billing: { billedThrough: null, rateType: "Fee", billedByMe: true,
+        billable: { periodStart: "2026-11-11", periodEnd: "2026-12-11" }, verified: true } })] },
+    });
+    const row = await screen.findByTestId("loan-0xl1");
+    await user.click(within(row).getByRole("button", { name: "Bill fee 2026-11-11 to 2026-12-11" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill", body: {} }]));
+  });
+
+  it("the borrower sees the fee at the billing date's price and pays or refuses it", async () => {
+    const user = userEvent.setup();
+    const pending = { rateType: "Fee", price: "1.1", amount: "37", periodStart: "2026-11-11", periodEnd: "2026-12-11", billedByMe: false, verified: true,
+      periods: [{ startDate: "2026-11-11", endDate: "2026-11-26", notional: "110000", accrual: "22.9166666667", quantity: "100000" },
+        { startDate: "2026-11-26", endDate: "2026-12-11", notional: "66000", accrual: "13.75", quantity: "60000" }] };
+    serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, {
+      "/loans": { businessDate: "2026-12-11", loans: [loan({ role: "borrower", counterparty: "A",
+        billing: { billedThrough: null, rateType: "Fee", billedByMe: false, pending, verified: true } })] },
+    });
+    expect((await screen.findByTestId("loan-bill-0xl1")).textContent).toBe(
+      "fee 37 tUSD for 2026-11-11 to 2026-12-11 at 1.1 (110,000 2026-11-11 to 2026-11-26: 22.9166666667; 66,000 2026-11-26 to 2026-12-11: 13.75)");
+    const row = screen.getByTestId("loan-0xl1");
+    await user.click(within(row).getByRole("button", { name: "Pay 37 tUSD" }));
     await user.click(within(row).getByRole("button", { name: "Refuse invoice" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/loans/0xl1/bill/pay", body: {} }, { path: "/loans/0xl1/bill/refuse", body: {} }]));
   });
@@ -1026,6 +1062,44 @@ describe("flow-gmsla-marking", () => {
     cleanup();
     serve("B", { calls: [], balances: balances("0") }, NO_SHORTFALL, { "/gmsla-marking": mark({ callOpen: true }) });
     expect((await screen.findByTestId("gmsla-call-open")).textContent).toBe("a GMSLA margin call is open");
+  });
+});
+
+describe("flow-gmsla-default-close-out", () => {
+  const statement = {
+    earlyTerminationDate: "2026-11-21", automaticEarlyTermination: false, nonDefaultingParty: "BANK-B", defaultingParty: "BANK-A",
+    loans: [{ loanId: "0xl1", lender: "BANK-A", borrower: "BANK-B", quantity: "100000", price: "1.1", defaultMarketValue: "110000",
+      collateral: "US9128100000", collateralQuantity: "1037", collateralPrice: "100", collateralValue: "103700", rateType: "Fee",
+      accruedFrom: "2026-11-11", accruedAmount: "15" }],
+    heldMargin: [], netAmount: "-6315", balance: "6315", payer: "BANK-B", receiver: "BANK-A",
+  };
+  const view = (over: Record<string, unknown>) => ({
+    businessDate: "2026-11-21", counterparty: "A", counterpartyInDefault: false, inDefault: false, automaticEarlyTermination: false,
+    baseCurrency: "USD", openLoans: 1, preview: statement, closeOuts: [], ...over,
+  });
+
+  it("the non-defaulting party declares the default and closes out with the balance shown", async () => {
+    const user = userEvent.setup();
+    serve("B", { calls: [], balances: [] }, NO_SHORTFALL, { "/loan-default": view({}) });
+    const button = await screen.findByTestId("loan-default-close-out");
+    expect(button.textContent).toBe("Declare A's default and close out: BANK-B pays USD 6315");
+    expect(screen.getByTestId("loan-default-status").textContent).toBe("no default recorded");
+    await user.click(button);
+    await waitFor(() => expect(posts).toEqual([{ path: "/loan-default/close-out", body: {} }]));
+  });
+
+  it("the defaulting party is offered no close-out; the payer pays a verified balance", async () => {
+    const user = userEvent.setup();
+    const closeOut = { closeOutId: "0xc0ffee0001", cdmHash: "0x01", nonDefaulting: "B", defaulting: "A", amount: "6315", paid: false, payer: "B",
+      toPay: true, noticeServed: true, verified: true, statement };
+    serve("A", { calls: [], balances: [] }, NO_SHORTFALL, { "/loan-default": view({ counterparty: "B", inDefault: true, openLoans: 0, preview: undefined, closeOuts: [{ ...closeOut, toPay: false }] }) });
+    expect((await screen.findByTestId("loan-default-status")).textContent).toBe("this party is in default");
+    expect(screen.queryByTestId("loan-default-close-out")).toBeNull();
+    expect(screen.getByTestId("loan-closeout-balance").textContent).toBe("B pays USD 6315");
+    cleanup();
+    serve("B", { calls: [], balances: [] }, NO_SHORTFALL, { "/loan-default": view({ counterpartyInDefault: true, openLoans: 0, preview: undefined, closeOuts: [closeOut] }) });
+    await user.click(await screen.findByRole("button", { name: "Pay USD 6315" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/loan-default/close-outs/0xc0ffee0001/pay", body: {} }]));
   });
 });
 

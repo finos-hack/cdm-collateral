@@ -35,7 +35,10 @@ import static collateral.CdmRuntime.o;
  * (CDM's invoice gives no amount on a loan, defect D27). The total is cdm-ext GmslaInvoiceTotal. The document is
  * cdm-ext GmslaLoanInvoice: CDM's SecurityLendingInvoice with the records' amounts and CDM's billing summary, and CDM's
  * payment event (a transfer of type InterestReturn, qualified CashTransfer). Row 17 bills the rebate on cash
- * collateral; the fee on non-cash collateral is row 18.
+ * collateral: the borrower bills, the lender pays, on the cash held. Row 18 bills the lending fee on non-cash collateral
+ * (wp-adr-gmsla-lending-fee): the lender bills, the borrower pays, on the loaned quantity outstanding x the loaned
+ * security's feed price on the billing date (one price per invoice), over a fee InterestRatePayout built from the fee
+ * rate in GmslaLoanTerms (fixed, ACT/360); the booked trade is unchanged.
  */
 public final class CdmLoanInvoice {
     private CdmLoanInvoice() {}
@@ -80,16 +83,50 @@ public final class CdmLoanInvoice {
                 "transferType", "InterestReturn");
     }
 
+    /** The fee payout the invoice accrues over: the borrower pays the lender the fee rate, fixed, ACT/360. */
+    static InterestRatePayout feePayout(BigDecimal rate) {
+        Map<String, Object> usd = o("currency", o("@data", "USD"));
+        return CdmRuntime.load(InterestRatePayout.class, o("payerReceiver", o("payer", "Party2", "receiver", "Party1"),
+                "rateSpecification", o("@type", "cdm.product.asset.FixedRateSpecification",
+                        "rateSchedule", o("price", o("value", rate, "unit", usd, "perUnitOf", usd, "priceType", "InterestRate"))),
+                "dayCountFraction", o("@data", "ACT/360")));
+    }
+
     /** The rebate invoice of a cash loan for [start, end), over its timeline (sorted by date, the first the delivery). */
     public static Invoice rebate(List<Change> timeline, GmslaLoanTerms lt, LocalDate start, LocalDate end) {
-        if (lt.getRebateRate() == null) throw new IllegalArgumentException("only a loan against cash collateral has a rebate (the fee is row 18)");
+        if (lt.getRebateRate() == null) throw new IllegalArgumentException("only a loan against cash collateral has a rebate");
         if (lt.getRebateRate().signum() < 0) throw new IllegalArgumentException("a negative rebate rate is not supported");
+        return invoice(timeline, lt, start, end, null);
+    }
+
+    /** The fee invoice of a loan against securities for [start, end), at the loaned security's `price` on the billing date. */
+    public static Invoice fee(List<Change> timeline, GmslaLoanTerms lt, LocalDate start, LocalDate end, BigDecimal price) {
+        if (lt.getFeeRate() == null) throw new IllegalArgumentException("only a loan against non-cash collateral has a lending fee");
+        if (lt.getFeeRate().signum() < 0) throw new IllegalArgumentException("a negative fee rate is not supported");
+        if (price == null || price.signum() <= 0) throw new IllegalArgumentException("the fee needs the loaned security's price");
+        return invoice(timeline, lt, start, end, price.stripTrailingZeros());
+    }
+
+    private static Invoice invoice(List<Change> timeline, GmslaLoanTerms lt, LocalDate start, LocalDate end, BigDecimal price) {
+        boolean fee = price != null;
         if (!end.isAfter(start)) throw new IllegalArgumentException("nothing to bill: the period " + start + " to " + end + " has no day");
         CdmLoan.Terms t0 = CdmLoan.terms(inForce(timeline, start), lt);
         String lender = t0.lender(), borrower = t0.borrower();
+        // The rate's payer and receiver: the lender pays the rebate, the borrower pays the fee. The receiver bills.
+        String payer = fee ? borrower : lender, receiver = fee ? lender : borrower;
+        InterestRatePayout feeIrp = fee ? feePayout(lt.getFeeRate()) : null;
         // The period's parts: split at each change after the start and before the end.
+        // A change splits the period only when what the rate applies to changes: the cash held for a rebate, the loaned
+        // quantity for a fee (a substitution changes neither).
+        java.util.function.ToLongFunction<TradeState> basis = ts -> fee ? CdmLoan.terms(ts, lt).quantity() : CdmLoan.collateralHeld(ts);
         List<LocalDate> bounds = new ArrayList<>(List.of(start));
-        for (Change c : timeline) if (c.date().isAfter(start) && c.date().isBefore(end)) bounds.add(c.date());
+        long held = basis.applyAsLong(inForce(timeline, start));
+        for (Change c : timeline) {
+            if (!c.date().isAfter(start) || !c.date().isBefore(end)) continue;
+            long now = basis.applyAsLong(c.trade());
+            if (now != held && !c.date().equals(bounds.get(bounds.size() - 1))) bounds.add(c.date());
+            held = now;
+        }
         bounds.add(end);
         List<Map<String, Object>> periods = new ArrayList<>();
         List<BigDecimal> accruals = new ArrayList<>();
@@ -97,38 +134,42 @@ public final class CdmLoanInvoice {
         for (int i = 0; i + 1 < bounds.size(); i++) {
             LocalDate a = bounds.get(i), b = bounds.get(i + 1);
             TradeState ts = inForce(timeline, a);
-            long cash = CdmLoan.collateralHeld(ts);
+            long quantity = CdmLoan.terms(ts, lt).quantity();
+            BigDecimal notional = fee ? price.multiply(BigDecimal.valueOf(quantity)).stripTrailingZeros() : BigDecimal.valueOf(CdmLoan.collateralHeld(ts));
             var range = CdmRuntime.fn(CalculationPeriodRange.class).evaluate(Date.of(a), Date.of(b), null);
-            BigDecimal accrual = CdmRuntime.fn(FixedAmount.class).evaluate(rebatePayout(ts), BigDecimal.valueOf(cash), Date.of(b), range)
+            BigDecimal accrual = CdmRuntime.fn(FixedAmount.class).evaluate(fee ? feeIrp : rebatePayout(ts), notional, Date.of(b), range)
                     .setScale(10, java.math.RoundingMode.HALF_UP).stripTrailingZeros();
             accruals.add(accrual);
-            periods.add(o("startDate", a.toString(), "endDate", b.toString(), "notional", cash, "accrual", accrual));
-            var rb = CdmRuntime.load(BillingRecord.class, o("recordTransfer", cashTransfer(accrual, lender, borrower, end),
+            Map<String, Object> part = o("startDate", a.toString(), "endDate", b.toString(), "notional", notional, "accrual", accrual);
+            if (fee) part.put("quantity", quantity);
+            periods.add(part);
+            var rb = CdmRuntime.load(BillingRecord.class, o("recordTransfer", cashTransfer(accrual, payer, receiver, end),
                     "recordStartDate", a.toString(), "recordEndDate", b.toString())).toBuilder();
             rb.setTradeStateValue(ts);
             records.add(rb.build());
         }
         BigDecimal amount = CdmRuntime.fn(GmslaInvoiceTotal.class).evaluate(accruals, CdmRepo.CASH_PRECISION);
-        if (amount.signum() <= 0) throw new IllegalStateException("the rebate for " + start + " to " + end + " rounds to zero");
+        if (amount.signum() <= 0) throw new IllegalStateException("the " + (fee ? "fee" : "rebate") + " for " + start + " to " + end + " rounds to zero");
         // CDM's Create_BillingSummary is a codeImplementation function with no implementation in CDM 7.7.0: it returns
         // nothing (part of D27). The summary is built as its comment describes: the records' total, ParentTotal.
         var summary = CdmRuntime.load(cdm.event.common.BillingSummary.class, o(
-                "summaryTransfer", cashTransfer(amount, lender, borrower, end), "summaryAmountType", "ParentTotal"));
+                "summaryTransfer", cashTransfer(amount, payer, receiver, end), "summaryAmountType", "ParentTotal"));
         var inv = CdmRuntime.load(cdm.event.common.SecurityLendingInvoice.class, o(
-                "sendingParty", CdmRepo.party(borrower), "receivingParty", CdmRepo.party(lender),
+                "sendingParty", CdmRepo.party(receiver), "receivingParty", CdmRepo.party(payer),
                 "billingStartDate", start.toString(), "billingEndDate", end.toString())).toBuilder();
         inv.addBillingRecord(records);
         inv.addBillingSummary(summary);
         TradeState last = inForce(timeline, end.minusDays(1));
         TransferInstruction ti = CdmRuntime.load(TransferInstruction.class, o("transferState", l(o("transfer",
-                cashTransfer(amount, lender, borrower, end)))));
+                cashTransfer(amount, payer, receiver, end)))));
         Instruction ins = Instruction.builder().setBeforeValue(last).setPrimitiveInstruction(PrimitiveInstruction.builder().setTransfer(ti)).build();
         BusinessEvent ev = CdmRepo.resolved(BusinessEvent.class,
                 CdmRuntime.fn(Create_BusinessEvent.class).evaluate(new ArrayList<>(List.of(ins)), null, Date.of(end), null));
         if (!CdmRuntime.fn(Qualify_CashTransfer.class).evaluate(ev)) throw new IllegalStateException("the payment does not qualify as a cash transfer");
-        Map<String, Object> doc = o("loanId", t0.loanId(), "rateType", "Rebate", "rate", lt.getRebateRate(),
-                "periodStart", start.toString(), "periodEnd", end.toString(), "period", periods, "precision", CdmRepo.CASH_PRECISION, "amount", amount,
-                "invoice", CdmLoan.tree(inv.build()), "paymentEvent", CdmLoan.tree(ev));
+        Map<String, Object> doc = o("loanId", t0.loanId(), "rateType", fee ? "Fee" : "Rebate", "rate", fee ? lt.getFeeRate() : lt.getRebateRate());
+        if (fee) doc.put("price", price);
+        doc.putAll(o("periodStart", start.toString(), "periodEnd", end.toString(), "period", periods, "precision", CdmRepo.CASH_PRECISION, "amount", amount,
+                "invoice", CdmLoan.tree(inv.build()), "paymentEvent", CdmLoan.tree(ev)));
         GmslaLoanInvoice g = CdmRuntime.load(GmslaLoanInvoice.class, doc);
         CdmRuntime.validate(g);
         String json = CdmRuntime.toJson(g);
@@ -144,7 +185,9 @@ public final class CdmLoanInvoice {
         } catch (Exception e) {
             throw new IllegalStateException("not a GmslaLoanInvoice: " + e.getMessage(), e);
         }
-        Invoice again = rebate(timeline, lt, g.getPeriodStart().toLocalDate(), g.getPeriodEnd().toLocalDate());
+        LocalDate start = g.getPeriodStart().toLocalDate(), end = g.getPeriodEnd().toLocalDate();
+        Invoice again = g.getRateType() == cdmx.collateral.gmsla.GmslaRateTypeEnum.FEE
+                ? fee(timeline, lt, start, end, g.getPrice()) : rebate(timeline, lt, start, end);
         if (!again.hash().equalsIgnoreCase(Cdm.keccakHex(json))) throw new IllegalStateException("the invoice does not rebuild to the same document");
         return again;
     }
@@ -153,14 +196,18 @@ public final class CdmLoanInvoice {
     public static Map<String, Object> view(Invoice inv) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("rateType", inv.doc().getRateType().toString());
+        if (inv.doc().getPrice() != null) m.put("price", inv.doc().getPrice().toPlainString());
         m.put("periodStart", inv.doc().getPeriodStart().toString());
         m.put("periodEnd", inv.doc().getPeriodEnd().toString());
         m.put("amount", inv.amount().toPlainString());
         m.put("onChainAmount", String.valueOf(inv.onChainAmount()));
         List<Map<String, Object>> ps = new ArrayList<>();
-        for (var p : inv.doc().getPeriod())
-            ps.add(Map.of("startDate", p.getStartDate().toString(), "endDate", p.getEndDate().toString(),
+        for (var p : inv.doc().getPeriod()) {
+            Map<String, Object> x = new LinkedHashMap<>(Map.of("startDate", p.getStartDate().toString(), "endDate", p.getEndDate().toString(),
                     "notional", p.getNotional().toPlainString(), "accrual", p.getAccrual().toPlainString()));
+            if (p.getQuantity() != null) x.put("quantity", p.getQuantity().toPlainString());
+            ps.add(x);
+        }
         m.put("periods", ps);
         return m;
     }

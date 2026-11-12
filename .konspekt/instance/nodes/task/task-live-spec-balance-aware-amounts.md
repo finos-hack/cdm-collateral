@@ -2,7 +2,7 @@
 id: task-live-spec-balance-aware-amounts
 type: task
 title: Size the live specs' call amounts to the pledgor's free on-chain balance
-status: open
+status: abandoned
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-01T22:01:07Z
   confidence: 0.8
 createdAt: 2026-11-01T22:01:07Z
-updatedAt: 2026-11-03T03:25:20Z
+updatedAt: 2026-11-12T00:00:26Z
 ```
 # Task: size the live specs' call amounts to the pledgor's free balance
 
@@ -35,3 +35,5 @@ Rejected options, kept for the record: (b) topping up the pledgor's test tokens 
 `live-e2e.sh reset` when it happens, which deletes the chain and the stored documents.
 
 Re-parented on 2026-11-03 from [[task-e2e-wiring]] (resolved with a narrowed scope) to [[goal-end-to-end-flow]] by the project owner (source `2d89f9ce09676a084c6672f5a9ba1b887d6112c5`).
+
+The project owner closed as abandoned the task on 2026-11-11 (source `9331a6a4b0aafc5103c06651a1a61309c35e4f3e`: "4. b"): out of date: [[task-live-test-balances]] (resolved) keeps the test parties funded across runs instead.

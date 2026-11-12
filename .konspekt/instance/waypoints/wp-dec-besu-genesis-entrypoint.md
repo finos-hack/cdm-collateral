@@ -2,7 +2,7 @@
 id: wp-dec-besu-genesis-entrypoint
 kind: decision
 timestamp: 2026-11-09T00:49:00Z
-review: proposed
+review: accepted
 provenance:
   conversationId: claude-ai-web-live-spec
   sourceRef: e765ec4d7d239f00f16330ce6c7b942512cd3359
@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-09T00:49:00Z
   confidence: 0.9
 createdAt: 2026-11-09T00:49:00Z
-updatedAt: 2026-11-09T00:49:00Z
+updatedAt: 2026-11-11T23:18:36Z
 ```
 # Decision: the Besu genesis step calls the Besu binary, not the image entrypoint
 

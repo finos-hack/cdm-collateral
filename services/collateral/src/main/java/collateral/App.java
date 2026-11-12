@@ -1,6 +1,9 @@
 package collateral;
 
 import cdmx.collateral.margincall.MarginCallState;
+import cdmx.collateral.triparty.TripartyAllocation;
+import cdmx.collateral.triparty.TripartyRepoRequest;
+import cdmx.collateral.triparty.TripartyTerms;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -19,6 +22,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,6 +109,25 @@ public final class App {
         app.exception(Exception.class, (e, ctx) -> ctx.status(400).json(Map.of("error", String.valueOf(e.getMessage()))));
 
         app.get("/api/v1/health", ctx -> ctx.json(Map.of("party", cfg.partyId, "role", cfg.role, "address", cfg.myAddress, "ok", true)));
+        tripartyRoutes(app);
+        if (cfg.isAgent()) {
+            // The triparty agent BANK-T (wp-adr-triparty-terms-profile) runs only the triparty routes and the console
+            // event stream; the bilateral CSA, repo and lending workflows stay on A and B.
+            app.sse("/api/v1/events", client -> {
+                client.keepAlive();
+                client.sendComment("connected");
+                sseClients.add(client);
+                client.onClose(() -> sseClients.remove(client));
+            });
+            // The agent's business date is the revaluation date (wp-adr-triparty-revaluation).
+            app.get("/api/v1/business-date", ctx -> ctx.json(Map.of("businessDate", businessDate.toString())));
+            app.post("/api/v1/business-date", this::setBusinessDate);
+            app.start(cfg.port);
+            startEventRelay();
+            System.out.printf("collateral service: triparty agent %s (%s) %s on http://localhost:%d/api/v1 -> gateway %s%n",
+                    cfg.bankName("T"), cfg.role, cfg.myAddress, cfg.port, cfg.gatewayUrl);
+            return;
+        }
         app.get("/api/v1/context", this::context);
         app.get("/api/v1/state", this::state);
         app.get("/api/v1/revaluation", this::revaluation);
@@ -184,6 +207,9 @@ public final class App {
         app.post("/api/v1/repos/{id}/pair-off/refuse", this::refusePairOff);
         app.get("/api/v1/repos/{id}/trade", this::repoTrade);
         app.get("/api/v1/repo-default", this::repoDefault);
+        app.get("/api/v1/loan-default", this::loanDefault);
+        app.post("/api/v1/loan-default/close-out", this::closeOutLoanDefault);
+        app.post("/api/v1/loan-default/close-outs/{id}/pay", this::payLoanCloseOut);
         app.post("/api/v1/repo-default/close-out", this::closeOutRepoDefault);
         app.post("/api/v1/repo-default/close-outs/{id}/pay", this::payRepoCloseOut);
         app.get("/api/v1/substitutions", this::substitutions);
@@ -225,7 +251,7 @@ public final class App {
                             String data = line.substring(5).trim();
                             // Record first (cheap), relay at once, and fold afterwards on the fold executor; a fold that
                             // changes what the console shows signals it again when done (task-live-read-latency).
-                            onLedgerEvent(data);
+                            if (!cfg.isAgent()) onLedgerEvent(data);
                             signalConsoles(data);
                         }
                     });
@@ -345,6 +371,984 @@ public final class App {
 
     private String counterparty() {
         return cfg.partyId.equals("B") ? "A" : "B";
+    }
+
+    // --- triparty terms (task-triparty-terms-profile, wp-adr-triparty-terms-profile) ---
+    // The giver (A or B) builds the cdm-ext TripartyTerms with the other party as the receiver and BANK-T as the agent,
+    // stores the document for the three parties and proposes its hash on TripartySettlement. The receiver and the agent
+    // each check the document against the terms they build themselves before affirming the hash; the receiver also
+    // checks the GMRA terms hash against its own GMRA terms in force. The terms take effect when both have affirmed.
+
+    /** Triparty documents that checked, by hash and this party's role; a failed check is not kept, so it is retried. */
+    private final Set<String> tripartyChecked = ConcurrentHashMap.newKeySet();
+
+    private void tripartyRoutes(Javalin app) {
+        app.get("/api/v1/triparty", this::triparty);
+        app.post("/api/v1/triparty/terms", this::proposeTripartyTerms);
+        app.post("/api/v1/triparty/terms/{id}/affirm", this::affirmTripartyTerms);
+        app.post("/api/v1/triparty/terms/{id}/refuse", ctx -> ctx.json(tripartyStep(ctx.pathParam("id"), "refuse")));
+        app.post("/api/v1/triparty/terms/{id}/terminate", ctx -> ctx.json(tripartyStep(ctx.pathParam("id"), "terminate")));
+        app.post("/api/v1/triparty/terms/{id}/deposit", this::depositTriparty);
+        app.post("/api/v1/triparty/terms/{id}/withdraw", this::withdrawTriparty);
+        app.post("/api/v1/triparty/terms/{id}/repos", this::requestTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/affirm", this::affirmTripartyRequest);
+        app.post("/api/v1/triparty/repos/{id}/allocate", this::allocateTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/refuse-allocation", ctx -> ctx.json(tripartyRepoStep(ctx.pathParam("id"), "refuse-allocation")));
+        app.post("/api/v1/triparty/repos/{id}/settle", this::settleTripartyPurchase);
+        app.post("/api/v1/triparty/repos/{id}/cancel", ctx -> ctx.json(tripartyRepoStep(ctx.pathParam("id"), "cancel")));
+        app.post("/api/v1/triparty/repos/{id}/revalue", this::revalueTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/substitution", this::requestTripartySubstitution);
+        app.post("/api/v1/triparty/repos/{id}/substitution/withdraw", this::withdrawTripartySubstitution);
+        app.post("/api/v1/triparty/repos/{id}/substitute", this::substituteTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/rebalance", this::rebalanceTripartyRepo);
+        app.post("/api/v1/triparty/repos/{id}/trade-end", this::prepareTripartyTradeEnd);
+        app.post("/api/v1/triparty/terms/{id}/report", this::sendTripartyReport);
+        app.post("/api/v1/triparty/repos/{id}/repurchase", this::settleTripartyRepurchase);
+    }
+
+    private List<String> tripartyParties() {
+        return List.of(cfg.partyAddress("A"), cfg.partyAddress("B"), cfg.partyAddress("T"));
+    }
+
+    /** The hash of the GMRA terms in force between A and B (cdm-ext GmraTerms), which the triparty terms name. */
+    private String gmraTermsHashInForce() {
+        return Cdm.keccakHex(CdmRuntime.toJson(gmraFold().terms().terms()));
+    }
+
+    private String bankOf(String address) {
+        return cfg.bankName(partyIdOf(address));
+    }
+
+    /** Check a proposed document against this party's own build; the receiver also checks the GMRA terms hash. */
+    private Optional<String> tripartyProblem(JsonNode t) {
+        String hash = t.get("termsHash").asText();
+        String role = t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress) ? "receiver" : "";
+        if (tripartyChecked.contains(hash + role)) return Optional.empty();
+        Optional<String> problem = checkTriparty(t, hash, role);
+        if (problem.isEmpty()) tripartyChecked.add(hash + role);
+        return problem;
+    }
+
+    private Optional<String> checkTriparty(JsonNode t, String hash, String role) {
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the terms are not in the payload store or their hash differs");
+            CdmTriparty.Terms v = CdmTriparty.verify(doc, bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()),
+                    bankOf(t.get("agent").asText()), cfg.isin("tUST"), cfg.isin("tAGY"));
+            if (!role.isEmpty() && !v.terms().getGmraTermsHash().equalsIgnoreCase(gmraTermsHashInForce()))
+                return Optional.of("the terms name GMRA terms other than those in force");
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    private JsonNode tripartyOnChain(String termsId) {
+        JsonNode t = gw.get("/triparty/terms/" + termsId);
+        if (t.get("state").asText().equals("none")) throw new IllegalArgumentException("no triparty terms " + termsId);
+        return t;
+    }
+
+    /** The triparty terms this party is named in, newest first, with the document checked and the steps open to it. */
+    private void triparty(Context ctx) {
+        JsonNode all = gw.getQuery("/triparty/terms", Map.of("party", cfg.myAddress));
+        List<Map<String, Object>> terms = new ArrayList<>();
+        boolean open = false;
+        for (int i = all.size() - 1; i >= 0; i--) {
+            JsonNode t = all.get(i);
+            String state = t.get("state").asText();
+            boolean giver = t.get("giver").asText().equalsIgnoreCase(cfg.myAddress);
+            boolean receiver = t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress);
+            boolean agent = t.get("agent").asText().equalsIgnoreCase(cfg.myAddress);
+            if (giver && (state.equals("proposed") || state.equals("effective"))) open = true;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("termsId", t.get("termsId").asText());
+            m.put("state", state);
+            m.put("giver", partyIdOf(t.get("giver").asText()));
+            m.put("receiver", partyIdOf(t.get("receiver").asText()));
+            m.put("agent", partyIdOf(t.get("agent").asText()));
+            m.put("termsHash", t.get("termsHash").asText());
+            m.put("receiverAffirmed", t.get("receiverAffirmed").asBoolean());
+            m.put("agentAffirmed", t.get("agentAffirmed").asBoolean());
+            Optional<String> problem = tripartyProblem(t);
+            m.put("verified", problem.isEmpty());
+            m.put("problem", problem.orElse(null));
+            String doc = payloads.get(t.get("termsHash").asText());
+            if (doc != null) {
+                try {
+                    Map<String, Object> v = CdmTriparty.view(CdmTriparty.parse(doc));
+                    @SuppressWarnings("unchecked") List<Map<String, Object>> profile = (List<Map<String, Object>>) v.get("profile");
+                    for (Map<String, Object> e : profile) e.put("token", symbolOfIsin(String.valueOf(e.get("isin"))));
+                    m.put("terms", v);
+                } catch (Exception ignored) {
+                    // shown without the document's fields
+                }
+            }
+            boolean proposed = state.equals("proposed");
+            m.put("canAffirm", proposed && ((receiver && !t.get("receiverAffirmed").asBoolean()) || (agent && !t.get("agentAffirmed").asBoolean())) && problem.isEmpty());
+            m.put("canRefuse", proposed && (giver || receiver || agent));
+            m.put("canTerminate", state.equals("effective") && (giver || receiver));
+            boolean effective = state.equals("effective");
+            m.put("canDeposit", effective && giver && problem.isEmpty());
+            m.put("canRequest", effective && giver && problem.isEmpty());
+            if (effective) {
+                m.put("free", tripartyFreeView(t.get("termsId").asText()));
+                m.put("repos", tripartyRepos(t, problem.isEmpty()));
+                tripartyReportView(m, t, agent);
+                m.put("canSendReport", agent && problem.isEmpty());
+            }
+            terms.add(m);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("party", cfg.partyId);
+        out.put("bank", cfg.bankName(cfg.partyId));
+        out.put("agent", cfg.isAgent());
+        out.put("canPropose", !cfg.isAgent() && !open);
+        out.put("terms", terms);
+        ctx.json(out);
+    }
+
+    /** The giver proposes the baseline triparty terms with the counterparty as the receiver and BANK-T as the agent. */
+    private void proposeTripartyTerms(Context ctx) {
+        if (cfg.isAgent()) throw new IllegalArgumentException("the agent does not propose triparty terms");
+        GmraFold f = gmraFold();
+        if (!f.verified()) throw new IllegalStateException("the GMRA terms do not verify: " + f.problem());
+        String receiver = counterparty();
+        CdmTriparty.Terms t = CdmTriparty.build(cfg.bankName(cfg.partyId), cfg.bankName(receiver), CdmTriparty.AGENT,
+                gmraTermsHashInForce(), LocalDate.now(), cfg.isin("tUST"), cfg.isin("tAGY"));
+        payloads.put(t.hash(), t.json(), tripartyParties());
+        JsonNode r = gw.post("/triparty/terms", Map.of("receiver", cfg.partyAddress(receiver), "agent", cfg.partyAddress("T"), "termsHash", t.hash()));
+        ctx.json(Map.of("termsId", r.get("termsId").asText(), "termsHash", t.hash(), "txHash", r.get("txHash").asText()));
+    }
+
+    /** The receiver or the agent affirms proposed terms after checking the document against its own build. */
+    private void affirmTripartyTerms(Context ctx) {
+        JsonNode t = tripartyOnChain(ctx.pathParam("id"));
+        if (!t.get("state").asText().equals("proposed")) throw new IllegalStateException("the triparty terms are not proposed");
+        if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress) && !t.get("agent").asText().equalsIgnoreCase(cfg.myAddress))
+            throw new IllegalArgumentException("only the receiver or the agent affirms triparty terms");
+        Optional<String> problem = tripartyProblem(t);
+        if (problem.isPresent()) throw new IllegalStateException("the triparty terms do not check: " + problem.get());
+        ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/affirm", Map.of("termsHash", t.get("termsHash").asText())));
+    }
+
+    // --- triparty trade start (task-triparty-trade-start, wp-adr-triparty-trade-start) ---
+    // The giver deposits tokens with TripartySettlement under terms in effect, with its rank for each, and requests a
+    // repo with a cdm-ext TripartyRepoRequest; the receiver checks the request and affirms its hash. The agent allocates
+    // the free deposit in the giver's ranking within the profile (cdm-ext AllocateTriparty) and books the CDM repo with
+    // the allocation as its collateral; nothing is allocated on-chain when the deposit cannot cover the Purchase Price.
+    // The giver and the receiver each recompute the allocation from the terms, the request, the free account and the
+    // feed prices; the receiver settles the purchase against the allocation's hash.
+
+    /** Allocation documents that checked, by hash and this party; a failed check is not kept, so it is retried. */
+    private final Set<String> allocationChecked = ConcurrentHashMap.newKeySet();
+    /** The agent's last allocation that could not cover the Purchase Price, by repo id, for its console. */
+    private final Map<String, Map<String, Object>> tripartyShortfalls = new ConcurrentHashMap<>();
+
+    private TripartyTerms tripartyTermsDoc(JsonNode t) {
+        Optional<String> problem = tripartyProblem(t);
+        if (problem.isPresent()) throw new IllegalStateException("the triparty terms do not check: " + problem.get());
+        return CdmTriparty.parse(payloads.get(t.get("termsHash").asText()));
+    }
+
+    /** The giver's free account under the terms, priced at the feed: the agent's input to the allocation. */
+    private List<CdmTriparty.Deposit> tripartyDeposits(String termsId) {
+        List<CdmTriparty.Deposit> out = new ArrayList<>();
+        for (JsonNode h : gw.get("/triparty/terms/" + termsId + "/free")) {
+            long amount = new BigInteger(h.get("amount").asText()).longValueExact();
+            if (amount == 0) continue;
+            String sym = symbolOf(h.get("token").asText());
+            if (sym == null) throw new IllegalStateException("a deposited token is not in the registry: " + h.get("token").asText());
+            out.add(new CdmTriparty.Deposit(Integer.parseInt(h.get("rank").asText()), cfg.isin(sym), amount,
+                    feedPrice(h.get("token").asText()).stripTrailingZeros()));
+        }
+        return out;
+    }
+
+    private List<Map<String, Object>> tripartyFreeView(String termsId) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode h : gw.get("/triparty/terms/" + termsId + "/free")) {
+            out.add(new LinkedHashMap<>(Map.of("token", String.valueOf(symbolOf(h.get("token").asText())),
+                    "amount", new BigInteger(h.get("amount").asText()).longValueExact(), "rank", Integer.parseInt(h.get("rank").asText()))));
+        }
+        return out;
+    }
+
+    private JsonNode tripartyRepoOnChain(String repoId) {
+        JsonNode r = gw.get("/triparty/repos/" + repoId);
+        if (r.get("state").asText().equals("none")) throw new IllegalArgumentException("no triparty repo " + repoId);
+        return r;
+    }
+
+    /** The receiver's check of the giver's request against the chain: the terms, the Purchase Price and the cash token. */
+    private Optional<String> tripartyRequestProblem(JsonNode terms, JsonNode r) {
+        try {
+            String doc = payloads.get(r.get("requestHash").asText());
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(r.get("requestHash").asText()))
+                return Optional.of("the request is not in the payload store or its hash differs");
+            if (!r.get("cash").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) return Optional.of("the repo is not paid in tUSD");
+            CdmTriparty.verifyRequest(doc, terms.get("termsHash").asText(), new BigInteger(r.get("purchasePrice").asText()).longValueExact());
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** The on-chain allocation by ISIN. */
+    private Map<String, Long> onChainAllocation(JsonNode r) {
+        Map<String, Long> m = new LinkedHashMap<>();
+        for (JsonNode a : r.get("allocation")) m.put(cfg.isin(symbolOf(a.get("token").asText())), new BigInteger(a.get("amount").asText()).longValueExact());
+        return m;
+    }
+
+    /** The giver's or the receiver's check of the agent's allocation. While it is proposed the party recomputes it from
+     *  the terms, the request, the free account and the feed prices; once settled the free account has moved, so the
+     *  document is checked on its own: it validates, answers this request, matches the chain and is within the limits. */
+    private Optional<String> tripartyAllocationProblem(JsonNode terms, JsonNode r) {
+        String hash = r.get("allocationHash").asText();
+        if (allocationChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the allocation is not in the payload store or its hash differs");
+            TripartyTerms tt = tripartyTermsDoc(terms);
+            String requestHash = r.get("requestHash").asText();
+            TripartyRepoRequest request = CdmTriparty.parseRequest(payloads.get(requestHash));
+            TripartyAllocation a = CdmTriparty.parseAllocation(doc);
+            var failures = CdmRuntime.failures(a);
+            if (!failures.isEmpty()) return Optional.of("the allocation fails CDM validation: " + failures.get(0));
+            if (!requestHash.equalsIgnoreCase(a.getRequestHash())) return Optional.of("the allocation answers another request");
+            Map<String, Long> units = new LinkedHashMap<>();
+            for (var pos : a.getPositions()) units.put(pos.getIsin(), pos.getUnits().longValueExact());
+            if (!units.equals(onChainAllocation(r))) return Optional.of("the allocation differs from the tokens allocated on-chain");
+            if (!units.equals(CdmRepo.collateralPositions(a.getTrade()))) return Optional.of("the CDM repo's collateral differs from the allocation");
+            if (r.get("state").asText().equals("allocated")) {
+                CdmTriparty.verifyAllocation(doc, tt, request, requestHash, tripartyDeposits(r.get("termsId").asText()));
+            } else if (!CdmRuntime.fn(cdmx.collateral.triparty.functions.TripartyConcentrationBreaches.class)
+                    .evaluate(tt.getProfile(), new ArrayList<>(a.getPositions()), a.getRequiredValue()).isEmpty()) {
+                return Optional.of("the allocation breaches the profile's limits");
+            }
+            allocationChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    private Map<String, Object> withSymbols(Map<String, Object> allocationView) {
+        @SuppressWarnings("unchecked") List<Map<String, Object>> ps = (List<Map<String, Object>>) allocationView.get("positions");
+        for (Map<String, Object> e : ps) e.put("token", symbolOfIsin(String.valueOf(e.get("isin"))));
+        return allocationView;
+    }
+
+    /** The repos under a set of terms, newest first, with the documents checked and the steps open to this party. */
+    private List<Map<String, Object>> tripartyRepos(JsonNode terms, boolean termsChecked) {
+        boolean giver = terms.get("giver").asText().equalsIgnoreCase(cfg.myAddress);
+        boolean receiver = terms.get("receiver").asText().equalsIgnoreCase(cfg.myAddress);
+        boolean agent = terms.get("agent").asText().equalsIgnoreCase(cfg.myAddress);
+        JsonNode all = gw.get("/triparty/terms/" + terms.get("termsId").asText() + "/repos");
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (int i = all.size() - 1; i >= 0; i--) {
+            JsonNode r = all.get(i);
+            String state = r.get("state").asText();
+            String repoId = r.get("repoId").asText();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("repoId", repoId);
+            m.put("state", state);
+            m.put("purchasePrice", new BigInteger(r.get("purchasePrice").asText()).longValueExact());
+            m.put("requestHash", r.get("requestHash").asText());
+            String reqDoc = payloads.get(r.get("requestHash").asText());
+            if (reqDoc != null) {
+                try {
+                    TripartyRepoRequest q = CdmTriparty.parseRequest(reqDoc);
+                    m.put("tradeId", q.getTradeId());
+                    m.put("ratePercent", q.getRepoRate().movePointRight(2).stripTrailingZeros().toPlainString());
+                    m.put("purchaseDate", q.getPurchaseDate().toString());
+                    m.put("repurchaseDate", q.getRepurchaseDate().toString());
+                } catch (Exception ignored) {
+                    // shown without the request's fields
+                }
+            }
+            Optional<String> requestProblem = termsChecked ? tripartyRequestProblem(terms, r) : Optional.of("the triparty terms do not check");
+            m.put("requestVerified", requestProblem.isEmpty());
+            m.put("requestProblem", requestProblem.orElse(null));
+            boolean allocated = state.equals("allocated") || state.equals("settled");
+            Optional<String> allocationProblem = Optional.empty();
+            if (allocated) {
+                m.put("allocationHash", r.get("allocationHash").asText());
+                String doc = payloads.get(r.get("allocationHash").asText());
+                if (doc != null) {
+                    try {
+                        m.put("allocation", withSymbols(CdmTriparty.allocationView(CdmTriparty.parseAllocation(doc))));
+                    } catch (Exception ignored) {
+                        // shown without the allocation's fields
+                    }
+                }
+                allocationProblem = agent ? Optional.empty() : tripartyAllocationProblem(terms, r);
+                m.put("allocationVerified", allocationProblem.isEmpty());
+                m.put("allocationProblem", allocationProblem.orElse(null));
+            } else if (tripartyShortfalls.containsKey(repoId) && state.equals("affirmed")) {
+                m.put("allocation", tripartyShortfalls.get(repoId));
+            }
+            if (state.equals("settled") || state.equals("repurchased")) {
+                tripartyChangesView(m, terms, r, giver, agent);
+                tripartyTradeEndView(m, terms, r, giver, agent);
+            }
+            if (!state.equals("settled") || m.containsKey("tradeEnd")) {
+                m.put("canRequestSubstitution", false);
+                m.put("canSubstitute", m.containsKey("pendingSubstitution") && agent && state.equals("settled"));
+                m.put("excess", List.of());
+            }
+            m.put("canRevalue", agent && state.equals("settled") && allocationProblem.isEmpty() && !m.containsKey("tradeEnd"));
+            m.put("canAffirm", receiver && state.equals("requested") && requestProblem.isEmpty());
+            m.put("canAllocate", agent && state.equals("affirmed") && requestProblem.isEmpty());
+            m.put("canRefuseAllocation", receiver && state.equals("allocated"));
+            m.put("canSettle", receiver && state.equals("allocated") && allocationProblem.isEmpty());
+            m.put("canCancel", (giver || receiver || agent) && (state.equals("requested") || state.equals("affirmed") || state.equals("allocated")));
+            out.add(m);
+        }
+        return out;
+    }
+
+    private JsonNode tripartyTermsAsGiver(String termsId) {
+        JsonNode t = tripartyOnChain(termsId);
+        if (!t.get("giver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the giver deposits, withdraws or requests a repo");
+        return t;
+    }
+
+    /** The giver deposits a token with the agent, with its rank for the allocation. */
+    private void depositTriparty(Context ctx) {
+        JsonNode t = tripartyTermsAsGiver(ctx.pathParam("id"));
+        if (!t.get("state").asText().equals("effective")) throw new IllegalStateException("the triparty terms are not in effect");
+        Map<String, Object> b = body(ctx);
+        String sym = String.valueOf(b.get("token"));
+        if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new IllegalArgumentException("not a security token: " + sym);
+        long amount = Long.parseLong(String.valueOf(b.get("amount")));
+        int rank = Integer.parseInt(String.valueOf(b.get("rank")));
+        if (amount <= 0 || rank <= 0) throw new IllegalArgumentException("the amount and the rank are positive");
+        ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/deposit", Map.of("token", cfg.tokenAddress(sym),
+                "amount", String.valueOf(amount), "rank", String.valueOf(rank))));
+    }
+
+    /** The giver withdraws free collateral; the amount defaults to all that is free. */
+    private void withdrawTriparty(Context ctx) {
+        tripartyTermsAsGiver(ctx.pathParam("id"));
+        Map<String, Object> b = body(ctx);
+        String sym = String.valueOf(b.get("token"));
+        String token = cfg.tokenAddress(sym);
+        long amount;
+        Object a = b.get("amount");
+        if (a == null || String.valueOf(a).isBlank()) {
+            amount = 0;
+            for (Map<String, Object> h : tripartyFreeView(ctx.pathParam("id"))) if (sym.equals(h.get("token"))) amount = (Long) h.get("amount");
+        } else amount = Long.parseLong(String.valueOf(a));
+        if (amount <= 0) throw new IllegalArgumentException("no free " + sym + " to withdraw");
+        ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/withdraw", Map.of("token", token, "amount", String.valueOf(amount))));
+    }
+
+    /** The giver requests a repo: the cdm-ext TripartyRepoRequest for the Purchase Price, rate and term. */
+    private void requestTripartyRepo(Context ctx) {
+        JsonNode t = tripartyTermsAsGiver(ctx.pathParam("id"));
+        if (!t.get("state").asText().equals("effective")) throw new IllegalStateException("the triparty terms are not in effect");
+        tripartyTermsDoc(t);
+        Map<String, Object> b = body(ctx);
+        long purchasePrice = Long.parseLong(String.valueOf(b.get("purchasePrice")));
+        BigDecimal rate = new BigDecimal(String.valueOf(b.getOrDefault("ratePercent", "5"))).movePointLeft(2);
+        int termDays = Integer.parseInt(String.valueOf(b.getOrDefault("termDays", "7")));
+        if (termDays < 1) throw new IllegalArgumentException("the term is at least one day");
+        CdmTriparty.Request r = CdmTriparty.request(t.get("termsHash").asText(), "TP-" + cfg.partyId + "-" + System.nanoTime(), purchasePrice, rate,
+                businessDate, businessDate.plusDays(termDays));
+        payloads.put(r.hash(), r.json(), tripartyParties());
+        JsonNode tx = gw.post("/triparty/terms/" + ctx.pathParam("id") + "/repos", Map.of("requestHash", r.hash(),
+                "cash", cfg.tokenAddress("tUSD"), "purchasePrice", String.valueOf(purchasePrice)));
+        ctx.json(Map.of("repoId", tx.get("repoId").asText(), "requestHash", r.hash(), "tradeId", r.request().getTradeId(), "txHash", tx.get("txHash").asText()));
+    }
+
+    /** The receiver affirms the giver's request after checking it against the chain. */
+    private void affirmTripartyRequest(Context ctx) {
+        JsonNode r = tripartyRepoOnChain(ctx.pathParam("id"));
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the receiver affirms a triparty repo request");
+        if (!r.get("state").asText().equals("requested")) throw new IllegalStateException("the triparty repo is not requested");
+        tripartyTermsDoc(t);
+        Optional<String> problem = tripartyRequestProblem(t, r);
+        if (problem.isPresent()) throw new IllegalStateException("the request does not check: " + problem.get());
+        ctx.json(gw.post("/triparty/repos/" + ctx.pathParam("id") + "/affirm", Map.of("requestHash", r.get("requestHash").asText())));
+    }
+
+    /** The agent allocates the giver's free deposit to the repo. When the deposit cannot cover the Purchase Price within
+     *  the profile nothing is allocated on-chain and the shortfall is shown in the agent's console. */
+    private void allocateTripartyRepo(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent allocates");
+        if (!r.get("state").asText().equals("affirmed")) throw new IllegalStateException("the triparty repo request is not affirmed");
+        TripartyTerms tt = tripartyTermsDoc(t);
+        Optional<String> problem = tripartyRequestProblem(t, r);
+        if (problem.isPresent()) throw new IllegalStateException("the request does not check: " + problem.get());
+        String requestHash = r.get("requestHash").asText();
+        CdmTriparty.Allocation a = CdmTriparty.allocate(tt, CdmTriparty.parseRequest(payloads.get(requestHash)), requestHash,
+                tripartyDeposits(r.get("termsId").asText()));
+        Map<String, Object> view = withSymbols(CdmTriparty.allocationView(a.allocation()));
+        if (!a.covers()) {
+            tripartyShortfalls.put(repoId, view);
+            signalConsoles("triparty");
+            ctx.json(Map.of("covers", false, "allocation", view));
+            return;
+        }
+        tripartyShortfalls.remove(repoId);
+        payloads.put(a.hash(), a.json(), tripartyParties());
+        List<String> tokens = new ArrayList<>();
+        List<String> amounts = new ArrayList<>();
+        a.units().forEach((isin, n) -> {
+            tokens.add(cfg.tokenAddress(symbolOfIsin(isin)));
+            amounts.add(String.valueOf(n));
+        });
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/allocate", Map.of("allocationHash", a.hash(), "tokens", tokens, "amounts", amounts));
+        ctx.json(Map.of("covers", true, "allocationHash", a.hash(), "allocation", view, "txHash", tx.get("txHash").asText()));
+    }
+
+    /** The receiver settles the purchase against the agent's allocation after recomputing it. */
+    private void settleTripartyPurchase(Context ctx) {
+        JsonNode r = tripartyRepoOnChain(ctx.pathParam("id"));
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the receiver settles the purchase");
+        if (!r.get("state").asText().equals("allocated")) throw new IllegalStateException("the triparty repo is not allocated");
+        Optional<String> problem = tripartyAllocationProblem(t, r);
+        if (problem.isPresent()) throw new IllegalStateException("the allocation does not check: " + problem.get());
+        ctx.json(gw.post("/triparty/repos/" + ctx.pathParam("id") + "/settle", Map.of("allocationHash", r.get("allocationHash").asText())));
+    }
+
+    // --- triparty revaluation (task-triparty-revaluation, wp-adr-triparty-revaluation) ---
+    // The agent revalues a settled repo at the feed prices against the Repurchase Price accrued to its business date
+    // (cdm-ext RevalueTriparty) and replaces the repo's holding on TripartySettlement with the hash of the document. The
+    // giver and the receiver recompute each revaluation from the chain at the block before it: the repo's holding, the
+    // free account with its ranks and the feed prices, through the gateway.
+
+
+    /** The document a holding change follows, and the repo as that document left it. */
+    private record RevaluationBasis(String hash, cdm.event.common.TradeState trade) {}
+
+    /** The basis of the repo's change number {@code index} in its history: the last change before it that is not a
+     *  declined substitution, or the allocation. */
+    private RevaluationBasis tripartyBasis(JsonNode r, JsonNode changes, int index) {
+        for (int j = index - 1; j >= 0; j--) {
+            String kind = changes.get(j).get("kind").asText();
+            if (kind.equals("declined")) continue;
+            String hash = changes.get(j).get("hash").asText();
+            String doc = payloads.get(hash);
+            if (doc == null) throw new IllegalStateException("the previous " + kind + " is not in the payload store");
+            return new RevaluationBasis(hash, kind.equals("revaluation")
+                    ? CdmTriparty.tradeAfter(CdmTriparty.parseRevaluation(doc))
+                    : CdmTriparty.tradeAfter(CdmTriparty.parseSubstitution(doc)));
+        }
+        String hash = r.get("allocationHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null) throw new IllegalStateException("the allocation is not in the payload store");
+        return new RevaluationBasis(hash, CdmTriparty.parseAllocation(doc).getTrade());
+    }
+
+    /** The held and free assets as the revaluation reads them, ranked and priced: from the holding, the free account
+     *  (assets with free units) and the scaled feed prices, as the chain gives them now or at a block. */
+    private record RevaluationInputs(List<CdmTriparty.Deposit> held, List<CdmTriparty.Deposit> free) {}
+
+    private RevaluationInputs revaluationInputs(JsonNode allocation, JsonNode free, Map<String, BigInteger> scaledPrices) {
+        Map<String, Integer> ranks = new HashMap<>();
+        for (JsonNode h : free) ranks.put(h.get("token").asText().toLowerCase(), Integer.parseInt(h.get("rank").asText()));
+        java.util.function.Function<String, BigDecimal> price = token -> {
+            BigInteger p = scaledPrices.get(token.toLowerCase());
+            if (p == null) throw new IllegalStateException("no feed price for " + token);
+            return new BigDecimal(p).divide(new BigDecimal(cfg.priceScale)).stripTrailingZeros();
+        };
+        List<CdmTriparty.Deposit> held = new ArrayList<>();
+        for (JsonNode a : allocation) {
+            String token = a.get("token").asText();
+            Integer rank = ranks.get(token.toLowerCase());
+            if (rank == null) throw new IllegalStateException("a held token has no rank: " + token);
+            held.add(new CdmTriparty.Deposit(rank, cfg.isin(symbolOf(token)), new BigInteger(a.get("amount").asText()).longValueExact(), price.apply(token)));
+        }
+        List<CdmTriparty.Deposit> out = new ArrayList<>();
+        for (JsonNode h : free) {
+            long amount = new BigInteger(h.get("amount").asText()).longValueExact();
+            if (amount == 0) continue;
+            String token = h.get("token").asText();
+            out.add(new CdmTriparty.Deposit(Integer.parseInt(h.get("rank").asText()), cfg.isin(symbolOf(token)), amount, price.apply(token)));
+        }
+        return new RevaluationInputs(held, out);
+    }
+
+    /** The agent's inputs now: the repo's holding, the free account and the latest feed prices. */
+    private RevaluationInputs currentInputs(JsonNode r) {
+        Map<String, BigInteger> prices = new HashMap<>();
+        feedPrices().forEach((k, v) -> prices.put(k.toLowerCase(), v));
+        return revaluationInputs(r.get("allocation"), gw.get("/triparty/terms/" + r.get("termsId").asText() + "/free"), prices);
+    }
+
+    /** The checker's inputs: the chain at the end of a block (the block before a change). */
+    private RevaluationInputs inputsAt(String repoId, long block) {
+        JsonNode at = gw.get("/triparty/repos/" + repoId + "/at?block=" + block);
+        Map<String, BigInteger> prices = new HashMap<>();
+        for (JsonNode p : at.get("prices")) if (!p.get("price").isNull()) prices.put(p.get("token").asText().toLowerCase(), new BigInteger(p.get("price").asText()));
+        return revaluationInputs(at.get("allocation"), at.get("free"), prices);
+    }
+
+    private JsonNode tripartyChanges(String repoId) {
+        return gw.get("/triparty/repos/" + repoId + "/changes");
+    }
+
+    private void agentsSettledRepo(JsonNode r, JsonNode t) {
+        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent revalues or substitutes");
+        if (!r.get("state").asText().equals("settled")) throw new IllegalStateException("the triparty repo is not settled");
+    }
+
+    private List<String>[] holdingArgs(Map<String, Long> units) {
+        List<String> tokens = new ArrayList<>();
+        List<String> amounts = new ArrayList<>();
+        units.forEach((isin, n) -> {
+            tokens.add(cfg.tokenAddress(symbolOfIsin(isin)));
+            amounts.add(String.valueOf(n));
+        });
+        @SuppressWarnings("unchecked") List<String>[] out = new List[] { tokens, amounts };
+        return out;
+    }
+
+    /** The agent revalues a settled repo at its business date and records the new holding on-chain. */
+    private void revalueTripartyRepo(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        JsonNode changes = tripartyChanges(repoId);
+        RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+        RevaluationInputs in = currentInputs(r);
+        CdmTriparty.Revaluation rv = CdmTriparty.revalue(tripartyTermsDoc(t), basis.trade(), basis.hash(), businessDate, in.held(), in.free());
+        payloads.put(rv.hash(), rv.json(), tripartyParties());
+        var args = holdingArgs(rv.units());
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/revalue", Map.of("revaluationHash", rv.hash(), "tokens", args[0], "amounts", args[1]));
+        changeChecked.add(rv.hash());
+        signalConsoles("triparty");
+        ctx.json(Map.of("outcome", CdmTriparty.revaluationView(rv.revaluation()).get("outcome"), "revaluationHash", rv.hash(),
+                "revaluation", withTokens(CdmTriparty.revaluationView(rv.revaluation())), "txHash", tx.get("txHash").asText()));
+    }
+
+    // --- triparty substitution (task-triparty-substitution, wp-adr-triparty-substitution) ---
+
+    /** The giver recalls units of an asset of a settled repo: records the request's hash for the agent. */
+    private void requestTripartySubstitution(Context ctx) throws Exception {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("giver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the giver recalls collateral");
+        if (!r.get("state").asText().equals("settled")) throw new IllegalStateException("the triparty repo is not settled");
+        JsonNode body = CdmRuntime.JSON.readTree(ctx.body());
+        String symbol = body.get("token").asText();
+        long units = body.get("units").asLong();
+        String json = recordSubstitutionRequest(r, cfg.isin(symbol), units, false);
+        signalConsoles("triparty");
+        ctx.json(Map.of("requestHash", Cdm.keccakHex(json)));
+    }
+
+    private String recordSubstitutionRequest(JsonNode r, String isin, long units, boolean byAgent) {
+        String reqDoc = payloads.get(r.get("requestHash").asText());
+        if (reqDoc == null) throw new IllegalStateException("the repo request is not in the payload store");
+        CdmTriparty.SubstitutionRequest q = CdmTriparty.substitutionRequest(CdmTriparty.parseRequest(reqDoc).getTradeId(), isin, units, byAgent, businessDate);
+        payloads.put(q.hash(), q.json(), tripartyParties());
+        gw.post("/triparty/repos/" + r.get("repoId").asText() + "/substitution", Map.of("requestHash", q.hash()));
+        return q.json();
+    }
+
+    /** The requester withdraws its pending substitution request. */
+    private void withdrawTripartySubstitution(Context ctx) {
+        JsonNode tx = gw.post("/triparty/repos/" + ctx.pathParam("id") + "/substitution/withdraw", Map.of());
+        signalConsoles("triparty");
+        ctx.json(Map.of("txHash", tx.get("txHash").asText()));
+    }
+
+    /** The agent substitutes the pending request, or declines it, and records the outcome on-chain. */
+    private void substituteTripartyRepo(Context ctx) {
+        ctx.json(substitutePending(ctx.pathParam("id")));
+    }
+
+    private Map<String, Object> substitutePending(String repoId) {
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        JsonNode pending = gw.get("/triparty/repos/" + repoId + "/substitution").get("pending");
+        if (pending == null || pending.isNull()) throw new IllegalStateException("no substitution request is pending");
+        String requestHash = pending.get("requestHash").asText();
+        String reqJson = payloads.get(requestHash);
+        if (reqJson == null || !Cdm.keccakHex(reqJson).equalsIgnoreCase(requestHash)) throw new IllegalStateException("the substitution request is not in the payload store or its hash differs");
+        var request = CdmTriparty.parseSubstitutionRequest(reqJson);
+        boolean byAgent = request.getRequestedBy() == cdmx.collateral.triparty.TripartyRequesterEnum.AGENT;
+        String requester = pending.get("requester").asText();
+        if (!requester.equalsIgnoreCase(t.get(byAgent ? "agent" : "giver").asText())) throw new IllegalStateException("the request names another requester");
+        JsonNode changes = tripartyChanges(repoId);
+        RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+        RevaluationInputs in = currentInputs(r);
+        CdmTriparty.Substitution sub = CdmTriparty.substitute(tripartyTermsDoc(t), basis.trade(), basis.hash(), requestHash, request,
+                bankOf(t.get("giver").asText()), businessDate, in.held(), in.free());
+        payloads.put(sub.hash(), sub.json(), tripartyParties());
+        JsonNode tx;
+        if (sub.substituted()) {
+            var args = holdingArgs(sub.units());
+            tx = gw.post("/triparty/repos/" + repoId + "/substitute", Map.of("substitutionHash", sub.hash(), "tokens", args[0], "amounts", args[1]));
+        } else {
+            tx = gw.post("/triparty/repos/" + repoId + "/substitution/decline", Map.of("substitutionHash", sub.hash()));
+        }
+        changeChecked.add(sub.hash());
+        signalConsoles("triparty");
+        Map<String, Object> view = withTokens(CdmTriparty.substitutionView(sub.substitution()));
+        return Map.of("outcome", view.get("outcome"), "substitutionHash", sub.hash(), "substitution", view, "txHash", tx.get("txHash").asText());
+    }
+
+    /** The latest change's (or the allocation's) recorded breaches, as excess units per ISIN, for the agent's own request. */
+    private Map<String, Long> latestExcess(JsonNode r, JsonNode changes) {
+        for (int j = changes.size() - 1; j >= 0; j--) {
+            String kind = changes.get(j).get("kind").asText();
+            if (kind.equals("declined")) continue;
+            String doc = payloads.get(changes.get(j).get("hash").asText());
+            if (doc == null) return Map.of();
+            if (kind.equals("revaluation")) {
+                var x = CdmTriparty.parseRevaluation(doc);
+                return CdmTriparty.excessUnits(x.getHeldAfter(), x.getBreaches(), x.getRequiredValue().getValue());
+            }
+            var x = CdmTriparty.parseSubstitution(doc);
+            return CdmTriparty.excessUnits(x.getHeldAfter(), x.getBreaches(), x.getRequiredValue().getValue());
+        }
+        return Map.of();
+    }
+
+    /** The agent asks back the units of an asset over its limit (from the latest recorded breach) and substitutes them. */
+    private void rebalanceTripartyRepo(Context ctx) throws Exception {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        String isin = cfg.isin(CdmRuntime.JSON.readTree(ctx.body()).get("token").asText());
+        Long units = latestExcess(r, tripartyChanges(repoId)).get(isin);
+        if (units == null || units <= 0) throw new IllegalStateException("the repo's latest holding has no breach in this asset");
+        recordSubstitutionRequest(r, isin, units, true);
+        ctx.json(substitutePending(repoId));
+    }
+
+    // --- triparty trade end (task-triparty-trade-end, wp-adr-triparty-trade-end) ---
+
+    /** The Repurchase Date of a repo, from its request document. */
+    private LocalDate repurchaseDateOf(JsonNode r) {
+        String reqDoc = payloads.get(r.get("requestHash").asText());
+        if (reqDoc == null) throw new IllegalStateException("the repo request is not in the payload store");
+        return CdmTriparty.parseRequest(reqDoc).getRepurchaseDate().toLocalDate();
+    }
+
+    /** The agent prepares the trade end on the repo's Repurchase Date and records its hash and the Repurchase Price. */
+    private void prepareTripartyTradeEnd(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        agentsSettledRepo(r, t);
+        LocalDate repurchaseDate = repurchaseDateOf(r);
+        if (!businessDate.equals(repurchaseDate)) throw new IllegalStateException("the trade end is on the Repurchase Date " + repurchaseDate + "; the business date is " + businessDate);
+        JsonNode pending = gw.get("/triparty/repos/" + repoId + "/substitution").get("pending");
+        if (pending != null && !pending.isNull()) throw new IllegalStateException("a substitution request is pending");
+        JsonNode changes = tripartyChanges(repoId);
+        RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+        CdmTriparty.TradeEnd e = CdmTriparty.tradeEnd(basis.trade(), basis.hash(), onChainAllocation(r), bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()));
+        payloads.put(e.hash(), e.json(), tripartyParties());
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/trade-end", Map.of("tradeEndHash", e.hash(), "repurchasePrice", String.valueOf(e.repurchasePrice())));
+        tradeEndChecked.add(e.hash());
+        signalConsoles("triparty");
+        ctx.json(Map.of("tradeEndHash", e.hash(), "repurchasePrice", e.repurchasePrice(), "txHash", tx.get("txHash").asText()));
+    }
+
+    /** The giver pays the Repurchase Price against the release, once it has rebuilt the agent's trade end. */
+    private void settleTripartyRepurchase(Context ctx) {
+        String repoId = ctx.pathParam("id");
+        JsonNode r = tripartyRepoOnChain(repoId);
+        JsonNode t = tripartyOnChain(r.get("termsId").asText());
+        if (!t.get("giver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the giver repurchases");
+        JsonNode te = gw.get("/triparty/repos/" + repoId + "/trade-end").get("tradeEnd");
+        if (te == null || te.isNull()) throw new IllegalStateException("the agent has not prepared the trade end");
+        Optional<String> problem = tripartyTradeEndProblem(t, r, te);
+        if (problem.isPresent()) throw new IllegalStateException("the trade end does not check: " + problem.get());
+        JsonNode tx = gw.post("/triparty/repos/" + repoId + "/repurchase", Map.of("tradeEndHash", te.get("tradeEndHash").asText()));
+        signalConsoles("triparty");
+        ctx.json(Map.of("txHash", tx.get("txHash").asText()));
+    }
+
+    private final Set<String> tradeEndChecked = ConcurrentHashMap.newKeySet();
+
+    /** The giver's or the receiver's check of a prepared trade end: rebuilt from the basis document and the holding on-chain
+     *  at the block before the preparation. */
+    private Optional<String> tripartyTradeEndProblem(JsonNode terms, JsonNode r, JsonNode te) {
+        String hash = te.get("tradeEndHash").asText();
+        if (tradeEndChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the trade end is not in the payload store or its hash differs");
+            String repoId = r.get("repoId").asText();
+            JsonNode changes = tripartyChanges(repoId);
+            RevaluationBasis basis = tripartyBasis(r, changes, changes.size());
+            long block = Long.parseLong(te.get("block").asText());
+            JsonNode at = gw.get("/triparty/repos/" + repoId + "/at?block=" + (block - 1));
+            CdmTriparty.TradeEnd e = CdmTriparty.verifyTradeEnd(doc, basis.trade(), basis.hash(), onChainAllocation(at),
+                    bankOf(terms.get("giver").asText()), bankOf(terms.get("receiver").asText()));
+            if (e.repurchasePrice() != new BigInteger(te.get("repurchasePrice").asText()).longValueExact()) return Optional.of("the Repurchase Price on-chain differs");
+            tradeEndChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** A settled or repurchased repo's trade end, if prepared, with this party's check and the next step. */
+    private void tripartyTradeEndView(Map<String, Object> m, JsonNode terms, JsonNode r, boolean giver, boolean agent) {
+        String state = r.get("state").asText();
+        JsonNode te = gw.get("/triparty/repos/" + r.get("repoId").asText() + "/trade-end").get("tradeEnd");
+        boolean prepared = te != null && !te.isNull();
+        if (prepared) {
+            Map<String, Object> v = new LinkedHashMap<>();
+            v.put("tradeEndHash", te.get("tradeEndHash").asText());
+            v.put("repurchasePrice", new BigInteger(te.get("repurchasePrice").asText()).longValueExact());
+            String doc = payloads.get(te.get("tradeEndHash").asText());
+            if (doc != null) {
+                try {
+                    Map<String, Object> view = CdmTriparty.tradeEndView(CdmTriparty.parseTradeEnd(doc));
+                    @SuppressWarnings("unchecked") List<Map<String, Object>> rs = (List<Map<String, Object>>) view.get("releases");
+                    for (Map<String, Object> x : rs) x.put("token", symbolOfIsin(String.valueOf(x.get("isin"))));
+                    v.put("releases", rs);
+                    v.put("repurchaseDate", view.get("repurchaseDate"));
+                } catch (Exception ignored) {
+                    // shown without the document's fields
+                }
+            }
+            Optional<String> problem = agent || state.equals("repurchased") ? Optional.empty() : tripartyTradeEndProblem(terms, r, te);
+            v.put("verified", problem.isEmpty());
+            v.put("problem", problem.orElse(null));
+            m.put("tradeEnd", v);
+            m.put("canSettleRepurchase", giver && state.equals("settled") && problem.isEmpty());
+        } else {
+            m.put("canSettleRepurchase", false);
+        }
+        boolean pending = m.containsKey("pendingSubstitution");
+        boolean onDate;
+        try {
+            onDate = businessDate.equals(repurchaseDateOf(r));
+        } catch (Exception e) {
+            onDate = false;
+        }
+        m.put("canPrepareTradeEnd", agent && state.equals("settled") && !prepared && !pending && onDate);
+    }
+
+    // --- triparty reporting (task-triparty-reporting, wp-adr-triparty-reporting) ---
+
+    /** The settled repos of the terms as a report reads them: from each repo's state and holding (now, or at a block),
+     *  its basis document as of that block, and the feed prices. */
+    private List<CdmTriparty.ReportedRepo> reportedRepos(JsonNode repos, Map<String, BigInteger> prices, JsonNode free, long beforeBlock) {
+        List<CdmTriparty.ReportedRepo> out = new ArrayList<>();
+        for (JsonNode at : repos) {
+            if (!at.get("state").asText().equals("settled")) continue;
+            String repoId = at.get("repoId").asText();
+            JsonNode r = tripartyRepoOnChain(repoId);
+            JsonNode changes = tripartyChanges(repoId);
+            int index = 0;
+            while (index < changes.size() && Long.parseLong(changes.get(index).get("block").asText()) < beforeBlock) index++;
+            RevaluationBasis basis = tripartyBasis(r, changes, index);
+            String reqDoc = payloads.get(r.get("requestHash").asText());
+            if (reqDoc == null) throw new IllegalStateException("the repo request is not in the payload store");
+            out.add(new CdmTriparty.ReportedRepo(repoId, CdmTriparty.parseRequest(reqDoc).getTradeId(), basis.trade(),
+                    revaluationInputs(at.get("allocation"), free, prices).held()));
+        }
+        return out;
+    }
+
+    /** The agent reports the settled repos and the giver's free collateral under the terms on its business date. */
+    private void sendTripartyReport(Context ctx) {
+        String termsId = ctx.pathParam("id");
+        JsonNode t = tripartyOnChain(termsId);
+        if (!t.get("agent").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the agent reports");
+        if (!t.get("state").asText().equals("effective")) throw new IllegalStateException("the triparty terms are not in effect");
+        Map<String, BigInteger> prices = new HashMap<>();
+        feedPrices().forEach((k, v) -> prices.put(k.toLowerCase(), v));
+        JsonNode free = gw.get("/triparty/terms/" + termsId + "/free");
+        JsonNode repos = gw.get("/triparty/terms/" + termsId + "/repos");
+        CdmTriparty.Report rep = CdmTriparty.report(tripartyTermsDoc(t), t.get("termsHash").asText(), businessDate,
+                reportedRepos(repos, prices, free, Long.MAX_VALUE), revaluationInputs(CdmRuntime.JSON.createArrayNode(), free, prices).free(),
+                bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()));
+        payloads.put(rep.hash(), rep.json(), tripartyParties());
+        JsonNode tx = gw.post("/triparty/terms/" + termsId + "/report", Map.of("reportHash", rep.hash()));
+        reportChecked.add(rep.hash());
+        signalConsoles("triparty");
+        ctx.json(Map.of("reportHash", rep.hash(), "txHash", tx.get("txHash").asText()));
+    }
+
+    private final Set<String> reportChecked = ConcurrentHashMap.newKeySet();
+
+    /** The giver's or the receiver's check of a report: rebuilt from the terms as the chain held them at the block before
+     *  it and the repo documents in this party's payload store, on the report's date. */
+    private Optional<String> tripartyReportProblem(JsonNode t, String hash, long block) {
+        if (reportChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the report is not in the payload store or its hash differs");
+            var stated = CdmTriparty.parseReport(doc);
+            String termsId = t.get("termsId").asText();
+            JsonNode at = gw.get("/triparty/terms/" + termsId + "/at?block=" + (block - 1));
+            Map<String, BigInteger> prices = new HashMap<>();
+            for (JsonNode p : at.get("prices")) if (!p.get("price").isNull()) prices.put(p.get("token").asText().toLowerCase(), new BigInteger(p.get("price").asText()));
+            CdmTriparty.verifyReport(doc, tripartyTermsDoc(t), t.get("termsHash").asText(), stated.getReportDate().toLocalDate(),
+                    reportedRepos(at.get("repos"), prices, at.get("free"), block), revaluationInputs(CdmRuntime.JSON.createArrayNode(), at.get("free"), prices).free(),
+                    bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()));
+            reportChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** The terms' latest report with this party's check. */
+    private void tripartyReportView(Map<String, Object> m, JsonNode t, boolean agent) {
+        JsonNode reports = gw.get("/triparty/terms/" + t.get("termsId").asText() + "/reports");
+        if (reports.size() == 0) return;
+        JsonNode last = reports.get(reports.size() - 1);
+        String hash = last.get("reportHash").asText();
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("reportHash", hash);
+        v.put("block", last.get("block").asText());
+        v.put("count", reports.size());
+        String doc = payloads.get(hash);
+        if (doc != null) {
+            try {
+                Map<String, Object> view = CdmTriparty.reportView(CdmTriparty.parseReport(doc));
+                @SuppressWarnings("unchecked") List<Map<String, Object>> rs = (List<Map<String, Object>>) view.get("repos");
+                for (Map<String, Object> r : rs) {
+                    @SuppressWarnings("unchecked") List<Map<String, Object>> hs = (List<Map<String, Object>>) r.get("held");
+                    for (Map<String, Object> h : hs) h.put("token", symbolOfIsin(String.valueOf(h.get("isin"))));
+                }
+                @SuppressWarnings("unchecked") List<Map<String, Object>> fs = (List<Map<String, Object>>) view.get("free");
+                for (Map<String, Object> f : fs) f.put("token", symbolOfIsin(String.valueOf(f.get("isin"))));
+                v.put("report", view);
+            } catch (Exception ignored) {
+                // shown without the document's fields
+            }
+        }
+        Optional<String> problem = agent ? Optional.empty() : tripartyReportProblem(t, hash, Long.parseLong(last.get("block").asText()));
+        v.put("verified", problem.isEmpty());
+        v.put("problem", problem.orElse(null));
+        m.put("report", v);
+    }
+
+    /** Holding-change documents that checked, by hash; a failed check is not kept, so it is retried. */
+    private final Set<String> changeChecked = ConcurrentHashMap.newKeySet();
+
+    /** The giver's or the receiver's check of change number {@code index}: recomputed from the chain at the block before
+     *  it, from its basis document and its stated date; the latest one also matches the repo's holding now. */
+    private Optional<String> tripartyChangeProblem(JsonNode terms, JsonNode r, JsonNode changes, int index) {
+        String hash = changes.get(index).get("hash").asText();
+        String kind = changes.get(index).get("kind").asText();
+        if (changeChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the document is not in the payload store or its hash differs");
+            RevaluationBasis basis = tripartyBasis(r, changes, index);
+            long block = Long.parseLong(changes.get(index).get("block").asText());
+            RevaluationInputs in = inputsAt(r.get("repoId").asText(), block - 1);
+            Map<String, Long> units;
+            if (kind.equals("revaluation")) {
+                var stated = CdmTriparty.parseRevaluation(doc);
+                if (!basis.hash().equalsIgnoreCase(stated.getBasisHash())) return Optional.of("the revaluation follows another document");
+                units = CdmTriparty.verifyRevaluation(doc, tripartyTermsDoc(terms), basis.trade(), basis.hash(),
+                        stated.getRevaluationDate().toLocalDate(), in.held(), in.free()).units();
+            } else {
+                var stated = CdmTriparty.parseSubstitution(doc);
+                if (!basis.hash().equalsIgnoreCase(stated.getBasisHash())) return Optional.of("the substitution follows another document");
+                String reqJson = payloads.get(stated.getRequestHash());
+                if (reqJson == null || !Cdm.keccakHex(reqJson).equalsIgnoreCase(stated.getRequestHash())) return Optional.of("the substitution request is not in the payload store");
+                var sub = CdmTriparty.verifySubstitution(doc, tripartyTermsDoc(terms), basis.trade(), basis.hash(), stated.getRequestHash(),
+                        CdmTriparty.parseSubstitutionRequest(reqJson), bankOf(terms.get("giver").asText()), stated.getSubstitutionDate().toLocalDate(), in.held(), in.free());
+                if (sub.substituted() != kind.equals("substitution")) return Optional.of("the substitution is recorded with another outcome");
+                units = sub.units();
+            }
+            boolean latest = true;
+            for (int j = index + 1; j < changes.size(); j++) if (!changes.get(j).get("kind").asText().equals("declined")) latest = false;
+            if (latest && !units.equals(onChainAllocation(r))) return Optional.of("the document differs from the tokens held on-chain");
+            changeChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    private Map<String, Object> withTokens(Map<String, Object> view) {
+        for (String key : List.of("movements", "heldBefore", "heldAfter", "breaches")) {
+            @SuppressWarnings("unchecked") List<Map<String, Object>> xs = (List<Map<String, Object>>) view.get(key);
+            for (Map<String, Object> e : xs) e.put("token", symbolOfIsin(String.valueOf(e.get("isin"))));
+        }
+        if (view.containsKey("isin")) view.put("token", symbolOfIsin(String.valueOf(view.get("isin"))));
+        return view;
+    }
+
+    /** A settled repo's revaluations and substitutions, oldest first, each with its document and, for the giver and the
+     *  receiver, its check; the pending substitution request; and the agent's possible own requests. */
+    private void tripartyChangesView(Map<String, Object> m, JsonNode terms, JsonNode r, boolean giver, boolean agent) {
+        String repoId = r.get("repoId").asText();
+        JsonNode changes = tripartyChanges(repoId);
+        List<Map<String, Object>> revaluations = new ArrayList<>();
+        List<Map<String, Object>> substitutions = new ArrayList<>();
+        for (int i = 0; i < changes.size(); i++) {
+            String hash = changes.get(i).get("hash").asText();
+            String kind = changes.get(i).get("kind").asText();
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put(kind.equals("revaluation") ? "revaluationHash" : "substitutionHash", hash);
+            e.put("block", changes.get(i).get("block").asText());
+            String doc = payloads.get(hash);
+            if (doc != null) {
+                try {
+                    if (kind.equals("revaluation")) e.put("revaluation", withTokens(CdmTriparty.revaluationView(CdmTriparty.parseRevaluation(doc))));
+                    else e.put("substitution", withTokens(CdmTriparty.substitutionView(CdmTriparty.parseSubstitution(doc))));
+                } catch (Exception ignored) {
+                    // shown without the document's fields
+                }
+            }
+            Optional<String> problem = agent ? Optional.empty() : tripartyChangeProblem(terms, r, changes, i);
+            e.put("verified", problem.isEmpty());
+            e.put("problem", problem.orElse(null));
+            (kind.equals("revaluation") ? revaluations : substitutions).add(e);
+        }
+        m.put("revaluations", revaluations);
+        m.put("substitutions", substitutions);
+        JsonNode pending = gw.get("/triparty/repos/" + repoId + "/substitution").get("pending");
+        boolean isPending = pending != null && !pending.isNull();
+        if (isPending) {
+            Map<String, Object> p = new LinkedHashMap<>();
+            p.put("requestHash", pending.get("requestHash").asText());
+            String reqJson = payloads.get(pending.get("requestHash").asText());
+            if (reqJson != null) {
+                var q = CdmTriparty.parseSubstitutionRequest(reqJson);
+                p.put("token", symbolOfIsin(q.getIsin()));
+                p.put("units", q.getUnits().longValueExact());
+                p.put("requestedBy", q.getRequestedBy() == cdmx.collateral.triparty.TripartyRequesterEnum.AGENT ? "Agent" : "Giver");
+            }
+            p.put("mine", pending.get("requester").asText().equalsIgnoreCase(cfg.myAddress));
+            m.put("pendingSubstitution", p);
+        }
+        m.put("canRequestSubstitution", giver && !isPending);
+        m.put("canSubstitute", agent && isPending);
+        List<Map<String, Object>> excess = new ArrayList<>();
+        if (agent && !isPending) latestExcess(r, changes).forEach((isin, n) -> excess.add(new LinkedHashMap<>(Map.of("token", symbolOfIsin(isin), "units", n))));
+        m.put("excess", excess);
+    }
+
+    /** The receiver refuses an allocation, or any of the three cancels a repo before it settles. */
+    private JsonNode tripartyRepoStep(String repoId, String step) {
+        tripartyRepoOnChain(repoId);
+        tripartyShortfalls.remove(repoId);
+        return gw.post("/triparty/repos/" + repoId + "/" + step, Map.of());
+    }
+
+    /** Refuse proposed terms (any of the three) or terminate terms in effect (the giver or the receiver). */
+    private JsonNode tripartyStep(String termsId, String step) {
+        tripartyOnChain(termsId);
+        return gw.post("/triparty/terms/" + termsId + "/" + step, Map.of());
     }
 
     // --- amendment of agreement terms (flow-agreement-amendment, task-csa-amendment) ---
@@ -1017,7 +2021,8 @@ public final class App {
         if (rc.path("quantity").asLong(0) > 0) m.put("recall", recallView(l, rc));
         JsonNode sb = l.path("substitution");
         if (!sb.path("cdmHash").asText(ZERO_HASH).equals(ZERO_HASH)) m.put("substitution", substitutionView(l, sb, lender));
-        if (!state.equals("booked") && !state.equals("affirmed")) {
+        if (state.equals("closedOut")) m.put("closeOutId", l.path("closeOutId").asText());
+        else if (!state.equals("booked") && !state.equals("affirmed")) {
             try {
                 m.put("billing", billingView(l, lender));
             } catch (Exception ex) {
@@ -1249,7 +2254,10 @@ public final class App {
     }
 
 
-    // ---- billing the loan's rate (task-gmsla-rebate, wp-adr-gmsla-rebate) ----
+    // ---- billing the loan's rate (task-gmsla-rebate, wp-adr-gmsla-rebate; task-gmsla-lending-fee, wp-adr-gmsla-lending-fee) ----
+    // The lending fee on non-cash collateral uses the same billing: the lender bills it on the loaned quantity outstanding
+    // at the loaned security's feed price on its business date, and the borrower's service checks that price against its
+    // own feed.
     // The party receiving the rate (the borrower for a rebate on cash collateral) builds the cdm-ext GmslaLoanInvoice for
     // the period from the billed-through date (or the delivery) to its business date (or the return date of a returned
     // loan), and bills on SecuritiesLoan with its hash; the payer's service rebuilds it over its own loan documents and
@@ -1347,7 +2355,7 @@ public final class App {
                 pending.put("problem", ex.getMessage());
             }
             m.put("pending", pending);
-        } else if (cash) {
+        } else {
             LocalDate[] period = billablePeriod(l, loanTimeline(l));
             if (period != null) m.put("billable", Map.of("periodStart", period[0].toString(), "periodEnd", period[1].toString()));
         }
@@ -1375,11 +2383,17 @@ public final class App {
         if (!known.doc().getPeriodStart().toLocalDate().equals(start)) throw new IllegalStateException("the invoice does not start at " + start);
         if (known.onChainAmount() != b.get("amount").asLong()) throw new IllegalStateException("the on-chain amount is not the invoice total");
         if (CdmRecall.yyyymmdd(known.periodEnd()) != b.get("periodEnd").asInt()) throw new IllegalStateException("the on-chain period end is not the invoice's");
+        if (known.doc().getPrice() != null) {
+            BigDecimal mine = loanFeedPrice(symbolByAddress.get(l.get("security").asText().toLowerCase()));
+            if (known.doc().getPrice().compareTo(mine) != 0)
+                throw new IllegalStateException("the invoice prices the loaned security at " + known.doc().getPrice().toPlainString() + ", this service's feed at " + mine.toPlainString());
+        }
         if (!b.get("cashToken").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) throw new IllegalStateException("the invoice is not payable in tUSD");
         return known;
     }
 
-    /** The borrower bills the rebate of a cash loan for the period to its business date (or the return date). */
+    /** The party receiving the loan's rate bills it for the period to its business date (or the return date): the
+     *  borrower the rebate of a cash loan, the lender the fee of a loan against securities. */
     private void billLoan(Context ctx) {
         String id = ctx.pathParam("id");
         JsonNode l = gw.get("/loans/" + id);
@@ -1390,12 +2404,14 @@ public final class App {
         if (!l.path("bill").path("invoiceHash").asText(ZERO_HASH).equals(ZERO_HASH)) throw new RuntimeException("an invoice of loan " + id + " is already pending");
         LoanCurrent c = loanCurrent(l);
         if (c == null) throw new RuntimeException("the loan document is not in the payload store");
-        if (c.terms().getRebateRate() == null) throw new RuntimeException("only a loan against cash collateral has a rebate (the fee is row 18)");
-        if (lender) throw new RuntimeException("the borrower bills the rebate");
+        boolean cash = c.terms().getRebateRate() != null;
+        if (cash && lender) throw new RuntimeException("the borrower bills the rebate");
+        if (!cash && !lender) throw new RuntimeException("the lender bills the fee");
         var timeline = loanTimeline(l);
         LocalDate[] period = billablePeriod(l, timeline);
         if (period == null) throw new RuntimeException("nothing to bill: loan " + id + " is billed through " + businessDate);
-        CdmLoanInvoice.Invoice inv = CdmLoanInvoice.rebate(timeline, c.terms(), period[0], period[1]);
+        CdmLoanInvoice.Invoice inv = cash ? CdmLoanInvoice.rebate(timeline, c.terms(), period[0], period[1])
+                : CdmLoanInvoice.fee(timeline, c.terms(), period[0], period[1], loanFeedPrice(symbolByAddress.get(l.get("security").asText().toLowerCase())));
         store.recordDocument(id, "GmslaLoanInvoice", "out", inv.hash(), inv.json());
         payloads.put(inv.hash(), inv.json(), callParties);
         loanInvoices.put(inv.hash(), inv);
@@ -2003,11 +3019,13 @@ public final class App {
     private GmslaMarginHeld gmslaMarginHeld() {
         BigDecimal held = BigDecimal.ZERO;
         List<String> calls = new ArrayList<>();
+        Set<String> closedOut = loanCloseOutSettledCalls();
         for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
             JsonNode c = entry.get("call");
             int state = c.get("state").asInt();
             String callId = entry.get("callId").asText();
             if (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmslaCall(callId)) continue;
+            if (closedOut.contains(callId.toLowerCase())) continue;
             boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
             long pid = c.get("activeProposal").asLong() - 1;
             for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
@@ -2782,6 +3800,7 @@ public final class App {
         String a = address.toLowerCase();
         if (a.equals(cfg.partyAddress("A").toLowerCase())) return "A";
         if (a.equals(cfg.partyAddress("B").toLowerCase())) return "B";
+        if (a.equals(cfg.partyAddress("T").toLowerCase())) return "T";
         return address;
     }
 
@@ -3880,6 +4899,278 @@ public final class App {
         if (problem != null) throw new RuntimeException("close-out " + id + ": " + problem);
         store.recordDocument(id, "GmraCloseOutStatement", "in", hash, doc);
         JsonNode tx = gw.post("/repo-default/close-outs/" + id + "/pay", Map.of("token", c.get("cash").asText(), "amount", c.get("amount").asText()));
+        ctx.json(Map.of("closeOutId", id, "amount", c.get("amount").asText(), "payTx", tx.path("txHash").asText()));
+    }
+
+    // ---- GMSLA default close-out (task-gmsla-default-close-out, wp-adr-gmsla-default-close-out) ----
+    // As the GMRA close-out above: the non-defaulting party's service builds the cdm-ext GmslaCloseOutStatement over every
+    // open loan of the pair and the margin held under the pair's settled GMSLA calls, at the feed prices on its business
+    // date, and records it on SecuritiesLoan; the other party's service rebuilds it from its own loan documents, the
+    // chain's billed-through dates and margin, and the prices the statement states. Rules: task-sme-gmsla-default-rules.
+
+    private final Map<String, cdmx.collateral.gmsla.GmslaCloseOutStatement> loanCloseOutDocs = new ConcurrentHashMap<>();
+
+    /** The statement of an on-chain loan close-out from the payload store, parsed once; null if not in the store. */
+    private cdmx.collateral.gmsla.GmslaCloseOutStatement loanCloseOutStatement(String hash) {
+        var known = loanCloseOutDocs.get(hash);
+        if (known != null) return known;
+        String doc = payloads.get(hash);
+        if (doc == null) return null;
+        if (!Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the close-out document does not hash to the on-chain hash");
+        var s = CdmLoanDefault.parse(doc);
+        loanCloseOutDocs.put(hash, s);
+        return s;
+    }
+
+    /** The GMSLA calls whose margin a recorded loan close-out of this party settled: margin views no longer count them. */
+    private Set<String> loanCloseOutSettledCalls() {
+        Set<String> out = new java.util.HashSet<>();
+        for (JsonNode c : gw.getQuery("/loan-default/close-outs", Map.of("party", cfg.myAddress))) {
+            var s = loanCloseOutStatement(c.get("cdmHash").asText());
+            if (s != null) for (String id : CdmLoanDefault.settledCalls(s)) out.add(id.toLowerCase());
+        }
+        return out;
+    }
+
+    /** This party's open loans with the counterparty, as the contract closes them out. */
+    private List<JsonNode> openLoansWithCounterparty() {
+        String other = cfg.partyAddress(counterparty());
+        List<JsonNode> out = new ArrayList<>();
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress))) {
+            if (!l.get("state").asText().equals("open")) continue;
+            if (l.get("lender").asText().equalsIgnoreCase(other) || l.get("borrower").asText().equalsIgnoreCase(other)) out.add(l);
+        }
+        return out;
+    }
+
+    /** The loans to close out, from this service's own checked documents, priced by `prices` (the loaned security's
+     *  price and the collateral's). */
+    private List<CdmLoanDefault.LoanInput> closeOutLoans(List<JsonNode> loans, java.util.function.Function<JsonNode, BigDecimal[]> prices) {
+        List<CdmLoanDefault.LoanInput> out = new ArrayList<>();
+        for (JsonNode l : loans) {
+            String id = l.get("loanId").asText();
+            LoanCurrent c = loanCurrent(l);
+            if (c == null) throw new RuntimeException("the document of loan " + id + " is not in the payload store");
+            String problem = loanProblem(l, c);
+            if (problem != null) throw new RuntimeException("loan " + id + ": " + problem);
+            var timeline = loanTimeline(l);
+            int through = l.path("bill").path("billedThrough").asInt(0);
+            LocalDate from = through == 0 ? timeline.get(0).date() : CdmRecall.fromYyyymmdd(through);
+            BigDecimal[] p = prices.apply(l);
+            out.add(new CdmLoanDefault.LoanInput(id, c.trade(), c.terms(), timeline, from, p[0], p[1]));
+        }
+        return out;
+    }
+
+    /** The feed prices of a loan's security and collateral (1 for tUSD). */
+    private BigDecimal[] loanFeedPrices(JsonNode l) {
+        String col = symbolByAddress.get(l.get("collateral").asText().toLowerCase());
+        return new BigDecimal[]{loanFeedPrice(symbolByAddress.get(l.get("security").asText().toLowerCase())),
+                "tUSD".equals(col) ? BigDecimal.ONE : loanFeedPrice(col)};
+    }
+
+    /** The margin each party holds net per asset under the pair's settled GMSLA calls, priced by `price` (asset code:
+     *  the Base Currency for tUSD, the ISIN otherwise). `only` null: every call not yet closed out; otherwise just those
+     *  calls (to check the close-out that settled them). */
+    private List<CdmLoanDefault.MarginInput> closeOutGmslaMargin(String baseCurrency, java.util.function.Function<String, BigDecimal> price, Set<String> only) {
+        Set<String> closedOut = only == null ? loanCloseOutSettledCalls() : Set.of();
+        Map<String, Long> net = new LinkedHashMap<>();
+        Map<String, List<String>> calls = new LinkedHashMap<>();
+        String tUsd = cfg.tokenAddress("tUSD");
+        for (JsonNode entry : gw.getQuery("/party-calls", Map.of("party", cfg.myAddress))) {
+            JsonNode c = entry.get("call");
+            int state = c.get("state").asInt();
+            String callId = entry.get("callId").asText();
+            if (only != null ? !only.contains(callId.toLowerCase())
+                    : (c.get("kind").asInt() != 1 || (state != 5 && state != 6) || !isGmslaCall(callId) || closedOut.contains(callId.toLowerCase()))) continue;
+            boolean received = c.get("from").asText().equalsIgnoreCase(cfg.myAddress);
+            long pid = c.get("activeProposal").asLong() - 1;
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + pid + "/assets")) {
+                String token = a.get("token").asText();
+                String asset = token.equalsIgnoreCase(tUsd) ? baseCurrency : cfg.isin(symbolByAddress.get(token.toLowerCase()));
+                net.merge(asset, received ? a.get("qty").asLong() : -a.get("qty").asLong(), Long::sum);
+                calls.computeIfAbsent(asset, k -> new ArrayList<>());
+                if (!calls.get(asset).contains(callId)) calls.get(asset).add(callId);
+            }
+        }
+        List<CdmLoanDefault.MarginInput> out = new ArrayList<>();
+        for (var e : net.entrySet()) {
+            if (e.getValue() == 0) continue;
+            boolean mine = e.getValue() > 0;
+            out.add(new CdmLoanDefault.MarginInput(mine ? myBank() : counterpartyBank(), mine ? counterpartyBank() : myBank(), e.getKey(),
+                    e.getKey().equals(baseCurrency), Math.abs(e.getValue()), price.apply(e.getKey()), calls.get(e.getKey())));
+        }
+        return out;
+    }
+
+    /** Whether the GMSLA terms elect automatic early termination for the counterparty's default. */
+    private boolean gmslaAutomaticFor(String partyId) {
+        var role = partyId.equals("A") ? cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_1 : cdm.base.staticdata.party.CounterpartyRoleEnum.PARTY_2;
+        return CdmGmsla.automaticEarlyTermination(gmslaFold().terms().terms(), role);
+    }
+
+    private String gmslaBaseCurrency() {
+        return CdmGmsla.gmsla(gmslaFold().terms().terms()).getBaseCurrency().getBaseCurrency().toDisplayString();
+    }
+
+    /** The close-out statement this party would record now as the non-defaulting party, at the feed prices. */
+    private CdmLoanDefault.Statement loanCloseOutPreview(CdmLoanDefault.Notice notice) {
+        String ccy = gmslaBaseCurrency();
+        List<JsonNode> loans = openLoansWithCounterparty();
+        if (loans.isEmpty()) throw new RuntimeException("no open loan with " + counterparty() + " to close out");
+        return CdmLoanDefault.statement(notice.notice(), ccy, businessDate, closeOutLoans(loans, this::loanFeedPrices),
+                closeOutGmslaMargin(ccy, a -> feedPriceOfAsset(a, ccy), null));
+    }
+
+    /** Whether a recorded loan close-out's statement is the one this party rebuilds from its own loan documents, the
+     *  chain's billed-through dates and margin, and the prices the statement states; and the on-chain record matches. */
+    private String loanCloseOutProblem(JsonNode c, cdmx.collateral.gmsla.GmslaCloseOutStatement s, String json) {
+        String hash = c.get("cdmHash").asText();
+        if (!Cdm.keccakHex(json).equalsIgnoreCase(hash)) return "the statement does not hash to the on-chain hash";
+        String closeOutId = c.get("closeOutId").asText();
+        List<JsonNode> loans = new ArrayList<>();
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress)))
+            if (l.get("state").asText().equals("closedOut") && l.path("closeOutId").asText().equalsIgnoreCase(closeOutId)) loans.add(l);
+        if (loans.size() != s.getLoanValue().size()) return "the statement values " + s.getLoanValue().size() + " loans; the contract closed out " + loans.size();
+        String ccy = s.getBaseCurrency();
+        Set<String> own = new java.util.HashSet<>();
+        for (String id : CdmLoanDefault.settledCalls(s)) own.add(id.toLowerCase());
+        Map<String, BigDecimal> statedMarginPrice = new HashMap<>();
+        for (var m : CdmLoanDefault.heldMargin(s)) statedMarginPrice.put(m.getAsset(), m.getPrice());
+        List<CdmLoanDefault.MarginInput> margin = closeOutGmslaMargin(ccy, a -> statedMarginPrice.getOrDefault(a, BigDecimal.ONE), own);
+        if (margin.size() != CdmLoanDefault.heldMargin(s).size()) return "the statement's margin is not the margin held under its calls";
+        CdmLoanDefault.Statement rebuilt;
+        try {
+            rebuilt = CdmLoanDefault.statement(s.getNotice(), ccy, s.getValuationDate().toLocalDate(),
+                    closeOutLoans(loans, l -> CdmLoanDefault.statedPrices(s, l.get("loanId").asText())), margin);
+        } catch (RuntimeException ex) {
+            return "the statement does not rebuild: " + ex.getMessage();
+        }
+        if (!rebuilt.hash().equalsIgnoreCase(hash)) return "the statement rebuilt from this party's loans differs";
+        long amount = c.get("amount").asLong();
+        if (amount != rebuilt.balance()) return "the on-chain balance is not the statement's";
+        if (amount != 0 && !cfg.bankName(partyIdOf(c.get("payer").asText())).equals(rebuilt.payer())) return "the on-chain payer is not the statement's";
+        return null;
+    }
+
+    /** The GMSLA default close-out view: the default status of both parties, the election, a preview when this party may
+     *  close out, and the recorded close-outs with their verification and payment. */
+    private void loanDefault(Context ctx) {
+        String other = cfg.partyAddress(counterparty());
+        boolean counterpartyInDefault = gw.get("/defaults/" + other).get("inDefault").asBoolean();
+        boolean inDefault = gw.get("/defaults/" + cfg.myAddress).get("inDefault").asBoolean();
+        boolean automatic = gmslaAutomaticFor(counterparty());
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("businessDate", businessDate.toString());
+        m.put("counterparty", counterparty());
+        m.put("counterpartyInDefault", counterpartyInDefault);
+        m.put("inDefault", inDefault);
+        m.put("automaticEarlyTermination", automatic);
+        m.put("baseCurrency", gmslaBaseCurrency());
+        int open = openLoansWithCounterparty().size();
+        m.put("openLoans", open);
+        if (!inDefault && open > 0) {
+            try {
+                var n = CdmLoanDefault.notice(myBank(), counterpartyBank(), businessDate, businessDate, automatic);
+                m.put("preview", CdmLoanDefault.view(loanCloseOutPreview(n).statement()));
+            } catch (RuntimeException ex) {
+                m.put("previewProblem", ex.getMessage());
+            }
+        }
+        List<Map<String, Object>> closeOuts = new ArrayList<>();
+        for (JsonNode c : gw.getQuery("/loan-default/close-outs", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> v = new LinkedHashMap<>();
+            String hash = c.get("cdmHash").asText();
+            v.put("closeOutId", c.get("closeOutId").asText());
+            v.put("cdmHash", hash);
+            v.put("nonDefaulting", partyIdOf(c.get("nonDefaulting").asText()));
+            v.put("defaulting", partyIdOf(c.get("defaulting").asText()));
+            v.put("amount", c.get("amount").asText());
+            v.put("paid", c.get("paid").asBoolean());
+            boolean owed = c.get("amount").asLong() > 0;
+            v.put("payer", owed ? partyIdOf(c.get("payer").asText()) : null);
+            v.put("toPay", owed && c.get("payer").asText().equalsIgnoreCase(cfg.myAddress) && !c.get("paid").asBoolean());
+            v.put("noticeServed", !c.get("noticeHash").asText().equals(ZERO_HASH));
+            String doc = payloads.get(hash);
+            if (doc == null) {
+                v.put("verified", false);
+                v.put("problem", "the statement is not in the payload store");
+            } else {
+                try {
+                    var s = loanCloseOutStatement(hash);
+                    v.put("statement", CdmLoanDefault.view(s));
+                    String problem = loanCloseOutProblem(c, s, doc);
+                    v.put("verified", problem == null);
+                    v.put("problem", problem);
+                } catch (RuntimeException ex) {
+                    v.put("verified", false);
+                    v.put("problem", ex.getMessage());
+                }
+            }
+            closeOuts.add(0, v);
+        }
+        m.put("closeOuts", closeOuts);
+        ctx.json(m);
+    }
+
+    /** The non-defaulting party closes out every open loan with the counterparty. The default goes to the oracle
+     *  service first when the feed does not show it. Without automatic early termination this service serves the
+     *  Default Notice on-chain; the Early Termination Date and the prices are its business date's. */
+    private void closeOutLoanDefault(Context ctx) {
+        String other = cfg.partyAddress(counterparty());
+        if (gw.get("/defaults/" + cfg.myAddress).get("inDefault").asBoolean())
+            throw new RuntimeException("the oracle feed records this party in default; only the non-defaulting party closes out");
+        if (openLoansWithCounterparty().isEmpty()) throw new RuntimeException("no open loan with " + counterparty() + " to close out");
+        String defaultTx = null;
+        if (!gw.get("/defaults/" + other).get("inDefault").asBoolean()) {
+            JsonNode notified = oracle.post("/defaults", Map.of("party", other, "inDefault", true, "notifiedBy", myBank()));
+            defaultTx = notified.path("tx").path("txHash").asText(null);
+        }
+        boolean automatic = gmslaAutomaticFor(counterparty());
+        CdmLoanDefault.Notice notice = CdmLoanDefault.notice(myBank(), counterpartyBank(), businessDate, businessDate, automatic);
+        CdmLoanDefault.Statement st = loanCloseOutPreview(notice);
+        String noticeHash = ZERO_HASH, noticeTx = null;
+        String closeOutId = Cdm.onChainId("loan-close-out-" + cfg.partyId + "-" + System.nanoTime());
+        if (!automatic) {
+            store.recordDocument(closeOutId, "GmslaDefaultNotice", "out", notice.hash(), notice.json());
+            payloads.put(notice.hash(), notice.json(), callParties);
+            noticeTx = gw.post("/loan-default/notice", Map.of("defaulting", other, "noticeHash", notice.hash())).path("txHash").asText();
+            noticeHash = notice.hash();
+        }
+        store.recordDocument(closeOutId, "GmslaCloseOutStatement", "out", st.hash(), st.json());
+        payloads.put(st.hash(), st.json(), callParties);
+        loanCloseOutDocs.put(st.hash(), st.statement());
+        String payer = st.balance() == 0 ? "0x0000000000000000000000000000000000000000"
+                : (st.payer().equals(myBank()) ? cfg.myAddress : other);
+        JsonNode tx = gw.post("/loan-default/close-outs", Map.of("closeOutId", closeOutId, "defaulting", other, "noticeHash", noticeHash,
+                "cdmHash", st.hash(), "cash", cfg.tokenAddress("tUSD"), "payer", payer, "amount", String.valueOf(st.balance())));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("closeOutId", closeOutId);
+        out.put("cdmHash", st.hash());
+        out.put("noticeHash", noticeHash.equals(ZERO_HASH) ? null : noticeHash);
+        out.put("statement", CdmLoanDefault.view(st.statement()));
+        out.put("defaultTx", defaultTx);
+        out.put("noticeTx", noticeTx);
+        out.put("closeOutTx", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    /** The party that owes a loan close-out balance pays it, after checking the statement. */
+    private void payLoanCloseOut(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode c = null;
+        for (JsonNode x : gw.getQuery("/loan-default/close-outs", Map.of("party", cfg.myAddress)))
+            if (x.get("closeOutId").asText().equalsIgnoreCase(id)) c = x;
+        if (c == null) throw new RuntimeException("no loan close-out " + id + " of this party");
+        if (c.get("paid").asBoolean()) throw new RuntimeException("close-out " + id + " is paid");
+        if (!c.get("payer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("this party does not owe the balance of close-out " + id);
+        String hash = c.get("cdmHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null) throw new RuntimeException("the statement is not in the payload store");
+        String problem = loanCloseOutProblem(c, loanCloseOutStatement(hash), doc);
+        if (problem != null) throw new RuntimeException("close-out " + id + ": " + problem);
+        store.recordDocument(id, "GmslaCloseOutStatement", "in", hash, doc);
+        JsonNode tx = gw.post("/loan-default/close-outs/" + id + "/pay", Map.of("token", c.get("cash").asText(), "amount", c.get("amount").asText()));
         ctx.json(Map.of("closeOutId", id, "amount", c.get("amount").asText(), "payTx", tx.path("txHash").asText()));
     }
 

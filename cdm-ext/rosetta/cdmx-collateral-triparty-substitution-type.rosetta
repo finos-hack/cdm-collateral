@@ -1,0 +1,63 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the giver's request for collateral back from a triparty repo and the agent's substitution of it (task-triparty-substitution, wp-adr-triparty-substitution). CDM 7.7.0 has a substitution event instructed by the trade parties (R11) and no substitution by an agent (T8).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.event.common.*
+import cdm.event.workflow.*
+import cdm.observable.asset.*
+
+enum TripartyRequesterEnum: <"Who asked for a substitution.">
+    Giver <"The collateral giver recalls collateral.">
+    Agent <"The agent removes the excess of an asset over its concentration limit.">
+
+enum TripartySubstitutionOutcomeEnum: <"What the agent did with a substitution request.">
+    Substituted <"The units are returned to the giver's free account and replaced, when needed, from it.">
+    Declined <"The free account cannot replace the units, or the repo holds fewer: nothing moves.">
+
+type TripartySubstitutionRequest: <"A request that the agent return units of one asset of a triparty repo's holding.">
+    [rootType]
+    tradeId string (1..1) <"The repo's trade identifier.">
+    isin string (1..1) <"The asset to return.">
+    units number (1..1) <"The whole units to return.">
+    requestedBy TripartyRequesterEnum (1..1)
+    requestDate date (1..1)
+
+    condition PositiveWholeUnits: <"At least one whole unit.">
+        units > 0 and RoundToNearest(units, 1.0, RoundingModeEnum -> Down) = units
+
+type TripartySubstitution: <"The agent's substitution of one request on one settled triparty repo: its inputs as read from the chain, the holdings valued before and after, the movements, and the CDM records.">
+    [rootType]
+    requestHash string (1..1) <"The keccak-256 hash of the TripartySubstitutionRequest.">
+    basisHash string (1..1) <"The hash of the TripartyAllocation, TripartyRevaluation or TripartySubstitution whose holding this changes.">
+    substitutionDate date (1..1)
+    requiredValue Money (1..1) <"TripartyRequiredValue of the repo on the date.">
+    isin string (1..1) <"The asset asked back.">
+    units number (1..1) <"The units asked back.">
+    held TripartyDeposit (1..*) <"The agent's input: the repo's held assets with the giver's ranks and the feed prices.">
+    free TripartyDeposit (0..*) <"The agent's input: the giver's free account with its ranks and the feed prices.">
+    heldBefore TripartyValuedPosition (1..*)
+    valueBefore Money (1..1)
+    movements TripartyMovement (0..*) <"The returned units (Release) and their replacements (TopUp).">
+    heldAfter TripartyValuedPosition (1..*)
+    valueAfter Money (1..1)
+    outcome TripartySubstitutionOutcomeEnum (1..1)
+    breaches TripartyConcentrationBreach (0..*) <"The held assets after the substitution over the profile's limits, measured against the required value.">
+    adjustment BusinessEvent (0..1) <"CDM's terms change of the repo's collateral portfolio to heldAfter, with the trade's own Purchase Date. Added by the caller.">
+    proposed WorkflowStep (0..1) <"CDM's proposed step: the substitution instruction, the requester and the agent's approval. Added by the caller.">
+    accepted WorkflowStep (0..1) <"CDM's accepted step with the agent's event. Added by the caller.">
+
+    condition DeclinedMovesNothing: <"A declined request moves nothing and carries no CDM event.">
+        if outcome = TripartySubstitutionOutcomeEnum -> Declined
+        then movements is absent and adjustment is absent
+
+    condition SubstitutedReturnsTheUnits: <"A substitution returns exactly the units asked back.">
+        if outcome = TripartySubstitutionOutcomeEnum -> Substituted
+        then (movements filter m [ m -> direction = TripartyMovementDirectionEnum -> Release ] then extract m [ m -> isin ] then distinct) all = isin
+            and (movements filter m [ m -> direction = TripartyMovementDirectionEnum -> Release ] then extract m [ m -> units ] then sum) = units
+
+    condition SubstitutedIsCovered: <"After a substitution the holding is worth at least the required value.">
+        if outcome = TripartySubstitutionOutcomeEnum -> Substituted
+        then valueAfter -> value >= requiredValue -> value
+
+    condition NoReplacementInTheReturnedAsset: <"The returned asset is not used to replace itself.">
+        (movements filter m [ m -> direction = TripartyMovementDirectionEnum -> TopUp and m -> isin = isin ] then count) = 0

@@ -19,10 +19,12 @@ Start order is top to bottom. Each row depends on the rows above it.
 | 3 | CDM payload store | `node store/src/server.ts` | 8300 | `curl localhost:8300/store/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-a | `node gateway/src/server.ts` (`NODE=bank-a`) | 8201 | `curl localhost:8201/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-b | `node gateway/src/server.ts` (`NODE=bank-b`) | 8202 | `curl localhost:8202/ledger/v1/health` | `orchestrate.mjs` |
+| 4 | Ledger gateway, bank-c (the triparty agent BANK-T) | `node gateway/src/server.ts` (`NODE=bank-c`) | 8203 | `curl localhost:8203/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, mkt (market operator, oracle publisher key) | `node gateway/src/server.ts` (`NODE=mkt`) | 8200 | `curl localhost:8200/ledger/v1/health` | `orchestrate.mjs` |
 | 5 | Oracle service (default notices; mock market data and price publishing, `flow-oracle-update`) | `java -jar services/oracle/target/oracle-service.jar` | 8100 | `curl localhost:8100/oracle/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service A (pledgor, bank-a) | `java -jar services/collateral/target/collateral-service.jar` | 8001 | `curl localhost:8001/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service B (secured party, bank-b) | same jar, `PARTY_ID=B` | 8002 | `curl localhost:8002/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
+| 5 | Collateral service T (triparty agent BANK-T, bank-c; triparty routes only) | same jar, `PARTY_ID=T` | 8003 | `curl localhost:8003/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 6 | Party console (Vite dev server) | `npm run dev` in `console/` | 5173 | open `http://localhost:5173/#/live/A` | `orchestrate.mjs` |
 
 Request path for one lifecycle step: console → collateral service → (CDM document to the payload store) → ledger
@@ -98,7 +100,7 @@ The dev container runs `build` once when it is created and `up` every time it st
 `up` does the following, in order:
 
 1. **Stop-and-replace:** stops the `orchestrate.mjs` process recorded in `.live-e2e.pid` from an earlier `up`, then
-   kills any process still listening on 8300, 8200, 8201, 8202, 8100, 8001, 8002, 5173 or 4173.
+   kills any process still listening on 8300, 8200, 8201, 8202, 8203, 8100, 8001, 8002, 8003, 5173 or 4173.
 2. Starts Besu: `docker compose up -d` when `besu/.env` and `besu/networkFiles/genesis.json` exist, otherwise
    `bash besu/start-network.sh`. Waits up to 120 s for a non-zero block height on 8545.
 3. Runs `npm run deploy:besu` only when `contracts/deployments/besu.json` is absent. It never redeploys over an
@@ -209,14 +211,15 @@ jar is missing. Otherwise it:
 
 1. mints one bearer token per party for the payload store (new tokens on every run, never written to disk);
 2. starts the store on 8300 with `PARTY_TOKENS` and `DATA_DIR=store/data`;
-3. starts gateway bank-a on 8201, gateway bank-b on 8202 and the market operator's gateway mkt on 8200;
-4. after 2 s, starts the oracle service on 8100 (writing through gateway mkt), then service A on 8001 and service B on
-   8002, each with its own `STORE_TOKEN` and `ORACLE_URL=http://localhost:8100`, from the repository root (so they
-   find `besu.json` and write `data/<node>.db`);
+3. starts gateway bank-a on 8201, gateway bank-b on 8202, gateway bank-c (the triparty agent BANK-T) on 8203 and the
+   market operator's gateway mkt on 8200;
+4. after 2 s, starts the oracle service on 8100 (writing through gateway mkt), then service A on 8001, service B on
+   8002 and service T on 8003, each with its own `STORE_TOKEN` and `ORACLE_URL=http://localhost:8100`, from the
+   repository root (so they find `besu.json` and write `data/<node>.db`);
 5. starts the console dev server on 5173.
 
-Every output line carries the child's prefix: `[store]`, `[gw-a]`, `[gw-b]`, `[gw-mkt]`, `[oracle]`, `[svc-a]`,
-`[svc-b]`, `[console]`.
+Every output line carries the child's prefix: `[store]`, `[gw-a]`, `[gw-b]`, `[gw-t]`, `[gw-mkt]`, `[oracle]`,
+`[svc-a]`, `[svc-b]`, `[svc-t]`, `[console]`.
 Expected startup lines:
 
 ```
@@ -227,6 +230,7 @@ Expected startup lines:
 [oracle] oracle service on http://localhost:8100/oracle/v1 -> operator gateway http://localhost:8200
 [svc-a] collateral service: party A (Pledgor) 0x… on http://localhost:8001/api/v1 -> gateway http://localhost:8201
 [svc-b] collateral service: party B (Secured Party) 0x… on http://localhost:8002/api/v1 -> gateway http://localhost:8202
+[svc-t] collateral service: triparty agent BANK-T (Triparty Agent) 0x… on http://localhost:8003/api/v1 -> gateway http://localhost:8203
 [console]   ➜  Local:   http://localhost:5173/
 ```
 
@@ -241,13 +245,15 @@ In a second terminal:
 curl -s localhost:8300/store/v1/health    # {"ok":true,"count":<documents>}
 curl -s localhost:8201/ledger/v1/health   # {"node":"bank-a","account":"0x…","ok":true}
 curl -s localhost:8202/ledger/v1/health   # {"node":"bank-b",…}
+curl -s localhost:8203/ledger/v1/health   # {"node":"bank-c",…}
 curl -s localhost:8200/ledger/v1/health   # {"node":"mkt",…}
 curl -s localhost:8100/oracle/v1/health   # {"service":"oracle","ok":true}
 curl -s localhost:8001/api/v1/health      # {"party":"A","role":"Pledgor","address":"0x…","ok":true}
 curl -s localhost:8002/api/v1/health      # {"party":"B","role":"Secured Party",…}
+curl -s localhost:8003/api/v1/health      # {"party":"T","role":"Triparty Agent",…}
 ```
 
-All seven must answer before step 6.
+All nine must answer before step 6.
 
 ## 5. Drive the flows
 
@@ -344,6 +350,91 @@ gateway calls `bill`. The lender's console shows `rebate … tUSD for … to …
 `Pay … tUSD` and `Refuse invoice`; paying moves the tUSD from the lender to the borrower and both consoles show `billed
 through …`. Totals are whole tUSD (tUSD has no decimals). Loans booked before this deployment start from their
 delivery. The rules are the assumptions in `docs/analysis/sme-question-ledger.md` (RBT-1 to RBT-6).
+
+Lending fees (`flow-gmsla-lending-fee`): for a delivered loan against securities, the lender's Rate billing column
+shows `Bill fee <start> to <end>`, over the same periods as the rebate. The fee accrues on the loaned quantity
+outstanding at the loaned security's feed price on the lender's business date, one price per invoice. The borrower's
+console shows `fee … tUSD for … to … at <price>` with each part, and `Pay … tUSD` and `Refuse invoice`; the
+borrower's service refuses an invoice whose price is not its own feed price. The rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (FEE-1 to FEE-6).
+
+Securities lending default (`flow-gmsla-default-close-out`): in the "Securities lending default (GMSLA)" card of the
+non-defaulting party B clicks `Declare A's default and close out` (or `Close out A's default` when the oracle feed
+already shows it). B's service notifies the default to the oracle service if needed, serves the Default Notice on-chain
+(the baseline GMSLA has automatic early termination not applicable) and records the close-out statement: every open
+loan of the pair closes out at once, valued at the Default Market Value of the loaned securities against the collateral
+the lender holds, both at the feed prices, with the fee or rebate accrued since the billed-through date and any margin
+held under the pair's GMSLA calls; one balance in tUSD remains. No securities or collateral move. Both services show the
+statement as verified, and the party that owes the balance clicks `Pay USD …`. The rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (DFL-1 to DFL-9).
+
+Triparty terms (`flow-triparty-terms`): in the "Triparty terms" card A clicks `Propose triparty terms (giver BANK-A,
+agent BANK-T)`. A's service builds the cdm-ext `TripartyTerms` (A as the giver, B as the receiver, BANK-T as the agent,
+the hash of the GMRA terms in force, and the profile: tUST at a 2% haircut, tAGY at 3% up to half of the Purchase
+Price) and records its hash on `TripartySettlement`. B, and then BANK-T in its own console (`#/live/T`), each see
+`terms checked against this party's own build ✓` and click `Affirm triparty terms`; after both the terms show
+`in effect on-chain ✓`. The giver or the receiver can `Terminate triparty terms`; any of the three can refuse a
+proposal. The terms and the profile are the assumptions in `docs/analysis/sme-question-ledger.md` (TPT-1 to TPT-6).
+
+Triparty trade start (`flow-triparty-trade-start`): under B-giver terms in effect (B gives, A receives), B deposits
+2,000 tUST ranked 1 and 4,000 tAGY ranked 2 with `Deposit with BANK-T` in the terms card; the "Free at the agent" table
+shows them held on `TripartySettlement`. B enters a Purchase Price of 500,000 and clicks `Request triparty repo`: B's
+service builds the cdm-ext `TripartyRepoRequest` and records its hash. A sees `request checked ✓` and clicks `Affirm
+triparty repo request`. In `#/live/T` the agent clicks `Allocate collateral`: its service runs cdm-ext
+`AllocateTriparty` over B's free account at the feed prices, in B's ranking, with tAGY capped at half of the Purchase
+Price after haircuts; 2,000 tUST and at most 2,598 tAGY cannot cover 500,000, so the card shows `the deposit cannot
+cover the Purchase Price within the profile: nothing allocated` and nothing is written on-chain. B deposits 1,000 tUST
+more; the agent allocates again: 3,000 tUST and 2,190 tAGY (42.15% of the Purchase Price), books the CDM repo with one
+collateral position per asset in the cdm-ext `TripartyAllocation`, and records its hash with the tokens and amounts.
+A's and B's services each recompute the allocation (`allocation recomputed by this party ✓`); A clicks `Settle purchase
+against the allocation`, and in one transaction 500,000 tUSD moves from A to B and the allocated tokens move from B's
+free account to the repo's account. B then clicks `Withdraw free tAGY`. The repo stays open, so the terms cannot be
+terminated until trade end (task-triparty-trade-end). The allocation rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (TPS-1 to TPS-7).
+
+Triparty revaluation (`flow-triparty-revaluation`): with a settled trade-start repo (3,000 tUST and 2,190 tAGY held,
+1,810 tAGY free) and the agent's business date three days after the Purchase Date, the operator lowers tUST to 96.00
+and tAGY to 97.00. In `#/live/T` the agent clicks `Revalue collateral` on the repo: its service runs cdm-ext
+`RevalueTriparty` over the holding and B's free account at the feed prices against the Repurchase Price accrued to the
+date (500,208.33); the holding is worth 488,297.10 after haircuts, so 127 free tAGY are topped up and the card shows
+`topped up from the giver's free account` and `+127 tAGY`. The cdm-ext `TripartyRevaluation` carries CDM's valuation
+update and the terms change of the repo's collateral; `TripartySettlement.revalue` replaces the holding in one
+transaction and keeps the hash with its block. A's and B's services each recompute the revaluation from the chain at
+the block before it (`recomputed from the chain ✓`). The operator raises tAGY to 101.00 and returns tUST to 98.40; the
+agent revalues again and 164 tAGY are released to B's free account. The prices and the agent's business date are
+restored at the end. The revaluation rules are the assumptions in `docs/analysis/sme-question-ledger.md` (TPR-1 to
+TPR-8).
+
+Triparty substitution (`flow-triparty-substitution`): with a settled trade-start repo (3,000 tUST and 2,190 tAGY held)
+and 1,500 tUST more deposited by B, B picks tAGY and 1,000 units in its repo row and clicks `Request substitution`: its
+service builds the cdm-ext `TripartySubstitutionRequest` and records its hash on `TripartySettlement`; the row shows the
+request awaiting the agent. In `#/live/T` the agent clicks `Substitute collateral`: its service runs cdm-ext
+`SubstituteTriparty` at its business date (the Purchase Date in the spec, so the required value is 500,000), returns the
+1,000 tAGY to B's free account and replaces them with 998 of B's free tUST; the cdm-ext `TripartySubstitution` carries
+the terms change of the repo's collateral and CDM's proposed and accepted workflow steps (`CDM workflow: request and
+execution`). A's and B's services recompute it from the chain at the block before (`recomputed from the chain ✓`). B
+then asks for the other 1,190 tAGY; its 502 free tUST cannot replace them, so the agent declines and nothing moves.
+When a revaluation or substitution records a concentration breach, the agent's row offers `Swap out N excess <token>`,
+which requests and substitutes the units over the limit. The substitution rules are the assumptions in
+`docs/analysis/sme-question-ledger.md` (TPU-1 to TPU-7).
+
+Triparty trade end (`flow-triparty-trade-end`): with a settled trade-start repo and the agent's business date set to
+its Repurchase Date (the button is absent the day before), the agent clicks `Prepare trade end` in `#/live/T`: its
+service builds the cdm-ext `TripartyTradeEnd` (CDM's repurchase event, one release per held asset, the Repurchase Price
+of 500,486 tUSD) and records its hash and the price on `TripartySettlement`; the row shows the trade end. A's and B's
+services rebuild it from the chain at the block before (`rebuilt by this party ✓`). B clicks `Settle repurchase
+(500,486 tUSD)`: in one transaction the price moves from B to A and the 3,000 tUST and 2,190 tAGY return to B's free
+account; the repo shows `repurchased on-chain ✓` in every console. The spec then ends every other settled repo under
+the B-giver terms through the services, each at its own Repurchase Date, withdraws B's free collateral and terminates
+Triparty reporting (`flow-triparty-reporting`, which runs before trade end): with a settled trade-start repo, 1,810
+tAGY free and the agent's business date on the Purchase Date, the agent clicks `Send report` in the B-giver terms card
+in `#/live/T`: its service builds the cdm-ext `TripartyReport` (each settled repo under the terms with its exposure, its
+holding valued after haircuts and CDM's `CollateralPortfolio` of it, and B's free collateral) and records its hash on
+`TripartySettlement`. The card shows the repo at 500,026.56 after haircuts against 500,000, covered, and 1,810 tAGY
+free. A's and B's services rebuild the report from the chain at the block before (`rebuilt from the chain ✓`). The
+report's content is the assumption in `docs/analysis/sme-question-ledger.md` (TPP-1 to TPP-5).
+
+the terms. The trade-end rules are the assumptions in `docs/analysis/sme-question-ledger.md` (TPE-1 to TPE-6).
 
 Repo margin maintenance (`flow-repo-margin-maintenance`): the "Repo margin (GMRA)" card shows each purchased repo's
 exposure, the Net Margin held and the Net Exposure at the service's business date. When the Net Exposure exceeds the
@@ -496,7 +587,15 @@ it books is returned in full, so every balance ends where it started), and `flow
 price, the borrower calls the margin back, and the loan is returned), and `flow-gmsla-recall` (it restores both
 business dates, and every loan it books is returned in full), and `flow-gmsla-substitution` (the return after the
 substitution redelivers the tAGY, so every balance ends where it started), and `flow-gmsla-rebate` (it restores both business
-dates and returns its loan; the lender's tUSD falls by the rebates it pays).
+dates and returns its loan; the lender's tUSD falls by the rebates it pays), and `flow-gmsla-lending-fee` (the
+same, with the borrower paying the fees), and `flow-gmsla-default-close-out` (two loans of the same tMMF against
+tUST in opposite directions offset, so the close-out leaves every holding where it was and only the difference of the
+fees moves; it restores A's default status as it found it), and `flow-triparty-terms` (it terminates the terms it
+makes effective and leaves the second proposal refused). `flow-triparty-trade-start` leaves one open triparty repo per
+run, `flow-triparty-revaluation` and `flow-triparty-substitution` one each, until `flow-triparty-trade-end`
+ends every settled repo under the B-giver terms, returns B's collateral and terminates the terms; the next run's specs
+make new B-giver terms. The top-up before each run restores B's free balances
+(`contracts/scripts/test-balances.json`, 20,000 tUST and 16,000 tAGY for bank-b).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive
 the flow in the consoles and check on-chain state through the gateways. Playwright builds the console and

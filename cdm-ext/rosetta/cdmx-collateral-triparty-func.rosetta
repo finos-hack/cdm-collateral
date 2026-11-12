@@ -1,0 +1,210 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the triparty agent's allocation against the collateral profile and the per-ISIN concentration check (task-triparty-trade-start, wp-adr-triparty-trade-start; defect D30).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.asset.common.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+import cdmx.collateral.amendment.*
+
+// CDM's CheckCriteria has no case for an AssetIdentifier criterion (defect D30), so ConcentrationLimitBreaches does
+// not apply a profile stated by ISIN. These functions find each asset's criterion by its ISIN, as HaircutFor does.
+// A percentage limit is measured as a share of the Purchase Price the allocation covers. The allocation takes the
+// giver's deposit in its ranking; an asset under a limit can supply at most the whole units whose value after
+// haircuts stays within the limit, and the last asset used is rounded up to whole units, within that cap.
+
+func ProfileCriterion: <"The profile's criterion for an asset identified by ISIN, when it has one.">
+    inputs:
+        profile EligibleCollateralSpecification (1..1)
+        isin string (1..1)
+    output:
+        criterion EligibleCollateralCriteria (0..1)
+
+    set criterion:
+        profile -> criteria
+            filter c [ AssetIdentifierCriterion(c -> collateralCriteria) -> identifier = isin ]
+            then first
+
+func ProfileEligible: <"True if the profile includes the asset.">
+    inputs:
+        profile EligibleCollateralSpecification (1..1)
+        isin string (1..1)
+    output:
+        eligible boolean (1..1)
+
+    set eligible:
+        ProfileCriterion(profile, isin) -> treatment -> isIncluded = True
+
+func ProfileHaircut: <"The profile's haircut for the asset; zero when the profile states none.">
+    inputs:
+        profile EligibleCollateralSpecification (1..1)
+        isin string (1..1)
+    output:
+        haircutPercentage number (1..1)
+
+    alias stated: ProfileCriterion(profile, isin) -> treatment -> valuationTreatment -> haircutPercentage
+
+    set haircutPercentage:
+        if stated exists then stated else 0.0
+
+func ProfileLimit: <"The upper bound of the profile's percentage concentration limit for the asset, when it has one.">
+    inputs:
+        profile EligibleCollateralSpecification (1..1)
+        isin string (1..1)
+    output:
+        limit number (0..1)
+
+    set limit:
+        ProfileCriterion(profile, isin) -> treatment -> concentrationLimit
+            extract percentageLimit -> upperBound -> number
+            then first
+
+func TripartyUnitValue: <"Value after haircuts of one unit of a deposited asset.">
+    inputs:
+        deposit TripartyDeposit (1..1)
+        profile EligibleCollateralSpecification (1..1)
+    output:
+        value number (1..1)
+
+    set value:
+        deposit -> unitPrice -> value * (1.0 - ProfileHaircut(profile, deposit -> isin))
+
+func TripartyUsableUnits: <"The units of a deposited asset the allocation can use: the free units, capped for an asset under a limit at the whole units whose value after haircuts stays within the limit of the required value.">
+    inputs:
+        deposit TripartyDeposit (1..1)
+        profile EligibleCollateralSpecification (1..1)
+        requiredValue number (1..1)
+    output:
+        units number (1..1)
+
+    alias limit: ProfileLimit(profile, deposit -> isin)
+
+    set units:
+        if limit exists
+        then Min(deposit -> units, RoundToNearest(limit * requiredValue / TripartyUnitValue(deposit, profile), 1.0, RoundingModeEnum -> Down))
+        else deposit -> units
+
+func TripartyAllocatedUnits: <"The whole units of one deposited asset the allocation uses: what the assets ranked before it leave of the required value, divided by its unit value after haircuts and rounded up, at most its usable units.">
+    inputs:
+        deposit TripartyDeposit (1..1)
+        usable TripartyDeposit (0..*) <"The eligible deposits with a positive value after haircuts.">
+        profile EligibleCollateralSpecification (1..1)
+        requiredValue number (1..1)
+    output:
+        units number (1..1)
+
+    alias coveredBefore:
+        usable
+            filter d [ d -> rank < deposit -> rank ]
+            then extract d [ TripartyUsableUnits(d, profile, requiredValue) * TripartyUnitValue(d, profile) ]
+            then sum
+
+    alias remaining: requiredValue - coveredBefore
+
+    set units:
+        if remaining > 0
+        then Min(
+                TripartyUsableUnits(deposit, profile, requiredValue),
+                RoundToNearest(remaining / TripartyUnitValue(deposit, profile), 1.0, RoundingModeEnum -> Up)
+            )
+        else 0.0
+
+func TripartyValued: <"An allocated asset with its price, haircut and value after haircuts.">
+    inputs:
+        deposit TripartyDeposit (1..1)
+        units number (1..1)
+        profile EligibleCollateralSpecification (1..1)
+    output:
+        position TripartyValuedPosition (1..1)
+
+    set position:
+        TripartyValuedPosition {
+            isin: deposit -> isin,
+            units: units,
+            unitPrice: deposit -> unitPrice,
+            haircutPercentage: ProfileHaircut(profile, deposit -> isin),
+            valueAfterHaircuts: Money {
+                value: units * TripartyUnitValue(deposit, profile),
+                unit: deposit -> unitPrice -> unit,
+                ...
+            }
+        }
+
+func AllocateTriparty: <"The agent's allocation of the giver's free deposit to a repo: eligible assets in the giver's ranking, each under a limit capped at the limit, until the value after haircuts covers the Purchase Price. Nothing is allocated when the deposit cannot cover it. The caller adds the CDM repo.">
+    inputs:
+        request TripartyRepoRequest (1..1)
+        requestHash string (1..1)
+        deposits TripartyDeposit (0..*) <"The giver's free account, ranked, priced by the agent.">
+        profile EligibleCollateralSpecification (1..1)
+    output:
+        allocation TripartyAllocation (1..1)
+
+    alias needed: request -> purchasePrice -> value
+
+    alias usable:
+        deposits
+            filter d [
+                ProfileEligible(profile, d -> isin) = True
+                    and ProfileHaircut(profile, d -> isin) < 1
+                    and TripartyUsableUnits(d, profile, needed) > 0
+            ]
+            then sort [ item -> rank ]
+
+    alias capacity:
+        usable extract d [ TripartyUsableUnits(d, profile, needed) * TripartyUnitValue(d, profile) ] then sum
+
+    alias covers: capacity >= needed
+
+    alias used: usable filter d [ TripartyAllocatedUnits(d, usable, profile, needed) > 0 ]
+
+    alias valued: used extract d [ TripartyValued(d, TripartyAllocatedUnits(d, usable, profile, needed), profile) ]
+
+    alias valuedTotal: valued extract valueAfterHaircuts -> value then sum
+
+    condition SameCurrency: <"Every price is in the currency of the Purchase Price.">
+        (deposits filter d [ d -> unitPrice -> unit -> currency <> request -> purchasePrice -> unit -> currency ] then count) = 0
+
+    condition DistinctRanks: <"Each deposited asset has its own rank.">
+        (deposits extract rank then distinct then count) = deposits count
+
+    set allocation:
+        TripartyAllocation {
+            requestHash: requestHash,
+            positions: if covers then valued else empty,
+            requiredValue: request -> purchasePrice,
+            allocatedValue: Money {
+                value: if covers then valuedTotal else 0.0,
+                unit: request -> purchasePrice -> unit,
+                ...
+            },
+            coversPurchasePrice: covers,
+            trade: empty
+        }
+
+func TripartyConcentrationBreaches: <"The allocated assets whose value after haircuts exceeds the profile's limit, measured as a share of the required value. An empty result means the allocation is within the profile's limits (the local fix for defect D30).">
+    inputs:
+        profile EligibleCollateralSpecification (1..1)
+        positions TripartyValuedPosition (0..*)
+        requiredValue Money (1..1)
+    output:
+        breaches TripartyConcentrationBreach (0..*)
+
+    alias over:
+        positions
+            filter p [
+                ProfileLimit(profile, p -> isin) exists
+                    and p -> valueAfterHaircuts -> value > ProfileLimit(profile, p -> isin) * requiredValue -> value
+            ]
+
+    condition PositiveRequiredValue: <"The required value is positive.">
+        requiredValue -> value > 0
+
+    set breaches:
+        over extract p [
+            TripartyConcentrationBreach {
+                isin: p -> isin,
+                limit: ProfileLimit(profile, p -> isin),
+                valueAfterHaircuts: p -> valueAfterHaircuts,
+                percentage: p -> valueAfterHaircuts -> value / requiredValue -> value
+            }
+        ]

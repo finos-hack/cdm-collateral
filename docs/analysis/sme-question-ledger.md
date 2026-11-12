@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 142 questions in 26 tasks, all open.
+Status of the ledger: 196 questions in 34 tasks, all open.
 
 ## Variation and initial margin rules
 
@@ -287,3 +287,99 @@ Status of the ledger: 142 questions in 26 tasks, all open.
 | RBT-4 | The invoice total is the sum of the daily accruals per sub-period, rounded half-up once (to whole tUSD in the prototype, whose cash token has no decimals). Is rounding per invoice the usual practice, or per day? | open | |
 | RBT-5 | Negative rebate rates are refused. Are negative rebates (the borrower pays) used for USD cash collateral, and should the prototype support them? | open | |
 | RBT-6 | A returned loan can still be billed for the period up to its return date. Is the final rebate usually settled with the return, or billed with the next periodic statement? | open | |
+
+### `task-sme-gmsla-fee-rules`: billing and paying the lending fee under the GMSLA
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| FEE-1 | The lending fee accrues on the market value of the loaned securities, without the margin. CDM's billing function charges it on the market value times the margin (the collateral requirement). Under GMSLA 2010 practice, is the fee charged on the loan value or on the collateral value? | open | |
+| FEE-2 | The prototype values the loaned securities at one price per invoice, the feed price on the billing date, because its feed keeps no history. In practice, is the fee accrued daily on each day's market value, and which price source and time are used? | open | |
+| FEE-3 | The fee accrues ACT/360, the start day counted and the end day not, at a fixed rate agreed at booking. Is that the usual convention for a USD-denominated lending fee, and are fee rates renegotiated during an open loan? | open | |
+| FEE-4 | The lender issues the fee invoice and the borrower pays on agreement, in USD cash. In practice, who issues the fee statement, how often, and how is a disputed amount handled? | open | |
+| FEE-5 | A substitution of the collateral does not change the fee. Is that right, or does the fee depend on the type of collateral held? | open | |
+| FEE-6 | A returned loan can still be billed for the period up to its return date. Is the final fee usually settled with the return, or billed with the next periodic statement? | open | |
+
+### `task-sme-gmsla-default-rules`: a GMSLA default and close-out
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| DFL-1 | Each loan enters as the Default Market Value of the Equivalent Securities, owed to the lender, against the value of the Equivalent Collateral the lender holds, owed to the borrower. Is that GMSLA 2010 paragraph 11, and is cash collateral owed back at its amount? | open | |
+| DFL-2 | The prototype values securities at one oracle price on the Early Termination Date. Under paragraph 11 the non-defaulting party may use the proceeds of a sale or purchase, or quotations, at the Default Valuation Time. Which method applies when, and on which day? | open | |
+| DFL-3 | The fee or rebate accrued from the billed-through date to the Early Termination Date, and any invoice still unpaid, enter the balance. Is that right, and does interest run on unpaid amounts? | open | |
+| DFL-4 | Margin held under the pair's GMSLA calls is set off at its value, cash at par and securities at their Default Market Value. With aggregated marking, is that margin treated as collateral of all the loans? | open | |
+| DFL-5 | Automatic early termination follows the defaulting party's election, and the oracle does not record the kind of default. Should only an Act of Insolvency terminate without notice? | open | |
+| DFL-6 | Loans booked and affirmed but not delivered stay open after the close-out. Does the Event of Default terminate them too, and at what value? | open | |
+| DFL-7 | A returned loan with a period not yet billed is not in the close-out and can still be billed. Should its unpaid rate enter the balance? | open | |
+| DFL-8 | The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply under paragraph 11? | open | |
+| DFL-9 | The GMSLA and GMRA close-outs between the same pair are separate statements. Is cross-agreement set-off (for example under a master netting agreement) expected? | open | |
+
+## Triparty repo
+
+### `task-sme-triparty-terms-profile`: the triparty terms and the collateral profile
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPT-1 | A triparty repo has a triparty agreement between the giver, the receiver and the agent, beside the GMRA between the giver and the receiver. Which terms does the triparty agreement hold that the prototype's terms leave out (the agent's fees, its liability, the cut-off times, the accounts)? | open | |
+| TPT-2 | The prototype's profile reuses the CSA schedule: US Treasuries at a 2% haircut and agency debt at 3%. Is that a usual triparty repo profile, or do agents' profiles usually state margin as a ratio per asset class? | open | |
+| TPT-3 | The profile limits agency debt to 50% of the allocated value after haircuts. Are concentration limits in triparty profiles usually per asset class, per issuer, or both, and measured before or after haircuts? | open | |
+| TPT-4 | Either the giver or the receiver may propose the terms, and the agent affirms them. Is the agent a party to the triparty agreement that consents to its terms, or only its operator? | open | |
+| TPT-5 | The terms are set once and only terminated, not amended. How are changes to a profile agreed in practice, and do they apply to repos already allocated? | open | |
+| TPT-6 | The giver or the receiver can terminate the triparty terms while nothing is allocated. What notice does termination take, and can the agent terminate? | open | |
+
+### `task-sme-triparty-trade-start`: the triparty allocation and the purchase through the agent
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPS-1 | The profile's haircuts take the place of the GMRA margin ratio: the allocated value after haircuts covers the Purchase Price. Is that how triparty repo margin is applied, or is a margin ratio applied on top of the haircuts? | open | |
+| TPS-2 | The agent allocates in the giver's own ranking of its assets. Do agents allocate in the giver's ranking, by their own optimisation (cheapest to deliver), or by a rule in the triparty agreement? | open | |
+| TPS-3 | A concentration limit is measured as a share of the Purchase Price the allocation covers. Do agents measure limits against the exposure, the total allocated value, or the giver's whole allocation across repos? | open | |
+| TPS-4 | When the giver's deposit cannot cover the Purchase Price within the profile, the agent allocates nothing. Do agents allocate partially and report a shortfall, or hold the trade unsettled? | open | |
+| TPS-5 | The allocated collateral stays in the agent's books in an account per repo, held by the receiver by title. Is the receiver's account at the agent per repo, or one account per giver and receiver? | open | |
+| TPS-6 | The receiver affirms the agent's allocation before the purchase settles. Does the receiver confirm allocations in practice, or is the agent's allocation binding on both parties? | open | |
+| TPS-7 | The agent values the collateral at the oracle feed price. Which price sources and times do agents use for the allocation? | open | |
+
+### `task-sme-triparty-revaluation`: the triparty agent's daily revaluation, top-up and release
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPR-1 | The agent's required value is the Purchase Price plus the repo interest accrued to the day. Do agents use the accrued Repurchase Price, the Purchase Price, or a value the parties report (the "exposure")? | open | |
+| TPR-2 | There is no threshold: any shortfall is topped up and any excess released. Do agents apply a minimum movement, a tolerance band, or a percentage of the exposure? | open | |
+| TPR-3 | A top-up comes from the giver's free collateral in the giver's ranking. Do agents top up by the same rule as the initial allocation, or by a separate one? | open | |
+| TPR-4 | An excess is released from the asset the giver ranked last. Do agents release from a particular asset, pro rata, or by the giver's instruction? | open | |
+| TPR-5 | When the giver's free collateral cannot cover a shortfall, nothing moves and the shortfall is recorded. Do agents move what they can, notify the parties, or treat it as a margin call between them? | open | |
+| TPR-6 | A concentration breach caused by price moves alone is recorded and left to substitution. Do agents rebalance during the daily revaluation? | open | |
+| TPR-7 | The agent revalues on request in the prototype. When and how often do agents revalue, and at which prices (closing, intraday)? | open | |
+| TPR-8 | The revaluation moves collateral without either party's affirmation. Is the agent's daily reallocation binding on both parties under the triparty agreement? | open | |
+
+### `task-sme-triparty-substitution`: the triparty agent's substitution of collateral
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPU-1 | The giver asks for a number of units of one asset back. Do givers recall specific securities by quantity, whole positions, or a value? | open | |
+| TPU-2 | The agent replaces the returned units from the giver's free collateral in the giver's ranking until the repo is covered again. Do agents replace by the allocation rule, by equal value, or by the giver's instruction? | open | |
+| TPU-3 | When the free collateral cannot replace the returned units, the agent declines the whole request. Do agents return part of the request, or queue it until collateral arrives? | open | |
+| TPU-4 | The agent may start a substitution itself to bring an asset back within its concentration limit. Do agents rebalance breaches on their own, and how quickly? | open | |
+| TPU-5 | The receiver does not affirm a substitution. Is the receiver notified or asked to consent under the triparty agreement? | open | |
+| TPU-6 | One substitution request may be pending per repo. Do agents process several recalls on one repo at once, or across a giver's repos together? | open | |
+| TPU-7 | The substitution takes effect when the agent records it. What cut-off times and settlement timing do agents apply to recalls? | open | |
+
+### `task-sme-triparty-trade-end`: the triparty trade end through the agent
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPE-1 | The agent prepares the trade end on the Repurchase Date and the giver settles it. Does the agent settle the close-out on its own, or does it wait for the giver's cash? | open | |
+| TPE-2 | Trade end happens on the Repurchase Date only. How do agents handle open (on-demand) repos and early terminations? | open | |
+| TPE-3 | The giver pays the Repurchase Price directly to the receiver in the same step as the release. Does the cash move through the agent's books, or through a separate cash agent or payment system? | open | |
+| TPE-4 | The released collateral returns to the giver's free account at the agent. Is released collateral kept at the agent for the next repo, or delivered back to the giver's custody? | open | |
+| TPE-5 | A pending substitution blocks the trade end. How do agents handle a recall that is pending at the Repurchase Date? | open | |
+| TPE-6 | The receiver does not confirm the trade end. Is the receiver's confirmation of the repayment needed before the agent releases? | open | |
+
+### `task-sme-triparty-reporting`: the triparty agent's report to both parties
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| TPP-1 | The agent reports all settled repos under one set of terms with the giver's free collateral in one report. Do agents report per repo, per terms, or per giver and receiver across their repos? | open | |
+| TPP-2 | The report states the exposure as the Repurchase Price accrued to the day. Is that the exposure agents report, or the value the parties gave them? | open | |
+| TPP-3 | The report states each asset's price, haircut and value after haircuts, and whether the repo is covered. Which fields do the giver and the receiver use to reconcile, and in which format (for example ISO 20022 colr messages)? | open | |
+| TPP-4 | The giver's free collateral is reported to both parties. Is the giver's unallocated inventory shown to the receiver? | open | |
+| TPP-5 | The agent reports on request in the prototype. How often and at which cut-offs do agents report? | open | |

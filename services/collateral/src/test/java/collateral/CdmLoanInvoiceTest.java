@@ -55,6 +55,44 @@ class CdmLoanInvoiceTest {
         assertThrows(RuntimeException.class, () -> CdmLoanInvoice.verify(inv.json(), List.of(tl.get(0)), b.loan().getTerms()));
     }
 
+    /** A loan of 100,000 tMMF against 1,037 tUST at a 0.5% fee; 40,000 returned on 2026-11-26. */
+    static List<CdmLoanInvoice.Change> ustTimeline(CdmLoan.Booking b) {
+        var r = CdmLoan.returnOf(b.trade(), b.loan().getTerms(), 40_000, RETURNED);
+        return List.of(new CdmLoanInvoice.Change(DELIVERED, b.trade()), new CdmLoanInvoice.Change(RETURNED, r.after()));
+    }
+
+    @Test
+    void theLenderBillsTheFeeOnTheMarketValueOfTheQuantityOutstandingAtTheBillingDatePrice() {
+        CdmLoan.Booking b = CdmLoan.book(CdmLoanTest.terms(false));
+        var inv = CdmLoanInvoice.fee(ustTimeline(b), b.loan().getTerms(), DELIVERED, LocalDate.of(2026, 12, 11), new BigDecimal("1.1"));
+        // 110,000 x 0.5% x 15/360 = 22.92 and 66,000 x 0.5% x 15/360 = 13.75: 36.67, rounded to 37.
+        assertEquals("Fee", inv.doc().getRateType().toString());
+        assertEquals(2, inv.doc().getPeriod().size());
+        assertEquals(0, new BigDecimal("110000").compareTo(inv.doc().getPeriod().get(0).getNotional()));
+        assertEquals(0, new BigDecimal("60000").compareTo(inv.doc().getPeriod().get(1).getQuantity()));
+        assertEquals(37, inv.onChainAmount());
+        // The borrower pays the lender; the lender sends the invoice.
+        var transfer = CdmRuntime.JSON.valueToTree(inv.doc().getPaymentEvent()).toString();
+        assertTrue(CdmRuntime.fn(Qualify_CashTransfer.class).evaluate(inv.doc().getPaymentEvent()));
+        assertEquals("BANK-A", inv.doc().getInvoice().getSendingParty().getName().getValue());
+        assertTrue(transfer.contains("BANK-B"), transfer);
+        assertEquals("", String.join("; ", CdmRuntime.failures(inv.doc()).stream().map(Object::toString).toList()));
+        // The borrower rebuilds it; at another price, or as a rebate, it does not.
+        assertEquals(inv.hash(), CdmLoanInvoice.verify(inv.json(), ustTimeline(b), b.loan().getTerms()).hash());
+        assertNotEquals(inv.hash(), CdmLoanInvoice.fee(ustTimeline(b), b.loan().getTerms(), DELIVERED, LocalDate.of(2026, 12, 11), BigDecimal.ONE).hash());
+        assertThrows(IllegalArgumentException.class, () -> CdmLoanInvoice.rebate(ustTimeline(b), b.loan().getTerms(), DELIVERED, RETURNED));
+    }
+
+    @Test
+    void aSubstitutionDoesNotSplitTheFee() {
+        CdmLoan.Booking b = CdmLoan.book(CdmLoanTest.terms(false));
+        var s = CdmLoanSubstitution.substitute(b.trade(), b.loan().getTerms(), CdmLoanSubstitutionTest.TAGY, BigDecimal.ONE, new BigDecimal("99.2"), RETURNED);
+        var tl = List.of(new CdmLoanInvoice.Change(DELIVERED, b.trade()), new CdmLoanInvoice.Change(RETURNED, s.after()));
+        var inv = CdmLoanInvoice.fee(tl, b.loan().getTerms(), DELIVERED, LocalDate.of(2026, 12, 11), BigDecimal.ONE);
+        assertEquals(1, inv.doc().getPeriod().size());
+        assertEquals(42, inv.onChainAmount()); // 100,000 x 0.5% x 30/360 = 41.67
+    }
+
     @Test
     void aReturnedLoanIsBilledToItsReturnDateAndALoanAgainstSecuritiesHasNoRebate() {
         CdmLoan.Booking b = CdmLoan.book(CdmLoanTest.terms(true));

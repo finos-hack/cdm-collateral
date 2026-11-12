@@ -1,15 +1,17 @@
 // Client for a participant's live collateral workflow service (/api/v1). In live mode the console drives the real
 // stack (service -> gateway -> Besu) instead of the in-browser engine mock. One service per party: A on 8001, B on
-// 8002 by default (override with VITE_SERVICE_A_URL / VITE_SERVICE_B_URL). This is the console-to-service connection
-// in architecture/prototype.architecture.json.
+// 8002 and the triparty agent T on 8003 by default (override with VITE_SERVICE_A_URL / VITE_SERVICE_B_URL /
+// VITE_SERVICE_T_URL). This is the console-to-service connection in architecture/prototype.architecture.json.
 export type LiveParty = "A" | "B";
+/** A party to triparty terms: A or B, or the triparty agent BANK-T (wp-adr-triparty-terms-profile). */
+export type TripartyParty = LiveParty | "T";
 
-const DEFAULT_URL: Record<LiveParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002" };
+const DEFAULT_URL: Record<TripartyParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002", T: "http://localhost:8003" };
 
 // Precedence: an explicit VITE_SERVICE_<P>_URL, then the same-origin proxy path when VITE_SERVICE_PROXY=1 (set in the
 // devcontainer; the dev/preview server forwards /svc/<P> to the service, vite.config.ts), then localhost.
-export function serviceUrl(party: LiveParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
-  const explicit = party === "A" ? env.VITE_SERVICE_A_URL : env.VITE_SERVICE_B_URL;
+export function serviceUrl(party: TripartyParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
+  const explicit = party === "A" ? env.VITE_SERVICE_A_URL : party === "B" ? env.VITE_SERVICE_B_URL : env.VITE_SERVICE_T_URL;
   if (explicit) return explicit;
   if (env.VITE_SERVICE_PROXY === "1") return `/svc/${party}`;
   return DEFAULT_URL[party];
@@ -72,7 +74,7 @@ export interface LiveState {
   defaults?: Partial<Record<LiveParty, boolean>>;
 }
 
-async function req<T>(party: LiveParty, method: string, path: string, body?: unknown): Promise<T> {
+async function req<T>(party: TripartyParty, method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(serviceUrl(party) + "/api/v1" + path, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -133,6 +135,222 @@ export interface LiveLedgerReconciliation {
   /** The pledgor's escrow by token: as the party's CDM records build it and as the control contract holds it. */
   escrow?: { record: string; recorded: Record<string, number>; ledger: Record<string, number> };
 }
+
+/** Triparty terms between a giver, a receiver and the agent BANK-T (wp-adr-triparty-terms-profile). */
+export interface LiveTripartyTerms {
+  termsId: string;
+  state: "proposed" | "effective" | "refused" | "terminated";
+  giver: TripartyParty;
+  receiver: TripartyParty;
+  agent: TripartyParty;
+  termsHash: string;
+  receiverAffirmed: boolean;
+  agentAffirmed: boolean;
+  /** The document checks against this party's own build (the receiver also checks the GMRA terms hash). */
+  verified: boolean;
+  problem: string | null;
+  terms?: {
+    giver: string;
+    receiver: string;
+    agent: string;
+    gmraTermsHash: string;
+    baseCurrency: string;
+    effectiveDate: string;
+    profile: { isin: string; token?: string; eligible: boolean; haircutBps: number | null; concentrationLimit: string | null }[];
+  };
+  canAffirm: boolean;
+  canRefuse: boolean;
+  canTerminate: boolean;
+  /** Trade start (wp-adr-triparty-trade-start): the giver deposits and requests while the terms are in effect. */
+  canDeposit?: boolean;
+  canRequest?: boolean;
+  /** The giver's free account at the agent, present while the terms are in effect. */
+  free?: { token: string; amount: number; rank: number }[];
+  /** The repos under the terms, newest first, present while the terms are in effect. */
+  repos?: LiveTripartyRepo[];
+  /** Reporting (wp-adr-triparty-reporting): the agent's latest report with this party's check; the agent sends one. */
+  report?: {
+    reportHash: string;
+    block: string;
+    count: number;
+    report?: {
+      reportDate: string;
+      repos: { repoId: string; tradeId: string; exposure: string; valueAfterHaircuts: string; covered: boolean; breaches: number;
+        held: { isin: string; token?: string; units: number; unitPrice: string; valueAfterHaircuts: string }[] }[];
+      free: { isin: string; token?: string; units: number; valueAfterHaircuts: string }[];
+    };
+    verified: boolean;
+    problem: string | null;
+  };
+  canSendReport?: boolean;
+}
+
+/** The agent's allocation of the giver's deposit to a repo (cdm-ext TripartyAllocation). */
+export interface LiveTripartyAllocation {
+  covers: boolean;
+  requiredValue: string;
+  allocatedValue: string;
+  positions: { isin: string; token?: string; units: number; unitPrice: string; haircutBps: number; valueAfterHaircuts: string; share: string }[];
+  /** The allocation carries the CDM repo. */
+  cdmRepo: boolean;
+}
+
+/** One asset of a revaluation's holding, at the agent's price after haircuts. */
+export interface LiveTripartyValued { isin: string; token?: string; units: number; unitPrice: string; valueAfterHaircuts: string; share: string }
+
+/** The agent's revaluation of a settled repo (cdm-ext TripartyRevaluation, wp-adr-triparty-revaluation). */
+export interface LiveTripartyRevaluationDoc {
+  revaluationDate: string;
+  outcome: "TopUp" | "Release" | "Unchanged" | "Uncovered";
+  requiredValue: string;
+  valueBefore: string;
+  valueAfter: string;
+  movements: { isin: string; token?: string; units: number; direction: "TopUp" | "Release" }[];
+  heldBefore: LiveTripartyValued[];
+  heldAfter: LiveTripartyValued[];
+  breaches: { isin: string; token?: string; limit: string; percentage: string }[];
+  /** The CDM events over the repo: the valuation, and the terms change when units moved. */
+  cdmEvents: number;
+}
+
+/** A revaluation on-chain, oldest first, with this party's check (always true for the agent). */
+export interface LiveTripartyRevaluation {
+  revaluationHash: string;
+  block: string;
+  revaluation?: LiveTripartyRevaluationDoc;
+  verified: boolean;
+  problem: string | null;
+}
+
+/** The agent's substitution of a request (cdm-ext TripartySubstitution, wp-adr-triparty-substitution). */
+export interface LiveTripartySubstitutionDoc {
+  substitutionDate: string;
+  outcome: "Substituted" | "Declined";
+  isin: string;
+  token?: string;
+  units: number;
+  requiredValue: string;
+  valueBefore: string;
+  valueAfter: string;
+  movements: { isin: string; token?: string; units: number; direction: "TopUp" | "Release" }[];
+  heldBefore: LiveTripartyValued[];
+  heldAfter: LiveTripartyValued[];
+  breaches: { isin: string; token?: string; limit: string; percentage: string }[];
+  /** CDM's proposed and accepted workflow steps, when substituted. */
+  workflowSteps: number;
+}
+
+export interface LiveTripartySubstitution {
+  substitutionHash: string;
+  block: string;
+  substitution?: LiveTripartySubstitutionDoc;
+  verified: boolean;
+  problem: string | null;
+}
+
+/** A triparty repo on TripartySettlement (wp-adr-triparty-trade-start). */
+export interface LiveTripartyRepo {
+  repoId: string;
+  state: "requested" | "affirmed" | "allocated" | "settled" | "cancelled" | "repurchased";
+  purchasePrice: number;
+  requestHash: string;
+  tradeId?: string;
+  ratePercent?: string;
+  purchaseDate?: string;
+  repurchaseDate?: string;
+  requestVerified: boolean;
+  requestProblem: string | null;
+  allocationHash?: string;
+  /** The allocation on-chain, or the agent's last allocation that could not cover the Purchase Price. */
+  allocation?: LiveTripartyAllocation;
+  allocationVerified?: boolean;
+  allocationProblem?: string | null;
+  canAffirm: boolean;
+  canAllocate: boolean;
+  canRefuseAllocation: boolean;
+  canSettle: boolean;
+  canCancel: boolean;
+  /** Revaluation (wp-adr-triparty-revaluation): on a settled repo, oldest first; the agent revalues. */
+  revaluations?: LiveTripartyRevaluation[];
+  canRevalue?: boolean;
+  /** Substitution (wp-adr-triparty-substitution): oldest first; the request awaiting the agent; the agent's own requests. */
+  substitutions?: LiveTripartySubstitution[];
+  pendingSubstitution?: { requestHash: string; token?: string; units?: number; requestedBy?: "Giver" | "Agent"; mine: boolean };
+  canRequestSubstitution?: boolean;
+  canSubstitute?: boolean;
+  excess?: { token: string; units: number }[];
+  /** Trade end (wp-adr-triparty-trade-end): the agent's prepared trade end with this party's check, and the next steps. */
+  tradeEnd?: {
+    tradeEndHash: string;
+    repurchasePrice: number;
+    repurchaseDate?: string;
+    releases?: { isin: string; token?: string; units: number }[];
+    verified: boolean;
+    problem: string | null;
+  };
+  canPrepareTradeEnd?: boolean;
+  canSettleRepurchase?: boolean;
+}
+
+export interface LiveTriparty {
+  party: TripartyParty;
+  bank: string;
+  agent: boolean;
+  canPropose: boolean;
+  /** Newest first. */
+  terms: LiveTripartyTerms[];
+}
+
+/** The triparty calls, which the agent's console uses too. */
+export const tripartyApi = {
+  health: (p: TripartyParty) => req<{ party: string; role: string; address: string; ok: boolean }>(p, "GET", "/health"),
+  triparty: (p: TripartyParty) => req<LiveTriparty>(p, "GET", "/triparty"),
+  /** The giver (A or B): propose the baseline triparty terms with the counterparty and BANK-T. */
+  proposeTripartyTerms: (p: LiveParty) => req<{ termsId: string; termsHash: string; txHash: string }>(p, "POST", "/triparty/terms", {}),
+  /** The receiver or the agent: affirm proposed terms after checking them. */
+  affirmTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/affirm`, {}),
+  refuseTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/refuse`, {}),
+  /** The giver or the receiver: terminate terms in effect. */
+  terminateTripartyTerms: (p: TripartyParty, termsId: string) => req<unknown>(p, "POST", `/triparty/terms/${termsId}/terminate`, {}),
+  /** The giver: deposit a token with the agent, with its rank for the allocation. */
+  depositTriparty: (p: LiveParty, termsId: string, token: string, amount: number, rank: number) =>
+    req<unknown>(p, "POST", `/triparty/terms/${termsId}/deposit`, { token, amount, rank }),
+  /** The giver: withdraw free collateral (all that is free when the amount is left out). */
+  withdrawTriparty: (p: LiveParty, termsId: string, token: string, amount?: number) =>
+    req<unknown>(p, "POST", `/triparty/terms/${termsId}/withdraw`, amount === undefined ? { token } : { token, amount }),
+  /** The giver: request a repo for a Purchase Price in tUSD. */
+  requestTripartyRepo: (p: LiveParty, termsId: string, purchasePrice: number, ratePercent: string, termDays: number) =>
+    req<{ repoId: string; requestHash: string; tradeId: string; txHash: string }>(p, "POST", `/triparty/terms/${termsId}/repos`, { purchasePrice, ratePercent, termDays }),
+  /** The receiver: affirm the giver's request after checking it. */
+  affirmTripartyRequest: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/affirm`, {}),
+  /** The agent: allocate the giver's free deposit; nothing is allocated when it cannot cover the Purchase Price. */
+  allocateTripartyRepo: (p: TripartyParty, repoId: string) =>
+    req<{ covers: boolean; allocation: LiveTripartyAllocation; allocationHash?: string }>(p, "POST", `/triparty/repos/${repoId}/allocate`, {}),
+  refuseTripartyAllocation: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/refuse-allocation`, {}),
+  /** The receiver: settle the purchase against the agent's allocation. */
+  settleTripartyPurchase: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/settle`, {}),
+  cancelTripartyRepo: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/cancel`, {}),
+  /** The agent: revalue a settled repo at its business date; tops up, releases, or records it unchanged or uncovered. */
+  /** The giver: recall units of an asset of a settled repo. */
+  requestTripartySubstitution: (p: TripartyParty, repoId: string, token: string, units: number) =>
+    req<{ requestHash: string }>(p, "POST", `/triparty/repos/${repoId}/substitution`, { token, units }),
+  withdrawTripartySubstitution: (p: TripartyParty, repoId: string) => req<unknown>(p, "POST", `/triparty/repos/${repoId}/substitution/withdraw`, {}),
+  /** The agent: substitute the pending request, or decline it. */
+  substituteTripartyRepo: (p: TripartyParty, repoId: string) =>
+    req<{ outcome: string; substitutionHash: string; substitution: LiveTripartySubstitutionDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/substitute`, {}),
+  /** The agent: ask back and substitute the units of an asset over its limit. */
+  rebalanceTripartyRepo: (p: TripartyParty, repoId: string, token: string) =>
+    req<{ outcome: string; substitutionHash: string; substitution: LiveTripartySubstitutionDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/rebalance`, { token }),
+  /** The agent: report the settled repos and the giver's free collateral under the terms. */
+  sendTripartyReport: (p: TripartyParty, termsId: string) => req<{ reportHash: string; txHash: string }>(p, "POST", `/triparty/terms/${termsId}/report`, {}),
+  /** The agent: prepare the trade end on the Repurchase Date. */
+  prepareTripartyTradeEnd: (p: TripartyParty, repoId: string) =>
+    req<{ tradeEndHash: string; repurchasePrice: number; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/trade-end`, {}),
+  /** The giver: pay the Repurchase Price to the receiver against the release of the whole holding. */
+  settleTripartyRepurchase: (p: TripartyParty, repoId: string) => req<{ txHash: string }>(p, "POST", `/triparty/repos/${repoId}/repurchase`, {}),
+  revalueTripartyRepo: (p: TripartyParty, repoId: string) =>
+    req<{ outcome: string; revaluationHash: string; revaluation: LiveTripartyRevaluationDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/revalue`, {}),
+};
 
 export const api = {
   context: (p: LiveParty) => req<LiveContext>(p, "GET", "/context"),
@@ -205,6 +423,13 @@ export const api = {
     req<{ closeOutId: string; cdmHash: string; statement: LiveGmraCloseOutStatement; closeOutTx: string }>(p, "POST", "/repo-default/close-out", {}),
   /** The party that owes a close-out balance pays it. */
   payRepoCloseOut: (p: LiveParty, id: string) => req<{ closeOutId: string; amount: string; payTx: string }>(p, "POST", `/repo-default/close-outs/${id}/pay`, {}),
+  /** GMSLA default close-out (wp-adr-gmsla-default-close-out): the default status, a preview and the recorded close-outs. */
+  loanDefault: (p: LiveParty) => req<LiveLoanDefault>(p, "GET", "/loan-default"),
+  /** The non-defaulting party closes out every open loan with the counterparty; notifies the default first if needed. */
+  closeOutLoanDefault: (p: LiveParty) =>
+    req<{ closeOutId: string; cdmHash: string; statement: LiveGmslaCloseOutStatement; closeOutTx: string }>(p, "POST", "/loan-default/close-out", {}),
+  /** The party that owes a loan close-out balance pays it. */
+  payLoanCloseOut: (p: LiveParty, id: string) => req<{ closeOutId: string; amount: string; payTx: string }>(p, "POST", `/loan-default/close-outs/${id}/pay`, {}),
   /** The party with the Net Exposure calls it; the service computes the amount. */
   callRepoMargin: (p: LiveParty) => req<{ callId: string; cdmHash: string; amountUsd: number }>(p, "POST", "/repo-margin/calls", {}),
   /** Reprice every purchased repo instead of calling margin (wp-adr-repo-reprice); the other party agrees. */
@@ -266,7 +491,8 @@ export const api = {
     req<{ loanId: string; cdmHash: string; agreeTx: string }>(p, "POST", `/loans/${loanId}/substitute/agree`, {}),
   refuseLoanSubstitution: (p: LiveParty, loanId: string) =>
     req<{ loanId: string; refuseTx: string }>(p, "POST", `/loans/${loanId}/substitute/refuse`, {}),
-  /** The borrower bills the rebate of a cash loan to its business date (wp-adr-gmsla-rebate); the lender pays or refuses. */
+  /** The party receiving the loan's rate bills it to its business date: the borrower the rebate of a cash loan
+   *  (wp-adr-gmsla-rebate), the lender the fee of a loan against securities (wp-adr-gmsla-lending-fee); the other pays or refuses. */
   billLoan: (p: LiveParty, loanId: string) =>
     req<{ loanId: string; invoiceHash: string; amount: string; periodStart: string; periodEnd: string; billTx: string }>(p, "POST", `/loans/${loanId}/bill`, {}),
   payLoanBill: (p: LiveParty, loanId: string) =>
@@ -453,6 +679,39 @@ export interface LiveRepoDefault {
   closeOuts: LiveRepoCloseOut[];
 }
 
+/** A GMSLA close-out statement (cdm-ext GmslaCloseOutStatement, wp-adr-gmsla-default-close-out). */
+export interface LiveGmslaCloseOutStatement {
+  earlyTerminationDate: string;
+  automaticEarlyTermination: boolean;
+  nonDefaultingParty: string;
+  defaultingParty: string;
+  loans: {
+    loanId: string; lender: string; borrower: string; quantity: string; price: string; defaultMarketValue: string;
+    collateral: string; collateralQuantity: string; collateralPrice: string; collateralValue: string;
+    rateType: string | null; accruedFrom: string | null; accruedAmount: string;
+  }[];
+  heldMargin: { holder: string; asset: string; quantity: string; value: string }[];
+  netAmount: string;
+  balance: string;
+  payer: string | null;
+  receiver: string | null;
+}
+
+export type LiveLoanCloseOut = Omit<LiveRepoCloseOut, "statement"> & { statement?: LiveGmslaCloseOutStatement };
+
+export interface LiveLoanDefault {
+  businessDate: string;
+  counterparty: LiveParty;
+  counterpartyInDefault: boolean;
+  inDefault: boolean;
+  automaticEarlyTermination: boolean;
+  baseCurrency: string;
+  openLoans: number;
+  preview?: LiveGmslaCloseOutStatement;
+  previewProblem?: string;
+  closeOuts: LiveLoanCloseOut[];
+}
+
 export interface LiveRepos {
   businessDate: string;
   repos: LiveRepo[];
@@ -473,7 +732,9 @@ export interface LiveLoan {
   loanId: string;
   role: "lender" | "borrower";
   counterparty: string;
-  state: "booked" | "affirmed" | "open" | "returned" | string;
+  state: "booked" | "affirmed" | "open" | "returned" | "closedOut" | string;
+  /** The GMSLA default close-out that closed the loan (wp-adr-gmsla-default-close-out). */
+  closeOutId?: string;
   security: string;
   quantity: string;
   collateral: string;
@@ -505,8 +766,9 @@ export interface LiveLoanBilling {
   rateType?: "Rebate" | "Fee";
   billedByMe?: boolean;
   pending?: {
+    rateType?: "Rebate" | "Fee"; price?: string;
     amount: string; periodEnd: string; billedByMe: boolean; verified: boolean; problem?: string;
-    periodStart?: string; periods?: { startDate: string; endDate: string; notional: string; accrual: string }[];
+    periodStart?: string; periods?: { startDate: string; endDate: string; notional: string; accrual: string; quantity?: string }[];
   };
   billable?: { periodStart: string; periodEnd: string };
   verified: boolean;

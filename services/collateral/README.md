@@ -162,8 +162,13 @@ the total is `GmslaInvoiceTotal`, rounded to whole tUSD; CDM's `SecurityLendingI
 `ParentTotal` billing summary built by the service, since CDM's `Create_BillingSummary` has no implementation (D27), and
 CDM's payment event, a transfer of type `InterestReturn` qualified `CashTransfer`; `GET /loans` shows `billing` with the
 `billedThrough` date, the `pending` invoice and whether it rebuilds, or the `billable` period; wp-adr-gmsla-rebate),
+`POST /loans/{id}/bill` also bills the lending fee of a loan against securities (the lender: rate type `Fee`, each
+part accruing `FixedAmount` over a fee `InterestRatePayout` built from the fee rate, fixed, ACT/360, on the loaned
+quantity outstanding x the loaned security's feed price on the business date; a substitution does not split the
+period; wp-adr-gmsla-lending-fee),
 `POST /loans/{id}/bill/pay` (the payer: rebuilds the invoice over its own loan documents, checks the start at the
-billed-through date, the on-chain amount and period end, and an end no later than its business date) and
+billed-through date, the on-chain amount and period end, an end no later than its business date, and for a fee the
+price against its own feed) and
 `POST /loans/{id}/bill/refuse` (the payer),
 `GET /gmsla-marking` (the aggregated mark of the pair's open loans stated for this party, cdm-ext `GmslaMarkStatement`
 built by `CdmGmslaMark`: each loan's requirement, collateral value and exposure at the feed prices, the margin held net
@@ -214,7 +219,34 @@ elected, and records a cdm-ext `GmraCloseOutStatement` that closes out every pur
 termination event, values each at the Repurchase Price to the Early Termination Date against the Default Market Value at
 the feed price, adds the margin held under the pair's GMRA calls, and sets it all off into one tUSD balance; no
 securities move; the other party's service rebuilds the statement from its own trades and the stated prices, and the
-party owing the balance pays it), and
+party owing the balance pays it),
+`GET /api/v1/loan-default`, `POST /api/v1/loan-default/close-out` and `POST /api/v1/loan-default/close-outs/{id}/pay`
+(GMSLA 2010 paragraph 11, wp-adr-gmsla-default-close-out, built by `CdmLoanDefault`: as for the GMRA, the
+non-defaulting party serves a cdm-ext `GmslaDefaultNotice` unless the defaulting party's GMSLA election applies
+automatic early termination, and records a cdm-ext `GmslaCloseOutStatement` that closes out every open loan of the pair
+on `SecuritiesLoan` with CDM's termination event, values each at the Default Market Value of the loaned securities
+against the collateral held (cash at par) at the feed prices, adds the fee or rebate accrued from the billed-through
+date as a `GmslaLoanInvoice` and the margin held under the pair's settled GMSLA calls, and sets it all off into one
+tUSD balance; no securities or collateral move; the GMSLA marking no longer counts the margin it settled), and
+`GET /api/v1/triparty`, `POST /api/v1/triparty/terms`, `POST /api/v1/triparty/terms/{id}/affirm`, `.../refuse` and
+`.../terminate` (triparty repo terms, wp-adr-triparty-terms-profile, built by `CdmTriparty`: the giver builds a cdm-ext
+`TripartyTerms` naming the giver, the receiver, the agent BANK-T in CDM's `TripartyAgent` role, the hash of the GMRA
+terms in force and the collateral profile as CDM's `EligibleCollateralSpecification`, and proposes its hash on
+`TripartySettlement`; the receiver and the agent each check the document against the terms they build themselves, the
+receiver also against its GMRA terms in force, and affirm the hash; the terms take effect when both have), and
 `GET /api/v1/events` — a Server-Sent Events stream the console subscribes to instead of polling. The service relays
 its gateway's chain-event stream (Besu ws → gateway → service → console), so each on-chain step pushes a refresh.
 The console's live mode (`console` route `#/live/A|B`) calls these; see `console/src/domain/liveApi.ts`.
+
+Triparty trade start (wp-adr-triparty-trade-start, `CdmTriparty`): `POST /api/v1/triparty/terms/{id}/deposit` and
+`.../withdraw` (the giver deposits a token with its rank, or withdraws free collateral), `POST
+/api/v1/triparty/terms/{id}/repos` (the giver requests a repo with a cdm-ext `TripartyRepoRequest`), `POST
+/api/v1/triparty/repos/{id}/affirm` (the receiver, after checking the request against the chain), `.../allocate` (the
+agent: cdm-ext `AllocateTriparty` over the giver's free account at the feed prices in the giver's ranking, capped per
+ISIN at the profile's limits, then the CDM repo with one collateral position per allocated asset in a cdm-ext
+`TripartyAllocation`; nothing is allocated on-chain when the deposit cannot cover the Purchase Price),
+`.../refuse-allocation` and `.../settle` (the receiver, after recomputing the allocation), and `.../cancel`. `GET
+/api/v1/triparty` adds each set of terms in effect's free account and repos.
+
+With `PARTY_ID=T` the service acts for the triparty agent BANK-T on the `bank-c` node (port 8003, gateway 8203). It
+registers only `/api/v1/health`, the triparty routes and `/api/v1/events`; the console's `#/live/T` route calls them.

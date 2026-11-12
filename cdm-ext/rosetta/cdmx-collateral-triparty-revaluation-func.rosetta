@@ -1,0 +1,444 @@
+namespace cdmx.collateral.triparty : <"Local CDM extension: the triparty agent's revaluation of a settled repo, its top-up from the giver's free account or release to it, and the qualification of a top-up and a release (task-triparty-revaluation, wp-adr-triparty-revaluation).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.asset.common.*
+import cdm.event.common.*
+import cdm.observable.asset.*
+import cdm.product.collateral.*
+import cdm.product.template.*
+import cdm.product.common.settlement.*
+import cdmx.collateral.repo.*
+
+// The required value is the Repurchase Price accrued to the revaluation date; the haircuts take the place of the GMRA
+// margin ratio, as at trade start. A top-up takes the giver's free account in the giver's ranking, as the allocation
+// does, with an asset under a limit capped so that its held and added units together stay within the limit. A release
+// starts from the held asset with the highest rank number; the next asset is released only once the one before it is
+// released in full, and each in whole units rounded down, so the value stays at or above the required value.
+
+func TripartyRequiredValue: <"The value after haircuts the agent requires of a repo's collateral on a date: the Purchase Price plus the Price Differential accrued to the date, rounded to the cent.">
+    inputs:
+        tradeState TradeState (1..1)
+        date date (1..1) <"The revaluation date.">
+    output:
+        requiredValue Money (1..1)
+
+    alias purchasePrice: RepoPurchasePrice(tradeState)
+
+    alias differential: <"Ten decimals first, as RepoRepurchasePrice does, so a half cent does not round down.">
+        RoundToPrecision(RepoPriceDifferential(tradeState, date), 10, RoundingDirectionEnum -> Nearest, True)
+
+    set requiredValue -> value:
+        RoundToPrecision(purchasePrice -> value + differential, 2, RoundingDirectionEnum -> Nearest, True)
+    set requiredValue -> unit -> currency: purchasePrice -> unit -> currency
+
+func TripartyUnitsOf: <"The units of one asset in a list of holdings.">
+    inputs:
+        holdings TripartyDeposit (0..*)
+        asset string (1..1) <"The ISIN.">
+    output:
+        units number (1..1)
+
+    set units:
+        holdings filter h [ h -> isin = asset ] then extract h [ h -> units ] then sum
+
+func TripartyMovedUnits: <"The units of one asset moved in one direction.">
+    inputs:
+        movements TripartyMovement (0..*)
+        asset string (1..1) <"The ISIN.">
+        direction TripartyMovementDirectionEnum (1..1)
+    output:
+        units number (1..1)
+
+    set units:
+        movements filter m [ m -> isin = asset and m -> direction = direction ] then extract m [ m -> units ] then sum
+
+func TripartyTopUpUsable: <"The units of a free asset a top-up can use: its free units, capped for an asset under a limit at the whole units whose value after haircuts, with the units of the asset already held, stays within the limit of the required value.">
+    inputs:
+        deposit TripartyDeposit (1..1)
+        held TripartyDeposit (0..*)
+        profile EligibleCollateralSpecification (1..1)
+        requiredValue number (1..1)
+    output:
+        units number (1..1)
+
+    alias limit: ProfileLimit(profile, deposit -> isin)
+
+    alias cap:
+        RoundToNearest(limit * requiredValue / TripartyUnitValue(deposit, profile), 1.0, RoundingModeEnum -> Down)
+            - TripartyUnitsOf(held, deposit -> isin)
+
+    set units:
+        if limit exists
+        then Max(0.0, Min(deposit -> units, cap))
+        else deposit -> units
+
+func TripartyTopUpUnits: <"The whole units of one free asset a top-up uses: what the assets ranked before it leave of the shortfall, divided by its unit value after haircuts and rounded up, at most its usable units.">
+    inputs:
+        deposit TripartyDeposit (1..1)
+        usable TripartyDeposit (0..*) <"The eligible free assets with usable units.">
+        held TripartyDeposit (0..*)
+        profile EligibleCollateralSpecification (1..1)
+        requiredValue number (1..1)
+        shortfall number (1..1)
+    output:
+        units number (1..1)
+
+    alias coveredBefore:
+        usable
+            filter d [ d -> rank < deposit -> rank ]
+            then extract d [ TripartyTopUpUsable(d, held, profile, requiredValue) * TripartyUnitValue(d, profile) ]
+            then sum
+
+    alias remaining: shortfall - coveredBefore
+
+    set units:
+        if remaining > 0
+        then Min(
+                TripartyTopUpUsable(deposit, held, profile, requiredValue),
+                RoundToNearest(remaining / TripartyUnitValue(deposit, profile), 1.0, RoundingModeEnum -> Up)
+            )
+        else 0.0
+
+func TripartyReleaseUnits: <"The whole units of one held asset a release returns: the excess the assets with a higher rank number leave when each is released in full, divided by its unit value after haircuts and rounded down, at most its held units.">
+    inputs:
+        holding TripartyDeposit (1..1)
+        releasable TripartyDeposit (0..*) <"The held assets with a positive value after haircuts.">
+        profile EligibleCollateralSpecification (1..1)
+        excess number (1..1)
+    output:
+        units number (1..1)
+
+    alias releasedBefore:
+        releasable
+            filter h [ h -> rank > holding -> rank ]
+            then extract h [ h -> units * TripartyUnitValue(h, profile) ]
+            then sum
+
+    alias remaining: excess - releasedBefore
+
+    set units:
+        if remaining > 0
+        then Min(holding -> units, RoundToNearest(remaining / TripartyUnitValue(holding, profile), 1.0, RoundingModeEnum -> Down))
+        else 0.0
+
+func RevalueTriparty: <"The agent's revaluation of a settled repo: the held assets at the feed prices after haircuts against the required value; a shortfall topped up from the free account when it can cover it, otherwise recorded as uncovered; an excess released. The caller adds the CDM events.">
+    inputs:
+        basisHash string (1..1) <"The hash of the allocation or previous revaluation whose holding this revalues.">
+        revaluationDate date (1..1)
+        requiredValue Money (1..1) <"TripartyRequiredValue of the repo on the date.">
+        held TripartyDeposit (1..*) <"The repo's held assets with the giver's ranks and the feed prices.">
+        free TripartyDeposit (0..*) <"The giver's free account with its ranks and the feed prices.">
+        profile EligibleCollateralSpecification (1..1)
+    output:
+        revaluation TripartyRevaluation (1..1)
+
+    alias needed: requiredValue -> value
+
+    alias valueBefore: held extract h [ h -> units * TripartyUnitValue(h, profile) ] then sum
+
+    alias shortfall: needed - valueBefore
+
+    alias usable:
+        free
+            filter d [
+                ProfileEligible(profile, d -> isin) = True
+                    and ProfileHaircut(profile, d -> isin) < 1
+                    and TripartyTopUpUsable(d, held, profile, needed) > 0
+            ]
+            then sort [ item -> rank ]
+
+    alias capacity:
+        usable extract d [ TripartyTopUpUsable(d, held, profile, needed) * TripartyUnitValue(d, profile) ] then sum
+
+    alias topsUp: shortfall > 0 and capacity >= shortfall
+
+    alias uncovered: shortfall > 0 and capacity < shortfall
+
+    alias topUps:
+        usable
+            filter d [ topsUp and TripartyTopUpUnits(d, usable, held, profile, needed, shortfall) > 0 ]
+            then extract d [
+                TripartyMovement {
+                    isin: d -> isin,
+                    units: TripartyTopUpUnits(d, usable, held, profile, needed, shortfall),
+                    direction: TripartyMovementDirectionEnum -> TopUp
+                }
+            ]
+
+    alias releasable: held filter h [ ProfileHaircut(profile, h -> isin) < 1 ]
+
+    alias releases:
+        releasable
+            filter h [ shortfall < 0 and TripartyReleaseUnits(h, releasable, profile, 0.0 - shortfall) > 0 ]
+            then extract h [
+                TripartyMovement {
+                    isin: h -> isin,
+                    units: TripartyReleaseUnits(h, releasable, profile, 0.0 - shortfall),
+                    direction: TripartyMovementDirectionEnum -> Release
+                }
+            ]
+
+    alias movements: [ topUps, releases ]
+
+    alias keptOrTopped:
+        held
+            extract h [
+                TripartyValued(
+                    h,
+                    h -> units
+                        + TripartyMovedUnits(movements, h -> isin, TripartyMovementDirectionEnum -> TopUp)
+                        - TripartyMovedUnits(movements, h -> isin, TripartyMovementDirectionEnum -> Release),
+                    profile
+                )
+            ]
+            then filter p [ p -> units > 0 ]
+
+    alias added:
+        usable
+            filter d [ TripartyUnitsOf(held, d -> isin) = 0 and TripartyMovedUnits(movements, d -> isin, TripartyMovementDirectionEnum -> TopUp) > 0 ]
+            then extract d [ TripartyValued(d, TripartyMovedUnits(movements, d -> isin, TripartyMovementDirectionEnum -> TopUp), profile) ]
+
+    alias after: [ keptOrTopped, added ]
+
+    condition SameCurrency: <"Every price is in the currency of the required value.">
+        ([ held, free ] filter d [ d -> unitPrice -> unit -> currency <> requiredValue -> unit -> currency ] then count) = 0
+
+    condition DistinctRanks: <"Each asset of the free account has its own rank, and each held asset its own rank.">
+        (free extract rank then distinct then count) = free count
+            and (held extract rank then distinct then count) = held count
+
+    condition PositiveRequiredValue: <"The required value is positive.">
+        needed > 0
+
+    set revaluation:
+        TripartyRevaluation {
+            basisHash: basisHash,
+            revaluationDate: revaluationDate,
+            requiredValue: requiredValue,
+            held: held,
+            free: free,
+            heldBefore: held extract h [ TripartyValued(h, h -> units, profile) ],
+            valueBefore: Money {
+                value: valueBefore,
+                unit: requiredValue -> unit,
+                ...
+            },
+            movements: movements,
+            heldAfter: after,
+            valueAfter: Money {
+                value: after extract p [ p -> valueAfterHaircuts -> value ] then sum,
+                unit: requiredValue -> unit,
+                ...
+            },
+            outcome:
+                if topsUp then TripartyRevaluationOutcomeEnum -> TopUp
+                else if uncovered then TripartyRevaluationOutcomeEnum -> Uncovered
+                else if releases exists then TripartyRevaluationOutcomeEnum -> Release
+                else TripartyRevaluationOutcomeEnum -> Unchanged,
+            breaches: TripartyConcentrationBreaches(profile, after, requiredValue),
+            valuation: empty,
+            adjustment: empty
+        }
+
+// Qualification. CDM's Qualify_Substitution and Qualify_Adjustment are false for a change of a repo's collateral
+// during its term (D20, D22), and cdm-ext RepoIsSubstitution is true for any such change. These two tell a top-up and a
+// release from a substitution by the units of each asset in the collateral portfolio before and after.
+
+func RepoCollateralUnits: <"The units of one asset across the collateral positions of a repo's economic terms.">
+    inputs:
+        terms EconomicTerms (0..1)
+        asset Asset (1..1)
+    output:
+        units number (1..1)
+
+    set units:
+        terms -> collateral -> collateralPortfolio -> collateralPosition
+            filter p [ (p -> product as TransferableProduct) -> asset = asset ]
+            then extract p [ p -> priceQuantity only-element -> quantity only-element -> value ]
+            then sum
+
+func RepoIsCollateralTopUp: <"Whether a BusinessEvent tops up a repo's collateral (wp-adr-triparty-revaluation): it changes the collateral during the term as RepoIsSubstitution requires, no asset held before has fewer units after, and at least one asset has more.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias priorTerms: ExtractBeforeEconomicTerms(businessEvent)
+    alias newTerms: ExtractOpenEconomicTerms(businessEvent)
+    alias priorAssets: priorTerms -> collateral -> collateralPortfolio -> collateralPosition extract p [ (p -> product as TransferableProduct) -> asset ]
+    alias newAssets: newTerms -> collateral -> collateralPortfolio -> collateralPosition extract p [ (p -> product as TransferableProduct) -> asset ]
+
+    set is_event:
+        RepoIsSubstitution(businessEvent) = True
+            and (priorAssets extract a [ RepoCollateralUnits(newTerms, a) >= RepoCollateralUnits(priorTerms, a) ]) all = True
+            and (newAssets extract a [ RepoCollateralUnits(newTerms, a) > RepoCollateralUnits(priorTerms, a) ]) any = True
+
+func RepoIsCollateralRelease: <"Whether a BusinessEvent releases part of a repo's collateral (wp-adr-triparty-revaluation): it changes the collateral during the term as RepoIsSubstitution requires, every asset held after was held before with at least as many units, and at least one asset has fewer.">
+    inputs:
+        businessEvent BusinessEvent (1..1)
+    output:
+        is_event boolean (1..1)
+
+    alias priorTerms: ExtractBeforeEconomicTerms(businessEvent)
+    alias newTerms: ExtractOpenEconomicTerms(businessEvent)
+    alias priorAssets: priorTerms -> collateral -> collateralPortfolio -> collateralPosition extract p [ (p -> product as TransferableProduct) -> asset ]
+    alias newAssets: newTerms -> collateral -> collateralPortfolio -> collateralPosition extract p [ (p -> product as TransferableProduct) -> asset ]
+
+    set is_event:
+        RepoIsSubstitution(businessEvent) = True
+            and (newAssets extract a [ RepoCollateralUnits(priorTerms, a) > 0 and RepoCollateralUnits(newTerms, a) <= RepoCollateralUnits(priorTerms, a) ]) all = True
+            and (priorAssets extract a [ RepoCollateralUnits(newTerms, a) < RepoCollateralUnits(priorTerms, a) ]) any = True
+
+// Substitution (task-triparty-substitution, wp-adr-triparty-substitution). The returned units go back to the free
+// account; the rest of the holding is then topped up as a revaluation would, from the free account without the
+// returned asset, until it covers the required value.
+
+func TripartyLessUnits: <"A holding with some units of one asset taken out; an asset left with none is dropped.">
+    inputs:
+        held TripartyDeposit (0..*)
+        asset string (1..1) <"The ISIN.">
+        units number (1..1)
+    output:
+        remaining TripartyDeposit (0..*)
+
+    add remaining:
+        held
+            extract h [
+                TripartyDeposit {
+                    rank: h -> rank,
+                    isin: h -> isin,
+                    units: if h -> isin = asset then h -> units - units else h -> units,
+                    unitPrice: h -> unitPrice
+                }
+            ]
+            then filter r [ r -> units > 0 ]
+
+func SubstituteTriparty: <"The agent's substitution of a request: the units asked back returned, then the holding topped up from the free account in the giver's ranking without the returned asset until it covers the required value; declined when the free account cannot cover it or the repo holds fewer units. The caller adds the CDM records.">
+    inputs:
+        requestHash string (1..1)
+        basisHash string (1..1)
+        substitutionDate date (1..1)
+        requiredValue Money (1..1)
+        held TripartyDeposit (1..*)
+        free TripartyDeposit (0..*)
+        asset string (1..1) <"The ISIN asked back.">
+        units number (1..1) <"The units asked back.">
+        profile EligibleCollateralSpecification (1..1)
+    output:
+        substitution TripartySubstitution (1..1)
+
+    alias needed: requiredValue -> value
+
+    alias remaining: TripartyLessUnits(held, asset, units)
+
+    alias valueRemaining: remaining extract h [ h -> units * TripartyUnitValue(h, profile) ] then sum
+
+    alias shortfall: needed - valueRemaining
+
+    alias usable:
+        free
+            filter d [
+                d -> isin <> asset
+                    and ProfileEligible(profile, d -> isin) = True
+                    and ProfileHaircut(profile, d -> isin) < 1
+                    and TripartyTopUpUsable(d, remaining, profile, needed) > 0
+            ]
+            then sort [ item -> rank ]
+
+    alias capacity:
+        usable extract d [ TripartyTopUpUsable(d, remaining, profile, needed) * TripartyUnitValue(d, profile) ] then sum
+
+    alias covered: units <= TripartyUnitsOf(held, asset) and (shortfall <= 0 or capacity >= shortfall)
+
+    alias returned:
+        [ TripartyMovement { isin: asset, units: units, direction: TripartyMovementDirectionEnum -> Release } ]
+            filter m [ covered ]
+
+    alias replacements:
+        usable
+            filter d [ covered and shortfall > 0 and TripartyTopUpUnits(d, usable, remaining, profile, needed, shortfall) > 0 ]
+            then extract d [
+                TripartyMovement {
+                    isin: d -> isin,
+                    units: TripartyTopUpUnits(d, usable, remaining, profile, needed, shortfall),
+                    direction: TripartyMovementDirectionEnum -> TopUp
+                }
+            ]
+
+    alias movements: [ returned, replacements ]
+
+    alias keptOrTopped:
+        held
+            extract h [
+                TripartyValued(
+                    h,
+                    h -> units
+                        + TripartyMovedUnits(movements, h -> isin, TripartyMovementDirectionEnum -> TopUp)
+                        - TripartyMovedUnits(movements, h -> isin, TripartyMovementDirectionEnum -> Release),
+                    profile
+                )
+            ]
+            then filter p [ p -> units > 0 ]
+
+    alias added:
+        usable
+            filter d [ TripartyUnitsOf(held, d -> isin) = 0 and TripartyMovedUnits(movements, d -> isin, TripartyMovementDirectionEnum -> TopUp) > 0 ]
+            then extract d [ TripartyValued(d, TripartyMovedUnits(movements, d -> isin, TripartyMovementDirectionEnum -> TopUp), profile) ]
+
+    alias after: [ keptOrTopped, added ]
+
+    condition SameCurrency: <"Every price is in the currency of the required value.">
+        ([ held, free ] filter d [ d -> unitPrice -> unit -> currency <> requiredValue -> unit -> currency ] then count) = 0
+
+    condition DistinctRanks: <"Each asset of the free account has its own rank, and each held asset its own rank.">
+        (free extract rank then distinct then count) = free count
+            and (held extract rank then distinct then count) = held count
+
+    condition PositiveRequiredValue: <"The required value is positive.">
+        needed > 0
+
+    set substitution:
+        TripartySubstitution {
+            requestHash: requestHash,
+            basisHash: basisHash,
+            substitutionDate: substitutionDate,
+            requiredValue: requiredValue,
+            isin: asset,
+            units: units,
+            held: held,
+            free: free,
+            heldBefore: held extract h [ TripartyValued(h, h -> units, profile) ],
+            valueBefore: Money {
+                value: held extract h [ h -> units * TripartyUnitValue(h, profile) ] then sum,
+                unit: requiredValue -> unit,
+                ...
+            },
+            movements: movements,
+            heldAfter: after,
+            valueAfter: Money {
+                value: after extract p [ p -> valueAfterHaircuts -> value ] then sum,
+                unit: requiredValue -> unit,
+                ...
+            },
+            outcome: if covered then TripartySubstitutionOutcomeEnum -> Substituted else TripartySubstitutionOutcomeEnum -> Declined,
+            breaches: TripartyConcentrationBreaches(profile, after, requiredValue),
+            adjustment: empty,
+            proposed: empty,
+            accepted: empty
+        }
+
+// Trade end (task-triparty-trade-end, wp-adr-triparty-trade-end).
+
+func TripartyReleaseCoversHolding: <"Whether a set of transfers releases exactly a repo's collateral portfolio: one transfer per held asset, each for the asset's units.">
+    inputs:
+        terms EconomicTerms (0..1)
+        releases ScheduledTransfer (1..*)
+    output:
+        covers boolean (1..1)
+
+    alias heldAssets: terms -> collateral -> collateralPortfolio -> collateralPosition extract p [ (p -> product as TransferableProduct) -> asset ]
+
+    set covers:
+        (heldAssets count) = (releases count)
+            and (heldAssets extract a [ (releases filter r [ r -> asset = a ] then extract r [ r -> quantity -> value ] then sum) = RepoCollateralUnits(terms, a) ]) all = True
