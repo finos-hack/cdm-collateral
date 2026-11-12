@@ -1,5 +1,5 @@
 // Bring up the per-participant runtime stack for the end-to-end cycle (task-e2e-wiring): four ledger gateways
-// (bank-a, bank-b, the triparty agent BANK-T on bank-c, and the market operator mkt, which holds the oracle publisher
+// (bank-a, bank-b, the triparty agent BANK-T on bank-c, the CCP BANK-C on ccp, and the market operator mkt, which holds the oracle publisher
 // key), the oracle service, three collateral workflow services (A pledgor, B secured party, T the triparty agent,
 // wp-adr-triparty-terms-profile), plus the console dev server.
 // Preconditions, checked below: the Besu network is running (besu/start-network.sh or `docker compose up` in besu/)
@@ -50,7 +50,7 @@ function run(name, cmd, args, cwd, env) {
 // store resolves the token to that party's address and enforces the document allowlist against it (store/src/server.ts).
 // Tokens are minted per run (never persisted), so a party can read only its own documents.
 const reg = JSON.parse(fs.readFileSync(registry, "utf8"));
-const token = { "bank-a": crypto.randomBytes(24).toString("hex"), "bank-b": crypto.randomBytes(24).toString("hex"), "bank-c": crypto.randomBytes(24).toString("hex") };
+const token = { "bank-a": crypto.randomBytes(24).toString("hex"), "bank-b": crypto.randomBytes(24).toString("hex"), "bank-c": crypto.randomBytes(24).toString("hex"), ccp: crypto.randomBytes(24).toString("hex") };
 const partyTokens = JSON.stringify(Object.fromEntries(Object.entries(token).map(([node, t]) => [t, reg.parties[node]])));
 
 // Content-addressed CDM payload store (wp-adr-cdm-payload-carrier), shared by both participants.
@@ -60,6 +60,8 @@ const gw = path.join(root, "gateway");
 run("gw-a", "node", ["src/server.ts"], gw, { NODE: "bank-a", PORT: "8201" });
 run("gw-b", "node", ["src/server.ts"], gw, { NODE: "bank-b", PORT: "8202" });
 run("gw-t", "node", ["src/server.ts"], gw, { NODE: "bank-c", PORT: "8203" });
+// The CCP BANK-C on its node ccp (wp-adr-ccp-membership).
+run("gw-c", "node", ["src/server.ts"], gw, { NODE: "ccp", PORT: "8204" });
 // The market operator's gateway signs with the mkt key, the oracle publisher (contracts/scripts/deploy.ts); only the
 // oracle service writes through it (architecture relationship oracle-to-gateway).
 run("gw-mkt", "node", ["src/server.ts"], gw, { NODE: "mkt", PORT: "8200" });
@@ -70,6 +72,7 @@ setTimeout(() => {
   run("svc-a", "java", ["-jar", jar], root, { PARTY_ID: "A", NODE: "bank-a", PORT: "8001", GATEWAY_URL: "http://localhost:8201", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-a"], COUNTERPARTY_SERVICE_URL: "http://localhost:8002" });
   run("svc-b", "java", ["-jar", jar], root, { PARTY_ID: "B", NODE: "bank-b", PORT: "8002", GATEWAY_URL: "http://localhost:8202", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-b"], COUNTERPARTY_SERVICE_URL: "http://localhost:8001" });
   run("svc-t", "java", ["-jar", jar], root, { PARTY_ID: "T", NODE: "bank-c", PORT: "8003", GATEWAY_URL: "http://localhost:8203", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token["bank-c"] });
+  run("svc-c", "java", ["-jar", jar], root, { PARTY_ID: "C", NODE: "ccp", PORT: "8004", GATEWAY_URL: "http://localhost:8204", ORACLE_URL: "http://localhost:8100", STORE_TOKEN: token.ccp });
 }, 2000);
 
 // CONSOLE_HOST: the interface the console dev server listens on. Unset, Vite listens on localhost only. The dev
@@ -86,12 +89,14 @@ stack starting:
   gateway  bank-a   http://localhost:8201/ledger/v1
   gateway  bank-b   http://localhost:8202/ledger/v1
   gateway  bank-c   http://localhost:8203/ledger/v1   (triparty agent BANK-T)
+  gateway  ccp      http://localhost:8204/ledger/v1   (CCP BANK-C)
   gateway  mkt      http://localhost:8200/ledger/v1   (oracle publisher)
   oracle            http://localhost:8100/oracle/v1
   service  A (pledgor)        http://localhost:8001/api/v1
   service  B (secured party)  http://localhost:8002/api/v1
-  service  T (triparty agent) http://localhost:8003/api/v1${ci ? "" : `
-  console  http://localhost:5173/#/live/B  (secured party),  /#/live/A  (pledgor)  and  /#/live/T  (triparty agent)`}
+  service  T (triparty agent) http://localhost:8003/api/v1
+  service  C (CCP)            http://localhost:8004/api/v1${ci ? "" : `
+  console  http://localhost:5173/#/live/B  (secured party),  /#/live/A  (pledgor),  /#/live/T  (triparty agent)  and  /#/live/C  (CCP)`}
 Ctrl-C to stop.
 `);
 

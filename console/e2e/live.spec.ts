@@ -4113,3 +4113,83 @@ test("flow-triparty-trade-end: B repos 500,000 tUSD to A through BANK-T -> on th
   await call(`${SERVICE.B}/triparty/terms/${id}/terminate`, "POST", {});
   await expect.poll(async () => (await call<TripartyTermsView>(`${GATEWAY.B}/triparty/terms/${id}`)).state, { timeout: 60_000 }).toBe("terminated");
 });
+
+// --- flow-ccp-membership (task-ccp-membership, wp-adr-ccp-membership) ---
+
+const SERVICE_C = "http://localhost:8004/api/v1";
+type CcpView = {
+  party: string; ccp: boolean; canPublish: boolean;
+  rulebook: null | {
+    rulebookHash: string; state: string; capital: number; fund: number; verified: boolean; problem: string | null;
+    members: { party: string; bank: string; share: number; paid: boolean }[];
+    rulebook?: { ccp: string; role: string; initialMarginRate: string; variationMarginPeriodDays: number; defaultFund: number; ccpCapital: number; baseCurrency: string };
+    canJoin: boolean; canLeave: boolean;
+  };
+};
+const ccpOf = async (svc: string) => call<CcpView>(`${svc}/ccp`);
+const paidOf = async (party: "A" | "B") => (await ccpOf(SERVICE_C)).rulebook?.members.find((m) => m.party === party)?.paid ?? false;
+
+test("flow-ccp-membership: BANK-C publishes its CDM rulebook in its console and pays 250,000 tUSD of capital -> A and B each check the rulebook and pay their 500,000 tUSD share -> the rulebook is in effect with 1,250,000 tUSD held -> B leaves and gets its share back -> B rejoins", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+
+  // Setup: a rulebook an earlier run published is reused; members an earlier run left paid leave through the services
+  // so that each can join in its console.
+  for (const p of ["A", "B"] as const) {
+    if (await paidOf(p)) {
+      await call(`${SERVICE[p]}/ccp/leave`, "POST", {});
+      await expect.poll(() => paidOf(p), { timeout: 60_000 }).toBe(false);
+    }
+  }
+
+  // 1. BANK-C publishes the rulebook and pays its capital in its console (skipped when the rulebook exists).
+  await page.goto("/#/live/C");
+  await expect(page.getByText("BANK-C · Central Counterparty")).toBeVisible({ timeout: STEP_TIMEOUT });
+  const cardC = page.getByTestId("ccp-card");
+  if ((await ccpOf(SERVICE_C)).canPublish) {
+    await cardC.getByRole("button", { name: "Publish the rulebook and pay the capital" }).click({ timeout: STEP_TIMEOUT });
+  }
+  await expect.poll(async () => (await ccpOf(SERVICE_C)).rulebook?.capital ?? 0, { timeout: 60_000 }).toBe(250_000);
+  await expect(cardC.getByTestId("ccp-terms")).toContainText("initial margin 5.00%", { timeout: STEP_TIMEOUT });
+
+  // 2. and 3. Each member checks the rulebook against its own build and pays its share in its console.
+  for (const p of ["A", "B"] as const) {
+    await page.goto(`/#/live/${p}`);
+    const card = page.getByTestId("ccp-card");
+    await expect(card.getByText("checked", { exact: true })).toBeVisible({ timeout: STEP_TIMEOUT });
+    await card.getByRole("button", { name: "Affirm the rulebook and pay the share" }).click({ timeout: STEP_TIMEOUT });
+    await expect.poll(() => paidOf(p), { timeout: 60_000 }).toBe(true);
+    await expect(card.getByTestId(`ccp-member-${p}`)).toContainText("yes", { timeout: STEP_TIMEOUT });
+  }
+
+  // The rulebook is in effect with the capital and the full fund; the three services hold the same checked document.
+  const views: NonNullable<CcpView["rulebook"]>[] = [];
+  for (const svc of [SERVICE_C, SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const r = (await ccpOf(svc)).rulebook;
+        return r?.state === "Effective" && r.verified && r.fund === 1_000_000 ? true : (r?.problem ?? r?.state ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    views.push((await ccpOf(svc)).rulebook!);
+  }
+  expect(new Set(views.map((v) => v.rulebookHash)).size).toBe(1);
+  expect(views[0].capital + views[0].fund).toBe(1_250_000);
+  expect(views[0].rulebook).toMatchObject({ ccp: "BANK-C", role: "ClearingOrganization", initialMarginRate: "0.05", variationMarginPeriodDays: 1,
+    defaultFund: 1_000_000, ccpCapital: 250_000, baseCurrency: "USD" });
+  expect(views[0].members.map((m) => [m.bank, m.share])).toEqual([["BANK-A", 500_000], ["BANK-B", 500_000]]);
+  const onChain = await call<{ rulebook: { state: string; fund: string; capital: string } }>(`${GATEWAY.A}/ccp/rulebook/${views[0].rulebookHash}`);
+  expect(onChain.rulebook).toMatchObject({ state: "Effective" });
+  expect(Number(onChain.rulebook.fund) + Number(onChain.rulebook.capital)).toBe(1_250_000);
+
+  // 4. B, which clears nothing, leaves in its console and gets its share back; the rulebook stays in effect.
+  await page.goto("/#/live/B");
+  const cardB = page.getByTestId("ccp-card");
+  await cardB.getByRole("button", { name: "Leave and get the share back" }).click({ timeout: STEP_TIMEOUT });
+  await expect.poll(async () => (await ccpOf(SERVICE_C)).rulebook?.fund ?? null, { timeout: 60_000 }).toBe(500_000);
+  expect((await ccpOf(SERVICE_C)).rulebook?.state).toBe("Effective");
+
+  // 5. B rejoins by paying its share again.
+  await cardB.getByRole("button", { name: "Affirm the rulebook and pay the share" }).click({ timeout: STEP_TIMEOUT });
+  await expect.poll(async () => (await ccpOf(SERVICE_C)).rulebook?.fund ?? null, { timeout: 60_000 }).toBe(1_000_000);
+  await expect(cardB.getByTestId("ccp-member-B")).toContainText("yes", { timeout: STEP_TIMEOUT });
+});

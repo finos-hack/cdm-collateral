@@ -31,6 +31,7 @@ const RPC: Record<string, string> = {
   "bank-a": "http://localhost:8547",
   "bank-b": "http://localhost:8549",
   "bank-c": "http://localhost:8551",
+  ccp: "http://localhost:8553",
 };
 
 // price in USD, haircut in basis points; mirrors reference.ts.
@@ -56,6 +57,8 @@ async function main() {
     "bank-a": partyAddress("bank-a"),
     "bank-b": partyAddress("bank-b"),
     "bank-c": partyAddress("bank-c"),
+    // BANK-C, the CCP, on the non-validator node ccp (wp-adr-ccp-membership).
+    ccp: partyAddress("ccp"),
   };
 
   const { viem } = await network.connect("besuMkt");
@@ -138,6 +141,9 @@ async function main() {
   // The triparty agent's books (task-triparty-terms-profile); the agent is BANK-T on the bank-c node.
   const tripartySettlement = await deploy("TripartySettlement", []);
   console.log("TripartySettlement   ", tripartySettlement.address);
+  // The CCP's books (task-ccp-membership): the rulebook, the members' default fund shares and BANK-C's capital.
+  const ccpClearing = await deploy("CcpClearing", []);
+  console.log("CcpClearing          ", ccpClearing.address);
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean }> = {};
   for (const t of TOKENS) {
@@ -169,6 +175,7 @@ async function main() {
       repoSettlement: repoSettlement.address,
       securitiesLoan: securitiesLoan.address,
       tripartySettlement: tripartySettlement.address,
+      ccpClearing: ccpClearing.address,
     },
     priceScale: SCALE.toString(),
     tokens: tokenRegistry,

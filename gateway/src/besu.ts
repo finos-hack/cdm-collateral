@@ -594,6 +594,33 @@ export interface OnChainRepo {
   incomeDeduction: bigint;
 }
 
+const ccpAbi = parseAbi([
+  "struct Rulebook { address ccp; bytes32 rulebookHash; address token; uint256 capital; uint256 fund; uint8 state; uint64 publishedAt; uint64 effectiveAt; }",
+  "function publishRulebook(bytes32 rulebookHash, address token, address[] members, uint256[] shares, uint256 capital)",
+  "function join(bytes32 rulebookHash)",
+  "function leave(bytes32 rulebookHash)",
+  "function rulebook(bytes32 rulebookHash) view returns (Rulebook)",
+  "function members(bytes32 rulebookHash) view returns (address[] member, uint256[] share, bool[] hasPaid)",
+  "function rulebookOf(address ccp) view returns (bytes32)",
+  "function clearedCount(bytes32 rulebookHash, address member) view returns (uint256)",
+]);
+
+export const CcpRulebookStateName = ["None", "Published", "Effective"] as const;
+
+/** A CCP rulebook on CcpClearing (wp-adr-ccp-membership): its hash, the CCP's capital, the default fund paid in, and
+ *  each named member with its share and whether it has paid. */
+export interface OnChainCcpRulebook {
+  rulebookHash: Hex;
+  ccp: Address;
+  token: Address;
+  capital: bigint;
+  fund: bigint;
+  state: string;
+  publishedAt: bigint;
+  effectiveAt: bigint;
+  members: { member: Address; share: bigint; paid: boolean }[];
+}
+
 const erc20Abi = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
@@ -752,6 +779,13 @@ export interface LedgerAdapter {
   declineTripartySubstitution(repoId: Hex, substitutionHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** A repo's holding, its terms' free account and the feed prices of those tokens at the end of a block. */
   tripartyRepoAt(repoId: Hex, block: bigint): Promise<{ allocation: { token: Address; amount: bigint }[]; free: TripartyHolding[]; prices: { token: Address; price: bigint | null }[] }>;
+  /** CCP membership (wp-adr-ccp-membership): the CCP's rulebook, its capital and the members' default fund shares. */
+  ccpContract(): Address;
+  publishCcpRulebook(rulebookHash: Hex, token: Address, members: Address[], shares: bigint[], capital: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  joinCcp(rulebookHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  leaveCcp(rulebookHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** The rulebook with this hash, or the CCP's own rulebook when the hash is omitted; null when there is none. */
+  getCcpRulebook(rulebookHash: Hex | null, ccp?: Address, block?: bigint): Promise<OnChainCcpRulebook | null>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
   watchLedgerEvents(onEvent: (e: LedgerEvent) => void): () => void;
   getProposalState(callId: Hex, proposalId: bigint): Promise<number>;
@@ -1876,5 +1910,51 @@ export class BesuAdapter implements LedgerAdapter {
 
   async tokenBalance(token: Address, owner: Address): Promise<bigint> {
     return (await this.pub.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner] })) as bigint;
+  }
+
+  /** The CcpClearing address: the CCP's rulebook and default fund. */
+  ccpContract(): Address {
+    const a = this.reg.contracts.ccpClearing;
+    if (!a) throw new Error("no CcpClearing in the deployment registry; redeploy the contracts");
+    return a;
+  }
+
+  /** The CCP publishes its rulebook's hash, members and shares, and pays its capital in the same transaction. */
+  async publishCcpRulebook(rulebookHash: Hex, token: Address, members: Address[], shares: bigint[], capital: bigint) {
+    await this.approve(token, this.ccpContract(), capital);
+    return this.send(this.ccpContract(), ccpAbi, "publishRulebook", [rulebookHash, token, members, shares, capital]);
+  }
+
+  /** A member affirms the rulebook's hash and pays its default fund share. */
+  async joinCcp(rulebookHash: Hex) {
+    const r = await this.getCcpRulebook(rulebookHash);
+    const share = r?.members.find((m) => m.member === this.account)?.share;
+    if (!r || share === undefined) throw new Error(`no rulebook ${rulebookHash} naming ${this.account}`);
+    await this.approve(r.token, this.ccpContract(), share);
+    return this.send(this.ccpContract(), ccpAbi, "join", [rulebookHash]);
+  }
+
+  async leaveCcp(rulebookHash: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "leave", [rulebookHash]);
+  }
+
+  async getCcpRulebook(rulebookHash: Hex | null, ccp?: Address, block?: bigint): Promise<OnChainCcpRulebook | null> {
+    const at = block === undefined ? {} : { blockNumber: block };
+    const address = this.ccpContract();
+    let hash = rulebookHash;
+    if (!hash) {
+      if (!ccp) throw new Error("a rulebook hash or a CCP address is needed");
+      hash = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "rulebookOf", args: [ccp], ...at })) as Hex;
+    }
+    const r = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "rulebook", args: [hash], ...at })) as {
+      ccp: Address; rulebookHash: Hex; token: Address; capital: bigint; fund: bigint; state: number; publishedAt: bigint; effectiveAt: bigint };
+    if (r.state === 0) return null;
+    const [member, share, hasPaid] = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "members", args: [hash], ...at })) as [
+      readonly Address[], readonly bigint[], readonly boolean[]];
+    return {
+      rulebookHash: hash, ccp: r.ccp, token: r.token, capital: r.capital, fund: r.fund,
+      state: CcpRulebookStateName[r.state] ?? String(r.state), publishedAt: r.publishedAt, effectiveAt: r.effectiveAt,
+      members: member.map((m, i) => ({ member: m, share: share[i], paid: hasPaid[i] })),
+    };
   }
 }

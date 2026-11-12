@@ -404,6 +404,23 @@ route("POST", "/ledger/v1/triparty/repos/:id/repurchase", async (p, b) => J(awai
 route("POST", "/ledger/v1/triparty/repos/:id/substitution/decline", async (p, b) => J(await adapter.declineTripartySubstitution(p.id as Hex, b.substitutionHash as Hex)));
 route("GET", "/ledger/v1/triparty/repos/:id/at", async (p, _b, url) => J(await adapter.tripartyRepoAt(p.id as Hex, BigInt(url.searchParams.get("block")!))));
 
+// CCP membership (wp-adr-ccp-membership): the CCP publishes its rulebook with its capital; each member affirms the
+// hash and pays its share, and may leave when it clears nothing. GET without a hash reads the CCP's own rulebook;
+// ?block= reads it as it was at the end of that block.
+route("POST", "/ledger/v1/ccp/rulebook", async (_p, b) =>
+  J(await adapter.publishCcpRulebook(b.rulebookHash as Hex, getAddress(b.token), (b.members as string[]).map((m) => getAddress(m)),
+    (b.shares as (string | number)[]).map((x) => BigInt(x)), BigInt(b.capital))));
+route("GET", "/ledger/v1/ccp/rulebook", async (_p, _b, url) => {
+  const block = url.searchParams.get("block");
+  return J({ rulebook: await adapter.getCcpRulebook(null, getAddress(url.searchParams.get("ccp")!), block ? BigInt(block) : undefined) });
+});
+route("GET", "/ledger/v1/ccp/rulebook/:hash", async (p, _b, url) => {
+  const block = url.searchParams.get("block");
+  return J({ rulebook: await adapter.getCcpRulebook(p.hash as Hex, undefined, block ? BigInt(block) : undefined) });
+});
+route("POST", "/ledger/v1/ccp/rulebook/:hash/join", async (p) => J(await adapter.joinCcp(p.hash as Hex)));
+route("POST", "/ledger/v1/ccp/rulebook/:hash/leave", async (p) => J(await adapter.leaveCcp(p.hash as Hex)));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {

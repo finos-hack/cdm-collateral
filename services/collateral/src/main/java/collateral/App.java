@@ -109,8 +109,9 @@ public final class App {
         app.exception(Exception.class, (e, ctx) -> ctx.status(400).json(Map.of("error", String.valueOf(e.getMessage()))));
 
         app.get("/api/v1/health", ctx -> ctx.json(Map.of("party", cfg.partyId, "role", cfg.role, "address", cfg.myAddress, "ok", true)));
-        tripartyRoutes(app);
-        if (cfg.isAgent()) {
+        if (!cfg.isCcp()) tripartyRoutes(app);
+        ccpRoutes(app);
+        if (cfg.isAgent() || cfg.isCcp()) {
             // The triparty agent BANK-T (wp-adr-triparty-terms-profile) runs only the triparty routes and the console
             // event stream; the bilateral CSA, repo and lending workflows stay on A and B.
             app.sse("/api/v1/events", client -> {
@@ -119,13 +120,14 @@ public final class App {
                 sseClients.add(client);
                 client.onClose(() -> sseClients.remove(client));
             });
-            // The agent's business date is the revaluation date (wp-adr-triparty-revaluation).
+            // The agent's business date is the revaluation date (wp-adr-triparty-revaluation). The CCP BANK-C
+            // (wp-adr-ccp-membership) runs only the CCP routes and the event stream in the same way.
             app.get("/api/v1/business-date", ctx -> ctx.json(Map.of("businessDate", businessDate.toString())));
             app.post("/api/v1/business-date", this::setBusinessDate);
             app.start(cfg.port);
             startEventRelay();
-            System.out.printf("collateral service: triparty agent %s (%s) %s on http://localhost:%d/api/v1 -> gateway %s%n",
-                    cfg.bankName("T"), cfg.role, cfg.myAddress, cfg.port, cfg.gatewayUrl);
+            System.out.printf("collateral service: %s %s (%s) %s on http://localhost:%d/api/v1 -> gateway %s%n",
+                    cfg.isCcp() ? "CCP" : "triparty agent", cfg.bankName(cfg.partyId), cfg.role, cfg.myAddress, cfg.port, cfg.gatewayUrl);
             return;
         }
         app.get("/api/v1/context", this::context);
@@ -251,7 +253,7 @@ public final class App {
                             String data = line.substring(5).trim();
                             // Record first (cheap), relay at once, and fold afterwards on the fold executor; a fold that
                             // changes what the console shows signals it again when done (task-live-read-latency).
-                            if (!cfg.isAgent()) onLedgerEvent(data);
+                            if (!cfg.isAgent() && !cfg.isCcp()) onLedgerEvent(data);
                             signalConsoles(data);
                         }
                     });
@@ -530,6 +532,132 @@ public final class App {
         Optional<String> problem = tripartyProblem(t);
         if (problem.isPresent()) throw new IllegalStateException("the triparty terms do not check: " + problem.get());
         ctx.json(gw.post("/triparty/terms/" + ctx.pathParam("id") + "/affirm", Map.of("termsHash", t.get("termsHash").asText())));
+    }
+
+    // --- CCP membership (task-ccp-membership, wp-adr-ccp-membership) ---
+    // The CCP BANK-C builds the cdm-ext CcpRulebook naming BANK-A and BANK-B, stores it for the three parties and
+    // publishes its hash on CcpClearing with its capital. Each member rebuilds the rulebook from the parties and the
+    // effective date it states, and affirms the hash with its default fund share only when the documents are identical.
+    // A paid member that clears no repo may leave and get its share back, and rejoin.
+
+    /** Rulebooks that checked, by hash; a failed check is not kept, so it is retried. */
+    private final Set<String> ccpChecked = ConcurrentHashMap.newKeySet();
+
+    private void ccpRoutes(Javalin app) {
+        app.get("/api/v1/ccp", this::ccp);
+        app.post("/api/v1/ccp/rulebook", this::publishCcpRulebook);
+        app.post("/api/v1/ccp/join", ctx -> ctx.json(ccpMemberStep("join")));
+        app.post("/api/v1/ccp/leave", ctx -> ctx.json(ccpMemberStep("leave")));
+    }
+
+    private List<String> ccpParties() {
+        return List.of(cfg.partyAddress("C"), cfg.partyAddress("A"), cfg.partyAddress("B"));
+    }
+
+    private List<String> ccpMemberNames() {
+        return List.of(cfg.bankName("A"), cfg.bankName("B"));
+    }
+
+    /** The CCP's rulebook on CcpClearing, or null when it has published none. */
+    private JsonNode ccpRulebookOnChain() {
+        JsonNode r = gw.getQuery("/ccp/rulebook", Map.of("ccp", cfg.partyAddress("C"))).get("rulebook");
+        return r == null || r.isNull() ? null : r;
+    }
+
+    /** Check the published document against this party's own build. */
+    private Optional<String> ccpProblem(JsonNode r) {
+        String hash = r.get("rulebookHash").asText();
+        if (ccpChecked.contains(hash)) return Optional.empty();
+        try {
+            String doc = payloads.get(hash);
+            if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the rulebook is not in the payload store or its hash differs");
+            CdmCcp.Rulebook v = CdmCcp.verify(doc, bankOf(r.get("ccp").asText()), ccpMemberNames());
+            if (!r.get("token").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) return Optional.of("the default fund is not paid in tUSD");
+            if (new BigInteger(r.get("capital").asText()).longValueExact() != v.capital()) return Optional.of("the capital paid differs from the rulebook");
+            for (JsonNode m : r.get("members")) {
+                Long share = v.shares().get(bankOf(m.get("member").asText()));
+                if (share == null || new BigInteger(m.get("share").asText()).longValueExact() != share)
+                    return Optional.of("the members or shares on chain differ from the rulebook");
+            }
+            if (r.get("members").size() != v.shares().size()) return Optional.of("the members on chain differ from the rulebook");
+            ccpChecked.add(hash);
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** The CCP's rulebook with the document checked, the members' payments and the steps open to this party. */
+    private void ccp(Context ctx) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("party", cfg.partyId);
+        out.put("bank", cfg.bankName(cfg.partyId));
+        out.put("ccp", cfg.isCcp());
+        JsonNode r = cfg.registry.get("parties").has("ccp") ? ccpRulebookOnChain() : null;
+        out.put("canPublish", cfg.isCcp() && r == null);
+        if (r == null) {
+            out.put("rulebook", null);
+            ctx.json(out);
+            return;
+        }
+        Optional<String> problem = ccpProblem(r);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("rulebookHash", r.get("rulebookHash").asText());
+        m.put("state", r.get("state").asText());
+        m.put("capital", new BigInteger(r.get("capital").asText()).longValueExact());
+        m.put("fund", new BigInteger(r.get("fund").asText()).longValueExact());
+        m.put("verified", problem.isEmpty());
+        m.put("problem", problem.orElse(null));
+        List<Map<String, Object>> members = new ArrayList<>();
+        Map<String, Object> mine = null;
+        for (JsonNode x : r.get("members")) {
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put("party", partyIdOf(x.get("member").asText()));
+            e.put("bank", bankOf(x.get("member").asText()));
+            e.put("share", new BigInteger(x.get("share").asText()).longValueExact());
+            e.put("paid", x.get("paid").asBoolean());
+            members.add(e);
+            if (x.get("member").asText().equalsIgnoreCase(cfg.myAddress)) mine = e;
+        }
+        m.put("members", members);
+        String doc = payloads.get(r.get("rulebookHash").asText());
+        if (doc != null) {
+            try {
+                m.put("rulebook", CdmCcp.view(CdmCcp.parse(doc)));
+            } catch (Exception ignored) {
+                // shown without the document's fields
+            }
+        }
+        m.put("canJoin", mine != null && !Boolean.TRUE.equals(mine.get("paid")) && problem.isEmpty());
+        m.put("canLeave", mine != null && Boolean.TRUE.equals(mine.get("paid")));
+        out.put("rulebook", m);
+        ctx.json(out);
+    }
+
+    /** The CCP publishes the baseline rulebook naming BANK-A and BANK-B and pays its capital. */
+    private void publishCcpRulebook(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP publishes the rulebook");
+        if (ccpRulebookOnChain() != null) throw new IllegalStateException("the CCP has published its rulebook");
+        CdmCcp.Rulebook rb = CdmCcp.build(cfg.bankName("C"), ccpMemberNames(), LocalDate.now());
+        payloads.put(rb.hash(), rb.json(), ccpParties());
+        List<String> members = List.of(cfg.partyAddress("A"), cfg.partyAddress("B"));
+        List<String> shares = rb.shares().values().stream().map(String::valueOf).toList();
+        JsonNode tx = gw.post("/ccp/rulebook", Map.of("rulebookHash", rb.hash(), "token", cfg.tokenAddress("tUSD"),
+                "members", members, "shares", shares, "capital", String.valueOf(rb.capital())));
+        ctx.json(Map.of("rulebookHash", rb.hash(), "txHash", tx.get("txHash").asText()));
+    }
+
+    /** A member joins (after checking the rulebook) or leaves. */
+    private JsonNode ccpMemberStep(String step) {
+        if (cfg.isCcp()) throw new IllegalArgumentException("the CCP is not a member");
+        JsonNode r = ccpRulebookOnChain();
+        if (r == null) throw new IllegalStateException("the CCP has published no rulebook");
+        if (step.equals("join")) {
+            Optional<String> problem = ccpProblem(r);
+            if (problem.isPresent()) throw new IllegalStateException("the rulebook does not check: " + problem.get());
+        }
+        JsonNode tx = gw.post("/ccp/rulebook/" + r.get("rulebookHash").asText() + "/" + step, Map.of());
+        return tx;
     }
 
     // --- triparty trade start (task-triparty-trade-start, wp-adr-triparty-trade-start) ---
@@ -3801,6 +3929,7 @@ public final class App {
         if (a.equals(cfg.partyAddress("A").toLowerCase())) return "A";
         if (a.equals(cfg.partyAddress("B").toLowerCase())) return "B";
         if (a.equals(cfg.partyAddress("T").toLowerCase())) return "T";
+        if (cfg.registry.get("parties").has("ccp") && a.equals(cfg.partyAddress("C").toLowerCase())) return "C";
         return address;
     }
 

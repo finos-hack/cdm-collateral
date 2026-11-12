@@ -5,13 +5,16 @@
 export type LiveParty = "A" | "B";
 /** A party to triparty terms: A or B, or the triparty agent BANK-T (wp-adr-triparty-terms-profile). */
 export type TripartyParty = LiveParty | "T";
+/** Any party with a workflow service: A, B, the triparty agent T, or the CCP BANK-C as C (wp-adr-ccp-membership). */
+export type ServiceParty = TripartyParty | "C";
 
-const DEFAULT_URL: Record<TripartyParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002", T: "http://localhost:8003" };
+const DEFAULT_URL: Record<ServiceParty, string> = { A: "http://localhost:8001", B: "http://localhost:8002", T: "http://localhost:8003", C: "http://localhost:8004" };
 
 // Precedence: an explicit VITE_SERVICE_<P>_URL, then the same-origin proxy path when VITE_SERVICE_PROXY=1 (set in the
 // devcontainer; the dev/preview server forwards /svc/<P> to the service, vite.config.ts), then localhost.
-export function serviceUrl(party: TripartyParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
-  const explicit = party === "A" ? env.VITE_SERVICE_A_URL : party === "B" ? env.VITE_SERVICE_B_URL : env.VITE_SERVICE_T_URL;
+export function serviceUrl(party: ServiceParty, env: Record<string, string | undefined> = (import.meta as any).env ?? {}): string {
+  const explicit =
+    party === "A" ? env.VITE_SERVICE_A_URL : party === "B" ? env.VITE_SERVICE_B_URL : party === "C" ? env.VITE_SERVICE_C_URL : env.VITE_SERVICE_T_URL;
   if (explicit) return explicit;
   if (env.VITE_SERVICE_PROXY === "1") return `/svc/${party}`;
   return DEFAULT_URL[party];
@@ -74,7 +77,7 @@ export interface LiveState {
   defaults?: Partial<Record<LiveParty, boolean>>;
 }
 
-async function req<T>(party: TripartyParty, method: string, path: string, body?: unknown): Promise<T> {
+async function req<T>(party: ServiceParty, method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(serviceUrl(party) + "/api/v1" + path, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -302,6 +305,49 @@ export interface LiveTriparty {
 }
 
 /** The triparty calls, which the agent's console uses too. */
+/** The CCP's rulebook on CcpClearing with the document checked by the reading party (wp-adr-ccp-membership). */
+export interface LiveCcpRulebook {
+  rulebookHash: string;
+  state: "Published" | "Effective" | string;
+  capital: number;
+  fund: number;
+  verified: boolean;
+  problem: string | null;
+  members: { party: string; bank: string; share: number; paid: boolean }[];
+  rulebook?: {
+    ccp: string;
+    role: string;
+    initialMarginRate: string;
+    variationMarginPeriodDays: number;
+    defaultFund: number;
+    ccpCapital: number;
+    baseCurrency: string;
+    effectiveDate: string;
+    members: { name: string; share: number; agreement: string }[];
+  };
+  canJoin: boolean;
+  canLeave: boolean;
+}
+
+export interface LiveCcp {
+  party: string;
+  bank: string;
+  ccp: boolean;
+  canPublish: boolean;
+  rulebook: LiveCcpRulebook | null;
+}
+
+export const ccpApi = {
+  health: (p: ServiceParty) => req<{ party: string; role: string; address: string; ok: boolean }>(p, "GET", "/health"),
+  ccp: (p: ServiceParty) => req<LiveCcp>(p, "GET", "/ccp"),
+  /** The CCP: publish the baseline rulebook and pay its capital. */
+  publishRulebook: (p: ServiceParty) => req<{ rulebookHash: string; txHash: string }>(p, "POST", "/ccp/rulebook", {}),
+  /** A member: affirm the rulebook after checking it and pay its default fund share. */
+  join: (p: ServiceParty) => req<unknown>(p, "POST", "/ccp/join", {}),
+  /** A member that clears no repo: leave and get its share back. */
+  leave: (p: ServiceParty) => req<unknown>(p, "POST", "/ccp/leave", {}),
+};
+
 export const tripartyApi = {
   health: (p: TripartyParty) => req<{ party: string; role: string; address: string; ok: boolean }>(p, "GET", "/health"),
   triparty: (p: TripartyParty) => req<LiveTriparty>(p, "GET", "/triparty"),

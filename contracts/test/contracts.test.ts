@@ -2194,4 +2194,77 @@ describe("CDM collateral contracts", async () => {
       });
     });
   });
+
+  describe("CCP membership: rulebook, capital and default fund (task-ccp-membership)", () => {
+    const R = keccak256(toHex("ccp-rulebook"));
+    let ccp: any, ccpAddr: `0x${string}`, tUSD: any, clearing: any;
+    beforeEach(async () => {
+      const wallets = await viem.getWalletClients();
+      ccp = wallets[4];
+      ccpAddr = getAddress(ccp.account.address);
+      tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "", "", ""]);
+      clearing = await viem.deployContract("CcpClearing", []);
+      await tUSD.write.mint([ccpAddr, 250n]);
+      await tUSD.write.mint([aAddr, 500n]);
+      await tUSD.write.mint([bAddr, 500n]);
+    });
+
+    async function publish() {
+      await tUSD.write.approve([clearing.address, 250n], { account: ccp.account });
+      await clearing.write.publishRulebook([R, tUSD.address, [aAddr, bAddr], [500n, 500n], 250n], { account: ccp.account });
+    }
+    async function join(w: any) {
+      await tUSD.write.approve([clearing.address, 500n], { account: w.account });
+      await clearing.write.join([R], { account: w.account });
+    }
+
+    it("takes the CCP's capital at publish and puts the rulebook in effect once both members have paid", async () => {
+      await publish();
+      let r = await clearing.read.rulebook([R]);
+      assert.equal(r.state, 1); // Published
+      assert.equal(r.capital, 250n);
+      assert.equal(await clearing.read.rulebookOf([ccpAddr]), R);
+      assert.equal(await tUSD.read.balanceOf([clearing.address]), 250n);
+      await join(bankA);
+      assert.equal((await clearing.read.rulebook([R])).state, 1);
+      await join(bankB);
+      r = await clearing.read.rulebook([R]);
+      assert.equal(r.state, 2); // Effective
+      assert.equal(r.fund, 1000n);
+      assert.equal(await tUSD.read.balanceOf([clearing.address]), 1250n);
+      const [member, share, hasPaid] = await clearing.read.members([R]);
+      assert.deepEqual(member, [aAddr, bAddr]);
+      assert.deepEqual(share, [500n, 500n]);
+      assert.deepEqual(hasPaid, [true, true]);
+    });
+
+    it("returns a leaving member's share, keeps the rulebook in effect and lets the member rejoin", async () => {
+      await publish();
+      await join(bankA);
+      await join(bankB);
+      await clearing.write.leave([R], { account: bankB.account });
+      assert.equal(await tUSD.read.balanceOf([bAddr]), 500n);
+      const r = await clearing.read.rulebook([R]);
+      assert.equal(r.state, 2);
+      assert.equal(r.fund, 500n);
+      await assert.rejects(clearing.write.leave([R], { account: bankB.account })); // NotPaid
+      await join(bankB);
+      assert.equal((await clearing.read.rulebook([R])).fund, 1000n);
+    });
+
+    it("rejects a second rulebook, a bad rulebook, an unnamed member, a second payment and an unknown rulebook", async () => {
+      const [, , , outsider] = await viem.getWalletClients();
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr], [500n, 500n], 250n], { account: ccp.account }));
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr, ccpAddr], [500n, 500n], 250n], { account: ccp.account }));
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr, aAddr], [500n, 500n], 250n], { account: ccp.account }));
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr, bAddr], [500n, 500n], 0n], { account: ccp.account }));
+      await publish();
+      await assert.rejects(clearing.write.publishRulebook([keccak256(toHex("other")), tUSD.address, [aAddr], [1n], 1n], { account: ccp.account }));
+      await assert.rejects(clearing.write.join([R], { account: outsider.account })); // NotAMember
+      await join(bankA);
+      await assert.rejects(clearing.write.join([R], { account: bankA.account })); // AlreadyPaid
+      await assert.rejects(clearing.write.join([zeroHash], { account: bankA.account })); // UnknownRulebook
+      await assert.rejects(clearing.write.leave([zeroHash], { account: bankA.account }));
+    });
+  });
 });

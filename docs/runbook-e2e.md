@@ -14,17 +14,19 @@ Start order is top to bottom. Each row depends on the rows above it.
 
 | # | Component | Process | Port(s) | Health check | Started by |
 |---|---|---|---|---|---|
-| 1 | Besu QBFT network (`mkt`, `bank-a`, `bank-b`, `bank-c`) | Docker containers `besu-<node>` | JSON-RPC 8545 / 8547 / 8549 / 8551, WebSocket one port higher | `bash besu/check-network.sh` | `bash besu/start-network.sh` |
+| 1 | Besu QBFT network (validators `mkt`, `bank-a`, `bank-b`, `bank-c`; non-validator `ccp` for the CCP BANK-C) | Docker containers `besu-<node>` | JSON-RPC 8545 / 8547 / 8549 / 8551 / 8553, WebSocket one port higher | `bash besu/check-network.sh` | `bash besu/start-network.sh` |
 | 2 | Contracts (margin call, collateral control, tokens, oracle feed) | one-off deploy | — | `contracts/deployments/besu.json` exists | `npm run deploy:besu` in `contracts/` |
 | 3 | CDM payload store | `node store/src/server.ts` | 8300 | `curl localhost:8300/store/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-a | `node gateway/src/server.ts` (`NODE=bank-a`) | 8201 | `curl localhost:8201/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-b | `node gateway/src/server.ts` (`NODE=bank-b`) | 8202 | `curl localhost:8202/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, bank-c (the triparty agent BANK-T) | `node gateway/src/server.ts` (`NODE=bank-c`) | 8203 | `curl localhost:8203/ledger/v1/health` | `orchestrate.mjs` |
+| 4 | Ledger gateway, ccp (the CCP BANK-C) | `node gateway/src/server.ts` (`NODE=ccp`) | 8204 | `curl localhost:8204/ledger/v1/health` | `orchestrate.mjs` |
 | 4 | Ledger gateway, mkt (market operator, oracle publisher key) | `node gateway/src/server.ts` (`NODE=mkt`) | 8200 | `curl localhost:8200/ledger/v1/health` | `orchestrate.mjs` |
 | 5 | Oracle service (default notices; mock market data and price publishing, `flow-oracle-update`) | `java -jar services/oracle/target/oracle-service.jar` | 8100 | `curl localhost:8100/oracle/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service A (pledgor, bank-a) | `java -jar services/collateral/target/collateral-service.jar` | 8001 | `curl localhost:8001/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service B (secured party, bank-b) | same jar, `PARTY_ID=B` | 8002 | `curl localhost:8002/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 5 | Collateral service T (triparty agent BANK-T, bank-c; triparty routes only) | same jar, `PARTY_ID=T` | 8003 | `curl localhost:8003/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
+| 5 | Collateral service C (the CCP BANK-C, ccp; CCP routes only) | same jar, `PARTY_ID=C` | 8004 | `curl localhost:8004/api/v1/health` | `orchestrate.mjs`, 2 s after the gateways |
 | 6 | Party console (Vite dev server) | `npm run dev` in `console/` | 5173 | open `http://localhost:5173/#/live/A` | `orchestrate.mjs` |
 
 Request path for one lifecycle step: console → collateral service → (CDM document to the payload store) → ledger
@@ -100,7 +102,7 @@ The dev container runs `build` once when it is created and `up` every time it st
 `up` does the following, in order:
 
 1. **Stop-and-replace:** stops the `orchestrate.mjs` process recorded in `.live-e2e.pid` from an earlier `up`, then
-   kills any process still listening on 8300, 8200, 8201, 8202, 8203, 8100, 8001, 8002, 8003, 5173 or 4173.
+   kills any process still listening on 8300, 8200, 8201, 8202, 8203, 8204, 8100, 8001, 8002, 8003, 8004, 5173 or 4173.
 2. Starts Besu: `docker compose up -d` when `besu/.env` and `besu/networkFiles/genesis.json` exist, otherwise
    `bash besu/start-network.sh`. Waits up to 120 s for a non-zero block height on 8545.
 3. Runs `npm run deploy:besu` only when `contracts/deployments/besu.json` is absent. It never redeploys over an
@@ -211,15 +213,15 @@ jar is missing. Otherwise it:
 
 1. mints one bearer token per party for the payload store (new tokens on every run, never written to disk);
 2. starts the store on 8300 with `PARTY_TOKENS` and `DATA_DIR=store/data`;
-3. starts gateway bank-a on 8201, gateway bank-b on 8202, gateway bank-c (the triparty agent BANK-T) on 8203 and the
-   market operator's gateway mkt on 8200;
+3. starts gateway bank-a on 8201, gateway bank-b on 8202, gateway bank-c (the triparty agent BANK-T) on 8203, gateway
+   ccp (the CCP BANK-C) on 8204 and the market operator's gateway mkt on 8200;
 4. after 2 s, starts the oracle service on 8100 (writing through gateway mkt), then service A on 8001, service B on
-   8002 and service T on 8003, each with its own `STORE_TOKEN` and `ORACLE_URL=http://localhost:8100`, from the
+   8002, service T on 8003 and service C on 8004, each with its own `STORE_TOKEN` and `ORACLE_URL=http://localhost:8100`, from the
    repository root (so they find `besu.json` and write `data/<node>.db`);
 5. starts the console dev server on 5173.
 
-Every output line carries the child's prefix: `[store]`, `[gw-a]`, `[gw-b]`, `[gw-t]`, `[gw-mkt]`, `[oracle]`,
-`[svc-a]`, `[svc-b]`, `[svc-t]`, `[console]`.
+Every output line carries the child's prefix: `[store]`, `[gw-a]`, `[gw-b]`, `[gw-t]`, `[gw-c]`, `[gw-mkt]`, `[oracle]`,
+`[svc-a]`, `[svc-b]`, `[svc-t]`, `[svc-c]`, `[console]`.
 Expected startup lines:
 
 ```
@@ -231,6 +233,7 @@ Expected startup lines:
 [svc-a] collateral service: party A (Pledgor) 0x… on http://localhost:8001/api/v1 -> gateway http://localhost:8201
 [svc-b] collateral service: party B (Secured Party) 0x… on http://localhost:8002/api/v1 -> gateway http://localhost:8202
 [svc-t] collateral service: triparty agent BANK-T (Triparty Agent) 0x… on http://localhost:8003/api/v1 -> gateway http://localhost:8203
+[svc-c] collateral service: CCP BANK-C (Central Counterparty) 0x… on http://localhost:8004/api/v1 -> gateway http://localhost:8204
 [console]   ➜  Local:   http://localhost:5173/
 ```
 
@@ -246,14 +249,16 @@ curl -s localhost:8300/store/v1/health    # {"ok":true,"count":<documents>}
 curl -s localhost:8201/ledger/v1/health   # {"node":"bank-a","account":"0x…","ok":true}
 curl -s localhost:8202/ledger/v1/health   # {"node":"bank-b",…}
 curl -s localhost:8203/ledger/v1/health   # {"node":"bank-c",…}
+curl -s localhost:8204/ledger/v1/health   # {"node":"ccp",…}
 curl -s localhost:8200/ledger/v1/health   # {"node":"mkt",…}
 curl -s localhost:8100/oracle/v1/health   # {"service":"oracle","ok":true}
 curl -s localhost:8001/api/v1/health      # {"party":"A","role":"Pledgor","address":"0x…","ok":true}
 curl -s localhost:8002/api/v1/health      # {"party":"B","role":"Secured Party",…}
 curl -s localhost:8003/api/v1/health      # {"party":"T","role":"Triparty Agent",…}
+curl -s localhost:8004/api/v1/health      # {"party":"C","role":"Central Counterparty",…}
 ```
 
-All nine must answer before step 6.
+All eleven must answer before step 6.
 
 ## 5. Drive the flows
 

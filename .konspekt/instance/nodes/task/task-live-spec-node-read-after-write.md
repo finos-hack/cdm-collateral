@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T18:25:00Z
   confidence: 0.6
 createdAt: 2026-11-12T18:25:00Z
-updatedAt: 2026-11-12T18:25:00Z
+updatedAt: 2026-11-12T20:15:00Z
 ```
 # Task: make a party's service read a counterparty's new on-chain record only once its own node has the block
 
@@ -22,6 +22,12 @@ a dedicated task on 2026-11-12 (source `323cd915721b60bb6900bbb2d1774d669f8870ac
 failed once: right after BANK-A issued a margin call, BANK-B's service answered it and its gateway's `getCall` reverted
 as for an unknown call (custom error `0x3c935374`), because BANK-B's node did not yet have the block BANK-A's node
 had mined. The spec passed on its own straight after (41.2 s).
+
+**Observed again** in the full live run of [[task-ccp-membership]] (2026-11-12, 47 of 49, with the fifth node `ccp`
+running): `flow-repo-reprice` (the first spec of that name) failed when BANK-B's service affirmed a repo BANK-A had
+just booked ("repo … is not booked"), and `flow-gmsla-marking` failed when BANK-A's service delivered a loan BANK-B had
+just affirmed ("loan … is not affirmed"). Both specs passed on their own straight after (1.1 min, 57.8 s). Whether the
+fifth node's load raises the rate is not known: one run is not enough to compare.
 
 **To do.** Find where a service acts on a counterparty's record by id (calls, repos, terms, loans) as soon as it learns
 the id, and make it wait for its own node to reach the block of the record (or retry an unknown-record revert for a

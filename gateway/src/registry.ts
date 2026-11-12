@@ -35,6 +35,8 @@ export interface Registry {
     securitiesLoan?: `0x${string}`;
     /** Absent in a deployment made before flow-triparty-terms. */
     tripartySettlement?: `0x${string}`;
+    /** Absent in a deployment made before flow-ccp-membership. */
+    ccpClearing?: `0x${string}`;
   };
   priceScale: string;
   tokens: Record<string, TokenInfo>;

@@ -383,3 +383,14 @@ Status of the ledger: 196 questions in 34 tasks, all open.
 | TPP-3 | The report states each asset's price, haircut and value after haircuts, and whether the repo is covered. Which fields do the giver and the receiver use to reconcile, and in which format (for example ISO 20022 colr messages)? | open | |
 | TPP-4 | The giver's free collateral is reported to both parties. Is the giver's unallocated inventory shown to the receiver? | open | |
 | TPP-5 | The agent reports on request in the prototype. How often and at which cut-offs do agents report? | open | |
+
+### `task-sme-ccp-membership`: CCP membership, the rulebook and the default fund
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| CCM-1 | The rulebook is one document with a bilateral membership agreement per member under it. Do CCP repo services document membership as a rulebook plus a clearing membership agreement per member, and which terms sit in each? | open | |
+| CCM-2 | The initial margin is a flat 5% of each cleared repo's cash amount. How do repo CCPs set initial margin (per security class, VaR or SPAN-type models), and is it per trade or per portfolio? | open | |
+| CCM-3 | The default fund is fixed in the rulebook (1,000,000 split equally). How are default fund contributions sized and resized, and how often? | open | |
+| CCM-4 | The CCP's own capital (skin in the game) is paid in once, when the rulebook is published. Where does the CCP's capital sit in the default waterfall, and is it held with the default fund? | open | |
+| CCM-5 | The rulebook is in effect once every named member has paid, and stays in effect when a member leaves. What are the CCP's admission conditions, and is the service suspended when a member's contribution falls short? | open | |
+| CCM-6 | A member that clears no repo may leave and get its contribution back at once. What notice period and conditions apply to a member's resignation and the return of its contribution? | open | |

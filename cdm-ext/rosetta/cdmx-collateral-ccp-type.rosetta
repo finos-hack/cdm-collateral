@@ -1,0 +1,69 @@
+namespace cdmx.collateral.ccp : <"Local CDM extension: a central counterparty's rulebook and its default fund (gap G23, task-ccp-membership, wp-adr-ccp-membership). CDM 7.7.0 has the CCP's party role (PartyRoleEnum ClearingOrganization) and no type for a CCP rulebook, its margin rates or its default fund.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.legaldocumentation.common.*
+import cdm.observable.asset.*
+
+type CcpMember: <"A clearing member named in the rulebook, its membership agreement with the CCP and the share of the default fund it pays.">
+    party Party (1..1) <"The clearing member.">
+    agreement LegalAgreementBase (1..1) <"The member's agreement with the CCP under the rulebook: CDM's LegalAgreementBase of type Other (\"CCP rulebook\") with the CCP and the member as its two contractual parties. CDM's LegalAgreementBase has exactly two contractual parties, so one agreement cannot name the CCP and every member.">
+    defaultFundShare Money (1..1) <"The member's share of the default fund, in the base currency of the rulebook.">
+
+    condition PositiveShare: <"A member pays a positive share.">
+        defaultFundShare -> value > 0
+
+    condition RulebookAgreement: <"The agreement is of type Other and names itself a CCP rulebook.">
+        agreement -> legalAgreementIdentification -> agreementName -> agreementType = LegalAgreementTypeEnum -> Other
+            and agreement -> legalAgreementIdentification -> agreementName -> otherAgreement = "CCP rulebook"
+
+    condition MemberIsAContractualParty: <"The member is one of the agreement's two contractual parties.">
+        agreement -> contractualParty -> name contains party -> name
+
+type CcpRulebook: <"A CCP rulebook between the CCP and its clearing members: the CCP in CDM's ClearingOrganization role, the members with their agreements and default fund shares, the initial margin rate, the variation margin period, the default fund and the CCP's own capital. Each member's agreement is CDM's LegalAgreementBase. CDM's LegalAgreement is not used: it requires agreementTerms, and no CDM agreement terms describe a CCP rulebook.">
+    [rootType]
+    ccp PartyRole (1..1) <"The CCP, in CDM's ClearingOrganization role.">
+    member CcpMember (1..*) <"The clearing members and their default fund shares.">
+    baseCurrency string (1..1) <"The currency of the margin, the default fund and the capital.">
+    initialMarginRate number (1..1) <"The initial margin each member posts on a cleared repo, as a fraction of its cash amount, for example 0.05 for 5%.">
+    variationMarginPeriodDays int (1..1) <"The number of business days between variation margin calls: 1 for daily.">
+    defaultFund Money (1..1) <"The default fund the members pay into.">
+    ccpCapital Money (1..1) <"The CCP's own capital, which it pays in when it publishes the rulebook.">
+    effectiveDate date (1..1) <"The date the rulebook takes effect.">
+
+    condition CcpRole: <"The CCP acts in CDM's clearing organization role.">
+        ccp -> role = PartyRoleEnum -> ClearingOrganization
+
+    condition PartiesNamed: <"The CCP and each member have a name, which the other conditions compare.">
+        ccp -> partyReference -> name exists
+            and (member filter item -> party -> name is absent then count = 0)
+
+    condition MembersAreNotTheCcp: <"No member is the CCP.">
+        member -> party -> name all <> ccp -> partyReference -> name
+
+
+    condition DistinctMembers: <"Each member is named once.">
+        member -> party -> name distinct count = member count
+
+    condition CcpIsAContractualParty: <"The CCP is a contractual party to each member's agreement.">
+        CcpMembersWithoutTheCcp(member, ccp -> partyReference -> name) = 0
+
+    condition SharesMakeTheFund: <"The members' shares add up to the default fund.">
+        member -> defaultFundShare -> value sum = defaultFund -> value
+
+    condition PositiveRateAndAmounts: <"The initial margin rate is above zero and below one, the period is at least one day, and the fund and the capital are positive.">
+        initialMarginRate > 0 and initialMarginRate < 1 and variationMarginPeriodDays >= 1
+            and defaultFund -> value > 0 and ccpCapital -> value > 0
+
+    condition OneCurrency: <"The fund, the capital and the shares are in the base currency.">
+        defaultFund -> unit -> currency = baseCurrency and ccpCapital -> unit -> currency = baseCurrency
+            and member -> defaultFundShare -> unit -> currency all = baseCurrency
+
+func CcpMembersWithoutTheCcp: <"The number of members whose agreement does not name the CCP as a contractual party.">
+    inputs:
+        member CcpMember (0..*)
+        ccpName string (1..1)
+    output:
+        result int (1..1)
+    set result:
+        member filter (item -> agreement -> contractualParty -> name contains ccpName) = False then count

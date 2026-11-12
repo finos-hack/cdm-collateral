@@ -1433,3 +1433,19 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-ccp-default | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
 | edge:e-dec-ccp-porting | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
 | edge:e-dec-e2eflow-readafterwrite | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
+| edge:e-mrk-ccpscope-ccp | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-drv-cdmdata-ccpscope | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-drv-finality-ccpscope | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-dec-ccp-membership | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-dec-ccp-clearing | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-dec-ccp-margin | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-dec-ccp-default | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-dec-ccp-porting | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-dec-e2eflow-readafterwrite | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| waypoint:wp-adr-ccp-membership | review |  | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
+| edge:e-mrk-ccpmemadr-ccpmem | review |  | proposed | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
+| edge:e-drv-cdmdata-ccpmemadr | review |  | proposed | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
+| node:task-sme-ccp-membership | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
+| node:task-sme-ccp-membership | status |  | open | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
+| edge:e-dec-cdmdev-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
+| edge:e-lnk-ccpmem-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
