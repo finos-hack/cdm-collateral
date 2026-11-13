@@ -10,7 +10,7 @@ Sources: [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md),
 [`findings.md`](findings.md), [`collateral-conceptual-model.md`](collateral-conceptual-model.md),
 [`collateral-flows.md`](collateral-flows.md), [`business-case.md`](business-case.md) and the gap register
 [`gap-register.md`](gap-register.md) (gap IDs G1–G39). Implementation status is
-as of branch `repo-purchase-repurchase` (2026-11-07); the 16 live specs of sections A and B and the first two of section C passed locally on 2026-11-07.
+as of 2026-11-13 (`main` after PR #66): every row of sections A, B and C is built, and the full live suite (53 specs) passed locally on a reset chain.
 
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other
 agreement families (section C). Section B starts only after the rest of section A is done: `flow-oracle-update`,

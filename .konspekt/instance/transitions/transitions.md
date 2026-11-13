@@ -1512,3 +1512,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-localenv-sharedconsole | review |  | proposed | 2026-11-13T02:42:43Z | 90ff59e14ac7b691c96db66b4e6263e7d794f410 |  |
 | noteworthy:nw-shared-console-dev-server | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |
 | edge:e-note-localenv-sharedconsole | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |
+| node:task-docs-readme-organization | review |  | proposed | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
+| node:task-docs-readme-organization | status |  | open | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
+| edge:e-dec-adoption-docsreadme | review |  | proposed | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |

@@ -384,6 +384,8 @@ Status of the ledger: 196 questions in 34 tasks, all open.
 | TPP-4 | The giver's free collateral is reported to both parties. Is the giver's unallocated inventory shown to the receiver? | open | |
 | TPP-5 | The agent reports on request in the prototype. How often and at which cut-offs do agents report? | open | |
 
+## CCP (GMRA repo cleared by BANK-C)
+
 ### `task-sme-ccp-membership`: CCP membership, the rulebook and the default fund
 
 | ID | Question | Status | Answer |
