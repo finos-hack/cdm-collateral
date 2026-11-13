@@ -1631,3 +1631,8 @@ excluded.
 | task-ccp-margin | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
 | task-ccp-default | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
 | task-ccp-porting | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
+| task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | README.md | 2026-11-13T15:05:46Z |
+| task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T15:05:46Z |
+| task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/defects.md | 2026-11-13T15:05:46Z |
+| task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/gap-register.md | 2026-11-13T15:05:46Z |
+| task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/sme-question-ledger.md | 2026-11-13T15:05:46Z |
