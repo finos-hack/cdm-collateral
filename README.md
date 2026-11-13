@@ -62,7 +62,8 @@ how it was fixed: [`defects.md`, In this repository](docs/analysis/defects.md#in
 ## 3. CDM gaps: closed, deferred to SMEs, open
 
 The gap register consolidates the findings and defects into 39 gaps. They are closed by local extensions in this
-repository only; nothing is proposed to FINOS. Per gap: [`gap-register.md`, Closure status](docs/analysis/gap-register.md#closure-status).
+repository only; nothing is proposed to FINOS. Per gap: [`gap-register.md`, Closure status](docs/analysis/gap-register.md#closure-status) (also as a page:
+[`docs/gap-register.html`](docs/gap-register.html)).
 
 | Status | Count | Gaps |
 |---|---|---|
