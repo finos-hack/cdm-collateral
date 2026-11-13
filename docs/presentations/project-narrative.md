@@ -1,7 +1,7 @@
 # CDM Collateral: how the project developed
 
 This document tells the history of the project from 14 October to 4 November 2026. It is written from the konspekt
-graph in `.konspekt/instance/` (goals, tasks, decision records, notes, artifacts and the transitions log). Every claim
+graph in `../../.konspekt/instance` (goals, tasks, decision records, notes, artifacts and the transitions log). Every claim
 can be traced to a record there; record IDs are given in brackets where a reader may want to follow one up. The
 records hold the detail and remain authoritative. This document gives the order of events and the reasons behind them.
 

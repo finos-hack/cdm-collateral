@@ -3,6 +3,7 @@ import { Grid } from "./components/Grid";
 import { LiveConsole } from "./components/LiveConsole";
 import { OperatorConsole } from "./components/OperatorConsole";
 import { AgentConsole } from "./components/TripartyConsole";
+import { CcpConsole } from "./components/CcpConsole";
 import { ScenarioView, type Mode } from "./components/ScenarioView";
 import type { LiveParty } from "./domain/liveApi";
 import { scenarioById } from "./scenarios/scenarios";
@@ -10,12 +11,14 @@ import { scenarioById } from "./scenarios/scenarios";
 // Hash routes: "#/" scenario grid; "#/s/<scenario>/<guided|free>" one scenario;
 // "#/live/<A|B>" the live party console wired to that party's running workflow service;
 // "#/live/T" the triparty agent BANK-T's console (wp-adr-triparty-terms-profile);
+// "#/live/C" the CCP BANK-C's console (wp-adr-ccp-membership);
 // "#/live/operator" the market operator console wired to the oracle service.
 export type Route =
   | { page: "grid" }
   | { page: "scenario"; id: string; mode: Mode }
   | { page: "live"; party: LiveParty }
   | { page: "agent" }
+  | { page: "ccp" }
   | { page: "operator" };
 
 export function parseRoute(hash: string): Route {
@@ -24,6 +27,7 @@ export function parseRoute(hash: string): Route {
   const l = /^#\/live\/(A|B)$/.exec(hash);
   if (l) return { page: "live", party: l[1] as LiveParty };
   if (hash === "#/live/T") return { page: "agent" };
+  if (hash === "#/live/C") return { page: "ccp" };
   if (hash === "#/live/operator") return { page: "operator" };
   return { page: "grid" };
 }
@@ -35,7 +39,9 @@ export const href = (r: Route) =>
       ? `#/live/${r.party}`
       : r.page === "agent"
         ? "#/live/T"
-        : r.page === "operator"
+        : r.page === "ccp"
+          ? "#/live/C"
+          : r.page === "operator"
           ? "#/live/operator"
           : `#/s/${r.id}/${r.mode}`;
 
@@ -57,7 +63,7 @@ export function App() {
           <h1>Collateral Console</h1>
         </div>
         <div className="tags">
-          {route.page === "live" || route.page === "operator" || route.page === "agent" ? (
+          {route.page === "live" || route.page === "operator" || route.page === "agent" || route.page === "ccp" ? (
             <span className="tag">live stack · service → gateway → Besu</span>
           ) : (
             <span className="tag">mocked state, no backend</span>
@@ -70,6 +76,7 @@ export function App() {
         <a href="#/live/A">Live · BANK-A (Pledgor)</a>
         <a href="#/live/B">Live · BANK-B (Secured Party)</a>
         <a href="#/live/T">Live · BANK-T (Triparty agent)</a>
+        <a href="#/live/C">Live · BANK-C (CCP)</a>
         <a href="#/live/operator">Live · Market operator</a>
       </nav>
       {route.page === "grid" ? (
@@ -78,6 +85,8 @@ export function App() {
         <OperatorConsole />
       ) : route.page === "agent" ? (
         <AgentConsole />
+      ) : route.page === "ccp" ? (
+        <CcpConsole />
       ) : route.page === "live" ? (
         <LiveConsole key={route.party} party={route.party} />
       ) : (

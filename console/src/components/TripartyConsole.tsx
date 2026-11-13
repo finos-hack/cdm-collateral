@@ -8,8 +8,11 @@
 // console; the receiver settles the purchase against the allocation, or refuses it; the giver withdraws free collateral.
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ccpApi,
   serviceUrl,
   tripartyApi,
+  type LiveCcp,
+  type LiveCcpClearing,
   type LiveParty,
   type LiveTriparty,
   type LiveTripartyRepo,
@@ -18,6 +21,7 @@ import {
   type LiveTripartyTerms,
   type TripartyParty,
 } from "../domain/liveApi";
+import { CcpCard } from "./CcpConsole";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const bank = (p: TripartyParty) => (p === "T" ? "BANK-T" : `BANK-${p}`);
@@ -383,6 +387,8 @@ export function TripartyTermsCard(props: { party: TripartyParty; triparty: LiveT
 export function AgentConsole() {
   const [health, setHealth] = useState<{ address: string; role: string } | null>(null);
   const [triparty, setTriparty] = useState<LiveTriparty | null>(null);
+  const [ccp, setCcp] = useState<LiveCcp | null>(null);
+  const [clearings, setClearings] = useState<LiveCcpClearing[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = useRef(true);
@@ -390,8 +396,13 @@ export function AgentConsole() {
   const refresh = useCallback(async () => {
     try {
       const tp = await tripartyApi.triparty("T");
+      // BANK-T is also a CCP member once BANK-C admits it (wp-adr-ccp-porting).
+      const c = await ccpApi.ccp("T").catch(() => null);
+      const cl = await ccpApi.clearings("T").catch(() => ({ clearings: [] as LiveCcpClearing[] }));
       if (live.current) {
         setTriparty(tp);
+        setCcp(c && "rulebook" in c ? c : null);
+        setClearings(Array.isArray(cl?.clearings) ? cl.clearings.filter((x) => x.role !== "" || x.porting?.to === "T") : []);
         setError(null);
       }
     } catch (e) {
@@ -437,6 +448,7 @@ export function AgentConsole() {
         {error && <div className="bad" data-testid="agent-error">{error}</div>}
       </div>
       {triparty && <TripartyTermsCard party="T" triparty={triparty} busy={busy} run={run} />}
+      {ccp?.rulebook?.members.some((m) => m.party === "T") && <CcpCard party="T" ccp={ccp} clearings={clearings} busy={busy} run={run} />}
     </div>
   );
 }

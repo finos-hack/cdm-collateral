@@ -6,15 +6,15 @@
 #
 # Subcommands:
 #   up      (default) Stop any stack from a previous run (stop-and-replace), then start the Besu network, deploy the
-#           contracts if they are not deployed yet, start store + four gateways (bank-a, bank-b, the triparty
-#           agent BANK-T on bank-c and the market operator mkt) + the oracle service + three collateral services (A, B
-#           and the agent T) + the console dev server, wait until all
+#           contracts if they are not deployed yet, start store + five gateways (bank-a, bank-b, the triparty
+#           agent BANK-T on bank-c, the CCP BANK-C on ccp and the market operator mkt) + the oracle service + four
+#           collateral services (A, B, the agent T and the CCP C) + the console dev server, wait until all
 #           health checks pass, print the URLs and leave everything running.
 #   down    Stop the store/gateways/services/console and stop the Besu containers. The Besu chain on disk is kept.
 #   reset   down, then delete the chain, the deployment and the off-chain state (runbook section 8). The next up
 #           re-creates the Besu network and redeploys.
-#   status  Print the seven health checks and the console port without changing anything.
-#   build   The one-time build of docs/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
+#   status  Print the health checks and the console port without changing anything.
+#   build   The one-time build of docs/setup/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
 #           cdm-ext install into ~/.m2, then the collateral service and oracle service jars. Uses mvn when on PATH, else cdm-ext/mvnw. The
 #           dev container runs it once on creation (postCreateCommand).
 #   check   Run every live flow (console/e2e/live.spec.ts) against the running stack: fails at once if the stack is
@@ -24,7 +24,7 @@
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
 # JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
-# see docs/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
+# see docs/setup/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
 # contracts/deployments/besu.json is absent; it never redeploys over an existing deployment (a redeploy would orphan
 # the stored documents that reference the current contract addresses).
 set -euo pipefail
@@ -45,13 +45,15 @@ health=(
   "8201|/ledger/v1/health"
   "8202|/ledger/v1/health"
   "8203|/ledger/v1/health"
+  "8204|/ledger/v1/health"
   "8001|/api/v1/health"
   "8002|/api/v1/health"
   "8003|/api/v1/health"
+  "8004|/api/v1/health"
   "8100|/oracle/v1/health"
 )
-backend_ports=(8300 8200 8201 8202 8203 8100 8001 8002 8003)
-all_ports=(8300 8200 8201 8202 8203 8100 8001 8002 8003 5173 4173)
+backend_ports=(8300 8200 8201 8202 8203 8204 8100 8001 8002 8003 8004)
+all_ports=(8300 8200 8201 8202 8203 8204 8100 8001 8002 8003 8004 5173 4173)
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'live-e2e: %s\n' "$*" >&2; exit 1; }
@@ -89,6 +91,9 @@ start_besu() {
   if [ -f besu/.env ] && [ -f besu/networkFiles/genesis.json ]; then
     # Leftover bridges and iptables rules from earlier besu_besu networks block validator peering (besu/clean-stale-network.sh).
     bash besu/clean-stale-network.sh
+    # The CCP's node writes its key into besu/ccp/data on its first start; Docker would create a missing bind-mount
+    # directory as root, which the Besu user cannot write (wp-adr-ccp-membership).
+    mkdir -p besu/ccp/data
     "${compose[@]}" up -d
   else
     # First time on this clone (no generated genesis/keys): start-network.sh generates them, then brings the nodes up.
@@ -104,14 +109,28 @@ start_besu() {
     n="$( { rpc 8545 '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' || true; } | sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p')"
     if [ -n "$n" ]; then
       [ -z "$first" ] && first="$n"
-      if [ "$n" != "$first" ]; then say "besu producing blocks (height $first -> $n)"; return 0; fi
+      if [ "$n" != "$first" ]; then say "besu producing blocks (height $first -> $n)"; wait_ccp_node; return 0; fi
     fi
     sleep 2
   done
   die "besu block height did not advance within 120 s (height ${first:-unknown}) — check: bash besu/check-network.sh"
 }
 
+# The CCP's non-validator node ccp: its key exists and it has synced past block 0 (wp-adr-ccp-membership).
+wait_ccp_node() {
+  local i n
+  for i in $(seq 1 60); do
+    n="$( { rpc 8553 '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' || true; } | sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p')"
+    if [ -f besu/ccp/data/key ] && [ -n "$n" ] && [ "$n" != "0x0" ]; then say "ccp node synced (height $n)"; return 0; fi
+    sleep 2
+  done
+  die "the ccp node did not sync within 120 s — check: docker logs besu-ccp"
+}
+
 deploy_if_needed() {
+  if [ -f "$registry" ] && ! grep -q '"ccpClearing"' "$registry"; then
+    die "the deployment in $registry predates CcpClearing and the CCP's node (task-ccp-membership) — run: scripts/live-e2e.sh reset"
+  fi
   if [ -f "$registry" ]; then
     say "contracts already deployed ($registry) — keeping the existing deployment"
   else
@@ -145,7 +164,7 @@ print_status() {
 }
 
 cmd_up() {
-  [ -f "$jar" ] || die "missing $jar — build it once: see docs/runbook-e2e.md section 3"
+  [ -f "$jar" ] || die "missing $jar — build it once: see docs/setup/runbook-e2e.md section 3"
   [ -f "$oracle_jar" ] || die "missing $oracle_jar — build it once: bash scripts/live-e2e.sh build"
   say "stop-and-replace: stopping any stack from a previous run"
   stop_stack
@@ -172,6 +191,7 @@ cmd_up() {
     say "    secured party (BANK-B)  http://localhost:5173/#/live/B"
     say "    pledgor      (BANK-A)  http://localhost:5173/#/live/A"
     say "    triparty agent (BANK-T) http://localhost:5173/#/live/T"
+    say "    CCP          (BANK-C)  http://localhost:5173/#/live/C"
     say ""
     say "  logs:  $stack_log"
     say "  stop:  scripts/live-e2e.sh down"
@@ -195,7 +215,7 @@ cmd_reset() {
   cmd_down
   say "removing chain, deployment and off-chain state (full reset)"
   "${compose[@]}" down -v 2>/dev/null || true
-  rm -rf besu/networkFiles besu/.env besu/mkt besu/bank-a besu/bank-b besu/bank-c
+  rm -rf besu/networkFiles besu/.env besu/mkt besu/bank-a besu/bank-b besu/bank-c besu/ccp
   rm -rf contracts/deployments store/data data
   say "reset done — the next 'up' re-creates the besu network and redeploys the contracts."
 }

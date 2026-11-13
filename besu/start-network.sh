@@ -33,6 +33,10 @@ if [ ! -f networkFiles/genesis.json ]; then
   printf 'BOOTNODE_ENODE=enode://%s@172.28.0.11:30303\nBESU_USER=%s:%s\n' "$PUB" "$(id -u)" "$(id -g)" > .env
 fi
 
+# The CCP's node ccp is not a validator (wp-adr-ccp-membership): Besu writes its node key into ccp/data on its first
+# start, so its data directory must exist and belong to the Besu user.
+mkdir -p ccp/data
+
 bash ./clean-stale-network.sh
 docker compose up -d
-echo "Besu nodes: mkt 8545, bank-a 8547, bank-b 8549, bank-c 8551 (JSON-RPC); WebSocket on the next port up."
+echo "Besu nodes: mkt 8545, bank-a 8547, bank-b 8549, bank-c 8551, ccp 8553 (JSON-RPC); WebSocket on the next port up."

@@ -404,6 +404,61 @@ route("POST", "/ledger/v1/triparty/repos/:id/repurchase", async (p, b) => J(awai
 route("POST", "/ledger/v1/triparty/repos/:id/substitution/decline", async (p, b) => J(await adapter.declineTripartySubstitution(p.id as Hex, b.substitutionHash as Hex)));
 route("GET", "/ledger/v1/triparty/repos/:id/at", async (p, _b, url) => J(await adapter.tripartyRepoAt(p.id as Hex, BigInt(url.searchParams.get("block")!))));
 
+// CCP membership (wp-adr-ccp-membership): the CCP publishes its rulebook with its capital; each member affirms the
+// hash and pays its share, and may leave when it clears nothing. GET without a hash reads the CCP's own rulebook;
+// ?block= reads it as it was at the end of that block.
+route("POST", "/ledger/v1/ccp/rulebook", async (_p, b) =>
+  J(await adapter.publishCcpRulebook(b.rulebookHash as Hex, getAddress(b.token), (b.members as string[]).map((m) => getAddress(m)),
+    (b.shares as (string | number)[]).map((x) => BigInt(x)), BigInt(b.capital))));
+route("GET", "/ledger/v1/ccp/rulebook", async (_p, _b, url) => {
+  const block = url.searchParams.get("block");
+  return J({ rulebook: await adapter.getCcpRulebook(null, getAddress(url.searchParams.get("ccp")!), block ? BigInt(block) : undefined) });
+});
+route("GET", "/ledger/v1/ccp/rulebook/:hash", async (p, _b, url) => {
+  const block = url.searchParams.get("block");
+  return J({ rulebook: await adapter.getCcpRulebook(p.hash as Hex, undefined, block ? BigInt(block) : undefined) });
+});
+route("POST", "/ledger/v1/ccp/rulebook/:hash/join", async (p) => J(await adapter.joinCcp(p.hash as Hex)));
+route("POST", "/ledger/v1/ccp/rulebook/:hash/leave", async (p) => J(await adapter.leaveCcp(p.hash as Hex)));
+
+// CCP clearing (wp-adr-ccp-clearing): the seller submits an affirmed repo, the buyer affirms, the CCP accepts or refuses;
+// each member then instructs its own leg's purchase and repurchase.
+route("POST", "/ledger/v1/ccp/clearings", async (_p, b) =>
+  J(await adapter.submitCcpClearing(b.repoId as Hex, getAddress(b.ccp), b.novationHash as Hex)));
+route("GET", "/ledger/v1/ccp/clearings", async (_p, _b, url) => J(await adapter.listCcpClearings(getAddress(url.searchParams.get("party")!))));
+route("GET", "/ledger/v1/ccp/clearings/:id", async (p) => J({ clearing: await adapter.getCcpClearing(p.id as Hex) }));
+route("POST", "/ledger/v1/ccp/clearings/:id/affirm", async (p, b) => J(await adapter.affirmCcpClearing(p.id as Hex, b.novationHash as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/accept", async (p) => J(await adapter.acceptCcpClearing(p.id as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/refuse", async (p, b) => J(await adapter.refuseCcpClearing(p.id as Hex, b.reasonHash as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/instruct", async (p, b) => J(await adapter.instructCcpCleared(p.id as Hex, b.legHash as Hex)));
+
+// CCP margin (wp-adr-ccp-margin): the CCP issues a round of variation and initial margin, one hash per member's
+// statement; each member that owes pays its net, the last payment settling the round. Amounts are decimal strings,
+// positive when the member pays (a repo's from the seller's side).
+route("POST", "/ledger/v1/ccp/margin", async (_p, b) =>
+  J(await adapter.issueCcpMargin(BigInt(b.businessDate as string), b.repoIds as Hex[], (b.repoVm as string[]).map((x) => BigInt(x)),
+    (b.members as string[]).map((m) => getAddress(m)), (b.im as string[]).map((x) => BigInt(x)), b.statementHashes as Hex[])));
+route("GET", "/ledger/v1/ccp/margin", async (_p, _b, url) => J(await adapter.listCcpMarginRounds(getAddress(url.searchParams.get("ccp")!))));
+route("GET", "/ledger/v1/ccp/margin/:id", async (p) => J({ round: await adapter.getCcpMarginRound(p.id as Hex) }));
+route("POST", "/ledger/v1/ccp/margin/:id/pay", async (p) => J(await adapter.payCcpMargin(p.id as Hex)));
+route("POST", "/ledger/v1/ccp/margin/:id/cancel", async (p) => J(await adapter.cancelCcpMargin(p.id as Hex)));
+
+// CCP default (wp-adr-ccp-default): the CCP closes out a defaulted member's cleared repos and applies the waterfall; a
+// survivor pays what it owes.
+route("POST", "/ledger/v1/ccp/defaults", async (_p, b) =>
+  J(await adapter.closeOutCcpDefault(getAddress(b.defaulter as string), b.closeOutHash as Hex, b.repoIds as Hex[], (b.residuals as string[]).map((x) => BigInt(x)))));
+route("GET", "/ledger/v1/ccp/defaults", async (_p, _b, url) => J(await adapter.listCcpDefaults(getAddress(url.searchParams.get("ccp")!))));
+route("POST", "/ledger/v1/ccp/defaults/:hash/pay", async (p) => J(await adapter.payCcpDefaultDue(p.hash as Hex)));
+
+// CCP admission and porting (wp-adr-ccp-porting).
+route("POST", "/ledger/v1/ccp/members", async (_p, b) =>
+  J(await adapter.admitCcpMember(getAddress(b.member as string), BigInt(b.share as string), b.admissionHash as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/porting", async (p, b) =>
+  J(await adapter.requestCcpPorting(p.id as Hex, getAddress(b.to as string), b.portingHash as Hex, BigInt(b.payment as string))));
+route("POST", "/ledger/v1/ccp/clearings/:id/porting/accept", async (p, b) => J(await adapter.acceptCcpPorting(p.id as Hex, b.portingHash as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/porting/approve", async (p) => J(await adapter.approveCcpPorting(p.id as Hex)));
+route("POST", "/ledger/v1/ccp/clearings/:id/porting/refuse", async (p) => J(await adapter.refuseCcpPorting(p.id as Hex)));
+
 // --- interest on cash collateral (flow-interest-on-cash, G17) ---
 
 route("POST", "/ledger/v1/interest", async (_p, b) => {
@@ -559,6 +614,9 @@ const server = http.createServer((req, res) => {
   req.on("end", async () => {
     try {
       const body = raw ? JSON.parse(raw) : {};
+      // Every request but the health check first waits for this node to reach the peers' head, so it sees a record
+      // another party has just written on its own node (task-live-spec-node-read-after-write).
+      if (url.pathname !== "/ledger/v1/health") await adapter.catchUpWithPeers();
       const out = await match.handler(params, body, url);
       res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(out));
     } catch (e) {
@@ -568,4 +626,5 @@ const server = http.createServer((req, res) => {
   });
 });
 
+adapter.catchUpWithPeers(0).catch(() => undefined); // start the head subscriptions before the first request
 server.listen(PORT, () => console.log(`ledger gateway for ${NODE} (${adapter.account}) on http://localhost:${PORT}/ledger/v1`));

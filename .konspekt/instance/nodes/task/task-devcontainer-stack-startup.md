@@ -37,7 +37,7 @@ Commit `383a6f5`: `postCreateCommand` runs `scripts/live-e2e.sh build` (new subc
 runs `scripts/live-e2e.sh up` in place of Besu plus `console/serve.sh` (gaps 1 and 4), `up` starts `orchestrate.mjs`
 under `setsid`, and `mvnw` keeps LF endings. A fresh dev container created with `@devcontainers/cli` 0.90.0 ran the
 build and the start-up and passed all five health checks plus console `HTTP 200`; the stack was still running after
-the start command ended (`docs/runbook-e2e.md` section 10). Open: gap 2, port forwarding to a host browser through
+the start command ended (`../../../../docs/setup/runbook-e2e.md` section 10). Open: gap 2, port forwarding to a host browser through
 VS Code, with one flow driven in the console.
 
 ## Progress (2026-11-01, gap 2)
@@ -48,7 +48,7 @@ commit `c9e0983` adds `appPort` (5173, 8001, 8002 published on `127.0.0.1`) and 
 Playwright config takes `E2E_BASE_URL` to test an already-served console. A fresh container from `c9e0983` started
 the stack, and from the Windows host both live specs passed against the container's console and services
 (`flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`), with both parties showing the calls `settled`
-(`docs/runbook-e2e.md` section 10). Every condition in "Done when" is met; resolving the task is the project owner's
+(`../../../../docs/setup/runbook-e2e.md` section 10). Every condition in "Done when" is met; resolving the task is the project owner's
 decision.
 
 ## Resolution (2026-11-01)

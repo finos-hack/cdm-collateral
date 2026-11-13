@@ -38,7 +38,7 @@ PORT=8300 DATA_DIR=./data PARTY_TOKENS='{"<token-a>":"0x<bank-a address>","<toke
 `PARTY_TOKENS` is a JSON map from bearer token to party address. The store fails closed: without it, startup prints
 `store: no PARTY_TOKENS configured …` and every `docs` request returns `401`. `orchestrate.mjs` mints one token per
 party on each run, passes the map here and each party's token to its collateral service (`STORE_TOKEN`); see
-[`../docs/runbook-e2e.md`](../docs/runbook-e2e.md).
+[`../docs/setup/runbook-e2e.md`](../docs/setup/runbook-e2e.md).
 
 Documents are written to `DATA_DIR` as `<hash>.json`.
 

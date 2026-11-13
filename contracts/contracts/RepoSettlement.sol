@@ -38,7 +38,8 @@ contract RepoSettlement {
         Affirmed,
         Purchased,
         Repurchased,
-        ClosedOut
+        ClosedOut,
+        Novated
     }
 
     enum Phase {
@@ -157,8 +158,40 @@ contract RepoSettlement {
     error NoCloseOut();
     error AlreadyPaid();
 
+    /// @notice The CCP's contract (CcpClearing, wp-adr-ccp-clearing), the only caller of novate; set once by the deployer.
+    address public clearingHouse;
+    address private immutable _deployer;
+    /// @notice The hash of the cdm-ext CcpNovation of each novated repo.
+    mapping(bytes32 => bytes32) public novationHash;
+
+    event RepoNovated(bytes32 indexed repoId, address indexed clearingHouse, bytes32 cdmHash);
+
+    error NotTheDeployer();
+    error ClearingHouseSet();
+    error NotTheClearingHouse();
+
     constructor(address oracle_) {
         oracle = IDefaultFeed(oracle_);
+        _deployer = msg.sender;
+    }
+
+    /// @notice The deployer names the CCP's contract once.
+    function setClearingHouse(address clearingHouse_) external {
+        if (msg.sender != _deployer) revert NotTheDeployer();
+        if (clearingHouse != address(0) || clearingHouse_ == address(0)) revert ClearingHouseSet();
+        clearingHouse = clearingHouse_;
+    }
+
+    /// @notice The CCP's contract closes an affirmed repo, not yet purchased, as novated to the CCP, with the hash of the
+    /// cdm-ext CcpNovation. A purchase instruction either party made is dropped: the purchase settles through the CCP.
+    function novate(bytes32 repoId, bytes32 cdmHash) external {
+        if (msg.sender != clearingHouse || clearingHouse == address(0)) revert NotTheClearingHouse();
+        Repo storage r = _load(repoId);
+        if (r.state != RepoState.Affirmed) revert WrongState(r.state);
+        delete _instructions[repoId][Phase.Purchase];
+        r.state = RepoState.Novated;
+        novationHash[repoId] = cdmHash;
+        emit RepoNovated(repoId, msg.sender, cdmHash);
     }
 
     /// @notice The seller books a repo with the buyer: the securities and quantity delivered at the purchase, the cash

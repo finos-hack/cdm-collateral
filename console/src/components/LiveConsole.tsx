@@ -29,11 +29,15 @@ import {
   type LiveParty,
   type LiveTriparty,
   tripartyApi,
+  type LiveCcp,
+  type LiveCcpClearing,
+  ccpApi,
   type LiveRevaluation,
   type LiveState,
   type LiveSubstitution,
 } from "../domain/liveApi";
 import { TripartyTermsCard } from "./TripartyConsole";
+import { CcpCard } from "./CcpConsole";
 
 const short = (h: string) => (h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 const usd = (s: string) => "USD " + Number(s).toLocaleString("en-US");
@@ -64,6 +68,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [repoDefault, setRepoDefault] = useState<LiveRepoDefault | null>(null);
   const [loanDefault, setLoanDefault] = useState<LiveLoanDefault | null>(null);
   const [triparty, setTriparty] = useState<LiveTriparty | null>(null);
+  const [ccp, setCcp] = useState<LiveCcp | null>(null);
+  const [clearings, setClearings] = useState<LiveCcpClearing[]>([]);
   const [periodStart, setPeriodStart] = useState("2026-11-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-01");
   const [ratePct, setRatePct] = useState(4.3);
@@ -103,6 +109,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         api.repoDefault(party).then((d) => setRepoDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setRepoDefault(null)),
         api.loanDefault(party).then((d) => setLoanDefault(d?.businessDate && Array.isArray(d?.closeOuts) ? d : null)).catch(() => setLoanDefault(null)),
         tripartyApi.triparty(party).then((t) => setTriparty(Array.isArray(t?.terms) ? t : null)).catch(() => setTriparty(null)),
+        ccpApi.ccp(party).then((c) => setCcp(c && "rulebook" in c ? c : null)).catch(() => setCcp(null)),
+        ccpApi.clearings(party).then((c) => setClearings(Array.isArray(c?.clearings) ? c.clearings : [])).catch(() => setClearings([])),
       );
       setState(await api.state(party));
       setError(null);
@@ -419,6 +427,18 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       {repos && <ReposCard party={party} other={other} repos={repos} defaultMarginRatio={gmra?.elections.defaultMarginRatio ?? "1.02"} busy={busy} run={run} />}
       {repoMargin && <RepoMarginCard party={party} other={other} margin={repoMargin} busy={busy} run={run} />}
       {triparty && <TripartyTermsCard party={party} triparty={triparty} busy={busy} run={run} />}
+      {ccp && (
+        <CcpCard
+          party={party}
+          ccp={ccp}
+          clearings={clearings}
+          clearable={(repos?.repos ?? [])
+            .filter((r) => r.role === "seller" && r.state === "affirmed" && !r.buySellBack && !clearings.some((c) => c.repoId === r.repoId && c.state !== "refused"))
+            .map((r) => ({ repoId: r.repoId, security: r.security, purchasePrice: r.purchasePrice }))}
+          busy={busy}
+          run={run}
+        />
+      )}
       {repoDefault && <RepoDefaultCard party={party} other={other} d={repoDefault} busy={busy} run={run} />}
 
       <ReconciliationCard party={party} other={other} latest={recons[0] ?? null} busy={busy} run={run} />

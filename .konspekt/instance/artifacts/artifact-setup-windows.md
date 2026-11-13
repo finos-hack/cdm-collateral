@@ -2,7 +2,7 @@
 id: artifact-setup-windows
 name: Windows development machine setup
 kind: document
-location: docs/setup-windows.md
+location: docs/setup/setup-windows.md
 review: accepted
 provenance:
   conversationId: architecture-design

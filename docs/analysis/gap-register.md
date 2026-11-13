@@ -6,10 +6,10 @@ comes from; the evidence (files, line numbers, scores) stays in those documents.
 in this repository only** (`wp-adr-cdm-local-extensions`); nothing is proposed to FINOS.
 
 Sources:
-[findings](../analysis/findings.md) (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3) ·
-[defects](../analysis/defects.md) (D1–D16) ·
-[CSA coverage matrix](../analysis/cdm-csa-coverage-matrix.md) (rows 1–25) ·
-[other agreements matrix](../analysis/cdm-other-agreements-coverage-matrix.md) (R1–R25, S1–S27, T1–T16, C1–C18) ·
+[findings](findings.md) (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3) ·
+[defects](defects.md) (D1–D16) ·
+[CSA coverage matrix](cdm-csa-coverage-matrix.md) (rows 1–25) ·
+[other agreements matrix](cdm-other-agreements-coverage-matrix.md) (R1–R25, S1–S27, T1–T16, C1–C18) ·
 [blockchain applicability](../architecture/blockchain-applicability.md) §4 (B1–B5).
 CDM release analysed: 7.6.0 (commit f685b4b). **Base release switched to 7.7.0 on 2026-10-17**: 7.7.0 changes six files, all
 interest-rate reset instruction composition, so every gap here holds for 7.7.0 unchanged.
@@ -18,7 +18,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 
 - **CDM score:** the lowest coverage score among the capability rows behind the gap (0 absent, 1 enum only, 2 data
   types, 3 functions, 4 events, 5 samples or tests).
-- **Needed by:** the console scenarios (`console/src/scenarios/scenarios.ts`) or planned grid columns that rely on
+- **Needed by:** the console scenarios (`../../console/src/scenarios/scenarios.ts`) or planned grid columns that rely on
   the gap being closed. A scenario that "needs" a gap currently does that step in the prototype's own rule engine,
   outside CDM.
 - **Priority:** **P1** needed by a built scenario (ISDA IM and VM rows); **P2** needed by a planned grid cell;
@@ -91,7 +91,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | ID | Gap | Sources | CDM score | Needed by | Priority | Closure kind |
 |---|---|---|---|---|---|---|
 | G26 | No mapping to ISO 20022 colr or FpML collateral messages; FpML collateral code lists bundled but unused | S1, TX2, B3 | 0 | off-chain CDM documents between services (`service-to-payload-store`, ADR `wp-adr-cdm-payload-carrier`); business case S8. **Deferred** (`nw-defer-message-standard-mapping`) | P2 | mapping |
-| G27 | Four asset taxonomies without a mapping; three representation styles mixed | TX4, TX1 | – | eligibility schedules across taxonomies | P3 | mapping (start: `docs/analysis/collateral-asset-taxonomy-mapping.md`) |
+| G27 | Four asset taxonomies without a mapping; three representation styles mixed | TX4, TX1 | – | eligibility schedules across taxonomies | P3 | mapping (start: `collateral-asset-taxonomy-mapping.md`) |
 | G28 | Financial Collateral Directive and SFTR not referenced; Collateral Asset Definitions at the 2003 edition; FISN, ELF, IBAN absent | S3, S4, S2 | – | none | P3 | enums, references |
 
 ### Quality and implementation
@@ -120,11 +120,11 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 | Toolchain | G39 | Closed: CDM and the extension on Java (`wp-adr-java-cdm-stack`) |
 
 The P1 set matches the steps the console's rule engine performs today outside CDM
-(`console/src/domain/engine.ts`), so closing it lets the engine's rules be expressed in CDM.
+(`../../console/src/domain/engine.ts`), so closing it lets the engine's rules be expressed in CDM.
 
 ## Closure status
 
-Local extension in [`../../cdm-ext/`](../../cdm-ext/) (`task-cdm-gap-closure`).
+Local extension in [`../../cdm-ext`](../../cdm-ext/) (`task-cdm-gap-closure`).
 
 | Gap | Status | What exists |
 |---|---|---|

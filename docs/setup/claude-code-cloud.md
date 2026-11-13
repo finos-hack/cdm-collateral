@@ -65,9 +65,9 @@ bash scripts/live-e2e.sh down
 ```
 
 The shell user is root. `besu/start-network.sh` runs the genesis step with `--entrypoint /opt/besu/bin/besu`, so a
-first `up` works as root (`wp-dec-besu-genesis-entrypoint`, `docs/runbook-e2e.md` section 4).
+first `up` works as root (`wp-dec-besu-genesis-entrypoint`, `runbook-e2e.md` section 4).
 
-The VM has 2 cores: a full `check` took 13.9 to 15.2 min in the claude.ai workspace (`docs/runbook-e2e.md`
+The VM has 2 cores: a full `check` took 13.9 to 15.2 min in the claude.ai workspace (`runbook-e2e.md`
 section 10).
 
 ## Verification status

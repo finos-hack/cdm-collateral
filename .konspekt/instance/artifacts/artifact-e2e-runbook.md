@@ -2,7 +2,7 @@
 id: artifact-e2e-runbook
 name: End-to-end stack runbook
 kind: document
-location: docs/runbook-e2e.md
+location: docs/setup/runbook-e2e.md
 review: accepted
 provenance:
   conversationId: e2e-runbook
@@ -15,7 +15,7 @@ updatedAt: 2026-10-26T11:56:19Z
 ```
 # End-to-end stack runbook
 
-Operator runbook for the live end-to-end stack (`docs/runbook-e2e.md`): component and port table with health checks;
+Operator runbook for the live end-to-end stack (`../../../docs/setup/runbook-e2e.md`): component and port table with health checks;
 prerequisites; one-time build (Node dependencies, `cdm-ext` install into `~/.m2`, service jar); start order (Besu
 network, contract deploy, optional `npm run cycle` chain/gateway check, `orchestrate.mjs` for store, gateways,
 services and console); manual and Playwright flow driving; per-component log locations and error formats; on-disk

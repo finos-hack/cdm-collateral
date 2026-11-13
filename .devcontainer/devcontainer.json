@@ -1,6 +1,6 @@
 {
   // Cloud or local development environment for the CDM collateral prototype.
-  // GitHub Codespaces: docs/setup-codespaces.md. On creation: the one-time build (scripts/live-e2e.sh build). On every
+  // GitHub Codespaces: docs/setup/setup-codespaces.md. On creation: the one-time build (scripts/live-e2e.sh build). On every
   // start: the full live stack (scripts/live-e2e.sh up) — Besu, contracts if not deployed, store, gateways, services
   // and the console dev server on 5173 (task-devcontainer-stack-startup).
   "name": "cdm-collateral",

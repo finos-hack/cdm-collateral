@@ -1,4 +1,4 @@
-namespace cdmx.collateral.event : <"Local CDM extension: margin call lifecycle events with qualification and transfers (gaps G1, G4 in docs/cdm-development/gap-register.md). Shaped like CDM 7.7.0's BusinessEvent (instruction, before and after state, eventQualifier, transfers); CDM's BusinessEvent records trade states (TradeState) and a margin call has none, and EventIntentEnum has no collateral value. Not part of FINOS CDM.">
+namespace cdmx.collateral.event : <"Local CDM extension: margin call lifecycle events with qualification and transfers (gaps G1, G4 in docs/analysis/gap-register.md). Shaped like CDM 7.7.0's BusinessEvent (instruction, before and after state, eventQualifier, transfers); CDM's BusinessEvent records trade states (TradeState) and a margin call has none, and EventIntentEnum has no collateral value. Not part of FINOS CDM.">
 version "${project.version}"
 
 import cdm.event.common.*

@@ -1,0 +1,109 @@
+namespace cdmx.collateral.ccp : <"Local CDM extension: a clearing member's default at the CCP, the close-out of its cleared repos and the default waterfall (gap G23, task-ccp-default, wp-adr-ccp-default). CDM 7.7.0 has no member default, default management, waterfall or default fund; each cleared repo leg ends with CDM's termination event, valued as in a GMRA close-out (cdm-ext GmraDefaultTransactionValue).">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.party.*
+import cdmx.collateral.repo.*
+
+type CcpDefaultTransaction: <"One cleared repo of the defaulter in the close-out. Both legs end with CDM's termination event on the close-out date and are valued at the same Repurchase Price and Default Market Value, since they have the same economic terms. The residual, from the seller's side, is what is left after the variation margin paid; the CCP pays it to the survivor, or the survivor owes it.">
+    repoId string (1..1)
+    purchased boolean (1..1) <"The purchase has settled. An unpurchased repo closes with nothing to pay.">
+    defaulterLeg GmraDefaultTransactionValue (1..1) <"The defaulter's leg with the CCP, terminated and valued.">
+    survivorLeg GmraDefaultTransactionValue (1..1) <"The surviving member's leg with the CCP, terminated and valued.">
+    survivor string (1..1)
+    variationMarginPaid number (1..1) <"The variation margin paid on the repo, from the seller's side.">
+    residual number (1..1) <"From the seller's side: the Repurchase Price less the Default Market Value less the variation margin paid; zero when unpurchased.">
+    survivorAmount number (1..1) <"What the CCP pays the survivor: the residual when the survivor is the buyer, its negative when the survivor is the seller. Negative when the survivor owes.">
+
+    condition SameValues: <"Both legs carry the same values.">
+        defaulterLeg -> repurchasePrice = survivorLeg -> repurchasePrice
+            and defaulterLeg -> defaultMarketValue = survivorLeg -> defaultMarketValue
+
+    condition SurvivorOnItsLeg: <"The survivor is a party to its leg and not to the defaulter's.">
+        (survivorLeg -> seller = survivor or survivorLeg -> buyer = survivor)
+            and defaulterLeg -> seller <> survivor and defaulterLeg -> buyer <> survivor
+
+    condition Residual:
+        if purchased = True
+        then residual = survivorLeg -> repurchasePrice - survivorLeg -> defaultMarketValue - variationMarginPaid
+        else residual = 0 and variationMarginPaid = 0
+
+    condition SurvivorAmount:
+        if survivorLeg -> buyer = survivor
+        then survivorAmount = residual
+        else survivorAmount = 0 - residual
+
+type CcpWaterfall: <"How the CCP covers the loss on a member's default, in the rulebook's order: the defaulter's initial margin, the defaulter's default fund contribution, the CCP's own capital, then the other members' contributions. What is left of the defaulter's margin and contribution, and its gain when the loss is negative, is returned to it.">
+    loss number (1..1) <"The survivor amounts summed: positive when the CCP pays the survivors more than they owe.">
+    defaulterInitialMargin number (1..1) <"The initial margin held from the defaulter.">
+    defaulterContribution number (1..1) <"The defaulter's default fund contribution.">
+    ccpCapital number (1..1) <"The CCP's capital in the waterfall.">
+    membersContribution number (1..1) <"The other paid members' contributions.">
+    fromDefaulterInitialMargin number (1..1)
+    fromDefaulterContribution number (1..1)
+    fromCcpCapital number (1..1)
+    fromMembersContribution number (1..1)
+    returnedToDefaulter number (1..1)
+
+    condition InOrder: <"Each layer covers what the layers before it leave, up to what it has.">
+        fromDefaulterInitialMargin = CcpWaterfallLayer(loss, 0, defaulterInitialMargin)
+            and fromDefaulterContribution = CcpWaterfallLayer(loss, defaulterInitialMargin, defaulterContribution)
+            and fromCcpCapital = CcpWaterfallLayer(loss, defaulterInitialMargin + defaulterContribution, ccpCapital)
+            and fromMembersContribution = CcpWaterfallLayer(loss, defaulterInitialMargin + defaulterContribution + ccpCapital, membersContribution)
+
+    condition Covered: <"The layers cover the whole loss.">
+        if loss > 0
+        then fromDefaulterInitialMargin + fromDefaulterContribution + fromCcpCapital + fromMembersContribution = loss
+
+    condition Returned:
+        if loss < 0
+        then returnedToDefaulter = defaulterInitialMargin + defaulterContribution - loss
+        else returnedToDefaulter = defaulterInitialMargin - fromDefaulterInitialMargin + defaulterContribution - fromDefaulterContribution
+
+type CcpDefaultManagement: <"The CCP's management of a clearing member's default (wp-adr-ccp-default): the oracle's default record of the member, the close-out of each of its cleared repos at the oracle's prices, and the waterfall that covers the loss. The defaulter is no longer a paid member afterwards.">
+    [rootType]
+    rulebookHash string (1..1) <"The keccak-256 hash of the cdm-ext CcpRulebook.">
+    ccp PartyRole (1..1) <"The CCP, in CDM's ClearingOrganization role.">
+    defaulter string (1..1)
+    eventOfDefaultDate date (1..1) <"The business date on which the CCP's service observed the oracle's default record.">
+    closeOutDate date (1..1) <"The date the defaulter's cleared repos are terminated and valued.">
+    transaction CcpDefaultTransaction (0..*)
+    waterfall CcpWaterfall (1..1)
+
+    condition CcpRole:
+        ccp -> role = PartyRoleEnum -> ClearingOrganization
+
+    condition DefaulterOnEachRepo: <"The defaulter is a party to each defaulter leg.">
+        CcpTransactionsWithoutTheDefaulter(transaction, defaulter) = 0
+
+    condition Loss: <"The loss is the survivor amounts summed.">
+        waterfall -> loss = (if transaction exists then (transaction extract item -> survivorAmount then sum) else 0)
+
+    condition NotBeforeTheDefault:
+        closeOutDate >= eventOfDefaultDate
+
+func CcpWaterfallLayer: <"What one layer of the waterfall covers: what the loss leaves after the layers before it, up to what the layer has; zero when the loss is not positive.">
+    inputs:
+        loss number (1..1)
+        before number (1..1) <"What the layers before this one have.">
+        available number (1..1) <"What this layer has.">
+    output:
+        applied number (1..1)
+
+    alias left:
+        if loss > before then loss - before else 0
+
+    condition NotNegative:
+        before >= 0 and available >= 0
+
+    set applied:
+        Min(left, available)
+
+func CcpTransactionsWithoutTheDefaulter: <"The number of transactions whose defaulter leg does not name the defaulter.">
+    inputs:
+        transaction CcpDefaultTransaction (0..*)
+        defaulter string (1..1)
+    output:
+        result int (1..1)
+    set result:
+        transaction filter [item -> defaulterLeg -> seller <> defaulter and item -> defaulterLeg -> buyer <> defaulter] then count

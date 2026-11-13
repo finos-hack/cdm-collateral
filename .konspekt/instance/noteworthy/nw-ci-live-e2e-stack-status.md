@@ -26,7 +26,7 @@ Playwright live specs stay for local runs.
 
 ## Runbook sections 1–4 verified on native Windows (2026-10-29, Windows 11 + Docker Desktop, JDK 25, Node 24)
 
-Ran [[artifact-e2e-runbook]] (`docs/runbook-e2e.md`) against the prebuilt artifacts on disk (`besu/networkFiles`,
+Ran [[artifact-e2e-runbook]] (`../../../docs/setup/runbook-e2e.md`) against the prebuilt artifacts on disk (`besu/networkFiles`,
 `contracts/deployments/besu.json` from the Oct 24 deploy, `services/collateral/target/collateral-service.jar`). Started
 the Docker engine (Docker Desktop was stopped); the four Besu containers resumed with the persisted chain (peers `0x3`,
 four validators, 2 s blocks). Skipped the contract redeploy because the chain persisted and `besu.json` is still valid

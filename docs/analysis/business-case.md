@@ -29,7 +29,7 @@ its full statement, evidence and line references are kept.
 | O | O1–O3, O8–O12 | A finding for the other agreement families (repo, securities lending, triparty, CCP margin) | [`findings.md`](findings.md); detail in [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) |
 | X | X1–X3 | A finding found while building the local extension against CDM 7.7.0 | [`findings.md`](findings.md) |
 | B | B1–B5 | A tokenization or on-chain consequence | [`../architecture/blockchain-applicability.md`](../architecture/blockchain-applicability.md) (§4) |
-| G | G1–G39 | A gap in the gap register | [`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) |
+| G | G1–G39 | A gap in the gap register | [`gap-register.md`](gap-register.md) |
 | D | D9–D15 | A CDM defect | [`defects.md`](defects.md) |
 
 Three prefixes are defined in this document and nowhere else: **V1–V7** are the value claims (§3), **C1–C2** are the
@@ -104,7 +104,7 @@ The project is complete when both goals below are met. They define 100% coverage
 goals apply to, and §6 states the first milestone toward them.
 
 **C1 — Close every known in-scope gap.** Every gap that
-[`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) classifies P1, P2 or P3 is closed by a
+[`gap-register.md`](gap-register.md) classifies P1, P2 or P3 is closed by a
 local extension in `cdm-ext/` (`wp-adr-cdm-local-extensions`), with tests (G29). A gap whose register closure kind is
 "none locally" or "none for now" (G32, G33) counts as closed when it is documented as a note in the register. The register holds 39 gaps: 15 P1, 12 P2, 9 P3 and 3
 classified out of scope. Its closure-status table records G1, G2, G4, G6 and G39 as closed (G1 and G4 proposed, for

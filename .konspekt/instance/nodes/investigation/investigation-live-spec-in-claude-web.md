@@ -19,7 +19,7 @@ The project owner asked whether the local test suites (Besu, Java, Node) run in 
 (2026-11-08), then asked to bind the work to an investigation of running the live spec tests there.
 
 Scope:
-- The one-time build of `docs/runbook-e2e.md` section 3 (`bash scripts/live-e2e.sh build`).
+- The one-time build of `../../../../docs/setup/runbook-e2e.md` section 3 (`bash scripts/live-e2e.sh build`).
 - The unit suites: `contracts` (`hardhat test`), `console` (`vitest run`), `cdm-ext`, `services/collateral` and
   `services/oracle` (`mvn test`).
 - The live stack (`bash scripts/live-e2e.sh up`) and the Playwright live specs (`bash scripts/live-e2e.sh check`).
@@ -55,7 +55,7 @@ JDK 21.0.12, Maven 3.9.11, Node 22.23.4. Outbound HTTPS goes through an allowlis
 6. Live run at commit `e276f39`: `bash scripts/live-e2e.sh up` exit 0 in 96 s (seven health checks and console HTTP
    200); `CHROMIUM_PATH=… bash scripts/live-e2e.sh check` exit 0 in 838 s, 27 passed, 0 failed (13.9 min). Load
    average reached 5.97 on 2 cores; no timeout observed.
-7. Runbook. `docs/runbook-e2e.md` section 4 "In a claude.ai web session" records findings 1 to 5, and section 10
+7. Runbook. `../../../../docs/setup/runbook-e2e.md` section 4 "In a claude.ai web session" records findings 1 to 5, and section 10
    records the run of finding 6 (commit `8cef351`). The specs added on `main` after `e276f39` (PR #52) were not run
    in this workspace.
 8. Fix for finding 3: the project owner chose option (a), recorded as [[wp-dec-besu-genesis-entrypoint]].

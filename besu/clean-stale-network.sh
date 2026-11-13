@@ -16,7 +16,7 @@
 set -euo pipefail
 
 GATEWAY=172.28.0.1/24
-NODES=(besu-mkt besu-bank-a besu-bank-b besu-bank-c)
+NODES=(besu-mkt besu-bank-a besu-bank-b besu-bank-c besu-ccp)
 
 [ "$(uname -s)" = Linux ] || exit 0
 command -v ip >/dev/null 2>&1 && command -v iptables-save >/dev/null 2>&1 || exit 0

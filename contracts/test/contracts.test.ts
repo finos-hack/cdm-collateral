@@ -1,7 +1,7 @@
 import { describe, it, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { network } from "hardhat";
-import { keccak256, toHex, zeroHash, zeroAddress, getAddress } from "viem";
+import { keccak256, toHex, zeroHash, zeroAddress, getAddress, encodeAbiParameters } from "viem";
 
 // Contract unit + property tests (architecture/testing.md, Smart contracts — unit / property). Runs on the in-memory
 // EDR network. Enum numeric values follow CollateralTypes.sol: CallKind {IM:0, VM:1, Return:2};
@@ -2190,6 +2190,396 @@ describe("CDM collateral contracts", async () => {
           assert.ok(rs[1].blockNumber > rs[0].blockNumber);
           await tri.write.terminateTerms([id], { account: bankB.account });
           await assert.rejects(tri.write.recordReport([id, H("report3")], { account: agent.account })); // not in effect
+        });
+      });
+    });
+  });
+
+  describe("CCP membership: rulebook, capital and default fund (task-ccp-membership)", () => {
+    const R = keccak256(toHex("ccp-rulebook"));
+    let ccp: any, ccpAddr: `0x${string}`, tUSD: any, clearing: any, repo: any;
+    beforeEach(async () => {
+      const wallets = await viem.getWalletClients();
+      ccp = wallets[4];
+      ccpAddr = getAddress(ccp.account.address);
+      tUSD = await viem.deployContract("TokenizedCollateral", ["USD deposit token", "tUSD", "", "", ""]);
+      repo = await viem.deployContract("RepoSettlement", [oracle.address]);
+      clearing = await viem.deployContract("CcpClearing", [repo.address, oracle.address]);
+      await repo.write.setClearingHouse([clearing.address]);
+      await tUSD.write.mint([ccpAddr, 250n]);
+      await tUSD.write.mint([aAddr, 500n]);
+      await tUSD.write.mint([bAddr, 500n]);
+    });
+
+    async function publish() {
+      await tUSD.write.approve([clearing.address, 250n], { account: ccp.account });
+      await clearing.write.publishRulebook([R, tUSD.address, [aAddr, bAddr], [500n, 500n], 250n], { account: ccp.account });
+    }
+    async function join(w: any) {
+      await tUSD.write.approve([clearing.address, 500n], { account: w.account });
+      await clearing.write.join([R], { account: w.account });
+    }
+
+    it("takes the CCP's capital at publish and puts the rulebook in effect once both members have paid", async () => {
+      await publish();
+      let r = await clearing.read.rulebook([R]);
+      assert.equal(r.state, 1); // Published
+      assert.equal(r.capital, 250n);
+      assert.equal(await clearing.read.rulebookOf([ccpAddr]), R);
+      assert.equal(await tUSD.read.balanceOf([clearing.address]), 250n);
+      await join(bankA);
+      assert.equal((await clearing.read.rulebook([R])).state, 1);
+      await join(bankB);
+      r = await clearing.read.rulebook([R]);
+      assert.equal(r.state, 2); // Effective
+      assert.equal(r.fund, 1000n);
+      assert.equal(await tUSD.read.balanceOf([clearing.address]), 1250n);
+      const [member, share, hasPaid] = await clearing.read.members([R]);
+      assert.deepEqual(member, [aAddr, bAddr]);
+      assert.deepEqual(share, [500n, 500n]);
+      assert.deepEqual(hasPaid, [true, true]);
+    });
+
+    it("returns a leaving member's share, keeps the rulebook in effect and lets the member rejoin", async () => {
+      await publish();
+      await join(bankA);
+      await join(bankB);
+      await clearing.write.leave([R], { account: bankB.account });
+      assert.equal(await tUSD.read.balanceOf([bAddr]), 500n);
+      const r = await clearing.read.rulebook([R]);
+      assert.equal(r.state, 2);
+      assert.equal(r.fund, 500n);
+      await assert.rejects(clearing.write.leave([R], { account: bankB.account })); // NotPaid
+      await join(bankB);
+      assert.equal((await clearing.read.rulebook([R])).fund, 1000n);
+    });
+
+    it("rejects a second rulebook, a bad rulebook, an unnamed member, a second payment and an unknown rulebook", async () => {
+      const [, , , outsider] = await viem.getWalletClients();
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr], [500n, 500n], 250n], { account: ccp.account }));
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr, ccpAddr], [500n, 500n], 250n], { account: ccp.account }));
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr, aAddr], [500n, 500n], 250n], { account: ccp.account }));
+      await assert.rejects(clearing.write.publishRulebook([R, tUSD.address, [aAddr, bAddr], [500n, 500n], 0n], { account: ccp.account }));
+      await publish();
+      await assert.rejects(clearing.write.publishRulebook([keccak256(toHex("other")), tUSD.address, [aAddr], [1n], 1n], { account: ccp.account }));
+      await assert.rejects(clearing.write.join([R], { account: outsider.account })); // NotAMember
+      await join(bankA);
+      await assert.rejects(clearing.write.join([R], { account: bankA.account })); // AlreadyPaid
+      await assert.rejects(clearing.write.join([zeroHash], { account: bankA.account })); // UnknownRulebook
+      await assert.rejects(clearing.write.leave([zeroHash], { account: bankA.account }));
+    });
+
+    describe("clearing by novation to the CCP (task-ccp-clearing)", () => {
+      const REPO = keccak256(toHex("repo-1"));
+      const N = keccak256(toHex("novation"));
+      const PURCHASE = 0;
+      beforeEach(async () => {
+        await publish();
+        await join(bankA);
+        await join(bankB);
+        await tUSD.write.mint([aAddr, 1000n]); // the seller pays the Price Differential out of its own cash
+        await tUSD.write.mint([bAddr, 10000n]);
+        await repo.write.book([REPO, bAddr, tUST.address, 103n, tUSD.address, 10000n, 10009n, keccak256(toHex("trade"))], { account: bankA.account });
+      });
+      const affirmRepo = () => repo.write.affirm([REPO, keccak256(toHex("trade"))], { account: bankB.account });
+      const submitted = async () => {
+        await affirmRepo();
+        await clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account });
+        await clearing.write.affirmClearing([REPO, N], { account: bankB.account });
+      };
+
+      it("novates the affirmed repo on acceptance, settles the purchase and the repurchase through the CCP, and blocks leaving meanwhile", async () => {
+        await assert.rejects(clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account })); // RepoNotAffirmed
+        await submitted();
+        await assert.rejects(clearing.write.acceptClearing([REPO], { account: bankA.account })); // NotTheCcp
+        await clearing.write.acceptClearing([REPO], { account: ccp.account });
+        assert.equal((await repo.read.getRepo([REPO])).state, 6); // Novated
+        assert.equal(await repo.read.novationHash([REPO]), N);
+        await assert.rejects(repo.write.instruct([REPO, PURCHASE, keccak256(toHex("p"))], { account: bankA.account })); // bilateral purchase closed
+        assert.equal(await clearing.read.clearedCount([R, aAddr]), 1n);
+        await assert.rejects(clearing.write.leave([R], { account: bankA.account })); // StillClearing
+
+        const usdA = await tUSD.read.balanceOf([aAddr]), usdB = await tUSD.read.balanceOf([bAddr]);
+        await tUST.write.approve([clearing.address, 103n], { account: bankA.account });
+        await tUSD.write.approve([clearing.address, 10000n], { account: bankB.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("seller-leg-purchase"))], { account: bankA.account });
+        await assert.rejects(clearing.write.instructCleared([REPO, keccak256(toHex("again"))], { account: bankA.account })); // AlreadyInstructed
+        await clearing.write.instructCleared([REPO, keccak256(toHex("buyer-leg-purchase"))], { account: bankB.account });
+        let c = await clearing.read.clearing([REPO]);
+        assert.equal(c.state, 5); // Purchased
+        assert.equal(await tUST.read.balanceOf([bAddr]), 103n);
+        assert.equal(await tUSD.read.balanceOf([aAddr]), usdA + 10000n);
+        assert.equal(await tUSD.read.balanceOf([bAddr]), usdB - 10000n);
+        assert.equal(await tUSD.read.balanceOf([ccpAddr]), 0n); // the CCP nets to zero
+
+        await tUST.write.approve([clearing.address, 103n], { account: bankB.account });
+        await tUSD.write.approve([clearing.address, 10009n], { account: bankA.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("buyer-leg-repurchase"))], { account: bankB.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("seller-leg-repurchase"))], { account: bankA.account });
+        c = await clearing.read.clearing([REPO]);
+        assert.equal(c.state, 6); // Repurchased
+        assert.equal(await tUST.read.balanceOf([aAddr]), 1000n);
+        assert.equal(await tUSD.read.balanceOf([bAddr]), usdB + 9n);
+        assert.equal(await clearing.read.clearedCount([R, bAddr]), 0n);
+        await clearing.write.leave([R], { account: bankA.account });
+        assert.deepEqual(await clearing.read.clearingsOfParty([ccpAddr]), [REPO]);
+      });
+
+      it("refuses another submitter, a wrong hash, an unpaid member and the bilateral novate path; a refused repo stays bilateral and may be submitted again", async () => {
+        await affirmRepo();
+        await assert.rejects(clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankB.account })); // NotTheSeller
+        await assert.rejects(repo.write.novate([REPO, N], { account: bankA.account })); // NotTheClearingHouse
+        await assert.rejects(repo.write.setClearingHouse([bAddr])); // ClearingHouseSet
+        await clearing.write.leave([R], { account: bankB.account });
+        await assert.rejects(clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account })); // MemberNotPaid
+        await join(bankB);
+        await clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account });
+        await assert.rejects(clearing.write.affirmClearing([REPO, keccak256(toHex("other"))], { account: bankB.account })); // HashMismatch
+        await clearing.write.refuseClearing([REPO, keccak256(toHex("reason"))], { account: ccp.account });
+        assert.equal((await clearing.read.clearing([REPO])).state, 4); // Refused
+        assert.equal((await repo.read.getRepo([REPO])).state, 2); // still Affirmed, bilateral
+        await clearing.write.submitClearing([REPO, ccpAddr, N], { account: bankA.account });
+        await clearing.write.affirmClearing([REPO, N], { account: bankB.account });
+        await clearing.write.acceptClearing([REPO], { account: ccp.account });
+        assert.equal((await clearing.read.clearing([REPO])).state, 3); // Cleared
+      });
+
+      // The repo cleared and its purchase settled: A sold 103 tUST to B through the CCP for 10,000 tUSD.
+      const purchased = async () => {
+        await submitted();
+        await clearing.write.acceptClearing([REPO], { account: ccp.account });
+        await tUST.write.approve([clearing.address, 103n], { account: bankA.account });
+        await tUSD.write.approve([clearing.address, 10000n], { account: bankB.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("seller-leg-purchase"))], { account: bankA.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("buyer-leg-purchase"))], { account: bankB.account });
+        await tUSD.write.mint([bAddr, 5000n]); // B's cash for margin
+      };
+      const repurchased = async (seller: any, buyer: any) => {
+        await tUST.write.approve([clearing.address, 103n], { account: buyer.account });
+        await tUSD.write.approve([clearing.address, 10009n], { account: seller.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("buyer-leg-repurchase"))], { account: buyer.account });
+        await clearing.write.instructCleared([REPO, keccak256(toHex("seller-leg-repurchase"))], { account: seller.account });
+      };
+      const SA = keccak256(toHex("statement-a")), SB = keccak256(toHex("statement-b"));
+      const roundId = (date: bigint, n: bigint) => keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint256" }, { type: "uint256" }], [ccpAddr, date, n]));
+      const pay = async (w: any, id: `0x${string}`, amount: bigint) => {
+        await tUSD.write.approve([clearing.address, amount], { account: w.account });
+        await clearing.write.payMargin([id], { account: w.account });
+      };
+
+      describe("margin (task-ccp-margin)", () => {
+        it("passes the variation margin from one member to the other, holds the initial margin, and returns both after the repurchase", async () => {
+          await purchased();
+          const usdA = await tUSD.read.balanceOf([aAddr]), usdB = await tUSD.read.balanceOf([bAddr]);
+          // Day 1: the securities fell, so A, the seller, pays 50 of variation margin to B; each posts 500 of initial margin.
+          await clearing.write.issueMargin([20261112n, [REPO], [50n], [aAddr, bAddr], [500n, 500n], [SA, SB]], { account: ccp.account });
+          const R1 = roundId(20261112n, 0n);
+          assert.equal(await clearing.read.openRound([ccpAddr]), R1);
+          const [member, vm, im, , hasPaid] = await clearing.read.roundMembers([R1]);
+          assert.deepEqual(member, [aAddr, bAddr]);
+          assert.deepEqual(vm, [50n, -50n]);
+          assert.deepEqual(im, [500n, 500n]);
+          assert.deepEqual(hasPaid, [false, false]);
+          await assert.rejects(clearing.write.issueMargin([20261113n, [], [], [aAddr], [0n], [SA]], { account: ccp.account })); // RoundOpen
+          await pay(bankA, R1, 550n);
+          await assert.rejects(clearing.write.payMargin([R1], { account: bankA.account })); // NothingToPay: paid
+          assert.equal((await clearing.read.marginRound([R1])).state, 1); // Issued
+          await pay(bankB, R1, 450n);
+          assert.equal((await clearing.read.marginRound([R1])).state, 2); // Settled
+          assert.equal(await clearing.read.openRound([ccpAddr]), zeroHash);
+          assert.equal(await clearing.read.vmBalance([REPO]), 50n);
+          assert.equal(await clearing.read.imHeld([R, aAddr]), 500n);
+          assert.equal(await tUSD.read.balanceOf([aAddr]), usdA - 550n);
+          assert.equal(await tUSD.read.balanceOf([bAddr]), usdB - 450n);
+
+          // The repurchase; the next round returns the variation margin and the initial margin, and settles at once.
+          await repurchased(bankA, bankB);
+          await assert.rejects(clearing.write.leave([R], { account: bankB.account })); // MarginHeld
+          await assert.rejects(clearing.write.issueMargin([20261119n, [REPO], [-40n], [aAddr, bAddr], [-500n, -500n], [SA, SB]], { account: ccp.account })); // must return the balance
+          const a = await tUSD.read.balanceOf([aAddr]), b = await tUSD.read.balanceOf([bAddr]);
+          await clearing.write.issueMargin([20261119n, [REPO], [-50n], [aAddr, bAddr], [-500n, -500n], [SA, SB]], { account: ccp.account });
+          assert.equal((await clearing.read.marginRound([roundId(20261119n, 1n)])).state, 2);
+          assert.equal(await tUSD.read.balanceOf([aAddr]), a + 550n);
+          assert.equal(await tUSD.read.balanceOf([bAddr]), b + 450n);
+          assert.equal(await clearing.read.vmBalance([REPO]), 0n);
+          assert.equal(await clearing.read.imHeld([R, bAddr]), 0n);
+          await clearing.write.leave([R], { account: bankB.account });
+          assert.deepEqual(await clearing.read.marginRoundsOf([ccpAddr]), [R1, roundId(20261119n, 1n)]);
+        });
+
+        it("rejects a round from a non-CCP, an unpaid member, a repo whose member is missing and a return above the margin held", async () => {
+          await purchased();
+          await assert.rejects(clearing.write.issueMargin([1n, [REPO], [1n], [aAddr, bAddr], [0n, 0n], [SA, SB]], { account: bankA.account })); // no rulebook
+          await assert.rejects(clearing.write.issueMargin([1n, [REPO], [1n], [aAddr], [0n], [SA]], { account: ccp.account })); // B missing
+          await assert.rejects(clearing.write.issueMargin([1n, [], [], [aAddr], [-1n], [SA]], { account: ccp.account })); // more than held
+          await assert.rejects(clearing.write.issueMargin([1n, [], [], [aAddr], [1n], [zeroHash]], { account: ccp.account })); // no statement
+          await assert.rejects(clearing.write.issueMargin([1n, [REPO, REPO], [1n, 1n], [aAddr, bAddr], [0n, 0n], [SA, SB]], { account: ccp.account })); // twice
+        });
+
+        it("cancels an open round when a member in it defaults, refunding the members that paid", async () => {
+          await purchased();
+          await clearing.write.issueMargin([20261112n, [REPO], [50n], [aAddr, bAddr], [500n, 500n], [SA, SB]], { account: ccp.account });
+          const R1 = roundId(20261112n, 0n);
+          await assert.rejects(clearing.write.cancelMarginRound([R1], { account: ccp.account })); // NotInDefault
+          const usdB = await tUSD.read.balanceOf([bAddr]);
+          await pay(bankB, R1, 450n);
+          await oracle.write.setDefault([aAddr, true], { account: operator.account });
+          await clearing.write.cancelMarginRound([R1], { account: ccp.account });
+          assert.equal((await clearing.read.marginRound([R1])).state, 3); // Cancelled
+          assert.equal(await tUSD.read.balanceOf([bAddr]), usdB);
+          assert.equal(await clearing.read.imHeld([R, bAddr]), 0n);
+        });
+      });
+
+      describe("member default and the waterfall (task-ccp-default)", () => {
+        const H = keccak256(toHex("close-out"));
+        const marginOnce = async () => {
+          await clearing.write.issueMargin([20261112n, [REPO], [50n], [aAddr, bAddr], [500n, 500n], [SA, SB]], { account: ccp.account });
+          await pay(bankA, roundId(20261112n, 0n), 550n);
+          await pay(bankB, roundId(20261112n, 0n), 450n);
+        };
+
+        it("closes out the defaulter's repo and covers the loss from its IM, its contribution, the CCP's capital and then the other member", async () => {
+          await purchased();
+          await marginOnce();
+          await assert.rejects(clearing.write.closeOutDefault([aAddr, H, [REPO], [1600n]], { account: ccp.account })); // NotInDefault
+          await oracle.write.setDefault([aAddr, true], { account: operator.account });
+          await assert.rejects(clearing.write.closeOutDefault([aAddr, H, [REPO], [1600n]], { account: bankB.account })); // not the CCP
+          const usdA = await tUSD.read.balanceOf([aAddr]), usdB = await tUSD.read.balanceOf([bAddr]);
+          // A, the seller, owes 1,600 more than the variation margin it paid: B, the buyer, is paid 1,600.
+          await clearing.write.closeOutDefault([aAddr, H, [REPO], [1600n]], { account: ccp.account });
+          const [d, ids] = await clearing.read.defaultRecord([H]);
+          assert.deepEqual(ids, [REPO]);
+          assert.equal(d.loss, 1600n);
+          assert.equal(d.fromInitialMargin, 500n);
+          assert.equal(d.fromDefaulterFund, 500n);
+          assert.equal(d.fromCapital, 250n);
+          assert.equal(d.fromMembersFund, 350n);
+          assert.equal(d.returned, 0n);
+          assert.equal((await clearing.read.clearing([REPO])).state, 7); // ClosedOut
+          assert.equal(await tUSD.read.balanceOf([bAddr]), usdB + 1600n);
+          assert.equal(await tUSD.read.balanceOf([aAddr]), usdA);
+          const r = await clearing.read.rulebook([R]);
+          assert.equal(r.capital, 0n);
+          assert.equal(r.fund, 150n);
+          assert.equal(await clearing.read.contributed([R, bAddr]), 150n);
+          assert.equal(await clearing.read.clearedCount([R, bAddr]), 0n);
+          const [, , hasPaid] = await clearing.read.members([R]);
+          assert.deepEqual(hasPaid, [false, true]);
+          await assert.rejects(clearing.write.closeOutDefault([aAddr, keccak256(toHex("again")), [], []], { account: ccp.account })); // NotPaid
+          // B's initial margin comes back in a round of its own; then B leaves with what is left of its contribution.
+          await clearing.write.issueMargin([20261113n, [], [], [bAddr], [-500n], [SB]], { account: ccp.account });
+          const b = await tUSD.read.balanceOf([bAddr]);
+          await clearing.write.leave([R], { account: bankB.account });
+          assert.equal(await tUSD.read.balanceOf([bAddr]), b + 150n);
+          // A, out of default, rejoins by paying its share again.
+          await oracle.write.setDefault([aAddr, false], { account: operator.account });
+          await join(bankA);
+          assert.equal(await clearing.read.contributed([R, aAddr]), 500n);
+        });
+
+        it("returns the defaulter its margin, its contribution and its gain when the survivor owes, and collects the survivor's due", async () => {
+          await purchased();
+          await marginOnce();
+          await oracle.write.setDefault([aAddr, true], { account: operator.account });
+          const usdA = await tUSD.read.balanceOf([aAddr]);
+          // The securities rose: B, the buyer, owes 300 to the CCP; A is owed it.
+          await clearing.write.closeOutDefault([aAddr, H, [REPO], [-300n]], { account: ccp.account });
+          const [d] = await clearing.read.defaultRecord([H]);
+          assert.equal(d.loss, -300n);
+          assert.equal(d.returned, 1300n);
+          assert.equal(d.dueOutstanding, 300n);
+          assert.equal(await tUSD.read.balanceOf([aAddr]), usdA + 1300n);
+          assert.equal(await clearing.read.defaultDue([H, bAddr]), 300n);
+          await assert.rejects(clearing.write.payDefaultDue([H], { account: bankA.account })); // NothingDue
+          await tUSD.write.approve([clearing.address, 300n], { account: bankB.account });
+          await clearing.write.payDefaultDue([H], { account: bankB.account });
+          assert.equal((await clearing.read.defaultRecord([H]))[0].dueOutstanding, 0n);
+          const r = await clearing.read.rulebook([R]);
+          assert.equal(r.capital, 250n);
+          assert.equal(r.fund, 500n);
+        });
+
+        it("rejects a close-out that leaves a repo of the defaulter open or a residual on an unpurchased repo, and a loss beyond the resources", async () => {
+          await submitted();
+          await clearing.write.acceptClearing([REPO], { account: ccp.account });
+          await oracle.write.setDefault([aAddr, true], { account: operator.account });
+          await assert.rejects(clearing.write.closeOutDefault([aAddr, H, [], []], { account: ccp.account })); // a repo left open
+          await assert.rejects(clearing.write.closeOutDefault([aAddr, H, [REPO], [1n]], { account: ccp.account })); // not purchased
+          await clearing.write.closeOutDefault([aAddr, H, [REPO], [0n]], { account: ccp.account });
+          assert.equal((await clearing.read.defaultRecord([H]))[0].returned, 500n);
+        });
+
+        it("reverts when the loss exceeds every layer", async () => {
+          await purchased();
+          await oracle.write.setDefault([aAddr, true], { account: operator.account });
+          await assert.rejects(clearing.write.closeOutDefault([aAddr, H, [REPO], [1251n]], { account: ccp.account })); // 500 + 250 + 500 = 1,250
+          await clearing.write.closeOutDefault([aAddr, H, [REPO], [1250n]], { account: ccp.account });
+          assert.equal((await clearing.read.rulebook([R])).fund, 0n);
+        });
+      });
+
+      describe("admission and porting (task-ccp-porting)", () => {
+        const P = keccak256(toHex("porting")), ADM = keccak256(toHex("admission"));
+        let bankT: any, tAddr: `0x${string}`;
+        beforeEach(async () => {
+          bankT = (await viem.getWalletClients())[5];
+          tAddr = getAddress(bankT.account.address);
+          await tUSD.write.mint([tAddr, 30000n]);
+        });
+        const admitT = async () => {
+          await clearing.write.admitMember([tAddr, 500n, ADM], { account: ccp.account });
+          await join(bankT);
+        };
+
+        it("admits a member who pays its share, then moves the seller's leg to it for a payment; the new seller repurchases", async () => {
+          await assert.rejects(clearing.write.admitMember([tAddr, 500n, ADM], { account: bankA.account })); // no rulebook
+          await assert.rejects(clearing.write.admitMember([aAddr, 500n, ADM], { account: ccp.account })); // already named
+          await admitT();
+          assert.equal(await clearing.read.admissionOf([R, tAddr]), ADM);
+          assert.equal((await clearing.read.rulebook([R])).fund, 1500n);
+          await purchased();
+          await assert.rejects(clearing.write.requestPorting([REPO, bAddr, P, 200n], { account: bankA.account })); // the counterparty
+          await assert.rejects(clearing.write.requestPorting([REPO, tAddr, P, 200n], { account: bankT.account })); // not a party
+          await clearing.write.requestPorting([REPO, tAddr, P, 200n], { account: bankA.account });
+          assert.ok((await clearing.read.clearingsOfParty([tAddr])).includes(REPO));
+          await assert.rejects(clearing.write.requestPorting([REPO, tAddr, P, 200n], { account: bankA.account })); // PortingPending
+          await assert.rejects(clearing.write.acceptPorting([REPO, keccak256(toHex("other"))], { account: bankT.account })); // HashMismatch
+          await tUSD.write.approve([clearing.address, 200n], { account: bankT.account });
+          await clearing.write.acceptPorting([REPO, P], { account: bankT.account });
+          await assert.rejects(clearing.write.approvePorting([REPO], { account: bankA.account })); // NotTheCcp
+          const usdA = await tUSD.read.balanceOf([aAddr]), usdT = await tUSD.read.balanceOf([tAddr]);
+          await clearing.write.approvePorting([REPO], { account: ccp.account });
+          assert.equal((await clearing.read.porting([REPO])).state, 3); // Executed
+          assert.equal(await tUSD.read.balanceOf([aAddr]), usdA + 200n);
+          assert.equal(await tUSD.read.balanceOf([tAddr]), usdT - 200n);
+          const c = await clearing.read.clearing([REPO]);
+          assert.equal(c.seller, tAddr);
+          assert.equal(await clearing.read.clearedCount([R, aAddr]), 0n);
+          assert.equal(await clearing.read.clearedCount([R, tAddr]), 1n);
+          await clearing.write.leave([R], { account: bankA.account });
+          await repurchased(bankT, bankB);
+          assert.equal(await tUST.read.balanceOf([tAddr]), 103n);
+        });
+
+        it("moves the buyer's leg with its securities, and lets the receiving member or the CCP refuse", async () => {
+          await admitT();
+          await purchased();
+          await clearing.write.requestPorting([REPO, tAddr, P, 9000n], { account: bankB.account });
+          await clearing.write.refusePorting([REPO], { account: bankT.account });
+          assert.equal((await clearing.read.porting([REPO])).state, 4); // Refused
+          await tUST.write.approve([clearing.address, 103n], { account: bankB.account });
+          await clearing.write.requestPorting([REPO, tAddr, P, 9000n], { account: bankB.account });
+          await tUSD.write.approve([clearing.address, 9000n], { account: bankT.account });
+          await clearing.write.acceptPorting([REPO, P], { account: bankT.account });
+          const usdB = await tUSD.read.balanceOf([bAddr]);
+          await clearing.write.approvePorting([REPO], { account: ccp.account });
+          assert.equal(await tUST.read.balanceOf([tAddr]), 103n);
+          assert.equal(await tUST.read.balanceOf([bAddr]), 0n);
+          assert.equal(await tUSD.read.balanceOf([bAddr]), usdB + 9000n);
+          assert.equal((await clearing.read.clearing([REPO])).buyer, tAddr);
+          await repurchased(bankA, bankT);
+          assert.equal(await tUST.read.balanceOf([aAddr]), 1000n);
         });
       });
     });

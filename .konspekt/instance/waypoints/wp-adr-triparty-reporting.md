@@ -3,7 +3,7 @@ id: wp-adr-triparty-reporting
 kind: decision
 subtype: adr
 timestamp: 2026-11-12T13:55:00Z
-review: proposed
+review: accepted
 provenance:
   conversationId: triparty-reporting
   sourceRef: 8816e213ab23a58fce8e77558228fcd381a4d8f5
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T13:55:00Z
   confidence: 0.5
 createdAt: 2026-11-12T13:55:00Z
-updatedAt: 2026-11-12T13:55:00Z
+updatedAt: 2026-11-12T20:48:00Z
 ```
 # ADR: the agent reports every settled repo under the terms and the giver's free collateral on its business date as CDM collateral portfolios, records the report's hash, and the giver and the receiver rebuild it from the chain
 

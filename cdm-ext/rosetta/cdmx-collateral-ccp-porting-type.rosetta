@@ -1,0 +1,59 @@
+namespace cdmx.collateral.ccp : <"Local CDM extension: a further clearing member's admission and the porting of a cleared repo leg from one member to another (gap G23, task-ccp-porting, wp-adr-ccp-porting). CDM 7.7.0 has the party change and the Novation intent, which do not satisfy Qualify_Novation for a leg with the CCP, and no record of the price at which a leg moves between members.">
+version "${project.version}"
+
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdm.event.qualification.*
+
+type CcpAdmission: <"The CCP admits a clearing member to its rulebook in effect: the member, its agreement with the CCP and its default fund share (CcpMember), which the member pays on joining.">
+    [rootType]
+    rulebookHash string (1..1) <"The keccak-256 hash of the cdm-ext CcpRulebook the member is admitted to.">
+    ccp PartyRole (1..1) <"The CCP, in CDM's ClearingOrganization role.">
+    member CcpMember (1..1)
+    admissionDate date (1..1)
+
+    condition CcpRole:
+        ccp -> role = PartyRoleEnum -> ClearingOrganization
+
+    condition CcpIsAContractualParty: <"The CCP is a contractual party to the member's agreement.">
+        member -> agreement -> contractualParty -> name contains ccp -> partyReference -> name
+
+    condition MemberIsNotTheCcp:
+        member -> party -> name <> ccp -> partyReference -> name
+
+type CcpPorting: <"The move of one leg of a cleared repo from a member to another (wp-adr-ccp-porting): CDM's party change of the leg with the Novation intent, and the payment between the members at the oracle's price. The receiving member takes the leg with its variation margin; the payment is the leg's value to the leaving member: for the seller, the Market Value less the Repurchase Price accrued plus the variation margin it paid; for the buyer, who also delivers the securities, the Repurchase Price accrued less the variation margin it received.">
+    [rootType]
+    rulebookHash string (1..1) <"The keccak-256 hash of the cdm-ext CcpRulebook.">
+    repoId string (1..1)
+    ccp PartyRole (1..1) <"The CCP, in CDM's ClearingOrganization role.">
+    fromMember string (1..1)
+    toMember string (1..1)
+    seller boolean (1..1) <"The leaving member is the repo's seller; otherwise its buyer.">
+    portingDate date (1..1)
+    porting BusinessEvent (1..1) <"CDM's party change of the leaving member's leg to the receiving member, intent Novation.">
+    quantity number (1..1)
+    price number (1..1) <"The oracle's price of one unit of the security on the porting date.">
+    marketValue number (1..1) <"GmraDefaultMarketValue: quantity x price.">
+    repurchasePrice number (1..1) <"The Repurchase Price accrued to the porting date (GmraDefaultRepurchasePrice).">
+    variationMarginPaid number (1..1) <"The variation margin paid on the repo, from the seller's side.">
+    payment number (1..1) <"What the receiving member pays the leaving member; negative when the leaving member pays.">
+
+    condition CcpRole:
+        ccp -> role = PartyRoleEnum -> ClearingOrganization
+
+    condition NovationIntent:
+        porting -> intent = EventIntentEnum -> Novation
+
+    condition TwoMembers:
+        fromMember <> toMember and fromMember <> ccp -> partyReference -> name and toMember <> ccp -> partyReference -> name
+
+    condition ReceivingMemberOnTheLeg: <"One open leg after the event, which names the receiving member and the CCP and not the leaving member.">
+        FilterOpenTradeStates(porting -> after) count = 1
+            and CcpTradesWithoutTheCcp(FilterOpenTradeStates(porting -> after), toMember) = 0
+            and CcpTradesWithoutTheCcp(FilterOpenTradeStates(porting -> after), ccp -> partyReference -> name) = 0
+            and (FilterOpenTradeStates(porting -> after) only-element -> trade -> party -> name contains fromMember) = False
+
+    condition Payment:
+        if seller = True
+        then payment = marketValue - repurchasePrice + variationMarginPaid
+        else payment = repurchasePrice - variationMarginPaid

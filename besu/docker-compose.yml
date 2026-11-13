@@ -1,5 +1,5 @@
-# Four-validator QBFT network, one Besu node per default participant.
-# Setup: besu/start-network.sh (Linux, macOS, Codespaces) or docs/setup-windows.md step 6.
+# Four-validator QBFT network, one Besu node per default participant, and the CCP's non-validator node ccp.
+# Setup: besu/start-network.sh (Linux, macOS, Codespaces) or docs/setup/setup-windows.md step 6.
 # BOOTNODE_ENODE and BESU_USER come from besu/.env, written by either.
 x-besu: &besu
   image: hyperledger/besu:26.9.0
@@ -109,6 +109,34 @@ services:
     networks:
       besu:
         ipv4_address: 172.28.0.14
+    depends_on:
+      - mkt
+
+  ccp:  # BANK-C, the CCP (wp-adr-ccp-membership): a non-validator that joins through the bootnode; its node key,
+    # generated on its first start, is BANK-C's account
+    <<: *besu
+    container_name: besu-ccp
+    volumes:
+      - ./networkFiles:/networkFiles:ro
+      - ./ccp/data:/data
+    command:
+      - --data-path=/data
+      - --genesis-file=/networkFiles/genesis.json
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.28.0.15
+      - --min-gas-price=0
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,QBFT,WEB3,TXPOOL
+      - --rpc-ws-enabled
+      - --rpc-ws-api=ETH,NET,QBFT,WEB3
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=all
+    ports:
+      - "8553:8545"
+      - "8554:8546"
+    networks:
+      besu:
+        ipv4_address: 172.28.0.15
     depends_on:
       - mkt
 
