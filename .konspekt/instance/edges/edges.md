@@ -431,3 +431,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdata-ccpclradr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-clearing |  | accepted |
 | e-dec-cdmdev-smeccpclr | decomposes | node:goal-cdm-development | node:task-sme-ccp-clearing |  | accepted |
 | e-lnk-ccpclr-smeccpclr | links | node:task-ccp-clearing | node:task-sme-ccp-clearing |  | accepted |
+| e-note-localenv-sharedconsole | notes | node:task-local-environment-setup | noteworthy:nw-shared-console-dev-server |  | proposed |

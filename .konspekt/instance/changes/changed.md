@@ -1572,3 +1572,4 @@ excluded.
 | task-ccp-margin | 015700333e381b17a0d6b8d6f025ce1a16e85882 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-13T02:33:16Z |
 | task-ccp-margin | 015700333e381b17a0d6b8d6f025ce1a16e85882 | docs/setup/setup-codespaces.md | 2026-11-13T02:33:16Z |
 | task-ccp-margin | 015700333e381b17a0d6b8d6f025ce1a16e85882 | scripts/live-e2e.sh | 2026-11-13T02:33:16Z |
+| artifact-e2e-live-harness | 2ebd70f776156f6ca513acd8db98fb58406eda04 | orchestrate.mjs | 2026-11-13T02:43:14Z |
