@@ -2,7 +2,7 @@
 id: task-ccp-margin
 type: task
 title: CCP daily variation margin and initial margin
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: ccp-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T18:25:00Z
   confidence: 0.6
 createdAt: 2026-11-12T18:25:00Z
-updatedAt: 2026-11-13T12:00:00Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: CCP daily variation margin and initial margin
 

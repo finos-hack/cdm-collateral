@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CDM Collateral Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+* { margin: 0; box-sizing: border-box; }
+html, body { height: 100%; background: #0B1222; overflow: hidden; }
+ul, ol { padding-left: 1.2em; }
+#stage { position: absolute; left: 50%; top: calc(50% - 22px); width: 1920px; height: 1080px; transform-origin: center; }
+#stage > section { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: none !important; }
+#stage > section.on { display: flex !important; }
+#stage > section aside { display: none; }
+section a { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
+#bar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; display: flex; align-items: center; gap: 20px; padding: 0 16px;
+  background: #0B1222; color: #C9D6E3; font: 14px 'IBM Plex Sans', Arial, sans-serif; }
+#bar a, #bar button { color: #C9D6E3; background: none; border: 0; font: inherit; cursor: pointer; text-decoration: none; }
+#bar a:hover, #bar button:hover { color: #E8A04E; }
+#bar .grow { flex: 1; }
+#notes { position: fixed; left: 0; right: 0; bottom: 44px; max-height: 30vh; overflow: auto; padding: 12px 16px; display: none;
+  background: #14213D; color: #F6F5F0; font: 16px/1.5 'IBM Plex Sans', Arial, sans-serif; }
+body.notes #notes { display: block; }
+@media print {
+  html, body { overflow: visible; background: none; }
+  #bar, #notes { display: none !important; }
+  #stage { position: static; transform: none !important; width: auto; height: auto; }
+  #stage > section { position: relative; display: flex !important; page-break-after: always; }
+  @page { size: 1920px 1080px; margin: 0; }
+}
+</style></head><body>
+<div id="stage">
+<section id="cover" style="background:#14213D;color:#F6F5F0;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-size:32px;color:#E8A04E;font-weight:600;letter-spacing:2px">FINOS CDM · COLLATERAL MANAGEMENT</p>
+<div style="display:flex;flex-direction:column;gap:40px">
+<h1 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:120px;font-weight:700;line-height:1.05;color:#F6F5F0">CDM collateral workflows on a shared ledger</h1>
+<p style="font-size:44px;color:#C9D6E3;line-height:1.3">A runnable prototype: CDM 7.7.0, Hyperledger Besu and smart contracts</p>
+</div>
+<p style="font-size:24px;color:#C9D6E3">[Presenter name] · [Event] · November 2026</p>
+<aside>Purpose: show what the prototype covers, what it changed in CDM, and what we need from collateral SMEs and partners.</aside>
+</section>
+
+<section id="industry" data-transition="fade" style="background:#F6F5F0;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<p style="font-size:24px;color:#1F6F8B;font-weight:600;letter-spacing:2px">CONTEXT</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">The industry is preparing to tokenize collateral</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;gap:16px;background:#FFFFFC;padding:40px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">GDF and ISDA sandbox</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">Margin calls generated from CDM-based analytics settled on-chain in under two minutes, with tokenized money market funds as collateral (July 2026).</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px;background:#FFFFFC;padding:40px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Eligibility under the CSA</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">ISDA assessed tokenized money market funds as eligible collateral under the ISDA Credit Support Annex (October 2026).</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px;background:#FFFFFC;padding:40px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Smart contracts in CDM</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">ISDA and Tokenovate run a taskforce on a technology-agnostic smart contract framework within the CDM (from October 2025).</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Sources: GDF/ISDA sandbox report (Jul 2026); ISDA tokenized MMF assessment (Oct 2026); ISDA press release (21 Oct 2025)</p>
+<aside>The sandbox supplied the margin-call layer from a vendor product, because CDM has no margin-call workflow. That gap is what this project addresses.</aside>
+</section>
+
+<section id="finos-dtcc" data-transition="fade" style="background:#F6F5F0;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<p style="font-size:24px;color:#1F6F8B;font-weight:600;letter-spacing:2px">CONTEXT</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">FINOS and DTCC are looking at CDM and blockchain</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;gap:20px;background:#FFFFFC;padding:48px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:44px;font-weight:600">FINOS CDM</h3>
+<p style="font-size:32px;color:#4A5568;line-height:1.4">The industry data standard for trade and collateral processes. For collateral, CDM 7.7.0 models agreement terms and eligibility, but no function or event moves collateral.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:20px;background:#FFFFFC;padding:48px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:44px;font-weight:600">DTCC tokenization service</h3>
+<p style="font-size:32px;color:#4A5568;line-height:1.4">Live on Canton and on DTCC’s private Besu network (ERC-20). Settlement and collateral, including on-chain netting, are on its 2027-and-beyond roadmap.</p>
+</div>
+</div>
+<p style="font-size:32px;line-height:1.4"><b>Missing piece:</b> an open, standards-based margin-call lifecycle that connects CDM agreement terms to collateral settlement on tokenized rails.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Sources: DTCC Tokenization Service fact sheet (Oct 2026); <a href="analysis/business-case.md">docs/analysis/business-case.md</a> §1</p>
+<aside>Because DTC holds most US securities used as collateral, DTCC’s Besu network is where tokenized DTC-eligible collateral will exist. That is the reason for choosing Besu as the first ledger.</aside>
+</section>
+
+<section id="besu" data-transition="fade" style="background:#14213D;color:#F6F5F0;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<p style="font-size:24px;color:#E8A04E;font-weight:600;letter-spacing:2px">WHAT WE BUILT</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">A prototype on Hyperledger Besu</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px;padding:40px;border:1px solid #3A4A6B;border-radius:16px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">5</p>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Besu nodes: 4 QBFT validators with deterministic finality, and the CCP’s node</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:40px;border:1px solid #3A4A6B;border-radius:16px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">9</p>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Solidity contracts: margin call, collateral control, repo, securities loan, triparty, CCP clearing, reconciliation, oracle feed, tokens</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:40px;border:1px solid #3A4A6B;border-radius:16px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">ERC-20</p>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Tokenized collateral and cash, the token model of DTCC’s Besu network</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:40px;border:1px solid #3A4A6B;border-radius:16px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">CDM</p>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Every on-chain step anchored to a CDM 7.7.0 event by content hash</p>
+</div>
+</div>
+<p style="font-size:32px;color:#F6F5F0;line-height:1.4">CDM computes off-chain; the ledger records call state, escrow and settlement that both parties share.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#C9D6E3">Repository: github.com/denisurusov/cdm-collateral · besu/, contracts/</p>
+<aside>Besu is the first ledger, not the only one: DTCC also runs Canton. The CDM extension keeps ledger identity (network, token contract, DTI) as data, gap G24.</aside>
+</section>
+
+<section id="coverage" data-transition="fade" style="background:#F6F5F0;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:24px;color:#1F6F8B;font-weight:600;letter-spacing:2px">WHAT WE BUILT</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">Agreement types and flows covered</h2>
+<table style="font-size:24px;border-collapse:collapse;width:1664px">
+<tr><th style="text-align:left;padding:12px 16px;border-bottom:2px solid #14213D;width:360px">Agreement</th><th style="text-align:left;padding:12px 16px;border-bottom:2px solid #14213D">Flows</th></tr>
+<tr><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;font-weight:600">ISDA CSA: margin cycle</td><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;color:#4A5568">IM call, proposal and pledge · VM call and title transfer · return of excess IM · default and enforcement · oracle price update · revaluation and top-up · two-way IM</td></tr>
+<tr><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;font-weight:600">ISDA CSA: extensions</td><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;color:#4A5568">close-out netting · substitution · interest on cash · amendment · call cancellation and replacement · settlement netting · allocation · reconciliation</td></tr>
+<tr><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;font-weight:600">Repo (GMRA)</td><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;color:#4A5568">terms and amendment · purchase and repurchase DvP · margin maintenance · reprice · adjustment · substitution · income · roll · pair-off · buy/sell-back · default and close-out</td></tr>
+<tr><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;font-weight:600">Securities lending (GMSLA)</td><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;color:#4A5568">terms and amendment · loan delivery and return · marking · recall · substitution · rebate · lending fee · default and close-out</td></tr>
+<tr><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;font-weight:600">Triparty</td><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;color:#4A5568">terms and collateral profile · trade start with the agent’s allocation · daily revaluation · substitution · trade end · the agent’s report</td></tr>
+<tr><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;font-weight:600">CCP (cleared repo)</td><td style="padding:12px 16px;border-bottom:1px solid #DAD8CF;color:#4A5568">membership and default fund · clearing by novation · daily VM and IM · member default and waterfall · porting</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Source: <a href="analysis/cdm-workflow-task-map.md">docs/analysis/cdm-workflow-task-map.md</a></p>
+<aside>All 47 flows are built. Each has a Playwright live spec that asserts on-chain state through the gateways; the full suite of 53 specs passed on 2026-11-13.</aside>
+</section>
+
+<section id="gaps" data-transition="fade" style="background:#F6F5F0;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:24px;color:#1F6F8B;font-weight:600;letter-spacing:2px">WHAT WE BUILT</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">CDM gaps closed in a Rune extension</h2>
+<div style="display:flex;gap:48px">
+<div style="display:flex;flex-direction:column;gap:24px;width:420px">
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#1F6F8B">28</p><p style="font-size:24px;color:#4A5568">of the 39 gaps in the register closed or partly closed</p></div>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#1F6F8B">30</p><p style="font-size:24px;color:#4A5568">CDM defects found and documented, 16 of them fixed in cdm-ext</p></div>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#1F6F8B">327</p><p style="font-size:24px;color:#4A5568">unit tests in cdm-ext (Java, CDM 7.7.0)</p></div>
+</div>
+<table style="font-size:24px;border-collapse:collapse;flex:1">
+<tr><th style="text-align:left;padding:10px 16px;border-bottom:2px solid #14213D">Status</th><th style="text-align:left;padding:10px 16px;border-bottom:2px solid #14213D">Gaps</th></tr>
+<tr><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">Closed (21): margin call lifecycle, valuation, concentration, exposure netting, enforcement, recall, GMRA and GMSLA terms, repo and lending exposure, triparty, CCP, tokens and ledger anchors</td><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">G1&#8288;–&#8288;G10, G12, G14, G18&#8288;–&#8288;G20, G22&#8288;–&#8288;G25, G29, G39</td></tr>
+<tr><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">Partial (7): close-out, substitution, interest and income, GMSLA clauses, lending workflows, allocation, reconciliation</td><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">G15&#8288;–&#8288;G17, G21, G33&#8288;–&#8288;G35</td></tr>
+<tr><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">Open (8): rating eligibility, taxonomy and regulatory references, CDM sample and naming defects, transfer type and roles</td><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">G11, G27, G28, G30&#8288;–&#8288;G32, G37, G38</td></tr>
+<tr><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">Deferred: mapping to ISO 20022 and FpML messages</td><td style="padding:10px 16px;border-bottom:1px solid #DAD8CF">G26</td></tr>
+</table>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Out of scope: SIMM (G13), regulatory reporting (G36). Sources: <a href="gap-register.html">docs/gap-register.html</a>, <a href="analysis/defects.md">docs/analysis/defects.md</a></p>
+<aside>Partial means part of the gap is built: for example, close-out netting is built for the ISDA 2002 MA, the GMRA, the GMSLA and the CCP, but not for ISDA Termination Events (G15). The open gaps are not hit by the built flows, or need a CDM change (G32). Fifteen closed or partial gaps rest on interim rules awaiting SMEs (next slide). Findings and defects go to FINOS CDM through the collaboration with the CDM maintainers.</aside>
+</section>
+
+<section id="app" data-transition="fade" style="background:#F6F5F0;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<p style="font-size:24px;color:#1F6F8B;font-weight:600;letter-spacing:2px">WHAT WE BUILT</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">A runnable application: UI driving smart contracts</h2>
+<div style="display:flex;align-items:stretch;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFC;padding:32px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Console</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">React UI per participant: pledgor, secured party, triparty agent, CCP, market data operator</p>
+</div>
+<div style="display:flex;align-items:center"><span style="font-size:48px;color:#1F6F8B">&#8594;</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFC;padding:32px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Gateway</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">One per participant; signs and submits transactions, polls receipts</p>
+</div>
+<div style="display:flex;align-items:center"><span style="font-size:48px;color:#1F6F8B">&#8594;</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFC;padding:32px;border:1px solid #DAD8CF;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Smart contracts</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">Call state, escrow and settlement on the Besu network</p>
+</div>
+</div>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#E6EEF1;padding:32px;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">CDM services (Java)</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">services/collateral computes amounts, eligibility and events with cdm-ext; services/oracle publishes prices and default notices</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#E6EEF1;padding:32px;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Run it</h3>
+<p style="font-size:24px;color:#4A5568;line-height:1.4">scripts/live-e2e.sh build | up | check: local, Codespaces or dev container; Playwright live specs assert on-chain state</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Runbook: <a href="setup/runbook-e2e.md">docs/setup/runbook-e2e.md</a> · Architecture: <a href="../architecture/prototype.architecture.json">architecture/prototype.architecture.json</a> (FINOS CALM)</p>
+<aside>Suggest a live demo here: one IM margin call from issue to pledge settlement, then a dispute. The console shows each participant’s view; the chain holds the shared record.</aside>
+</section>
+
+<section id="sme" data-transition="fade" style="background:#F6F5F0;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<p style="font-size:24px;color:#1F6F8B;font-weight:600;letter-spacing:2px">WHAT IS OPEN</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">Open questions for collateral SMEs</h2>
+<div style="display:flex;gap:64px;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:8px;width:400px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:120px;font-weight:700;color:#1F6F8B;line-height:1">222</p>
+<p style="font-size:32px;color:#4A5568;line-height:1.3">questions in 39 topics, each with the interim rule the prototype uses</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #1F6F8B;padding-left:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">IM enforcement and two-way IM</h3>
+<p style="font-size:24px;color:#4A5568">What is an Enforcement Event? When can the pledgor reclaim its IM on the secured party’s default?</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #1F6F8B;padding-left:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Tokenized assets</h3>
+<p style="font-size:24px;color:#4A5568">Is a pledge of a registered token complete on-chain or at the register? Which prevails when they disagree?</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #1F6F8B;padding-left:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Call lifecycle, allocation, reconciliation</h3>
+<p style="font-size:24px;color:#4A5568">Cancellation rules, settlement netting, ranking and concentration, matching tolerances</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #1F6F8B;padding-left:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600">Repo, securities lending, triparty and CCP</h3>
+<p style="font-size:24px;color:#4A5568">GMRA margin, reprice, roll and default; GMSLA marking, recall and fees; the triparty agent’s allocation; CCP margin, default and porting</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">All questions: <a href="sme-questions.html">docs/sme-questions.html</a> · ledger: <a href="analysis/sme-question-ledger.md">docs/analysis/sme-question-ledger.md</a> · all open</p>
+<aside>Each question links to a task that records its context and the project owner’s interim decision. An SME answer replaces the interim rule.</aside>
+</section>
+
+<section id="join" data-transition="fade" style="background:#1F6F8B;color:#F6F5F0;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<p style="font-size:24px;color:#F6F5F0;font-weight:600;letter-spacing:2px">JOIN US</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1.1">We invite collateral SMEs and partners to join</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;gap:16px;background:#14213D;padding:40px;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;color:#E8A04E">Collateral SMEs</h3>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Answer the open questions and review the modelled rules against your agreements and operations</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px;background:#14213D;padding:40px;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;color:#E8A04E">Firms and infrastructures</h3>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Run the prototype with your own agreement terms, tokens or ledger, for example Canton</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px;background:#14213D;padding:40px;border-radius:16px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;color:#E8A04E">FINOS CDM community</h3>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Take the extension and defect reports into CDM through the Collateral Working Group</p>
+</div>
+</div>
+<p style="font-size:32px;line-height:1.4">github.com/denisurusov/cdm-collateral · [contact]</p>
+<aside>The repository is intended to become a FINOS project. Ask the audience for a named SME contact per topic on the previous slide.</aside>
+</section>
+
+</div>
+<div id="notes"></div>
+<div id="bar">
+<button id="prev" title="Previous (Left arrow)">&#8592;</button><span id="pos"></span><button id="next" title="Next (Right arrow or Space)">&#8594;</button>
+<span class="grow"></span>
+<a href="gap-register.html">Gap register</a>
+<a href="sme-questions.html">SME questions (222)</a>
+<a href="presentations/intro_deck/intro_deck.pdf">PDF</a>
+<button id="ntoggle" title="Speaker notes (N)">Notes</button>
+</div>
+<script>
+const slides = [...document.querySelectorAll("#stage > section")];
+const stage = document.getElementById("stage");
+let i = Math.max(0, slides.findIndex(s => "#" + s.id === location.hash));
+function fit() {
+  const k = Math.min(innerWidth / 1920, (innerHeight - 44) / 1080);
+  stage.style.transform = "translate(-50%, -50%) scale(" + k + ")";
+}
+function show(n) {
+  i = Math.min(slides.length - 1, Math.max(0, n));
+  slides.forEach((s, j) => s.classList.toggle("on", j === i));
+  document.getElementById("pos").textContent = (i + 1) + " / " + slides.length;
+  const a = slides[i].querySelector("aside");
+  document.getElementById("notes").textContent = a ? a.textContent : "";
+  history.replaceState(null, "", "#" + slides[i].id);
+}
+addEventListener("resize", fit);
+addEventListener("keydown", e => {
+  if (["ArrowRight", "PageDown", " "].includes(e.key)) { show(i + 1); e.preventDefault(); }
+  else if (["ArrowLeft", "PageUp"].includes(e.key)) { show(i - 1); e.preventDefault(); }
+  else if (e.key === "Home") show(0);
+  else if (e.key === "End") show(slides.length - 1);
+  else if (e.key === "n" || e.key === "N") document.body.classList.toggle("notes");
+});
+document.getElementById("prev").onclick = () => show(i - 1);
+document.getElementById("next").onclick = () => show(i + 1);
+document.getElementById("ntoggle").onclick = () => document.body.classList.toggle("notes");
+fit(); show(i);
+</script>
+</body></html>

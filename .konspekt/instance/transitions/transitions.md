@@ -1512,3 +1512,23 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-localenv-sharedconsole | review |  | proposed | 2026-11-13T02:42:43Z | 90ff59e14ac7b691c96db66b4e6263e7d794f410 |  |
 | noteworthy:nw-shared-console-dev-server | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |
 | edge:e-note-localenv-sharedconsole | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |
+| node:task-docs-readme-organization | review |  | proposed | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
+| node:task-docs-readme-organization | status |  | open | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
+| edge:e-dec-adoption-docsreadme | review |  | proposed | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
+| node:task-docs-readme-organization | review | proposed | accepted | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| edge:e-dec-adoption-docsreadme | review | proposed | accepted | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-ccp-membership | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-ccp-clearing | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-ccp-margin | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-ccp-default | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-ccp-porting | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-ccp-workflows | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-terms-profile | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-trade-start | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-revaluation | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-substitution | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-trade-end | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-reporting | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-triparty-workflows | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-gmsla-default-close-out | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| node:task-securities-lending-gmsla-workflows | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |

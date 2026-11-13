@@ -2,7 +2,7 @@
 id: task-ccp-membership
 type: task
 title: CCP membership and rules: BANK-C, its rulebook, the members' default fund contributions
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: ccp-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T18:25:00Z
   confidence: 0.6
 createdAt: 2026-11-12T18:25:00Z
-updatedAt: 2026-11-12T19:40:00Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: CCP membership and rules: BANK-C, its rulebook, the members' default fund contributions
 

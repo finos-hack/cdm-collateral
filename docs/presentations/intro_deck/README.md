@@ -8,10 +8,26 @@ Nine-slide introduction for collateral SMEs and potential partners (task `task-p
 | `deck.json` | Slide order, sections and typefaces |
 | `slides/<id>.html` | One slide per file: a single `<section>` with inline styles; speaker notes in the trailing `<aside>` |
 | `render_pdf.py` | Regenerates `intro_deck.pdf` from `deck.json` and `slides/` |
+| `build_site.mjs` | Generates `docs/index.html` (the deck as a web page), `docs/sme-questions.html` (every question of `docs/analysis/sme-question-ledger.md`) and `docs/gap-register.html` (from `docs/analysis/gap-register.md`) |
 
-The source files are in the Claude Slides artifact format. The editable deck is the artifact
-https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa; the copy here was taken on 2026-11-10 from artifact version
-`1794230093-92bc`. Edits made in the artifact are not copied here automatically.
+**This directory is the source of the deck** (project owner, 2026-11-13). Edit `slides/<id>.html` and `deck.json`
+here, then regenerate the PDF. The files are in the Claude Slides artifact format. The deck began as the artifact
+https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa (copied here on 2026-11-10 from version `1794230093-92bc`); that
+artifact is no longer maintained and is out of date since the update of 2026-11-13 (`gaps`, `sme`, `besu`, `app`
+and `coverage` slides to the figures of `main` after PR #66).
+
+## The web page: `docs/index.html`
+
+The deck is published as `docs/index.html`, with `docs/sme-questions.html` and `docs/gap-register.html` beside it.
+All three are generated; do not edit them. After a change to the slides, `deck.json`, the SME question ledger or the
+gap register, run:
+
+```sh
+node docs/presentations/intro_deck/build_site.mjs
+```
+
+In the page, the arrow keys, Space, Page Up and Page Down move between slides, and N shows the speaker notes. The bar
+at the bottom links the gap register, the SME questions and the PDF. Links in the slides are relative to `docs/`.
 
 ## Regenerating the PDF
 

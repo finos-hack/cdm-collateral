@@ -2,7 +2,7 @@
 id: task-ccp-clearing
 type: task
 title: CCP clearing of a bilateral repo by novation to BANK-C
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: ccp-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T18:25:00Z
   confidence: 0.6
 createdAt: 2026-11-12T18:25:00Z
-updatedAt: 2026-11-12T23:30:00Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: CCP clearing of a bilateral repo by novation to BANK-C
 

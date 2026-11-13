@@ -2,7 +2,7 @@
 id: task-ccp-workflows
 type: task
 title: Implement the CCP collateral workflows
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.75
 createdAt: 2026-11-03T14:29:20Z
-updatedAt: 2026-11-12T15:10:00Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: implement the CCP collateral workflows
 

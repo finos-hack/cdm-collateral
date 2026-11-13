@@ -2,7 +2,7 @@
 id: task-triparty-terms-profile
 type: task
 title: Triparty terms and the collateral profile
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: triparty-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T01:08:09Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: Triparty terms and the collateral profile
 

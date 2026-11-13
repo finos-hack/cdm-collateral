@@ -34,6 +34,7 @@ page = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><style>
 * {{ margin: 0; box-sizing: border-box; }}
 section {{ width: 1920px; height: 1080px; position: relative; overflow: hidden; page-break-after: always; }}
 ul, ol {{ padding-left: 1.2em; }}
+section a {{ color: inherit; text-underline-offset: 4px; }}
 </style></head><body>{''.join(sections)}</body></html>"""
 
 out_html = HERE / "_render.html"

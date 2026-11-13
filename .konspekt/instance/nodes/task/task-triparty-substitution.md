@@ -2,7 +2,7 @@
 id: task-triparty-substitution
 type: task
 title: Triparty substitution by the agent
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: triparty-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T11:58:00Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: Triparty substitution by the agent
 

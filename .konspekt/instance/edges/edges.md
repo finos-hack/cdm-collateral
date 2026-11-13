@@ -444,3 +444,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdata-ccpprtadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-porting |  | accepted |
 | e-dec-cdmdev-smeccpprt | decomposes | node:goal-cdm-development | node:task-sme-ccp-porting |  | accepted |
 | e-lnk-ccpprt-smeccpprt | links | node:task-ccp-porting | node:task-sme-ccp-porting |  | accepted |
+| e-dec-adoption-docsreadme | decomposes | node:goal-adoption | node:task-docs-readme-organization |  | accepted |

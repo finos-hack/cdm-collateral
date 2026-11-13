@@ -2,7 +2,7 @@
 id: task-triparty-trade-start
 type: task
 title: Triparty trade start: allocation by the agent and DvP of the cash
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: triparty-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-12T00:36:54Z
   confidence: 0.6
 createdAt: 2026-11-12T00:36:54Z
-updatedAt: 2026-11-12T01:45:39Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: Triparty trade start: allocation by the agent and DvP of the cash
 
