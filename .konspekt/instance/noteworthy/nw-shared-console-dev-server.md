@@ -1,7 +1,7 @@
 ```yaml
 id: nw-shared-console-dev-server
 kind: fact
-review: proposed
+review: accepted
 provenance:
   conversationId: ccp-rows-28-30
   sourceRef: 90ff59e14ac7b691c96db66b4e6263e7d794f410
@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-13T02:42:43Z
   confidence: 0.6
 createdAt: 2026-11-13T02:42:43Z
-updatedAt: 2026-11-13T02:42:43Z
+updatedAt: 2026-11-13T02:45:20Z
 ```
 # One console dev server serves every party's console, where wp-adr-per-participant-services gives each its own
 
