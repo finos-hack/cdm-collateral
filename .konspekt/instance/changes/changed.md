@@ -1546,3 +1546,17 @@ excluded.
 | task-ccp-clearing | 7bc7675638ea325a8f46583c3a63c638cd6ada5f | services/collateral/src/main/java/collateral/App.java | 2026-11-12T23:33:50Z |
 | task-ccp-clearing | 7bc7675638ea325a8f46583c3a63c638cd6ada5f | services/collateral/src/main/java/collateral/CdmCcp.java | 2026-11-12T23:33:50Z |
 | task-ccp-clearing | 7bc7675638ea325a8f46583c3a63c638cd6ada5f | services/collateral/src/test/java/collateral/CdmCcpTest.java | 2026-11-12T23:33:50Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | README.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | architecture/README.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | cdm-ext/README.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/analysis/business-case.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/analysis/gap-register.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/analysis/references.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/architecture/blockchain-applicability.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/presentations/project-narrative.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/setup/claude-code-cloud.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/setup/runbook-e2e.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/setup/setup-codespaces.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | docs/setup/setup-windows.md | 2026-11-13T02:30:56Z |
+| task-ccp-margin | bb81b56ae1365850cac76d309d353a4ffbb902b0 | store/README.md | 2026-11-13T02:30:56Z |
