@@ -313,7 +313,9 @@ export interface LiveCcpRulebook {
   fund: number;
   verified: boolean;
   problem: string | null;
-  members: { party: string; bank: string; share: number; paid: boolean }[];
+  /** contributed: the share less what a default's waterfall used; imHeld: initial margin the CCP holds; admitted: joined
+   *  by a CcpAdmission (wp-adr-ccp-porting). */
+  members: { party: string; bank: string; share: number; paid: boolean; contributed?: number; imHeld?: number; admitted?: boolean }[];
   rulebook?: {
     ccp: string;
     role: string;
@@ -327,6 +329,8 @@ export interface LiveCcpRulebook {
   };
   canJoin: boolean;
   canLeave: boolean;
+  /** The CCP: the parties it may admit. */
+  canAdmit?: string[];
 }
 
 export interface LiveCcp {
@@ -364,6 +368,81 @@ export interface LiveCcpClearing {
   canRefuse: boolean;
   canInstruct: boolean;
   phase: "purchase" | "repurchase";
+  /** Variation margin paid on the repo, from the seller's side (wp-adr-ccp-margin). */
+  vmBalance?: number;
+  /** The porting of a leg to another member (wp-adr-ccp-porting), checked by the reading party. */
+  porting?: { from: string; to: string; payment: number; state: string; portingHash: string; verified: boolean; problem: string | null } | null;
+  canPortTo?: string[];
+  canAcceptPorting?: boolean;
+  canApprovePorting?: boolean;
+  canRefusePorting?: boolean;
+}
+
+/** A member's statement in a margin round, rebuilt and checked by the member (wp-adr-ccp-margin). */
+export interface LiveCcpStatement {
+  member?: string;
+  party?: string;
+  /** Absent when this service did not check the statement (a round that settled at issue, no member owing). */
+  vm?: number;
+  im?: number;
+  net: number;
+  imRequired?: number;
+  imHeld?: number;
+  lines?: { repoId: string; seller: string; buyer: string; price: string; exposure: number; previous: number; change: number; repurchased: boolean }[];
+  calls?: string[];
+  verified?: boolean;
+  problem?: string | null;
+  paid?: boolean;
+  canPay?: boolean;
+}
+
+export interface LiveCcpRound {
+  roundId: string;
+  businessDate: string;
+  state: "issued" | "settled" | "cancelled" | string;
+  members: { party: string; vm: number; im: number; net: number; paid: boolean }[];
+  repos: { repoId: string; vm: number }[];
+  mine?: LiveCcpStatement;
+  canCancel: boolean;
+}
+
+export interface LiveCcpMargin {
+  businessDate: string;
+  ccp: boolean;
+  /** The CCP: the statements it would issue today. */
+  preview?: (LiveCcpStatement & { vm: number; im: number })[];
+  previewProblem?: string;
+  canIssue: boolean;
+  /** Newest first. */
+  rounds: LiveCcpRound[];
+}
+
+/** A member's default managed by the CCP (wp-adr-ccp-default), checked by the reading party. */
+export interface LiveCcpDefault {
+  closeOutHash: string;
+  defaulter: string;
+  loss: number;
+  fromInitialMargin: number;
+  fromDefaulterFund: number;
+  fromCapital: number;
+  fromMembersFund: number;
+  returned: number;
+  /** What survivors that owe on the close-out have still to pay. */
+  dueOutstanding: number;
+  due: { party: string; amount: number }[];
+  mineDue: number;
+  transactions?: { repoId: string; survivor: string; price: string; repurchasePrice: number; defaultMarketValue: number; variationMarginPaid: number; residual: number; survivorAmount: number }[];
+  closeOutDate?: string;
+  verified: boolean;
+  problem: string | null;
+  canPayDue: boolean;
+}
+
+export interface LiveCcpDefaults {
+  businessDate: string;
+  members: { party: string; inDefault: boolean; canDeclare: boolean }[];
+  /** Newest first. */
+  defaults: LiveCcpDefault[];
 }
 
 export const ccpApi = {
@@ -385,6 +464,24 @@ export const ccpApi = {
   refuseClearing: (p: ServiceParty, repoId: string, reason: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/refuse`, { reason }),
   /** A member: instruct its own leg's purchase or repurchase. */
   instructCleared: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/instruct`, {}),
+  margin: (p: ServiceParty) => req<LiveCcpMargin>(p, "GET", "/ccp/margin"),
+  /** The CCP: issue the margin round of its business date. */
+  issueMargin: (p: ServiceParty) => req<{ businessDate: string; members: number; txHash: string }>(p, "POST", "/ccp/margin", {}),
+  /** A member: pay its net on a round after checking its statement. */
+  payMargin: (p: ServiceParty, roundId: string) => req<unknown>(p, "POST", `/ccp/margin/${roundId}/pay`, {}),
+  cancelMargin: (p: ServiceParty, roundId: string) => req<unknown>(p, "POST", `/ccp/margin/${roundId}/cancel`, {}),
+  defaults: (p: ServiceParty) => req<LiveCcpDefaults>(p, "GET", "/ccp/defaults"),
+  /** The CCP: declare a member's default and close out its cleared repos. */
+  declareDefault: (p: ServiceParty, member: string) => req<{ closeOutHash: string; loss: number; txHash: string }>(p, "POST", "/ccp/defaults", { member }),
+  /** A survivor that owes on the close-out pays it; a survivor that is owed is paid by the close-out itself. */
+  payDefaultDue: (p: ServiceParty, closeOutHash: string) => req<unknown>(p, "POST", `/ccp/defaults/${closeOutHash}/pay`, {}),
+  /** The CCP: admit a member with a CcpAdmission. */
+  admit: (p: ServiceParty, member: string) => req<{ admissionHash: string; txHash: string }>(p, "POST", "/ccp/members", { member }),
+  /** A party to a purchased cleared repo: port its leg to another member. */
+  requestPorting: (p: ServiceParty, repoId: string, to: string) => req<{ portingHash: string; payment: number }>(p, "POST", `/ccp/clearings/${repoId}/porting`, { to }),
+  acceptPorting: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/porting/accept`, {}),
+  approvePorting: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/porting/approve`, {}),
+  refusePorting: (p: ServiceParty, repoId: string) => req<unknown>(p, "POST", `/ccp/clearings/${repoId}/porting/refuse`, {}),
 };
 
 export const tripartyApi = {

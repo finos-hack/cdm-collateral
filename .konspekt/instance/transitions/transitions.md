@@ -1469,6 +1469,45 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-ccpclradr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
 | edge:e-dec-cdmdev-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
 | edge:e-lnk-ccpclr-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
+| waypoint:wp-adr-ccp-margin | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| waypoint:wp-adr-ccp-default | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| waypoint:wp-adr-ccp-porting | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| node:task-sme-ccp-margin | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| node:task-sme-ccp-margin | status |  | open | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| node:task-sme-ccp-default | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| node:task-sme-ccp-default | status |  | open | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| node:task-sme-ccp-porting | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| node:task-sme-ccp-porting | status |  | open | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-mrk-ccpmrgadr-ccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-drv-cdmdata-ccpmrgadr | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-dec-cdmdev-smeccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-lnk-ccpmrg-smeccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-mrk-ccpdftadr-ccpdft | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-drv-cdmdata-ccpdftadr | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-dec-cdmdev-smeccpdft | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-lnk-ccpdft-smeccpdft | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-mrk-ccpprtadr-ccpprt | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-drv-cdmdata-ccpprtadr | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-dec-cdmdev-smeccpprt | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| edge:e-lnk-ccpprt-smeccpprt | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
+| waypoint:wp-adr-ccp-margin | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| waypoint:wp-adr-ccp-default | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| waypoint:wp-adr-ccp-porting | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| node:task-sme-ccp-margin | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| node:task-sme-ccp-default | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| node:task-sme-ccp-porting | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-mrk-ccpmrgadr-ccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-drv-cdmdata-ccpmrgadr | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-dec-cdmdev-smeccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-lnk-ccpmrg-smeccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-mrk-ccpdftadr-ccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-drv-cdmdata-ccpdftadr | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-dec-cdmdev-smeccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-lnk-ccpdft-smeccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-mrk-ccpprtadr-ccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-drv-cdmdata-ccpprtadr | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-dec-cdmdev-smeccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
+| edge:e-lnk-ccpprt-smeccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
 | noteworthy:nw-shared-console-dev-server | review |  | proposed | 2026-11-13T02:42:43Z | 90ff59e14ac7b691c96db66b4e6263e7d794f410 |  |
 | edge:e-note-localenv-sharedconsole | review |  | proposed | 2026-11-13T02:42:43Z | 90ff59e14ac7b691c96db66b4e6263e7d794f410 |  |
 | noteworthy:nw-shared-console-dev-server | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |

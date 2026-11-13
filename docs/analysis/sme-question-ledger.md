@@ -405,3 +405,32 @@ Status of the ledger: 196 questions in 34 tasks, all open.
 | CCC-4 | The purchase and the repurchase settle in one transaction between the members, the CCP netting to zero. Do CCPs settle each leg against the CCP's own accounts, or net members' obligations and settle once per day? | open | |
 | CCC-5 | A refused repo stays bilateral and may be submitted again. What happens to a trade the CCP rejects under the members' agreements? | open | |
 
+### `task-sme-ccp-margin`: the CCP's daily variation margin and initial margin
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| CVM-1 | BANK-C issues one round per business date when it chooses, and the members pay that day. Do repo CCPs also call intraday, and what is the payment deadline? | open | |
+| CVM-2 | Variation margin is GMRA Transaction Exposure at the repo's Margin Ratio. Do repo CCPs margin the exposure with the haircut, or the mark-to-market without it, and do they pay price alignment interest on variation margin? | open | |
+| CVM-3 | Initial margin is a flat 5% of the Purchase Prices of a member's open cleared repos. Which initial margin models do repo CCPs use (VaR, haircut schedules), and on which base? | open | |
+| CVM-4 | Each member pays or receives one net amount of variation and initial margin per round, in tUSD. Do CCPs net the two, or settle them separately, for example variation margin in cash and initial margin in securities? | open | |
+| CVM-5 | Variation margin passes to the other member only when the round settles, after every member that owes has paid. How do CCPs pay variation margin out, and what happens when a member does not pay on time? | open | |
+
+### `task-sme-ccp-default`: the CCP's management of a member default and its waterfall
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| CDF-1 | BANK-C closes out all the defaulter's cleared repos at once at the feed price on its business date. Do repo CCPs instead hedge and auction the defaulter's positions over several days, and how is the close-out price set? | open | |
+| CDF-2 | The loss is covered by the defaulter's initial margin, its default fund contribution, the CCP's capital, then the other members' contributions pro rata. Is this order standard for repo CCPs, how much capital does a CCP put in before the members' contributions, and do the rulebooks also give an assessment power? | open | |
+| CDF-3 | The survivors' repos are closed out: each survivor keeps the securities or cash it holds and the residual is settled in cash. Do CCPs close the survivors' positions out, or keep them open and give them a new counterparty through the auction? | open | |
+| CDF-4 | What is left of the defaulter's margin and contribution is paid to it at once. When and to whom is a defaulter's surplus returned (an insolvency practitioner, after the default management period)? | open | |
+| CDF-5 | The defaulter may rejoin at once by paying its share again. What process do CCPs apply to a member after its default, and when may it clear again? | open | |
+
+### `task-sme-ccp-porting`: the admission of a member and the porting of a cleared repo
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| CPT-1 | BANK-C admits a member to its rulebook in effect with a separate admission document, and the rulebook is unchanged. How do CCPs admit a member (an accession agreement, an amendment of the rulebook), and which checks come first? | open | |
+| CPT-2 | A member moves its leg of a cleared repo to another member when the two agree and the CCP approves. Do repo CCPs allow such member-to-member transfers, or is porting used only for client positions when a clearing member defaults? | open | |
+| CPT-3 | The receiving member pays the leaving member the leg's value at the feed price, with the variation margin paid. How is a transferred position priced and paid for: at market, at the original terms, or with no payment between the members? | open | |
+| CPT-4 | The variation margin paid stays with the repo, and the initial margin does not move: the next round calls the receiving member's and returns the leaving member's. Is margin transferred with a ported position? | open | |
+| CPT-5 | Either the receiving member or the CCP may refuse, and a leg may be ported only once. What criteria does a CCP apply to accept a transfer, and are repeated transfers limited? | open | |

@@ -555,10 +555,23 @@ public final class App {
         app.post("/api/v1/ccp/clearings/{id}/accept", this::acceptCcpClearing);
         app.post("/api/v1/ccp/clearings/{id}/refuse", this::refuseCcpClearing);
         app.post("/api/v1/ccp/clearings/{id}/instruct", this::instructCcpCleared);
+        app.get("/api/v1/ccp/margin", this::ccpMargin);
+        app.post("/api/v1/ccp/margin", this::issueCcpMargin);
+        app.post("/api/v1/ccp/margin/{id}/pay", this::payCcpMargin);
+        app.post("/api/v1/ccp/margin/{id}/cancel", this::cancelCcpMargin);
+        app.get("/api/v1/ccp/defaults", this::ccpDefaults);
+        app.post("/api/v1/ccp/defaults", this::declareCcpDefault);
+        app.post("/api/v1/ccp/defaults/{hash}/pay", this::payCcpDefaultDue);
+        app.post("/api/v1/ccp/members", this::admitCcpMember);
+        app.post("/api/v1/ccp/clearings/{id}/porting", this::requestCcpPorting);
+        app.post("/api/v1/ccp/clearings/{id}/porting/accept", this::acceptCcpPorting);
+        app.post("/api/v1/ccp/clearings/{id}/porting/approve", this::approveCcpPorting);
+        app.post("/api/v1/ccp/clearings/{id}/porting/refuse", this::refuseCcpPorting);
     }
 
+    /** The CCP's documents go to the CCP, the rulebook's members and BANK-T, which the CCP may admit (wp-adr-ccp-porting). */
     private List<String> ccpParties() {
-        return List.of(cfg.partyAddress("C"), cfg.partyAddress("A"), cfg.partyAddress("B"));
+        return List.of(cfg.partyAddress("C"), cfg.partyAddress("A"), cfg.partyAddress("B"), cfg.partyAddress("T"));
     }
 
     private List<String> ccpMemberNames() {
@@ -574,20 +587,33 @@ public final class App {
     /** Check the published document against this party's own build. */
     private Optional<String> ccpProblem(JsonNode r) {
         String hash = r.get("rulebookHash").asText();
-        if (ccpChecked.contains(hash)) return Optional.empty();
+        // Keyed by the number of members too: an admission (wp-adr-ccp-porting) adds one, which is checked in turn.
+        String key = hash + ":" + r.get("members").size();
+        if (ccpChecked.contains(key)) return Optional.empty();
         try {
             String doc = payloads.get(hash);
             if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the rulebook is not in the payload store or its hash differs");
             CdmCcp.Rulebook v = CdmCcp.verify(doc, bankOf(r.get("ccp").asText()), ccpMemberNames());
             if (!r.get("token").asText().equalsIgnoreCase(cfg.tokenAddress("tUSD"))) return Optional.of("the default fund is not paid in tUSD");
             if (new BigInteger(r.get("capital").asText()).longValueExact() != v.capital()) return Optional.of("the capital paid differs from the rulebook");
+            int named = 0;
             for (JsonNode m : r.get("members")) {
+                String admission = m.path("admissionHash").asText(ZERO_HASH);
+                if (!admission.equals(ZERO_HASH)) {
+                    String adoc = payloads.get(admission);
+                    if (adoc == null || !Cdm.keccakHex(adoc).equalsIgnoreCase(admission))
+                        return Optional.of("an admission is not in the payload store or its hash differs");
+                    CdmCcp.Admission a = CdmCcp.verifyAdmission(adoc, hash, bankOf(r.get("ccp").asText()), bankOf(m.get("member").asText()));
+                    if (new BigInteger(m.get("share").asText()).longValueExact() != a.share()) return Optional.of("an admitted member's share on chain differs from its admission");
+                    continue;
+                }
+                named++;
                 Long share = v.shares().get(bankOf(m.get("member").asText()));
                 if (share == null || new BigInteger(m.get("share").asText()).longValueExact() != share)
                     return Optional.of("the members or shares on chain differ from the rulebook");
             }
-            if (r.get("members").size() != v.shares().size()) return Optional.of("the members on chain differ from the rulebook");
-            ccpChecked.add(hash);
+            if (named != v.shares().size()) return Optional.of("the members on chain differ from the rulebook");
+            ccpChecked.add(key);
             return Optional.empty();
         } catch (Exception e) {
             return Optional.of(String.valueOf(e.getMessage()));
@@ -623,6 +649,9 @@ public final class App {
             e.put("bank", bankOf(x.get("member").asText()));
             e.put("share", new BigInteger(x.get("share").asText()).longValueExact());
             e.put("paid", x.get("paid").asBoolean());
+            e.put("contributed", new BigInteger(x.path("contributed").asText("0")).longValueExact());
+            e.put("imHeld", new BigInteger(x.path("imHeld").asText("0")).longValueExact());
+            e.put("admitted", !x.path("admissionHash").asText(ZERO_HASH).equals(ZERO_HASH));
             members.add(e);
             if (x.get("member").asText().equalsIgnoreCase(cfg.myAddress)) mine = e;
         }
@@ -637,6 +666,9 @@ public final class App {
         }
         m.put("canJoin", mine != null && !Boolean.TRUE.equals(mine.get("paid")) && problem.isEmpty());
         m.put("canLeave", mine != null && Boolean.TRUE.equals(mine.get("paid")));
+        // The CCP may admit BANK-T (wp-adr-ccp-porting) once the rulebook is in effect.
+        boolean tNamed = members.stream().anyMatch(x -> "T".equals(x.get("party")));
+        m.put("canAdmit", cfg.isCcp() && r.get("state").asText().equals("Effective") && !tNamed ? List.of("T") : List.of());
         out.put("rulebook", m);
         ctx.json(out);
     }
@@ -679,7 +711,9 @@ public final class App {
 
     /** The bilateral trade this party checks a novation against: its own booking for a member, the carried trade for the CCP. */
     private TradeState ccpBilateralTrade(JsonNode repo, String novationJson) {
-        if (cfg.isCcp()) return CdmCcp.bilateralOf(CdmCcp.parseNovation(novationJson));
+        boolean party = repo.get("seller").asText().equalsIgnoreCase(cfg.myAddress) || repo.get("buyer").asText().equalsIgnoreCase(cfg.myAddress);
+        // The CCP, and a member a leg was ported to (wp-adr-ccp-porting), check the trade the clearing event carries.
+        if (cfg.isCcp() || !party) return CdmCcp.bilateralOf(CdmCcp.parseNovation(novationJson));
         CdmRepo.Booking b = repoBooking(repo);
         if (b == null) throw new IllegalStateException("the booked document is not in the payload store");
         return b.trade();
@@ -767,8 +801,42 @@ public final class App {
         }
         m.put("verified", problem == null);
         m.put("problem", problem);
+        m.put("vmBalance", new BigInteger(c.path("vmBalance").asText("0")).longValueExact());
+        Map<String, Object> pv = null;
+        JsonNode p = c.path("porting");
+        if (!p.isMissingNode() && !p.isNull()) {
+            pv = new LinkedHashMap<>();
+            pv.put("from", partyIdOf(p.get("from").asText()));
+            pv.put("to", partyIdOf(p.get("to").asText()));
+            pv.put("payment", new BigInteger(p.get("payment").asText()).longValueExact());
+            pv.put("state", p.get("state").asText());
+            pv.put("portingHash", p.get("portingHash").asText());
+            String pp = null;
+            if (n != null) {
+                try {
+                    ccpPortingCheck(c, n);
+                } catch (Exception e) {
+                    pp = String.valueOf(e.getMessage());
+                }
+            } else {
+                pp = "the novation does not check";
+            }
+            pv.put("verified", pp == null);
+            pv.put("problem", pp);
+        }
+        m.put("porting", pv);
+        TradeState[] current = null;
         if (n != null) {
-            CdmRepo.Terms s = CdmRepo.terms(n.sellerLeg()), b = CdmRepo.terms(n.buyerLeg());
+            try {
+                current = ccpLegs(c, n);
+            } catch (Exception e) {
+                if (problem == null) problem = String.valueOf(e.getMessage());
+                m.put("verified", false);
+                m.put("problem", problem);
+            }
+        }
+        if (n != null && current != null) {
+            CdmRepo.Terms s = CdmRepo.terms(current[0]), b = CdmRepo.terms(current[1]);
             m.put("legs", List.of(
                     Map.of("tradeId", s.tradeId(), "seller", s.seller(), "buyer", s.buyer()),
                     Map.of("tradeId", b.tradeId(), "seller", b.seller(), "buyer", b.buyer())));
@@ -782,8 +850,25 @@ public final class App {
         m.put("canRefuse", ccp && (state.equals("submitted") || state.equals("affirmed")));
         boolean mineInstructed = seller ? sellerInstructed : buyerInstructed;
         boolean due = state.equals("cleared") || (state.equals("purchased") && Boolean.TRUE.equals(m.get("repurchaseDue")));
-        m.put("canInstruct", (seller || buyer) && due && !mineInstructed && ok);
+        String pstate = pv == null ? "none" : String.valueOf(pv.get("state"));
+        boolean portingOpen = pstate.equals("requested") || pstate.equals("accepted");
+        m.put("canInstruct", (seller || buyer) && due && !mineInstructed && ok && !portingOpen);
         m.put("phase", state.equals("purchased") ? "repurchase" : "purchase");
+        // Porting (wp-adr-ccp-porting): a party to a purchased repo may move its leg to another paid member, once.
+        List<String> targets = new ArrayList<>();
+        if ((seller || buyer) && ok && state.equals("purchased") && (pstate.equals("none") || pstate.equals("refused")) && !sellerInstructed && !buyerInstructed) {
+            JsonNode rb = ccpRulebookOnChain();
+            if (rb != null) for (JsonNode x : rb.get("members")) {
+                String a = x.get("member").asText();
+                if (x.get("paid").asBoolean() && !a.equalsIgnoreCase(c.get("seller").asText()) && !a.equalsIgnoreCase(c.get("buyer").asText())) targets.add(partyIdOf(a));
+            }
+        }
+        m.put("canPortTo", targets);
+        boolean pok = pv != null && Boolean.TRUE.equals(pv.get("verified"));
+        boolean to = pv != null && p.get("to").asText().equalsIgnoreCase(cfg.myAddress);
+        m.put("canAcceptPorting", to && pstate.equals("requested") && pok);
+        m.put("canApprovePorting", ccp && pstate.equals("accepted") && pok);
+        m.put("canRefusePorting", (ccp || to) && portingOpen);
         return m;
     }
 
@@ -847,13 +932,562 @@ public final class App {
         if (!Boolean.TRUE.equals(v.get("canInstruct")))
             throw new IllegalStateException("leg not open to instruct: " + (v.get("problem") != null ? v.get("problem") : "the clearing is " + v.get("state")));
         CdmCcp.Novation n = ccpNovation(c);
-        TradeState leg = c.get("seller").asText().equalsIgnoreCase(cfg.myAddress) ? n.sellerLeg() : n.buyerLeg();
+        TradeState[] legs = ccpLegs(c, n);
+        TradeState leg = c.get("seller").asText().equalsIgnoreCase(cfg.myAddress) ? legs[0] : legs[1];
         CdmRepo.Settlement s = v.get("phase").equals("purchase") ? CdmRepo.purchase(leg) : CdmRepo.repurchase(leg);
         store.recordDocument(id, "RepoSettlement", "out", s.hash(), s.json());
         payloads.put(s.hash(), s.json(), ccpParties());
         JsonNode tx = gw.post("/ccp/clearings/" + id + "/instruct", Map.of("legHash", s.hash()));
         ctx.json(Map.of("repoId", id, "phase", v.get("phase"), "legHash", s.hash(), "txHash", tx.path("txHash").asText()));
     }
+
+    // --- CCP legs after porting (task-ccp-porting, wp-adr-ccp-porting) ---
+
+    /** Portings that checked, by hash and state; a failed check is not kept, so it is retried. */
+    private final Map<String, CdmCcp.Porting> ccpPortings = new ConcurrentHashMap<>();
+
+    /** Check a cleared repo's porting against this party's own build from the novation's leg. While it is pending, the
+     *  variation margin it states must be the chain's and its price the feed's. Returns the porting or throws. */
+    private CdmCcp.Porting ccpPortingCheck(JsonNode c, CdmCcp.Novation n) {
+        JsonNode p = c.get("porting");
+        String hash = p.get("portingHash").asText(), state = p.get("state").asText();
+        boolean pending = state.equals("requested") || state.equals("accepted");
+        String key = hash + ":" + (pending ? "pending" : "final");
+        CdmCcp.Porting cached = ccpPortings.get(key);
+        if (cached != null) return cached;
+        String doc = payloads.get(hash);
+        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the porting is not in the payload store or its hash differs");
+        var parsed = CdmCcp.parsePorting(doc);
+        boolean seller = parsed.getSeller();
+        long vm = parsed.getVariationMarginPaid().longValueExact();
+        if (pending) {
+            if (vm != new BigInteger(c.path("vmBalance").asText("0")).longValueExact()) throw new IllegalStateException("the porting's variation margin is not the chain's");
+            String leaving = seller ? c.get("seller").asText() : c.get("buyer").asText();
+            if (!leaving.equalsIgnoreCase(p.get("from").asText())) throw new IllegalStateException("the leaving member is not on the leg the porting moves");
+            if (parsed.getPrice().compareTo(feedPrice(c.get("security").asText())) != 0) throw new IllegalStateException("the porting's price is not the feed price");
+        }
+        CdmCcp.Porting again = CdmCcp.verifyPorting(doc, c.get("rulebookHash").asText(), c.get("repoId").asText(), bankOf(c.get("ccp").asText()),
+                bankOf(p.get("from").asText()), bankOf(p.get("to").asText()), seller, seller ? n.sellerLeg() : n.buyerLeg(), vm);
+        if (again.payment() != new BigInteger(p.get("payment").asText()).longValueExact()) throw new IllegalStateException("the payment on chain differs from the porting");
+        ccpPortings.put(key, again);
+        return again;
+    }
+
+    /** A cleared repo's current legs, the seller's then the buyer's: the novation's, with a leg an executed porting moved
+     *  replaced by the porting's new leg. */
+    private TradeState[] ccpLegs(JsonNode c, CdmCcp.Novation n) {
+        TradeState s = n.sellerLeg(), b = n.buyerLeg();
+        JsonNode p = c.path("porting");
+        if (!p.isMissingNode() && !p.isNull() && p.path("state").asText().equals("executed")) {
+            CdmCcp.Porting po = ccpPortingCheck(c, n);
+            if (po.porting().getSeller()) s = po.newLeg();
+            else b = po.newLeg();
+        }
+        return new TradeState[] {s, b};
+    }
+
+    /** An ordered map of key, value pairs, values may be null. */
+    private static Map<String, Object> o(Object... kv) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        for (int i = 0; i < kv.length; i += 2) m.put(String.valueOf(kv[i]), kv[i + 1]);
+        return m;
+    }
+
+    // --- CCP margin (task-ccp-margin, wp-adr-ccp-margin) ---
+    // On its business date the CCP builds each paid member's cdm-ext CcpMarginStatement: a variation margin line for each
+    // cleared repo, purchased or repurchased with variation margin still paid, at the feed price, and the initial margin
+    // at the rulebook's rate of the member's open cleared repos' Purchase Prices less what it holds. It stores them for
+    // the parties and issues the round on CcpClearing. Each member rebuilds its own statement from the chain and the
+    // stated prices, which must be the feed's while the round is open, and pays its net.
+
+    /** Margin statements that checked, by hash. */
+    private final Set<String> ccpMarginChecked = ConcurrentHashMap.newKeySet();
+
+    private List<JsonNode> ccpAllClearings() {
+        List<JsonNode> out = new ArrayList<>();
+        if (!cfg.registry.get("parties").has("ccp")) return out;
+        for (JsonNode c : gw.getQuery("/ccp/clearings", Map.of("party", cfg.partyAddress("C")))) out.add(c);
+        return out;
+    }
+
+    private static boolean involves(JsonNode c, String address) {
+        return c.get("seller").asText().equalsIgnoreCase(address) || c.get("buyer").asText().equalsIgnoreCase(address);
+    }
+
+    private static long vmOf(JsonNode c) {
+        return new BigInteger(c.path("vmBalance").asText("0")).longValueExact();
+    }
+
+    /** Whether a round counts the repo: purchased, or repurchased with variation margin still to return. */
+    private static boolean countsForMargin(JsonNode c) {
+        String st = c.get("state").asText();
+        return st.equals("purchased") || (st.equals("repurchased") && vmOf(c) != 0);
+    }
+
+    private CdmCcp.MarginLine marginLine(JsonNode c, BigDecimal price) {
+        CdmCcp.Novation n = ccpNovation(c);
+        return new CdmCcp.MarginLine(c.get("repoId").asText(), bankOf(c.get("seller").asText()), bankOf(c.get("buyer").asText()),
+                c.get("state").asText().equals("repurchased"), n.sellerLeg(), price, vmOf(c));
+    }
+
+    private long imBaseOf(List<JsonNode> all, String address) {
+        long base = 0;
+        for (JsonNode c : all) {
+            String st = c.get("state").asText();
+            if ((st.equals("cleared") || st.equals("purchased")) && involves(c, address)) base += c.get("purchasePrice").asLong();
+        }
+        return base;
+    }
+
+    private BigDecimal ccpRate(JsonNode rb) {
+        String doc = payloads.get(rb.get("rulebookHash").asText());
+        return doc == null ? CdmCcp.IM_RATE : CdmCcp.parse(doc).getInitialMarginRate();
+    }
+
+    /** The statements the CCP would issue on its business date, by member address, for members with something to state. */
+    private Map<String, CdmCcp.MarginStatement> ccpMarginBuild(JsonNode rb) {
+        List<JsonNode> all = ccpAllClearings();
+        Map<String, CdmCcp.MarginStatement> out = new LinkedHashMap<>();
+        for (JsonNode m : rb.get("members")) {
+            if (!m.get("paid").asBoolean()) continue;
+            String addr = m.get("member").asText();
+            List<CdmCcp.MarginLine> lines = new ArrayList<>();
+            for (JsonNode c : all) if (countsForMargin(c) && involves(c, addr)) lines.add(marginLine(c, feedPrice(c.get("security").asText())));
+            long held = new BigInteger(m.path("imHeld").asText("0")).longValueExact();
+            long base = imBaseOf(all, addr);
+            if (lines.isEmpty() && held == 0 && base == 0) continue;
+            out.put(addr, CdmCcp.marginStatement(rb.get("rulebookHash").asText(), cfg.bankName("C"), bankOf(addr), businessDate, ccpRate(rb), lines, base, held));
+        }
+        return out;
+    }
+
+    private static Map<String, Object> statementView(CdmCcp.MarginStatement st) {
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("member", st.statement().getMember());
+        v.put("vm", st.vm());
+        v.put("im", st.im());
+        v.put("net", st.net());
+        v.put("imRequired", st.statement().getInitialMarginRequired().longValueExact());
+        v.put("imHeld", st.statement().getInitialMarginHeld().longValueExact());
+        List<Map<String, Object>> lines = new ArrayList<>();
+        for (var l : CdmCcp.lines(st.statement()))
+            lines.add(o("repoId", l.getRepoId(), "seller", l.getSeller(), "buyer", l.getBuyer(), "price", l.getPrice().toPlainString(),
+                    "exposure", l.getExposure().longValueExact(), "previous", l.getPreviousVariationMargin().longValueExact(),
+                    "change", l.getVariationMargin().longValueExact(), "repurchased", l.getRepurchased()));
+        v.put("lines", lines);
+        v.put("calls", st.statement().getCall() == null ? List.of() : st.statement().getCall().stream().map(x -> String.valueOf(x.getRegMarginType())).toList());
+        return v;
+    }
+
+    /** Check this member's statement in an issued round: rebuilt from the chain's repos and margin and the stated prices,
+     *  which must be the feed's; the chain's amounts must be the statement's. Returns the statement or throws. */
+    private CdmCcp.MarginStatement ccpMyStatement(JsonNode round, JsonNode mine, JsonNode rb) {
+        String hash = mine.get("statementHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the statement is not in the payload store or its hash differs");
+        var stated = CdmCcp.parseMargin(doc);
+        if (ccpMarginChecked.contains(hash)) return new CdmCcp.MarginStatement(stated, doc, hash);
+        if (!round.get("state").asText().equals("issued")) throw new IllegalStateException("the round is " + round.get("state").asText() + "; this service did not check it");
+        LocalDate date = CdmCcp.dateOfKey(round.get("businessDate").asText());
+        Map<String, Long> onChainVm = new HashMap<>();
+        for (JsonNode r : round.get("repos")) onChainVm.put(r.get("repoId").asText().toLowerCase(), new BigInteger(r.get("vm").asText()).longValueExact());
+        List<JsonNode> all = ccpAllClearings();
+        List<CdmCcp.MarginLine> lines = new ArrayList<>();
+        for (JsonNode c : all) {
+            if (!countsForMargin(c) || !involves(c, cfg.myAddress)) continue;
+            String id = c.get("repoId").asText();
+            if (!onChainVm.containsKey(id.toLowerCase())) throw new IllegalStateException("the round leaves out repo " + id);
+            BigDecimal price = CdmCcp.statedPrice(stated, id);
+            if (price == null) throw new IllegalStateException("the statement has no line for repo " + id);
+            if (price.compareTo(feedPrice(c.get("security").asText())) != 0) throw new IllegalStateException("the statement's price for repo " + id + " is not the feed price");
+            lines.add(marginLine(c, price));
+        }
+        long held = 0;
+        for (JsonNode m : rb.get("members"))
+            if (m.get("member").asText().equalsIgnoreCase(cfg.myAddress)) held = new BigInteger(m.path("imHeld").asText("0")).longValueExact();
+        CdmCcp.MarginStatement again = CdmCcp.marginStatement(rb.get("rulebookHash").asText(), bankOf(round.get("ccp").asText()), myBankName(), date,
+                ccpRate(rb), lines, imBaseOf(all, cfg.myAddress), held);
+        if (!again.json().equals(doc)) throw new IllegalStateException("the statement differs from the statement this member builds");
+        if (again.vm() != new BigInteger(mine.get("vm").asText()).longValueExact() || again.im() != new BigInteger(mine.get("im").asText()).longValueExact())
+            throw new IllegalStateException("the amounts on chain differ from the statement");
+        for (var l : CdmCcp.lines(again.statement()))
+            if (onChainVm.get(l.getRepoId().toLowerCase()) != l.getVariationMargin().longValueExact()) throw new IllegalStateException("repo " + l.getRepoId() + "'s change on chain differs from the statement");
+        ccpMarginChecked.add(hash);
+        return again;
+    }
+
+    private String myBankName() {
+        return cfg.bankName(cfg.partyId);
+    }
+
+    private void ccpMargin(Context ctx) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("businessDate", businessDate.toString());
+        out.put("ccp", cfg.isCcp());
+        JsonNode rb = cfg.registry.get("parties").has("ccp") ? ccpRulebookOnChain() : null;
+        List<Map<String, Object>> rounds = new ArrayList<>();
+        boolean open = false;
+        if (rb != null) {
+            JsonNode all = gw.getQuery("/ccp/margin", Map.of("ccp", cfg.partyAddress("C")));
+            for (JsonNode r : all) {
+                Map<String, Object> v = new LinkedHashMap<>();
+                String state = r.get("state").asText();
+                open |= state.equals("issued");
+                v.put("roundId", r.get("roundId").asText());
+                v.put("businessDate", CdmCcp.dateOfKey(r.get("businessDate").asText()).toString());
+                v.put("state", state);
+                List<Map<String, Object>> ms = new ArrayList<>();
+                JsonNode mine = null;
+                for (JsonNode m : r.get("members")) {
+                    long vm = new BigInteger(m.get("vm").asText()).longValueExact(), im = new BigInteger(m.get("im").asText()).longValueExact();
+                    ms.add(o("party", partyIdOf(m.get("member").asText()), "vm", vm, "im", im, "net", vm + im, "paid", m.get("paid").asBoolean()));
+                    if (m.get("member").asText().equalsIgnoreCase(cfg.myAddress)) mine = m;
+                }
+                v.put("members", ms);
+                List<Map<String, Object>> repos = new ArrayList<>();
+                for (JsonNode x : r.get("repos")) repos.add(o("repoId", x.get("repoId").asText(), "vm", new BigInteger(x.get("vm").asText()).longValueExact()));
+                v.put("repos", repos);
+                if (mine != null) {
+                    Map<String, Object> mv = new LinkedHashMap<>();
+                    try {
+                        mv.putAll(statementView(ccpMyStatement(r, mine, rb)));
+                        mv.put("verified", true);
+                        mv.put("problem", null);
+                    } catch (Exception e) {
+                        mv.put("verified", false);
+                        mv.put("problem", String.valueOf(e.getMessage()));
+                    }
+                    long net = new BigInteger(mine.get("vm").asText()).add(new BigInteger(mine.get("im").asText())).longValueExact();
+                    mv.put("net", net);
+                    mv.put("paid", mine.get("paid").asBoolean());
+                    mv.put("canPay", state.equals("issued") && net > 0 && !mine.get("paid").asBoolean() && Boolean.TRUE.equals(mv.get("verified")));
+                    v.put("mine", mv);
+                }
+                v.put("canCancel", cfg.isCcp() && state.equals("issued"));
+                rounds.add(0, v);
+            }
+            if (cfg.isCcp() && !open && rb.get("state").asText().equals("Effective")) {
+                try {
+                    List<Map<String, Object>> preview = new ArrayList<>();
+                    for (var e : ccpMarginBuild(rb).entrySet()) {
+                        Map<String, Object> pv = statementView(e.getValue());
+                        pv.put("party", partyIdOf(e.getKey()));
+                        preview.add(pv);
+                    }
+                    out.put("preview", preview);
+                } catch (Exception e) {
+                    out.put("previewProblem", String.valueOf(e.getMessage()));
+                }
+            }
+        }
+        out.put("canIssue", cfg.isCcp() && rb != null && !open && out.get("preview") instanceof List<?> l && !l.isEmpty());
+        out.put("rounds", rounds);
+        ctx.json(out);
+    }
+
+    /** The CCP issues the round of its business date. */
+    private void issueCcpMargin(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP issues margin");
+        JsonNode rb = ccpRulebookOnChain();
+        if (rb == null || !rb.get("state").asText().equals("Effective")) throw new IllegalStateException("the CCP's rulebook is not in effect");
+        Map<String, CdmCcp.MarginStatement> sts = ccpMarginBuild(rb);
+        if (sts.isEmpty()) throw new IllegalStateException("no member has margin to state");
+        List<String> repoIds = new ArrayList<>(), repoVm = new ArrayList<>(), members = new ArrayList<>(), im = new ArrayList<>(), hashes = new ArrayList<>();
+        for (var e : sts.entrySet()) {
+            CdmCcp.MarginStatement st = e.getValue();
+            store.recordDocument(st.hash(), "CcpMarginStatement", "out", st.hash(), st.json());
+            payloads.put(st.hash(), st.json(), ccpParties());
+            members.add(e.getKey());
+            im.add(String.valueOf(st.im()));
+            hashes.add(st.hash());
+            for (var l : CdmCcp.lines(st.statement()))
+                if (l.getSeller().equals(st.statement().getMember())) {
+                    repoIds.add(l.getRepoId());
+                    repoVm.add(String.valueOf(l.getVariationMargin().longValueExact()));
+                }
+        }
+        JsonNode tx = gw.post("/ccp/margin", Map.of("businessDate", String.valueOf(CdmCcp.dateKey(businessDate)), "repoIds", repoIds, "repoVm", repoVm,
+                "members", members, "im", im, "statementHashes", hashes));
+        ctx.json(Map.of("businessDate", businessDate.toString(), "members", members.size(), "txHash", tx.path("txHash").asText()));
+    }
+
+    private JsonNode ccpRoundOnChain(String id) {
+        JsonNode r = gw.get("/ccp/margin/" + id).get("round");
+        if (r == null || r.isNull()) throw new IllegalArgumentException("no margin round " + id);
+        return r;
+    }
+
+    /** A member pays its net on a round after checking its statement. */
+    private void payCcpMargin(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode r = ccpRoundOnChain(id);
+        JsonNode mine = null;
+        for (JsonNode m : r.get("members")) if (m.get("member").asText().equalsIgnoreCase(cfg.myAddress)) mine = m;
+        if (mine == null) throw new IllegalArgumentException("this member is not in round " + id);
+        ccpMyStatement(r, mine, ccpRulebookOnChain());
+        ctx.json(gw.post("/ccp/margin/" + id + "/pay", Map.of()));
+    }
+
+    private void cancelCcpMargin(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP cancels a round");
+        ctx.json(gw.post("/ccp/margin/" + ctx.pathParam("id") + "/cancel", Map.of()));
+    }
+
+    // --- CCP default (task-ccp-default, wp-adr-ccp-default) ---
+    // The CCP declares a paid member's default: the oracle service records it when the feed does not show it, an open
+    // margin round is cancelled, and the CCP builds the cdm-ext CcpDefaultManagement: each of the member's cleared repos
+    // closed out at the feed price on its business date (both legs terminated with CDM's termination event), the residual
+    // after the variation margin paid, and the waterfall. It records the close-out on CcpClearing, which pays the
+    // survivors and returns what is left to the defaulter. Each member rebuilds the document from the novations, the
+    // stated prices and resources, and compares the chain's amounts.
+
+    /** Default management documents that checked, by hash. */
+    private final Set<String> ccpDefaultChecked = ConcurrentHashMap.newKeySet();
+
+    private boolean inDefault(String address) {
+        return gw.get("/defaults/" + address).get("inDefault").asBoolean();
+    }
+
+    private CdmCcp.Management ccpManagementBuild(JsonNode rb, String defaulter, LocalDate date, Map<String, BigDecimal> prices, CdmCcp.Resources res) {
+        List<CdmCcp.DefaultInput> txs = new ArrayList<>();
+        for (JsonNode c : ccpAllClearings()) {
+            String st = c.get("state").asText();
+            if (!involves(c, defaulter) || !(st.equals("cleared") || st.equals("purchased"))) continue;
+            txs.add(defaultInput(c, defaulter, prices == null ? feedPrice(c.get("security").asText()) : prices.get(c.get("repoId").asText().toLowerCase())));
+        }
+        return CdmCcp.defaultManagement(rb.get("rulebookHash").asText(), cfg.bankName("C"), bankOf(defaulter), date, date, txs, res);
+    }
+
+    private CdmCcp.DefaultInput defaultInput(JsonNode c, String defaulter, BigDecimal price) {
+        CdmCcp.Novation n = ccpNovation(c);
+        TradeState[] legs = ccpLegs(c, n);
+        boolean seller = c.get("seller").asText().equalsIgnoreCase(defaulter);
+        String survivor = bankOf(seller ? c.get("buyer").asText() : c.get("seller").asText());
+        boolean purchased = c.get("state").asText().equals("purchased");
+        return new CdmCcp.DefaultInput(c.get("repoId").asText(), purchased, seller ? legs[0] : legs[1], seller ? legs[1] : legs[0], survivor,
+                purchased ? vmOf(c) : 0, price);
+    }
+
+    private CdmCcp.Resources resourcesOf(JsonNode rb, String defaulter) {
+        long im = 0, contribution = 0, members = 0;
+        for (JsonNode m : rb.get("members")) {
+            long c = new BigInteger(m.path("contributed").asText("0")).longValueExact();
+            if (m.get("member").asText().equalsIgnoreCase(defaulter)) {
+                im = new BigInteger(m.path("imHeld").asText("0")).longValueExact();
+                contribution = c;
+            } else if (m.get("paid").asBoolean()) {
+                members += c;
+            }
+        }
+        return new CdmCcp.Resources(im, contribution, new BigInteger(rb.get("capital").asText()).longValueExact(), members);
+    }
+
+    private void ccpDefaults(Context ctx) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("businessDate", businessDate.toString());
+        JsonNode rb = cfg.registry.get("parties").has("ccp") ? ccpRulebookOnChain() : null;
+        List<Map<String, Object>> members = new ArrayList<>();
+        List<Map<String, Object>> defaults = new ArrayList<>();
+        if (rb != null) {
+            for (JsonNode m : rb.get("members")) {
+                if (!m.get("paid").asBoolean()) continue;
+                String a = m.get("member").asText();
+                members.add(o("party", partyIdOf(a), "inDefault", inDefault(a), "canDeclare", cfg.isCcp()));
+            }
+            for (JsonNode d : gw.getQuery("/ccp/defaults", Map.of("ccp", cfg.partyAddress("C")))) defaults.add(0, ccpDefaultView(d));
+        }
+        out.put("members", members);
+        out.put("defaults", defaults);
+        ctx.json(out);
+    }
+
+    private Map<String, Object> ccpDefaultView(JsonNode d) {
+        Map<String, Object> v = new LinkedHashMap<>();
+        String hash = d.get("closeOutHash").asText();
+        v.put("closeOutHash", hash);
+        v.put("defaulter", partyIdOf(d.get("defaulter").asText()));
+        for (String f : List.of("loss", "fromInitialMargin", "fromDefaulterFund", "fromCapital", "fromMembersFund", "returned", "dueOutstanding"))
+            v.put(f, new BigInteger(d.get(f).asText()).longValueExact());
+        List<Map<String, Object>> due = new ArrayList<>();
+        long mineDue = 0;
+        for (JsonNode x : d.get("due")) {
+            long a = new BigInteger(x.get("amount").asText()).longValueExact();
+            due.add(o("party", partyIdOf(x.get("member").asText()), "amount", a));
+            if (x.get("member").asText().equalsIgnoreCase(cfg.myAddress)) mineDue = a;
+        }
+        v.put("due", due);
+        v.put("mineDue", mineDue);
+        String problem = null;
+        try {
+            CdmCcp.Management m = ccpDefaultCheck(d);
+            List<Map<String, Object>> txs = new ArrayList<>();
+            for (var t : m.management().getTransaction())
+                txs.add(o("repoId", t.getRepoId(), "survivor", t.getSurvivor(), "price", t.getSurvivorLeg().getPrice().toPlainString(),
+                        "repurchasePrice", t.getSurvivorLeg().getRepurchasePrice().longValueExact(), "defaultMarketValue", t.getSurvivorLeg().getDefaultMarketValue().longValueExact(),
+                        "variationMarginPaid", t.getVariationMarginPaid().longValueExact(), "residual", t.getResidual().longValueExact(),
+                        "survivorAmount", t.getSurvivorAmount().longValueExact()));
+            v.put("transactions", txs);
+            v.put("closeOutDate", m.management().getCloseOutDate().toString());
+        } catch (Exception e) {
+            problem = String.valueOf(e.getMessage());
+        }
+        v.put("verified", problem == null);
+        v.put("problem", problem);
+        v.put("canPayDue", mineDue > 0 && problem == null);
+        return v;
+    }
+
+    /** Check a default management document: it validates and equals the one this party builds from the novations, the
+     *  chain's variation margin, and the prices, dates and resources it states; the chain's waterfall must be its own. */
+    private CdmCcp.Management ccpDefaultCheck(JsonNode d) {
+        String hash = d.get("closeOutHash").asText();
+        String doc = payloads.get(hash);
+        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) throw new IllegalStateException("the close-out is not in the payload store or its hash differs");
+        var stated = CdmCcp.parseManagement(doc);
+        if (ccpDefaultChecked.contains(hash)) return new CdmCcp.Management(stated, doc, hash);
+        var failures = CdmRuntime.failures(stated);
+        if (!failures.isEmpty()) throw new IllegalStateException("the close-out fails CDM validation: " + failures.get(0));
+        String defaulter = d.get("defaulter").asText();
+        List<String> onChain = new ArrayList<>();
+        for (JsonNode x : d.get("repoIds")) onChain.add(x.asText().toLowerCase());
+        List<CdmCcp.DefaultInput> txs = new ArrayList<>();
+        for (var t : stated.getTransaction()) {
+            if (!onChain.contains(t.getRepoId().toLowerCase())) throw new IllegalStateException("repo " + t.getRepoId() + " is not in the close-out on chain");
+            JsonNode c = ccpClearingOnChain(t.getRepoId());
+            CdmCcp.DefaultInput in = defaultInputClosed(c, defaulter, t.getSurvivorLeg().getPrice(), t.getPurchased());
+            txs.add(in);
+        }
+        if (txs.size() != onChain.size()) throw new IllegalStateException("the close-out on chain has other repos");
+        var w = stated.getWaterfall();
+        CdmCcp.Resources res = new CdmCcp.Resources(w.getDefaulterInitialMargin().longValueExact(), w.getDefaulterContribution().longValueExact(),
+                w.getCcpCapital().longValueExact(), w.getMembersContribution().longValueExact());
+        JsonNode rb = gw.get("/ccp/rulebook/" + stated.getRulebookHash()).get("rulebook");
+        CdmCcp.Management again = CdmCcp.defaultManagement(stated.getRulebookHash(), bankOf(d.get("ccp").asText()), bankOf(defaulter),
+                stated.getEventOfDefaultDate().toLocalDate(), stated.getCloseOutDate().toLocalDate(), txs, res);
+        if (!again.json().equals(doc)) throw new IllegalStateException("the close-out differs from the close-out this party builds");
+        if (rb == null || rb.isNull()) throw new IllegalStateException("the rulebook is not on chain");
+        long[] chain = {new BigInteger(d.get("loss").asText()).longValueExact(), new BigInteger(d.get("fromInitialMargin").asText()).longValueExact(),
+                new BigInteger(d.get("fromDefaulterFund").asText()).longValueExact(), new BigInteger(d.get("fromCapital").asText()).longValueExact(),
+                new BigInteger(d.get("fromMembersFund").asText()).longValueExact(), new BigInteger(d.get("returned").asText()).longValueExact()};
+        long[] mine = {w.getLoss().longValueExact(), w.getFromDefaulterInitialMargin().longValueExact(), w.getFromDefaulterContribution().longValueExact(),
+                w.getFromCcpCapital().longValueExact(), w.getFromMembersContribution().longValueExact(), w.getReturnedToDefaulter().longValueExact()};
+        if (!java.util.Arrays.equals(chain, mine)) throw new IllegalStateException("the waterfall on chain differs from the close-out");
+        ccpDefaultChecked.add(hash);
+        return again;
+    }
+
+    /** The input of a closed-out repo, rebuilt from the chain: the parties and variation margin are unchanged by the close-out. */
+    private CdmCcp.DefaultInput defaultInputClosed(JsonNode c, String defaulter, BigDecimal price, boolean purchased) {
+        CdmCcp.DefaultInput in = defaultInput(c, defaulter, price);
+        return new CdmCcp.DefaultInput(in.repoId(), purchased, in.defaulterLeg(), in.survivorLeg(), in.survivor(), purchased ? vmOf(c) : 0, price);
+    }
+
+    /** The CCP declares a member's default and closes out its cleared repos. */
+    private void declareCcpDefault(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP manages a member's default");
+        String member = cfg.partyAddress(String.valueOf(body(ctx).get("member")));
+        JsonNode rb = ccpRulebookOnChain();
+        if (rb == null) throw new IllegalStateException("the CCP has published no rulebook");
+        String defaultTx = null;
+        if (!inDefault(member)) {
+            JsonNode notified = oracle.post("/defaults", Map.of("party", member, "inDefault", true, "notifiedBy", cfg.bankName("C")));
+            defaultTx = notified.path("tx").path("txHash").asText(null);
+        }
+        for (JsonNode r : gw.getQuery("/ccp/margin", Map.of("ccp", cfg.myAddress)))
+            if (r.get("state").asText().equals("issued")) gw.post("/ccp/margin/" + r.get("roundId").asText() + "/cancel", Map.of());
+        rb = ccpRulebookOnChain();
+        CdmCcp.Management m = ccpManagementBuild(rb, member, businessDate, null, resourcesOf(rb, member));
+        store.recordDocument(m.hash(), "CcpDefaultManagement", "out", m.hash(), m.json());
+        payloads.put(m.hash(), m.json(), ccpParties());
+        List<String> ids = new ArrayList<>(), residuals = new ArrayList<>();
+        for (var e : m.residuals().entrySet()) {
+            ids.add(e.getKey());
+            residuals.add(String.valueOf(e.getValue()));
+        }
+        JsonNode tx = gw.post("/ccp/defaults", Map.of("defaulter", member, "closeOutHash", m.hash(), "repoIds", ids, "residuals", residuals));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("closeOutHash", m.hash());
+        out.put("loss", m.waterfall().getLoss().longValueExact());
+        out.put("defaultTx", defaultTx);
+        out.put("txHash", tx.path("txHash").asText());
+        ctx.json(out);
+    }
+
+    private void payCcpDefaultDue(Context ctx) {
+        String hash = ctx.pathParam("hash");
+        for (JsonNode d : gw.getQuery("/ccp/defaults", Map.of("ccp", cfg.partyAddress("C"))))
+            if (d.get("closeOutHash").asText().equalsIgnoreCase(hash)) ccpDefaultCheck(d);
+        ctx.json(gw.post("/ccp/defaults/" + hash + "/pay", Map.of()));
+    }
+
+    // --- CCP admission and porting (task-ccp-porting, wp-adr-ccp-porting) ---
+    // The CCP admits BANK-T with a cdm-ext CcpAdmission naming the rulebook; BANK-T checks it and joins by paying its
+    // share. A party to a purchased cleared repo builds the cdm-ext CcpPorting of its leg to another paid member at the
+    // feed price (CDM's party change, intent Novation); the receiving member and the CCP each rebuild it, the receiving
+    // member accepts and the CCP approves, which moves the payment, and a buyer's securities, on CcpClearing.
+
+    private void admitCcpMember(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP admits a member");
+        String party = String.valueOf(body(ctx).getOrDefault("member", "T"));
+        JsonNode rb = ccpRulebookOnChain();
+        if (rb == null || !rb.get("state").asText().equals("Effective")) throw new IllegalStateException("the CCP's rulebook is not in effect");
+        CdmCcp.Admission a = CdmCcp.admission(rb.get("rulebookHash").asText(), cfg.bankName("C"), cfg.bankName(party), businessDate);
+        store.recordDocument(a.hash(), "CcpAdmission", "out", a.hash(), a.json());
+        payloads.put(a.hash(), a.json(), ccpParties());
+        JsonNode tx = gw.post("/ccp/members", Map.of("member", cfg.partyAddress(party), "share", String.valueOf(a.share()), "admissionHash", a.hash()));
+        ctx.json(Map.of("admissionHash", a.hash(), "txHash", tx.path("txHash").asText()));
+    }
+
+    private void requestCcpPorting(Context ctx) {
+        String id = ctx.pathParam("id");
+        String to = String.valueOf(body(ctx).get("to"));
+        JsonNode c = ccpClearingOnChain(id);
+        Map<String, Object> v = ccpClearingView(c);
+        @SuppressWarnings("unchecked") List<String> targets = (List<String>) v.get("canPortTo");
+        if (!targets.contains(to)) throw new IllegalStateException("the leg cannot be ported to " + to + (v.get("problem") != null ? ": " + v.get("problem") : ""));
+        CdmCcp.Novation n = ccpNovation(c);
+        boolean seller = c.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
+        CdmCcp.Porting po = CdmCcp.porting(c.get("rulebookHash").asText(), id, bankOf(c.get("ccp").asText()), myBankName(), cfg.bankName(to), seller,
+                businessDate, seller ? n.sellerLeg() : n.buyerLeg(), feedPrice(c.get("security").asText()), vmOf(c));
+        store.recordDocument(id, "CcpPorting", "out", po.hash(), po.json());
+        payloads.put(po.hash(), po.json(), ccpParties());
+        // The receiving member reads the novation to check the leg it takes.
+        String nov = payloads.get(c.get("novationHash").asText());
+        if (nov != null) payloads.put(c.get("novationHash").asText(), nov, ccpParties());
+        JsonNode tx = gw.post("/ccp/clearings/" + id + "/porting", Map.of("to", cfg.partyAddress(to), "portingHash", po.hash(), "payment", String.valueOf(po.payment())));
+        ctx.json(Map.of("repoId", id, "portingHash", po.hash(), "payment", po.payment(), "txHash", tx.path("txHash").asText()));
+    }
+
+    private void acceptCcpPorting(Context ctx) {
+        String id = ctx.pathParam("id");
+        JsonNode c = ccpClearingOnChain(id);
+        Map<String, Object> v = ccpClearingView(c);
+        if (!Boolean.TRUE.equals(v.get("canAcceptPorting"))) throw new IllegalStateException("the porting cannot be accepted: " + porting(v));
+        ctx.json(gw.post("/ccp/clearings/" + id + "/porting/accept", Map.of("portingHash", c.get("porting").get("portingHash").asText())));
+    }
+
+    private void approveCcpPorting(Context ctx) {
+        if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP approves a porting");
+        String id = ctx.pathParam("id");
+        Map<String, Object> v = ccpClearingView(ccpClearingOnChain(id));
+        if (!Boolean.TRUE.equals(v.get("canApprovePorting"))) throw new IllegalStateException("the porting cannot be approved: " + porting(v));
+        ctx.json(gw.post("/ccp/clearings/" + id + "/porting/approve", Map.of()));
+    }
+
+    private void refuseCcpPorting(Context ctx) {
+        String id = ctx.pathParam("id");
+        Map<String, Object> v = ccpClearingView(ccpClearingOnChain(id));
+        if (!Boolean.TRUE.equals(v.get("canRefusePorting"))) throw new IllegalStateException("the porting cannot be refused: " + porting(v));
+        ctx.json(gw.post("/ccp/clearings/" + id + "/porting/refuse", Map.of()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String porting(Map<String, Object> v) {
+        Map<String, Object> p = (Map<String, Object>) v.get("porting");
+        if (p == null) return "no porting is requested";
+        return p.get("problem") != null ? String.valueOf(p.get("problem")) : "it is " + p.get("state");
+    }
+
 
     // --- triparty trade start (task-triparty-trade-start, wp-adr-triparty-trade-start) ---
     // The giver deposits tokens with TripartySettlement under terms in effect, with its rank for each, and requests a
@@ -3278,12 +3912,13 @@ public final class App {
         m.put("minimumTransferAmountUsd", String.valueOf(mta));
         m.put("callableUsd", String.valueOf(CdmRepoMargin.callAmount(s.net(), mta)));
         m.put("callOpen", gmraCallOpen());
-        m.put("repriceOffered", replacementPending("reprice", true));
-        m.put("repriceToAgree", replacementPending("reprice", false));
-        m.put("adjustOffered", replacementPending("adjustment", true));
-        m.put("adjustToAgree", replacementPending("adjustment", false));
-        m.put("substitutionsPending", substitutionsPending());
-        m.put("paymentsPending", paymentsPending());
+        List<JsonNode> purchased = purchasedRepos();
+        m.put("repriceOffered", replacementPending(purchased, "reprice", true));
+        m.put("repriceToAgree", replacementPending(purchased, "reprice", false));
+        m.put("adjustOffered", replacementPending(purchased, "adjustment", true));
+        m.put("adjustToAgree", replacementPending(purchased, "adjustment", false));
+        m.put("substitutionsPending", substitutionsPending(purchased));
+        m.put("paymentsPending", paymentsPending(purchased));
         List<Map<String, Object>> interest = new ArrayList<>();
         var elections = gmraFold().terms().terms().getElections();
         for (JsonNode r : gw.getQuery("/interest", Map.of("party", cfg.myAddress))) {
@@ -3311,7 +3946,7 @@ public final class App {
     /** The party with the Net Exposure calls it, when it exceeds this party's minimum transfer amount. */
     private void issueRepoMarginCall(Context ctx) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
-        if (replacementsPending() > 0) throw new RuntimeException("a reprice, adjustment, substitution or payment between the parties is still pending");
+        if (replacementsPending(purchasedRepos()) > 0) throw new RuntimeException("a reprice, adjustment, substitution or payment between the parties is still pending");
         RepoMarginState s = repoMarginState();
         long amountUsd = CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId));
         if (amountUsd == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
@@ -3469,32 +4104,41 @@ public final class App {
         return r.get(kind).get(seller ? "seller" : "buyer").asText();
     }
 
+    /** This party's purchased repos, fetched once per request: the gateway's /repos reads every repo this party was ever
+     *  in, so its cost grows with the chain's history, and the pending counts below each need the same list. */
+    private List<JsonNode> purchasedRepos() {
+        List<JsonNode> purchased = new ArrayList<>();
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            if (r.get("state").asText().equals("purchased")) purchased.add(r);
+        }
+        return purchased;
+    }
+
     /** The purchased repos with a pending instruction of this kind ("reprice" or "adjustment") from this party (mine) or
      *  from the counterparty. */
-    private int replacementPending(String kind, boolean mine) {
+    private int replacementPending(List<JsonNode> purchased, String kind, boolean mine) {
         int n = 0;
-        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
-            if (!r.get("state").asText().equals("purchased")) continue;
+        for (JsonNode r : purchased) {
             boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
             if (!pendingHash(r, kind, mine ? seller : !seller).equals(ZERO_HASH)) n++;
         }
         return n;
     }
 
-    private int replacementsPending() {
-        return replacementPending("reprice", true) + replacementPending("reprice", false)
-                + replacementPending("adjustment", true) + replacementPending("adjustment", false)
-                + substitutionsPending() + paymentsPending();
+    private int replacementsPending(List<JsonNode> purchased) {
+        return replacementPending(purchased, "reprice", true) + replacementPending(purchased, "reprice", false)
+                + replacementPending(purchased, "adjustment", true) + replacementPending(purchased, "adjustment", false)
+                + substitutionsPending(purchased) + paymentsPending(purchased);
     }
 
-    private int paymentsPending() {
-        return replacementPending("interimInterest", true) + replacementPending("interimInterest", false)
-                + replacementPending("income", true) + replacementPending("income", false)
-                + replacementPending("roll", true) + replacementPending("roll", false);
+    private int paymentsPending(List<JsonNode> purchased) {
+        return replacementPending(purchased, "interimInterest", true) + replacementPending(purchased, "interimInterest", false)
+                + replacementPending(purchased, "income", true) + replacementPending(purchased, "income", false)
+                + replacementPending(purchased, "roll", true) + replacementPending(purchased, "roll", false);
     }
 
-    private int substitutionsPending() {
-        return replacementPending("substitution", true) + replacementPending("substitution", false);
+    private int substitutionsPending(List<JsonNode> purchased) {
+        return replacementPending(purchased, "substitution", true) + replacementPending(purchased, "substitution", false);
     }
 
     /** The checked booking of a purchased repo; null when it is due for repurchase and cannot be replaced. */
@@ -3564,8 +4208,9 @@ public final class App {
     /** The party with the Net Exposure above its minimum transfer amount offers to replace every purchased repo. */
     private void proposeReplacement(Context ctx, ReplacementBuilder builder) {
         if (gmraCallOpen()) throw new RuntimeException("a GMRA margin call between the parties is still open");
-        if (replacementPending("reprice", false) + replacementPending("adjustment", false) > 0) throw new RuntimeException("the counterparty has made an offer: agree to it");
-        if (substitutionsPending() + paymentsPending() > 0) throw new RuntimeException("a substitution or payment between the parties is still pending");
+        List<JsonNode> purchased = purchasedRepos();
+        if (replacementPending(purchased, "reprice", false) + replacementPending(purchased, "adjustment", false) > 0) throw new RuntimeException("the counterparty has made an offer: agree to it");
+        if (substitutionsPending(purchased) + paymentsPending(purchased) > 0) throw new RuntimeException("a substitution or payment between the parties is still pending");
         RepoMarginState s = repoMarginState();
         if (CdmRepoMargin.callAmount(s.net(), gmraMta(cfg.partyId)) == 0) throw new RuntimeException("the Net Exposure " + s.net().toPlainString() + " does not exceed the minimum transfer amount");
         var elections = gmraFold().terms().terms().getElections();

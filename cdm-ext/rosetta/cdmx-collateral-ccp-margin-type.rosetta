@@ -1,0 +1,143 @@
+namespace cdmx.collateral.ccp : <"Local CDM extension: the CCP's daily variation margin and initial margin on cleared repos (gap G23, task-ccp-margin, wp-adr-ccp-margin). CDM 7.7.0 has the margin call itself (MarginCallIssuance) and ISDA SIMM for initial margin, and no CCP margin model or statement of the variation margin on each cleared trade.">
+version "${project.version}"
+
+import cdm.base.math.*
+import cdm.base.staticdata.party.*
+import cdm.event.common.*
+import cdmx.collateral.repo.*
+
+type CcpVariationMarginLine: <"One cleared repo in a member's margin statement, from the seller's side: the CCP's exposure to the seller on the business date, the variation margin paid on the repo before the round and the change the round makes. The seller pays a positive change, which the CCP passes to the buyer.">
+    repoId string (1..1)
+    seller string (1..1) <"The member on the repo's seller leg.">
+    buyer string (1..1) <"The member on the repo's buyer leg.">
+    repurchased boolean (1..1) <"The repo is repurchased: it has no exposure and the round returns its variation margin.">
+    quantity number (1..1) <"The number of securities purchased.">
+    price number (1..1) <"The oracle's price of one unit of the security on the business date.">
+    marginRatio number (1..1) <"The repo's Margin Ratio, which CcpRepoExposure applies as GMRA Transaction Exposure does.">
+    exposure number (1..1) <"CcpRepoExposure on the business date; zero once repurchased.">
+    previousVariationMargin number (1..1) <"The variation margin paid on the repo before the round, positive when the seller has paid.">
+    variationMargin number (1..1) <"The change the round makes: the exposure less the variation margin paid before.">
+
+    condition Change: <"The round brings the variation margin paid up to the exposure.">
+        variationMargin = exposure - previousVariationMargin
+
+    condition NoExposureOnceRepurchased:
+        if repurchased = True then exposure = 0
+
+    condition TwoMembers:
+        seller <> buyer
+
+type CcpMarginStatement: <"A member's margin for one business date under the CCP rulebook (wp-adr-ccp-margin): a variation margin line for each of its cleared repos, the initial margin at the rulebook's rate of the Purchase Prices of its open cleared repos less what it has posted, and one net amount. What the member pays is called by CDM's MarginCallIssuance from the CCP, one call for variation margin and one for initial margin.">
+    [rootType]
+    rulebookHash string (1..1) <"The keccak-256 hash of the cdm-ext CcpRulebook.">
+    ccp PartyRole (1..1) <"The CCP, in CDM's ClearingOrganization role.">
+    member string (1..1)
+    businessDate date (1..1)
+    initialMarginRate number (1..1) <"The rulebook's initial margin rate.">
+    line CcpVariationMarginLine (0..*)
+    variationMarginAmount number (1..1) <"The variation margin the member pays: the lines' changes where it is the seller, their negatives where it is the buyer. Negative when it is paid.">
+    initialMarginBase number (1..1) <"The Purchase Prices of the member's open cleared repos.">
+    initialMarginRequired number (1..1) <"CcpInitialMarginRequired over the base.">
+    initialMarginHeld number (1..1) <"The initial margin the member has posted before the round.">
+    initialMarginAmount number (1..1) <"The initial margin the member posts in the round; negative when the CCP returns it.">
+    netAmount number (1..1) <"What the member pays in the round; negative when it is paid.">
+    call MarginCallIssuance (0..2) <"CDM's margin calls from the CCP for what the member pays: a variation margin call (regMarginType VM) when it pays variation margin and an initial margin call (NonRegIM) when it posts initial margin.">
+
+    condition CcpRole: <"The CCP acts in CDM's clearing organization role.">
+        ccp -> role = PartyRoleEnum -> ClearingOrganization
+
+    condition MemberOnEachLine: <"The member is a party to every repo in its statement.">
+        CcpLinesWithoutTheMember(line, member) = 0
+
+    condition VariationMarginAmount:
+        variationMarginAmount = CcpMemberVariationMargin(line, member)
+
+    condition InitialMarginRequired:
+        initialMarginRequired = CcpInitialMarginRequired(initialMarginBase, initialMarginRate)
+
+    condition InitialMarginAmount:
+        initialMarginAmount = initialMarginRequired - initialMarginHeld
+
+    condition NetAmount:
+        netAmount = variationMarginAmount + initialMarginAmount
+
+    condition VariationMarginCall: <"A variation margin call exactly when the member pays variation margin, for that amount.">
+        if variationMarginAmount > 0
+        then CcpCallCount(call, RegMarginTypeEnum -> VM) = 1 and CcpCallAmount(call, RegMarginTypeEnum -> VM) = variationMarginAmount
+        else CcpCallCount(call, RegMarginTypeEnum -> VM) = 0
+
+    condition InitialMarginCall: <"An initial margin call exactly when the member posts initial margin, for that amount.">
+        if initialMarginAmount > 0
+        then CcpCallCount(call, RegMarginTypeEnum -> NonRegIM) = 1 and CcpCallAmount(call, RegMarginTypeEnum -> NonRegIM) = initialMarginAmount
+        else CcpCallCount(call, RegMarginTypeEnum -> NonRegIM) = 0
+
+func CcpRepoExposure: <"The CCP's exposure to the seller on a cleared repo on a date: GMRA Transaction Exposure (RepoTransactionExposure) at the repo's Margin Ratio, rounded to the nearest at the given decimals. Positive when the seller owes variation margin.">
+    inputs:
+        tradeState TradeState (1..1) <"A leg of the cleared repo; both legs have the same economic terms.">
+        date date (1..1)
+        quantity number (1..1)
+        price number (1..1)
+        marginRatio number (1..1)
+        precision int (1..1)
+    output:
+        exposure number (1..1)
+
+    set exposure:
+        RoundToPrecision(
+                RepoTransactionExposure(tradeState, date, quantity, price, marginRatio),
+                precision,
+                RoundingDirectionEnum -> Nearest,
+                True
+            )
+
+func CcpMemberVariationMargin: <"The variation margin a member pays over its lines: each change where it is the seller, its negative where it is the buyer.">
+    inputs:
+        line CcpVariationMarginLine (0..*)
+        member string (1..1)
+    output:
+        amount number (1..1)
+
+    set amount:
+        if line exists
+        then (line extract [if item -> seller = member then item -> variationMargin else 0 - item -> variationMargin] then sum)
+        else 0
+
+func CcpInitialMarginRequired: <"The initial margin on a base at the rulebook's rate, rounded up to whole units.">
+    inputs:
+        base number (1..1)
+        rate number (1..1)
+    output:
+        amount number (1..1)
+
+    condition NotNegativeBase:
+        base >= 0
+
+    set amount:
+        RoundToPrecision(base * rate, 0, RoundingDirectionEnum -> Up, True)
+
+func CcpLinesWithoutTheMember: <"The number of lines whose repo the member is not a party to.">
+    inputs:
+        line CcpVariationMarginLine (0..*)
+        member string (1..1)
+    output:
+        result int (1..1)
+    set result:
+        line filter [item -> seller <> member and item -> buyer <> member] then count
+
+func CcpCallCount: <"The number of calls of a margin type.">
+    inputs:
+        call MarginCallIssuance (0..*)
+        marginType RegMarginTypeEnum (1..1)
+    output:
+        result int (1..1)
+    set result:
+        call filter [item -> regMarginType = marginType] then count
+
+func CcpCallAmount: <"The amount of the one call of a margin type.">
+    inputs:
+        call MarginCallIssuance (0..*)
+        marginType RegMarginTypeEnum (1..1)
+    output:
+        amount number (0..1)
+    set amount:
+        call filter [item -> regMarginType = marginType] then only-element then extract item -> callAmountInBaseCurrency -> value

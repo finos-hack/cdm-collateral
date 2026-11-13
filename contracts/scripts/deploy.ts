@@ -143,7 +143,7 @@ async function main() {
   console.log("TripartySettlement   ", tripartySettlement.address);
   // The CCP's books (task-ccp-membership): the rulebook, the members' default fund shares and BANK-C's capital.
   // Clearing (task-ccp-clearing): CcpClearing novates repos on RepoSettlement, which accepts novate only from it.
-  const ccpClearing = await deploy("CcpClearing", [repoSettlement.address]);
+  const ccpClearing = await deploy("CcpClearing", [repoSettlement.address, oracle.address]);
   console.log("CcpClearing          ", ccpClearing.address);
   await send("RepoSettlement.setClearingHouse", (nonce) => repoSettlement.write.setClearingHouse([ccpClearing.address], { nonce }));
 

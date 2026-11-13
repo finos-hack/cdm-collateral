@@ -3,7 +3,7 @@
 // QBFT gives immediate per-block finality, so a mined receipt is final (concept-asr-settlement-finality): each write
 // waits for its receipt before returning. The chain charges no gas (genesis zeroBaseFee, --min-gas-price=0), so every
 // write is a legacy transaction with gasPrice 0.
-import { createPublicClient, createWalletClient, decodeEventLog, defineChain, http, webSocket, getAddress, keccak256, parseAbi, toEventSelector, toHex } from "viem";
+import { createPublicClient, createWalletClient, decodeEventLog, defineChain, http, webSocket, getAddress, keccak256, parseAbi, toEventSelector, toHex, zeroAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { loadNodeKey, loadRegistry } from "./registry.ts";
@@ -631,9 +631,82 @@ const ccpAbi = parseAbi([
   "event ClearingRefused(bytes32 indexed repoId, address indexed ccp, bytes32 reasonHash)",
   "event ClearedLegInstructed(bytes32 indexed repoId, address indexed member, uint8 state, bytes32 legHash)",
   "event ClearedRepoSettled(bytes32 indexed repoId, uint8 state, bytes32 sellerLegHash, bytes32 buyerLegHash)",
+  // margin (wp-adr-ccp-margin)
+  "function contributed(bytes32 rulebookHash, address member) view returns (uint256)",
+  "function imHeld(bytes32 rulebookHash, address member) view returns (uint256)",
+  "function admissionOf(bytes32 rulebookHash, address member) view returns (bytes32)",
+  "function vmBalance(bytes32 repoId) view returns (int256)",
+  "function openRound(address ccp) view returns (bytes32)",
+  "struct MarginRound { address ccp; bytes32 rulebookHash; uint64 businessDate; uint8 state; uint32 unpaid; }",
+  "function issueMargin(uint64 businessDate, bytes32[] repoIds, int256[] repoVm, address[] ms, int256[] im, bytes32[] statementHashes) returns (bytes32)",
+  "function payMargin(bytes32 roundId)",
+  "function cancelMarginRound(bytes32 roundId)",
+  "function marginRound(bytes32 roundId) view returns (MarginRound)",
+  "function roundMembers(bytes32 roundId) view returns (address[] member, int256[] vm, int256[] im, bytes32[] statementHash, bool[] hasPaid)",
+  "function roundRepos(bytes32 roundId) view returns (bytes32[] repoId, int256[] vm)",
+  "function marginRoundsOf(address ccp) view returns (bytes32[])",
+  "event MarginRoundIssued(bytes32 indexed roundId, address indexed ccp, uint64 businessDate)",
+  "event MarginStatementIssued(bytes32 indexed roundId, address indexed member, bytes32 statementHash, int256 vm, int256 im)",
+  "event MarginPaid(bytes32 indexed roundId, address indexed member, uint256 amount)",
+  "event MarginRoundSettled(bytes32 indexed roundId, address indexed ccp)",
+  "event MarginRoundCancelled(bytes32 indexed roundId, address indexed ccp)",
+  // default (wp-adr-ccp-default)
+  "struct DefaultRecord { address ccp; bytes32 rulebookHash; address defaulter; int256 loss; uint256 fromInitialMargin; uint256 fromDefaulterFund; uint256 fromCapital; uint256 fromMembersFund; uint256 returned; uint256 dueOutstanding; }",
+  "function closeOutDefault(address defaulter, bytes32 closeOutHash, bytes32[] repoIds, int256[] residuals)",
+  "function payDefaultDue(bytes32 closeOutHash)",
+  "function defaultRecord(bytes32 closeOutHash) view returns (DefaultRecord record, bytes32[] repoIds)",
+  "function defaultsOf(address ccp) view returns (bytes32[])",
+  "function defaultDue(bytes32 closeOutHash, address member) view returns (uint256)",
+  "event MemberDefaulted(bytes32 indexed closeOutHash, address indexed ccp, address indexed defaulter, int256 loss)",
+  "event WaterfallApplied(bytes32 indexed closeOutHash, uint256 fromInitialMargin, uint256 fromDefaulterFund, uint256 fromCapital, uint256 fromMembersFund, uint256 returned)",
+  "event DefaultDuePaid(bytes32 indexed closeOutHash, address indexed member, uint256 amount)",
+  // porting (wp-adr-ccp-porting)
+  "struct Porting { address from; address to; bytes32 portingHash; int256 payment; uint8 state; }",
+  "function admitMember(address member, uint256 share, bytes32 admissionHash)",
+  "function requestPorting(bytes32 repoId, address to, bytes32 portingHash, int256 payment)",
+  "function acceptPorting(bytes32 repoId, bytes32 portingHash)",
+  "function approvePorting(bytes32 repoId)",
+  "function refusePorting(bytes32 repoId)",
+  "function porting(bytes32 repoId) view returns (Porting)",
+  "event MemberAdmitted(bytes32 indexed rulebookHash, address indexed member, uint256 share, bytes32 admissionHash)",
+  "event PortingRequested(bytes32 indexed repoId, address indexed from, address indexed to, bytes32 portingHash, int256 payment)",
+  "event PortingAccepted(bytes32 indexed repoId, address indexed to, bytes32 portingHash)",
+  "event PortingExecuted(bytes32 indexed repoId, address indexed from, address indexed to, bytes32 portingHash)",
+  "event PortingRefused(bytes32 indexed repoId, address indexed by, bytes32 portingHash)",
 ]);
 
-export const CcpClearingStateName = ["none", "submitted", "affirmed", "cleared", "refused", "purchased", "repurchased"] as const;
+export const CcpClearingStateName = ["none", "submitted", "affirmed", "cleared", "refused", "purchased", "repurchased", "closedOut"] as const;
+export const CcpRoundStateName = ["none", "issued", "settled", "cancelled"] as const;
+export const CcpPortingStateName = ["none", "requested", "accepted", "executed", "refused"] as const;
+
+/** A CCP margin round (wp-adr-ccp-margin): each member's variation and initial margin, positive when it pays, its
+ *  statement hash and whether it paid; each repo's variation margin change from the seller's side. */
+export interface OnChainCcpMarginRound {
+  roundId: Hex;
+  ccp: Address;
+  rulebookHash: Hex;
+  businessDate: string;
+  state: string;
+  unpaid: number;
+  members: { member: Address; vm: bigint; im: bigint; statementHash: Hex; paid: boolean }[];
+  repos: { repoId: Hex; vm: bigint }[];
+}
+
+/** A member default at the CCP (wp-adr-ccp-default): the loss, the waterfall and what the survivors still owe. */
+export interface OnChainCcpDefault {
+  closeOutHash: Hex;
+  ccp: Address;
+  rulebookHash: Hex;
+  defaulter: Address;
+  loss: bigint;
+  fromInitialMargin: bigint;
+  fromDefaulterFund: bigint;
+  fromCapital: bigint;
+  fromMembersFund: bigint;
+  returned: bigint;
+  dueOutstanding: bigint;
+  repoIds: Hex[];
+}
 
 /** A repo submitted to a CCP on CcpClearing (wp-adr-ccp-clearing), with each member's pending leg instruction. */
 export interface OnChainCcpClearing {
@@ -652,6 +725,10 @@ export interface OnChainCcpClearing {
   reasonHash: Hex;
   sellerLegHash: Hex;
   buyerLegHash: Hex;
+  /** The variation margin paid on the repo, from the seller's side (wp-adr-ccp-margin). */
+  vmBalance: bigint;
+  /** The latest request to port a leg (wp-adr-ccp-porting), or null. */
+  porting: { from: Address; to: Address; portingHash: Hex; payment: bigint; state: string } | null;
 }
 
 export const CcpRulebookStateName = ["None", "Published", "Effective"] as const;
@@ -667,7 +744,9 @@ export interface OnChainCcpRulebook {
   state: string;
   publishedAt: bigint;
   effectiveAt: bigint;
-  members: { member: Address; share: bigint; paid: boolean }[];
+  /** contributed: what is in the default fund for the member; imHeld: its initial margin with the CCP; admissionHash:
+   *  its CcpAdmission, zero for a member the rulebook names (wp-adr-ccp-margin, wp-adr-ccp-default, wp-adr-ccp-porting). */
+  members: { member: Address; share: bigint; paid: boolean; contributed: bigint; imHeld: bigint; admissionHash: Hex }[];
 }
 
 const erc20Abi = parseAbi([
@@ -843,6 +922,24 @@ export interface LedgerAdapter {
   instructCcpCleared(repoId: Hex, legHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   getCcpClearing(repoId: Hex): Promise<OnChainCcpClearing | null>;
   listCcpClearings(party: Address): Promise<OnChainCcpClearing[]>;
+  /** CCP margin (wp-adr-ccp-margin): the CCP issues a round; each member that owes pays; the CCP may cancel a round
+   *  when a member in it is in default. */
+  issueCcpMargin(businessDate: bigint, repoIds: Hex[], repoVm: bigint[], members: Address[], im: bigint[], statementHashes: Hex[]): Promise<{ txHash: Hex; block: bigint }>;
+  payCcpMargin(roundId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  cancelCcpMargin(roundId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getCcpMarginRound(roundId: Hex): Promise<OnChainCcpMarginRound | null>;
+  listCcpMarginRounds(ccp: Address): Promise<OnChainCcpMarginRound[]>;
+  /** CCP default (wp-adr-ccp-default): the close-out and waterfall, and a survivor's payment of what it owes. */
+  closeOutCcpDefault(defaulter: Address, closeOutHash: Hex, repoIds: Hex[], residuals: bigint[]): Promise<{ txHash: Hex; block: bigint }>;
+  payCcpDefaultDue(closeOutHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  getCcpDefault(closeOutHash: Hex): Promise<OnChainCcpDefault | null>;
+  listCcpDefaults(ccp: Address): Promise<(OnChainCcpDefault & { due: { member: Address; amount: bigint }[] })[]>;
+  /** CCP admission and porting (wp-adr-ccp-porting). */
+  admitCcpMember(member: Address, share: bigint, admissionHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  requestCcpPorting(repoId: Hex, to: Address, portingHash: Hex, payment: bigint): Promise<{ txHash: Hex; block: bigint }>;
+  acceptCcpPorting(repoId: Hex, portingHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  approveCcpPorting(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  refuseCcpPorting(repoId: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** Wait until this gateway's node has the highest block a peer node reports (task-live-spec-node-read-after-write). */
   catchUpWithPeers(maxWaitMs?: number): Promise<void>;
   watchSteps(onStep: (e: StepEvent) => void): () => void;
@@ -2079,7 +2176,12 @@ export class BesuAdapter implements LedgerAdapter {
     return {
       rulebookHash: hash, ccp: r.ccp, token: r.token, capital: r.capital, fund: r.fund,
       state: CcpRulebookStateName[r.state] ?? String(r.state), publishedAt: r.publishedAt, effectiveAt: r.effectiveAt,
-      members: member.map((m, i) => ({ member: m, share: share[i], paid: hasPaid[i] })),
+      members: await Promise.all(member.map(async (m, i) => {
+        const read = (functionName: "contributed" | "imHeld" | "admissionOf") =>
+          this.pub.readContract({ address, abi: ccpAbi, functionName, args: [hash!, m], ...at }) as Promise<unknown>;
+        const [contributed, imHeld, admissionHash] = await Promise.all([read("contributed"), read("imHeld"), read("admissionOf")]);
+        return { member: m, share: share[i], paid: hasPaid[i], contributed: contributed as bigint, imHeld: imHeld as bigint, admissionHash: admissionHash as Hex };
+      })),
     };
   }
 
@@ -2111,9 +2213,131 @@ export class BesuAdapter implements LedgerAdapter {
   }
 
   async getCcpClearing(repoId: Hex): Promise<OnChainCcpClearing | null> {
-    const c = (await this.pub.readContract({ address: this.ccpContract(), abi: ccpAbi, functionName: "clearing", args: [repoId] })) as Omit<OnChainCcpClearing, "repoId" | "state"> & { state: number };
+    const address = this.ccpContract();
+    const c = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "clearing", args: [repoId] })) as Omit<OnChainCcpClearing, "repoId" | "state" | "vmBalance" | "porting"> & { state: number };
     if (Number(c.state) === 0) return null;
-    return { repoId, ...c, state: CcpClearingStateName[Number(c.state)] ?? String(c.state) };
+    const [vmBalance, p] = await Promise.all([
+      this.pub.readContract({ address, abi: ccpAbi, functionName: "vmBalance", args: [repoId] }) as Promise<bigint>,
+      this.pub.readContract({ address, abi: ccpAbi, functionName: "porting", args: [repoId] }) as Promise<{ from: Address; to: Address; portingHash: Hex; payment: bigint; state: number }>,
+    ]);
+    const porting = Number(p.state) === 0 ? null
+      : { from: p.from, to: p.to, portingHash: p.portingHash, payment: p.payment, state: CcpPortingStateName[Number(p.state)] ?? String(p.state) };
+    return { repoId, ...c, state: CcpClearingStateName[Number(c.state)] ?? String(c.state), vmBalance, porting };
+  }
+
+  // ---- CCP margin (wp-adr-ccp-margin) ----
+
+  issueCcpMargin(businessDate: bigint, repoIds: Hex[], repoVm: bigint[], members: Address[], im: bigint[], statementHashes: Hex[]) {
+    return this.send(this.ccpContract(), ccpAbi, "issueMargin", [businessDate, repoIds, repoVm, members, im, statementHashes]);
+  }
+
+  /** A member pays its net on a round, approving it to CcpClearing first. */
+  async payCcpMargin(roundId: Hex) {
+    const r = await this.getCcpMarginRound(roundId);
+    const mine = r?.members.find((m) => m.member === this.account);
+    if (!r || !mine) throw new Error(`no margin round ${roundId} naming ${this.account}`);
+    const rb = await this.getCcpRulebook(r.rulebookHash);
+    await this.approve(rb!.token, this.ccpContract(), mine.vm + mine.im);
+    return this.send(this.ccpContract(), ccpAbi, "payMargin", [roundId]);
+  }
+
+  cancelCcpMargin(roundId: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "cancelMarginRound", [roundId]);
+  }
+
+  async getCcpMarginRound(roundId: Hex): Promise<OnChainCcpMarginRound | null> {
+    const address = this.ccpContract();
+    const r = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "marginRound", args: [roundId] })) as {
+      ccp: Address; rulebookHash: Hex; businessDate: bigint; state: number; unpaid: number };
+    if (Number(r.state) === 0) return null;
+    const [member, vm, im, statementHash, hasPaid] = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "roundMembers", args: [roundId] })) as [
+      readonly Address[], readonly bigint[], readonly bigint[], readonly Hex[], readonly boolean[]];
+    const [repoId, repoVm] = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "roundRepos", args: [roundId] })) as [readonly Hex[], readonly bigint[]];
+    return {
+      roundId, ccp: r.ccp, rulebookHash: r.rulebookHash, businessDate: r.businessDate.toString(),
+      state: CcpRoundStateName[Number(r.state)] ?? String(r.state), unpaid: Number(r.unpaid),
+      members: member.map((m, i) => ({ member: m, vm: vm[i], im: im[i], statementHash: statementHash[i], paid: hasPaid[i] })),
+      repos: repoId.map((id, j) => ({ repoId: id, vm: repoVm[j] })),
+    };
+  }
+
+  async listCcpMarginRounds(ccp: Address) {
+    const ids = (await this.pub.readContract({ address: this.ccpContract(), abi: ccpAbi, functionName: "marginRoundsOf", args: [ccp] })) as readonly Hex[];
+    return (await Promise.all(ids.map((id) => this.getCcpMarginRound(id)))).filter((r): r is OnChainCcpMarginRound => r !== null);
+  }
+
+  // ---- CCP default (wp-adr-ccp-default) ----
+
+  closeOutCcpDefault(defaulter: Address, closeOutHash: Hex, repoIds: Hex[], residuals: bigint[]) {
+    return this.send(this.ccpContract(), ccpAbi, "closeOutDefault", [defaulter, closeOutHash, repoIds, residuals]);
+  }
+
+  /** A survivor pays what it owes on a close-out, approving it to CcpClearing first. */
+  async payCcpDefaultDue(closeOutHash: Hex) {
+    const address = this.ccpContract();
+    const due = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "defaultDue", args: [closeOutHash, this.account] })) as bigint;
+    const d = await this.getCcpDefault(closeOutHash);
+    if (!d || due === 0n) throw new Error(`nothing due from ${this.account} on ${closeOutHash}`);
+    const rb = await this.getCcpRulebook(d.rulebookHash);
+    await this.approve(rb!.token, address, due);
+    return this.send(address, ccpAbi, "payDefaultDue", [closeOutHash]);
+  }
+
+  async getCcpDefault(closeOutHash: Hex): Promise<OnChainCcpDefault | null> {
+    const [d, repoIds] = (await this.pub.readContract({ address: this.ccpContract(), abi: ccpAbi, functionName: "defaultRecord", args: [closeOutHash] })) as [
+      Omit<OnChainCcpDefault, "closeOutHash" | "repoIds">, readonly Hex[]];
+    if (d.ccp === zeroAddress) return null;
+    return { closeOutHash, ...d, repoIds: [...repoIds] };
+  }
+
+  async listCcpDefaults(ccp: Address) {
+    const address = this.ccpContract();
+    const ids = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "defaultsOf", args: [ccp] })) as readonly Hex[];
+    const out: (OnChainCcpDefault & { due: { member: Address; amount: bigint }[] })[] = [];
+    for (const id of ids) {
+      const d = await this.getCcpDefault(id);
+      if (!d) continue;
+      const rb = await this.getCcpRulebook(d.rulebookHash);
+      const due: { member: Address; amount: bigint }[] = [];
+      for (const m of rb?.members ?? []) {
+        const amount = (await this.pub.readContract({ address, abi: ccpAbi, functionName: "defaultDue", args: [id, m.member] })) as bigint;
+        if (amount > 0n) due.push({ member: m.member, amount });
+      }
+      out.push({ ...d, due });
+    }
+    return out;
+  }
+
+  // ---- CCP admission and porting (wp-adr-ccp-porting) ----
+
+  admitCcpMember(member: Address, share: bigint, admissionHash: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "admitMember", [member, share, admissionHash]);
+  }
+
+  /** The leaving member requests the porting; it approves what it moves: the payment when it pays, and its securities
+   *  when it is the buyer. */
+  async requestCcpPorting(repoId: Hex, to: Address, portingHash: Hex, payment: bigint) {
+    const c = await this.getCcpClearing(repoId);
+    if (!c) throw new Error(`repo ${repoId} is not cleared`);
+    if (payment < 0n) await this.approve(c.cash, this.ccpContract(), -payment);
+    if (c.buyer === this.account) await this.approve(c.security, this.ccpContract(), c.quantity);
+    return this.send(this.ccpContract(), ccpAbi, "requestPorting", [repoId, to, portingHash, payment]);
+  }
+
+  /** The receiving member accepts, approving the payment when it pays. */
+  async acceptCcpPorting(repoId: Hex, portingHash: Hex) {
+    const c = await this.getCcpClearing(repoId);
+    if (!c?.porting) throw new Error(`no porting requested for ${repoId}`);
+    if (c.porting.payment > 0n) await this.approve(c.cash, this.ccpContract(), c.porting.payment);
+    return this.send(this.ccpContract(), ccpAbi, "acceptPorting", [repoId, portingHash]);
+  }
+
+  approveCcpPorting(repoId: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "approvePorting", [repoId]);
+  }
+
+  refuseCcpPorting(repoId: Hex) {
+    return this.send(this.ccpContract(), ccpAbi, "refusePorting", [repoId]);
   }
 
   async listCcpClearings(party: Address) {

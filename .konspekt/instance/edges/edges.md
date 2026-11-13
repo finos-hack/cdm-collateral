@@ -432,3 +432,15 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeccpclr | decomposes | node:goal-cdm-development | node:task-sme-ccp-clearing |  | accepted |
 | e-lnk-ccpclr-smeccpclr | links | node:task-ccp-clearing | node:task-sme-ccp-clearing |  | accepted |
 | e-note-localenv-sharedconsole | notes | node:task-local-environment-setup | noteworthy:nw-shared-console-dev-server |  | accepted |
+| e-mrk-ccpmrgadr-ccpmrg | marks | waypoint:wp-adr-ccp-margin | node:task-ccp-margin |  | accepted |
+| e-drv-cdmdata-ccpmrgadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-margin |  | accepted |
+| e-dec-cdmdev-smeccpmrg | decomposes | node:goal-cdm-development | node:task-sme-ccp-margin |  | accepted |
+| e-lnk-ccpmrg-smeccpmrg | links | node:task-ccp-margin | node:task-sme-ccp-margin |  | accepted |
+| e-mrk-ccpdftadr-ccpdft | marks | waypoint:wp-adr-ccp-default | node:task-ccp-default |  | accepted |
+| e-drv-cdmdata-ccpdftadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-default |  | accepted |
+| e-dec-cdmdev-smeccpdft | decomposes | node:goal-cdm-development | node:task-sme-ccp-default |  | accepted |
+| e-lnk-ccpdft-smeccpdft | links | node:task-ccp-default | node:task-sme-ccp-default |  | accepted |
+| e-mrk-ccpprtadr-ccpprt | marks | waypoint:wp-adr-ccp-porting | node:task-ccp-porting |  | accepted |
+| e-drv-cdmdata-ccpprtadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-ccp-porting |  | accepted |
+| e-dec-cdmdev-smeccpprt | decomposes | node:goal-cdm-development | node:task-sme-ccp-porting |  | accepted |
+| e-lnk-ccpprt-smeccpprt | links | node:task-ccp-porting | node:task-sme-ccp-porting |  | accepted |
