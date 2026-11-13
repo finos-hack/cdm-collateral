@@ -1,5 +1,5 @@
 # Four-validator QBFT network, one Besu node per default participant, and the CCP's non-validator node ccp.
-# Setup: besu/start-network.sh (Linux, macOS, Codespaces) or docs/setup-windows.md step 6.
+# Setup: besu/start-network.sh (Linux, macOS, Codespaces) or docs/setup/setup-windows.md step 6.
 # BOOTNODE_ENODE and BESU_USER come from besu/.env, written by either.
 x-besu: &besu
   image: hyperledger/besu:26.9.0

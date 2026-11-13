@@ -1,4 +1,4 @@
-namespace cdmx.collateral.transfer : <"Local CDM extension: collateral movements as CDM transfers (gap G4 in docs/cdm-development/gap-register.md). Kept in its own namespace because generated Python does not import a same-namespace function called inside extract (D15). Not part of FINOS CDM.">
+namespace cdmx.collateral.transfer : <"Local CDM extension: collateral movements as CDM transfers (gap G4 in docs/analysis/gap-register.md). Kept in its own namespace because generated Python does not import a same-namespace function called inside extract (D15). Not part of FINOS CDM.">
 version "${project.version}"
 
 import cdm.base.datetime.*

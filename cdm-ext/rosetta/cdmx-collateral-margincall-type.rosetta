@@ -1,4 +1,4 @@
-namespace cdmx.collateral.margincall : <"Local CDM extension: margin call lifecycle as a sequence of steps over a state record, following the pattern of CDM 7.7.0's instruction composition (gaps G1, G3, G4, G6 in docs/cdm-development/gap-register.md). CDM's own CompositionState is a closed choice, so the pattern is mirrored here rather than extended. Not part of FINOS CDM.">
+namespace cdmx.collateral.margincall : <"Local CDM extension: margin call lifecycle as a sequence of steps over a state record, following the pattern of CDM 7.7.0's instruction composition (gaps G1, G3, G4, G6 in docs/analysis/gap-register.md). CDM's own CompositionState is a closed choice, so the pattern is mirrored here rather than extended. Not part of FINOS CDM.">
 version "${project.version}"
 
 import cdm.base.staticdata.party.*

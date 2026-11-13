@@ -2,7 +2,7 @@
 id: artifact-setup-codespaces
 name: GitHub Codespaces environment
 kind: document
-location: docs/setup-codespaces.md
+location: docs/setup/setup-codespaces.md
 review: accepted
 provenance:
   conversationId: architecture-design

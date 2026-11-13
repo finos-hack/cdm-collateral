@@ -1,4 +1,4 @@
-namespace cdmx.collateral.reconciliation : <"Local CDM extension: reconciliation (gap G35 in docs/cdm-development/gap-register.md; wp-adr-reconciliation-scope). Two parts: a party's CDM records against the ledger, and the two parties' trade portfolios against each other. CDM 7.7.0 has trade, portfolio and exposure types but no reconciliation type or function. Not part of FINOS CDM.">
+namespace cdmx.collateral.reconciliation : <"Local CDM extension: reconciliation (gap G35 in docs/analysis/gap-register.md; wp-adr-reconciliation-scope). Two parts: a party's CDM records against the ledger, and the two parties' trade portfolios against each other. CDM 7.7.0 has trade, portfolio and exposure types but no reconciliation type or function. Not part of FINOS CDM.">
 version "${project.version}"
 
 import cdm.base.staticdata.party.*

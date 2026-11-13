@@ -1,4 +1,4 @@
-namespace cdmx.collateral.proposal : <"Local CDM extension: collateral proposal and its acceptance or rejection (gap G2 in docs/cdm-development/gap-register.md; ISO 20022 colr.007 / colr.008). Not part of FINOS CDM.">
+namespace cdmx.collateral.proposal : <"Local CDM extension: collateral proposal and its acceptance or rejection (gap G2 in docs/analysis/gap-register.md; ISO 20022 colr.007 / colr.008). Not part of FINOS CDM.">
 version "${project.version}"
 
 import cdm.base.staticdata.identifier.*

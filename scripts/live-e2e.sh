@@ -14,7 +14,7 @@
 #   reset   down, then delete the chain, the deployment and the off-chain state (runbook section 8). The next up
 #           re-creates the Besu network and redeploys.
 #   status  Print the health checks and the console port without changing anything.
-#   build   The one-time build of docs/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
+#   build   The one-time build of docs/setup/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
 #           cdm-ext install into ~/.m2, then the collateral service and oracle service jars. Uses mvn when on PATH, else cdm-ext/mvnw. The
 #           dev container runs it once on creation (postCreateCommand).
 #   check   Run every live flow (console/e2e/live.spec.ts) against the running stack: fails at once if the stack is
@@ -24,7 +24,7 @@
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
 # JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
-# see docs/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
+# see docs/setup/runbook-e2e.md sections 2 and 3. This script deploys the contracts only when
 # contracts/deployments/besu.json is absent; it never redeploys over an existing deployment (a redeploy would orphan
 # the stored documents that reference the current contract addresses).
 set -euo pipefail
@@ -164,7 +164,7 @@ print_status() {
 }
 
 cmd_up() {
-  [ -f "$jar" ] || die "missing $jar — build it once: see docs/runbook-e2e.md section 3"
+  [ -f "$jar" ] || die "missing $jar — build it once: see docs/setup/runbook-e2e.md section 3"
   [ -f "$oracle_jar" ] || die "missing $oracle_jar — build it once: bash scripts/live-e2e.sh build"
   say "stop-and-replace: stopping any stack from a previous run"
   stop_stack

@@ -2,7 +2,7 @@
 id: artifact-cdm-gap-register
 name: CDM 7.6.0 gap register for collateral management
 kind: analysis
-location: docs/cdm-development/gap-register.md
+location: docs/analysis/gap-register.md
 review: accepted
 provenance:
   conversationId: cdm-development

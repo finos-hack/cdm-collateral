@@ -2,7 +2,7 @@
 id: artifact-gap-register-g26-carrier
 name: Gap register G26: need-site after the payload carrier
 kind: doc
-location: docs/cdm-development/gap-register.md
+location: docs/analysis/gap-register.md
 createdAt: 2026-10-25T15:09:55Z
 updatedAt: 2026-10-25T15:09:55Z
 review: accepted

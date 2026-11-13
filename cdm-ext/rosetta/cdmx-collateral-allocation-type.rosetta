@@ -1,4 +1,4 @@
-namespace cdmx.collateral.allocation : <"Local CDM extension: collateral allocation, a suggested basket that covers an agreed margin call amount from the pledgor's inventory (gap G34 in docs/cdm-development/gap-register.md; wp-adr-allocation-scope). CDM 7.7.0 has no allocation or optimisation function. Not part of FINOS CDM.">
+namespace cdmx.collateral.allocation : <"Local CDM extension: collateral allocation, a suggested basket that covers an agreed margin call amount from the pledgor's inventory (gap G34 in docs/analysis/gap-register.md; wp-adr-allocation-scope). CDM 7.7.0 has no allocation or optimisation function. Not part of FINOS CDM.">
 version "${project.version}"
 
 import cdm.event.common.*

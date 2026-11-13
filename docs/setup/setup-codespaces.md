@@ -6,7 +6,7 @@ GitHub's cloud, opened in the browser (or in VS Code), built from this repositor
 machine. The Windows install ([`setup-windows.md`](setup-windows.md)) remains for working locally.
 
 **What the codespace contains:** Ubuntu 24.04, Docker (Docker-in-Docker), Java 21 (Maven through the wrapper `../../cdm-ext/mvnw`), Python 3.12 (documentation scripts), Node.js LTS, and the four-node
-QBFT Besu network from [`../besu/`](../besu/). When the container is created it runs the one-time build
+QBFT Besu network from [`../../besu/`](../../besu/). When the container is created it runs the one-time build
 (`bash scripts/live-e2e.sh build`: Node dependencies, the `cdm-ext` install and the collateral service jar). Every time
 it starts it runs `bash scripts/live-e2e.sh up`, which starts the Besu network, deploys the contracts if they are not
 deployed, and starts the store, gateways, services and the console dev server on 5173
