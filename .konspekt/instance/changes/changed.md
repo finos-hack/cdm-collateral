@@ -1645,3 +1645,4 @@ excluded.
 | task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/coverage.html | 2026-11-13T15:56:35Z |
 | task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-13T15:56:35Z |
 | task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/sme.html | 2026-11-13T15:56:35Z |
+| task-presentation | 739318361197345abb62e4e8a2c7a53360f275d4 | docs/presentations/intro_deck/README.md | 2026-11-13T15:57:58Z |
