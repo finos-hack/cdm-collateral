@@ -1626,3 +1626,8 @@ excluded.
 | task-ccp-porting | 4b8860231d972fca76e0fe584cd251010a09598d | services/collateral/src/main/java/collateral/App.java | 2026-11-13T13:29:06Z |
 | task-ccp-porting | 4b8860231d972fca76e0fe584cd251010a09598d | services/collateral/src/main/java/collateral/CdmCcp.java | 2026-11-13T13:29:06Z |
 | task-ccp-porting | 4b8860231d972fca76e0fe584cd251010a09598d | services/collateral/src/test/java/collateral/CdmCcpRiskTest.java | 2026-11-13T13:29:06Z |
+| task-ccp-membership | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
+| task-ccp-clearing | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
+| task-ccp-margin | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
+| task-ccp-default | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
+| task-ccp-porting | 6a8e5a89b583a95b66b8052c6c0e64cbb918919d | docs/analysis/cdm-workflow-task-map.md | 2026-11-13T14:39:55Z |
