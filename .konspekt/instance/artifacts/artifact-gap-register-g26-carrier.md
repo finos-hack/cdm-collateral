@@ -15,7 +15,7 @@ provenance:
 ```
 # Artifact: Gap register G26 need-site after the payload carrier
 
-Revision of one row of `docs/cdm-development/gap-register.md` (recorded as `artifact-cdm-gap-register`) for
+Revision of one row of `../../../docs/analysis/gap-register.md` (recorded as `artifact-cdm-gap-register`) for
 `task-cdm-gap-closure`. G26 (no mapping to ISO 20022 colr or FpML collateral messages) names its need-site as
 "off-chain messages between services (`service-to-peer-service`)". ADR `wp-adr-cdm-payload-carrier` (review:
 proposed) and the CALM revision `artifact-architecture-payload-carrier-revision` retire that relationship; CDM content

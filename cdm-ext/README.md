@@ -3,7 +3,7 @@
 Extensions to the FINOS Common Domain Model for collateral management, written in the Rune DSL and generated like
 CDM itself (decisions `wp-adr-cdm-local-extensions`, `wp-adr-cdm-extension-rune`), to Java (`wp-adr-java-cdm-stack`).
 Not part of FINOS CDM and not proposed to FINOS. Gaps are numbered as in
-[`../docs/cdm-development/gap-register.md`](../docs/cdm-development/gap-register.md).
+[`../docs/analysis/gap-register.md`](../docs/analysis/gap-register.md).
 
 Built on CDM **7.7.0** (`org.finos.cdm:cdm-java` on Maven Central) with CDM's own toolchain:
 `org.finos.rune:rune-maven-plugin` **10.15.1** (CDM 7.7.0's DSL version) with `RosettaStandaloneSetup`.

@@ -1,6 +1,6 @@
 # Setting up the development machine (Windows)
 
-For the prototype in [`../architecture/README.md`](../architecture/README.md). The primary environment is GitHub
+For the prototype in [`../../architecture/README.md`](../../architecture/README.md). The primary environment is GitHub
 Codespaces ([`setup-codespaces.md`](setup-codespaces.md)); this guide is for working on a local Windows machine. These steps install the tools and start
 a local four-node Besu network (one node per default participant). The prototype code itself is not built yet; later steps will add it.
 
@@ -9,7 +9,7 @@ step 6 were run with Besu 26.9.0 (native binary, Java 25, Linux) on 2026-10-16: 
 first as bootnode; each node had 3 peers, `qbft_getValidatorsByBlockNumber` listed 4 validators, blocks came every 2
 seconds, and blocks continued with one node stopped. The Docker and four-node-network parts — step 3 (Docker Desktop
 engine) and all of step 6 (image pull, `generate-blockchain-config`, the PowerShell key-distribution block, and
-`besu/docker-compose.yml`) — were then run end-to-end on Windows 11 with Docker Desktop (WSL 2 engine, Besu 26.9.0) on
+`../../besu/docker-compose.yml`) — were then run end-to-end on Windows 11 with Docker Desktop (WSL 2 engine, Besu 26.9.0) on
 2026-10-17: the four containers came up healthy, `net_peerCount` was `0x3`, `qbft_getValidatorsByBlockNumber` listed 4
 validators, and blocks were produced every 2 seconds. **Not tested:** steps 2, 4 and 5 (`wsl --install`, the Git /
 Python / Node installs, the clone), because those tools were already present on the test machine. The Besu Docker image
@@ -100,8 +100,8 @@ validators to keep producing blocks when one node is down, so the default networ
 | `bank-c` (`besu-bank-c`) | BANK-C, second pledgor (multi-party tests) | 8551 | 8552 | 172.28.0.14 |
 
 Each participant's ledger gateway talks to its own node. The repository already holds the two configuration files:
-[`besu/qbftConfigFile.json`](../besu/qbftConfigFile.json) (chain id 1337, 2-second blocks, no gas fees, 4 validator
-keys) and [`besu/docker-compose.yml`](../besu/docker-compose.yml) (the four nodes on a Docker network with fixed IPs).
+[`../../besu/qbftConfigFile.json`](../../besu/qbftConfigFile.json) (chain id 1337, 2-second blocks, no gas fees, 4 validator
+keys) and [`../../besu/docker-compose.yml`](../../besu/docker-compose.yml) (the four nodes on a Docker network with fixed IPs).
 
 Pull the image (26.9.0 is the newest release at least two weeks old on 2026-10-16):
 
@@ -183,5 +183,5 @@ non-validator (same genesis, `--bootnodes`) and be voted in as a validator with 
 | A port between 8545 and 8552 in use | `netstat -ano | findstr 8545`; stop the other process or change the `ports` mapping in `besu/docker-compose.yml` |
 | `eth_blockNumber` stays at `0x0` | `docker logs besu-mkt`; at least three of the four nodes must be running; each node folder must hold a different `key` from step 6; `net_peerCount` must be `0x3` |
 | `net_peerCount` is `0x0` on `bank-*` nodes | `besu\.env` exists and `BOOTNODE_ENODE` holds the `mkt` node's public key without `0x`; run `docker compose up -d` from inside `besu\` |
-| `docker compose up` reports `Pool overlaps with other one on this address space` | Another Docker network uses 172.28.0.0/24; change the subnet and the four IPs in `besu/docker-compose.yml` and in `besu\.env` |
+| `docker compose up` reports `Pool overlaps with other one on this address space` | Another Docker network uses 172.28.0.0/24; change the subnet and the four IPs in `../../besu/docker-compose.yml` and in `besu\.env` |
 | Log shows `WARN … Forcing price bump … zero basefee network` | Expected on a gas-free network; not an error |

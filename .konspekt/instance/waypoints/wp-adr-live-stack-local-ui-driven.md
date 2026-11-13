@@ -36,4 +36,4 @@ stack runs for now; it does not replace `wp-adr-cloud-dev-environment`.
 **Consequences.** CI no longer checks the collateral flow end to end, only that the stack builds, deploys and starts
 healthy on a clean machine. The Playwright live specs stay for local runs and can return to CI later. The local stack
 keeps the persistent chain across runs (`reset` deletes it), so calls from earlier runs remain visible. An engineer
-needs Docker, Node 22+, a JDK and the one-time build (`docs/runbook-e2e.md` sections 2 and 3).
+needs Docker, Node 22+, a JDK and the one-time build (`../../../docs/setup/runbook-e2e.md` sections 2 and 3).

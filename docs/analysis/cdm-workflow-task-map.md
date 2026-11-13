@@ -9,7 +9,7 @@ Sources: [`cdm-csa-coverage-matrix.md`](cdm-csa-coverage-matrix.md),
 [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md),
 [`findings.md`](findings.md), [`collateral-conceptual-model.md`](collateral-conceptual-model.md),
 [`collateral-flows.md`](collateral-flows.md), [`business-case.md`](business-case.md) and the gap register
-[`../cdm-development/gap-register.md`](../cdm-development/gap-register.md) (gap IDs G1–G39). Implementation status is
+[`gap-register.md`](gap-register.md) (gap IDs G1–G39). Implementation status is
 as of branch `repo-purchase-repurchase` (2026-11-07); the 16 live specs of sections A and B and the first two of section C passed locally on 2026-11-07.
 
 Build order, set by the project owner on 2026-11-03: the ISDA CSA cycle first (sections A and B), then the four other

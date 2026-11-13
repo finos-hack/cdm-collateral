@@ -2,7 +2,7 @@
 
 Output of `task-blockchain-smart-contracts-applicability` (goal `goal-architecture-design`). First pass, 2026-10-16.
 
-**Sources read in full** (text extracted from the downloaded documents; links in [`../references.md`](../references.md)):
+**Sources read in full** (text extracted from the downloaded documents; links in [`../analysis/references.md`](../analysis/references.md)):
 
 | Ref | Document |
 |---|---|

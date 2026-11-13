@@ -35,7 +35,7 @@ The three open questions, settled in the plan the project owner approved on 2026
 
 `check` fails at once if the stack is not up, installs Playwright's Chromium if absent, and runs
 `console/e2e/live.spec.ts` with `E2E_REQUIRE_STACK=1` against the console on 5173 (`E2E_BASE_URL` overrides it);
-extra arguments go to Playwright. Verified on the Windows host (`docs/runbook-e2e.md` section 10): the down-stack
+extra arguments go to Playwright. Verified on the Windows host (`../../../../docs/setup/runbook-e2e.md` section 10): the down-stack
 failure, argument passthrough and exit code work. On that long-lived chain `flow-vm-margin-call-transfer` failed
 because the pledgor's free tUSD (4,185,000) is below the VM test's per-run amount (up to 9,999,000). That is test
 data running out; this task does not fix it. Not run: `check` inside the dev container (Chromium there may need OS

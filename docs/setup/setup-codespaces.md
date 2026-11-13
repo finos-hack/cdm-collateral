@@ -1,11 +1,11 @@
 # Running the prototype environment in GitHub Codespaces
 
-For the prototype in [`../architecture/README.md`](../architecture/README.md). A codespace is a Linux machine in
+For the prototype in [`../../architecture/README.md`](../../architecture/README.md). A codespace is a Linux machine in
 GitHub's cloud, opened in the browser (or in VS Code), built from this repository's dev container definition
-[`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json). It needs nothing installed on your own
+[`../../.devcontainer/devcontainer.json`](../../.devcontainer/devcontainer.json). It needs nothing installed on your own
 machine. The Windows install ([`setup-windows.md`](setup-windows.md)) remains for working locally.
 
-**What the codespace contains:** Ubuntu 24.04, Docker (Docker-in-Docker), Java 21 (Maven through the wrapper `cdm-ext/mvnw`), Python 3.12 (documentation scripts), Node.js LTS, and the four-node
+**What the codespace contains:** Ubuntu 24.04, Docker (Docker-in-Docker), Java 21 (Maven through the wrapper `../../cdm-ext/mvnw`), Python 3.12 (documentation scripts), Node.js LTS, and the four-node
 QBFT Besu network from [`../besu/`](../besu/). When the container is created it runs the one-time build
 (`bash scripts/live-e2e.sh build`: Node dependencies, the `cdm-ext` install and the collateral service jar). Every time
 it starts it runs `bash scripts/live-e2e.sh up`, which starts the Besu network, deploys the contracts if they are not
@@ -14,7 +14,7 @@ deployed, and starts the store, gateways, services and the console dev server on
 section 4 below.
 
 **Tested** (2026-10-16): `start-network.sh` with the `docker` command replaced by a native Besu 26.9.0 binary (Java 25,
-Linux): it generated the genesis and four keys, gave each node its key and wrote `besu/.env`; a second run reused
+Linux): it generated the genesis and four keys, gave each node its key and wrote `../../besu/.env`; a second run reused
 them; four nodes started from those files reached the same blocks, each with 3 peers and 4 validators
 (`check-network.sh`). The dev container CLI 0.80.0 read the configuration and resolved its three features. **Run in
 a real codespace** by the project owner on 2026-10-16 (4-core machine, branch `main`): the codespace built, the
@@ -87,11 +87,11 @@ needs (later: the party consoles), keep test keys only, and set the ports back t
 
 Every time the container starts, `scripts/live-e2e.sh up` starts the console dev server on 5173 together with the
 services on 8001 and 8002. Open it from the **Ports** panel ("Collateral Console"). Check the stack from the terminal
-with `bash scripts/live-e2e.sh status`; its log is `stack.log` at the repository root.
+with `bash scripts/live-e2e.sh status`; its log is `../../stack.log` at the repository root.
 
 The dev container sets `VITE_SERVICE_PROXY=1`, so the console calls the services on its own origin (`/svc/A/...`,
 `/svc/B/...`) and the console dev server forwards those requests to 8001 / 8002 inside the container
-(`console/vite.config.ts`). The browser needs only port 5173. This applies in a local dev container and in a
+(`../../console/vite.config.ts`). The browser needs only port 5173. This applies in a local dev container and in a
 codespace: in a codespace the console at `https://<codespace-name>-5173.app.github.dev` reaches the services without
 per-port URLs, without a cross-origin request to a private port, and without CORS. An explicit
 `VITE_SERVICE_A_URL` / `VITE_SERVICE_B_URL` still takes precedence over the proxy.
@@ -106,7 +106,7 @@ bash scripts/live-e2e.sh up
 
 `up` replaces the running stack. A production build of the console only, without the services, is still available with
 `bash console/serve.sh` (port 5173; stop the stack first with `bash scripts/live-e2e.sh down`, or set `CONSOLE_PORT`).
-Tests and modes: [`../console/README.md`](../console/README.md).
+Tests and modes: [`../../console/README.md`](../../console/README.md).
 
 ## Troubleshooting
 

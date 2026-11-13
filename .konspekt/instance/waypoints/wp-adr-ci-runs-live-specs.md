@@ -37,7 +37,7 @@ fresh chain all six pass locally, and the runner chain is always fresh.
 - A pull request that touches the stack paths runs the full flow set: about 3–4 minutes more on top of the bring-up.
 - A spec failure fails the job.
 - The intermittent failures seen locally can now fail CI: the stale nonce on gateway B and the deploy RPC error
-  (`docs/runbook-e2e.md` §10). Pledgor balance depletion does not occur on a fresh chain.
+  (`../../../docs/setup/runbook-e2e.md` §10). Pledgor balance depletion does not occur on a fresh chain.
 
 Accepted by the project owner on 2026-11-03 ("Run specs in CI", the recommended option).
 

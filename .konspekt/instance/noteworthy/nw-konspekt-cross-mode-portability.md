@@ -26,7 +26,7 @@ were present in the Claude Code web session of 2026-11-04.
 
 The committed repository is the surface all modes with a checkout read. `.konspekt/instance/` (sources, transitions,
 acceptances) and `AGENTS.md` / `OPERATING.md` are in it, so a session in any mode starts from the same accepted project
-state. Evidence: on 2026-11-04 a Claude Code web session with no prior context wrote `docs/project-narrative.md` from
+state. Evidence: on 2026-11-04 a Claude Code web session with no prior context wrote `../../../docs/presentations/project-narrative.md` from
 the graph alone, covering decisions made in earlier local and cloud sessions.
 
 **Scope decision (project owner, 2026-11-04):** the graph stays repository-based. claude.ai chats have no repository
