@@ -7,7 +7,7 @@
 // The service jars must be built once: `mvn -DskipTests package` in services/collateral/ and services/oracle/.
 //
 // Usage: node orchestrate.mjs   (Ctrl-C stops every child process). Cross-platform (Windows/Linux/macOS).
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -100,9 +100,17 @@ stack starting:
 Ctrl-C to stop.
 `);
 
+// Each child is spawned through a shell (shell: true), so on Windows its pid is the cmd.exe wrapper's and c.kill() stops
+// only that wrapper, leaving the node or java process under it running and holding its port. taskkill /T stops the
+// whole tree. On Linux and macOS, sh -c with a single command runs it in place of the shell (bash and dash exec it), so
+// the pid is the command's own and c.kill() reaches it.
 function shutdown() {
   console.log("\nstopping…");
-  for (const c of children) c.kill();
+  for (const c of children) {
+    if (process.platform === "win32" && c.pid) {
+      try { execFileSync("taskkill", ["/T", "/F", "/PID", String(c.pid)], { stdio: "ignore" }); } catch { /* already exited */ }
+    } else c.kill();
+  }
   process.exit(0);
 }
 process.on("SIGINT", shutdown);
