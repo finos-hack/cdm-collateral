@@ -10,7 +10,7 @@ provenance:
   contentHash: 8cf387509cb832a6bf35a80f63462960544a2bb1
   timestamp: 2026-11-09T12:57:26Z
 createdAt: 2026-11-09T12:57:26Z
-updatedAt: 2026-11-09T12:57:26Z
+updatedAt: 2026-11-13T15:57:57Z
 ```
 # Task: presentation
 
@@ -32,3 +32,7 @@ including section C rows 9 to 14, which the map lists as not built.
 
 Draft deck 2026-11-09 (9 slides, cover plus the 8 above): https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa
 Repository copy (PDF and Slides source) 2026-11-10: docs/presentations/intro_deck/
+
+Decision 2026-11-13 (project owner, source `fa3339fe717626104178951637fba0627c4c0cb4`): the repository copy `docs/presentations/intro_deck/` is the
+source of the deck; the artifact above is no longer maintained. The same day the gaps, SME, Besu, app and coverage
+slides were updated to `main` after PR #66 and the PDF re-rendered.

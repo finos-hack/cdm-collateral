@@ -9,11 +9,11 @@ Nine-slide introduction for collateral SMEs and potential partners (task `task-p
 | `slides/<id>.html` | One slide per file: a single `<section>` with inline styles; speaker notes in the trailing `<aside>` |
 | `render_pdf.py` | Regenerates `intro_deck.pdf` from `deck.json` and `slides/` |
 
-The source files are in the Claude Slides artifact format. The editable deck is the artifact
-https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa; the copy here was taken on 2026-11-10 from artifact version
-`1794230093-92bc`. Edits made in the artifact are not copied here automatically. On 2026-11-13 the `gaps`, `sme`,
-`besu`, `app` and `coverage` slides were updated here to the figures of `main` after PR #66 and the PDF re-rendered;
-the artifact was not updated, so it now differs from this copy.
+**This directory is the source of the deck** (project owner, 2026-11-13). Edit `slides/<id>.html` and `deck.json`
+here, then regenerate the PDF. The files are in the Claude Slides artifact format. The deck began as the artifact
+https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa (copied here on 2026-11-10 from version `1794230093-92bc`); that
+artifact is no longer maintained and is out of date since the update of 2026-11-13 (`gaps`, `sme`, `besu`, `app`
+and `coverage` slides to the figures of `main` after PR #66).
 
 ## Regenerating the PDF
 
