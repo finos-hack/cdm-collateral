@@ -155,14 +155,14 @@ Local extension in [`../../cdm-ext`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | G19 | closed | `GmraTermsAmendment` (row C1), `GmslaTermsAmendment` (row C12) |
 | G20 | closed | `GmraTerms` (row C1) |
 | G21 | partial | `GmslaTerms` and the functions of rows C13 to C19 use the GMSLA elections. Open: CDM's clause library is not used |
-| G22 | closed | Triparty GMRA repo: `TripartyTerms`, `AllocateTriparty`, `RevalueTriparty`, `SubstituteTriparty`, `TripartyTradeEnd`, `TripartyReport` (rows C20 to C25). Triparty securities lending is out of scope (`wp-adr-triparty-scope`) |
-| G23 | closed | CCP-cleared GMRA repo: `CcpRulebook`, `CcpNovation`, `CcpMarginStatement`, `CcpDefaultManagement`, `CcpAdmission` and `CcpPorting` in `cdmx.collateral.ccp` (rows C26 to C30). Cleared derivatives are out of scope (`wp-adr-ccp-scope`) |
+| G22 | closed | Triparty GMRA repo: `TripartyTerms`, `AllocateTriparty`, `RevalueTriparty`, `SubstituteTriparty`, `TripartyTradeEnd`, `TripartyReport` (rows C20 to C25). Triparty securities lending is out of scope (`wp-adr-triparty-scope`). Closed for that scope (project owner, 2026-11-13) |
+| G23 | closed | CCP-cleared GMRA repo: `CcpRulebook`, `CcpNovation`, `CcpMarginStatement`, `CcpDefaultManagement`, `CcpAdmission` and `CcpPorting` in `cdmx.collateral.ccp` (rows C26 to C30). Cleared derivatives are out of scope (`wp-adr-ccp-scope`). Closed for that scope (project owner, 2026-11-13) |
 | G27 | open | Tracked in the register only (project owner, 2026-11-10); no flow depends on it |
 | G28 | open | Tracked in the register only (project owner, 2026-11-10); no flow depends on it |
 | G30 | open | Not hit: every repo and buy/sell-back the prototype builds keeps one `InterestRatePayout` and qualifies (checked 2026-11-10 and 2026-11-11; `PairOffTest`). D7 and D13 not fixed |
 | G31 | open | Not hit: the prototype does not read CDM's repo sample (checked 2026-11-10). D3 and D6 not fixed |
 | G32 | open | Misspellings in CDM; renaming needs a CDM change, so no local closure exists |
-| G33 | partial | Buy/sell-back closed (`BuySellBackSellBackPrice` and related, row C10). Securities lending delivery and return are built in Rune over `Create_BusinessEvent` (`GmslaLoanSettlement`, row C13), not on CDM's Java workflows |
+| G33 | partial | Buy/sell-back closed (`BuySellBackSellBackPrice` and related, row C10). Securities lending delivery and return are built in Rune over `Create_BusinessEvent` (`GmslaLoanSettlement`, row C13), not on CDM's Java workflows; partial (project owner, 2026-11-13) |
 | G36 | out of scope | Regulatory reporting (priority Out) |
 | G37, G38 | open | Found while closing G4 (findings X2, X3); the extension leaves `transferType` absent and reads pledge roles only |
 | G39 | closed | Moved to Java (`wp-adr-java-cdm-stack`, 2026-10-18): CDM's Java distribution and the extension generated to Java run the 23 tests with no workarounds and with CDM's full validation; the Python build is retired (kept at commit `e1a2e6f` as a reproduction of D14–D16) |

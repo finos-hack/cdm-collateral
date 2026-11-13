@@ -2,7 +2,7 @@
 id: task-gmsla-default-close-out
 type: task
 title: Securities lending default and close-out
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
 createdAt: 2026-11-11T15:11:27Z
-updatedAt: 2026-11-11T23:49:14Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: securities lending default and close-out
 

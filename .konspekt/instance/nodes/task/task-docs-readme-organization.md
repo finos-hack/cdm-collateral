@@ -3,7 +3,7 @@ id: task-docs-readme-organization
 type: task
 title: Organise the docs behind a clean README
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: clean-up-and-prep
   sourceRef: 602ba7a2f8332392c61bb001b2499f349c64a96f
@@ -11,7 +11,7 @@ provenance:
   timestamp: 2026-11-13T14:59:13Z
   confidence: 0.8
 createdAt: 2026-11-13T14:59:13Z
-updatedAt: 2026-11-13T14:59:13Z
+updatedAt: 2026-11-13T15:22:33Z
 ```
 # Task: organise the docs behind a clean README
 
@@ -38,3 +38,12 @@ status, a status column in `defects.md`), then the README links to them and stat
 - `sme-question-ledger.md`: a CCP heading; `cdm-workflow-task-map.md`: the status line as of PR #66.
 - The per-defect and per-gap statuses were researched against `cdm-ext`, the collateral service, the task map and the
   SME ledger, and their cited functions checked to exist.
+
+**Accepted 2026-11-13** by the project owner (source `c0fb0a22cd9996db76fe587875f9fc95c90d4203`), with these decisions:
+G22 and G23 are closed for the scope their ADRs set; G33 stays partial; `cdm-ext/README.md` gets the missing files and
+the 15 built tasks still marked open are resolved; no `docs/INDEX.md`; push and PR later.
+
+- `cdm-ext/README.md`: rows for the 14 GMRA, repo, GMSLA and triparty Rune files or pairs and the 20 test classes it
+  lacked, with the gaps and defects each closes.
+- Resolved: the six `task-ccp-*` tasks, the seven `task-triparty-*` tasks, `task-gmsla-default-close-out` and the
+  GMSLA parent `task-securities-lending-gmsla-workflows`.
