@@ -1636,3 +1636,5 @@ excluded.
 | task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/defects.md | 2026-11-13T15:05:46Z |
 | task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/gap-register.md | 2026-11-13T15:05:46Z |
 | task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/sme-question-ledger.md | 2026-11-13T15:05:46Z |
+| task-docs-readme-organization | 2f5499b5bf98dd47912848e0f8c4aa4fe01cc0bc | cdm-ext/README.md | 2026-11-13T15:24:27Z |
+| task-docs-readme-organization | 2f5499b5bf98dd47912848e0f8c4aa4fe01cc0bc | docs/analysis/gap-register.md | 2026-11-13T15:24:27Z |
