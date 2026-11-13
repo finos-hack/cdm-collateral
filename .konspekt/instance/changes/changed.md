@@ -1661,3 +1661,13 @@ excluded.
 | task-presentation | 0ffbc5c0662368cf4314e8a4cc21fd7182176591 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-13T17:26:05Z |
 | task-presentation | 0ffbc5c0662368cf4314e8a4cc21fd7182176591 | docs/presentations/intro_deck/slides/sme.html | 2026-11-13T17:26:05Z |
 | task-presentation | 0ffbc5c0662368cf4314e8a4cc21fd7182176591 | docs/sme-questions.html | 2026-11-13T17:26:05Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | .konspekt/instance/nodes/task/task-presentation.md | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | .konspekt/instance/sources/a469b47ec01f1dd450d0a2a4f27fad6457184ac0.md | 2026-11-13T17:29:33Z |
+| task-docs-readme-organization | 7d8568cb199e47bea7c314759adc3f63189b0b70 | README.md | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/gap-register.html | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/index.html | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/presentations/intro_deck/README.md | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/presentations/intro_deck/build_site.mjs | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-13T17:29:33Z |
+| task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/sme-questions.html | 2026-11-13T17:29:33Z |
