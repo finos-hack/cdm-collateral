@@ -11,7 +11,9 @@ Nine-slide introduction for collateral SMEs and potential partners (task `task-p
 
 The source files are in the Claude Slides artifact format. The editable deck is the artifact
 https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa; the copy here was taken on 2026-11-10 from artifact version
-`1794230093-92bc`. Edits made in the artifact are not copied here automatically.
+`1794230093-92bc`. Edits made in the artifact are not copied here automatically. On 2026-11-13 the `gaps`, `sme`,
+`besu`, `app` and `coverage` slides were updated here to the figures of `main` after PR #66 and the PDF re-rendered;
+the artifact was not updated, so it now differs from this copy.
 
 ## Regenerating the PDF
 
