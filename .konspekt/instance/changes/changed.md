@@ -1638,3 +1638,10 @@ excluded.
 | task-docs-readme-organization | 0d288ef8750d69101e9442dd937f1be1d8ce3092 | docs/analysis/sme-question-ledger.md | 2026-11-13T15:05:46Z |
 | task-docs-readme-organization | 2f5499b5bf98dd47912848e0f8c4aa4fe01cc0bc | cdm-ext/README.md | 2026-11-13T15:24:27Z |
 | task-docs-readme-organization | 2f5499b5bf98dd47912848e0f8c4aa4fe01cc0bc | docs/analysis/gap-register.md | 2026-11-13T15:24:27Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/README.md | 2026-11-13T15:56:35Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-13T15:56:35Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/app.html | 2026-11-13T15:56:35Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/besu.html | 2026-11-13T15:56:35Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/coverage.html | 2026-11-13T15:56:35Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-13T15:56:35Z |
+| task-presentation | 3890d593a0d7443234613212ba802b6eb492e3a6 | docs/presentations/intro_deck/slides/sme.html | 2026-11-13T15:56:35Z |
