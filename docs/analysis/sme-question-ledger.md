@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 196 questions in 34 tasks, all open.
+Status of the ledger: 222 questions in 39 tasks, all open. The same questions as a page: [`docs/sme-questions.html`](../sme-questions.html).
 
 ## Variation and initial margin rules
 

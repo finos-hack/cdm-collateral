@@ -41,8 +41,8 @@ Other documents:
   [`docs/architecture/blockchain-applicability.md`](docs/architecture/blockchain-applicability.md).
 - The local CDM extension: [`cdm-ext/README.md`](cdm-ext/README.md).
 - History and presentation: [`docs/presentations/project-narrative.md`](docs/presentations/project-narrative.md) (14
-  October to 4 November 2026) and the SME introduction deck in
-  [`docs/presentations/intro_deck/`](docs/presentations/intro_deck/).
+  October to 4 November 2026) and the SME introduction deck: [`docs/index.html`](docs/index.html) (generated from
+  [`docs/presentations/intro_deck/`](docs/presentations/intro_deck/), with the PDF there).
 - Decisions (ADRs `wp-adr-*`), tasks and the change log are konspekt records in
   [`.konspekt/instance/`](.konspekt/instance/).
 
@@ -73,8 +73,9 @@ repository only; nothing is proposed to FINOS. Per gap: [`gap-register.md`, Clos
 | Out of scope | 2 | G13 ISDA SIMM; G36 regulatory reporting |
 
 **Deferred to SMEs.** Fifteen of the closed or partial gaps rest on an interim assumption of the project owner. Their
-open questions are in [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md): 217 questions in 39 sections,
-one section per `task-sme-*` task, none answered yet. Which sections belong to which gap:
+open questions are in [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md): 222 questions in 39 sections,
+one section per `task-sme-*` task, none answered yet. The same questions as a page:
+[`docs/sme-questions.html`](docs/sme-questions.html). Which sections belong to which gap:
 [`gap-register.md`, Questions deferred to SMEs](docs/analysis/gap-register.md#questions-deferred-to-smes).
 
 ## 4. Flows built

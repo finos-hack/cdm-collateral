@@ -1,0 +1,170 @@
+// Builds the two published pages under docs/ from their sources:
+//   docs/index.html          the intro deck, from deck.json and slides/<id>.html in this directory
+//   docs/sme-questions.html  the SME questions, from docs/analysis/sme-question-ledger.md
+// Usage: node docs/presentations/intro_deck/build_site.mjs   (Node 18 or later, no packages)
+// Both outputs are generated: edit the sources and run this script again.
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const DOCS = path.resolve(HERE, "..", "..");
+const read = p => fs.readFileSync(p, "utf8").replace(/\r/g, "");
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+// ---- SME questions ----
+const ledger = read(path.join(DOCS, "analysis", "sme-question-ledger.md")).split("\n");
+const families = [];
+let family = null, task = null;
+for (const line of ledger) {
+  if (line.startsWith("## ")) families.push(family = { title: line.slice(3).trim(), tasks: [] });
+  else if (line.startsWith("### ")) {
+    const m = line.slice(4).match(/^`([^`]+)`:\s*(.*)$/);
+    family.tasks.push(task = { id: m ? m[1] : "", title: (t => t.charAt(0).toUpperCase() + t.slice(1))(m ? m[2] : line.slice(4)), rows: [] });
+  } else if (/^\| [A-Z0-9]+-[0-9]+ \|/.test(line)) {
+    const [id, question, status, answer] = line.split("|").slice(1, -1).map(c => c.trim());
+    task.rows.push({ id, question, status, answer });
+  }
+}
+const all = families.flatMap(f => f.tasks.flatMap(t => t.rows));
+const taskCount = families.reduce((n, f) => n + f.tasks.length, 0);
+const openCount = all.filter(r => r.status === "open").length;
+
+const qBody = families.map((f, fi) => `
+<h2 id="f${fi + 1}">${inline(f.title)}</h2>
+${f.tasks.map(t => `<section class="task" id="${esc(t.id)}">
+<h3>${inline(t.title)}</h3>
+<p class="task-id">Task <code>${esc(t.id)}</code> · ${t.rows.length} question${t.rows.length === 1 ? "" : "s"}</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+${t.rows.map(r => `<tr id="${esc(r.id)}"><td class="id">${esc(r.id)}</td><td>${inline(r.question)}</td><td class="st ${esc(r.status)}">${esc(r.status)}</td><td>${inline(r.answer)}</td></tr>`).join("\n")}
+</tbody></table>
+</section>`).join("\n")}`).join("\n");
+
+const questions = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open questions for collateral SMEs · CDM Collateral Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+body { margin: 0; background: #F6F5F0; color: #14213D; font: 16px/1.5 'IBM Plex Sans', Arial, sans-serif; }
+header, main { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+header { padding-top: 40px; }
+h1, h2, h3 { font-family: 'Space Grotesk', Arial, sans-serif; line-height: 1.2; }
+h1 { font-size: 40px; margin: 8px 0 16px; }
+h2 { font-size: 28px; margin: 48px 0 8px; padding-top: 16px; border-top: 2px solid #14213D; }
+h3 { font-size: 20px; margin: 32px 0 4px; }
+.kicker { color: #1F6F8B; font-weight: 600; letter-spacing: 2px; font-size: 14px; margin: 0; }
+.task-id { color: #4A5568; margin: 0 0 8px; font-size: 14px; }
+nav.toc { columns: 2; font-size: 15px; }
+nav.toc ul { margin: 0; padding-left: 1.2em; }
+a { color: #1F6F8B; }
+table { border-collapse: collapse; width: 100%; background: #fff; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid #DAD8CF; }
+th { border-bottom: 2px solid #14213D; font-size: 14px; }
+td.id { white-space: nowrap; font-weight: 600; }
+td.st.open { color: #9A5B13; }
+td.st.answered { color: #2F7D4F; }
+code { font-size: 0.92em; background: #ECEAE2; padding: 0 3px; border-radius: 3px; }
+footer { max-width: 1100px; margin: 48px auto; padding: 0 24px; color: #4A5568; font-size: 14px; }
+</style></head><body>
+<header>
+<p class="kicker">CDM COLLATERAL PROTOTYPE · <a href="index.html">BACK TO THE DECK</a></p>
+<h1>Open questions for collateral SMEs</h1>
+<p>${all.length} questions in ${taskCount} topics, ${openCount} of them open. Each topic is one konspekt task in
+<code>.konspekt/instance/nodes/task/</code>, which records the question's context and the interim rule the prototype
+uses until an SME answers. Related: <a href="analysis/gap-register.md">gap register</a> (which gaps rest on these
+questions), <a href="analysis/sme-question-ledger.md">the ledger in Markdown</a>.</p>
+<nav class="toc"><ul>
+${families.map((f, fi) => `<li><a href="#f${fi + 1}">${inline(f.title)}</a> (${f.tasks.reduce((n, t) => n + t.rows.length, 0)})</li>`).join("\n")}
+</ul></nav>
+</header>
+<main>${qBody}
+</main>
+<footer>Generated by <code>docs/presentations/intro_deck/build_site.mjs</code> from
+<code>docs/analysis/sme-question-ledger.md</code>. Edit the ledger, then run the script again.</footer>
+</body></html>
+`;
+
+// ---- Deck ----
+const deck = JSON.parse(read(path.join(HERE, "deck.json")));
+const fonts = Object.values(deck.faces).map(f => `<link rel="stylesheet" href="${esc(f.href)}">`).join("\n");
+const slides = deck.order.map(id => read(path.join(HERE, "slides", `${id}.html`))
+  // <x-icon> is a Slides-runtime element; a browser renders it empty, so show an arrow character.
+  .replace(/<x-icon name="ArrowRight"[^>]*>\s*<\/x-icon>/g, '<span style="font-size:48px;color:#1F6F8B">&#8594;</span>'));
+
+const index = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(deck.title)}</title>
+${fonts}
+<style>
+* { margin: 0; box-sizing: border-box; }
+html, body { height: 100%; background: #0B1222; overflow: hidden; }
+ul, ol { padding-left: 1.2em; }
+#stage { position: absolute; left: 50%; top: calc(50% - 22px); width: 1920px; height: 1080px; transform-origin: center; }
+#stage > section { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: none !important; }
+#stage > section.on { display: flex !important; }
+#stage > section aside { display: none; }
+section a { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
+#bar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; display: flex; align-items: center; gap: 20px; padding: 0 16px;
+  background: #0B1222; color: #C9D6E3; font: 14px 'IBM Plex Sans', Arial, sans-serif; }
+#bar a, #bar button { color: #C9D6E3; background: none; border: 0; font: inherit; cursor: pointer; text-decoration: none; }
+#bar a:hover, #bar button:hover { color: #E8A04E; }
+#bar .grow { flex: 1; }
+#notes { position: fixed; left: 0; right: 0; bottom: 44px; max-height: 30vh; overflow: auto; padding: 12px 16px; display: none;
+  background: #14213D; color: #F6F5F0; font: 16px/1.5 'IBM Plex Sans', Arial, sans-serif; }
+body.notes #notes { display: block; }
+@media print {
+  html, body { overflow: visible; background: none; }
+  #bar, #notes { display: none !important; }
+  #stage { position: static; transform: none !important; width: auto; height: auto; }
+  #stage > section { position: relative; display: flex !important; page-break-after: always; }
+  @page { size: 1920px 1080px; margin: 0; }
+}
+</style></head><body>
+<div id="stage">
+${slides.join("\n")}
+</div>
+<div id="notes"></div>
+<div id="bar">
+<button id="prev" title="Previous (Left arrow)">&#8592;</button><span id="pos"></span><button id="next" title="Next (Right arrow or Space)">&#8594;</button>
+<span class="grow"></span>
+<a href="analysis/gap-register.md">Gap register</a>
+<a href="sme-questions.html">SME questions (${all.length})</a>
+<a href="presentations/intro_deck/intro_deck.pdf">PDF</a>
+<button id="ntoggle" title="Speaker notes (N)">Notes</button>
+</div>
+<script>
+const slides = [...document.querySelectorAll("#stage > section")];
+const stage = document.getElementById("stage");
+let i = Math.max(0, slides.findIndex(s => "#" + s.id === location.hash));
+function fit() {
+  const k = Math.min(innerWidth / 1920, (innerHeight - 44) / 1080);
+  stage.style.transform = "translate(-50%, -50%) scale(" + k + ")";
+}
+function show(n) {
+  i = Math.min(slides.length - 1, Math.max(0, n));
+  slides.forEach((s, j) => s.classList.toggle("on", j === i));
+  document.getElementById("pos").textContent = (i + 1) + " / " + slides.length;
+  const a = slides[i].querySelector("aside");
+  document.getElementById("notes").textContent = a ? a.textContent : "";
+  history.replaceState(null, "", "#" + slides[i].id);
+}
+addEventListener("resize", fit);
+addEventListener("keydown", e => {
+  if (["ArrowRight", "PageDown", " "].includes(e.key)) { show(i + 1); e.preventDefault(); }
+  else if (["ArrowLeft", "PageUp"].includes(e.key)) { show(i - 1); e.preventDefault(); }
+  else if (e.key === "Home") show(0);
+  else if (e.key === "End") show(slides.length - 1);
+  else if (e.key === "n" || e.key === "N") document.body.classList.toggle("notes");
+});
+document.getElementById("prev").onclick = () => show(i - 1);
+document.getElementById("next").onclick = () => show(i + 1);
+document.getElementById("ntoggle").onclick = () => document.body.classList.toggle("notes");
+fit(); show(i);
+</script>
+</body></html>
+`;
+
+fs.writeFileSync(path.join(DOCS, "sme-questions.html"), questions);
+fs.writeFileSync(path.join(DOCS, "index.html"), index);
+console.log(`docs/index.html: ${slides.length} slides; docs/sme-questions.html: ${all.length} questions in ${taskCount} topics`);

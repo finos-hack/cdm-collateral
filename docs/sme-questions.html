@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open questions for collateral SMEs · CDM Collateral Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+body { margin: 0; background: #F6F5F0; color: #14213D; font: 16px/1.5 'IBM Plex Sans', Arial, sans-serif; }
+header, main { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+header { padding-top: 40px; }
+h1, h2, h3 { font-family: 'Space Grotesk', Arial, sans-serif; line-height: 1.2; }
+h1 { font-size: 40px; margin: 8px 0 16px; }
+h2 { font-size: 28px; margin: 48px 0 8px; padding-top: 16px; border-top: 2px solid #14213D; }
+h3 { font-size: 20px; margin: 32px 0 4px; }
+.kicker { color: #1F6F8B; font-weight: 600; letter-spacing: 2px; font-size: 14px; margin: 0; }
+.task-id { color: #4A5568; margin: 0 0 8px; font-size: 14px; }
+nav.toc { columns: 2; font-size: 15px; }
+nav.toc ul { margin: 0; padding-left: 1.2em; }
+a { color: #1F6F8B; }
+table { border-collapse: collapse; width: 100%; background: #fff; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid #DAD8CF; }
+th { border-bottom: 2px solid #14213D; font-size: 14px; }
+td.id { white-space: nowrap; font-weight: 600; }
+td.st.open { color: #9A5B13; }
+td.st.answered { color: #2F7D4F; }
+code { font-size: 0.92em; background: #ECEAE2; padding: 0 3px; border-radius: 3px; }
+footer { max-width: 1100px; margin: 48px auto; padding: 0 24px; color: #4A5568; font-size: 14px; }
+</style></head><body>
+<header>
+<p class="kicker">CDM COLLATERAL PROTOTYPE · <a href="index.html">BACK TO THE DECK</a></p>
+<h1>Open questions for collateral SMEs</h1>
+<p>222 questions in 39 topics, 222 of them open. Each topic is one konspekt task in
+<code>.konspekt/instance/nodes/task/</code>, which records the question's context and the interim rule the prototype
+uses until an SME answers. Related: <a href="analysis/gap-register.md">gap register</a> (which gaps rest on these
+questions), <a href="analysis/sme-question-ledger.md">the ledger in Markdown</a>.</p>
+<nav class="toc"><ul>
+<li><a href="#f1">Variation and initial margin rules</a> (16)</li>
+<li><a href="#f2">Call lifecycle and settlement</a> (17)</li>
+<li><a href="#f3">Allocation and reconciliation</a> (14)</li>
+<li><a href="#f4">Repo under the GMRA</a> (59)</li>
+<li><a href="#f5">Securities lending under the GMSLA</a> (51)</li>
+<li><a href="#f6">Triparty repo</a> (39)</li>
+<li><a href="#f7">CCP (GMRA repo cleared by BANK-C)</a> (26)</li>
+</ul></nav>
+</header>
+<main>
+<h2 id="f1">Variation and initial margin rules</h2>
+<section class="task" id="task-sme-enforcement-event-definition">
+<h3>What an Enforcement Event is under the IM Security Agreement</h3>
+<p class="task-id">Task <code>task-sme-enforcement-event-definition</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="ENF-1"><td class="id">ENF-1</td><td>With no elections, is the Enforcement Event an Early Termination Date reached, or does a continuing Event of Default suffice?</td><td class="st open">open</td><td></td></tr>
+<tr id="ENF-2"><td class="id">ENF-2</td><td>What does <code>earlyTerminationDate = False</code> remove: the trigger, or a distinction between designated and deemed Early Termination Dates?</td><td class="st open">open</td><td></td></tr>
+<tr id="ENF-3"><td class="id">ENF-3</td><td>Does <code>failureToPay</code> mean the ISDA MA Section 5(a)(i) Event of Default from the notice, a failure under the security agreement itself, or something with its own grace period?</td><td class="st open">open</td><td></td></tr>
+<tr id="ENF-4"><td class="id">ENF-4</td><td>Under Automatic Early Termination no notice is given, but the model's <code>DefaultNotice</code> needs a notice date. How is that handled?</td><td class="st open">open</td><td></td></tr>
+<tr id="ENF-5"><td class="id">ENF-5</td><td>Are Specified Conditions (Termination Events treated as defaults) Enforcement Events?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-registered-asset-completion">
+<h3>What completes settlement and enforcement of registered and claim-based tokens</h3>
+<p class="task-id">Task <code>task-sme-registered-asset-completion</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="REG-1"><td class="id">REG-1</td><td>For a Registered asset, is a pledge or title transfer complete at the on-chain transfer, or when the transfer agent updates the register? Is the on-chain transfer an instruction to the register or evidence of it?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-2"><td class="id">REG-2</td><td>For a Claim asset, what must the intermediary confirm, and does the token holder have a proprietary claim or only a contractual one?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-3"><td class="id">REG-3</td><td>What gives the secured party control for each record type (for example UCC Articles 8, 9 and 12, or the English law equivalent), and is the escrow contract enough?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-4"><td class="id">REG-4</td><td>On enforcement, who must act for each record type, and can the secured party enforce without the record keeper?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-5"><td class="id">REG-5</td><td>If the chain and the register disagree, which prevails, and how is the difference resolved?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-two-way-im-rules">
+<h3>Two-way initial margin and the pledgor's reclaim on default</h3>
+<p class="task-id">Task <code>task-sme-two-way-im-rules</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="IM2-1"><td class="id">IM2-1</td><td>Which paragraph of the 2018 NY law IM CSA, and of the control agreement with the custodian, gives the pledgor its collateral back when the secured party is the Defaulting Party? Is it the Pledgor's Rights and Remedies paragraph?</td><td class="st open">open</td><td></td></tr>
+<tr id="IM2-2"><td class="id">IM2-2</td><td>The prototype lets the pledgor reclaim as soon as the oracle feed records the secured party's default. Does it need a notice, a waiting period, or a designated Early Termination Date first?</td><td class="st open">open</td><td></td></tr>
+<tr id="IM2-3"><td class="id">IM2-3</td><td>The prototype returns the whole leg at once. Can the custodian hold back part of it, for example for amounts the pledgor owes on the other leg, or does segregation forbid that?</td><td class="st open">open</td><td></td></tr>
+<tr id="IM2-4"><td class="id">IM2-4</td><td>The non-defaulting party enforces or closes out the defaulting party's leg and reclaims its own in separate steps. Is any order between them required?</td><td class="st open">open</td><td></td></tr>
+<tr id="IM2-5"><td class="id">IM2-5</td><td>In one IM CSA with both parties posting, is each party's Substitution election, Minimum Transfer Amount and eligibility schedule stated per party (Party1, Party2) as the prototype assumes?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-revaluation-top-up-modelling">
+<h3>How a revaluation shortfall is called</h3>
+<p class="task-id">Task <code>task-revaluation-top-up-modelling</code> · 1 question</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TOP-1"><td class="id">TOP-1</td><td>Is a revaluation shortfall called by an ordinary IM margin call (the interim basis), or by a dedicated top-up call with its own CDM representation and on-chain record?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+
+<h2 id="f2">Call lifecycle and settlement</h2>
+<section class="task" id="task-sme-call-cancellation-rules">
+<h3>Cancelling a margin call</h3>
+<p class="task-id">Task <code>task-sme-call-cancellation-rules</code> · 7 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="CAN-1"><td class="id">CAN-1</td><td>Can the calling party withdraw an unanswered call alone? Is there a cut-off (for example the Notification Time, or once the called party has started to process the call)?</td><td class="st open">open</td><td></td></tr>
+<tr id="CAN-2"><td class="id">CAN-2</td><td>Once a call is agreed, partly agreed or disputed, does cancellation need the other party's acceptance? Can either party request it? What happens to a request neither accepted nor refused?</td><td class="st open">open</td><td></td></tr>
+<tr id="CAN-3"><td class="id">CAN-3</td><td>Can a call be cancelled while a proposal is pending, or after it is accepted but before settlement? Is the proposal then void, or must it be rejected or withdrawn first? Does the answer change once settlement instructions have been sent?</td><td class="st open">open</td><td></td></tr>
+<tr id="CAN-4"><td class="id">CAN-4</td><td>Is cancellation the right way to close a call disputed in full, or is it closed by the dispute resolution (Paragraph 5) and a new call?</td><td class="st open">open</td><td></td></tr>
+<tr id="CAN-5"><td class="id">CAN-5</td><td>Is a cancelled call usually replaced by a new call, and should the new call refer to the one it replaces?</td><td class="st open">open</td><td></td></tr>
+<tr id="CAN-6"><td class="id">CAN-6</td><td>Is a reason required for a cancellation or a refusal, and is there a standard list (ISO 20022 colr.005 and colr.006 reason codes)?</td><td class="st open">open</td><td></td></tr>
+<tr id="CAN-7"><td class="id">CAN-7</td><td>Is a settled call ever cancelled, or is the only way back a return call?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-settlement-netting-rules">
+<h3>Settlement netting of collateral movements</h3>
+<p class="task-id">Task <code>task-sme-settlement-netting-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="NET-1"><td class="id">NET-1</td><td>When do a VM delivery and a VM return between the same parties fall due on the same day, and should they net?</td><td class="st open">open</td><td></td></tr>
+<tr id="NET-2"><td class="id">NET-2</td><td>Does <code>netInterestWithMarginCalls</code> cover netting an Interest Amount with a delivery and with a return? Does <code>netPostedAndHeldInterest</code> belong in the same netting?</td><td class="st open">open</td><td></td></tr>
+<tr id="NET-3"><td class="id">NET-3</td><td>Is it enough that the party owing the net pays it, or do both parties first agree a netting statement (as under ISDA Master Agreement Section 2(c))?</td><td class="st open">open</td><td></td></tr>
+<tr id="NET-4"><td class="id">NET-4</td><td>Only cash nets in the prototype. Do deliveries and returns of the same security net in practice?</td><td class="st open">open</td><td></td></tr>
+<tr id="NET-5"><td class="id">NET-5</td><td>Which settlement date and cut-off define the movements that net together?</td><td class="st open">open</td><td></td></tr>
+<tr id="NET-6"><td class="id">NET-6</td><td>Confirm that initial margin, segregated with a custodian, never nets with variation margin or interest.</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-interest-daily-balances">
+<h3>Daily cash balances and rates of an Interest Period</h3>
+<p class="task-id">Task <code>task-sme-interest-daily-balances</code> · 4 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="INT-1"><td class="id">INT-1</td><td>Which balance counts for a day: the cash held at the end of the day, at a cut-off time, or the settled balance only? How are transfers in flight treated?</td><td class="st open">open</td><td></td></tr>
+<tr id="INT-2"><td class="id">INT-2</td><td>Which rate applies on a non-business day, and on which day is the rate observed (same day, or with a lookback)?</td><td class="st open">open</td><td></td></tr>
+<tr id="INT-3"><td class="id">INT-3</td><td>Who supplies the balances and rates for the statement, and can the pledgor dispute them?</td><td class="st open">open</td><td></td></tr>
+<tr id="INT-4"><td class="id">INT-4</td><td>For tokenized cash on a ledger, does the on-chain balance at the end of a calendar day (by block time) serve as the day's balance?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+
+<h2 id="f3">Allocation and reconciliation</h2>
+<section class="task" id="task-sme-allocation-ranking">
+<h3>Ranking and rules for collateral allocation</h3>
+<p class="task-id">Task <code>task-sme-allocation-ranking</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="ALR-1"><td class="id">ALR-1</td><td>Which default ranking do pledgors use in practice: lowest haircut first, highest haircut first, funding cost, or another cheapest-to-deliver measure?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALR-2"><td class="id">ALR-2</td><td>The last asset is rounded up to whole units. Is overshooting by less than one unit's value acceptable, or is a minimum transfer or rounding amount from the CSA applied?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALR-3"><td class="id">ALR-3</td><td>Should a suggestion respect the schedule's concentration limits against the collateral already held?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALR-4"><td class="id">ALR-4</td><td>Suggestions cover new IM and VM calls only. Does allocation apply to substitution or to returns chosen by the secured party?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALR-5"><td class="id">ALR-5</td><td>The registry order puts tUSD (cash) last. Should cash come first, last, or be excluded from suggestions unless the pledgor ranks it?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-allocation-concentration">
+<h3>Concentration limits on a suggested basket</h3>
+<p class="task-id">Task <code>task-sme-allocation-concentration</code> · 4 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="ALC-1"><td class="id">ALC-1</td><td>Which concentration limits does a CSA eligibility schedule carry in practice: a share of the total collateral per asset, per issuer, per asset class, or an absolute amount?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALC-2"><td class="id">ALC-2</td><td>Is a limit tested against the collateral already held plus the new basket, against the agreed amount of the call, or against the total credit support amount?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALC-3"><td class="id">ALC-3</td><td>Is the limit applied to market value or to value after haircuts?</td><td class="st open">open</td><td></td></tr>
+<tr id="ALC-4"><td class="id">ALC-4</td><td>When the ranked inventory would breach a limit, does the allocation skip to the next asset, cap the asset at the limit, or reject the suggestion? Is an existing breach corrected by the next call?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-reconciliation-rules">
+<h3>Matching rules, tolerances and cadence for portfolio reconciliation</h3>
+<p class="task-id">Task <code>task-sme-reconciliation-rules</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="REC-1"><td class="id">REC-1</td><td>Which fields must match for a trade to reconcile, beyond product, notional and currency, dates, fixed rate, floating index, and payer and receiver?</td><td class="st open">open</td><td></td></tr>
+<tr id="REC-2"><td class="id">REC-2</td><td>What difference in a trade's valuation counts as a break: an absolute amount, a percentage of the larger valuation, or both? Is the tolerance set per trade, per portfolio, or in the CSA?</td><td class="st open">open</td><td></td></tr>
+<tr id="REC-3"><td class="id">REC-3</td><td>How often do counterparties reconcile in practice, and should the prototype reconcile on request only or on a schedule?</td><td class="st open">open</td><td></td></tr>
+<tr id="REC-4"><td class="id">REC-4</td><td>Which breaks justify disputing a call? Is a dispute raised only when answering a call, or also against a call already agreed?</td><td class="st open">open</td><td></td></tr>
+<tr id="REC-5"><td class="id">REC-5</td><td>Must both snapshots share one as-of time, and what happens when one party's snapshot is late?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+
+<h2 id="f4">Repo under the GMRA</h2>
+<section class="task" id="task-sme-repo-margin-exposure">
+<h3>GMRA exposure and Net Margin rules</h3>
+<p class="task-id">Task <code>task-sme-repo-margin-exposure</code> · 3 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="RPM-1"><td class="id">RPM-1</td><td>Is Transaction Exposure the Repurchase Price accrued to the date times the Margin Ratio, less the market value of the securities? (Written from model memory of the GMRA; not checked against agreement text.)</td><td class="st open">open</td><td></td></tr>
+<tr id="RPM-2"><td class="id">RPM-2</td><td>Is Net Exposure the sum of the Transaction Exposures across the pair's repos in both directions, less the net margin held?</td><td class="st open">open</td><td></td></tr>
+<tr id="RPM-3"><td class="id">RPM-3</td><td>Interest on Cash Margin uses ACT/360 and one rate for the whole period, because <code>NetMarginInterest</code> has no day count attribute. Is that acceptable?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-live-spec-returns">
+<h3>Returning amounts in a live spec</h3>
+<p class="task-id">Task <code>task-sme-repo-live-spec-returns</code> · 1 question</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="RLS-1"><td class="id">RLS-1</td><td>The live spec <code>flow-repo-purchase-repurchase</code> leaves the 875 tUSD Price Differential with the buyer on every run. Should a live spec also return such amounts itself?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-reprice-rules">
+<h3>Repricing a repo under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-reprice-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="RPR-1"><td class="id">RPR-1</td><td>The prototype settles the Price Differential accrued to the reprice date in the cash difference. Is it settled then, or carried to the final Repurchase Price?</td><td class="st open">open</td><td></td></tr>
+<tr id="RPR-2"><td class="id">RPR-2</td><td>Is the new Purchase Price the market value of the securities divided by the Margin Ratio?</td><td class="st open">open</td><td></td></tr>
+<tr id="RPR-3"><td class="id">RPR-3</td><td>The prototype reprices every open repo of the pair, one settlement each. Does paragraph 4(i)(i) require all repos, and must they settle together?</td><td class="st open">open</td><td></td></tr>
+<tr id="RPR-4"><td class="id">RPR-4</td><td>The prototype offers a reprice under the same minimum transfer amount as a margin call. Does the minimum apply to a reprice?</td><td class="st open">open</td><td></td></tr>
+<tr id="RPR-5"><td class="id">RPR-5</td><td>Is a reprice agreed in place of a margin call, or is it a way of satisfying a call already made?</td><td class="st open">open</td><td></td></tr>
+<tr id="RPR-6"><td class="id">RPR-6</td><td>The prototype sets each repriced Transaction Exposure to about zero and leaves Net Margin already held unchanged, so after a reprice the other party can call that margin back. Should a reprice take the margin held into account?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-adjustment-rules">
+<h3>Adjusting a repo under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-adjustment-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="RAD-1"><td class="id">RAD-1</td><td>The prototype has the Seller pay the Price Differential accrued to the adjustment date in cash. Is it settled then, carried to the final Repurchase Price, or added to the new Purchase Price?</td><td class="st open">open</td><td></td></tr>
+<tr id="RAD-2"><td class="id">RAD-2</td><td>Is the new quantity the Purchase Price times the Margin Ratio divided by the price, rounded up to whole units?</td><td class="st open">open</td><td></td></tr>
+<tr id="RAD-3"><td class="id">RAD-3</td><td>The prototype adjusts every open repo of the pair, one settlement each. Does paragraph 4(i)(ii) require all repos, and must they settle together?</td><td class="st open">open</td><td></td></tr>
+<tr id="RAD-4"><td class="id">RAD-4</td><td>The prototype offers an adjustment under the same minimum transfer amount as a margin call. Does the minimum apply to an adjustment?</td><td class="st open">open</td><td></td></tr>
+<tr id="RAD-5"><td class="id">RAD-5</td><td>Is an adjustment agreed in place of a margin call, or is it a way of satisfying a call already made?</td><td class="st open">open</td><td></td></tr>
+<tr id="RAD-6"><td class="id">RAD-6</td><td>The prototype leaves Net Margin held unchanged, so after an adjustment the other party can call that margin back. Should an adjustment take the margin held into account?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-substitution-rules">
+<h3>Substituting repo securities under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-substitution-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="SUB-1"><td class="id">SUB-1</td><td>Must the substitute's Market Value be at least that of the securities it replaces, on the substitution date, with quantity rounded up to whole units?</td><td class="st open">open</td><td></td></tr>
+<tr id="SUB-2"><td class="id">SUB-2</td><td>The prototype accepts any security with a feed price and relies on the Buyer's agreement. Does the GMRA or Annex I limit which securities may be substituted?</td><td class="st open">open</td><td></td></tr>
+<tr id="SUB-3"><td class="id">SUB-3</td><td>The prototype replaces all the securities of one repo. Is a partial substitution in scope?</td><td class="st open">open</td><td></td></tr>
+<tr id="SUB-4"><td class="id">SUB-4</td><td>The prototype moves no cash and keeps the Repurchase Price. Is that correct under paragraph 8?</td><td class="st open">open</td><td></td></tr>
+<tr id="SUB-5"><td class="id">SUB-5</td><td>May the Buyer refuse a substitution without a reason?</td><td class="st open">open</td><td></td></tr>
+<tr id="SUB-6"><td class="id">SUB-6</td><td>A rounded-up substitute may leave a small excess with the Buyer, and later price moves follow the new security. Is any margin step required at the substitution?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-income-rules">
+<h3>Interim interest and manufactured income under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-income-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="INC-1"><td class="id">INC-1</td><td>The prototype pays the whole Price Differential accrued to the date, less earlier interim payments, and reduces the Repurchase Price by it. Is that correct, and are partial payments needed?</td><td class="st open">open</td><td></td></tr>
+<tr id="INC-2"><td class="id">INC-2</td><td>The prototype lets the Seller start an interim payment and needs the Buyer's agreement. Can either party demand it?</td><td class="st open">open</td><td></td></tr>
+<tr id="INC-3"><td class="id">INC-3</td><td>The prototype computes income per unit times the quantity, rounded to whole tUSD. Is it the amount paid by the issuer on the securities held, and is withholding tax taken into account?</td><td class="st open">open</td><td></td></tr>
+<tr id="INC-4"><td class="id">INC-4</td><td>The prototype pays when the parties agree, with the income date as a stated field. Must payment be on the income date, and who holds the securities on the record date?</td><td class="st open">open</td><td></td></tr>
+<tr id="INC-5"><td class="id">INC-5</td><td>Under paragraph 5, may income be set off against other amounts, or applied to reduce the Repurchase Price or the exposure?</td><td class="st open">open</td><td></td></tr>
+<tr id="INC-6"><td class="id">INC-6</td><td>CDM's on-demand rate change is not built. Is an agreed change of the repo rate needed?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-roll-rules">
+<h3>A repo roll under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-roll-rules</code> · 7 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="ROL-1"><td class="id">ROL-1</td><td>The prototype has the Seller pay the Price Differential on the roll date and keeps the Purchase Price. Is that correct, or is the interest added to the new Purchase Price, or the Transaction reset to the market value?</td><td class="st open">open</td><td></td></tr>
+<tr id="ROL-2"><td class="id">ROL-2</td><td>The prototype rolls only on the Repurchase Date. Can a Transaction be rolled earlier, or after a missed date?</td><td class="st open">open</td><td></td></tr>
+<tr id="ROL-3"><td class="id">ROL-3</td><td>The prototype keeps the securities and does not revalue them at the roll. Must the rolled Transaction be priced or margined again at the roll?</td><td class="st open">open</td><td></td></tr>
+<tr id="ROL-4"><td class="id">ROL-4</td><td>The proposing party enters the new repo rate and the other party agrees to it. Is there any constraint on the rate?</td><td class="st open">open</td><td></td></tr>
+<tr id="ROL-5"><td class="id">ROL-5</td><td>After a refusal the repo stays due for repurchase on the same date. Is any other consequence intended?</td><td class="st open">open</td><td></td></tr>
+<tr id="ROL-6"><td class="id">ROL-6</td><td>A settled repurchase clears a pending roll, and a repurchase instruction stops a roll from settling. Is that the right precedence?</td><td class="st open">open</td><td></td></tr>
+<tr id="ROL-7"><td class="id">ROL-7</td><td>CDM closes the trade and opens another with the same identifier. Under the GMRA, is a roll a new Transaction needing its own Confirmation?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-pair-off-rules">
+<h3>A repo pair-off under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-pair-off-rules</code> · 7 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="POF-1"><td class="id">POF-1</td><td>The prototype pairs off two repos only when they are between the same parties in opposite directions, with the same security, quantity, cash currency and Repurchase Date. Which of these must match in practice, and is a pair-off of repos with different Repurchase Dates possible?</td><td class="st open">open</td><td></td></tr>
+<tr id="POF-2"><td class="id">POF-2</td><td>Only equal quantities pair off. Is a partial pair-off (the difference delivered) common, and how is the residual treated?</td><td class="st open">open</td><td></td></tr>
+<tr id="POF-3"><td class="id">POF-3</td><td>The prototype nets the repurchase legs on the common Repurchase Date. Is pairing off the purchase legs (the repos never start) also in scope?</td><td class="st open">open</td><td></td></tr>
+<tr id="POF-4"><td class="id">POF-4</td><td>The net cash is the difference of the two Repurchase Prices, paid by the Seller of the repo with the higher one. Are interim interest, income or margin also netted into it?</td><td class="st open">open</td><td></td></tr>
+<tr id="POF-5"><td class="id">POF-5</td><td>Either party proposes and the other agrees or refuses. Is a pair-off agreed bilaterally like this, or instructed through a settlement system?</td><td class="st open">open</td><td></td></tr>
+<tr id="POF-6"><td class="id">POF-6</td><td>The paired repos leave the pair's Net Exposure on settlement. Must the margin held be adjusted at the same time?</td><td class="st open">open</td><td></td></tr>
+<tr id="POF-7"><td class="id">POF-7</td><td>CDM keeps both trades and adds a package reference; the prototype then marks both repurchased. Under the GMRA, are the two Transactions terminated, or settled by netting?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-buy-sell-back-rules">
+<h3>A buy/sell-back under the GMRA</h3>
+<p class="task-id">Task <code>task-sme-repo-buy-sell-back-rules</code> · 8 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="BSB-1"><td class="id">BSB-1</td><td>The income lowers the sell-back price by the income amount plus interest at the repo rate (ACT/360) from the income date to the Repurchase Date. Is that the GMRA Buy/Sell Back Annex formula, and which rate applies?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-2"><td class="id">BSB-2</td><td>The deduction is fixed when the Seller agrees it, to the Repurchase Date of that time. Is it recomputed if the Transaction is later repriced or adjusted?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-3"><td class="id">BSB-3</td><td>The Buyer enters the income per unit and date and the Seller agrees. Is that how the income is agreed in practice?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-4"><td class="id">BSB-4</td><td>A buy/sell-back's Transaction Exposure uses the accrued Repurchase Price less the full deduction. Should the interest part of the deduction accrue to the valuation date instead?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-5"><td class="id">BSB-5</td><td>Margin maintenance, repricing, adjustment, substitution, roll and pair-off apply as for a repo; interim interest does not. Is that right for a buy/sell-back under the Annex, and for an undocumented one?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-6"><td class="id">BSB-6</td><td>At a roll the Seller pays the Price Differential less the deduction, the Buyer pays any excess, and the deduction resets. Is that correct?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-7"><td class="id">BSB-7</td><td>Only two trades of the same type pair off. Can a repo and a buy/sell-back be paired off?</td><td class="st open">open</td><td></td></tr>
+<tr id="BSB-8"><td class="id">BSB-8</td><td>The tokenized securities accrue no coupon, so the prototype quotes no accrued interest in the purchase and sell-back prices. For coupon securities, how are the clean price and accrued interest stated?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-repo-default-close-out-rules">
+<h3>A GMRA default and close-out</h3>
+<p class="task-id">Task <code>task-sme-repo-default-close-out-rules</code> · 9 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="DCO-1"><td class="id">DCO-1</td><td>Each Transaction enters as the Repurchase Price accrued to the Early Termination Date, owed by the Seller, against the Default Market Value of the Equivalent Securities, owed by the Buyer. Is that paragraph 10(c)?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-2"><td class="id">DCO-2</td><td>The prototype uses one market price at the Default Valuation Time. Under paragraph 10(e) the non-defaulting party may use the net proceeds of a sale or purchase, or quotations. Which method applies when?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-3"><td class="id">DCO-3</td><td>The elections hold a Default Valuation Time and a business day calendar. Which day: the Early Termination Date, or a number of dealing days after it?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-4"><td class="id">DCO-4</td><td>The oracle records a default without its kind, and with automatic early termination elected every default terminates without notice. Should only an Act of Insolvency do so?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-5"><td class="id">DCO-5</td><td>Cash Margin is owed back at its amount and Margin Securities at their Default Market Value. Is accrued Net Margin interest also included?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-6"><td class="id">DCO-6</td><td>Agreed income that was due and not paid enters the balance. Does interest on it apply?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-7"><td class="id">DCO-7</td><td>A buy/sell-back enters at its Repurchase Price less the income deduction. Is that right under the Buy/Sell Back Annex when the income date falls after the Early Termination Date?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-8"><td class="id">DCO-8</td><td>The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply?</td><td class="st open">open</td><td></td></tr>
+<tr id="DCO-9"><td class="id">DCO-9</td><td>The close-out ends only Transactions whose purchase has settled; one booked and affirmed but not yet purchased stays open. Does the Event of Default terminate it too, and with what value?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+
+<h2 id="f5">Securities lending under the GMSLA</h2>
+<section class="task" id="task-sme-gmsla-terms-baseline">
+<h3>The baseline GMSLA elections and their amendment</h3>
+<p class="task-id">Task <code>task-sme-gmsla-terms-baseline</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="GST-1"><td class="id">GST-1</td><td>CDM's GMSLA elections hold one notification time. Which notices does it govern under GMSLA 2010 (margin calls, recall notices, both), and is 10:00 London a usual baseline?</td><td class="st open">open</td><td></td></tr>
+<tr id="GST-2"><td class="id">GST-2</td><td>GMSLA 2010 has no standard minimum transfer amount. Is a per-party minimum transfer amount in the Schedule usual, and does it apply to the aggregated mark under paragraph 5.4?</td><td class="st open">open</td><td></td></tr>
+<tr id="GST-3"><td class="id">GST-3</td><td>The prototype's agreement carries a default margin of 102% for loans that state none. Is margin always agreed per loan, or is an agreement-level default usual?</td><td class="st open">open</td><td></td></tr>
+<tr id="GST-4"><td class="id">GST-4</td><td>The baseline has automatic early termination not applicable for both parties. Is that usual for an English law GMSLA 2010 between two banks?</td><td class="st open">open</td><td></td></tr>
+<tr id="GST-5"><td class="id">GST-5</td><td>The baseline applies netting of deliveries (paragraph 5.6) and the failure-to-redeliver indemnity (paragraph 6.4). Are these the usual elections?</td><td class="st open">open</td><td></td></tr>
+<tr id="GST-6"><td class="id">GST-6</td><td>An agreed amendment of the elections takes effect on its effective date. Does it apply to loans already outstanding, or only to new loans?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-loan-delivery-return-rules">
+<h3>Securities loan delivery and return under the GMSLA</h3>
+<p class="task-id">Task <code>task-sme-gmsla-loan-delivery-return-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="LDR-1"><td class="id">LDR-1</td><td>The initial collateral is the Market Value of the Loaned Securities at the booking date's price times the loan's margin, rounded up. Is that the Required Collateral Value under GMSLA 2010, and is it priced on the trade date or the settlement date?</td><td class="st open">open</td><td></td></tr>
+<tr id="LDR-2"><td class="id">LDR-2</td><td>On a partial return the lender redelivers collateral in proportion to the quantity returned, in the same settlement. Is that usual, or is the excess collateral returned only through the next mark?</td><td class="st open">open</td><td></td></tr>
+<tr id="LDR-3"><td class="id">LDR-3</td><td>Open loans may be returned on any business day, and the prototype settles a return when both parties instruct it. What notice of return does the borrower give, and what is the standard settlement period?</td><td class="st open">open</td><td></td></tr>
+<tr id="LDR-4"><td class="id">LDR-4</td><td>A cash-collateral loan states a rebate rate, and a loan against securities states a fee rate, both fixed at booking. Are both agreed per loan, and can a rate change during the loan?</td><td class="st open">open</td><td></td></tr>
+<tr id="LDR-5"><td class="id">LDR-5</td><td>Collateral passes to the lender by outright title transfer, as under GMSLA 2010. Should the prototype also support the GMSLA 2018 security interest (pledge) variant?</td><td class="st open">open</td><td></td></tr>
+<tr id="LDR-6"><td class="id">LDR-6</td><td>A full return is qualified as a full return and not as a termination. Is the end of a loan by full return treated differently from its early termination (for example on recall or default)?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-marking-rules">
+<h3>Marking securities loans under the GMSLA</h3>
+<p class="task-id">Task <code>task-sme-gmsla-marking-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="MRK-1"><td class="id">MRK-1</td><td>Loans are marked together per pair (GMSLA paragraph 5.4): each party's requirement as lender less the collateral it holds, the two directions netted to one figure. Is that how aggregated marking is computed, and is margin from earlier calls netted in the same figure?</td><td class="st open">open</td><td></td></tr>
+<tr id="MRK-2"><td class="id">MRK-2</td><td>Either party may call: a lender short of collateral calls for more, and a borrower over-collateralised calls for the excess back. Is that usual, and is the call made by notice to the other party?</td><td class="st open">open</td><td></td></tr>
+<tr id="MRK-3"><td class="id">MRK-3</td><td>A call is made only when the net figure exceeds the calling party's minimum transfer amount. Does the GMSLA minimum transfer amount apply this way, and is there also a rounding of the amount called?</td><td class="st open">open</td><td></td></tr>
+<tr id="MRK-4"><td class="id">MRK-4</td><td>Collateral is valued at its market price without a haircut, the loan's margin being the buffer. Is a haircut on non-cash collateral applied as well under GMSLA 2010?</td><td class="st open">open</td><td></td></tr>
+<tr id="MRK-5"><td class="id">MRK-5</td><td>The margin delivered on a call stays with the pair and is netted at the next mark; a return of a loan redelivers only that loan's own collateral. Is margin attributed to individual loans in practice?</td><td class="st open">open</td><td></td></tr>
+<tr id="MRK-6"><td class="id">MRK-6</td><td>Prices are the feed prices on the business date, and a call settles by the next business day. What are the usual valuation time and settlement period for a margin call under the GMSLA?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-recall-rules">
+<h3>Recalling loaned securities under the GMSLA</h3>
+<p class="task-id">Task <code>task-sme-gmsla-recall-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="RCL-1"><td class="id">RCL-1</td><td>The lender recalls all or part of a loan by notice, and the borrower must return the securities by the end of the standard settlement time for them. Is two business days after the notice the right date for the prototype's securities, and is the notice date the day the notice is given or the next business day after a cut-off time?</td><td class="st open">open</td><td></td></tr>
+<tr id="RCL-2"><td class="id">RCL-2</td><td>A recall is recorded as a notice and does not change the loan; the loan ends only when the securities are returned. Is that how a recall works under GMSLA 2010, or does the notice itself terminate the loan for the recalled quantity?</td><td class="st open">open</td><td></td></tr>
+<tr id="RCL-3"><td class="id">RCL-3</td><td>The lender may withdraw a recall before the securities are returned. Is a withdrawal usual, and does it need the borrower's agreement?</td><td class="st open">open</td><td></td></tr>
+<tr id="RCL-4"><td class="id">RCL-4</td><td>When the borrower misses the date, the prototype only shows the recall as overdue. What may the lender do, and from when: a buy-in, a default notice, or both (row 19)?</td><td class="st open">open</td><td></td></tr>
+<tr id="RCL-5"><td class="id">RCL-5</td><td>The collateral stays with the lender until the return, which redelivers it in proportion. Is that right, or is collateral released when the recall is made?</td><td class="st open">open</td><td></td></tr>
+<tr id="RCL-6"><td class="id">RCL-6</td><td>A borrower's own return of part of a recalled loan reduces the quantity still recalled. Is that how a partial return during a recall is treated?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-substitution-rules">
+<h3>Substituting non-cash collateral of a loan under the GMSLA</h3>
+<p class="task-id">Task <code>task-sme-gmsla-substitution-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="LSB-1"><td class="id">LSB-1</td><td>The borrower may substitute the collateral of a loan with alternative collateral acceptable to the lender. Under GMSLA 2010, is the lender's agreement needed for each substitution, or only that the substitute be eligible under the agreed collateral schedule?</td><td class="st open">open</td><td></td></tr>
+<tr id="LSB-2"><td class="id">LSB-2</td><td>The substitute must be worth at least the loan's required collateral (the loaned value times the margin) at the substitution date's prices. Is that the right test, or must it equal the value of the collateral it replaces?</td><td class="st open">open</td><td></td></tr>
+<tr id="LSB-3"><td class="id">LSB-3</td><td>The substitute and the original collateral move in one transaction. In practice, must the borrower deliver the substitute first, with the lender returning the original afterwards, and by when?</td><td class="st open">open</td><td></td></tr>
+<tr id="LSB-4"><td class="id">LSB-4</td><td>A substitution replaces all the collateral of one loan. Are partial substitutions, giving a loan with mixed collateral, usual under the GMSLA?</td><td class="st open">open</td><td></td></tr>
+<tr id="LSB-5"><td class="id">LSB-5</td><td>The loan's fee is unchanged by a substitution. Is the fee repriced when the collateral changes, for example to a lower-grade security?</td><td class="st open">open</td><td></td></tr>
+<tr id="LSB-6"><td class="id">LSB-6</td><td>A substitution is allowed while a recall is pending. Is that right, or does a recall freeze the collateral until the return?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-rebate-rules">
+<h3>Billing and paying the rebate on cash collateral under the GMSLA</h3>
+<p class="task-id">Task <code>task-sme-gmsla-rebate-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="RBT-1"><td class="id">RBT-1</td><td>The rebate is billed from the last billed date to the business date, at any time the borrower chooses. Under GMSLA 2010 practice, is the rebate settled monthly, and on which day (e.g. the first business days of the next month)?</td><td class="st open">open</td><td></td></tr>
+<tr id="RBT-2"><td class="id">RBT-2</td><td>The rebate accrues daily on the cash collateral actually held, ACT/360, the start day counted and the end day not. Is that the usual accrual convention for a USD cash rebate?</td><td class="st open">open</td><td></td></tr>
+<tr id="RBT-3"><td class="id">RBT-3</td><td>The borrower issues the invoice and the lender pays on agreement. In practice, who issues the rebate statement, and how is a disputed amount handled?</td><td class="st open">open</td><td></td></tr>
+<tr id="RBT-4"><td class="id">RBT-4</td><td>The invoice total is the sum of the daily accruals per sub-period, rounded half-up once (to whole tUSD in the prototype, whose cash token has no decimals). Is rounding per invoice the usual practice, or per day?</td><td class="st open">open</td><td></td></tr>
+<tr id="RBT-5"><td class="id">RBT-5</td><td>Negative rebate rates are refused. Are negative rebates (the borrower pays) used for USD cash collateral, and should the prototype support them?</td><td class="st open">open</td><td></td></tr>
+<tr id="RBT-6"><td class="id">RBT-6</td><td>A returned loan can still be billed for the period up to its return date. Is the final rebate usually settled with the return, or billed with the next periodic statement?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-fee-rules">
+<h3>Billing and paying the lending fee under the GMSLA</h3>
+<p class="task-id">Task <code>task-sme-gmsla-fee-rules</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="FEE-1"><td class="id">FEE-1</td><td>The lending fee accrues on the market value of the loaned securities, without the margin. CDM's billing function charges it on the market value times the margin (the collateral requirement). Under GMSLA 2010 practice, is the fee charged on the loan value or on the collateral value?</td><td class="st open">open</td><td></td></tr>
+<tr id="FEE-2"><td class="id">FEE-2</td><td>The prototype values the loaned securities at one price per invoice, the feed price on the billing date, because its feed keeps no history. In practice, is the fee accrued daily on each day's market value, and which price source and time are used?</td><td class="st open">open</td><td></td></tr>
+<tr id="FEE-3"><td class="id">FEE-3</td><td>The fee accrues ACT/360, the start day counted and the end day not, at a fixed rate agreed at booking. Is that the usual convention for a USD-denominated lending fee, and are fee rates renegotiated during an open loan?</td><td class="st open">open</td><td></td></tr>
+<tr id="FEE-4"><td class="id">FEE-4</td><td>The lender issues the fee invoice and the borrower pays on agreement, in USD cash. In practice, who issues the fee statement, how often, and how is a disputed amount handled?</td><td class="st open">open</td><td></td></tr>
+<tr id="FEE-5"><td class="id">FEE-5</td><td>A substitution of the collateral does not change the fee. Is that right, or does the fee depend on the type of collateral held?</td><td class="st open">open</td><td></td></tr>
+<tr id="FEE-6"><td class="id">FEE-6</td><td>A returned loan can still be billed for the period up to its return date. Is the final fee usually settled with the return, or billed with the next periodic statement?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-gmsla-default-rules">
+<h3>A GMSLA default and close-out</h3>
+<p class="task-id">Task <code>task-sme-gmsla-default-rules</code> · 9 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="DFL-1"><td class="id">DFL-1</td><td>Each loan enters as the Default Market Value of the Equivalent Securities, owed to the lender, against the value of the Equivalent Collateral the lender holds, owed to the borrower. Is that GMSLA 2010 paragraph 11, and is cash collateral owed back at its amount?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-2"><td class="id">DFL-2</td><td>The prototype values securities at one oracle price on the Early Termination Date. Under paragraph 11 the non-defaulting party may use the proceeds of a sale or purchase, or quotations, at the Default Valuation Time. Which method applies when, and on which day?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-3"><td class="id">DFL-3</td><td>The fee or rebate accrued from the billed-through date to the Early Termination Date, and any invoice still unpaid, enter the balance. Is that right, and does interest run on unpaid amounts?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-4"><td class="id">DFL-4</td><td>Margin held under the pair's GMSLA calls is set off at its value, cash at par and securities at their Default Market Value. With aggregated marking, is that margin treated as collateral of all the loans?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-5"><td class="id">DFL-5</td><td>Automatic early termination follows the defaulting party's election, and the oracle does not record the kind of default. Should only an Act of Insolvency terminate without notice?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-6"><td class="id">DFL-6</td><td>Loans booked and affirmed but not delivered stay open after the close-out. Does the Event of Default terminate them too, and at what value?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-7"><td class="id">DFL-7</td><td>A returned loan with a period not yet billed is not in the close-out and can still be billed. Should its unpaid rate enter the balance?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-8"><td class="id">DFL-8</td><td>The prototype adds no costs of the non-defaulting party and no interest on an unpaid balance. Which apply under paragraph 11?</td><td class="st open">open</td><td></td></tr>
+<tr id="DFL-9"><td class="id">DFL-9</td><td>The GMSLA and GMRA close-outs between the same pair are separate statements. Is cross-agreement set-off (for example under a master netting agreement) expected?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+
+<h2 id="f6">Triparty repo</h2>
+<section class="task" id="task-sme-triparty-terms-profile">
+<h3>The triparty terms and the collateral profile</h3>
+<p class="task-id">Task <code>task-sme-triparty-terms-profile</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TPT-1"><td class="id">TPT-1</td><td>A triparty repo has a triparty agreement between the giver, the receiver and the agent, beside the GMRA between the giver and the receiver. Which terms does the triparty agreement hold that the prototype's terms leave out (the agent's fees, its liability, the cut-off times, the accounts)?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPT-2"><td class="id">TPT-2</td><td>The prototype's profile reuses the CSA schedule: US Treasuries at a 2% haircut and agency debt at 3%. Is that a usual triparty repo profile, or do agents' profiles usually state margin as a ratio per asset class?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPT-3"><td class="id">TPT-3</td><td>The profile limits agency debt to 50% of the allocated value after haircuts. Are concentration limits in triparty profiles usually per asset class, per issuer, or both, and measured before or after haircuts?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPT-4"><td class="id">TPT-4</td><td>Either the giver or the receiver may propose the terms, and the agent affirms them. Is the agent a party to the triparty agreement that consents to its terms, or only its operator?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPT-5"><td class="id">TPT-5</td><td>The terms are set once and only terminated, not amended. How are changes to a profile agreed in practice, and do they apply to repos already allocated?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPT-6"><td class="id">TPT-6</td><td>The giver or the receiver can terminate the triparty terms while nothing is allocated. What notice does termination take, and can the agent terminate?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-triparty-trade-start">
+<h3>The triparty allocation and the purchase through the agent</h3>
+<p class="task-id">Task <code>task-sme-triparty-trade-start</code> · 7 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TPS-1"><td class="id">TPS-1</td><td>The profile's haircuts take the place of the GMRA margin ratio: the allocated value after haircuts covers the Purchase Price. Is that how triparty repo margin is applied, or is a margin ratio applied on top of the haircuts?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPS-2"><td class="id">TPS-2</td><td>The agent allocates in the giver's own ranking of its assets. Do agents allocate in the giver's ranking, by their own optimisation (cheapest to deliver), or by a rule in the triparty agreement?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPS-3"><td class="id">TPS-3</td><td>A concentration limit is measured as a share of the Purchase Price the allocation covers. Do agents measure limits against the exposure, the total allocated value, or the giver's whole allocation across repos?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPS-4"><td class="id">TPS-4</td><td>When the giver's deposit cannot cover the Purchase Price within the profile, the agent allocates nothing. Do agents allocate partially and report a shortfall, or hold the trade unsettled?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPS-5"><td class="id">TPS-5</td><td>The allocated collateral stays in the agent's books in an account per repo, held by the receiver by title. Is the receiver's account at the agent per repo, or one account per giver and receiver?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPS-6"><td class="id">TPS-6</td><td>The receiver affirms the agent's allocation before the purchase settles. Does the receiver confirm allocations in practice, or is the agent's allocation binding on both parties?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPS-7"><td class="id">TPS-7</td><td>The agent values the collateral at the oracle feed price. Which price sources and times do agents use for the allocation?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-triparty-revaluation">
+<h3>The triparty agent's daily revaluation, top-up and release</h3>
+<p class="task-id">Task <code>task-sme-triparty-revaluation</code> · 8 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TPR-1"><td class="id">TPR-1</td><td>The agent's required value is the Purchase Price plus the repo interest accrued to the day. Do agents use the accrued Repurchase Price, the Purchase Price, or a value the parties report (the "exposure")?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-2"><td class="id">TPR-2</td><td>There is no threshold: any shortfall is topped up and any excess released. Do agents apply a minimum movement, a tolerance band, or a percentage of the exposure?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-3"><td class="id">TPR-3</td><td>A top-up comes from the giver's free collateral in the giver's ranking. Do agents top up by the same rule as the initial allocation, or by a separate one?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-4"><td class="id">TPR-4</td><td>An excess is released from the asset the giver ranked last. Do agents release from a particular asset, pro rata, or by the giver's instruction?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-5"><td class="id">TPR-5</td><td>When the giver's free collateral cannot cover a shortfall, nothing moves and the shortfall is recorded. Do agents move what they can, notify the parties, or treat it as a margin call between them?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-6"><td class="id">TPR-6</td><td>A concentration breach caused by price moves alone is recorded and left to substitution. Do agents rebalance during the daily revaluation?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-7"><td class="id">TPR-7</td><td>The agent revalues on request in the prototype. When and how often do agents revalue, and at which prices (closing, intraday)?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPR-8"><td class="id">TPR-8</td><td>The revaluation moves collateral without either party's affirmation. Is the agent's daily reallocation binding on both parties under the triparty agreement?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-triparty-substitution">
+<h3>The triparty agent's substitution of collateral</h3>
+<p class="task-id">Task <code>task-sme-triparty-substitution</code> · 7 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TPU-1"><td class="id">TPU-1</td><td>The giver asks for a number of units of one asset back. Do givers recall specific securities by quantity, whole positions, or a value?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPU-2"><td class="id">TPU-2</td><td>The agent replaces the returned units from the giver's free collateral in the giver's ranking until the repo is covered again. Do agents replace by the allocation rule, by equal value, or by the giver's instruction?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPU-3"><td class="id">TPU-3</td><td>When the free collateral cannot replace the returned units, the agent declines the whole request. Do agents return part of the request, or queue it until collateral arrives?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPU-4"><td class="id">TPU-4</td><td>The agent may start a substitution itself to bring an asset back within its concentration limit. Do agents rebalance breaches on their own, and how quickly?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPU-5"><td class="id">TPU-5</td><td>The receiver does not affirm a substitution. Is the receiver notified or asked to consent under the triparty agreement?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPU-6"><td class="id">TPU-6</td><td>One substitution request may be pending per repo. Do agents process several recalls on one repo at once, or across a giver's repos together?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPU-7"><td class="id">TPU-7</td><td>The substitution takes effect when the agent records it. What cut-off times and settlement timing do agents apply to recalls?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-triparty-trade-end">
+<h3>The triparty trade end through the agent</h3>
+<p class="task-id">Task <code>task-sme-triparty-trade-end</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TPE-1"><td class="id">TPE-1</td><td>The agent prepares the trade end on the Repurchase Date and the giver settles it. Does the agent settle the close-out on its own, or does it wait for the giver's cash?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPE-2"><td class="id">TPE-2</td><td>Trade end happens on the Repurchase Date only. How do agents handle open (on-demand) repos and early terminations?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPE-3"><td class="id">TPE-3</td><td>The giver pays the Repurchase Price directly to the receiver in the same step as the release. Does the cash move through the agent's books, or through a separate cash agent or payment system?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPE-4"><td class="id">TPE-4</td><td>The released collateral returns to the giver's free account at the agent. Is released collateral kept at the agent for the next repo, or delivered back to the giver's custody?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPE-5"><td class="id">TPE-5</td><td>A pending substitution blocks the trade end. How do agents handle a recall that is pending at the Repurchase Date?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPE-6"><td class="id">TPE-6</td><td>The receiver does not confirm the trade end. Is the receiver's confirmation of the repayment needed before the agent releases?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-triparty-reporting">
+<h3>The triparty agent's report to both parties</h3>
+<p class="task-id">Task <code>task-sme-triparty-reporting</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="TPP-1"><td class="id">TPP-1</td><td>The agent reports all settled repos under one set of terms with the giver's free collateral in one report. Do agents report per repo, per terms, or per giver and receiver across their repos?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPP-2"><td class="id">TPP-2</td><td>The report states the exposure as the Repurchase Price accrued to the day. Is that the exposure agents report, or the value the parties gave them?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPP-3"><td class="id">TPP-3</td><td>The report states each asset's price, haircut and value after haircuts, and whether the repo is covered. Which fields do the giver and the receiver use to reconcile, and in which format (for example ISO 20022 colr messages)?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPP-4"><td class="id">TPP-4</td><td>The giver's free collateral is reported to both parties. Is the giver's unallocated inventory shown to the receiver?</td><td class="st open">open</td><td></td></tr>
+<tr id="TPP-5"><td class="id">TPP-5</td><td>The agent reports on request in the prototype. How often and at which cut-offs do agents report?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+
+<h2 id="f7">CCP (GMRA repo cleared by BANK-C)</h2>
+<section class="task" id="task-sme-ccp-membership">
+<h3>CCP membership, the rulebook and the default fund</h3>
+<p class="task-id">Task <code>task-sme-ccp-membership</code> · 6 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="CCM-1"><td class="id">CCM-1</td><td>The rulebook is one document with a bilateral membership agreement per member under it. Do CCP repo services document membership as a rulebook plus a clearing membership agreement per member, and which terms sit in each?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCM-2"><td class="id">CCM-2</td><td>The initial margin is a flat 5% of each cleared repo's cash amount. How do repo CCPs set initial margin (per security class, VaR or SPAN-type models), and is it per trade or per portfolio?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCM-3"><td class="id">CCM-3</td><td>The default fund is fixed in the rulebook (1,000,000 split equally). How are default fund contributions sized and resized, and how often?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCM-4"><td class="id">CCM-4</td><td>The CCP's own capital (skin in the game) is paid in once, when the rulebook is published. Where does the CCP's capital sit in the default waterfall, and is it held with the default fund?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCM-5"><td class="id">CCM-5</td><td>The rulebook is in effect once every named member has paid, and stays in effect when a member leaves. What are the CCP's admission conditions, and is the service suspended when a member's contribution falls short?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCM-6"><td class="id">CCM-6</td><td>A member that clears no repo may leave and get its contribution back at once. What notice period and conditions apply to a member's resignation and the return of its contribution?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-ccp-clearing">
+<h3>Clearing a bilateral repo by novation to the CCP</h3>
+<p class="task-id">Task <code>task-sme-ccp-clearing</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="CCC-1"><td class="id">CCC-1</td><td>The repo is submitted after both parties affirm it and before the purchase settles. Do repo CCPs accept trades for clearing before the start leg settles, after it, or both (for example forward-starting repos)?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCC-2"><td class="id">CCC-2</td><td>The seller submits and the buyer affirms the submission. Do both members submit, does a trading venue or matching service submit, or does one party give up the trade?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCC-3"><td class="id">CCC-3</td><td>The CCP checks only that both are paid members and the security is eligible. Which further checks does a CCP make at acceptance (credit limits, initial margin posted first, settlement eligibility)?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCC-4"><td class="id">CCC-4</td><td>The purchase and the repurchase settle in one transaction between the members, the CCP netting to zero. Do CCPs settle each leg against the CCP's own accounts, or net members' obligations and settle once per day?</td><td class="st open">open</td><td></td></tr>
+<tr id="CCC-5"><td class="id">CCC-5</td><td>A refused repo stays bilateral and may be submitted again. What happens to a trade the CCP rejects under the members' agreements?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-ccp-margin">
+<h3>The CCP's daily variation margin and initial margin</h3>
+<p class="task-id">Task <code>task-sme-ccp-margin</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="CVM-1"><td class="id">CVM-1</td><td>BANK-C issues one round per business date when it chooses, and the members pay that day. Do repo CCPs also call intraday, and what is the payment deadline?</td><td class="st open">open</td><td></td></tr>
+<tr id="CVM-2"><td class="id">CVM-2</td><td>Variation margin is GMRA Transaction Exposure at the repo's Margin Ratio. Do repo CCPs margin the exposure with the haircut, or the mark-to-market without it, and do they pay price alignment interest on variation margin?</td><td class="st open">open</td><td></td></tr>
+<tr id="CVM-3"><td class="id">CVM-3</td><td>Initial margin is a flat 5% of the Purchase Prices of a member's open cleared repos. Which initial margin models do repo CCPs use (VaR, haircut schedules), and on which base?</td><td class="st open">open</td><td></td></tr>
+<tr id="CVM-4"><td class="id">CVM-4</td><td>Each member pays or receives one net amount of variation and initial margin per round, in tUSD. Do CCPs net the two, or settle them separately, for example variation margin in cash and initial margin in securities?</td><td class="st open">open</td><td></td></tr>
+<tr id="CVM-5"><td class="id">CVM-5</td><td>Variation margin passes to the other member only when the round settles, after every member that owes has paid. How do CCPs pay variation margin out, and what happens when a member does not pay on time?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-ccp-default">
+<h3>The CCP's management of a member default and its waterfall</h3>
+<p class="task-id">Task <code>task-sme-ccp-default</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="CDF-1"><td class="id">CDF-1</td><td>BANK-C closes out all the defaulter's cleared repos at once at the feed price on its business date. Do repo CCPs instead hedge and auction the defaulter's positions over several days, and how is the close-out price set?</td><td class="st open">open</td><td></td></tr>
+<tr id="CDF-2"><td class="id">CDF-2</td><td>The loss is covered by the defaulter's initial margin, its default fund contribution, the CCP's capital, then the other members' contributions pro rata. Is this order standard for repo CCPs, how much capital does a CCP put in before the members' contributions, and do the rulebooks also give an assessment power?</td><td class="st open">open</td><td></td></tr>
+<tr id="CDF-3"><td class="id">CDF-3</td><td>The survivors' repos are closed out: each survivor keeps the securities or cash it holds and the residual is settled in cash. Do CCPs close the survivors' positions out, or keep them open and give them a new counterparty through the auction?</td><td class="st open">open</td><td></td></tr>
+<tr id="CDF-4"><td class="id">CDF-4</td><td>What is left of the defaulter's margin and contribution is paid to it at once. When and to whom is a defaulter's surplus returned (an insolvency practitioner, after the default management period)?</td><td class="st open">open</td><td></td></tr>
+<tr id="CDF-5"><td class="id">CDF-5</td><td>The defaulter may rejoin at once by paying its share again. What process do CCPs apply to a member after its default, and when may it clear again?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-ccp-porting">
+<h3>The admission of a member and the porting of a cleared repo</h3>
+<p class="task-id">Task <code>task-sme-ccp-porting</code> · 5 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="CPT-1"><td class="id">CPT-1</td><td>BANK-C admits a member to its rulebook in effect with a separate admission document, and the rulebook is unchanged. How do CCPs admit a member (an accession agreement, an amendment of the rulebook), and which checks come first?</td><td class="st open">open</td><td></td></tr>
+<tr id="CPT-2"><td class="id">CPT-2</td><td>A member moves its leg of a cleared repo to another member when the two agree and the CCP approves. Do repo CCPs allow such member-to-member transfers, or is porting used only for client positions when a clearing member defaults?</td><td class="st open">open</td><td></td></tr>
+<tr id="CPT-3"><td class="id">CPT-3</td><td>The receiving member pays the leaving member the leg's value at the feed price, with the variation margin paid. How is a transferred position priced and paid for: at market, at the original terms, or with no payment between the members?</td><td class="st open">open</td><td></td></tr>
+<tr id="CPT-4"><td class="id">CPT-4</td><td>The variation margin paid stays with the repo, and the initial margin does not move: the next round calls the receiving member's and returns the leaving member's. Is margin transferred with a ported position?</td><td class="st open">open</td><td></td></tr>
+<tr id="CPT-5"><td class="id">CPT-5</td><td>Either the receiving member or the CCP may refuse, and a leg may be ported only once. What criteria does a CCP apply to accept a transfer, and are repeated transfers limited?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+</main>
+<footer>Generated by <code>docs/presentations/intro_deck/build_site.mjs</code> from
+<code>docs/analysis/sme-question-ledger.md</code>. Edit the ledger, then run the script again.</footer>
+</body></html>
