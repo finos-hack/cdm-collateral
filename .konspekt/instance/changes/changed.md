@@ -1677,3 +1677,4 @@ excluded.
 | task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/presentations/intro_deck/slides/join.html | 2026-11-15T16:25:13Z |
 | task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/setup/setup-codespaces.md | 2026-11-15T16:25:13Z |
 | task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/setup/setup-windows.md | 2026-11-15T16:25:13Z |
+| task-konspekt-re-seeding | 22b36978730483fe656c8ad12f7f100128e6ce81 | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-15T16:29:10Z |
