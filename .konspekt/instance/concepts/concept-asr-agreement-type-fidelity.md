@@ -5,10 +5,13 @@ subtype: asr
 review: accepted
 provenance:
   conversationId: adr-asr-traceability
-  sourceRef: 5927fa0239a8781c51442acdf4500e2af1eea411
-  contentHash: 5927fa0239a8781c51442acdf4500e2af1eea411
+  sourceRef: ni:///sha-256;ox0Q32fO48q4mXrz28vk8Um7b_zayIPuP61PCwenQoM
   timestamp: 2026-11-06T21:52:57Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 5927fa0239a8781c51442acdf4500e2af1eea411
+    contentHash: 5927fa0239a8781c51442acdf4500e2af1eea411
 createdAt: 2026-11-06T21:52:57Z
 updatedAt: 2026-11-06T22:27:21Z
 ```

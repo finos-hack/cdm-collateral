@@ -4,10 +4,13 @@ kind: fact
 review: accepted
 provenance:
   conversationId: ci-live-e2e-stack
-  sourceRef: 16306102ad473abb9b5140f1c2af6e9b8fc40aca
-  contentHash: 16306102ad473abb9b5140f1c2af6e9b8fc40aca
+  sourceRef: ni:///sha-256;oRZWUHOtZmLfKgJxpHHm5sRsBKk0S8budPZ-selJtgs
   timestamp: 2026-10-30T02:12:11Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 16306102ad473abb9b5140f1c2af6e9b8fc40aca
+    contentHash: 16306102ad473abb9b5140f1c2af6e9b8fc40aca
 createdAt: 2026-10-27T01:19:47Z
 updatedAt: 2026-10-30T02:19:00Z
 ```

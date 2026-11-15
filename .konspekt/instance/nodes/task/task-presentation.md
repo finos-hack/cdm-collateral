@@ -6,9 +6,12 @@ status: active
 review: accepted
 provenance:
   conversationId: presentation
-  sourceRef: 8cf387509cb832a6bf35a80f63462960544a2bb1
-  contentHash: 8cf387509cb832a6bf35a80f63462960544a2bb1
+  sourceRef: ni:///sha-256;g5Ulss0nnEGnE1sQe2h4o2ZmEaFwvWnhbNm4C4P1mC4
   timestamp: 2026-11-09T12:57:26Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 8cf387509cb832a6bf35a80f63462960544a2bb1
+    contentHash: 8cf387509cb832a6bf35a80f63462960544a2bb1
 createdAt: 2026-11-09T12:57:26Z
 updatedAt: 2026-11-13T17:29:26Z
 ```

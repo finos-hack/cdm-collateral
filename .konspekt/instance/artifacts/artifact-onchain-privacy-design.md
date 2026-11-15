@@ -7,11 +7,14 @@ createdAt: 2026-10-23T00:00:00Z
 updatedAt: 2026-10-23T00:00:00Z
 review: accepted
 provenance:
-  sourceRef: fb7fc41f8d17de20191da289faee16fb85ddbf08
-  contentHash: fb7fc41f8d17de20191da289faee16fb85ddbf08
+  sourceRef: ni:///sha-256;whkcPr5vGRhGfyP3KBwHgRuYvZBFAxfwi17mcztcocs
   conversationId: spec-writer-2026-10-23
   timestamp: 2026-10-23T16:22:32.687Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: fb7fc41f8d17de20191da289faee16fb85ddbf08
+    contentHash: fb7fc41f8d17de20191da289faee16fb85ddbf08
 ```
 # Artifact: On-chain privacy and confidentiality design
 

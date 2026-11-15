@@ -5,10 +5,13 @@ timestamp: 2026-11-09T00:49:00Z
 review: accepted
 provenance:
   conversationId: claude-ai-web-live-spec
-  sourceRef: e765ec4d7d239f00f16330ce6c7b942512cd3359
-  contentHash: e765ec4d7d239f00f16330ce6c7b942512cd3359
+  sourceRef: ni:///sha-256;ZSM7RD-wnqSfs7bEWIVTHcXuZaDYjeaqU8Ftac1Z9sk
   timestamp: 2026-11-09T00:49:00Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: e765ec4d7d239f00f16330ce6c7b942512cd3359
+    contentHash: e765ec4d7d239f00f16330ce6c7b942512cd3359
 createdAt: 2026-11-09T00:49:00Z
 updatedAt: 2026-11-11T23:18:36Z
 ```

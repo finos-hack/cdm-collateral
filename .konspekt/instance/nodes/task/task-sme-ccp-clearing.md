@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: ccp-clearing
-  sourceRef: 0072e61cda902e466726ca3c65c8c1ad61b3f089
-  contentHash: 0072e61cda902e466726ca3c65c8c1ad61b3f089
+  sourceRef: ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0
   timestamp: 2026-11-12T23:30:00Z
   confidence: 0.5
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 0072e61cda902e466726ca3c65c8c1ad61b3f089
+    contentHash: 0072e61cda902e466726ca3c65c8c1ad61b3f089
 createdAt: 2026-11-12T23:30:00Z
 updatedAt: 2026-11-12T23:43:46Z
 ```

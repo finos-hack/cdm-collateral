@@ -6,10 +6,13 @@ status: active
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
-  sourceRef: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
-  contentHash: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
+  sourceRef: ni:///sha-256;zsnmZETbzIDT3KVN5D8Pj3GGGS6Ix1Iol6m3NAJOgHI
   timestamp: 2026-11-03T14:18:57Z
   confidence: 0.85
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
+    contentHash: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
 createdAt: 2026-11-03T14:18:57Z
 updatedAt: 2026-11-03T14:47:29Z
 ```

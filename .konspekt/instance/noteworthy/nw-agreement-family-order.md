@@ -4,10 +4,13 @@ kind: decision
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
-  sourceRef: f2af9c708d4dfb0afca4f8657294d0883797c5b2
-  contentHash: f2af9c708d4dfb0afca4f8657294d0883797c5b2
+  sourceRef: ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw
   timestamp: 2026-11-03T14:47:29Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: f2af9c708d4dfb0afca4f8657294d0883797c5b2
+    contentHash: f2af9c708d4dfb0afca4f8657294d0883797c5b2
 createdAt: 2026-11-03T14:47:29Z
 updatedAt: 2026-11-03T15:18:20Z
 ```

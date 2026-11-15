@@ -6,10 +6,13 @@ location: cdm-ext/
 review: accepted
 provenance:
   conversationId: cdm-development
-  sourceRef: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
-  contentHash: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
+  sourceRef: ni:///sha-256;nf7BcFV4Q1Ziopu-BU0WXFAK508ZmwQk32KpcUcuzJQ
   timestamp: 2026-10-17T01:16:19Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
+    contentHash: 9ab0cbf86284cce4606e93eabb8507c9d009d7b7
 createdAt: 2026-10-17T01:16:19Z
 updatedAt: 2026-10-18T01:27:28Z
 ```

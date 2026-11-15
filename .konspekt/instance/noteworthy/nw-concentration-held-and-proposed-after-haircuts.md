@@ -4,10 +4,13 @@ kind: decision
 review: accepted
 provenance:
   conversationId: cdm-development
-  sourceRef: d73a117f54291c2304fe402650272d50c599ab6b
-  contentHash: d73a117f54291c2304fe402650272d50c599ab6b
+  sourceRef: ni:///sha-256;uowYDkAqviLpQor8nuZgnIz1no84C9aNVuZxYpHlVq0
   timestamp: 2026-11-03T20:54:04Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: d73a117f54291c2304fe402650272d50c599ab6b
+    contentHash: d73a117f54291c2304fe402650272d50c599ab6b
 createdAt: 2026-11-03T20:54:04Z
 updatedAt: 2026-11-03T21:48:03Z
 ```

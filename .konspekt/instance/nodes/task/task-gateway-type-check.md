@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: repo-income
-  sourceRef: 4d99f087ff103e4c3d5799b9ac5c1f98537f958d
-  contentHash: 4d99f087ff103e4c3d5799b9ac5c1f98537f958d
+  sourceRef: ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0
   timestamp: 2026-11-08T21:19:44Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 4d99f087ff103e4c3d5799b9ac5c1f98537f958d
+    contentHash: 4d99f087ff103e4c3d5799b9ac5c1f98537f958d
 createdAt: 2026-11-08T21:19:44Z
 updatedAt: 2026-11-08T23:13:16Z
 ```

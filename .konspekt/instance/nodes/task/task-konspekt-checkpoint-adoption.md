@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-checkpoint
-  sourceRef: 230f9e855232d941fc6e7cbd34dfdf92a93163da
-  contentHash: 230f9e855232d941fc6e7cbd34dfdf92a93163da
+  sourceRef: ni:///sha-256;_NM9qi7q5kWoi1S15NT-J_zJLprmKdscclhwI-4p-FU
   timestamp: 2026-11-07T22:13:30Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 230f9e855232d941fc6e7cbd34dfdf92a93163da
+    contentHash: 230f9e855232d941fc6e7cbd34dfdf92a93163da
 createdAt: 2026-11-07T22:13:30Z
 updatedAt: 2026-11-12T00:00:26Z
 ```

@@ -7,10 +7,13 @@ version: cdm-7.6.0
 review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
-  sourceRef: 342fbd7743d6ba622c0f9c0adac070fd2d538d07
-  contentHash: 342fbd7743d6ba622c0f9c0adac070fd2d538d07
+  sourceRef: ni:///sha-256;vBOckLSISZJvKIvy1HX69dAveNvpP31f4nxrLCX1zsY
   timestamp: 2026-10-15T23:48:20Z
   confidence: 0.75
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 342fbd7743d6ba622c0f9c0adac070fd2d538d07
+    contentHash: 342fbd7743d6ba622c0f9c0adac070fd2d538d07
 createdAt: 2026-10-15T23:48:20Z
 updatedAt: 2026-10-15T23:55:50Z
 ```

@@ -6,10 +6,13 @@ timestamp: 2026-11-12T18:25:00Z
 review: accepted
 provenance:
   conversationId: ccp-scope
-  sourceRef: 323cd915721b60bb6900bbb2d1774d669f8870ac
-  contentHash: 323cd915721b60bb6900bbb2d1774d669f8870ac
+  sourceRef: ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg
   timestamp: 2026-11-12T18:25:00Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 323cd915721b60bb6900bbb2d1774d669f8870ac
+    contentHash: 323cd915721b60bb6900bbb2d1774d669f8870ac
 createdAt: 2026-11-12T18:25:00Z
 updatedAt: 2026-11-12T18:25:00Z
 ```

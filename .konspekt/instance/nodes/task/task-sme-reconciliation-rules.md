@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: csa-section-b
-  sourceRef: 9a57e2d1cdefdaf5914d764b3e69381646e0560d
-  contentHash: 9a57e2d1cdefdaf5914d764b3e69381646e0560d
+  sourceRef: ni:///sha-256;Ka4WSnHugzpj6DbmeXEwMD4u-AXWVOlgljgpfVIoK6I
   timestamp: 2026-11-07T18:37:24Z
   confidence: 0.65
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9a57e2d1cdefdaf5914d764b3e69381646e0560d
+    contentHash: 9a57e2d1cdefdaf5914d764b3e69381646e0560d
 createdAt: 2026-11-07T18:37:24Z
 updatedAt: 2026-11-07T18:41:40Z
 ```

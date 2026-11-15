@@ -6,10 +6,13 @@ location: docs/analysis/cdm-workflow-task-map.md
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
-  sourceRef: 3d50de191d1f9ab4e959c8bfb0bd04d2e397ca05
-  contentHash: 3d50de191d1f9ab4e959c8bfb0bd04d2e397ca05
+  sourceRef: ni:///sha-256;Hz-Wy1LX7MxZHrtHdKdGAvW6iIBnWud1M1UwzNVDAys
   timestamp: 2026-11-03T14:29:20Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 3d50de191d1f9ab4e959c8bfb0bd04d2e397ca05
+    contentHash: 3d50de191d1f9ab4e959c8bfb0bd04d2e397ca05
 createdAt: 2026-11-03T14:29:20Z
 updatedAt: 2026-11-03T14:47:29Z
 ```

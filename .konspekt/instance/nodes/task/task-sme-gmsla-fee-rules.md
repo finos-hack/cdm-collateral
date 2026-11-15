@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: gmsla-lending-fee
-  sourceRef: 1577efddfacbb1f2fedacd57705e2f766a8b44bc
-  contentHash: 1577efddfacbb1f2fedacd57705e2f766a8b44bc
+  sourceRef: ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI
   timestamp: 2026-11-11T23:29:22Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 1577efddfacbb1f2fedacd57705e2f766a8b44bc
+    contentHash: 1577efddfacbb1f2fedacd57705e2f766a8b44bc
 createdAt: 2026-11-11T23:29:22Z
 updatedAt: 2026-11-11T23:42:15Z
 ```

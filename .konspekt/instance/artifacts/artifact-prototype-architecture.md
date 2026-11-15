@@ -7,10 +7,13 @@ version: calm-1.2
 review: accepted
 provenance:
   conversationId: architecture-design
-  sourceRef: 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62
-  contentHash: 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62
+  sourceRef: ni:///sha-256;NhbLlV5fc2u1gteGpkfyjtrp1fQ-vBN1J9uK0yT_OBY
   timestamp: 2026-10-16T20:08:49Z
   confidence: 0.75
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62
+    contentHash: 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62
 createdAt: 2026-10-16T20:08:49Z
 updatedAt: 2026-10-18T01:27:28Z
 ```

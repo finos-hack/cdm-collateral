@@ -15,86 +15,86 @@ into state history — an instance without it is v1-conformant and records none.
 
 | ref | field | from | to | timestamp | source | by |
 |-----|-------|------|----|-----------|--------|----|
-| node:node-app-setup | review |  | accepted | 2026-10-15T00:18:11Z | df5298515334f4f37dc86dfd54b8e0805558203b | denisurusov |
+| node:node-app-setup | review |  | accepted | 2026-10-15T00:18:11Z | ni:///sha-256;iGM77_gCwbAiHXoq7F82NfWGTvYHgcYwSyx3YY5Fu10 | denisurusov |
 | node:node-app-setup | status |  | active | 2026-10-15T00:18:11Z |  |  |
-| node:goal-test-konspekt-adoption | review |  | accepted | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
-| node:goal-test-konspekt-adoption | status |  | active | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
-| node:task-repo-setup-iteration | review |  | accepted | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
-| node:task-repo-setup-iteration | status |  | active | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
-| edge:e-dec-adoption-setupiter | review |  | accepted | 2026-10-15T02:15:25Z | b625196f2f2fd6cf48bdbf8771dabda407a20f1e | denisurusov |
-| node:goal-architecture-design | review |  | accepted | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-architecture-design | status |  | open | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-business-case | review |  | accepted | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-business-case | status |  | open | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-end-to-end-flow | review |  | accepted | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-end-to-end-flow | status |  | open | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-data-cdm-taxonomies-specs | review |  | accepted | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:goal-data-cdm-taxonomies-specs | status |  | open | 2026-10-15T02:46:38Z | 82d9f5b6f0f462ef766727975fd6e34ca1b8359d | denisurusov |
-| node:task-cdm-current-state-analysis | review |  | accepted | 2026-10-15T12:24:36Z | c06f71f1e33136d841554b3edcac893f013a932a | denisurusov |
-| node:task-cdm-current-state-analysis | status |  | open | 2026-10-15T12:24:36Z | c06f71f1e33136d841554b3edcac893f013a932a | denisurusov |
-| edge:e-dec-cdmdata-cdmanalysis | review |  | accepted | 2026-10-15T12:24:36Z | c06f71f1e33136d841554b3edcac893f013a932a | denisurusov |
-| node:task-cdm-collateral-other-agreements | review |  | accepted | 2026-10-15T12:32:58Z | e4b447e13cef62282de0670bc02b310467ef5d04 | denisurusov |
-| node:task-cdm-collateral-other-agreements | status |  | open | 2026-10-15T12:32:58Z | e4b447e13cef62282de0670bc02b310467ef5d04 | denisurusov |
-| edge:e-dec-cdmdata-otheragreements | review |  | accepted | 2026-10-15T12:32:58Z | e4b447e13cef62282de0670bc02b310467ef5d04 | denisurusov |
+| node:goal-test-konspekt-adoption | review |  | accepted | 2026-10-15T02:15:25Z | ni:///sha-256;cjKI0Aq_d0b5KnkKztWgZgYHR29Xm-u2zziAJ9rsTbI | denisurusov |
+| node:goal-test-konspekt-adoption | status |  | active | 2026-10-15T02:15:25Z | ni:///sha-256;cjKI0Aq_d0b5KnkKztWgZgYHR29Xm-u2zziAJ9rsTbI | denisurusov |
+| node:task-repo-setup-iteration | review |  | accepted | 2026-10-15T02:15:25Z | ni:///sha-256;cjKI0Aq_d0b5KnkKztWgZgYHR29Xm-u2zziAJ9rsTbI | denisurusov |
+| node:task-repo-setup-iteration | status |  | active | 2026-10-15T02:15:25Z | ni:///sha-256;cjKI0Aq_d0b5KnkKztWgZgYHR29Xm-u2zziAJ9rsTbI | denisurusov |
+| edge:e-dec-adoption-setupiter | review |  | accepted | 2026-10-15T02:15:25Z | ni:///sha-256;cjKI0Aq_d0b5KnkKztWgZgYHR29Xm-u2zziAJ9rsTbI | denisurusov |
+| node:goal-architecture-design | review |  | accepted | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-architecture-design | status |  | open | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-business-case | review |  | accepted | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-business-case | status |  | open | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-end-to-end-flow | review |  | accepted | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-end-to-end-flow | status |  | open | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-data-cdm-taxonomies-specs | review |  | accepted | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:goal-data-cdm-taxonomies-specs | status |  | open | 2026-10-15T02:46:38Z | ni:///sha-256;LJXIKhMJnvegqasJA4T0N92nP-sMwWGJGYOHeeejZ4E | denisurusov |
+| node:task-cdm-current-state-analysis | review |  | accepted | 2026-10-15T12:24:36Z | ni:///sha-256;IK4gaMTs7JwEwzhEwg5g332Y1rorxNwaBs4p4GFgRhw | denisurusov |
+| node:task-cdm-current-state-analysis | status |  | open | 2026-10-15T12:24:36Z | ni:///sha-256;IK4gaMTs7JwEwzhEwg5g332Y1rorxNwaBs4p4GFgRhw | denisurusov |
+| edge:e-dec-cdmdata-cdmanalysis | review |  | accepted | 2026-10-15T12:24:36Z | ni:///sha-256;IK4gaMTs7JwEwzhEwg5g332Y1rorxNwaBs4p4GFgRhw | denisurusov |
+| node:task-cdm-collateral-other-agreements | review |  | accepted | 2026-10-15T12:32:58Z | ni:///sha-256;9n5_Y0RnLiMfSOKq5YEGrnniEqtG1_wfUPeYYxxBNKU | denisurusov |
+| node:task-cdm-collateral-other-agreements | status |  | open | 2026-10-15T12:32:58Z | ni:///sha-256;9n5_Y0RnLiMfSOKq5YEGrnniEqtG1_wfUPeYYxxBNKU | denisurusov |
+| edge:e-dec-cdmdata-otheragreements | review |  | accepted | 2026-10-15T12:32:58Z | ni:///sha-256;9n5_Y0RnLiMfSOKq5YEGrnniEqtG1_wfUPeYYxxBNKU | denisurusov |
 | artifact:artifact-cdm-csa-coverage-matrix | review |  | proposed | 2026-10-15T12:32:58Z |  |  |
 | edge:e-prod-cdmanalysis-csamatrix | review |  | proposed | 2026-10-15T12:32:58Z |  |  |
-| artifact:artifact-cdm-csa-coverage-matrix | review | proposed | accepted | 2026-10-15T22:33:21Z | d0ddd12ef8783447c7d207f5e33017925a95e138 | denisurusov |
-| edge:e-prod-cdmanalysis-csamatrix | review | proposed | accepted | 2026-10-15T22:33:21Z | d0ddd12ef8783447c7d207f5e33017925a95e138 | denisurusov |
+| artifact:artifact-cdm-csa-coverage-matrix | review | proposed | accepted | 2026-10-15T22:33:21Z | ni:///sha-256;7ud6DC8hV53tUYAGQv_JZBR9Q4xFC6vjpv3xJxV_6jc | denisurusov |
+| edge:e-prod-cdmanalysis-csamatrix | review | proposed | accepted | 2026-10-15T22:33:21Z | ni:///sha-256;7ud6DC8hV53tUYAGQv_JZBR9Q4xFC6vjpv3xJxV_6jc | denisurusov |
 | artifact:artifact-collateral-conceptual-model | review |  | proposed | 2026-10-15T22:52:16Z |  |  |
 | edge:e-prod-cdmanalysis-conceptmodel | review |  | proposed | 2026-10-15T22:52:16Z |  |  |
-| artifact:artifact-collateral-conceptual-model | review | proposed | accepted | 2026-10-15T22:55:58Z | 94293e8ad90754de7d8477febce19fe2f106917c | denisurusov |
-| edge:e-prod-cdmanalysis-conceptmodel | review | proposed | accepted | 2026-10-15T22:55:58Z | 94293e8ad90754de7d8477febce19fe2f106917c | denisurusov |
-| node:task-cdm-current-state-analysis | status | open | resolved | 2026-10-15T22:55:58Z | 94293e8ad90754de7d8477febce19fe2f106917c | denisurusov |
-| node:task-cdm-collateral-other-agreements | status | open | active | 2026-10-15T22:58:45Z | 0b576199aa677a19c4afe85ad893f9bdd3466fb1 | denisurusov |
-| node:task-collateral-standards-inventory | review |  | accepted | 2026-10-15T22:58:45Z | 0b576199aa677a19c4afe85ad893f9bdd3466fb1 | denisurusov |
-| node:task-collateral-standards-inventory | status |  | active | 2026-10-15T22:58:45Z | 0b576199aa677a19c4afe85ad893f9bdd3466fb1 | denisurusov |
-| edge:e-dec-cdmdata-standards | review |  | accepted | 2026-10-15T22:58:45Z | 0b576199aa677a19c4afe85ad893f9bdd3466fb1 | denisurusov |
+| artifact:artifact-collateral-conceptual-model | review | proposed | accepted | 2026-10-15T22:55:58Z | ni:///sha-256;nTUfZr_NZLV6Y0aPoidEhi4KB2-xgnXmNNLE0NRNEuw | denisurusov |
+| edge:e-prod-cdmanalysis-conceptmodel | review | proposed | accepted | 2026-10-15T22:55:58Z | ni:///sha-256;nTUfZr_NZLV6Y0aPoidEhi4KB2-xgnXmNNLE0NRNEuw | denisurusov |
+| node:task-cdm-current-state-analysis | status | open | resolved | 2026-10-15T22:55:58Z | ni:///sha-256;nTUfZr_NZLV6Y0aPoidEhi4KB2-xgnXmNNLE0NRNEuw | denisurusov |
+| node:task-cdm-collateral-other-agreements | status | open | active | 2026-10-15T22:58:45Z | ni:///sha-256;tWP7oIiQoaIEvQZjUpahAW4hDQ6_sIm504a6EJutHbQ | denisurusov |
+| node:task-collateral-standards-inventory | review |  | accepted | 2026-10-15T22:58:45Z | ni:///sha-256;tWP7oIiQoaIEvQZjUpahAW4hDQ6_sIm504a6EJutHbQ | denisurusov |
+| node:task-collateral-standards-inventory | status |  | active | 2026-10-15T22:58:45Z | ni:///sha-256;tWP7oIiQoaIEvQZjUpahAW4hDQ6_sIm504a6EJutHbQ | denisurusov |
+| edge:e-dec-cdmdata-standards | review |  | accepted | 2026-10-15T22:58:45Z | ni:///sha-256;tWP7oIiQoaIEvQZjUpahAW4hDQ6_sIm504a6EJutHbQ | denisurusov |
 | artifact:artifact-collateral-standards-inventory | review |  | proposed | 2026-10-15T23:01:30Z |  |  |
 | edge:e-prod-standards-inventory | review |  | proposed | 2026-10-15T23:01:30Z |  |  |
-| artifact:artifact-collateral-standards-inventory | review | proposed | accepted | 2026-10-15T23:04:45Z | 0b9a35394e1743e57cf2f659f3cf28d82b5d7a6d | denisurusov |
-| edge:e-prod-standards-inventory | review | proposed | accepted | 2026-10-15T23:04:45Z | 0b9a35394e1743e57cf2f659f3cf28d82b5d7a6d | denisurusov |
+| artifact:artifact-collateral-standards-inventory | review | proposed | accepted | 2026-10-15T23:04:45Z | ni:///sha-256;VsqOt2z5asfX7aUtxSyNG_DEyviWDGbzf7E5F_LpODs | denisurusov |
+| edge:e-prod-standards-inventory | review | proposed | accepted | 2026-10-15T23:04:45Z | ni:///sha-256;VsqOt2z5asfX7aUtxSyNG_DEyviWDGbzf7E5F_LpODs | denisurusov |
 | artifact:artifact-collateral-findings | review |  | proposed | 2026-10-15T23:04:45Z |  |  |
 | edge:e-prod-cdmanalysis-findings | review |  | proposed | 2026-10-15T23:04:45Z |  |  |
 | edge:e-prod-standards-findings | review |  | proposed | 2026-10-15T23:04:45Z |  |  |
-| artifact:artifact-collateral-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | c029f9e7a3a26d6fcce64f03b1372c3960ab6691 | denisurusov |
-| edge:e-prod-cdmanalysis-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | c029f9e7a3a26d6fcce64f03b1372c3960ab6691 | denisurusov |
-| edge:e-prod-standards-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | c029f9e7a3a26d6fcce64f03b1372c3960ab6691 | denisurusov |
+| artifact:artifact-collateral-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | ni:///sha-256;DMGZBm74Xs0mY9zNME89OltdTaH2Iyim8D6K2X09zf4 | denisurusov |
+| edge:e-prod-cdmanalysis-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | ni:///sha-256;DMGZBm74Xs0mY9zNME89OltdTaH2Iyim8D6K2X09zf4 | denisurusov |
+| edge:e-prod-standards-findings | review | proposed | accepted | 2026-10-15T23:07:41Z | ni:///sha-256;DMGZBm74Xs0mY9zNME89OltdTaH2Iyim8D6K2X09zf4 | denisurusov |
 | artifact:artifact-cdm-other-agreements-matrix | review |  | proposed | 2026-10-15T23:10:47Z |  |  |
 | edge:e-prod-otheragreements-matrix | review |  | proposed | 2026-10-15T23:10:47Z |  |  |
-| artifact:artifact-cdm-other-agreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | d34896439c2f6fe7c2d7428990964e715e081ddc | denisurusov |
-| edge:e-prod-otheragreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | d34896439c2f6fe7c2d7428990964e715e081ddc | denisurusov |
+| artifact:artifact-cdm-other-agreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | ni:///sha-256;yJN7r4_E2V0yGSNzReku2jtlb_EYwOR5KZB6CiW1lrA | denisurusov |
+| edge:e-prod-otheragreements-matrix | review | proposed | accepted | 2026-10-15T23:25:52Z | ni:///sha-256;yJN7r4_E2V0yGSNzReku2jtlb_EYwOR5KZB6CiW1lrA | denisurusov |
 | artifact:artifact-collateral-flow-diagrams | review |  | proposed | 2026-10-15T23:35:01Z |  |  |
 | edge:e-prod-otheragreements-flows | review |  | proposed | 2026-10-15T23:35:01Z |  |  |
-| artifact:artifact-collateral-flow-diagrams | review | proposed | accepted | 2026-10-15T23:38:18Z | 452754ac69e311254b84437f01745b7ca9b4e0da | denisurusov |
-| edge:e-prod-otheragreements-flows | review | proposed | accepted | 2026-10-15T23:38:18Z | 452754ac69e311254b84437f01745b7ca9b4e0da | denisurusov |
-| node:task-cdm-collateral-other-agreements | status | active | resolved | 2026-10-15T23:43:16Z | 49ae9555adc7a648e1096930260e3933c2ea902a | denisurusov |
-| node:task-collateral-standards-inventory | status | active | resolved | 2026-10-15T23:43:16Z | 49ae9555adc7a648e1096930260e3933c2ea902a | denisurusov |
-| node:task-collateral-taxonomy-inventory | review |  | accepted | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
-| node:task-collateral-taxonomy-inventory | status |  | active | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
-| edge:e-dec-cdmdata-taxonomy | review |  | accepted | 2026-10-15T23:45:47Z | 342fbd7743d6ba622c0f9c0adac070fd2d538d07 | denisurusov |
+| artifact:artifact-collateral-flow-diagrams | review | proposed | accepted | 2026-10-15T23:38:18Z | ni:///sha-256;cxTTlfZhcrunANNpMuc-ry77UYMrmO3-WOk28CKvhHE | denisurusov |
+| edge:e-prod-otheragreements-flows | review | proposed | accepted | 2026-10-15T23:38:18Z | ni:///sha-256;cxTTlfZhcrunANNpMuc-ry77UYMrmO3-WOk28CKvhHE | denisurusov |
+| node:task-cdm-collateral-other-agreements | status | active | resolved | 2026-10-15T23:43:16Z | ni:///sha-256;hNTKjvn6fOKkhrG6oTshlDcYXjmjIwOQ147-XfdNu-4 | denisurusov |
+| node:task-collateral-standards-inventory | status | active | resolved | 2026-10-15T23:43:16Z | ni:///sha-256;hNTKjvn6fOKkhrG6oTshlDcYXjmjIwOQ147-XfdNu-4 | denisurusov |
+| node:task-collateral-taxonomy-inventory | review |  | accepted | 2026-10-15T23:45:47Z | ni:///sha-256;vBOckLSISZJvKIvy1HX69dAveNvpP31f4nxrLCX1zsY | denisurusov |
+| node:task-collateral-taxonomy-inventory | status |  | active | 2026-10-15T23:45:47Z | ni:///sha-256;vBOckLSISZJvKIvy1HX69dAveNvpP31f4nxrLCX1zsY | denisurusov |
+| edge:e-dec-cdmdata-taxonomy | review |  | accepted | 2026-10-15T23:45:47Z | ni:///sha-256;vBOckLSISZJvKIvy1HX69dAveNvpP31f4nxrLCX1zsY | denisurusov |
 | artifact:artifact-collateral-taxonomy-inventory | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
 | edge:e-prod-taxonomy-inventory | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
 | edge:e-prod-taxonomy-findings | review |  | proposed | 2026-10-15T23:48:20Z |  |  |
-| artifact:artifact-collateral-taxonomy-inventory | review | proposed | accepted | 2026-10-15T23:55:50Z | 2e9d537257293259626a3455694bb5c35146e859 | denisurusov |
-| edge:e-prod-taxonomy-inventory | review | proposed | accepted | 2026-10-15T23:55:50Z | 2e9d537257293259626a3455694bb5c35146e859 | denisurusov |
-| edge:e-prod-taxonomy-findings | review | proposed | accepted | 2026-10-15T23:55:50Z | 2e9d537257293259626a3455694bb5c35146e859 | denisurusov |
+| artifact:artifact-collateral-taxonomy-inventory | review | proposed | accepted | 2026-10-15T23:55:50Z | ni:///sha-256;xr-tzMxBAA0pmldc0WBwr3dKYiEJoLMMfrBw_OQOzwA | denisurusov |
+| edge:e-prod-taxonomy-inventory | review | proposed | accepted | 2026-10-15T23:55:50Z | ni:///sha-256;xr-tzMxBAA0pmldc0WBwr3dKYiEJoLMMfrBw_OQOzwA | denisurusov |
+| edge:e-prod-taxonomy-findings | review | proposed | accepted | 2026-10-15T23:55:50Z | ni:///sha-256;xr-tzMxBAA0pmldc0WBwr3dKYiEJoLMMfrBw_OQOzwA | denisurusov |
 | artifact:artifact-cdm-defects | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
 | edge:e-prod-taxonomy-defects | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
 | artifact:artifact-collateral-asset-taxonomy-mapping | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
 | edge:e-prod-taxonomy-mapping | review |  | proposed | 2026-10-15T23:55:50Z |  |  |
-| artifact:artifact-cdm-defects | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
-| edge:e-prod-taxonomy-defects | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
-| artifact:artifact-collateral-asset-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
-| edge:e-prod-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
-| node:task-collateral-taxonomy-inventory | status | active | resolved | 2026-10-16T00:27:52Z | 6fff603871a6ddaed03a46fae36b80003b74f7c1 | denisurusov |
-| node:goal-data-cdm-taxonomies-specs | status | open | resolved | 2026-10-16T00:35:35Z | 10e7bafcf7a5969d99e8534b8228ff0a69a8d8bf | denisurusov |
-| node:task-blockchain-smart-contracts-applicability | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
-| node:task-blockchain-smart-contracts-applicability | status |  | open | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
-| edge:e-dec-arch-blockchain | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
-| node:task-local-environment-setup | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
-| node:task-local-environment-setup | status |  | open | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
-| edge:e-dec-arch-localenv | review |  | accepted | 2026-10-16T00:38:00Z | fe2705558d2755b85248ab33c41cae227a827998 | denisurusov |
-| node:task-blockchain-smart-contracts-applicability | status | open | active | 2026-10-16T02:47:21Z | ed7176232e1ff62642302f9432d3bb079d443e09 | denisurusov |
+| artifact:artifact-cdm-defects | review | proposed | accepted | 2026-10-16T00:27:52Z | ni:///sha-256;US9W6Gkft0EpkjvQ0JAnEwjkT4xdXwXhkEZ6BdYuJzw | denisurusov |
+| edge:e-prod-taxonomy-defects | review | proposed | accepted | 2026-10-16T00:27:52Z | ni:///sha-256;US9W6Gkft0EpkjvQ0JAnEwjkT4xdXwXhkEZ6BdYuJzw | denisurusov |
+| artifact:artifact-collateral-asset-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | ni:///sha-256;US9W6Gkft0EpkjvQ0JAnEwjkT4xdXwXhkEZ6BdYuJzw | denisurusov |
+| edge:e-prod-taxonomy-mapping | review | proposed | accepted | 2026-10-16T00:27:52Z | ni:///sha-256;US9W6Gkft0EpkjvQ0JAnEwjkT4xdXwXhkEZ6BdYuJzw | denisurusov |
+| node:task-collateral-taxonomy-inventory | status | active | resolved | 2026-10-16T00:27:52Z | ni:///sha-256;US9W6Gkft0EpkjvQ0JAnEwjkT4xdXwXhkEZ6BdYuJzw | denisurusov |
+| node:goal-data-cdm-taxonomies-specs | status | open | resolved | 2026-10-16T00:35:35Z | ni:///sha-256;kNADr3kryboSLRopUb-ZVQyl2Ofwd4I52FEpE5VvTag | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | review |  | accepted | 2026-10-16T00:38:00Z | ni:///sha-256;gLcBxNNJbdG--M75QfFWmr9ILlFfqItnaNrMHzhSRMQ | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | status |  | open | 2026-10-16T00:38:00Z | ni:///sha-256;gLcBxNNJbdG--M75QfFWmr9ILlFfqItnaNrMHzhSRMQ | denisurusov |
+| edge:e-dec-arch-blockchain | review |  | accepted | 2026-10-16T00:38:00Z | ni:///sha-256;gLcBxNNJbdG--M75QfFWmr9ILlFfqItnaNrMHzhSRMQ | denisurusov |
+| node:task-local-environment-setup | review |  | accepted | 2026-10-16T00:38:00Z | ni:///sha-256;gLcBxNNJbdG--M75QfFWmr9ILlFfqItnaNrMHzhSRMQ | denisurusov |
+| node:task-local-environment-setup | status |  | open | 2026-10-16T00:38:00Z | ni:///sha-256;gLcBxNNJbdG--M75QfFWmr9ILlFfqItnaNrMHzhSRMQ | denisurusov |
+| edge:e-dec-arch-localenv | review |  | accepted | 2026-10-16T00:38:00Z | ni:///sha-256;gLcBxNNJbdG--M75QfFWmr9ILlFfqItnaNrMHzhSRMQ | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | status | open | active | 2026-10-16T02:47:21Z | ni:///sha-256;WP6JsG3_uZkYZHImTWLIxQm0syjWpr_pohTin1p4vow | denisurusov |
 | concept:concept-asr-ledger-neutrality | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
 | edge:e-men-blockchain-ledger-neutrality | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
 | concept:concept-asr-cdm-data-layer | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
@@ -107,146 +107,146 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-men-blockchain-offchain-dispute | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
 | artifact:artifact-blockchain-applicability | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
 | edge:e-prod-blockchain-applicability | review |  | proposed | 2026-10-16T02:55:34Z |  |  |
-| waypoint:wp-adr-prototype-ledgers | review |  | accepted | 2026-10-16T19:30:54Z | 156003750853115a8c254d36bc96078d723bd6af | denisurusov |
+| waypoint:wp-adr-prototype-ledgers | review |  | accepted | 2026-10-16T19:30:54Z | ni:///sha-256;W_6Ev0j1zn7b0l8-TydnvRDwVNHRRr6IWwyfjnmfRv4 | denisurusov |
 | edge:e-drv-ledgerneutrality-ledgers | review |  | proposed | 2026-10-16T19:30:54Z |  |  |
 | edge:e-drv-finality-ledgers | review |  | proposed | 2026-10-16T19:30:54Z |  |  |
-| edge:e-mrk-ledgers-blockchain | review |  | accepted | 2026-10-16T19:30:54Z | 156003750853115a8c254d36bc96078d723bd6af | denisurusov |
-| concept:concept-asr-ledger-neutrality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| concept:concept-asr-offchain-dispute | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| concept:concept-asr-cdm-data-layer | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| concept:concept-asr-onchain-asset-identity | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| concept:concept-asr-settlement-finality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-men-blockchain-ledger-neutrality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-men-blockchain-cdm-data-layer | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-men-blockchain-onchain-asset-identity | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-men-blockchain-settlement-finality | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-men-blockchain-offchain-dispute | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-drv-ledgerneutrality-ledgers | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-drv-finality-ledgers | review | proposed | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| noteworthy:nw-prototype-scope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| noteworthy:nw-prototype-scope | status |  | active | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| edge:e-note-arch-prototypescope | review |  | accepted | 2026-10-16T19:43:54Z | d11992be4fcac0fe33247f55804518d19a1121d3 | denisurusov |
-| artifact:artifact-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | cac26a66e1421d940c957c481268aa244388300e | denisurusov |
-| edge:e-prod-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | cac26a66e1421d940c957c481268aa244388300e | denisurusov |
-| waypoint:wp-adr-im-segregation | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
-| edge:e-mrk-imseg-blockchain | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
-| noteworthy:nw-assumption-contract-control | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
-| noteworthy:nw-assumption-contract-control | status |  | unvalidated | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
-| edge:e-note-arch-contractcontrol | review |  | accepted | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
-| node:task-blockchain-smart-contracts-applicability | status | active | resolved | 2026-10-16T19:49:05Z | 2fb4e26caea617c016a1f1089b037ff9c5b92cce | denisurusov |
-| node:task-local-environment-setup | status | open | active | 2026-10-16T20:08:49Z | 4b19056d8c79b44d09a5d2b5798f74d5dd53fe62 | denisurusov |
+| edge:e-mrk-ledgers-blockchain | review |  | accepted | 2026-10-16T19:30:54Z | ni:///sha-256;W_6Ev0j1zn7b0l8-TydnvRDwVNHRRr6IWwyfjnmfRv4 | denisurusov |
+| concept:concept-asr-ledger-neutrality | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| concept:concept-asr-offchain-dispute | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| concept:concept-asr-cdm-data-layer | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| concept:concept-asr-onchain-asset-identity | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| concept:concept-asr-settlement-finality | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-men-blockchain-ledger-neutrality | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-men-blockchain-cdm-data-layer | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-men-blockchain-onchain-asset-identity | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-men-blockchain-settlement-finality | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-men-blockchain-offchain-dispute | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-drv-ledgerneutrality-ledgers | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-drv-finality-ledgers | review | proposed | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| noteworthy:nw-prototype-scope | review |  | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| noteworthy:nw-prototype-scope | status |  | active | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| edge:e-note-arch-prototypescope | review |  | accepted | 2026-10-16T19:43:54Z | ni:///sha-256;WtQXsb4VQVijQxZC4s-onjyB01gXNy7poWhQUJWJfTo | denisurusov |
+| artifact:artifact-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | ni:///sha-256;uOZDmWtWUMMSB0imhy3J2ell7oTD_4nPzEeiu1y4yC4 | denisurusov |
+| edge:e-prod-blockchain-applicability | review | proposed | accepted | 2026-10-16T19:47:11Z | ni:///sha-256;uOZDmWtWUMMSB0imhy3J2ell7oTD_4nPzEeiu1y4yC4 | denisurusov |
+| waypoint:wp-adr-im-segregation | review |  | accepted | 2026-10-16T19:49:05Z | ni:///sha-256;t9f5p5BDJ8edCrAksunxZU5uH2d0S4nMMRSMp8v97z8 | denisurusov |
+| edge:e-mrk-imseg-blockchain | review |  | accepted | 2026-10-16T19:49:05Z | ni:///sha-256;t9f5p5BDJ8edCrAksunxZU5uH2d0S4nMMRSMp8v97z8 | denisurusov |
+| noteworthy:nw-assumption-contract-control | review |  | accepted | 2026-10-16T19:49:05Z | ni:///sha-256;t9f5p5BDJ8edCrAksunxZU5uH2d0S4nMMRSMp8v97z8 | denisurusov |
+| noteworthy:nw-assumption-contract-control | status |  | unvalidated | 2026-10-16T19:49:05Z | ni:///sha-256;t9f5p5BDJ8edCrAksunxZU5uH2d0S4nMMRSMp8v97z8 | denisurusov |
+| edge:e-note-arch-contractcontrol | review |  | accepted | 2026-10-16T19:49:05Z | ni:///sha-256;t9f5p5BDJ8edCrAksunxZU5uH2d0S4nMMRSMp8v97z8 | denisurusov |
+| node:task-blockchain-smart-contracts-applicability | status | active | resolved | 2026-10-16T19:49:05Z | ni:///sha-256;t9f5p5BDJ8edCrAksunxZU5uH2d0S4nMMRSMp8v97z8 | denisurusov |
+| node:task-local-environment-setup | status | open | active | 2026-10-16T20:08:49Z | ni:///sha-256;NhbLlV5fc2u1gteGpkfyjtrp1fQ-vBN1J9uK0yT_OBY | denisurusov |
 | artifact:artifact-prototype-architecture | review |  | proposed | 2026-10-16T20:08:49Z |  |  |
 | edge:e-prod-localenv-architecture | review |  | proposed | 2026-10-16T20:08:49Z |  |  |
 | artifact:artifact-test-framework-plan | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
 | edge:e-prod-localenv-testplan | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
 | artifact:artifact-setup-windows | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
 | edge:e-prod-localenv-setup | review |  | proposed | 2026-10-16T20:21:13Z |  |  |
-| artifact:artifact-prototype-architecture | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| edge:e-prod-localenv-architecture | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| artifact:artifact-test-framework-plan | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| edge:e-prod-localenv-testplan | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| artifact:artifact-setup-windows | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| edge:e-prod-localenv-setup | review | proposed | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| waypoint:wp-adr-per-participant-services | review |  | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| edge:e-mrk-perparticipant-localenv | review |  | accepted | 2026-10-16T20:43:52Z | 5cd34412708fc0ffdc4ac2252610f61d5d4fed0c | denisurusov |
-| concept:concept-asr-onchain-call-state | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| waypoint:wp-adr-margin-call-state-onchain | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| noteworthy:nw-assumption-besu-visibility | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| node:task-onchain-privacy | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| edge:e-sup-callstate-offchaindispute | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| edge:e-drv-callstate-callcontract | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| edge:e-mrk-callcontract-localenv | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| edge:e-note-arch-besuvisibility | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| edge:e-dec-arch-privacy | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| edge:e-note-privacy-besuvisibility | review |  | accepted | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| noteworthy:nw-assumption-besu-visibility | status |  | unvalidated | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| node:task-onchain-privacy | status |  | open | 2026-10-16T21:34:51Z | 70532bbf71d41c99c9efad27c0e9ed009891292a | denisurusov |
-| noteworthy:nw-mimic-real-flows | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
-| node:task-two-way-initial-margin | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
-| edge:e-note-arch-mimicrealflows | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
-| edge:e-dec-arch-twowayim | review |  | accepted | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
-| noteworthy:nw-mimic-real-flows | status |  | active | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
-| node:task-two-way-initial-margin | status |  | open | 2026-10-16T22:15:03Z | 030d173b1a7f835b860f9cca1cb4d482d59f360d | denisurusov |
-| waypoint:wp-adr-cloud-dev-environment | review |  | accepted | 2026-10-16T22:20:33Z | 41af88afd7f6994b53858c3b109793a399df3d06 | denisurusov |
-| node:task-windows-install | review |  | accepted | 2026-10-16T22:20:33Z | 41af88afd7f6994b53858c3b109793a399df3d06 | denisurusov |
-| edge:e-mrk-cloudenv-localenv | review |  | accepted | 2026-10-16T22:20:33Z | 41af88afd7f6994b53858c3b109793a399df3d06 | denisurusov |
-| edge:e-dec-localenv-windows | review |  | accepted | 2026-10-16T22:20:33Z | 41af88afd7f6994b53858c3b109793a399df3d06 | denisurusov |
-| node:task-windows-install | status |  | open | 2026-10-16T22:20:33Z | 41af88afd7f6994b53858c3b109793a399df3d06 | denisurusov |
+| artifact:artifact-prototype-architecture | review | proposed | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| edge:e-prod-localenv-architecture | review | proposed | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| artifact:artifact-test-framework-plan | review | proposed | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| edge:e-prod-localenv-testplan | review | proposed | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| artifact:artifact-setup-windows | review | proposed | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| edge:e-prod-localenv-setup | review | proposed | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| waypoint:wp-adr-per-participant-services | review |  | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| edge:e-mrk-perparticipant-localenv | review |  | accepted | 2026-10-16T20:43:52Z | ni:///sha-256;ApOnayVBl4dYxAoHxIsGVC-bkB5lPnFbKvjU-Zw91So | denisurusov |
+| concept:concept-asr-onchain-call-state | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| waypoint:wp-adr-margin-call-state-onchain | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| noteworthy:nw-assumption-besu-visibility | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| node:task-onchain-privacy | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| edge:e-sup-callstate-offchaindispute | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| edge:e-drv-callstate-callcontract | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| edge:e-mrk-callcontract-localenv | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| edge:e-note-arch-besuvisibility | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| edge:e-dec-arch-privacy | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| edge:e-note-privacy-besuvisibility | review |  | accepted | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| noteworthy:nw-assumption-besu-visibility | status |  | unvalidated | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| node:task-onchain-privacy | status |  | open | 2026-10-16T21:34:51Z | ni:///sha-256;vBHcKiKCvGIBEzCq8N0ACqYrcr58Ejd-DWldPn8z-Bc | denisurusov |
+| noteworthy:nw-mimic-real-flows | review |  | accepted | 2026-10-16T22:15:03Z | ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI | denisurusov |
+| node:task-two-way-initial-margin | review |  | accepted | 2026-10-16T22:15:03Z | ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI | denisurusov |
+| edge:e-note-arch-mimicrealflows | review |  | accepted | 2026-10-16T22:15:03Z | ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI | denisurusov |
+| edge:e-dec-arch-twowayim | review |  | accepted | 2026-10-16T22:15:03Z | ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI | denisurusov |
+| noteworthy:nw-mimic-real-flows | status |  | active | 2026-10-16T22:15:03Z | ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI | denisurusov |
+| node:task-two-way-initial-margin | status |  | open | 2026-10-16T22:15:03Z | ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI | denisurusov |
+| waypoint:wp-adr-cloud-dev-environment | review |  | accepted | 2026-10-16T22:20:33Z | ni:///sha-256;8Jx7J_a279LKNQEQrz3bE8rHZAx04LFMDhKmmkKuzu4 | denisurusov |
+| node:task-windows-install | review |  | accepted | 2026-10-16T22:20:33Z | ni:///sha-256;8Jx7J_a279LKNQEQrz3bE8rHZAx04LFMDhKmmkKuzu4 | denisurusov |
+| edge:e-mrk-cloudenv-localenv | review |  | accepted | 2026-10-16T22:20:33Z | ni:///sha-256;8Jx7J_a279LKNQEQrz3bE8rHZAx04LFMDhKmmkKuzu4 | denisurusov |
+| edge:e-dec-localenv-windows | review |  | accepted | 2026-10-16T22:20:33Z | ni:///sha-256;8Jx7J_a279LKNQEQrz3bE8rHZAx04LFMDhKmmkKuzu4 | denisurusov |
+| node:task-windows-install | status |  | open | 2026-10-16T22:20:33Z | ni:///sha-256;8Jx7J_a279LKNQEQrz3bE8rHZAx04LFMDhKmmkKuzu4 | denisurusov |
 | artifact:artifact-setup-codespaces | review |  | proposed | 2026-10-16T22:20:33Z |  |  |
 | edge:e-prod-localenv-codespaces | review |  | proposed | 2026-10-16T22:20:33Z |  |  |
-| artifact:artifact-setup-codespaces | review | proposed | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
-| edge:e-prod-localenv-codespaces | review | proposed | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
-| node:task-local-environment-setup | status | active | resolved | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
-| node:task-clickable-ui | review |  | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
-| node:task-clickable-ui | status |  | open | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
-| edge:e-dec-e2e-clickableui | review |  | accepted | 2026-10-16T22:43:35Z | 48da8f8dca28f7daae9b60536dd9576532c351cd | denisurusov |
-| waypoint:wp-adr-ux-scenario-grid | review |  | accepted | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
-| edge:e-mrk-uxgrid-clickableui | review |  | accepted | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
-| node:task-clickable-ui | status | open | active | 2026-10-16T22:48:10Z | 71b1348bad1addc3f8adaa253f5a147a502cb15d | denisurusov |
+| artifact:artifact-setup-codespaces | review | proposed | accepted | 2026-10-16T22:43:35Z | ni:///sha-256;rx2zgXo-J_DPjuyXcZsItg3FAqN6Pljky_YbVHyOOdk | denisurusov |
+| edge:e-prod-localenv-codespaces | review | proposed | accepted | 2026-10-16T22:43:35Z | ni:///sha-256;rx2zgXo-J_DPjuyXcZsItg3FAqN6Pljky_YbVHyOOdk | denisurusov |
+| node:task-local-environment-setup | status | active | resolved | 2026-10-16T22:43:35Z | ni:///sha-256;rx2zgXo-J_DPjuyXcZsItg3FAqN6Pljky_YbVHyOOdk | denisurusov |
+| node:task-clickable-ui | review |  | accepted | 2026-10-16T22:43:35Z | ni:///sha-256;rx2zgXo-J_DPjuyXcZsItg3FAqN6Pljky_YbVHyOOdk | denisurusov |
+| node:task-clickable-ui | status |  | open | 2026-10-16T22:43:35Z | ni:///sha-256;rx2zgXo-J_DPjuyXcZsItg3FAqN6Pljky_YbVHyOOdk | denisurusov |
+| edge:e-dec-e2e-clickableui | review |  | accepted | 2026-10-16T22:43:35Z | ni:///sha-256;rx2zgXo-J_DPjuyXcZsItg3FAqN6Pljky_YbVHyOOdk | denisurusov |
+| waypoint:wp-adr-ux-scenario-grid | review |  | accepted | 2026-10-16T22:48:10Z | ni:///sha-256;Xnpw1EXZMVaaO1GEG1ZgA-BsIOYAxF3STyOFsoa9OhQ | denisurusov |
+| edge:e-mrk-uxgrid-clickableui | review |  | accepted | 2026-10-16T22:48:10Z | ni:///sha-256;Xnpw1EXZMVaaO1GEG1ZgA-BsIOYAxF3STyOFsoa9OhQ | denisurusov |
+| node:task-clickable-ui | status | open | active | 2026-10-16T22:48:10Z | ni:///sha-256;Xnpw1EXZMVaaO1GEG1ZgA-BsIOYAxF3STyOFsoa9OhQ | denisurusov |
 | artifact:artifact-clickable-ui-html | review |  | proposed | 2026-10-16T22:52:27Z |  |  |
 | edge:e-prod-clickableui-html | review |  | proposed | 2026-10-16T22:52:27Z |  |  |
-| artifact:artifact-clickable-ui-html | review | proposed | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
-| edge:e-prod-clickableui-html | review | proposed | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
-| node:task-clickable-ui | status | active | resolved | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
-| node:task-react-console | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
-| node:task-react-console | status |  | active | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
-| edge:e-dec-e2e-reactconsole | review |  | accepted | 2026-10-16T23:07:09Z | 91117ab560e058b945bc3eb3e35fa977f99a88b3 | denisurusov |
+| artifact:artifact-clickable-ui-html | review | proposed | accepted | 2026-10-16T23:07:09Z | ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM | denisurusov |
+| edge:e-prod-clickableui-html | review | proposed | accepted | 2026-10-16T23:07:09Z | ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM | denisurusov |
+| node:task-clickable-ui | status | active | resolved | 2026-10-16T23:07:09Z | ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM | denisurusov |
+| node:task-react-console | review |  | accepted | 2026-10-16T23:07:09Z | ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM | denisurusov |
+| node:task-react-console | status |  | active | 2026-10-16T23:07:09Z | ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM | denisurusov |
+| edge:e-dec-e2e-reactconsole | review |  | accepted | 2026-10-16T23:07:09Z | ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM | denisurusov |
 | artifact:artifact-react-console | review |  | proposed | 2026-10-16T23:17:11Z |  |  |
 | edge:e-prod-reactconsole-app | review |  | proposed | 2026-10-16T23:17:11Z |  |  |
-| node:task-react-console | status | active | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| node:goal-cdm-development | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| node:goal-cdm-development | status |  | active | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| node:task-cdm-gap-analysis | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| node:task-cdm-gap-analysis | status |  | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| node:task-cdm-gap-closure | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| node:task-cdm-gap-closure | status |  | open | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| edge:e-dec-cdmdev-gapanalysis | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| edge:e-dec-cdmdev-gapclosure | review |  | accepted | 2026-10-17T00:22:35Z | c559e965491f960d039091cb857d61d9cb85ac25 | denisurusov |
-| waypoint:wp-adr-cdm-local-extensions | review |  | accepted | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
-| edge:e-mrk-localext-gapclosure | review |  | accepted | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
-| node:task-cdm-gap-analysis | status | open | active | 2026-10-17T00:25:47Z | 593386d553b3e9523c084f9ad874eb2a715f4235 | denisurusov |
+| node:task-react-console | status | active | open | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| node:goal-cdm-development | review |  | accepted | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| node:goal-cdm-development | status |  | active | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| node:task-cdm-gap-analysis | review |  | accepted | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| node:task-cdm-gap-analysis | status |  | open | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| node:task-cdm-gap-closure | review |  | accepted | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| node:task-cdm-gap-closure | status |  | open | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| edge:e-dec-cdmdev-gapanalysis | review |  | accepted | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| edge:e-dec-cdmdev-gapclosure | review |  | accepted | 2026-10-17T00:22:35Z | ni:///sha-256;bSPfwI8IRqJV_3J_A4R_wl0sIASqYpCcUtz-i8PE44A | denisurusov |
+| waypoint:wp-adr-cdm-local-extensions | review |  | accepted | 2026-10-17T00:25:47Z | ni:///sha-256;c2Gu8g49j8f9Y-kbYTWwJL0WUGQtLg2uYUjIMTkI4mU | denisurusov |
+| edge:e-mrk-localext-gapclosure | review |  | accepted | 2026-10-17T00:25:47Z | ni:///sha-256;c2Gu8g49j8f9Y-kbYTWwJL0WUGQtLg2uYUjIMTkI4mU | denisurusov |
+| node:task-cdm-gap-analysis | status | open | active | 2026-10-17T00:25:47Z | ni:///sha-256;c2Gu8g49j8f9Y-kbYTWwJL0WUGQtLg2uYUjIMTkI4mU | denisurusov |
 | artifact:artifact-cdm-gap-register | review |  | proposed | 2026-10-17T00:25:47Z |  |  |
 | edge:e-prod-gapanalysis-register | review |  | proposed | 2026-10-17T00:25:47Z |  |  |
-| artifact:artifact-cdm-gap-register | review | proposed | accepted | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
-| edge:e-prod-gapanalysis-register | review | proposed | accepted | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
-| node:task-cdm-gap-analysis | status | active | resolved | 2026-10-17T00:29:31Z | 7f37c371e3e7b4d9f046f372b322465e173c88b3 | denisurusov |
-| waypoint:wp-adr-cdm-extension-rune | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
-| waypoint:wp-adr-console-on-extension-rules | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
-| edge:e-mrk-extrune-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
-| edge:e-mrk-consolerules-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
-| node:task-cdm-gap-closure | status | open | active | 2026-10-17T00:48:29Z | 718789ef3024496c06042f84fc8cf0129ecc58dc | denisurusov |
-| noteworthy:nw-cdm-base-release-7-7-0 | review |  | accepted | 2026-10-17T01:16:19Z | 9ab0cbf86284cce4606e93eabb8507c9d009d7b7 | denisurusov |
-| edge:e-note-cdmdev-baserelease | review |  | accepted | 2026-10-17T01:16:19Z | 9ab0cbf86284cce4606e93eabb8507c9d009d7b7 | denisurusov |
+| artifact:artifact-cdm-gap-register | review | proposed | accepted | 2026-10-17T00:29:31Z | ni:///sha-256;5kj8C3RZym5Y33uTgcdSquU4WFVRcfF2petr9KGx51U | denisurusov |
+| edge:e-prod-gapanalysis-register | review | proposed | accepted | 2026-10-17T00:29:31Z | ni:///sha-256;5kj8C3RZym5Y33uTgcdSquU4WFVRcfF2petr9KGx51U | denisurusov |
+| node:task-cdm-gap-analysis | status | active | resolved | 2026-10-17T00:29:31Z | ni:///sha-256;5kj8C3RZym5Y33uTgcdSquU4WFVRcfF2petr9KGx51U | denisurusov |
+| waypoint:wp-adr-cdm-extension-rune | review |  | accepted | 2026-10-17T00:48:29Z | ni:///sha-256;-T2xchAVDPCwaxZulVT_ISvaRx13XVeYc5tSZ71vdAk | denisurusov |
+| waypoint:wp-adr-console-on-extension-rules | review |  | accepted | 2026-10-17T00:48:29Z | ni:///sha-256;-T2xchAVDPCwaxZulVT_ISvaRx13XVeYc5tSZ71vdAk | denisurusov |
+| edge:e-mrk-extrune-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | ni:///sha-256;-T2xchAVDPCwaxZulVT_ISvaRx13XVeYc5tSZ71vdAk | denisurusov |
+| edge:e-mrk-consolerules-gapclosure | review |  | accepted | 2026-10-17T00:48:29Z | ni:///sha-256;-T2xchAVDPCwaxZulVT_ISvaRx13XVeYc5tSZ71vdAk | denisurusov |
+| node:task-cdm-gap-closure | status | open | active | 2026-10-17T00:48:29Z | ni:///sha-256;-T2xchAVDPCwaxZulVT_ISvaRx13XVeYc5tSZ71vdAk | denisurusov |
+| noteworthy:nw-cdm-base-release-7-7-0 | review |  | accepted | 2026-10-17T01:16:19Z | ni:///sha-256;nf7BcFV4Q1Ziopu-BU0WXFAK508ZmwQk32KpcUcuzJQ | denisurusov |
+| edge:e-note-cdmdev-baserelease | review |  | accepted | 2026-10-17T01:16:19Z | ni:///sha-256;nf7BcFV4Q1Ziopu-BU0WXFAK508ZmwQk32KpcUcuzJQ | denisurusov |
 | artifact:artifact-cdm-ext | review |  | proposed | 2026-10-17T01:16:19Z |  |  |
 | edge:e-prod-gapclosure-cdmext | review |  | proposed | 2026-10-17T01:16:19Z |  |  |
-| artifact:artifact-cdm-ext | review | proposed | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
-| edge:e-prod-gapclosure-cdmext | review | proposed | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
-| noteworthy:nw-cdm-python-workarounds | review |  | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
-| edge:e-note-cdmdev-pythonworkarounds | review |  | accepted | 2026-10-17T13:40:02Z | 0f2f88c5496b77b3cef85e94a5ec0236fa765099 | denisurusov |
+| artifact:artifact-cdm-ext | review | proposed | accepted | 2026-10-17T13:40:02Z | ni:///sha-256;IstbiN2JrzNS8pxp9CyD665c6eJ4aBiQ8c1uV8TokoU | denisurusov |
+| edge:e-prod-gapclosure-cdmext | review | proposed | accepted | 2026-10-17T13:40:02Z | ni:///sha-256;IstbiN2JrzNS8pxp9CyD665c6eJ4aBiQ8c1uV8TokoU | denisurusov |
+| noteworthy:nw-cdm-python-workarounds | review |  | accepted | 2026-10-17T13:40:02Z | ni:///sha-256;IstbiN2JrzNS8pxp9CyD665c6eJ4aBiQ8c1uV8TokoU | denisurusov |
+| edge:e-note-cdmdev-pythonworkarounds | review |  | accepted | 2026-10-17T13:40:02Z | ni:///sha-256;IstbiN2JrzNS8pxp9CyD665c6eJ4aBiQ8c1uV8TokoU | denisurusov |
 | waypoint:wp-adr-cdm-collateral-events | review |  | proposed | 2026-10-17T16:03:44Z |  |  |
 | edge:e-mrk-collevents-gapclosure | review |  | proposed | 2026-10-17T16:03:44Z |  |  |
-| noteworthy:nw-cdm-stay-on-python | review |  | accepted | 2026-10-17T16:59:27Z | 14f3682a9d131660ccfcbec45a3c662a9ed1f7e8 | denisurusov |
-| edge:e-note-cdmdev-stayonpython | review |  | accepted | 2026-10-17T16:59:27Z | 14f3682a9d131660ccfcbec45a3c662a9ed1f7e8 | denisurusov |
-| waypoint:wp-adr-cdm-collateral-events | review | proposed | accepted | 2026-10-17T17:00:55Z | e61393e8f33765faa3913c1c4270ef0919a1a43a | denisurusov |
-| edge:e-mrk-collevents-gapclosure | review | proposed | accepted | 2026-10-17T17:00:55Z | e61393e8f33765faa3913c1c4270ef0919a1a43a | denisurusov |
-| noteworthy:nw-repo-shared-with-cdm-maintainers | review |  | accepted | 2026-10-17T17:07:57Z | 303fc10a2ccd0ad628d55390871ed811a9c34a5c | denisurusov |
-| edge:e-note-cdmdev-sharedmaintainers | review |  | accepted | 2026-10-17T17:07:57Z | 303fc10a2ccd0ad628d55390871ed811a9c34a5c | denisurusov |
-| node:task-windows-install | status | open | resolved | 2026-10-17T18:32:09Z | f653908353dce5cf20875fa230afab001c9f8ea1 | denisurusov |
+| noteworthy:nw-cdm-stay-on-python | review |  | accepted | 2026-10-17T16:59:27Z | ni:///sha-256;jT44joD6YDnnKJ7VgXv47ZC9AGcZhCHLbXHlAM00M24 | denisurusov |
+| edge:e-note-cdmdev-stayonpython | review |  | accepted | 2026-10-17T16:59:27Z | ni:///sha-256;jT44joD6YDnnKJ7VgXv47ZC9AGcZhCHLbXHlAM00M24 | denisurusov |
+| waypoint:wp-adr-cdm-collateral-events | review | proposed | accepted | 2026-10-17T17:00:55Z | ni:///sha-256;u5Qnuvu9SM7HQ5mfjc6gZ--BmeLl5-5Oikjki0q3Xm8 | denisurusov |
+| edge:e-mrk-collevents-gapclosure | review | proposed | accepted | 2026-10-17T17:00:55Z | ni:///sha-256;u5Qnuvu9SM7HQ5mfjc6gZ--BmeLl5-5Oikjki0q3Xm8 | denisurusov |
+| noteworthy:nw-repo-shared-with-cdm-maintainers | review |  | accepted | 2026-10-17T17:07:57Z | ni:///sha-256;rEWviG1MQtrLwSW7xJTSd1Za2xTwNfR5EM6zI6X-HHc | denisurusov |
+| edge:e-note-cdmdev-sharedmaintainers | review |  | accepted | 2026-10-17T17:07:57Z | ni:///sha-256;rEWviG1MQtrLwSW7xJTSd1Za2xTwNfR5EM6zI6X-HHc | denisurusov |
+| node:task-windows-install | status | open | resolved | 2026-10-17T18:32:09Z | ni:///sha-256;tlevq0KZ4xiAZEAwftLSiW283RHDNDfNRCS30ea0Qhc | denisurusov |
 | node:task-e2e-wiring | review |  | proposed | 2026-10-17T20:56:54Z |  |  |
 | node:task-e2e-wiring | status |  | open | 2026-10-17T20:56:54Z |  |  |
 | edge:e-dec-e2e-wiring | review |  | proposed | 2026-10-17T20:56:54Z |  |  |
-| waypoint:wp-adr-java-cdm-stack | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
-| edge:e-sup-javastack-stayonpython | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
-| edge:e-sup-javastack-pythonworkarounds | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
-| edge:e-mrk-javastack-gapclosure | review |  | accepted | 2026-10-18T01:27:28Z | 6634e3f08a3a21e5cc0574f7ca2bfaf3cdd61630 | denisurusov |
+| waypoint:wp-adr-java-cdm-stack | review |  | accepted | 2026-10-18T01:27:28Z | ni:///sha-256;uTVpTsHhFM2-VfYVE0yYk9BbFLNr0MptY43fSW9jufU | denisurusov |
+| edge:e-sup-javastack-stayonpython | review |  | accepted | 2026-10-18T01:27:28Z | ni:///sha-256;uTVpTsHhFM2-VfYVE0yYk9BbFLNr0MptY43fSW9jufU | denisurusov |
+| edge:e-sup-javastack-pythonworkarounds | review |  | accepted | 2026-10-18T01:27:28Z | ni:///sha-256;uTVpTsHhFM2-VfYVE0yYk9BbFLNr0MptY43fSW9jufU | denisurusov |
+| edge:e-mrk-javastack-gapclosure | review |  | accepted | 2026-10-18T01:27:28Z | ni:///sha-256;uTVpTsHhFM2-VfYVE0yYk9BbFLNr0MptY43fSW9jufU | denisurusov |
 | edge:e-mrk-javastack-e2ewiring | review |  | proposed | 2026-10-18T15:05:37Z |  |  |
 | node:task-repo-setup-iteration | status | active | resolved | 2026-10-19T03:55:28Z |  |
 | node:task-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  | denisurusov |
 | edge:e-dec-e2e-wiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  | denisurusov |
 | edge:e-mrk-javastack-e2ewiring | review | proposed | accepted | 2026-10-19T03:55:54Z |  | denisurusov |
-| node:task-adopt-agent-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
-| node:task-adopt-agent-fleet | status |  | open | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
-| edge:e-dec-adoption-fleet | review |  | accepted | 2026-10-22T23:29:00Z | 98439d29e3489c9547264c7d125ced58ceaf03b5 | denisurusov |
+| node:task-adopt-agent-fleet | review |  | accepted | 2026-10-22T23:29:00Z | ni:///sha-256;MxlOJMhcBEVK94FyyYCSFzQwmpvqsRRi48q9IEaZNLg | denisurusov |
+| node:task-adopt-agent-fleet | status |  | open | 2026-10-22T23:29:00Z | ni:///sha-256;MxlOJMhcBEVK94FyyYCSFzQwmpvqsRRi48q9IEaZNLg | denisurusov |
+| edge:e-dec-adoption-fleet | review |  | accepted | 2026-10-22T23:29:00Z | ni:///sha-256;MxlOJMhcBEVK94FyyYCSFzQwmpvqsRRi48q9IEaZNLg | denisurusov |
 | artifact:artifact-two-way-im-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
 | edge:e-prod-twowayim-design | review |  | proposed | 2026-10-23T15:39:17.930Z |  | spec-writer |
 | artifact:artifact-two-way-im-design | review | proposed | accepted | 2026-10-23T15:52:41Z |  | denisurusov |
@@ -256,7 +256,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-onchain-privacy-produces-design | review |  | proposed | 2026-10-23T16:22:32.687Z |  | spec-writer |
 | artifact:artifact-onchain-privacy-design | review | proposed | accepted | 2026-10-23T16:25:21Z |  | denisurusov |
 | edge:e-onchain-privacy-produces-design | review | proposed | accepted | 2026-10-23T16:25:21Z |  | denisurusov |
-| node:task-e2e-wiring | status | open | active | 2026-10-23T21:54:35Z | adc651e4f21db3c07ae7d96294f91d86737b76f1 | denisurusov |
+| node:task-e2e-wiring | status | open | active | 2026-10-23T21:54:35Z | ni:///sha-256;lF45oaZWxhekK7vBE-2LR7S1Sr3QMao7RNYRqikFpL8 | denisurusov |
 | artifact:artifact-business-case | review |  | proposed | 2026-10-24T13:56:51.384Z |  | spec-writer |
 | edge:e-business-case-produces-doc | review |  | proposed | 2026-10-24T13:56:51.384Z |  | spec-writer |
 | artifact:artifact-business-case | review | proposed | accepted | 2026-10-24T14:11:28.731Z |  | denisurusov |
@@ -324,23 +324,23 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-livestacklocal-devcontainerstack | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
 | noteworthy:nw-ci-live-e2e-stack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
 | edge:e-note-cilivestack-status | review |  | proposed | 2026-10-30T02:12:11Z |  |  |
-| waypoint:wp-adr-live-stack-local-ui-driven | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| node:task-devcontainer-live-stack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| noteworthy:nw-ci-live-e2e-stack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| edge:e-dec-e2ewiring-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| edge:e-lnk-cilivestack-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| edge:e-mrk-livestacklocal-cilivestack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| edge:e-mrk-livestacklocal-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| edge:e-note-cilivestack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
-| node:task-ci-live-e2e-stack | status | open | resolved | 2026-10-30T02:19:00Z | 9deece5d6f0ea8128d8917e40165299b3b18dfc6 | denisurusov |
+| waypoint:wp-adr-live-stack-local-ui-driven | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| node:task-devcontainer-live-stack | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| noteworthy:nw-ci-live-e2e-stack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| edge:e-dec-e2ewiring-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| edge:e-lnk-cilivestack-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| edge:e-mrk-livestacklocal-cilivestack | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| edge:e-mrk-livestacklocal-devcontainerstack | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| edge:e-note-cilivestack-status | review | proposed | accepted | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
+| node:task-ci-live-e2e-stack | status | open | resolved | 2026-10-30T02:19:00Z | ni:///sha-256;AQ08kSErOHRd7B2Zpiz56_koQ-jKd-OQ9fj89vYshwo | denisurusov |
 | noteworthy:nw-ci-live-stack-first-run | review |  | proposed | 2026-10-31T23:50:39Z |  |  |
 | edge:e-note-cilivestack-first-run | review |  | proposed | 2026-10-31T23:50:39Z |  |  |
-| noteworthy:nw-ci-live-stack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
-| edge:e-note-cilivestack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
-| noteworthy:nw-ci-live-stack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
-| edge:e-note-cilivestack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
-| edge:e-sup-livestacklocal-cilivestacksteps | review |  | accepted | 2026-11-01T00:10:00Z | 22139dbfa67bd4a249f7068bac11084c68caf5ad | denisurusov |
-| node:task-devcontainer-live-stack | status | open | resolved | 2026-11-01T00:40:00Z | 7a0b40227dfaa8c090f24ff18dadc5de671dafb5 | denisurusov |
+| noteworthy:nw-ci-live-stack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | ni:///sha-256;KhiFFxYPVKw1m8LGQBM_5p4F8b_gIFTspxerGn7NKzQ | denisurusov |
+| edge:e-note-cilivestack-first-run | review | proposed | accepted | 2026-11-01T00:10:00Z | ni:///sha-256;KhiFFxYPVKw1m8LGQBM_5p4F8b_gIFTspxerGn7NKzQ | denisurusov |
+| noteworthy:nw-ci-live-stack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | ni:///sha-256;KhiFFxYPVKw1m8LGQBM_5p4F8b_gIFTspxerGn7NKzQ | denisurusov |
+| edge:e-note-cilivestack-steps | review | proposed | rejected | 2026-11-01T00:10:00Z | ni:///sha-256;KhiFFxYPVKw1m8LGQBM_5p4F8b_gIFTspxerGn7NKzQ | denisurusov |
+| edge:e-sup-livestacklocal-cilivestacksteps | review |  | accepted | 2026-11-01T00:10:00Z | ni:///sha-256;KhiFFxYPVKw1m8LGQBM_5p4F8b_gIFTspxerGn7NKzQ | denisurusov |
+| node:task-devcontainer-live-stack | status | open | resolved | 2026-11-01T00:40:00Z | ni:///sha-256;8l41fecWgOFo8xb3ZzgUhevYyqWqyjbnR08svhYu2_8 | denisurusov |
 | node:task-devcontainer-stack-startup | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
 | node:task-devcontainer-stack-startup | status |  | open | 2026-11-01T01:00:00Z |  |  |
 | node:task-codespaces-live-stack | review |  | proposed | 2026-11-01T01:00:00Z |  |  |
@@ -361,7 +361,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2ewiring-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-remainingflows-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
 | edge:e-lnk-cilivestack-livecheckout | review |  | proposed | 2026-11-01T16:22:08Z |  |  |
-| node:task-devcontainer-stack-startup | status | open | resolved | 2026-11-01T21:07:28Z | 71e098075ed6f5310fcd0558fcc16984f99b0612 | denisurusov |
+| node:task-devcontainer-stack-startup | status | open | resolved | 2026-11-01T21:07:28Z | ni:///sha-256;DcJKMSenaFlobjVBzwckfO2R7aWUWi0gljZjJfyS5CE | denisurusov |
 | node:task-live-flow-checkout-script | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
 | edge:e-dec-e2ewiring-livecheckout | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
 | edge:e-lnk-cilivestack-livecheckout | review | proposed | accepted | 2026-11-01T21:58:21Z |  | denisurusov |
@@ -373,21 +373,21 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-remainingflows-balanceaware | review |  | proposed | 2026-11-01T22:01:07Z |  |  |
 | waypoint:wp-adr-console-same-origin-proxy | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
 | edge:e-mrk-sameoriginproxy-codespacesstack | review |  | proposed | 2026-11-02T23:15:24Z |  |  |
-| waypoint:wp-adr-console-same-origin-proxy | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
-| node:task-codespaces-live-stack | review | proposed | accepted | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
-| node:task-codespaces-live-stack | status | open | resolved | 2026-11-03T03:05:59Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
-| edge:e-mrk-sameoriginproxy-codespacesstack | review | proposed | accepted | 2026-11-03T03:11:11Z | 551fcc742556f79f90b83c29c01b8cbd240e0e4b | denisurusov |
+| waypoint:wp-adr-console-same-origin-proxy | review | proposed | accepted | 2026-11-03T03:05:59Z | ni:///sha-256;TNqAU7z7Nndy2y2cREbOb7SrxRracwYPExksV7RCKHc | denisurusov |
+| node:task-codespaces-live-stack | review | proposed | accepted | 2026-11-03T03:05:59Z | ni:///sha-256;TNqAU7z7Nndy2y2cREbOb7SrxRracwYPExksV7RCKHc | denisurusov |
+| node:task-codespaces-live-stack | status | open | resolved | 2026-11-03T03:05:59Z | ni:///sha-256;TNqAU7z7Nndy2y2cREbOb7SrxRracwYPExksV7RCKHc | denisurusov |
+| edge:e-mrk-sameoriginproxy-codespacesstack | review | proposed | accepted | 2026-11-03T03:11:11Z | ni:///sha-256;5Q8nClGVgchu69k4e1o4I7htTRambbZm7vs1byqz8Rg | denisurusov |
 | waypoint:wp-adr-cdm-payload-carrier | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
 | edge:e-drv-ledgerneutrality-carrier | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
 | edge:e-drv-cdmdatalayer-carrier | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
 | edge:e-mrk-carrier-e2ewiring | review | proposed | accepted | 2026-11-03T03:24:07Z |  | denisurusov |
-| edge:e-dec-e2ewiring-remainingflows | review | proposed | rejected | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
-| edge:e-dec-e2ewiring-balanceaware | review | proposed | rejected | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
-| edge:e-dec-e2eflow-remainingflows | review |  | accepted | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
-| edge:e-dec-e2eflow-balanceaware | review |  | accepted | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
-| node:task-e2e-wiring | status | active | resolved | 2026-11-03T03:25:20Z | 2d89f9ce09676a084c6672f5a9ba1b887d6112c5 | denisurusov |
-| edge:e-dec-e2ewiring-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
-| edge:e-lnk-devcontainerstartup-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | 5c190e38fe670e7310d923d91fea67ab10d39ab9 | denisurusov |
+| edge:e-dec-e2ewiring-remainingflows | review | proposed | rejected | 2026-11-03T03:25:20Z | ni:///sha-256;FmLvYUG8GpOYCzGnsqLFy8jspTsEUGSiXn6zm4GofdA | denisurusov |
+| edge:e-dec-e2ewiring-balanceaware | review | proposed | rejected | 2026-11-03T03:25:20Z | ni:///sha-256;FmLvYUG8GpOYCzGnsqLFy8jspTsEUGSiXn6zm4GofdA | denisurusov |
+| edge:e-dec-e2eflow-remainingflows | review |  | accepted | 2026-11-03T03:25:20Z | ni:///sha-256;FmLvYUG8GpOYCzGnsqLFy8jspTsEUGSiXn6zm4GofdA | denisurusov |
+| edge:e-dec-e2eflow-balanceaware | review |  | accepted | 2026-11-03T03:25:20Z | ni:///sha-256;FmLvYUG8GpOYCzGnsqLFy8jspTsEUGSiXn6zm4GofdA | denisurusov |
+| node:task-e2e-wiring | status | active | resolved | 2026-11-03T03:25:20Z | ni:///sha-256;FmLvYUG8GpOYCzGnsqLFy8jspTsEUGSiXn6zm4GofdA | denisurusov |
+| edge:e-dec-e2ewiring-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | ni:///sha-256;TNqAU7z7Nndy2y2cREbOb7SrxRracwYPExksV7RCKHc | denisurusov |
+| edge:e-lnk-devcontainerstartup-codespacesstack | review | proposed | accepted | 2026-11-03T03:31:02Z | ni:///sha-256;TNqAU7z7Nndy2y2cREbOb7SrxRracwYPExksV7RCKHc | denisurusov |
 | edge:e-lnk-remainingflows-livecheckout | review | proposed | accepted | 2026-11-03T03:31:02Z |  | denisurusov |
 | node:task-devcontainer-stack-startup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
 | edge:e-dec-e2ewiring-devcontainerstartup | review | proposed | accepted | 2026-11-03T03:32:33Z |  | denisurusov |
@@ -411,13 +411,13 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-livecheckout-balanceaware | review | proposed | accepted | 2026-11-03T12:49:19Z |  | denisurusov |
 | edge:e-lnk-remainingflows-balanceaware | review | proposed | accepted | 2026-11-03T12:49:19Z |  | denisurusov |
 | edge:e-note-balanceaware-depletion | review |  | proposed | 2026-11-03T12:50:15Z |  |  |
-| noteworthy:nw-return-default-flows-wired | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
-| noteworthy:nw-live-spec-balance-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
-| edge:e-note-remainingflows-returndefault | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
-| edge:e-note-remainingflows-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
-| edge:e-note-livecheckout-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
-| edge:e-note-balanceaware-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
-| node:task-e2e-remaining-flows | status | open | active | 2026-11-03T12:50:48Z | 3ae8b62f2e82d6124c2ca634281230fbbb66b5a8 | denisurusov |
+| noteworthy:nw-return-default-flows-wired | review | proposed | accepted | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
+| noteworthy:nw-live-spec-balance-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
+| edge:e-note-remainingflows-returndefault | review | proposed | accepted | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
+| edge:e-note-remainingflows-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
+| edge:e-note-livecheckout-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
+| edge:e-note-balanceaware-depletion | review | proposed | accepted | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
+| node:task-e2e-remaining-flows | status | open | active | 2026-11-03T12:50:48Z | ni:///sha-256;FZF3cQ1v_bOFjSiCJWBK803Zu4RssGLZV7HrmkxtATc | denisurusov |
 | node:task-collateral-service-unit-tests | review |  | proposed | 2026-11-03T14:01:12Z |  |  |
 | node:task-collateral-service-unit-tests | status |  | open | 2026-11-03T14:01:12Z |  |  |
 | edge:e-dec-e2eflow-collateralunittests | review |  | proposed | 2026-11-03T14:01:12Z |  |  |
@@ -442,46 +442,46 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-e2eflow-triparty | review |  | proposed | 2026-11-03T14:29:20Z |  |  |
 | edge:e-dec-e2eflow-ccp | review |  | proposed | 2026-11-03T14:29:20Z |  |  |
 | edge:e-lnk-csaextensions-gapclosure | review |  | proposed | 2026-11-03T14:29:20Z |  |  |
-| node:investigation-cdm-workflow-task-map | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| artifact:artifact-cdm-workflow-task-map | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| node:task-csa-workflow-extensions | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| node:task-repo-gmra-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| node:task-securities-lending-gmsla-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| node:task-triparty-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| node:task-ccp-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-dec-e2eflow-workflowtaskmap | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-prod-workflowtaskmap-map | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-dec-e2eflow-csaextensions | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-dec-e2eflow-repogmra | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-dec-e2eflow-seclendinggmsla | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-dec-e2eflow-triparty | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-dec-e2eflow-ccp | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-lnk-csaextensions-gapclosure | review | proposed | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| noteworthy:nw-core-cycle-first | review |  | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
-| edge:e-note-workflowtaskmap-corefirst | review |  | accepted | 2026-11-03T14:47:29Z | f2af9c708d4dfb0afca4f8657294d0883797c5b2 | denisurusov |
+| node:investigation-cdm-workflow-task-map | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| artifact:artifact-cdm-workflow-task-map | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| node:task-csa-workflow-extensions | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| node:task-repo-gmra-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| node:task-securities-lending-gmsla-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| node:task-triparty-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| node:task-ccp-workflows | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-dec-e2eflow-workflowtaskmap | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-prod-workflowtaskmap-map | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-dec-e2eflow-csaextensions | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-dec-e2eflow-repogmra | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-dec-e2eflow-seclendinggmsla | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-dec-e2eflow-triparty | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-dec-e2eflow-ccp | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-lnk-csaextensions-gapclosure | review | proposed | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| noteworthy:nw-core-cycle-first | review |  | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
+| edge:e-note-workflowtaskmap-corefirst | review |  | accepted | 2026-11-03T14:47:29Z | ni:///sha-256;kSctsKHEX0SEE2eVX2AJpgnNtDtIno9vWm44SthSsuw | denisurusov |
 | noteworthy:nw-csa-extension-order | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
 | noteworthy:nw-agreement-family-order | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
 | edge:e-note-workflowtaskmap-csaorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
 | edge:e-note-csaextensions-csaorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
 | edge:e-note-workflowtaskmap-familyorder | review |  | proposed | 2026-11-03T14:47:29Z |  |  |
-| noteworthy:nw-csa-extension-order | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
-| noteworthy:nw-agreement-family-order | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
-| edge:e-note-workflowtaskmap-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
-| edge:e-note-csaextensions-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
-| edge:e-note-workflowtaskmap-familyorder | review | proposed | accepted | 2026-11-03T15:18:20Z | f8f1443bfe0b092cf3b946298cc9462579bc27a9 | denisurusov |
-| waypoint:wp-adr-oracle-prices-on-request-ratings-offchain | review |  | accepted | 2026-11-03T15:31:39Z | 9fb38c6c305f7d6f3e87894c56f343b421c5df99 | denisurusov |
-| edge:e-mrk-oracleadr-remainingflows | review |  | accepted | 2026-11-03T15:31:39Z | 9fb38c6c305f7d6f3e87894c56f343b421c5df99 | denisurusov |
-| waypoint:wp-adr-revaluation-outstanding-im-from-calls | review |  | accepted | 2026-11-03T16:24:46Z | 7b7af5a7e92584d713a86f7f0a6dd5c3e64bb860 | denisurusov |
-| edge:e-mrk-revaladr-remainingflows | review |  | accepted | 2026-11-03T16:24:46Z | 7b7af5a7e92584d713a86f7f0a6dd5c3e64bb860 | denisurusov |
+| noteworthy:nw-csa-extension-order | review | proposed | accepted | 2026-11-03T15:18:20Z | ni:///sha-256;9kYAFSUAZH-lUMWz84xMpUIxk4H2w-HclEsoUA5I99Y | denisurusov |
+| noteworthy:nw-agreement-family-order | review | proposed | accepted | 2026-11-03T15:18:20Z | ni:///sha-256;9kYAFSUAZH-lUMWz84xMpUIxk4H2w-HclEsoUA5I99Y | denisurusov |
+| edge:e-note-workflowtaskmap-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | ni:///sha-256;9kYAFSUAZH-lUMWz84xMpUIxk4H2w-HclEsoUA5I99Y | denisurusov |
+| edge:e-note-csaextensions-csaorder | review | proposed | accepted | 2026-11-03T15:18:20Z | ni:///sha-256;9kYAFSUAZH-lUMWz84xMpUIxk4H2w-HclEsoUA5I99Y | denisurusov |
+| edge:e-note-workflowtaskmap-familyorder | review | proposed | accepted | 2026-11-03T15:18:20Z | ni:///sha-256;9kYAFSUAZH-lUMWz84xMpUIxk4H2w-HclEsoUA5I99Y | denisurusov |
+| waypoint:wp-adr-oracle-prices-on-request-ratings-offchain | review |  | accepted | 2026-11-03T15:31:39Z | ni:///sha-256;8w4tiyTqKyL6OHv367h9lKvnyNaOH9t35rb1ZkEE83s | denisurusov |
+| edge:e-mrk-oracleadr-remainingflows | review |  | accepted | 2026-11-03T15:31:39Z | ni:///sha-256;8w4tiyTqKyL6OHv367h9lKvnyNaOH9t35rb1ZkEE83s | denisurusov |
+| waypoint:wp-adr-revaluation-outstanding-im-from-calls | review |  | accepted | 2026-11-03T16:24:46Z | ni:///sha-256;sF-wwnWFGGjDxoAR76G55kMb5Og6lcFf1389CE2X9Gg | denisurusov |
+| edge:e-mrk-revaladr-remainingflows | review |  | accepted | 2026-11-03T16:24:46Z | ni:///sha-256;sF-wwnWFGGjDxoAR76G55kMb5Og6lcFf1389CE2X9Gg | denisurusov |
 | noteworthy:nw-revaluation-top-up-excluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
 | edge:e-note-remainingflows-topupexcluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
 | edge:e-note-topupmodelling-topupexcluded | review |  | proposed | 2026-11-03T16:24:46Z |  |  |
 | noteworthy:nw-revaluation-top-up-excluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
 | edge:e-note-remainingflows-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
 | edge:e-note-topupmodelling-topupexcluded | review | proposed | accepted | 2026-11-03T16:35:57Z |  | denisurusov |
-| waypoint:wp-adr-ci-runs-live-specs | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
-| edge:e-mrk-cispecsadr-remainingflows | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
-| edge:e-sup-cispecs-livestacklocal | review |  | accepted | 2026-11-03T17:05:51Z | db38e95ee8c10dee9650ada2a61e3c4905116a3a | denisurusov |
+| waypoint:wp-adr-ci-runs-live-specs | review |  | accepted | 2026-11-03T17:05:51Z | ni:///sha-256;IJciepOEqgHnadLWMJv48SpKG10HaQI_3vV5NFKK0xc | denisurusov |
+| edge:e-mrk-cispecsadr-remainingflows | review |  | accepted | 2026-11-03T17:05:51Z | ni:///sha-256;IJciepOEqgHnadLWMJv48SpKG10HaQI_3vV5NFKK0xc | denisurusov |
+| edge:e-sup-cispecs-livestacklocal | review |  | accepted | 2026-11-03T17:05:51Z | ni:///sha-256;IJciepOEqgHnadLWMJv48SpKG10HaQI_3vV5NFKK0xc | denisurusov |
 | node:task-e2e-remaining-flows | status | active | resolved | 2026-11-03T17:51:55Z |  | denisurusov |
 | noteworthy:nw-portfolio-per-pair-post-haircut | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
 | noteworthy:nw-cdm-valuation-percentage-as-haircut | review |  | proposed | 2026-11-03T18:04:30Z |  |  |
@@ -524,8 +524,8 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-gapclosure-ledger | review |  | proposed | 2026-11-04T00:15:20Z |  |  |
 | noteworthy:nw-dispute-record-beside-call | review | proposed | accepted | 2026-11-04T02:15:33Z |  | denisurusov |
 | edge:e-note-gapclosure-dispute | review | proposed | accepted | 2026-11-04T02:15:33Z |  | denisurusov |
-| noteworthy:nw-ledger-reference-and-token-identity | review | proposed | rejected | 2026-11-04T02:21:16Z | 67989287b51231983b6e1159a2195a185f5d16b3 | denisurusov |
-| edge:e-note-gapclosure-ledger | review | proposed | rejected | 2026-11-04T02:21:16Z | 67989287b51231983b6e1159a2195a185f5d16b3 | denisurusov |
+| noteworthy:nw-ledger-reference-and-token-identity | review | proposed | rejected | 2026-11-04T02:21:16Z | ni:///sha-256;-RZvrfQ3NLZ_uyRcmtqFD8H9XlfaTBAi3_792ucIxRc | denisurusov |
+| edge:e-note-gapclosure-ledger | review | proposed | rejected | 2026-11-04T02:21:16Z | ni:///sha-256;-RZvrfQ3NLZ_uyRcmtqFD8H9XlfaTBAi3_792ucIxRc | denisurusov |
 | noteworthy:nw-ledger-anchor-redesign | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
 | node:task-g25-ledger-anchor-redesign | review |  | proposed | 2026-11-04T02:21:16Z |  |  |
 | node:task-g25-ledger-anchor-redesign | status |  | open | 2026-11-04T02:21:16Z |  |  |
@@ -550,7 +550,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-g25redesign-implementation | review |  | proposed | 2026-11-04T02:39:30Z |  |  |
 | noteworthy:nw-ledger-anchor-implementation | review | proposed | accepted | 2026-11-04T02:46:59Z |  | denisurusov |
 | edge:e-note-g25redesign-implementation | review | proposed | accepted | 2026-11-04T02:46:59Z |  | denisurusov |
-| node:task-g25-ledger-anchor-redesign | status | open | resolved | 2026-11-04T03:11:51Z | 30d8b3afe7270e41926a27c489077bee1626627e | denisurusov |
+| node:task-g25-ledger-anchor-redesign | status | open | resolved | 2026-11-04T03:11:51Z | ni:///sha-256;Dkskm4jLbHYyUngdTz2icuo7wHtciBDYmQMC78Jz-Cs | denisurusov |
 | node:task-csa-close-out-netting | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
 | node:task-csa-close-out-netting | status |  | open | 2026-11-06T13:19:22Z |  |  |
 | edge:e-dec-csaext-closeout | review |  | proposed | 2026-11-06T13:19:22Z |  |  |
@@ -579,66 +579,66 @@ into state history — an instance without it is v1-conformant and records none.
 | waypoint:wp-adr-substitution-fold-portfolio | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
 | edge:e-mrk-closeoutadr-closeout | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
 | edge:e-mrk-subfoldadr-substitution | review |  | proposed | 2026-11-06T14:41:19Z |  |  |
-| waypoint:wp-adr-closeout-contract-applies-collateral | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| waypoint:wp-adr-substitution-fold-portfolio | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-close-out-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-interest-on-cash | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-call-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-settlement-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-interest | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-settlementnetting | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-dec-csaext-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-mrk-closeoutadr-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| edge:e-mrk-subfoldadr-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-close-out-netting | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
-| node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | b90a19c5cfa7e4c3b9b980101626ac2bdd894981 | denisurusov |
+| waypoint:wp-adr-closeout-contract-applies-collateral | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| waypoint:wp-adr-substitution-fold-portfolio | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-close-out-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-interest-on-cash | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-call-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-settlement-netting | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-interest | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-amendment | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-cancellation | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-settlementnetting | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-allocation | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-dec-csaext-reconciliation | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-mrk-closeoutadr-closeout | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| edge:e-mrk-subfoldadr-substitution | review | proposed | accepted | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-close-out-netting | status | open | resolved | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
+| node:task-csa-substitution | status | open | resolved | 2026-11-06T15:14:18Z | ni:///sha-256;7NrBVkknXxtv65MxIC5KWB3I90LlegK9ja-kaePXfGs | denisurusov |
 | waypoint:wp-adr-interest-rate-rules-and-withholding | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
 | edge:e-mrk-interestadr-interest | review |  | proposed | 2026-11-06T15:26:06Z |  |  |
-| waypoint:wp-adr-interest-rate-rules-and-withholding | review | proposed | accepted | 2026-11-06T15:35:07Z | 16dca9f0c1765191fa8235340845c442d5744245 | denisurusov |
-| edge:e-mrk-interestadr-interest | review | proposed | accepted | 2026-11-06T15:35:07Z | 16dca9f0c1765191fa8235340845c442d5744245 | denisurusov |
+| waypoint:wp-adr-interest-rate-rules-and-withholding | review | proposed | accepted | 2026-11-06T15:35:07Z | ni:///sha-256;ykrq4pPBDS2eLjEFB1dOXGBJbTH45C7F9YkutihIlE4 | denisurusov |
+| edge:e-mrk-interestadr-interest | review | proposed | accepted | 2026-11-06T15:35:07Z | ni:///sha-256;ykrq4pPBDS2eLjEFB1dOXGBJbTH45C7F9YkutihIlE4 | denisurusov |
 | node:task-sme-interest-daily-balances | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
 | node:task-sme-interest-daily-balances | status |  | open | 2026-11-06T15:35:07Z |  |  |
 | edge:e-dec-cdmdev-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
 | edge:e-lnk-interest-smeinterest | review |  | proposed | 2026-11-06T15:35:07Z |  |  |
 | waypoint:wp-adr-interest-onchain-settlement | review |  | proposed | 2026-11-06T15:51:39Z |  |  |
 | edge:e-mrk-interestsettle-interest | review |  | proposed | 2026-11-06T15:51:39Z |  |  |
-| waypoint:wp-adr-interest-onchain-settlement | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
-| node:task-sme-interest-daily-balances | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
-| edge:e-mrk-interestsettle-interest | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
-| edge:e-dec-cdmdev-smeinterest | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
-| edge:e-lnk-interest-smeinterest | review | proposed | accepted | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
-| node:task-csa-interest-on-cash | status | open | resolved | 2026-11-06T15:52:55Z | 5955eca8c156067c277e351f691178335a87ba30 | denisurusov |
+| waypoint:wp-adr-interest-onchain-settlement | review | proposed | accepted | 2026-11-06T15:52:55Z | ni:///sha-256;1dtVHHRpFR-iSuGZpUkyfAPSH-wLVqArSbUqlOwFm4E | denisurusov |
+| node:task-sme-interest-daily-balances | review | proposed | accepted | 2026-11-06T15:52:55Z | ni:///sha-256;1dtVHHRpFR-iSuGZpUkyfAPSH-wLVqArSbUqlOwFm4E | denisurusov |
+| edge:e-mrk-interestsettle-interest | review | proposed | accepted | 2026-11-06T15:52:55Z | ni:///sha-256;1dtVHHRpFR-iSuGZpUkyfAPSH-wLVqArSbUqlOwFm4E | denisurusov |
+| edge:e-dec-cdmdev-smeinterest | review | proposed | accepted | 2026-11-06T15:52:55Z | ni:///sha-256;1dtVHHRpFR-iSuGZpUkyfAPSH-wLVqArSbUqlOwFm4E | denisurusov |
+| edge:e-lnk-interest-smeinterest | review | proposed | accepted | 2026-11-06T15:52:55Z | ni:///sha-256;1dtVHHRpFR-iSuGZpUkyfAPSH-wLVqArSbUqlOwFm4E | denisurusov |
+| node:task-csa-interest-on-cash | status | open | resolved | 2026-11-06T15:52:55Z | ni:///sha-256;1dtVHHRpFR-iSuGZpUkyfAPSH-wLVqArSbUqlOwFm4E | denisurusov |
 | waypoint:wp-adr-amendment-per-pair-terms | review |  | proposed | 2026-11-06T17:04:10Z |  |  |
 | edge:e-mrk-amendterms-amendment | review |  | proposed | 2026-11-06T17:04:10Z |  |  |
-| waypoint:wp-adr-amendment-per-pair-terms | review | proposed | accepted | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
-| edge:e-mrk-amendterms-amendment | review | proposed | accepted | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
-| node:task-csa-amendment | status | open | resolved | 2026-11-06T19:18:15Z | 73534ab20f26bfc834f5bc6e55c106c8eefd450d | denisurusov |
+| waypoint:wp-adr-amendment-per-pair-terms | review | proposed | accepted | 2026-11-06T19:18:15Z | ni:///sha-256;fs6wksjb_oAlVW4ZRgEl5IY8TH-PEJ8ehqM1heMeXKY | denisurusov |
+| edge:e-mrk-amendterms-amendment | review | proposed | accepted | 2026-11-06T19:18:15Z | ni:///sha-256;fs6wksjb_oAlVW4ZRgEl5IY8TH-PEJ8ehqM1heMeXKY | denisurusov |
+| node:task-csa-amendment | status | open | resolved | 2026-11-06T19:18:15Z | ni:///sha-256;fs6wksjb_oAlVW4ZRgEl5IY8TH-PEJ8ehqM1heMeXKY | denisurusov |
 | node:task-sme-call-cancellation-rules | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
 | node:task-sme-call-cancellation-rules | status |  | open | 2026-11-06T20:16:20Z |  |  |
 | edge:e-dec-cdmdev-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
 | edge:e-lnk-cancel-smecancel | review |  | proposed | 2026-11-06T20:16:20Z |  |  |
 | waypoint:wp-adr-cancellation-blocks-call | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
 | edge:e-mrk-cancelblocks-cancel | review |  | proposed | 2026-11-06T20:38:13Z |  |  |
-| waypoint:wp-adr-cancellation-blocks-call | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
-| node:task-sme-call-cancellation-rules | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
-| edge:e-mrk-cancelblocks-cancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
-| edge:e-dec-cdmdev-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
-| edge:e-lnk-cancel-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
-| node:task-csa-call-cancellation | status | open | resolved | 2026-11-06T20:45:24Z | c2edefb45dac2ddd6d81594d1c998a6f8f5374df | denisurusov |
+| waypoint:wp-adr-cancellation-blocks-call | review | proposed | accepted | 2026-11-06T20:45:24Z | ni:///sha-256;LJM9bzM53BmhXs3TMRgXfadtGNoKY_MVzTlTSPgps7E | denisurusov |
+| node:task-sme-call-cancellation-rules | review | proposed | accepted | 2026-11-06T20:45:24Z | ni:///sha-256;LJM9bzM53BmhXs3TMRgXfadtGNoKY_MVzTlTSPgps7E | denisurusov |
+| edge:e-mrk-cancelblocks-cancel | review | proposed | accepted | 2026-11-06T20:45:24Z | ni:///sha-256;LJM9bzM53BmhXs3TMRgXfadtGNoKY_MVzTlTSPgps7E | denisurusov |
+| edge:e-dec-cdmdev-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | ni:///sha-256;LJM9bzM53BmhXs3TMRgXfadtGNoKY_MVzTlTSPgps7E | denisurusov |
+| edge:e-lnk-cancel-smecancel | review | proposed | accepted | 2026-11-06T20:45:24Z | ni:///sha-256;LJM9bzM53BmhXs3TMRgXfadtGNoKY_MVzTlTSPgps7E | denisurusov |
+| node:task-csa-call-cancellation | status | open | resolved | 2026-11-06T20:45:24Z | ni:///sha-256;LJM9bzM53BmhXs3TMRgXfadtGNoKY_MVzTlTSPgps7E | denisurusov |
 | node:task-ci-deploy-dropped-tx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |
 | node:task-ci-deploy-dropped-tx | status |  | open | 2026-11-06T21:19:41Z |  |  |
 | edge:e-lnk-cilivestack-deploydroppedtx | review |  | proposed | 2026-11-06T21:19:41Z |  |  |
-| node:task-ci-deploy-dropped-tx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
-| edge:e-lnk-cilivestack-deploydroppedtx | review | proposed | accepted | 2026-11-06T21:21:30Z | 22f981c66f08de2c25660758c56b999391f6a362 | denisurusov |
+| node:task-ci-deploy-dropped-tx | review | proposed | accepted | 2026-11-06T21:21:30Z | ni:///sha-256;LNG4zLgNGa-S7tpnkBRAUWaqaZXZU1BryTPqtWk6p94 | denisurusov |
+| edge:e-lnk-cilivestack-deploydroppedtx | review | proposed | accepted | 2026-11-06T21:21:30Z | ni:///sha-256;LNG4zLgNGa-S7tpnkBRAUWaqaZXZU1BryTPqtWk6p94 | denisurusov |
 | node:investigation-adr-asr-traceability | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
 | node:investigation-adr-asr-traceability | status |  | active | 2026-11-06T21:34:07Z |  |  |
 | edge:e-dec-archdesign-adrtrace | review |  | proposed | 2026-11-06T21:34:07Z |  |  |
@@ -667,34 +667,34 @@ into state history — an instance without it is v1-conformant and records none.
 | concept:concept-asr-agreement-type-fidelity | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
 | edge:e-drv-feedscope-oracleprices | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
 | edge:e-drv-agreementfidelity-scenariogrid | review |  | proposed | 2026-11-06T21:52:57Z |  |  |
-| edge:e-dec-archdesign-adrtrace | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-amendterms | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-callstate-cancelblocks | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-cancelblocks | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-cdmevents | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-extrune | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-localext | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-closeout | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-finality-closeout | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-consolerules | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-callstate-imseg | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-finality-imseg | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-interestsettle | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-finality-interestsettle | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-interestrules | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-javastack | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-callstate-perparty | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-callstate-reval | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-callstate-subst | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-drv-cdmdata-subst | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| edge:e-note-adrtrace-jsonsource | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| node:investigation-adr-asr-traceability | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| noteworthy:nw-architecture-json-is-source | review | proposed | accepted | 2026-11-06T21:53:08Z | bd69e3ba82507a26a39a0a1fbcbbfe3d296c09e5 | denisurusov |
-| concept:concept-asr-onchain-feed-scope | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
-| concept:concept-asr-agreement-type-fidelity | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
-| edge:e-drv-feedscope-oracleprices | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
-| edge:e-drv-agreementfidelity-scenariogrid | review | proposed | accepted | 2026-11-06T22:27:21Z | 33850d5be9ec3305f235b5145548d2dab4f1100e | denisurusov |
-| node:investigation-adr-asr-traceability | status | active | resolved | 2026-11-06T22:40:11Z | 22aa20e558831db58e7cbd2e41943f4ee16e1f11 | denisurusov |
+| edge:e-dec-archdesign-adrtrace | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-amendterms | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-callstate-cancelblocks | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-cancelblocks | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-cdmevents | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-extrune | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-localext | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-closeout | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-finality-closeout | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-consolerules | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-callstate-imseg | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-finality-imseg | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-interestsettle | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-finality-interestsettle | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-interestrules | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-javastack | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-callstate-perparty | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-callstate-reval | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-callstate-subst | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-drv-cdmdata-subst | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| edge:e-note-adrtrace-jsonsource | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| node:investigation-adr-asr-traceability | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| noteworthy:nw-architecture-json-is-source | review | proposed | accepted | 2026-11-06T21:53:08Z | ni:///sha-256;CX7Yp0rOWie0v6wc0130XWLZyhAUPeci0y4_wdx18J4 | denisurusov |
+| concept:concept-asr-onchain-feed-scope | review | proposed | accepted | 2026-11-06T22:27:21Z | ni:///sha-256;IwYR6lidfMGSd24IvSEgdTWMkBxXlK-sv69-Rbegj_Q | denisurusov |
+| concept:concept-asr-agreement-type-fidelity | review | proposed | accepted | 2026-11-06T22:27:21Z | ni:///sha-256;IwYR6lidfMGSd24IvSEgdTWMkBxXlK-sv69-Rbegj_Q | denisurusov |
+| edge:e-drv-feedscope-oracleprices | review | proposed | accepted | 2026-11-06T22:27:21Z | ni:///sha-256;IwYR6lidfMGSd24IvSEgdTWMkBxXlK-sv69-Rbegj_Q | denisurusov |
+| edge:e-drv-agreementfidelity-scenariogrid | review | proposed | accepted | 2026-11-06T22:27:21Z | ni:///sha-256;IwYR6lidfMGSd24IvSEgdTWMkBxXlK-sv69-Rbegj_Q | denisurusov |
+| node:investigation-adr-asr-traceability | status | active | resolved | 2026-11-06T22:40:11Z | ni:///sha-256;SESoEqm0d_NULN3MMuqEAOOQqc1YOsveFsLK3Kq9Zyg | denisurusov |
 | node:task-csa-call-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
 | node:task-csa-call-replacement | status |  | open | 2026-11-06T21:44:40Z |  |  |
 | waypoint:wp-adr-replacement-call-link | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
@@ -702,17 +702,17 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cancel-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
 | edge:e-lnk-replacement-smecancel | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
 | edge:e-mrk-replacementlink-replacement | review |  | proposed | 2026-11-06T21:44:40Z |  |  |
-| node:task-csa-call-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
-| waypoint:wp-adr-replacement-call-link | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
-| edge:e-dec-csaext-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
-| edge:e-lnk-cancel-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
-| edge:e-lnk-replacement-smecancel | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
-| edge:e-mrk-replacementlink-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
-| node:task-csa-call-replacement | status | open | resolved | 2026-11-06T21:53:01Z | 17bdd48517562af268b60766e55747d540486bb2 | denisurusov |
+| node:task-csa-call-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
+| waypoint:wp-adr-replacement-call-link | review | proposed | accepted | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
+| edge:e-dec-csaext-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
+| edge:e-lnk-cancel-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
+| edge:e-lnk-replacement-smecancel | review | proposed | accepted | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
+| edge:e-mrk-replacementlink-replacement | review | proposed | accepted | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
+| node:task-csa-call-replacement | status | open | resolved | 2026-11-06T21:53:01Z | ni:///sha-256;frLuD4YY5eeFycI-cY9DgrUdql1QgrPOGk1aBflbLMQ | denisurusov |
 | edge:e-drv-callstate-replacelink | review |  | proposed | 2026-11-06T22:58:01Z |  |  |
 | edge:e-drv-cdmdata-replacelink | review |  | proposed | 2026-11-06T22:58:01Z |  |  |
-| edge:e-drv-callstate-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ea0ed4c6ddb1c4da0564b4c86fb9a7ed396a0262 | denisurusov |
-| edge:e-drv-cdmdata-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ea0ed4c6ddb1c4da0564b4c86fb9a7ed396a0262 | denisurusov |
+| edge:e-drv-callstate-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ni:///sha-256;ZLijPO_Kb9XsyR6leEA_WCfwGwzXvc-rdIfcSbKIheU | denisurusov |
+| edge:e-drv-cdmdata-replacelink | review | proposed | accepted | 2026-11-06T23:02:51Z | ni:///sha-256;ZLijPO_Kb9XsyR6leEA_WCfwGwzXvc-rdIfcSbKIheU | denisurusov |
 | waypoint:wp-adr-settlement-netting-scope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
 | node:task-sme-settlement-netting-rules | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
 | node:task-sme-settlement-netting-rules | status |  | open | 2026-11-07T04:24:56Z |  |  |
@@ -722,14 +722,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-nettingscope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
 | edge:e-drv-callstate-nettingscope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
 | edge:e-drv-cdmdata-nettingscope | review |  | proposed | 2026-11-07T04:24:56Z |  |  |
-| waypoint:wp-adr-settlement-netting-scope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| node:task-sme-settlement-netting-rules | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| edge:e-mrk-nettingscope-netting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| edge:e-drv-finality-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| edge:e-drv-callstate-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| edge:e-drv-cdmdata-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| edge:e-dec-cdmdev-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
-| edge:e-lnk-netting-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | 8987810d076eb2cb62faa3b3b572cf1f19796fc4 | denisurusov |
+| waypoint:wp-adr-settlement-netting-scope | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| node:task-sme-settlement-netting-rules | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| edge:e-mrk-nettingscope-netting | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| edge:e-drv-finality-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| edge:e-drv-callstate-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| edge:e-drv-cdmdata-nettingscope | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| edge:e-dec-cdmdev-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
+| edge:e-lnk-netting-smenetting | review | proposed | accepted | 2026-11-07T04:38:11Z | ni:///sha-256;mv4B4Dkq_68A5HcvKmHBzRZuE5h-odOTDcs4uhA43zM | denisurusov |
 | waypoint:wp-adr-allocation-scope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
 | node:task-sme-allocation-ranking | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
 | node:task-sme-allocation-ranking | status |  | open | 2026-11-07T13:52:51Z |  |  |
@@ -738,14 +738,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-alloc-smealloc | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
 | edge:e-drv-cdmdata-allocscope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
 | edge:e-drv-callstate-allocscope | review |  | proposed | 2026-11-07T13:52:51Z |  |  |
-| waypoint:wp-adr-allocation-scope | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| edge:e-mrk-allocscope-alloc | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| edge:e-drv-cdmdata-allocscope | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| edge:e-drv-callstate-allocscope | review | proposed | accepted | 2026-11-07T15:58:37Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| node:task-sme-allocation-ranking | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| edge:e-dec-cdmdev-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| edge:e-lnk-alloc-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | 8e25aca5b93d570808667f6415edf097c11c1d56 | denisurusov |
-| node:task-csa-allocation | status | open | resolved | 2026-11-07T18:15:45Z | b94ecf05be6e7d479e2ec32ca6f413bdcfb74679 | denisurusov |
+| waypoint:wp-adr-allocation-scope | review | proposed | accepted | 2026-11-07T15:58:37Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| edge:e-mrk-allocscope-alloc | review | proposed | accepted | 2026-11-07T15:58:37Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| edge:e-drv-cdmdata-allocscope | review | proposed | accepted | 2026-11-07T15:58:37Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| edge:e-drv-callstate-allocscope | review | proposed | accepted | 2026-11-07T15:58:37Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| node:task-sme-allocation-ranking | review | proposed | accepted | 2026-11-07T15:58:48Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| edge:e-dec-cdmdev-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| edge:e-lnk-alloc-smealloc | review | proposed | accepted | 2026-11-07T15:58:48Z | ni:///sha-256;WRYqAfJw6337a-JIZ9rjy01H9Pin8v9vppq2pBaycLc | denisurusov |
+| node:task-csa-allocation | status | open | resolved | 2026-11-07T18:15:45Z | ni:///sha-256;Oa0dMHG1Hg3O2O3axwEBMJk0_uAHOLaCAJPS7qA2CIU | denisurusov |
 | node:task-sme-allocation-concentration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
 | node:task-sme-allocation-concentration | status |  | open | 2026-11-07T18:27:28Z |  |  |
 | node:task-csa-allocation-optimisation | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
@@ -758,15 +758,15 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-alloc-allocopt | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
 | edge:e-dec-e2eflow-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
 | edge:e-lnk-cilivestack-specduration | review |  | proposed | 2026-11-07T18:27:28Z |  |  |
-| node:task-sme-allocation-concentration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| node:task-csa-allocation-optimisation | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| node:task-live-spec-duration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| edge:e-dec-cdmdev-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| edge:e-lnk-alloc-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| edge:e-dec-csaext-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| edge:e-lnk-alloc-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| edge:e-dec-e2eflow-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
-| edge:e-lnk-cilivestack-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | a2bc041d64b5866b6881d035f29342b3a34faccd | denisurusov |
+| node:task-sme-allocation-concentration | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| node:task-csa-allocation-optimisation | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| node:task-live-spec-duration | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| edge:e-dec-cdmdev-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| edge:e-lnk-alloc-smeallocconc | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| edge:e-dec-csaext-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| edge:e-lnk-alloc-allocopt | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| edge:e-dec-e2eflow-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
+| edge:e-lnk-cilivestack-specduration | review | proposed | accepted | 2026-11-07T18:32:00Z | ni:///sha-256;SzrvQxVbQABBvGK9yUvg0VNYdk16uH43Zu3xJVKytmg | denisurusov |
 | waypoint:wp-adr-reconciliation-scope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
 | node:task-sme-reconciliation-rules | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
 | node:task-sme-reconciliation-rules | status |  | open | 2026-11-07T18:37:24Z |  |  |
@@ -776,14 +776,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
 | edge:e-drv-callstate-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
 | edge:e-drv-offchaindispute-reconscope | review |  | proposed | 2026-11-07T18:37:24Z |  |  |
-| waypoint:wp-adr-reconciliation-scope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| node:task-sme-reconciliation-rules | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| edge:e-mrk-reconscope-recon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| edge:e-dec-cdmdev-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| edge:e-lnk-recon-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| edge:e-drv-cdmdata-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| edge:e-drv-callstate-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
-| edge:e-drv-offchaindispute-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | 51c3390d90b19b0acd543367baf069b4fb9400bd | denisurusov |
+| waypoint:wp-adr-reconciliation-scope | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| node:task-sme-reconciliation-rules | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| edge:e-mrk-reconscope-recon | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| edge:e-dec-cdmdev-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| edge:e-lnk-recon-smerecon | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| edge:e-drv-cdmdata-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| edge:e-drv-callstate-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
+| edge:e-drv-offchaindispute-reconscope | review | proposed | accepted | 2026-11-07T18:41:40Z | ni:///sha-256;M0G1-14smIN9vh9ljGOZG4gADgm4w-IadRLFAwNypxc | denisurusov |
 | node:task-gateway-receipt-poll | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
 | node:task-gateway-receipt-poll | status |  | open | 2026-11-07T18:54:12Z |  |  |
 | node:task-live-read-latency | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
@@ -793,23 +793,23 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-specduration-receiptpoll | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
 | edge:e-dec-specduration-readlatency | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
 | edge:e-dec-specduration-blockperiod | review |  | proposed | 2026-11-07T18:54:12Z |  |  |
-| node:task-gateway-receipt-poll | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
-| node:task-live-read-latency | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
-| node:task-test-chain-block-period | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
-| edge:e-dec-specduration-receiptpoll | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
-| edge:e-dec-specduration-readlatency | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
-| edge:e-dec-specduration-blockperiod | review | proposed | accepted | 2026-11-07T19:57:56Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
-| node:task-csa-reconciliation | status | open | resolved | 2026-11-07T20:11:29Z | fe94d24c8393576eafa827a5ced53840580becbe | denisurusov |
+| node:task-gateway-receipt-poll | review | proposed | accepted | 2026-11-07T19:57:56Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
+| node:task-live-read-latency | review | proposed | accepted | 2026-11-07T19:57:56Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
+| node:task-test-chain-block-period | review | proposed | accepted | 2026-11-07T19:57:56Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
+| edge:e-dec-specduration-receiptpoll | review | proposed | accepted | 2026-11-07T19:57:56Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
+| edge:e-dec-specduration-readlatency | review | proposed | accepted | 2026-11-07T19:57:56Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
+| edge:e-dec-specduration-blockperiod | review | proposed | accepted | 2026-11-07T19:57:56Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
+| node:task-csa-reconciliation | status | open | resolved | 2026-11-07T20:11:29Z | ni:///sha-256;XjwbwOWVc2LofUyVTnQSRxi5nSgtPg6iRuIx47eH98U | denisurusov |
 | node:task-live-test-balances | review |  | proposed | 2026-11-07T20:46:35Z |  |  |
 | node:task-live-test-balances | status |  | open | 2026-11-07T20:46:35Z |  |  |
 | edge:e-lnk-receiptpoll-testbalances | review |  | proposed | 2026-11-07T20:46:35Z |  |  |
-| node:task-gateway-receipt-poll | status | open | resolved | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
-| node:task-live-test-balances | review | proposed | accepted | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
-| edge:e-lnk-receiptpoll-testbalances | review | proposed | accepted | 2026-11-07T20:52:50Z | cf9a296128848aa5cdf9ffde53124e8bcd1672f4 | denisurusov |
-| node:task-live-read-latency | status | open | resolved | 2026-11-07T21:14:36Z | 1f18f384e0b534a4a82dd24e1d9303362296d64e | denisurusov |
-| node:task-live-test-balances | status | open | resolved | 2026-11-07T21:14:36Z | 1f18f384e0b534a4a82dd24e1d9303362296d64e | denisurusov |
+| node:task-gateway-receipt-poll | status | open | resolved | 2026-11-07T20:52:50Z | ni:///sha-256;tKFJ_4yIk2aogFHn4ZLuuJ-bSGdBuSOv0e3d8hwKxag | denisurusov |
+| node:task-live-test-balances | review | proposed | accepted | 2026-11-07T20:52:50Z | ni:///sha-256;tKFJ_4yIk2aogFHn4ZLuuJ-bSGdBuSOv0e3d8hwKxag | denisurusov |
+| edge:e-lnk-receiptpoll-testbalances | review | proposed | accepted | 2026-11-07T20:52:50Z | ni:///sha-256;tKFJ_4yIk2aogFHn4ZLuuJ-bSGdBuSOv0e3d8hwKxag | denisurusov |
+| node:task-live-read-latency | status | open | resolved | 2026-11-07T21:14:36Z | ni:///sha-256;WbwOL4zlZ5_ooWTkkzkHQKDCrh9EPVlWuWR48OaLwHI | denisurusov |
+| node:task-live-test-balances | status | open | resolved | 2026-11-07T21:14:36Z | ni:///sha-256;WbwOL4zlZ5_ooWTkkzkHQKDCrh9EPVlWuWR48OaLwHI | denisurusov |
 | node:task-csa-settlement-netting | status | open | resolved | 2026-11-07T21:16:04Z |  | denisurusov |
-| node:task-csa-workflow-extensions | status | open | resolved | 2026-11-07T21:18:31Z | fd15e5535b198d08fc024585cf53a29c2edc27ec | denisurusov |
+| node:task-csa-workflow-extensions | status | open | resolved | 2026-11-07T21:18:31Z | ni:///sha-256;-rHL6YMiFYpb2sOAVi6xX3pAjLv0AlE6hSqEy143w9k | denisurusov |
 | waypoint:wp-adr-two-way-im | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
 | node:task-sme-two-way-im-rules | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
 | edge:e-mrk-twowayimadr-twowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
@@ -818,19 +818,19 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-cdmdev-smetwowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
 | edge:e-lnk-twowayim-smetwowayim | review |  | proposed | 2026-11-07T21:24:29Z |  |  |
 | node:task-sme-two-way-im-rules | status |  | open | 2026-11-07T21:24:29Z |  |  |
-| waypoint:wp-adr-two-way-im | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| node:task-sme-two-way-im-rules | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| edge:e-mrk-twowayimadr-twowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| edge:e-drv-callstate-twowayimadr | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| edge:e-drv-finality-twowayimadr | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| edge:e-dec-cdmdev-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| edge:e-lnk-twowayim-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
-| node:task-two-way-initial-margin | status | open | resolved | 2026-11-07T21:58:01Z | 2a303c540e4fec96e3d83b0e45a53afa55defe0f | denisurusov |
+| waypoint:wp-adr-two-way-im | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| node:task-sme-two-way-im-rules | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| edge:e-mrk-twowayimadr-twowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| edge:e-drv-callstate-twowayimadr | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| edge:e-drv-finality-twowayimadr | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| edge:e-dec-cdmdev-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| edge:e-lnk-twowayim-smetwowayim | review | proposed | accepted | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
+| node:task-two-way-initial-margin | status | open | resolved | 2026-11-07T21:58:01Z | ni:///sha-256;cpnFE5lngiBHV0oPoeTHKWyHow4Rs9GP_59u678yC6Y | denisurusov |
 | node:task-konspekt-checkpoint-adoption | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
 | node:task-konspekt-checkpoint-adoption | status |  | open | 2026-11-07T22:13:30Z |  |  |
 | edge:e-dec-konspektadopt-checkpoint | review |  | proposed | 2026-11-07T22:13:30Z |  |  |
-| node:task-konspekt-checkpoint-adoption | review | proposed | accepted | 2026-11-07T22:31:16Z | 22bd8364ab05ce0184ff96fe2006969da7db8dea | denisurusov |
-| edge:e-dec-konspektadopt-checkpoint | review | proposed | accepted | 2026-11-07T22:31:16Z | 22bd8364ab05ce0184ff96fe2006969da7db8dea | denisurusov |
+| node:task-konspekt-checkpoint-adoption | review | proposed | accepted | 2026-11-07T22:31:16Z | ni:///sha-256;pOvpiwfW75w13-BKS9N4TLl31R8zISoEgocsZhcRFEk | denisurusov |
+| edge:e-dec-konspektadopt-checkpoint | review | proposed | accepted | 2026-11-07T22:31:16Z | ni:///sha-256;pOvpiwfW75w13-BKS9N4TLl31R8zISoEgocsZhcRFEk | denisurusov |
 | waypoint:wp-adr-repo-gmra-scope | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
 | node:task-repo-gmra-terms | review |  | proposed | 2026-11-07T22:35:17Z |  |  |
 | node:task-repo-gmra-terms | status |  | open | 2026-11-07T22:35:17Z |  |  |
@@ -871,24 +871,24 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-repogmrascope | review | proposed | accepted | 2026-11-07T23:09:48Z |  | denisurusov |
 | node:task-repo-gmra-terms | review | proposed | accepted | 2026-11-07T23:10:06Z |  | denisurusov |
 | edge:e-dec-repogmra-gmraterms | review | proposed | accepted | 2026-11-07T23:10:06Z |  | denisurusov |
-| node:task-repo-purchase-repurchase | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-purchaserepurchase | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-margin-maintenance | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-marginmaintenance | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-reprice | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-reprice | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-adjustment | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-adjustment | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-substitution | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-substitution | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-income | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-income | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-roll | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-roll | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-pair-off | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-pairoff | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| node:task-repo-buy-sell-back | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
-| edge:e-dec-repogmra-buysellback | review | proposed | accepted | 2026-11-07T23:11:58Z | 098fab36b2d91ff22a659917fbb8c77ca7aa4108 | denisurusov |
+| node:task-repo-purchase-repurchase | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-purchaserepurchase | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-margin-maintenance | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-marginmaintenance | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-reprice | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-reprice | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-adjustment | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-adjustment | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-substitution | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-substitution | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-income | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-income | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-roll | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-roll | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-pair-off | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-pairoff | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| node:task-repo-buy-sell-back | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
+| edge:e-dec-repogmra-buysellback | review | proposed | accepted | 2026-11-07T23:11:58Z | ni:///sha-256;BIF4dmgyCdmUYojMM4HZtXftf2gydNcmW8j09mtyZ8A | denisurusov |
 | node:task-repo-default-close-out | review |  | proposed | 2026-11-07T23:11:58Z |  |  |
 | node:task-repo-default-close-out | status |  | open | 2026-11-07T23:11:58Z |  |  |
 | edge:e-dec-repogmra-defaultcloseout | review |  | proposed | 2026-11-07T23:11:58Z |  |  |
@@ -908,21 +908,21 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-mrk-repopradr-purchaserepurchase | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
 | edge:e-drv-cdmdata-repopradr | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
 | edge:e-drv-finality-repopradr | review |  | proposed | 2026-11-08T01:23:33Z |  |  |
-| waypoint:wp-adr-repo-purchase-repurchase | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
-| edge:e-mrk-repopradr-purchaserepurchase | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
-| edge:e-drv-cdmdata-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
-| edge:e-drv-finality-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
-| node:task-repo-purchase-repurchase | status | open | resolved | 2026-11-08T01:55:28Z | 0ef54baaa98806298dc824298cef7111bd63236a | denisurusov |
+| waypoint:wp-adr-repo-purchase-repurchase | review | proposed | accepted | 2026-11-08T01:55:28Z | ni:///sha-256;6T7pYG_ROggccY5wOMOjf-0hseF-M_fzEHQsicDiSfU | denisurusov |
+| edge:e-mrk-repopradr-purchaserepurchase | review | proposed | accepted | 2026-11-08T01:55:28Z | ni:///sha-256;6T7pYG_ROggccY5wOMOjf-0hseF-M_fzEHQsicDiSfU | denisurusov |
+| edge:e-drv-cdmdata-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | ni:///sha-256;6T7pYG_ROggccY5wOMOjf-0hseF-M_fzEHQsicDiSfU | denisurusov |
+| edge:e-drv-finality-repopradr | review | proposed | accepted | 2026-11-08T01:55:28Z | ni:///sha-256;6T7pYG_ROggccY5wOMOjf-0hseF-M_fzEHQsicDiSfU | denisurusov |
+| node:task-repo-purchase-repurchase | status | open | resolved | 2026-11-08T01:55:28Z | ni:///sha-256;6T7pYG_ROggccY5wOMOjf-0hseF-M_fzEHQsicDiSfU | denisurusov |
 | waypoint:wp-adr-repo-margin-maintenance | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
 | edge:e-mrk-repomarginadr-marginmaint | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
 | edge:e-drv-cdmdata-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
 | edge:e-drv-finality-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
 | edge:e-drv-callstate-repomarginadr | review |  | proposed | 2026-11-08T14:35:55Z |  |  |
-| waypoint:wp-adr-repo-margin-maintenance | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
-| edge:e-mrk-repomarginadr-marginmaint | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
-| edge:e-drv-cdmdata-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
-| edge:e-drv-finality-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
-| edge:e-drv-callstate-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | d7075ebf2ed8b09469e486de0a8c51320ad977a7 | denisurusov |
+| waypoint:wp-adr-repo-margin-maintenance | review | proposed | accepted | 2026-11-08T14:58:07Z | ni:///sha-256;DVI37LCvFDCXGVR2AhM7BTgkWX1L0cIbDe3tZK4IC00 | denisurusov |
+| edge:e-mrk-repomarginadr-marginmaint | review | proposed | accepted | 2026-11-08T14:58:07Z | ni:///sha-256;DVI37LCvFDCXGVR2AhM7BTgkWX1L0cIbDe3tZK4IC00 | denisurusov |
+| edge:e-drv-cdmdata-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | ni:///sha-256;DVI37LCvFDCXGVR2AhM7BTgkWX1L0cIbDe3tZK4IC00 | denisurusov |
+| edge:e-drv-finality-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | ni:///sha-256;DVI37LCvFDCXGVR2AhM7BTgkWX1L0cIbDe3tZK4IC00 | denisurusov |
+| edge:e-drv-callstate-repomarginadr | review | proposed | accepted | 2026-11-08T14:58:07Z | ni:///sha-256;DVI37LCvFDCXGVR2AhM7BTgkWX1L0cIbDe3tZK4IC00 | denisurusov |
 | node:task-sme-repo-margin-exposure | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
 | node:task-sme-repo-margin-exposure | status |  | open | 2026-11-08T14:58:07Z |  |  |
 | node:task-sme-repo-live-spec-returns | review |  | proposed | 2026-11-08T14:58:07Z |  |  |
@@ -937,7 +937,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-repo-live-spec-returns | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
 | edge:e-dec-cdmdev-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
 | edge:e-lnk-repopr-smerepolivespec | review | proposed | accepted | 2026-11-08T15:00:21Z |  | denisurusov |
-| node:task-repo-margin-maintenance | status | open | resolved | 2026-11-08T15:44:59Z | c773fad4a30b82770c93c68a8eb759651dfa8c91 | denisurusov |
+| node:task-repo-margin-maintenance | status | open | resolved | 2026-11-08T15:44:59Z | ni:///sha-256;0XwMxIh9xIcBADxSUUXaj1K3R42WT6lvbXv_DyjidyY | denisurusov |
 | waypoint:wp-adr-repo-reprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
 | node:task-sme-repo-reprice-rules | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
 | node:task-sme-repo-reprice-rules | status |  | open | 2026-11-08T15:59:51Z |  |  |
@@ -946,14 +946,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-repricadr | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
 | edge:e-dec-cdmdev-smereprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
 | edge:e-lnk-reprice-smereprice | review |  | proposed | 2026-11-08T15:59:51Z |  |  |
-| waypoint:wp-adr-repo-reprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| node:task-sme-repo-reprice-rules | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| edge:e-mrk-repricadr-reprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| edge:e-drv-cdmdata-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| edge:e-drv-finality-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| edge:e-dec-cdmdev-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| edge:e-lnk-reprice-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | 5bd52142f0109a178957f308c4271992920f507b | denisurusov |
-| node:task-repo-reprice | status | open | resolved | 2026-11-08T17:11:10Z | 9d4effea727b889d053d25974d6f494bb561a795 | denisurusov |
+| waypoint:wp-adr-repo-reprice | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| node:task-sme-repo-reprice-rules | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| edge:e-mrk-repricadr-reprice | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| edge:e-drv-cdmdata-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| edge:e-drv-finality-repricadr | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| edge:e-dec-cdmdev-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| edge:e-lnk-reprice-smereprice | review | proposed | accepted | 2026-11-08T16:33:21Z | ni:///sha-256;bIoiWZfNFjytgtXLxGuz8-lQ71jLtBpJzUdKbq_McBQ | denisurusov |
+| node:task-repo-reprice | status | open | resolved | 2026-11-08T17:11:10Z | ni:///sha-256;HtJUHt00OZLpYZ75fHIKG_hY5xKpXODbaJk5opjShRs | denisurusov |
 | waypoint:wp-adr-repo-adjustment | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
 | node:task-sme-repo-adjustment-rules | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
 | node:task-sme-repo-adjustment-rules | status |  | open | 2026-11-08T17:19:27Z |  |  |
@@ -962,14 +962,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-adjadr | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
 | edge:e-dec-cdmdev-smeadjust | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
 | edge:e-lnk-adjust-smeadjust | review |  | proposed | 2026-11-08T17:19:27Z |  |  |
-| waypoint:wp-adr-repo-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| node:task-sme-repo-adjustment-rules | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| edge:e-mrk-adjadr-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| edge:e-drv-cdmdata-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| edge:e-drv-finality-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| edge:e-dec-cdmdev-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| edge:e-lnk-adjust-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | 88338189d9f1b0816292679de7665394876c257d | denisurusov |
-| node:task-repo-adjustment | status | open | resolved | 2026-11-08T19:31:43Z | 2d9ab942b69f6d8dfb9396efd4f943f1e23aad61 | denisurusov |
+| waypoint:wp-adr-repo-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| node:task-sme-repo-adjustment-rules | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| edge:e-mrk-adjadr-adjustment | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| edge:e-drv-cdmdata-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| edge:e-drv-finality-adjadr | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| edge:e-dec-cdmdev-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| edge:e-lnk-adjust-smeadjust | review | proposed | accepted | 2026-11-08T19:12:04Z | ni:///sha-256;dT96sDyq06RKq4dp_3H3GRB9xxfD0DWLtQQkIdBH3vI | denisurusov |
+| node:task-repo-adjustment | status | open | resolved | 2026-11-08T19:31:43Z | ni:///sha-256;s8f1JxGmTxZClRLUJL8wOpLwm47ySoEXR7NHcAmvQ30 | denisurusov |
 | waypoint:wp-adr-repo-substitution | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
 | node:task-sme-repo-substitution-rules | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
 | node:task-sme-repo-substitution-rules | status |  | open | 2026-11-08T19:59:37Z |  |  |
@@ -978,14 +978,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-subadr | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
 | edge:e-dec-cdmdev-smesubst | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
 | edge:e-lnk-subst-smesubst | review |  | proposed | 2026-11-08T19:59:37Z |  |  |
-| waypoint:wp-adr-repo-substitution | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| node:task-sme-repo-substitution-rules | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| edge:e-mrk-subadr-substitution | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| edge:e-drv-cdmdata-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| edge:e-drv-finality-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| edge:e-dec-cdmdev-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| edge:e-lnk-subst-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | 4113e61ceb7491d830b0143708f8fc05c885b59a | denisurusov |
-| node:task-repo-substitution | status | open | resolved | 2026-11-08T20:45:57Z | 18b7999491e105aa2eea878407ae6999254f1f87 | denisurusov |
+| waypoint:wp-adr-repo-substitution | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| node:task-sme-repo-substitution-rules | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| edge:e-mrk-subadr-substitution | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| edge:e-drv-cdmdata-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| edge:e-drv-finality-subadr | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| edge:e-dec-cdmdev-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| edge:e-lnk-subst-smesubst | review | proposed | accepted | 2026-11-08T20:23:50Z | ni:///sha-256;O4PS3_OvN41UwxhyLpzelQ2Kbk_eekNjw2tUkV6BaD8 | denisurusov |
+| node:task-repo-substitution | status | open | resolved | 2026-11-08T20:45:57Z | ni:///sha-256;zLIAX2Pq9sfWLhTsB0nSHsU5mXlPU3mnn2KT4FcRv0k | denisurusov |
 | waypoint:wp-adr-repo-income | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
 | node:task-sme-repo-income-rules | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
 | node:task-sme-repo-income-rules | status |  | open | 2026-11-08T20:48:34Z |  |  |
@@ -994,20 +994,20 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-incadr | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
 | edge:e-dec-cdmdev-smeincome | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
 | edge:e-lnk-income-smeincome | review |  | proposed | 2026-11-08T20:48:34Z |  |  |
-| waypoint:wp-adr-repo-income | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
-| node:task-sme-repo-income-rules | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
-| edge:e-mrk-incadr-income | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
-| edge:e-drv-cdmdata-incadr | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
-| edge:e-drv-finality-incadr | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
-| edge:e-dec-cdmdev-smeincome | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
-| edge:e-lnk-income-smeincome | review | proposed | accepted | 2026-11-08T21:19:44Z | 4d99f087ff103e4c3d5799b9ac5c1f98537f958d | denisurusov |
+| waypoint:wp-adr-repo-income | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
+| node:task-sme-repo-income-rules | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
+| edge:e-mrk-incadr-income | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
+| edge:e-drv-cdmdata-incadr | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
+| edge:e-drv-finality-incadr | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
+| edge:e-dec-cdmdev-smeincome | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
+| edge:e-lnk-income-smeincome | review | proposed | accepted | 2026-11-08T21:19:44Z | ni:///sha-256;PPKEnE3-V45AWtKKCXszLa1VxEPhg28Hml0LB9NnZQ0 | denisurusov |
 | node:task-gateway-type-check | review |  | proposed | 2026-11-08T21:19:44Z |  |  |
 | node:task-gateway-type-check | status |  | open | 2026-11-08T21:19:44Z |  |  |
 | edge:e-dec-cdmdev-gatewaytypecheck | review |  | proposed | 2026-11-08T21:19:44Z |  |  |
-| node:task-repo-income | status | open | resolved | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
-| node:task-gateway-type-check | review | proposed | accepted | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
-| edge:e-dec-cdmdev-gatewaytypecheck | review | proposed | accepted | 2026-11-08T21:55:20Z | d89c4100ffbdd633e869dcb32468fece0f6d0cc1 | denisurusov |
-| node:task-gateway-type-check | status | open | resolved | 2026-11-08T23:13:16Z | 20ee39c124ef4fb13de2cb2e6fcb83679a97d22c | denisurusov |
+| node:task-repo-income | status | open | resolved | 2026-11-08T21:55:20Z | ni:///sha-256;0zHvndk48b0GzbGhBFd8-SMqhGEl1BKT7qIxG1LDM04 | denisurusov |
+| node:task-gateway-type-check | review | proposed | accepted | 2026-11-08T21:55:20Z | ni:///sha-256;0zHvndk48b0GzbGhBFd8-SMqhGEl1BKT7qIxG1LDM04 | denisurusov |
+| edge:e-dec-cdmdev-gatewaytypecheck | review | proposed | accepted | 2026-11-08T21:55:20Z | ni:///sha-256;0zHvndk48b0GzbGhBFd8-SMqhGEl1BKT7qIxG1LDM04 | denisurusov |
+| node:task-gateway-type-check | status | open | resolved | 2026-11-08T23:13:16Z | ni:///sha-256;vJ4cMz_0ElAwvyK_qTCfJx5i3ntieOlBA6wZmxhYvqc | denisurusov |
 | waypoint:wp-adr-repo-roll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
 | node:task-sme-repo-roll-rules | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
 | node:task-sme-repo-roll-rules | status |  | open | 2026-11-08T23:21:41Z |  |  |
@@ -1016,27 +1016,27 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-roladr | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
 | edge:e-dec-cdmdev-smeroll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
 | edge:e-lnk-roll-smeroll | review |  | proposed | 2026-11-08T23:21:41Z |  |  |
-| waypoint:wp-adr-repo-roll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
-| node:task-sme-repo-roll-rules | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
-| edge:e-mrk-roladr-roll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
-| edge:e-drv-cdmdata-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
-| edge:e-drv-finality-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
-| edge:e-dec-cdmdev-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
-| edge:e-lnk-roll-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | 9c4e45522cfce77c7f7123b2391ffed141cbade4 | denisurusov |
+| waypoint:wp-adr-repo-roll | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
+| node:task-sme-repo-roll-rules | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
+| edge:e-mrk-roladr-roll | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
+| edge:e-drv-cdmdata-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
+| edge:e-drv-finality-roladr | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
+| edge:e-dec-cdmdev-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
+| edge:e-lnk-roll-smeroll | review | proposed | accepted | 2026-11-09T00:03:11Z | ni:///sha-256;jNUFQTL5weekyf0we5mUNfK2aVdkn_yER2KC8OFBwaM | denisurusov |
 | node:investigation-live-spec-in-claude-web | review |  | proposed | 2026-11-09T00:17:00Z |  |  |
 | node:investigation-live-spec-in-claude-web | status |  | active | 2026-11-09T00:17:00Z |  |  |
-| node:task-repo-roll | status | open | resolved | 2026-11-09T00:27:02Z | a1623dde2b68f67b0223a996e80a0a8c5410a2bd | denisurusov |
-| node:task-collateral-service-unit-tests | review | proposed | accepted | 2026-11-09T00:28:03Z | e81a8365f9239b98d4403e15226c5f0ed9c53baa | denisurusov |
-| edge:e-dec-e2eflow-collateralunittests | review | proposed | accepted | 2026-11-09T00:28:03Z | e81a8365f9239b98d4403e15226c5f0ed9c53baa | denisurusov |
+| node:task-repo-roll | status | open | resolved | 2026-11-09T00:27:02Z | ni:///sha-256;zArb8v33HLJA-t6BcHWKTRb7hpJrKw6TSyjH8k7tHL4 | denisurusov |
+| node:task-collateral-service-unit-tests | review | proposed | accepted | 2026-11-09T00:28:03Z | ni:///sha-256;B3Tu2syttuODkUisegP90OMKsEqEBDTC3xGeFCD0rag | denisurusov |
+| edge:e-dec-e2eflow-collateralunittests | review | proposed | accepted | 2026-11-09T00:28:03Z | ni:///sha-256;B3Tu2syttuODkUisegP90OMKsEqEBDTC3xGeFCD0rag | denisurusov |
 | edge:e-dec-e2eflow-livespecweb | review |  | proposed | 2026-11-09T00:43:47Z |  |  |
-| node:goal-adoption | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
-| node:goal-adoption | status |  | open | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
-| node:task-presentation | review |  | accepted | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
-| node:task-presentation | status |  | active | 2026-11-09T12:57:26Z | 8cf387509cb832a6bf35a80f63462960544a2bb1 | denisurusov |
+| node:goal-adoption | review |  | accepted | 2026-11-09T12:57:26Z | ni:///sha-256;g5Ulss0nnEGnE1sQe2h4o2ZmEaFwvWnhbNm4C4P1mC4 | denisurusov |
+| node:goal-adoption | status |  | open | 2026-11-09T12:57:26Z | ni:///sha-256;g5Ulss0nnEGnE1sQe2h4o2ZmEaFwvWnhbNm4C4P1mC4 | denisurusov |
+| node:task-presentation | review |  | accepted | 2026-11-09T12:57:26Z | ni:///sha-256;g5Ulss0nnEGnE1sQe2h4o2ZmEaFwvWnhbNm4C4P1mC4 | denisurusov |
+| node:task-presentation | status |  | active | 2026-11-09T12:57:26Z | ni:///sha-256;g5Ulss0nnEGnE1sQe2h4o2ZmEaFwvWnhbNm4C4P1mC4 | denisurusov |
 | edge:e-dec-adoption-presentation | review |  | proposed | 2026-11-09T12:57:26Z |  |  |
-| noteworthy:nw-defer-message-standard-mapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
-| edge:e-note-workflowtaskmap-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
-| edge:e-note-businesscase-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | 6bd8ae81e8599cbf2270352d4fa49372faa1f22a | denisurusov |
+| noteworthy:nw-defer-message-standard-mapping | review |  | accepted | 2026-11-10T23:00:33Z | ni:///sha-256;FkjvKBvP6SZzmpt8FBl9zYlssQ5n13JYCvOHevZs5go | denisurusov |
+| edge:e-note-workflowtaskmap-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | ni:///sha-256;FkjvKBvP6SZzmpt8FBl9zYlssQ5n13JYCvOHevZs5go | denisurusov |
+| edge:e-note-businesscase-defermapping | review |  | accepted | 2026-11-10T23:00:33Z | ni:///sha-256;FkjvKBvP6SZzmpt8FBl9zYlssQ5n13JYCvOHevZs5go | denisurusov |
 | waypoint:wp-adr-repo-pair-off | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
 | node:task-sme-repo-pair-off-rules | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
 | node:task-sme-repo-pair-off-rules | status |  | open | 2026-11-10T23:26:13Z |  |  |
@@ -1045,15 +1045,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-pofadr | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
 | edge:e-dec-cdmdev-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
 | edge:e-lnk-pairoff-smepairoff | review |  | proposed | 2026-11-10T23:26:13Z |  |  |
-| waypoint:wp-adr-repo-pair-off | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| node:task-sme-repo-pair-off-rules | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| edge:e-mrk-pofadr-pairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| edge:e-drv-cdmdata-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| edge:e-drv-finality-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| edge:e-dec-cdmdev-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| edge:e-lnk-pairoff-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | 5236e78208f11fa3f6b35226a61ee9d38ca82a8c | denisurusov |
-| node:task-repo-pair-off | status | open | resolved | 2026-11-11T01:11:49Z | f66f6f311a48c5a33fba553bdc0f6e52fce7543b | denisurusov |
-
+| waypoint:wp-adr-repo-pair-off | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| node:task-sme-repo-pair-off-rules | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| edge:e-mrk-pofadr-pairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| edge:e-drv-cdmdata-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| edge:e-drv-finality-pofadr | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| edge:e-dec-cdmdev-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| edge:e-lnk-pairoff-smepairoff | review | proposed | accepted | 2026-11-11T00:12:48Z | ni:///sha-256;-tq5HrNPIU2snA8rxEVrvKnogzjkGAi6D6Mdq3Uu0Eg | denisurusov |
+| node:task-repo-pair-off | status | open | resolved | 2026-11-11T01:11:49Z | ni:///sha-256;zOhMTOzxbacKyBzyTScQapsVuWnQM1U8yBLDfywW7bc | denisurusov |
 | waypoint:wp-adr-repo-buy-sell-back | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
 | node:task-sme-repo-buy-sell-back-rules | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
 | node:task-sme-repo-buy-sell-back-rules | status |  | open | 2026-11-11T01:42:28Z |  |  |
@@ -1062,14 +1061,14 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-bsbadr | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
 | edge:e-dec-cdmdev-smebsb | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
 | edge:e-lnk-bsb-smebsb | review |  | proposed | 2026-11-11T01:42:28Z |  |  |
-| waypoint:wp-adr-repo-buy-sell-back | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| node:task-sme-repo-buy-sell-back-rules | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| edge:e-mrk-bsbadr-buysellback | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| edge:e-drv-cdmdata-bsbadr | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| edge:e-drv-finality-bsbadr | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| edge:e-dec-cdmdev-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| edge:e-lnk-bsb-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | 427d087ac12bd480a201953be1eb79ae4e49f2dc | denisurusov |
-| node:task-repo-buy-sell-back | status | open | resolved | 2026-11-11T12:56:08Z | 01afb79b41bae16a17f1b01ac91610f6583f0583 | denisurusov |
+| waypoint:wp-adr-repo-buy-sell-back | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| node:task-sme-repo-buy-sell-back-rules | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| edge:e-mrk-bsbadr-buysellback | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| edge:e-drv-cdmdata-bsbadr | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| edge:e-drv-finality-bsbadr | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| edge:e-dec-cdmdev-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| edge:e-lnk-bsb-smebsb | review | proposed | accepted | 2026-11-11T03:30:38Z | ni:///sha-256;5wBcKDSmaNHqC-RQLmUMRSRYlxKTva-UqEF8FfQR9ds | denisurusov |
+| node:task-repo-buy-sell-back | status | open | resolved | 2026-11-11T12:56:08Z | ni:///sha-256;hsX3ouSFV6pthsF5r3gpGh-KONL_kfXWFUSxrIQOkT8 | denisurusov |
 | waypoint:wp-adr-repo-default-close-out | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
 | node:task-sme-repo-default-close-out-rules | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
 | node:task-sme-repo-default-close-out-rules | status |  | open | 2026-11-11T13:07:05Z |  |  |
@@ -1078,457 +1077,460 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-finality-dcoadr | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
 | edge:e-dec-cdmdev-smedco | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
 | edge:e-lnk-dco-smedco | review |  | proposed | 2026-11-11T13:07:05Z |  |  |
-| waypoint:wp-adr-repo-default-close-out | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| node:task-sme-repo-default-close-out-rules | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| edge:e-mrk-dcoadr-defaultcloseout | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| edge:e-drv-cdmdata-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| edge:e-drv-finality-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| edge:e-dec-cdmdev-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| edge:e-lnk-dco-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | 575dd6b56b8726060898a3acb607df1bca8c315d | denisurusov |
-| node:task-repo-default-close-out | status | open | resolved | 2026-11-11T14:57:51Z | de1c3bb0a99c0ee0cc8a9c1c939343529103c103 | denisurusov |
-| waypoint:wp-adr-securities-lending-gmsla-scope | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-terms | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-terms | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-loan-delivery-return | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-loan-delivery-return | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-marking | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-marking | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-recall | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-recall | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-substitution | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-substitution | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-rebate | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-rebate | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-lending-fee | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-lending-fee | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-default-close-out | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| node:task-gmsla-default-close-out | status |  | open | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-mrk-slscope-slgmsla | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-drv-cdmdata-slscope | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-drv-finality-slscope | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-terms | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-loandeliveryreturn | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-marking | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-recall | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-substitution | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-rebate | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-lendingfee | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| edge:e-dec-slgmsla-defaultcloseout | review |  | proposed | 2026-11-11T15:11:27Z | 58c01e3dad7c97cb870c00fde33af78f4201e5dd |  |
-| waypoint:wp-adr-securities-lending-gmsla-scope | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-terms | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-loan-delivery-return | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-marking | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-recall | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-substitution | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-lending-fee | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| node:task-gmsla-default-close-out | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-mrk-slscope-slgmsla | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-drv-cdmdata-slscope | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-drv-finality-slscope | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-terms | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-loandeliveryreturn | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-marking | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-recall | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-substitution | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-lendingfee | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| edge:e-dec-slgmsla-defaultcloseout | review | proposed | accepted | 2026-11-11T15:16:16Z | f348b8b046b7618919957cd9115bfa15fad966d5 | denisurusov |
-| waypoint:wp-adr-gmsla-terms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| node:task-sme-gmsla-terms-baseline | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| node:task-sme-gmsla-terms-baseline | status |  | open | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| edge:e-mrk-gmslatermsadr-gmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| edge:e-drv-cdmdata-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| edge:e-drv-finality-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| edge:e-dec-cdmdev-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| edge:e-lnk-gmslaterms-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | 0993e4fa3e595a8c5ff438c2ddcfc242e6a1bc95 |  |
-| waypoint:wp-adr-gmsla-terms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| node:task-sme-gmsla-terms-baseline | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| edge:e-mrk-gmslatermsadr-gmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| edge:e-drv-cdmdata-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| edge:e-drv-finality-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| edge:e-dec-cdmdev-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| edge:e-lnk-gmslaterms-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | 8c6c0777efd7152326fa5b06307a6f287cebe7fe | denisurusov |
-| waypoint:wp-adr-gmsla-loan-delivery-return | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| node:task-sme-gmsla-loan-delivery-return-rules | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| node:task-sme-gmsla-loan-delivery-return-rules | status |  | open | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| edge:e-mrk-ldradr-gmslaldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| edge:e-drv-cdmdata-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| edge:e-drv-finality-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| edge:e-dec-cdmdev-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| edge:e-lnk-gmslaldr-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | 0459d62f952baa979a166c76641c678927e782b0 |  |
-| waypoint:wp-adr-gmsla-loan-delivery-return | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| node:task-sme-gmsla-loan-delivery-return-rules | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| edge:e-mrk-ldradr-gmslaldr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| edge:e-drv-cdmdata-ldradr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| edge:e-drv-finality-ldradr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| edge:e-dec-cdmdev-smeldr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| edge:e-lnk-gmslaldr-smeldr | review | proposed | accepted | 2026-11-11T16:46:56Z | 1dfa6876aa2f71e2fa0fd9b66d7d4638bb02e341 | denisurusov |
-| node:task-gmsla-terms | status | open | resolved | 2026-11-11T17:44:30Z | f62bbce51dcdcbfd3e7c7e68bdea07af64d6873a | denisurusov |
-| node:task-gmsla-loan-delivery-return | status | open | resolved | 2026-11-11T18:10:31Z | 27940ebe8edf7fc4e79374b55bf7b097597d1d84 | denisurusov |
-| waypoint:wp-adr-gmsla-marking | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| node:task-sme-gmsla-marking-rules | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| node:task-sme-gmsla-marking-rules | status |  | open | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| edge:e-mrk-mrkadr-gmslamrk | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| edge:e-drv-cdmdata-mrkadr | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| edge:e-drv-finality-mrkadr | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| edge:e-dec-cdmdev-smemrk | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| edge:e-lnk-gmslamrk-smemrk | review |  | proposed | 2026-11-11T18:15:49Z | e56a84b64d6211be054d63c35b84556e556a0feb |  |
-| waypoint:wp-adr-gmsla-marking | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| node:task-sme-gmsla-marking-rules | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| edge:e-mrk-mrkadr-gmslamrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| edge:e-drv-cdmdata-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| edge:e-drv-finality-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| edge:e-dec-cdmdev-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| edge:e-lnk-gmslamrk-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | 398cfb2cc2f4eeed417d717745ffd0171443cc4f | denisurusov |
-| waypoint:wp-adr-gmsla-recall | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| node:task-sme-gmsla-recall-rules | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| node:task-sme-gmsla-recall-rules | status |  | open | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| edge:e-mrk-rcladr-gmslarcl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| edge:e-drv-cdmdata-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| edge:e-drv-finality-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| edge:e-dec-cdmdev-smercl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| edge:e-lnk-gmslarcl-smercl | review |  | proposed | 2026-11-11T19:17:49Z | 72146b83411def7096cb21b1d196e0988e884c38 |  |
-| waypoint:wp-adr-gmsla-recall | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| node:task-sme-gmsla-recall-rules | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| edge:e-mrk-rcladr-gmslarcl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| edge:e-drv-cdmdata-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| edge:e-drv-finality-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| edge:e-dec-cdmdev-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| edge:e-lnk-gmslarcl-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| node:task-gmsla-marking | status | open | resolved | 2026-11-11T19:39:49Z | 6713ea5dc1b1b7654c3f47b0835b8f60e69393f2 | denisurusov |
-| waypoint:wp-adr-gmsla-substitution | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| node:task-sme-gmsla-substitution-rules | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| node:task-sme-gmsla-substitution-rules | status |  | open | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| edge:e-mrk-lsbadr-gmslasub | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| edge:e-drv-cdmdata-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| edge:e-drv-finality-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| edge:e-dec-cdmdev-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| edge:e-lnk-gmslasub-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | 48fe886bd6db13fa671e8e91d418ed0f300f1833 |  |
-| waypoint:wp-adr-gmsla-substitution | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| node:task-sme-gmsla-substitution-rules | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| edge:e-mrk-lsbadr-gmslasub | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| edge:e-drv-cdmdata-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| edge:e-drv-finality-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| edge:e-dec-cdmdev-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| edge:e-lnk-gmslasub-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | 48f89b9ee0960547d09c41e2711a931df9d1d156 | denisurusov |
-| node:task-gmsla-recall | status | open | resolved | 2026-11-11T20:43:22Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
-| waypoint:wp-adr-gmsla-rebate | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| node:task-sme-gmsla-rebate-rules | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| node:task-sme-gmsla-rebate-rules | status |  | open | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| edge:e-mrk-rbtadr-gmslarbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| edge:e-drv-cdmdata-rbtadr | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| edge:e-drv-finality-rbtadr | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| edge:e-dec-cdmdev-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| edge:e-lnk-gmslarbt-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| edge:e-lnk-rbtadr-gmslafee | review |  | proposed | 2026-11-11T20:39:13Z | 7aad715d9ef96f8f93b411878275c88a846e99a8 |  |
-| waypoint:wp-adr-gmsla-rebate | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
-| edge:e-mrk-rbtadr-gmslarbt | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
-| edge:e-drv-cdmdata-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
-| edge:e-drv-finality-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
-| edge:e-lnk-rbtadr-gmslafee | review | proposed | accepted | 2026-11-11T20:43:36Z | 1dba795152ed770e8a520fdf4466d1d453bb6406 | denisurusov |
-| node:task-gmsla-substitution | status | open | resolved | 2026-11-11T22:30:25Z | 344bcc1695e32a485b57a758d9d1685040f127a9 | denisurusov |
-| node:task-sme-gmsla-rebate-rules | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
-| edge:e-dec-cdmdev-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
-| edge:e-lnk-gmslarbt-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | 5c46c4b1f99b00e2dc2b5850c4c92d07ef0bee3e | denisurusov |
-| node:investigation-live-spec-in-claude-web | review | proposed | accepted | 2026-11-09T00:49:00Z | e765ec4d7d239f00f16330ce6c7b942512cd3359 | denisurusov |
-| edge:e-dec-e2eflow-livespecweb | review | proposed | accepted | 2026-11-09T00:49:00Z | e765ec4d7d239f00f16330ce6c7b942512cd3359 | denisurusov |
+| waypoint:wp-adr-repo-default-close-out | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| node:task-sme-repo-default-close-out-rules | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| edge:e-mrk-dcoadr-defaultcloseout | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| edge:e-drv-cdmdata-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| edge:e-drv-finality-dcoadr | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| edge:e-dec-cdmdev-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| edge:e-lnk-dco-smedco | review | proposed | accepted | 2026-11-11T13:09:45Z | ni:///sha-256;sjqBNC7DGASPedmnS4WOWPaFVnjD4S-U8_cT0EcD1iY | denisurusov |
+| node:task-repo-default-close-out | status | open | resolved | 2026-11-11T14:57:51Z | ni:///sha-256;sjnksyNd6KBvq7NbdDPxCi0I9kL0cOLmdsUB4ZwRGvw | denisurusov |
+| waypoint:wp-adr-securities-lending-gmsla-scope | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-terms | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-terms | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-loan-delivery-return | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-loan-delivery-return | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-marking | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-marking | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-recall | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-recall | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-substitution | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-substitution | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-rebate | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-rebate | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-lending-fee | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-lending-fee | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-default-close-out | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| node:task-gmsla-default-close-out | status |  | open | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-mrk-slscope-slgmsla | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-drv-cdmdata-slscope | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-drv-finality-slscope | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-terms | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-loandeliveryreturn | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-marking | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-recall | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-substitution | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-rebate | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-lendingfee | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| edge:e-dec-slgmsla-defaultcloseout | review |  | proposed | 2026-11-11T15:11:27Z | ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM |  |
+| waypoint:wp-adr-securities-lending-gmsla-scope | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-terms | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-loan-delivery-return | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-marking | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-recall | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-substitution | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-lending-fee | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| node:task-gmsla-default-close-out | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-mrk-slscope-slgmsla | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-drv-cdmdata-slscope | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-drv-finality-slscope | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-terms | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-loandeliveryreturn | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-marking | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-recall | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-substitution | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-rebate | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-lendingfee | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| edge:e-dec-slgmsla-defaultcloseout | review | proposed | accepted | 2026-11-11T15:16:16Z | ni:///sha-256;mwVaCw_eIieXN29lKjmEb5svQii9Ik-DG1gqGy4JbXs | denisurusov |
+| waypoint:wp-adr-gmsla-terms | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| node:task-sme-gmsla-terms-baseline | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| node:task-sme-gmsla-terms-baseline | status |  | open | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| edge:e-mrk-gmslatermsadr-gmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| edge:e-drv-cdmdata-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| edge:e-drv-finality-gmslatermsadr | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| edge:e-dec-cdmdev-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| edge:e-lnk-gmslaterms-smegmslaterms | review |  | proposed | 2026-11-11T15:30:34Z | ni:///sha-256;_m3kmHfnAgV2iz-0XDXYVHqQMgGXcAIMwK89wpXvu8c |  |
+| waypoint:wp-adr-gmsla-terms | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| node:task-sme-gmsla-terms-baseline | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| edge:e-mrk-gmslatermsadr-gmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| edge:e-drv-cdmdata-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| edge:e-drv-finality-gmslatermsadr | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| edge:e-dec-cdmdev-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| edge:e-lnk-gmslaterms-smegmslaterms | review | proposed | accepted | 2026-11-11T15:32:22Z | ni:///sha-256;nT5WKoqEHr8Xgq0YlpS_GPv9Fj3N2b_TumQMgQrcdRw | denisurusov |
+| waypoint:wp-adr-gmsla-loan-delivery-return | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| node:task-sme-gmsla-loan-delivery-return-rules | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| node:task-sme-gmsla-loan-delivery-return-rules | status |  | open | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| edge:e-mrk-ldradr-gmslaldr | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| edge:e-drv-cdmdata-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| edge:e-drv-finality-ldradr | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| edge:e-dec-cdmdev-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| edge:e-lnk-gmslaldr-smeldr | review |  | proposed | 2026-11-11T16:38:28Z | ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM |  |
+| waypoint:wp-adr-gmsla-loan-delivery-return | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| node:task-sme-gmsla-loan-delivery-return-rules | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| edge:e-mrk-ldradr-gmslaldr | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| edge:e-drv-cdmdata-ldradr | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| edge:e-drv-finality-ldradr | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| edge:e-dec-cdmdev-smeldr | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| edge:e-lnk-gmslaldr-smeldr | review | proposed | accepted | 2026-11-11T16:46:56Z | ni:///sha-256;pE3oWmi6qX7xQ096Pm5VL8-omlc-jNxHyC8Wu1T2DpM | denisurusov |
+| node:task-gmsla-terms | status | open | resolved | 2026-11-11T17:44:30Z | ni:///sha-256;teBazmaJ4yfcAGhFdqxYuhtaQw-no143y-N1mLt7ZDw | denisurusov |
+| node:task-gmsla-loan-delivery-return | status | open | resolved | 2026-11-11T18:10:31Z | ni:///sha-256;kgVPB6yEPVts_4N1nE6YNtHFEHHmd3ZAv7dG9GrXrwU | denisurusov |
+| waypoint:wp-adr-gmsla-marking | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| node:task-sme-gmsla-marking-rules | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| node:task-sme-gmsla-marking-rules | status |  | open | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| edge:e-mrk-mrkadr-gmslamrk | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| edge:e-drv-cdmdata-mrkadr | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| edge:e-drv-finality-mrkadr | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| edge:e-dec-cdmdev-smemrk | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| edge:e-lnk-gmslamrk-smemrk | review |  | proposed | 2026-11-11T18:15:49Z | ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw |  |
+| waypoint:wp-adr-gmsla-marking | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| node:task-sme-gmsla-marking-rules | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| edge:e-mrk-mrkadr-gmslamrk | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| edge:e-drv-cdmdata-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| edge:e-drv-finality-mrkadr | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| edge:e-dec-cdmdev-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| edge:e-lnk-gmslamrk-smemrk | review | proposed | accepted | 2026-11-11T18:19:11Z | ni:///sha-256;ezy-BpIMTdY7CsBZ-R5_KzcSCL_p2XTY6PsZ2TAHK9Y | denisurusov |
+| waypoint:wp-adr-gmsla-recall | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| node:task-sme-gmsla-recall-rules | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| node:task-sme-gmsla-recall-rules | status |  | open | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| edge:e-mrk-rcladr-gmslarcl | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| edge:e-drv-cdmdata-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| edge:e-drv-finality-rcladr | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| edge:e-dec-cdmdev-smercl | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| edge:e-lnk-gmslarcl-smercl | review |  | proposed | 2026-11-11T19:17:49Z | ni:///sha-256;kaOpTN_3Wpj-WOAmNK85IoGN4vg9qvsl4XA52di5Ba0 |  |
+| waypoint:wp-adr-gmsla-recall | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| node:task-sme-gmsla-recall-rules | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| edge:e-mrk-rcladr-gmslarcl | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| edge:e-drv-cdmdata-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| edge:e-drv-finality-rcladr | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| edge:e-dec-cdmdev-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| edge:e-lnk-gmslarcl-smercl | review | proposed | accepted | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| node:task-gmsla-marking | status | open | resolved | 2026-11-11T19:39:49Z | ni:///sha-256;tDChllyULArYkvHXZm7GFEF5ju7D-2XdqAeZXXYRSOY | denisurusov |
+| waypoint:wp-adr-gmsla-substitution | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| node:task-sme-gmsla-substitution-rules | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| node:task-sme-gmsla-substitution-rules | status |  | open | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| edge:e-mrk-lsbadr-gmslasub | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| edge:e-drv-cdmdata-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| edge:e-drv-finality-lsbadr | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| edge:e-dec-cdmdev-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| edge:e-lnk-gmslasub-smelsb | review |  | proposed | 2026-11-11T20:05:16Z | ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao |  |
+| waypoint:wp-adr-gmsla-substitution | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| node:task-sme-gmsla-substitution-rules | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| edge:e-mrk-lsbadr-gmslasub | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| edge:e-drv-cdmdata-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| edge:e-drv-finality-lsbadr | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| edge:e-dec-cdmdev-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| edge:e-lnk-gmslasub-smelsb | review | proposed | accepted | 2026-11-11T20:09:55Z | ni:///sha-256;EZNGEmyLhIInxdmMFRhTSuixZVXY5lSwgUGd6Mdcd-U | denisurusov |
+| node:task-gmsla-recall | status | open | resolved | 2026-11-11T20:43:22Z | ni:///sha-256;3jzI7BHeNkATu3BL11206SQi4wTUSV7gfWfJyvULZBQ | denisurusov |
+| waypoint:wp-adr-gmsla-rebate | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| node:task-sme-gmsla-rebate-rules | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| node:task-sme-gmsla-rebate-rules | status |  | open | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| edge:e-mrk-rbtadr-gmslarbt | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| edge:e-drv-cdmdata-rbtadr | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| edge:e-drv-finality-rbtadr | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| edge:e-dec-cdmdev-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| edge:e-lnk-gmslarbt-smerbt | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| edge:e-lnk-rbtadr-gmslafee | review |  | proposed | 2026-11-11T20:39:13Z | ni:///sha-256;i_pdEDYZa7G8cVzu_eZudz926MfPmwn6alf-xZ-g-Ho |  |
+| waypoint:wp-adr-gmsla-rebate | review | proposed | accepted | 2026-11-11T20:43:36Z | ni:///sha-256;3jzI7BHeNkATu3BL11206SQi4wTUSV7gfWfJyvULZBQ | denisurusov |
+| edge:e-mrk-rbtadr-gmslarbt | review | proposed | accepted | 2026-11-11T20:43:36Z | ni:///sha-256;3jzI7BHeNkATu3BL11206SQi4wTUSV7gfWfJyvULZBQ | denisurusov |
+| edge:e-drv-cdmdata-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | ni:///sha-256;3jzI7BHeNkATu3BL11206SQi4wTUSV7gfWfJyvULZBQ | denisurusov |
+| edge:e-drv-finality-rbtadr | review | proposed | accepted | 2026-11-11T20:43:36Z | ni:///sha-256;3jzI7BHeNkATu3BL11206SQi4wTUSV7gfWfJyvULZBQ | denisurusov |
+| edge:e-lnk-rbtadr-gmslafee | review | proposed | accepted | 2026-11-11T20:43:36Z | ni:///sha-256;3jzI7BHeNkATu3BL11206SQi4wTUSV7gfWfJyvULZBQ | denisurusov |
+| node:task-gmsla-substitution | status | open | resolved | 2026-11-11T22:30:25Z | ni:///sha-256;-4_8CeHdfNziMg8WILpbkAcTnT8ClHTtvlm7CDBqxSs | denisurusov |
+| node:task-sme-gmsla-rebate-rules | review | proposed | accepted | 2026-11-11T22:32:46Z | ni:///sha-256;0WriP72NGQNYx0kmInWomt1c37JofYeY8bT44HdP8To | denisurusov |
+| edge:e-dec-cdmdev-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | ni:///sha-256;0WriP72NGQNYx0kmInWomt1c37JofYeY8bT44HdP8To | denisurusov |
+| edge:e-lnk-gmslarbt-smerbt | review | proposed | accepted | 2026-11-11T22:32:46Z | ni:///sha-256;0WriP72NGQNYx0kmInWomt1c37JofYeY8bT44HdP8To | denisurusov |
+| node:investigation-live-spec-in-claude-web | review | proposed | accepted | 2026-11-09T00:49:00Z | ni:///sha-256;ZSM7RD-wnqSfs7bEWIVTHcXuZaDYjeaqU8Ftac1Z9sk | denisurusov |
+| edge:e-dec-e2eflow-livespecweb | review | proposed | accepted | 2026-11-09T00:49:00Z | ni:///sha-256;ZSM7RD-wnqSfs7bEWIVTHcXuZaDYjeaqU8Ftac1Z9sk | denisurusov |
 | waypoint:wp-dec-besu-genesis-entrypoint | review |  | proposed | 2026-11-09T00:49:00Z |  |  |
 | edge:e-mrk-besugenesis-livespecweb | review |  | proposed | 2026-11-09T00:49:00Z |  |  |
-| node:task-ci-actions-minutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
-| node:task-ci-actions-minutes | status |  | resolved | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
-| edge:e-dec-e2eflow-ciminutes | review |  | accepted | 2026-11-11T23:11:59Z | 23cb42d62c48a430012c9c96c6f18443f9941fbf | denisurusov |
+| node:task-ci-actions-minutes | review |  | accepted | 2026-11-11T23:11:59Z | ni:///sha-256;MkiMPYZRrEaQRBWxbmX6k4r9J2ipKjghlZpI2z9Hv1U | denisurusov |
+| node:task-ci-actions-minutes | status |  | resolved | 2026-11-11T23:11:59Z | ni:///sha-256;MkiMPYZRrEaQRBWxbmX6k4r9J2ipKjghlZpI2z9Hv1U | denisurusov |
+| edge:e-dec-e2eflow-ciminutes | review |  | accepted | 2026-11-11T23:11:59Z | ni:///sha-256;MkiMPYZRrEaQRBWxbmX6k4r9J2ipKjghlZpI2z9Hv1U | denisurusov |
 | noteworthy:nw-konspekt-cross-mode-portability | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
 | node:task-konspekt-index-cross-mode-portability | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
 | node:task-konspekt-index-cross-mode-portability | status |  | open | 2026-11-04T02:34:39Z |  |  |
 | edge:e-note-adoption-crossmode | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
 | edge:e-dec-adoption-konspektindex | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
 | edge:e-note-konspektindex-crossmode | review |  | proposed | 2026-11-04T02:34:39Z |  |  |
-| noteworthy:nw-konspekt-cross-mode-portability | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
-| node:task-konspekt-index-cross-mode-portability | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
-| edge:e-note-adoption-crossmode | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
-| edge:e-dec-adoption-konspektindex | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
-| edge:e-note-konspektindex-crossmode | review | proposed | accepted | 2026-11-04T02:46:43Z | 0eb6114c3e6aa478168884e70b062f3e3c3df6a4 | denisurusov |
-| node:task-konspekt-index-cross-mode-portability | status | open | resolved | 2026-11-04T02:59:07Z | 4ee571002628f2836bef93d14d9a2d9ecef1e5b5 | denisurusov |
-| waypoint:wp-dec-besu-genesis-entrypoint | review | proposed | accepted | 2026-11-11T23:18:36Z | 1bb0b05b37aa3eae99cefeaf54d1b6b8f10378b1 | denisurusov |
-| edge:e-mrk-besugenesis-livespecweb | review | proposed | accepted | 2026-11-11T23:18:36Z | 1bb0b05b37aa3eae99cefeaf54d1b6b8f10378b1 | denisurusov |
-| waypoint:wp-adr-gmsla-lending-fee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| node:task-sme-gmsla-fee-rules | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| node:task-sme-gmsla-fee-rules | status |  | open | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| edge:e-mrk-feeadr-gmslafee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| edge:e-drv-cdmdata-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| edge:e-drv-finality-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| edge:e-dec-cdmdev-smefee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| edge:e-lnk-gmslafee-smefee | review |  | proposed | 2026-11-11T23:29:22Z | 1577efddfacbb1f2fedacd57705e2f766a8b44bc |  |
-| waypoint:wp-adr-gmsla-lending-fee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| node:task-sme-gmsla-fee-rules | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| edge:e-mrk-feeadr-gmslafee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| edge:e-drv-cdmdata-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| edge:e-drv-finality-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| edge:e-dec-cdmdev-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| edge:e-lnk-gmslafee-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | a0b7a6a637a7ec9a3189f722bccbf19dfff2abf7 | denisurusov |
-| node:task-gmsla-rebate | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| node:task-gmsla-lending-fee | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| node:task-repo-gmra-workflows | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| node:task-live-spec-duration | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| node:task-konspekt-checkpoint-adoption | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| node:task-ci-deploy-dropped-tx | status | open | resolved | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| node:task-live-spec-balance-aware-amounts | status | open | abandoned | 2026-11-12T00:00:26Z | 9331a6a4b0aafc5103c06651a1a61309c35e4f3e | denisurusov |
-| waypoint:wp-adr-gmsla-default-close-out | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| node:task-sme-gmsla-default-rules | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| node:task-sme-gmsla-default-rules | status |  | open | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| edge:e-mrk-dfladr-gmsladfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| edge:e-drv-cdmdata-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| edge:e-drv-finality-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| edge:e-dec-cdmdev-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| edge:e-lnk-gmsladfl-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | 7959b57674d67db7e8b0388d158596713d079aea |  |
-| waypoint:wp-adr-gmsla-default-close-out | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| node:task-sme-gmsla-default-rules | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| edge:e-mrk-dfladr-gmsladfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| edge:e-drv-cdmdata-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| edge:e-drv-finality-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| edge:e-dec-cdmdev-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| edge:e-lnk-gmsladfl-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | 3cf39107d5ca560785cda994b4ddca19aa5b0dde | denisurusov |
-| waypoint:wp-adr-triparty-scope | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-terms-profile | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-terms-profile | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-trade-start | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-trade-start | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-revaluation | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-revaluation | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-substitution | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-substitution | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-trade-end | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-trade-end | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-reporting | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| node:task-triparty-reporting | status |  | open | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-mrk-tpscope-tp | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-drv-cdmdata-tpscope | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-drv-finality-tpscope | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-dec-tp-terms | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-dec-tp-tradestart | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-dec-tp-reval | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-dec-tp-subst | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-dec-tp-tradeend | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| edge:e-dec-tp-report | review |  | proposed | 2026-11-12T00:36:54Z | 41bdcccfd2c7410720f06a21f0e5ff20ae297d3c |  |
-| waypoint:wp-adr-triparty-terms-profile | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| node:task-sme-triparty-terms-profile | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| node:task-sme-triparty-terms-profile | status |  | open | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| edge:e-mrk-tptermsadr-tpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| edge:e-drv-cdmdata-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| edge:e-drv-finality-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| edge:e-dec-cdmdev-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| edge:e-lnk-tpterms-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33 |  |
-| waypoint:wp-adr-triparty-scope | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| waypoint:wp-adr-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-triparty-trade-start | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-triparty-revaluation | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-triparty-substitution | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-triparty-trade-end | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-triparty-reporting | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| node:task-sme-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-mrk-tpscope-tp | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-drv-cdmdata-tpscope | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-drv-finality-tpscope | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-tp-terms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-tp-tradestart | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-tp-reval | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-tp-subst | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-tp-tradeend | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-tp-report | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-mrk-tptermsadr-tpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-drv-cdmdata-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-drv-finality-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-dec-cdmdev-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| edge:e-lnk-tpterms-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | 1ab22fca0b3d8cc65894a6f24667c190f1c1ee0e | denisurusov |
-| waypoint:wp-adr-triparty-trade-start | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| node:task-sme-triparty-trade-start | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| node:task-sme-triparty-trade-start | status |  | open | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| edge:e-mrk-tpstartadr-tpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| edge:e-drv-cdmdata-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| edge:e-drv-finality-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| edge:e-dec-cdmdev-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| edge:e-lnk-tpstart-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | dfc25e3ca5487c53cf915b0e61638c428cd4e377 |  |
-| waypoint:wp-adr-triparty-trade-start | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| node:task-sme-triparty-trade-start | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| edge:e-mrk-tpstartadr-tpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| edge:e-drv-cdmdata-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| edge:e-drv-finality-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| edge:e-dec-cdmdev-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| edge:e-lnk-tpstart-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | 2dd8c9cbd82224ad16acac12c00a0c8839745e4d | denisurusov |
-| waypoint:wp-adr-triparty-revaluation | review |  | accepted | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 | denisurusov |
-| node:task-sme-triparty-revaluation | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| node:task-sme-triparty-revaluation | status |  | open | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| edge:e-mrk-tprevaladr-tpreval | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| edge:e-drv-cdmdata-tprevaladr | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| edge:e-drv-finality-tprevaladr | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| edge:e-dec-cdmdev-smetpreval | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| edge:e-lnk-tpreval-smetpreval | review |  | proposed | 2026-11-12T04:13:02Z | 6a7359a7984c74ea1532a50e8983f72646773375 |  |
-| node:task-sme-triparty-revaluation | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| edge:e-mrk-tprevaladr-tpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| edge:e-drv-cdmdata-tprevaladr | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| edge:e-drv-finality-tprevaladr | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| edge:e-dec-cdmdev-smetpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| edge:e-lnk-tpreval-smetpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| edge:e-dec-adoption-presentation | review | proposed | accepted | 2026-11-12T11:42:00Z | e19577aff94f16cec93320441792111e7576e963 | denisurusov |
-| waypoint:wp-adr-triparty-substitution | review |  | accepted | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 | denisurusov |
-| node:task-sme-triparty-substitution | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| node:task-sme-triparty-substitution | status |  | open | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| edge:e-mrk-tpsubadr-tpsub | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| edge:e-drv-cdmdata-tpsubadr | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| edge:e-drv-finality-tpsubadr | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| edge:e-dec-cdmdev-smetpsub | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| edge:e-lnk-tpsub-smetpsub | review |  | proposed | 2026-11-12T11:53:00Z | 38140e048d810e158beb273724813d18a6c01704 |  |
-| edge:e-mrk-tpsubadr-tpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
-| edge:e-drv-cdmdata-tpsubadr | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
-| edge:e-drv-finality-tpsubadr | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
-| edge:e-dec-cdmdev-smetpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
-| edge:e-lnk-tpsub-smetpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | d3a89ff867042c7a21d9390da7c3227080071317 | denisurusov |
-| node:task-sme-triparty-substitution | review | proposed | accepted | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 | denisurusov |
-| waypoint:wp-adr-triparty-trade-end | review |  | accepted | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 | denisurusov |
-| node:task-sme-triparty-trade-end | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| node:task-sme-triparty-trade-end | status |  | open | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| edge:e-mrk-tpendadr-tpend | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| edge:e-drv-cdmdata-tpendadr | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| edge:e-drv-finality-tpendadr | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| edge:e-dec-cdmdev-smetpend | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| edge:e-lnk-tpend-smetpend | review |  | proposed | 2026-11-12T12:42:00Z | baffa673bcccdc9dd2a5d617bd8963a25cdd4e41 |  |
-| node:task-sme-triparty-trade-end | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
-| edge:e-mrk-tpendadr-tpend | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
-| edge:e-drv-cdmdata-tpendadr | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
-| edge:e-drv-finality-tpendadr | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
-| edge:e-dec-cdmdev-smetpend | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
-| edge:e-lnk-tpend-smetpend | review | proposed | accepted | 2026-11-12T13:49:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 | denisurusov |
-| waypoint:wp-adr-triparty-reporting | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| node:task-sme-triparty-reporting | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| node:task-sme-triparty-reporting | status |  | open | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| edge:e-mrk-tprepadr-tprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| edge:e-drv-cdmdata-tprepadr | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| edge:e-dec-cdmdev-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| edge:e-lnk-tprep-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | 8816e213ab23a58fce8e77558228fcd381a4d8f5 |  |
-| edge:e-mrk-tprepadr-tprep | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| edge:e-drv-cdmdata-tprepadr | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| edge:e-dec-cdmdev-smetprep | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| edge:e-lnk-tprep-smetprep | review | proposed | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| waypoint:wp-adr-ccp-scope | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-ccp-membership | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-ccp-membership | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| node:task-ccp-clearing | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-ccp-clearing | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| node:task-ccp-margin | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-ccp-margin | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| node:task-ccp-default | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-ccp-default | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| node:task-ccp-porting | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-ccp-porting | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| node:task-live-spec-node-read-after-write | review |  | accepted | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac | denisurusov |
-| node:task-live-spec-node-read-after-write | status |  | open | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-mrk-ccpscope-ccp | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-drv-cdmdata-ccpscope | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-drv-finality-ccpscope | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-dec-ccp-membership | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-dec-ccp-clearing | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-dec-ccp-margin | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-dec-ccp-default | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-dec-ccp-porting | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-dec-e2eflow-readafterwrite | review |  | proposed | 2026-11-12T18:25:00Z | 323cd915721b60bb6900bbb2d1774d669f8870ac |  |
-| edge:e-mrk-ccpscope-ccp | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-drv-cdmdata-ccpscope | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-drv-finality-ccpscope | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-dec-ccp-membership | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-dec-ccp-clearing | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-dec-ccp-margin | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-dec-ccp-default | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-dec-ccp-porting | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-dec-e2eflow-readafterwrite | review | proposed | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| waypoint:wp-adr-ccp-membership | review |  | accepted | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a | denisurusov |
-| edge:e-mrk-ccpmemadr-ccpmem | review |  | proposed | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
-| edge:e-drv-cdmdata-ccpmemadr | review |  | proposed | 2026-11-12T19:01:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
-| node:task-sme-ccp-membership | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
-| node:task-sme-ccp-membership | status |  | open | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
-| edge:e-dec-cdmdev-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
-| edge:e-lnk-ccpmem-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | 041be7509af8f3a7990e6b1056c58cb4967eb42a |  |
-| node:task-sme-ccp-membership | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| node:task-sme-triparty-reporting | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| waypoint:wp-adr-triparty-reporting | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| edge:e-mrk-ccpmemadr-ccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| edge:e-drv-cdmdata-ccpmemadr | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| edge:e-dec-cdmdev-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| edge:e-lnk-ccpmem-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf | denisurusov |
-| node:task-live-spec-node-read-after-write | status | open | resolved | 2026-11-12T22:45:00Z | ed13c2c2260ce411f1846f9cda1127297ac063bf |  |
-| waypoint:wp-adr-ccp-clearing | review |  | accepted | 2026-11-12T22:50:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 | denisurusov |
-| edge:e-mrk-ccpclradr-ccpclr | review |  | proposed | 2026-11-12T22:50:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
-| edge:e-drv-cdmdata-ccpclradr | review |  | proposed | 2026-11-12T22:50:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
-| node:task-sme-ccp-clearing | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
-| node:task-sme-ccp-clearing | status |  | open | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
-| edge:e-dec-cdmdev-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
-| edge:e-lnk-ccpclr-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | 0072e61cda902e466726ca3c65c8c1ad61b3f089 |  |
-| node:task-sme-ccp-clearing | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
-| edge:e-mrk-ccpclradr-ccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
-| edge:e-drv-cdmdata-ccpclradr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
-| edge:e-dec-cdmdev-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
-| edge:e-lnk-ccpclr-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc | denisurusov |
-| waypoint:wp-adr-ccp-margin | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| waypoint:wp-adr-ccp-default | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| waypoint:wp-adr-ccp-porting | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| node:task-sme-ccp-margin | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| node:task-sme-ccp-margin | status |  | open | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| node:task-sme-ccp-default | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| node:task-sme-ccp-default | status |  | open | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| node:task-sme-ccp-porting | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| node:task-sme-ccp-porting | status |  | open | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-mrk-ccpmrgadr-ccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-drv-cdmdata-ccpmrgadr | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-dec-cdmdev-smeccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-lnk-ccpmrg-smeccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-mrk-ccpdftadr-ccpdft | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-drv-cdmdata-ccpdftadr | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-dec-cdmdev-smeccpdft | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-lnk-ccpdft-smeccpdft | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-mrk-ccpprtadr-ccpprt | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-drv-cdmdata-ccpprtadr | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-dec-cdmdev-smeccpprt | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| edge:e-lnk-ccpprt-smeccpprt | review |  | proposed | 2026-11-13T00:30:00Z | 9313093366bdd34b988e9a2baa1c53ee3f5f44cc |  |
-| waypoint:wp-adr-ccp-margin | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| waypoint:wp-adr-ccp-default | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| waypoint:wp-adr-ccp-porting | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| node:task-sme-ccp-margin | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| node:task-sme-ccp-default | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| node:task-sme-ccp-porting | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-mrk-ccpmrgadr-ccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-drv-cdmdata-ccpmrgadr | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-dec-cdmdev-smeccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-lnk-ccpmrg-smeccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-mrk-ccpdftadr-ccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-drv-cdmdata-ccpdftadr | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-dec-cdmdev-smeccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-lnk-ccpdft-smeccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-mrk-ccpprtadr-ccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-drv-cdmdata-ccpprtadr | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-dec-cdmdev-smeccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| edge:e-lnk-ccpprt-smeccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | f3cbd969407370da23a2bafbc2c7f58ee4234beb | denisurusov |
-| noteworthy:nw-shared-console-dev-server | review |  | proposed | 2026-11-13T02:42:43Z | 90ff59e14ac7b691c96db66b4e6263e7d794f410 |  |
-| edge:e-note-localenv-sharedconsole | review |  | proposed | 2026-11-13T02:42:43Z | 90ff59e14ac7b691c96db66b4e6263e7d794f410 |  |
-| noteworthy:nw-shared-console-dev-server | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |
-| edge:e-note-localenv-sharedconsole | review | proposed | accepted | 2026-11-13T02:45:20Z | ec071424f2aed20c0fe8cdd0df9b0930558b4057 | denisurusov |
-| node:task-docs-readme-organization | review |  | proposed | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
-| node:task-docs-readme-organization | status |  | open | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
-| edge:e-dec-adoption-docsreadme | review |  | proposed | 2026-11-13T14:59:13Z | 602ba7a2f8332392c61bb001b2499f349c64a96f |  |
-| node:task-docs-readme-organization | review | proposed | accepted | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| edge:e-dec-adoption-docsreadme | review | proposed | accepted | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-ccp-membership | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-ccp-clearing | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-ccp-margin | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-ccp-default | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-ccp-porting | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-ccp-workflows | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-terms-profile | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-trade-start | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-revaluation | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-substitution | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-trade-end | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-reporting | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-triparty-workflows | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-gmsla-default-close-out | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
-| node:task-securities-lending-gmsla-workflows | status | open | resolved | 2026-11-13T15:22:33Z | c0fb0a22cd9996db76fe587875f9fc95c90d4203 | denisurusov |
+| noteworthy:nw-konspekt-cross-mode-portability | review | proposed | accepted | 2026-11-04T02:46:43Z | ni:///sha-256;G_YJ9YN8dqrTfNU02Q0XpLloKjgzXuWSUOjTNAPHysI | denisurusov |
+| node:task-konspekt-index-cross-mode-portability | review | proposed | accepted | 2026-11-04T02:46:43Z | ni:///sha-256;G_YJ9YN8dqrTfNU02Q0XpLloKjgzXuWSUOjTNAPHysI | denisurusov |
+| edge:e-note-adoption-crossmode | review | proposed | accepted | 2026-11-04T02:46:43Z | ni:///sha-256;G_YJ9YN8dqrTfNU02Q0XpLloKjgzXuWSUOjTNAPHysI | denisurusov |
+| edge:e-dec-adoption-konspektindex | review | proposed | accepted | 2026-11-04T02:46:43Z | ni:///sha-256;G_YJ9YN8dqrTfNU02Q0XpLloKjgzXuWSUOjTNAPHysI | denisurusov |
+| edge:e-note-konspektindex-crossmode | review | proposed | accepted | 2026-11-04T02:46:43Z | ni:///sha-256;G_YJ9YN8dqrTfNU02Q0XpLloKjgzXuWSUOjTNAPHysI | denisurusov |
+| node:task-konspekt-index-cross-mode-portability | status | open | resolved | 2026-11-04T02:59:07Z | ni:///sha-256;lpJ-E6THEYMuM7fb33ZF9OQ7tZ9KYigekmi21U5ElpY | denisurusov |
+| waypoint:wp-dec-besu-genesis-entrypoint | review | proposed | accepted | 2026-11-11T23:18:36Z | ni:///sha-256;S3af2YPYv1OHo4u5jtWkPYMZ68NO53R_bCPx41DhcfQ | denisurusov |
+| edge:e-mrk-besugenesis-livespecweb | review | proposed | accepted | 2026-11-11T23:18:36Z | ni:///sha-256;S3af2YPYv1OHo4u5jtWkPYMZ68NO53R_bCPx41DhcfQ | denisurusov |
+| waypoint:wp-adr-gmsla-lending-fee | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| node:task-sme-gmsla-fee-rules | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| node:task-sme-gmsla-fee-rules | status |  | open | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| edge:e-mrk-feeadr-gmslafee | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| edge:e-drv-cdmdata-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| edge:e-drv-finality-feeadr | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| edge:e-dec-cdmdev-smefee | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| edge:e-lnk-gmslafee-smefee | review |  | proposed | 2026-11-11T23:29:22Z | ni:///sha-256;BfvkYjlkvhxSHc9oiXE3PJDhwJxGhSHcbk582-gDCLI |  |
+| waypoint:wp-adr-gmsla-lending-fee | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| node:task-sme-gmsla-fee-rules | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| edge:e-mrk-feeadr-gmslafee | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| edge:e-drv-cdmdata-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| edge:e-drv-finality-feeadr | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| edge:e-dec-cdmdev-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| edge:e-lnk-gmslafee-smefee | review | proposed | accepted | 2026-11-11T23:42:15Z | ni:///sha-256;7YPkw5jkzDJq8WuffvCeCW97uoYJxJ1DCtreETZtanw | denisurusov |
+| node:task-gmsla-rebate | status | open | resolved | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| node:task-gmsla-lending-fee | status | open | resolved | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| node:task-repo-gmra-workflows | status | open | resolved | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| node:task-live-spec-duration | status | open | resolved | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| node:task-konspekt-checkpoint-adoption | status | open | resolved | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| node:task-ci-deploy-dropped-tx | status | open | resolved | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| node:task-live-spec-balance-aware-amounts | status | open | abandoned | 2026-11-12T00:00:26Z | ni:///sha-256;gvQ5lKqngqSIktBGICcxSkn9J_ZOwGJkF8NV-iirew0 | denisurusov |
+| waypoint:wp-adr-gmsla-default-close-out | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| node:task-sme-gmsla-default-rules | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| node:task-sme-gmsla-default-rules | status |  | open | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| edge:e-mrk-dfladr-gmsladfl | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| edge:e-drv-cdmdata-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| edge:e-drv-finality-dfladr | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| edge:e-dec-cdmdev-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| edge:e-lnk-gmsladfl-smedfl | review |  | proposed | 2026-11-12T00:05:02Z | ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE |  |
+| waypoint:wp-adr-gmsla-default-close-out | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| node:task-sme-gmsla-default-rules | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| edge:e-mrk-dfladr-gmsladfl | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| edge:e-drv-cdmdata-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| edge:e-drv-finality-dfladr | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| edge:e-dec-cdmdev-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| edge:e-lnk-gmsladfl-smedfl | review | proposed | accepted | 2026-11-12T00:17:36Z | ni:///sha-256;pCRlAgMIzpkMRu53qynECMQMyjMAwUhbnuBW8X9fxDI | denisurusov |
+| waypoint:wp-adr-triparty-scope | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-terms-profile | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-terms-profile | status |  | open | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-trade-start | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-trade-start | status |  | open | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-revaluation | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-revaluation | status |  | open | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-substitution | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-substitution | status |  | open | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-trade-end | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-trade-end | status |  | open | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-reporting | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| node:task-triparty-reporting | status |  | open | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-mrk-tpscope-tp | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-drv-cdmdata-tpscope | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-drv-finality-tpscope | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-dec-tp-terms | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-dec-tp-tradestart | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-dec-tp-reval | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-dec-tp-subst | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-dec-tp-tradeend | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| edge:e-dec-tp-report | review |  | proposed | 2026-11-12T00:36:54Z | ni:///sha-256;uCFqE3GZejmU7rs2-A1jFqCW9PhOIAzqqN8WMPrmca4 |  |
+| waypoint:wp-adr-triparty-terms-profile | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| node:task-sme-triparty-terms-profile | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| node:task-sme-triparty-terms-profile | status |  | open | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| edge:e-mrk-tptermsadr-tpterms | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| edge:e-drv-cdmdata-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| edge:e-drv-finality-tptermsadr | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| edge:e-dec-cdmdev-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| edge:e-lnk-tpterms-smetpterms | review |  | proposed | 2026-11-12T00:45:37Z | ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM |  |
+| waypoint:wp-adr-triparty-scope | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| waypoint:wp-adr-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-triparty-trade-start | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-triparty-revaluation | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-triparty-substitution | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-triparty-trade-end | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-triparty-reporting | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| node:task-sme-triparty-terms-profile | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-mrk-tpscope-tp | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-drv-cdmdata-tpscope | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-drv-finality-tpscope | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-tp-terms | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-tp-tradestart | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-tp-reval | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-tp-subst | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-tp-tradeend | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-tp-report | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-mrk-tptermsadr-tpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-drv-cdmdata-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-drv-finality-tptermsadr | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-dec-cdmdev-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| edge:e-lnk-tpterms-smetpterms | review | proposed | accepted | 2026-11-12T01:07:01Z | ni:///sha-256;ipCRbvl2MRBclBmWwdk7mnkFBZI7jEgxBnv-QoqYemg | denisurusov |
+| waypoint:wp-adr-triparty-trade-start | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| node:task-sme-triparty-trade-start | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| node:task-sme-triparty-trade-start | status |  | open | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| edge:e-mrk-tpstartadr-tpstart | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| edge:e-drv-cdmdata-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| edge:e-drv-finality-tpstartadr | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| edge:e-dec-cdmdev-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| edge:e-lnk-tpstart-smetpstart | review |  | proposed | 2026-11-12T01:20:36Z | ni:///sha-256;-yKSBOR9mILY7KVPWYYiYncIH1lSpW8UGGTQ5STbi-k |  |
+| waypoint:wp-adr-triparty-trade-start | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| node:task-sme-triparty-trade-start | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| edge:e-mrk-tpstartadr-tpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| edge:e-drv-cdmdata-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| edge:e-drv-finality-tpstartadr | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| edge:e-dec-cdmdev-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| edge:e-lnk-tpstart-smetpstart | review | proposed | accepted | 2026-11-12T02:16:12Z | ni:///sha-256;cUpPrhQtdkuKXY9nop1tbsQvtVmbXFEJaJYn6_FEHPM | denisurusov |
+| waypoint:wp-adr-triparty-revaluation | review |  | accepted | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o | denisurusov |
+| node:task-sme-triparty-revaluation | review |  | proposed | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| node:task-sme-triparty-revaluation | status |  | open | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| edge:e-mrk-tprevaladr-tpreval | review |  | proposed | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| edge:e-drv-cdmdata-tprevaladr | review |  | proposed | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| edge:e-drv-finality-tprevaladr | review |  | proposed | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| edge:e-dec-cdmdev-smetpreval | review |  | proposed | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| edge:e-lnk-tpreval-smetpreval | review |  | proposed | 2026-11-12T04:13:02Z | ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o |  |
+| node:task-sme-triparty-revaluation | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| edge:e-mrk-tprevaladr-tpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| edge:e-drv-cdmdata-tprevaladr | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| edge:e-drv-finality-tprevaladr | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| edge:e-dec-cdmdev-smetpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| edge:e-lnk-tpreval-smetpreval | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| edge:e-dec-adoption-presentation | review | proposed | accepted | 2026-11-12T11:42:00Z | ni:///sha-256;aF2lCaKl5lvxVKHkqu_pMQRnNcahdvJTPn57KhDjPZs | denisurusov |
+| waypoint:wp-adr-triparty-substitution | review |  | accepted | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 | denisurusov |
+| node:task-sme-triparty-substitution | review |  | proposed | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| node:task-sme-triparty-substitution | status |  | open | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| edge:e-mrk-tpsubadr-tpsub | review |  | proposed | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| edge:e-drv-cdmdata-tpsubadr | review |  | proposed | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| edge:e-drv-finality-tpsubadr | review |  | proposed | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| edge:e-dec-cdmdev-smetpsub | review |  | proposed | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| edge:e-lnk-tpsub-smetpsub | review |  | proposed | 2026-11-12T11:53:00Z | ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74 |  |
+| edge:e-mrk-tpsubadr-tpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | ni:///sha-256;Oeh1Qnc18ntGSaN5kgHPyUaFjLbicttR-sITHXYFmtY | denisurusov |
+| edge:e-drv-cdmdata-tpsubadr | review | proposed | accepted | 2026-11-12T12:33:00Z | ni:///sha-256;Oeh1Qnc18ntGSaN5kgHPyUaFjLbicttR-sITHXYFmtY | denisurusov |
+| edge:e-drv-finality-tpsubadr | review | proposed | accepted | 2026-11-12T12:33:00Z | ni:///sha-256;Oeh1Qnc18ntGSaN5kgHPyUaFjLbicttR-sITHXYFmtY | denisurusov |
+| edge:e-dec-cdmdev-smetpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | ni:///sha-256;Oeh1Qnc18ntGSaN5kgHPyUaFjLbicttR-sITHXYFmtY | denisurusov |
+| edge:e-lnk-tpsub-smetpsub | review | proposed | accepted | 2026-11-12T12:33:00Z | ni:///sha-256;Oeh1Qnc18ntGSaN5kgHPyUaFjLbicttR-sITHXYFmtY | denisurusov |
+| node:task-sme-triparty-substitution | review | proposed | accepted | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk | denisurusov |
+| waypoint:wp-adr-triparty-trade-end | review |  | accepted | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk | denisurusov |
+| node:task-sme-triparty-trade-end | review |  | proposed | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| node:task-sme-triparty-trade-end | status |  | open | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| edge:e-mrk-tpendadr-tpend | review |  | proposed | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| edge:e-drv-cdmdata-tpendadr | review |  | proposed | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| edge:e-drv-finality-tpendadr | review |  | proposed | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| edge:e-dec-cdmdev-smetpend | review |  | proposed | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| edge:e-lnk-tpend-smetpend | review |  | proposed | 2026-11-12T12:42:00Z | ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk |  |
+| node:task-sme-triparty-trade-end | review | proposed | accepted | 2026-11-12T13:49:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w | denisurusov |
+| edge:e-mrk-tpendadr-tpend | review | proposed | accepted | 2026-11-12T13:49:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w | denisurusov |
+| edge:e-drv-cdmdata-tpendadr | review | proposed | accepted | 2026-11-12T13:49:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w | denisurusov |
+| edge:e-drv-finality-tpendadr | review | proposed | accepted | 2026-11-12T13:49:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w | denisurusov |
+| edge:e-dec-cdmdev-smetpend | review | proposed | accepted | 2026-11-12T13:49:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w | denisurusov |
+| edge:e-lnk-tpend-smetpend | review | proposed | accepted | 2026-11-12T13:49:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w | denisurusov |
+| waypoint:wp-adr-triparty-reporting | review |  | proposed | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| node:task-sme-triparty-reporting | review |  | proposed | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| node:task-sme-triparty-reporting | status |  | open | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| edge:e-mrk-tprepadr-tprep | review |  | proposed | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| edge:e-drv-cdmdata-tprepadr | review |  | proposed | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| edge:e-dec-cdmdev-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| edge:e-lnk-tprep-smetprep | review |  | proposed | 2026-11-12T13:55:00Z | ni:///sha-256;2GVMBxFcikGG3Wd3qWLk9UxGf7SDQCoDmgWEqwOlh4w |  |
+| edge:e-mrk-tprepadr-tprep | review | proposed | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| edge:e-drv-cdmdata-tprepadr | review | proposed | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| edge:e-dec-cdmdev-smetprep | review | proposed | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| edge:e-lnk-tprep-smetprep | review | proposed | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| waypoint:wp-adr-ccp-scope | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-ccp-membership | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-ccp-membership | status |  | open | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| node:task-ccp-clearing | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-ccp-clearing | status |  | open | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| node:task-ccp-margin | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-ccp-margin | status |  | open | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| node:task-ccp-default | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-ccp-default | status |  | open | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| node:task-ccp-porting | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-ccp-porting | status |  | open | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| node:task-live-spec-node-read-after-write | review |  | accepted | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg | denisurusov |
+| node:task-live-spec-node-read-after-write | status |  | open | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-mrk-ccpscope-ccp | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-drv-cdmdata-ccpscope | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-drv-finality-ccpscope | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-dec-ccp-membership | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-dec-ccp-clearing | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-dec-ccp-margin | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-dec-ccp-default | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-dec-ccp-porting | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-dec-e2eflow-readafterwrite | review |  | proposed | 2026-11-12T18:25:00Z | ni:///sha-256;N4gtG4mbzjE1QoXqgyZKO4nB6ax62aB4uQadg_YPaCg |  |
+| edge:e-mrk-ccpscope-ccp | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-drv-cdmdata-ccpscope | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-drv-finality-ccpscope | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-dec-ccp-membership | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-dec-ccp-clearing | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-dec-ccp-margin | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-dec-ccp-default | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-dec-ccp-porting | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-dec-e2eflow-readafterwrite | review | proposed | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| waypoint:wp-adr-ccp-membership | review |  | accepted | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo | denisurusov |
+| edge:e-mrk-ccpmemadr-ccpmem | review |  | proposed | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo |  |
+| edge:e-drv-cdmdata-ccpmemadr | review |  | proposed | 2026-11-12T19:01:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo |  |
+| node:task-sme-ccp-membership | review |  | proposed | 2026-11-12T19:40:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo |  |
+| node:task-sme-ccp-membership | status |  | open | 2026-11-12T19:40:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo |  |
+| edge:e-dec-cdmdev-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo |  |
+| edge:e-lnk-ccpmem-smeccpmem | review |  | proposed | 2026-11-12T19:40:00Z | ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo |  |
+| node:task-sme-ccp-membership | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| node:task-sme-triparty-reporting | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| waypoint:wp-adr-triparty-reporting | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| edge:e-mrk-ccpmemadr-ccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| edge:e-drv-cdmdata-ccpmemadr | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| edge:e-dec-cdmdev-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| edge:e-lnk-ccpmem-smeccpmem | review | proposed | accepted | 2026-11-12T20:48:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg | denisurusov |
+| node:task-live-spec-node-read-after-write | status | open | resolved | 2026-11-12T22:45:00Z | ni:///sha-256;EcmrhbhdwdsPcQI60z7kqt7GM1pY-Tuj6tEvPlLCLGg |  |
+| waypoint:wp-adr-ccp-clearing | review |  | accepted | 2026-11-12T22:50:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 | denisurusov |
+| edge:e-mrk-ccpclradr-ccpclr | review |  | proposed | 2026-11-12T22:50:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 |  |
+| edge:e-drv-cdmdata-ccpclradr | review |  | proposed | 2026-11-12T22:50:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 |  |
+| node:task-sme-ccp-clearing | review |  | proposed | 2026-11-12T23:30:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 |  |
+| node:task-sme-ccp-clearing | status |  | open | 2026-11-12T23:30:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 |  |
+| edge:e-dec-cdmdev-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 |  |
+| edge:e-lnk-ccpclr-smeccpclr | review |  | proposed | 2026-11-12T23:30:00Z | ni:///sha-256;aEaA7T5Ai-LFOFvuw677OUTJdvBGv54u697KH8A9EL0 |  |
+| node:task-sme-ccp-clearing | review | proposed | accepted | 2026-11-12T23:43:46Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 | denisurusov |
+| edge:e-mrk-ccpclradr-ccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 | denisurusov |
+| edge:e-drv-cdmdata-ccpclradr | review | proposed | accepted | 2026-11-12T23:43:46Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 | denisurusov |
+| edge:e-dec-cdmdev-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 | denisurusov |
+| edge:e-lnk-ccpclr-smeccpclr | review | proposed | accepted | 2026-11-12T23:43:46Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 | denisurusov |
+| waypoint:wp-adr-ccp-margin | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| waypoint:wp-adr-ccp-default | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| waypoint:wp-adr-ccp-porting | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| node:task-sme-ccp-margin | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| node:task-sme-ccp-margin | status |  | open | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| node:task-sme-ccp-default | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| node:task-sme-ccp-default | status |  | open | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| node:task-sme-ccp-porting | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| node:task-sme-ccp-porting | status |  | open | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-mrk-ccpmrgadr-ccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-drv-cdmdata-ccpmrgadr | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-dec-cdmdev-smeccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-lnk-ccpmrg-smeccpmrg | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-mrk-ccpdftadr-ccpdft | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-drv-cdmdata-ccpdftadr | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-dec-cdmdev-smeccpdft | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-lnk-ccpdft-smeccpdft | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-mrk-ccpprtadr-ccpprt | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-drv-cdmdata-ccpprtadr | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-dec-cdmdev-smeccpprt | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| edge:e-lnk-ccpprt-smeccpprt | review |  | proposed | 2026-11-13T00:30:00Z | ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8 |  |
+| waypoint:wp-adr-ccp-margin | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| waypoint:wp-adr-ccp-default | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| waypoint:wp-adr-ccp-porting | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| node:task-sme-ccp-margin | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| node:task-sme-ccp-default | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| node:task-sme-ccp-porting | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-mrk-ccpmrgadr-ccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-drv-cdmdata-ccpmrgadr | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-dec-cdmdev-smeccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-lnk-ccpmrg-smeccpmrg | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-mrk-ccpdftadr-ccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-drv-cdmdata-ccpdftadr | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-dec-cdmdev-smeccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-lnk-ccpdft-smeccpdft | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-mrk-ccpprtadr-ccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-drv-cdmdata-ccpprtadr | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-dec-cdmdev-smeccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| edge:e-lnk-ccpprt-smeccpprt | review | proposed | accepted | 2026-11-13T02:31:42Z | ni:///sha-256;fwD_nK5809G6OsLkxUwRyuBUOrzowQJwWZ0amR1soK0 | denisurusov |
+| noteworthy:nw-shared-console-dev-server | review |  | proposed | 2026-11-13T02:42:43Z | ni:///sha-256;mq2D-JKNZGUArv2EqjQWIx1t3QvdBsjWpgBX1ETglMY |  |
+| edge:e-note-localenv-sharedconsole | review |  | proposed | 2026-11-13T02:42:43Z | ni:///sha-256;mq2D-JKNZGUArv2EqjQWIx1t3QvdBsjWpgBX1ETglMY |  |
+| noteworthy:nw-shared-console-dev-server | review | proposed | accepted | 2026-11-13T02:45:20Z | ni:///sha-256;bvxz34rpFkHmBHasNXl2Kx6UOrql5dWbvGgsDsLyXSo | denisurusov |
+| edge:e-note-localenv-sharedconsole | review | proposed | accepted | 2026-11-13T02:45:20Z | ni:///sha-256;bvxz34rpFkHmBHasNXl2Kx6UOrql5dWbvGgsDsLyXSo | denisurusov |
+| node:task-docs-readme-organization | review |  | proposed | 2026-11-13T14:59:13Z | ni:///sha-256;nn4stfwVQo46WAFykK398kbcXhl8GdicyuyhSYh-eKY |  |
+| node:task-docs-readme-organization | status |  | open | 2026-11-13T14:59:13Z | ni:///sha-256;nn4stfwVQo46WAFykK398kbcXhl8GdicyuyhSYh-eKY |  |
+| edge:e-dec-adoption-docsreadme | review |  | proposed | 2026-11-13T14:59:13Z | ni:///sha-256;nn4stfwVQo46WAFykK398kbcXhl8GdicyuyhSYh-eKY |  |
+| node:task-docs-readme-organization | review | proposed | accepted | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| edge:e-dec-adoption-docsreadme | review | proposed | accepted | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-ccp-membership | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-ccp-clearing | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-ccp-margin | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-ccp-default | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-ccp-porting | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-ccp-workflows | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-terms-profile | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-trade-start | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-revaluation | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-substitution | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-trade-end | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-reporting | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-triparty-workflows | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-gmsla-default-close-out | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-securities-lending-gmsla-workflows | status | open | resolved | 2026-11-13T15:22:33Z | ni:///sha-256;VXy08vs2kIt0zyLir0roW-aK2BWK2WfqOHTME8LHt_g | denisurusov |
+| node:task-konspekt-re-seeding | review |  | proposed | 2026-11-15T14:55:58Z | ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw |  |
+| node:task-konspekt-re-seeding | status |  | open | 2026-11-15T14:55:58Z | ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw |  |
+| edge:e-dec-konspektadopt-reseeding | review |  | proposed | 2026-11-15T14:55:58Z | ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw |  |

@@ -6,9 +6,12 @@ timestamp: 2026-10-17T00:25:47Z
 review: accepted
 provenance:
   conversationId: cdm-development
-  sourceRef: 593386d553b3e9523c084f9ad874eb2a715f4235
-  contentHash: 593386d553b3e9523c084f9ad874eb2a715f4235
+  sourceRef: ni:///sha-256;c2Gu8g49j8f9Y-kbYTWwJL0WUGQtLg2uYUjIMTkI4mU
   timestamp: 2026-10-17T00:25:47Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 593386d553b3e9523c084f9ad874eb2a715f4235
+    contentHash: 593386d553b3e9523c084f9ad874eb2a715f4235
 createdAt: 2026-10-17T00:25:47Z
 updatedAt: 2026-10-24T14:48:11Z
 ```

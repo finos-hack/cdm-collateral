@@ -6,9 +6,12 @@ timestamp: 2026-10-16T22:48:10Z
 review: accepted
 provenance:
   conversationId: architecture-design
-  sourceRef: 71b1348bad1addc3f8adaa253f5a147a502cb15d
-  contentHash: 71b1348bad1addc3f8adaa253f5a147a502cb15d
+  sourceRef: ni:///sha-256;Xnpw1EXZMVaaO1GEG1ZgA-BsIOYAxF3STyOFsoa9OhQ
   timestamp: 2026-10-16T22:48:10Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 71b1348bad1addc3f8adaa253f5a147a502cb15d
+    contentHash: 71b1348bad1addc3f8adaa253f5a147a502cb15d
 createdAt: 2026-10-16T22:48:10Z
 updatedAt: 2026-10-16T22:48:10Z
 ```

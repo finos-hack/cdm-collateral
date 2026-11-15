@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: clean-up-and-prep
-  sourceRef: 602ba7a2f8332392c61bb001b2499f349c64a96f
-  contentHash: 602ba7a2f8332392c61bb001b2499f349c64a96f
+  sourceRef: ni:///sha-256;nn4stfwVQo46WAFykK398kbcXhl8GdicyuyhSYh-eKY
   timestamp: 2026-11-13T14:59:13Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 602ba7a2f8332392c61bb001b2499f349c64a96f
+    contentHash: 602ba7a2f8332392c61bb001b2499f349c64a96f
 createdAt: 2026-11-13T14:59:13Z
 updatedAt: 2026-11-13T15:22:33Z
 ```

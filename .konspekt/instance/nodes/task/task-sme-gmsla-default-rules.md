@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: gmsla-default-close-out
-  sourceRef: 7959b57674d67db7e8b0388d158596713d079aea
-  contentHash: 7959b57674d67db7e8b0388d158596713d079aea
+  sourceRef: ni:///sha-256;FkcPk7FtgY_FTt0jan9GjgTrTGu8yA-LyZP8q7LapLE
   timestamp: 2026-11-12T00:05:02Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 7959b57674d67db7e8b0388d158596713d079aea
+    contentHash: 7959b57674d67db7e8b0388d158596713d079aea
 createdAt: 2026-11-12T00:05:02Z
 updatedAt: 2026-11-12T00:17:36Z
 ```

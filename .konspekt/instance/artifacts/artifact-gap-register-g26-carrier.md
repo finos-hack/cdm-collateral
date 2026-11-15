@@ -7,11 +7,14 @@ createdAt: 2026-10-25T15:09:55Z
 updatedAt: 2026-10-25T15:09:55Z
 review: accepted
 provenance:
-  sourceRef: 42bf64bf7ca0a7f912644a77ac14af106abde3dc
-  contentHash: 42bf64bf7ca0a7f912644a77ac14af106abde3dc
+  sourceRef: ni:///sha-256;aWQYY003A94yE5wa3kfg9m5HHnl4OvKcaD_Q2desmxY
   conversationId: spec-writer-2026-10-25
   timestamp: 2026-10-25T15:10:09.711Z
   confidence: 0.5
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 42bf64bf7ca0a7f912644a77ac14af106abde3dc
+    contentHash: 42bf64bf7ca0a7f912644a77ac14af106abde3dc
 ```
 # Artifact: Gap register G26 need-site after the payload carrier
 

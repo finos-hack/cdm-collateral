@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: triparty-revaluation
-  sourceRef: 6a7359a7984c74ea1532a50e8983f72646773375
-  contentHash: 6a7359a7984c74ea1532a50e8983f72646773375
+  sourceRef: ni:///sha-256;y73URoctWIzGAFYxJdWd5yIFG8SjWG3ImDVRrRKJM0o
   timestamp: 2026-11-12T04:13:02Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 6a7359a7984c74ea1532a50e8983f72646773375
+    contentHash: 6a7359a7984c74ea1532a50e8983f72646773375
 createdAt: 2026-11-12T04:13:02Z
 updatedAt: 2026-11-12T11:42:00Z
 ```

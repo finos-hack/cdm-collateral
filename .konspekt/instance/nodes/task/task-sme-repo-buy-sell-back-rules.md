@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: repo-buy-sell-back
-  sourceRef: a778f993a5a736fc18ae08c6df925fd62a81d0f5
-  contentHash: a778f993a5a736fc18ae08c6df925fd62a81d0f5
+  sourceRef: ni:///sha-256;jJF30v3IUXcqVH1JYw5SCW3v8m52pWaSBCY_XNhWTsA
   timestamp: 2026-11-11T01:42:28Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: a778f993a5a736fc18ae08c6df925fd62a81d0f5
+    contentHash: a778f993a5a736fc18ae08c6df925fd62a81d0f5
 createdAt: 2026-11-11T01:42:28Z
 updatedAt: 2026-11-11T03:30:38Z
 ```

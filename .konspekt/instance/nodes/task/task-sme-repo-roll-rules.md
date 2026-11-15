@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: repo-roll
-  sourceRef: e1c2bf5c4fd1267ffad133deb7c37373f3ac3c24
-  contentHash: e1c2bf5c4fd1267ffad133deb7c37373f3ac3c24
+  sourceRef: ni:///sha-256;dsxQtRiOBIYJs6tTW0FrGRDeMTZRZFrd1HS1nm9j_2c
   timestamp: 2026-11-08T23:21:41Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: e1c2bf5c4fd1267ffad133deb7c37373f3ac3c24
+    contentHash: e1c2bf5c4fd1267ffad133deb7c37373f3ac3c24
 createdAt: 2026-11-08T23:21:41Z
 updatedAt: 2026-11-09T00:03:11Z
 ```

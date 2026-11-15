@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: ci-live-e2e-stack
-  sourceRef: e139780d8f166473110d16140fa7d1113340e17b
-  contentHash: e139780d8f166473110d16140fa7d1113340e17b
+  sourceRef: ni:///sha-256;RyMRvRd3KmnPb5uY5MVY8D6TLw_YxMgsCIdmvVRd15w
   timestamp: 2026-10-30T01:30:09Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: e139780d8f166473110d16140fa7d1113340e17b
+    contentHash: e139780d8f166473110d16140fa7d1113340e17b
 createdAt: 2026-10-30T01:30:09Z
 updatedAt: 2026-11-01T00:40:00Z
 ```

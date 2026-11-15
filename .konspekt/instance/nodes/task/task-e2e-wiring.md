@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: console-dev
-  sourceRef: d1de6644506267cf9033a70a5d1893adc44926fd
-  contentHash: d1de6644506267cf9033a70a5d1893adc44926fd
+  sourceRef: ni:///sha-256;ME4ZpgbRiSuXJZR9N7TjaL8-wI4WJDoFEhb8c7SjrQc
   timestamp: 2026-10-17T20:56:54Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: d1de6644506267cf9033a70a5d1893adc44926fd
+    contentHash: d1de6644506267cf9033a70a5d1893adc44926fd
 createdAt: 2026-10-17T20:56:54Z
 updatedAt: 2026-11-03T03:25:20Z
 ```

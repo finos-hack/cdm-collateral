@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: fleet-port
-  sourceRef: 98439d29e3489c9547264c7d125ced58ceaf03b5
-  contentHash: 98439d29e3489c9547264c7d125ced58ceaf03b5
+  sourceRef: ni:///sha-256;MxlOJMhcBEVK94FyyYCSFzQwmpvqsRRi48q9IEaZNLg
   timestamp: 2026-10-22T23:29:00Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 98439d29e3489c9547264c7d125ced58ceaf03b5
+    contentHash: 98439d29e3489c9547264c7d125ced58ceaf03b5
 createdAt: 2026-10-22T23:29:00Z
 updatedAt: 2026-10-22T23:29:00Z
 ```

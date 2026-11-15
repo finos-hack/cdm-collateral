@@ -4,10 +4,13 @@ kind: constraint
 review: accepted
 provenance:
   conversationId: e2e-return-default
-  sourceRef: 09a5861b69043c21bd8677f7d46c2ecc70bcdb07
-  contentHash: 09a5861b69043c21bd8677f7d46c2ecc70bcdb07
+  sourceRef: ni:///sha-256;0GTjGJvpHQbhJMKVOgBuqzygG9sme0HYSd3nfWY1aKs
   timestamp: 2026-11-01T16:45:36Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 09a5861b69043c21bd8677f7d46c2ecc70bcdb07
+    contentHash: 09a5861b69043c21bd8677f7d46c2ecc70bcdb07
 createdAt: 2026-11-01T16:45:36Z
 updatedAt: 2026-11-03T12:50:48Z
 ```

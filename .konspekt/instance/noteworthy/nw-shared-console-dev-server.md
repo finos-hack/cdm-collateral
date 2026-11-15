@@ -4,10 +4,13 @@ kind: fact
 review: accepted
 provenance:
   conversationId: ccp-rows-28-30
-  sourceRef: 90ff59e14ac7b691c96db66b4e6263e7d794f410
-  contentHash: 90ff59e14ac7b691c96db66b4e6263e7d794f410
+  sourceRef: ni:///sha-256;mq2D-JKNZGUArv2EqjQWIx1t3QvdBsjWpgBX1ETglMY
   timestamp: 2026-11-13T02:42:43Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 90ff59e14ac7b691c96db66b4e6263e7d794f410
+    contentHash: 90ff59e14ac7b691c96db66b4e6263e7d794f410
 createdAt: 2026-11-13T02:42:43Z
 updatedAt: 2026-11-13T02:45:20Z
 ```

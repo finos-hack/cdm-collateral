@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: securities-lending-gmsla-scope
-  sourceRef: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
-  contentHash: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
+  sourceRef: ni:///sha-256;mBNipe_OTzILvGu_nKDYEPI14bTpkrfNnQ3FVFVSwmM
   timestamp: 2026-11-11T15:11:27Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
+    contentHash: 58c01e3dad7c97cb870c00fde33af78f4201e5dd
 createdAt: 2026-11-11T15:11:27Z
 updatedAt: 2026-11-13T15:22:33Z
 ```

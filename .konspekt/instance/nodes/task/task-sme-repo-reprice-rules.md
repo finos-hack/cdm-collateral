@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: repo-reprice
-  sourceRef: 729ada99275ed710b1515fb8acc6de27fa1df799
-  contentHash: 729ada99275ed710b1515fb8acc6de27fa1df799
+  sourceRef: ni:///sha-256;c_Gh9lOto12yt03OyklkAXpVRKHQD_lADcmW8XbKB5s
   timestamp: 2026-11-08T15:59:51Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 729ada99275ed710b1515fb8acc6de27fa1df799
+    contentHash: 729ada99275ed710b1515fb8acc6de27fa1df799
 createdAt: 2026-11-08T15:59:51Z
 updatedAt: 2026-11-08T16:33:21Z
 ```

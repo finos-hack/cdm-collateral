@@ -7,11 +7,14 @@ createdAt: 2026-10-24T00:00:00Z
 updatedAt: 2026-10-24T00:00:00Z
 review: accepted
 provenance:
-  sourceRef: ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4
-  contentHash: ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4
+  sourceRef: ni:///sha-256;AsIdYOX8bT1f5j6GNb9Y5Dft_LTr_K-Yi6St4gtJrP0
   conversationId: spec-writer-2026-10-24
   timestamp: 2026-10-24T13:56:51.384Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4
+    contentHash: ea0826b663d0d09e10c9f2e0ae7dd4c2921059d4
 ```
 # Artifact: Business case for CDM-based collateral management
 
