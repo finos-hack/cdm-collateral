@@ -14,7 +14,7 @@ provenance:
     sourceRef: be7815334afc8921538e8467c7c61c0a00381ad4
     contentHash: be7815334afc8921538e8467c7c61c0a00381ad4
 createdAt: 2026-11-15T14:55:58Z
-updatedAt: 2026-11-15T16:16:33Z
+updatedAt: 2026-11-15T16:18:52Z
 ```
 # Task: konspekt re-seeding
 
@@ -39,3 +39,4 @@ Scope: migrate this instance to the `ni:///sha-256` references of konspekt `main
   `--check` unchanged and a re-run changes no file. This session's commands are recorded in `commands/executed.md`.
 
 **Accepted and resolved 2026-11-15** by the project owner (source `ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA`).
+- The repository moved to `finos-hack/cdm-collateral`; the `store` resolve URLs in `project.md` and the `origin` remote now point there.
