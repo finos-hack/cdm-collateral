@@ -14,7 +14,7 @@ provenance:
     sourceRef: be7815334afc8921538e8467c7c61c0a00381ad4
     contentHash: be7815334afc8921538e8467c7c61c0a00381ad4
 createdAt: 2026-11-15T14:55:58Z
-updatedAt: 2026-11-15T16:18:52Z
+updatedAt: 2026-11-15T16:25:13Z
 ```
 # Task: konspekt re-seeding
 
@@ -40,3 +40,4 @@ Scope: migrate this instance to the `ni:///sha-256` references of konspekt `main
 
 **Accepted and resolved 2026-11-15** by the project owner (source `ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA`).
 - The repository moved to `finos-hack/cdm-collateral`; the `store` resolve URLs in `project.md` and the `origin` remote now point there.
+- Follow-up on branch `repo-move-links`: the docs, deck slides, setup guides, architecture renderer and `nw-ci-live-stack-first-run` link to `finos-hack/cdm-collateral`. `intro_deck.pdf` still needs regenerating.

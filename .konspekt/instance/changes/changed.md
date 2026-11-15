@@ -1671,3 +1671,9 @@ excluded.
 | task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-13T17:29:33Z |
 | task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-13T17:29:33Z |
 | task-presentation | 7d8568cb199e47bea7c314759adc3f63189b0b70 | docs/sme-questions.html | 2026-11-13T17:29:33Z |
+| task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | architecture/render_architecture_page.py | 2026-11-15T16:25:13Z |
+| task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/index.html | 2026-11-15T16:25:13Z |
+| task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/presentations/intro_deck/slides/besu.html | 2026-11-15T16:25:13Z |
+| task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/presentations/intro_deck/slides/join.html | 2026-11-15T16:25:13Z |
+| task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/setup/setup-codespaces.md | 2026-11-15T16:25:13Z |
+| task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/setup/setup-windows.md | 2026-11-15T16:25:13Z |

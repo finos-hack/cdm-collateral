@@ -12,13 +12,13 @@ provenance:
     sourceRef: a5702a6802c46733ed2fb65f2c0a95b8c5b28b0c
     contentHash: a5702a6802c46733ed2fb65f2c0a95b8c5b28b0c
 createdAt: 2026-10-31T23:50:39Z
-updatedAt: 2026-11-01T00:10:00Z
+updatedAt: 2026-11-15T16:25:13Z
 ```
 # CI live stack: first run of the re-scoped workflow passed
 
 The re-scoped `e2e-live-stack.yml` (commit `e7f4e27`, build → deploy → start → health-check via
 `scripts/live-e2e.sh up`, [[wp-adr-live-stack-local-ui-driven]]) ran for the first time on 2026-10-31 and passed:
-run `41253964256` (https://github.com/denisurusov/cdm-collateral/actions/runs/41253964256), `pull_request` trigger on
+run `41253964256` (https://github.com/finos-hack/cdm-collateral/actions/runs/41253964256), `pull_request` trigger on
 PR #8 (`e2e-wiring → main`), head `2307781`, `ubuntu-latest`, 23:47:12Z → 23:50:39Z (about 3.5 min). The run was
 triggered by pushing `e2e-wiring` (`5853dd9..2307781`).
 
