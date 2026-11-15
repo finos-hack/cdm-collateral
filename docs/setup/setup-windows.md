@@ -83,7 +83,7 @@ npm -v
 
 ```powershell
 cd $HOME
-git clone https://github.com/denisurusov/cdm-collateral.git
+git clone https://github.com/finos-hack/cdm-collateral.git
 cd cdm-collateral
 ```
 

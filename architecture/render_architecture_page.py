@@ -153,7 +153,7 @@ th {{ font-family:var(--f-d); font-weight:600; }} td:first-child {{ white-space:
   </figure>
   <section class="col" id="stepsec" hidden><h2 id="flowname"></h2><p id="flowdesc"></p><ol class="steps" id="steps"></ol></section>
   <section style="display:grid;gap:10px"><h2>Components</h2><div class="tbl"><table><thead><tr><th>Component</th><th>CALM type</th><th>Description</th></tr></thead><tbody>{rows}</tbody></table></div></section>
-  <p class="src">Source: <code>architecture/prototype.architecture.json</code> in denisurusov/cdm-collateral (CALM release 1.2, validated with <code>calm validate --strict</code>). Design only; nothing built.</p>
+  <p class="src">Source: <code>architecture/prototype.architecture.json</code> in finos-hack/cdm-collateral (CALM release 1.2, validated with <code>calm validate --strict</code>). Design only; nothing built.</p>
 </main>
 <script>
 (function(){{

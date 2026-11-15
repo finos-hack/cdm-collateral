@@ -25,9 +25,9 @@ validators.
 
 Use a desktop browser, signed in to GitHub. Either:
 
-- **Direct link:** open https://codespaces.new/denisurusov/cdm-collateral — it shows the "Create codespace" options
+- **Direct link:** open https://codespaces.new/finos-hack/cdm-collateral — it shows the "Create codespace" options
   page; or
-- **From the repository page:** open https://github.com/denisurusov/cdm-collateral. Above the file list, on the right,
+- **From the repository page:** open https://github.com/finos-hack/cdm-collateral. Above the file list, on the right,
   is a green **`<> Code`** button. Click it; the panel that opens has two tabs, **Local** and **Codespaces**. Choose
   **Codespaces**, then the **…** menu at the top right of that tab → **New with options…**.
 
@@ -43,7 +43,7 @@ To reopen it later: https://github.com/codespaces lists your codespaces.
 **From the command line** (GitHub CLI, `gh` 2.103.3 or later):
 
 ```bash
-gh codespace create -R denisurusov/cdm-collateral -b <branch> -m standardLinux32gb --display-name <name>
+gh codespace create -R finos-hack/cdm-collateral -b <branch> -m standardLinux32gb --display-name <name>
 gh codespace code --web -c <codespace-name>    # required once: opens the editor, which sets up the forwarded ports
 gh codespace ports -c <codespace-name>         # lists the forwarded URLs, e.g. https://<codespace-name>-5173.app.github.dev
 ```
