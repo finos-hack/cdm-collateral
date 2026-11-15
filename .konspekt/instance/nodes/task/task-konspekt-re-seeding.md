@@ -2,8 +2,8 @@
 id: task-konspekt-re-seeding
 type: task
 title: konspekt re-seeding
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: konspekt-re-seeding
   sourceRef: ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw
@@ -14,7 +14,7 @@ provenance:
     sourceRef: be7815334afc8921538e8467c7c61c0a00381ad4
     contentHash: be7815334afc8921538e8467c7c61c0a00381ad4
 createdAt: 2026-11-15T14:55:58Z
-updatedAt: 2026-11-15T16:03:19Z
+updatedAt: 2026-11-15T16:16:33Z
 ```
 # Task: konspekt re-seeding
 
@@ -37,3 +37,5 @@ Scope: migrate this instance to the `ni:///sha-256` references of konspekt `main
   binding audit clean.
 - Rechecked against konspekt `11626c1` (PR #113, the `migrate-ni.mjs` blank-line fix, `nw-migrate-ni-table-blank-line`):
   `--check` unchanged and a re-run changes no file. This session's commands are recorded in `commands/executed.md`.
+
+**Accepted and resolved 2026-11-15** by the project owner (source `ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA`).

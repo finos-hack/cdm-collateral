@@ -1534,3 +1534,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-re-seeding | review |  | proposed | 2026-11-15T14:55:58Z | ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw |  |
 | node:task-konspekt-re-seeding | status |  | open | 2026-11-15T14:55:58Z | ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw |  |
 | edge:e-dec-konspektadopt-reseeding | review |  | proposed | 2026-11-15T14:55:58Z | ni:///sha-256;X0_bvuPkEF43h_xYFW1wq0w2UHOa9SqSGz3M_QbiEUw |  |
+| node:task-konspekt-re-seeding | review | proposed | accepted | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
+| node:task-konspekt-re-seeding | status | open | resolved | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
+| edge:e-dec-konspektadopt-reseeding | review | proposed | accepted | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
