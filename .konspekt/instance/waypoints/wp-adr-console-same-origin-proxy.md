@@ -5,10 +5,13 @@ timestamp: 2026-11-02T23:15:24Z
 review: accepted
 provenance:
   conversationId: 988875b8-4ec1-4971-aceb-47c0f58236c5
-  sourceRef: 11d6ad3ea1a0518924d73887fa242027bcf2ddd1
-  contentHash: 11d6ad3ea1a0518924d73887fa242027bcf2ddd1
+  sourceRef: ni:///sha-256;rNyRb1YU8gyMh8bz384PN_mcq7KdO6DzCgrdw-m1VM4
   timestamp: 2026-11-02T23:15:24Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 11d6ad3ea1a0518924d73887fa242027bcf2ddd1
+    contentHash: 11d6ad3ea1a0518924d73887fa242027bcf2ddd1
 createdAt: 2026-11-02T23:15:24Z
 updatedAt: 2026-11-06T21:52:57Z
 ```

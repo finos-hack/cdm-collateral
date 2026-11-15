@@ -6,9 +6,12 @@ status: resolved
 review: accepted
 provenance:
   conversationId: architecture-design
-  sourceRef: 91117ab560e058b945bc3eb3e35fa977f99a88b3
-  contentHash: 91117ab560e058b945bc3eb3e35fa977f99a88b3
+  sourceRef: ni:///sha-256;JiIT71CcaxnNUuNlwgA53P_U9JxGEG_ugoFDaPAZPzM
   timestamp: 2026-10-16T23:07:09Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 91117ab560e058b945bc3eb3e35fa977f99a88b3
+    contentHash: 91117ab560e058b945bc3eb3e35fa977f99a88b3
 createdAt: 2026-10-16T23:07:09Z
 updatedAt: 2026-10-17T00:22:35Z
 ```

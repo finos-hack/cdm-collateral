@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: gmsla-loan-delivery-return
-  sourceRef: 0459d62f952baa979a166c76641c678927e782b0
-  contentHash: 0459d62f952baa979a166c76641c678927e782b0
+  sourceRef: ni:///sha-256;OH_8AvAVJwyXqxfbI3yy1iQNzG1llR5n3b1tIwq39TM
   timestamp: 2026-11-11T16:38:28Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 0459d62f952baa979a166c76641c678927e782b0
+    contentHash: 0459d62f952baa979a166c76641c678927e782b0
 createdAt: 2026-11-11T16:38:28Z
 updatedAt: 2026-11-11T16:46:56Z
 ```

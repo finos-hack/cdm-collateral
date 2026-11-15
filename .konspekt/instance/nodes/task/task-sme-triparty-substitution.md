@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: triparty-substitution
-  sourceRef: 38140e048d810e158beb273724813d18a6c01704
-  contentHash: 38140e048d810e158beb273724813d18a6c01704
+  sourceRef: ni:///sha-256;6TPBBDofDlexXsJqknY8OnJK6dCtu2t7JP5tGc27s74
   timestamp: 2026-11-12T11:53:00Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 38140e048d810e158beb273724813d18a6c01704
+    contentHash: 38140e048d810e158beb273724813d18a6c01704
 createdAt: 2026-11-12T11:53:00Z
 updatedAt: 2026-11-12T12:42:00Z
 ```

@@ -6,10 +6,13 @@ status: active
 review: accepted
 provenance:
   conversationId: claude-ai-web-live-spec
-  sourceRef: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
-  contentHash: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
+  sourceRef: ni:///sha-256;c0sc8LNi3IgVJCyO_qKb9iMCi8uhqCgXNpRZjfqaCp4
   timestamp: 2026-11-09T00:17:00Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
+    contentHash: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
 createdAt: 2026-11-09T00:17:00Z
 updatedAt: 2026-11-12T02:29:51Z
 ```

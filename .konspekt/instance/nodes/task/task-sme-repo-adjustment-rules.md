@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: repo-adjustment
-  sourceRef: 0dd1cef601500b689fcd3ce949a69d1c02f9647d
-  contentHash: 0dd1cef601500b689fcd3ce949a69d1c02f9647d
+  sourceRef: ni:///sha-256;kToGmmgRHioG1CwLyFJVfivO6gnZfwrlWJW_eBuTX6o
   timestamp: 2026-11-08T17:19:27Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 0dd1cef601500b689fcd3ce949a69d1c02f9647d
+    contentHash: 0dd1cef601500b689fcd3ce949a69d1c02f9647d
 createdAt: 2026-11-08T17:19:27Z
 updatedAt: 2026-11-08T19:12:04Z
 ```

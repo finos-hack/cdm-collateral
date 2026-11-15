@@ -6,10 +6,13 @@ location: architecture/testing.md
 review: accepted
 provenance:
   conversationId: architecture-design
-  sourceRef: 9ae499a1f078db987641f81be32f5a995ed8f218
-  contentHash: 9ae499a1f078db987641f81be32f5a995ed8f218
+  sourceRef: ni:///sha-256;lv5tosfOiDWWMT91RddUxJLOfZP_VGDZ3j6w3rvcWo8
   timestamp: 2026-10-16T20:21:13Z
   confidence: 0.75
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9ae499a1f078db987641f81be32f5a995ed8f218
+    contentHash: 9ae499a1f078db987641f81be32f5a995ed8f218
 createdAt: 2026-10-16T20:21:13Z
 updatedAt: 2026-10-18T01:27:28Z
 ```

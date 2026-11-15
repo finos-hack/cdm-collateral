@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: devcontainer-live-stack
-  sourceRef: 95c5dff4cf00f514d0354f18696dd767033021e8
-  contentHash: 95c5dff4cf00f514d0354f18696dd767033021e8
+  sourceRef: ni:///sha-256;ybLgMoK-4LKYgo-XV-dv1jRKYsbjV5xjsw2AkB6zF3o
   timestamp: 2026-11-01T01:00:00Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 95c5dff4cf00f514d0354f18696dd767033021e8
+    contentHash: 95c5dff4cf00f514d0354f18696dd767033021e8
 createdAt: 2026-11-01T01:00:00Z
 updatedAt: 2026-11-01T21:07:28Z
 ```

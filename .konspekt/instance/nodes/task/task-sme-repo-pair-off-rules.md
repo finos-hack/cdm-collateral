@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: repo-pair-off
-  sourceRef: 2733275ab3cc72d223729efa4a32ccae2f360c80
-  contentHash: 2733275ab3cc72d223729efa4a32ccae2f360c80
+  sourceRef: ni:///sha-256;1rByYLqVhnkU_dZFCsGCIRnP5HhZtPtVtcSGpaQCY3g
   timestamp: 2026-11-10T23:26:13Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 2733275ab3cc72d223729efa4a32ccae2f360c80
+    contentHash: 2733275ab3cc72d223729efa4a32ccae2f360c80
 createdAt: 2026-11-10T23:26:13Z
 updatedAt: 2026-11-11T00:12:48Z
 ```

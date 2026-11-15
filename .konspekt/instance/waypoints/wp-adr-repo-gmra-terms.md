@@ -6,10 +6,13 @@ timestamp: 2026-11-07T23:26:59Z
 review: accepted
 provenance:
   conversationId: repo-gmra-terms
-  sourceRef: 9146674da13957a4cd21ae92f51ab6ebc712c90c
-  contentHash: 9146674da13957a4cd21ae92f51ab6ebc712c90c
+  sourceRef: ni:///sha-256;BzN_9rl9q4jwBH7k2u4L37dao5DV2q8f-vp5A5lmVuY
   timestamp: 2026-11-07T23:26:59Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9146674da13957a4cd21ae92f51ab6ebc712c90c
+    contentHash: 9146674da13957a4cd21ae92f51ab6ebc712c90c
 createdAt: 2026-11-07T23:26:59Z
 updatedAt: 2026-11-07T23:46:22Z
 ```

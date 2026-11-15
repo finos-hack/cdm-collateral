@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: cdm-development
-  sourceRef: 674efc0066984797811930c097b69847c345e30e
-  contentHash: 674efc0066984797811930c097b69847c345e30e
+  sourceRef: ni:///sha-256;Gb4QAEcv7DyAP0gcu7znukNqBvFVsy-sTschc8JOE5w
   timestamp: 2026-11-03T23:55:33Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 674efc0066984797811930c097b69847c345e30e
+    contentHash: 674efc0066984797811930c097b69847c345e30e
 createdAt: 2026-11-03T23:55:33Z
 updatedAt: 2026-11-04T00:10:23Z
 ```

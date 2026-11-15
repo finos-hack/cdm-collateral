@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: gmsla-substitution
-  sourceRef: 48fe886bd6db13fa671e8e91d418ed0f300f1833
-  contentHash: 48fe886bd6db13fa671e8e91d418ed0f300f1833
+  sourceRef: ni:///sha-256;SpMyVl29kD7JVrbgrL1AEeBfVf6LxNqb9EDM-FRaXao
   timestamp: 2026-11-11T20:05:16Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 48fe886bd6db13fa671e8e91d418ed0f300f1833
+    contentHash: 48fe886bd6db13fa671e8e91d418ed0f300f1833
 createdAt: 2026-11-11T20:05:16Z
 updatedAt: 2026-11-11T20:09:55Z
 ```

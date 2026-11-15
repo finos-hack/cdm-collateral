@@ -6,10 +6,13 @@ timestamp: 2026-11-08T19:59:37Z
 review: accepted
 provenance:
   conversationId: repo-substitution
-  sourceRef: 1f591034dc560e55251b72785553d524701abbf3
-  contentHash: 1f591034dc560e55251b72785553d524701abbf3
+  sourceRef: ni:///sha-256;DoZH4LDhjHi9vXUENXrlFG9GGTyOc96xzZBO7Ewugqk
   timestamp: 2026-11-08T19:59:37Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 1f591034dc560e55251b72785553d524701abbf3
+    contentHash: 1f591034dc560e55251b72785553d524701abbf3
 createdAt: 2026-11-08T19:59:37Z
 updatedAt: 2026-11-08T20:23:50Z
 ```

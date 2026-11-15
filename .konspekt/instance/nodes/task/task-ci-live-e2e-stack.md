@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: e2e-wiring
-  sourceRef: f7db748fb298ba32f7c8171c31c9c9009bf8ce0d
-  contentHash: f7db748fb298ba32f7c8171c31c9c9009bf8ce0d
+  sourceRef: ni:///sha-256;vxBflS6bMRp-NbKsSgf6nVU_8xN8xY5vD00lRyzPL24
   timestamp: 2026-10-25T01:56:01Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: f7db748fb298ba32f7c8171c31c9c9009bf8ce0d
+    contentHash: f7db748fb298ba32f7c8171c31c9c9009bf8ce0d
 createdAt: 2026-10-25T01:56:01Z
 updatedAt: 2026-10-30T02:19:00Z
 ```

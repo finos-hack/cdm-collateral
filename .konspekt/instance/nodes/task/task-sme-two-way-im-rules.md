@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: two-way-initial-margin
-  sourceRef: 57ae0e7cbeb65ec44ba5e313131802c0d6f53c10
-  contentHash: 57ae0e7cbeb65ec44ba5e313131802c0d6f53c10
+  sourceRef: ni:///sha-256;I6HvF9iUq53j_yvowPS8jQywjC96uhlGKvkTQaWgHKo
   timestamp: 2026-11-07T21:24:29Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 57ae0e7cbeb65ec44ba5e313131802c0d6f53c10
+    contentHash: 57ae0e7cbeb65ec44ba5e313131802c0d6f53c10
 createdAt: 2026-11-07T21:24:29Z
 updatedAt: 2026-11-07T21:58:01Z
 ```

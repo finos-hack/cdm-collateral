@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: ccp-risk
-  sourceRef: 9313093366bdd34b988e9a2baa1c53ee3f5f44cc
-  contentHash: 9313093366bdd34b988e9a2baa1c53ee3f5f44cc
+  sourceRef: ni:///sha-256;58vMcgZhJO932LB70K19ejZw9RWKGfpkEGe8QbQ_li8
   timestamp: 2026-11-13T00:30:00Z
   confidence: 0.45
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9313093366bdd34b988e9a2baa1c53ee3f5f44cc
+    contentHash: 9313093366bdd34b988e9a2baa1c53ee3f5f44cc
 createdAt: 2026-11-13T00:30:00Z
 updatedAt: 2026-11-13T02:31:42Z
 ```

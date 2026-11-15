@@ -6,10 +6,13 @@ location: docs/setup/runbook-e2e.md
 review: accepted
 provenance:
   conversationId: e2e-runbook
-  sourceRef: 1bf15826f5f85f9c9eae3457462a1fc31140be9c
-  contentHash: 1bf15826f5f85f9c9eae3457462a1fc31140be9c
+  sourceRef: ni:///sha-256;xVAVTfb5aptt4iFkHxF0PUSYwfM8nVxdI-BUibEo8wk
   timestamp: 2026-10-26T11:56:19Z
   confidence: 0.75
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 1bf15826f5f85f9c9eae3457462a1fc31140be9c
+    contentHash: 1bf15826f5f85f9c9eae3457462a1fc31140be9c
 createdAt: 2026-10-26T11:56:19Z
 updatedAt: 2026-10-26T11:56:19Z
 ```

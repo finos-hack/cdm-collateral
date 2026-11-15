@@ -6,10 +6,13 @@ timestamp: 2026-11-12T12:42:00Z
 review: accepted
 provenance:
   conversationId: triparty-trade-end
-  sourceRef: baffa673bcccdc9dd2a5d617bd8963a25cdd4e41
-  contentHash: baffa673bcccdc9dd2a5d617bd8963a25cdd4e41
+  sourceRef: ni:///sha-256;kCFINuDc5yr4LikihHp9nanqxBDuQIFznFrI3iOtqWk
   timestamp: 2026-11-12T12:42:00Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: baffa673bcccdc9dd2a5d617bd8963a25cdd4e41
+    contentHash: baffa673bcccdc9dd2a5d617bd8963a25cdd4e41
 createdAt: 2026-11-12T12:42:00Z
 updatedAt: 2026-11-12T12:42:00Z
 ```

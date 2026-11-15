@@ -1,0 +1,1 @@
+sed -i '1056{/^$/d}' .konspekt/instance/transitions/transitions.md

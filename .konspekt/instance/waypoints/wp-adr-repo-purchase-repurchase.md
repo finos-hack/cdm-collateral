@@ -6,10 +6,13 @@ timestamp: 2026-11-08T01:23:33Z
 review: accepted
 provenance:
   conversationId: repo-purchase-repurchase
-  sourceRef: 80d5c6596368a0436259035ca8d5c4b429f2f9e6
-  contentHash: 80d5c6596368a0436259035ca8d5c4b429f2f9e6
+  sourceRef: ni:///sha-256;cQpsb40LnXNSejmd6N8r0y97662OGnzas4nDqcqMlE8
   timestamp: 2026-11-08T01:23:33Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 80d5c6596368a0436259035ca8d5c4b429f2f9e6
+    contentHash: 80d5c6596368a0436259035ca8d5c4b429f2f9e6
 createdAt: 2026-11-08T01:23:33Z
 updatedAt: 2026-11-08T01:55:28Z
 ```

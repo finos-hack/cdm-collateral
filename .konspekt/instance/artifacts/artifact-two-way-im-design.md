@@ -7,11 +7,14 @@ createdAt: 2026-10-23T00:00:00Z
 updatedAt: 2026-10-23T00:00:00Z
 review: accepted
 provenance:
-  sourceRef: a33642b39ae267df90f5838679e595f9b64eb2fb
-  contentHash: a33642b39ae267df90f5838679e595f9b64eb2fb
+  sourceRef: ni:///sha-256;HcTe7ZoPp7_qZG8V7BUvE5Anj-vRNOe3IYiWwj1FntA
   conversationId: spec-writer-2026-10-23
   timestamp: 2026-10-23T15:39:17.930Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: a33642b39ae267df90f5838679e595f9b64eb2fb
+    contentHash: a33642b39ae267df90f5838679e595f9b64eb2fb
 ```
 # Artifact: Two-way initial margin design
 

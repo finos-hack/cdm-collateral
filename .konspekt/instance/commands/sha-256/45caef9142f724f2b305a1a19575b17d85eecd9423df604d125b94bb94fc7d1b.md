@@ -1,0 +1,1 @@
+docker run --rm --user 1000:1000 -v "$PWD/besu/qbftConfigFile.json:/cfg.json:ro" hyperledger/besu:26.9.0 operator generate-blockchain-config --config-file=/cfg.json --to=/tmp/out --private-key-file-name=key >/tmp/gen.log 2>&1; echo "exit $?"; grep -c Exception /tmp/gen.log

@@ -6,10 +6,13 @@ timestamp: 2026-11-08T14:35:55Z
 review: accepted
 provenance:
   conversationId: repo-margin-maintenance
-  sourceRef: ae0dea272a7d57577b0c8d0625863feb6ded3a8c
-  contentHash: ae0dea272a7d57577b0c8d0625863feb6ded3a8c
+  sourceRef: ni:///sha-256;S_HZ-OP6rsdt4G2zhEOmUeQDzPTVsODeeA2bnnPWp5Y
   timestamp: 2026-11-08T14:35:55Z
   confidence: 0.7
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: ae0dea272a7d57577b0c8d0625863feb6ded3a8c
+    contentHash: ae0dea272a7d57577b0c8d0625863feb6ded3a8c
 createdAt: 2026-11-08T14:35:55Z
 updatedAt: 2026-11-08T14:58:07Z
 ```

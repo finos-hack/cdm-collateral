@@ -4,9 +4,12 @@ kind: decision
 review: accepted
 provenance:
   conversationId: gap-coverage-audit
-  sourceRef: 6bd8ae81e8599cbf2270352d4fa49372faa1f22a
-  contentHash: 6bd8ae81e8599cbf2270352d4fa49372faa1f22a
+  sourceRef: ni:///sha-256;FkjvKBvP6SZzmpt8FBl9zYlssQ5n13JYCvOHevZs5go
   timestamp: 2026-11-10T23:00:33Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 6bd8ae81e8599cbf2270352d4fa49372faa1f22a
+    contentHash: 6bd8ae81e8599cbf2270352d4fa49372faa1f22a
 createdAt: 2026-11-10T23:00:33Z
 updatedAt: 2026-11-10T23:00:33Z
 ```

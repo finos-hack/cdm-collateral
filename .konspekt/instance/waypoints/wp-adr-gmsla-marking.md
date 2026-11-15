@@ -6,10 +6,13 @@ timestamp: 2026-11-11T18:15:49Z
 review: accepted
 provenance:
   conversationId: gmsla-marking
-  sourceRef: e56a84b64d6211be054d63c35b84556e556a0feb
-  contentHash: e56a84b64d6211be054d63c35b84556e556a0feb
+  sourceRef: ni:///sha-256;WfGdBE8oZqdts9vk5oow939vhVqmbyenSQKeY94g6Iw
   timestamp: 2026-11-11T18:15:49Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: e56a84b64d6211be054d63c35b84556e556a0feb
+    contentHash: e56a84b64d6211be054d63c35b84556e556a0feb
 createdAt: 2026-11-11T18:15:49Z
 updatedAt: 2026-11-11T18:19:11Z
 ```

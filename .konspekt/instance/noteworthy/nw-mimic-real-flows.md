@@ -5,9 +5,12 @@ status: active
 review: accepted
 provenance:
   conversationId: architecture-design
-  sourceRef: 030d173b1a7f835b860f9cca1cb4d482d59f360d
-  contentHash: 030d173b1a7f835b860f9cca1cb4d482d59f360d
+  sourceRef: ni:///sha-256;fe2l8Jg-JfDV_qiXtoFHRgFJ5m2dgrWSHZFVQ3UxrLI
   timestamp: 2026-10-16T22:15:03Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 030d173b1a7f835b860f9cca1cb4d482d59f360d
+    contentHash: 030d173b1a7f835b860f9cca1cb4d482d59f360d
 createdAt: 2026-10-16T22:15:03Z
 updatedAt: 2026-10-16T22:15:03Z
 ```

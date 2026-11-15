@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: repo-gmra-scope
-  sourceRef: 43bd267adffbb70e3a740c20620deed96d966092
-  contentHash: 43bd267adffbb70e3a740c20620deed96d966092
+  sourceRef: ni:///sha-256;STJirKt2MoMm9lBaaCwnSam9QDrdl3_syYsofLZjtpE
   timestamp: 2026-11-07T22:35:17Z
   confidence: 0.65
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 43bd267adffbb70e3a740c20620deed96d966092
+    contentHash: 43bd267adffbb70e3a740c20620deed96d966092
 createdAt: 2026-11-07T22:35:17Z
 updatedAt: 2026-11-08T20:45:57Z
 ```

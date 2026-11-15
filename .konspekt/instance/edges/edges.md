@@ -445,3 +445,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-cdmdev-smeccpprt | decomposes | node:goal-cdm-development | node:task-sme-ccp-porting |  | accepted |
 | e-lnk-ccpprt-smeccpprt | links | node:task-ccp-porting | node:task-sme-ccp-porting |  | accepted |
 | e-dec-adoption-docsreadme | decomposes | node:goal-adoption | node:task-docs-readme-organization |  | accepted |
+| e-dec-konspektadopt-reseeding | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-re-seeding |  | accepted |

@@ -9,6 +9,17 @@ summary:
 personas: [engineer]
 binding: required
 basis: proposed
+store:
+  kind: git
+  ref: main
+  resolve:
+    source: https://github.com/finos-hack/cdm-collateral/blob/{ref}/.konspekt/instance/sources/sha-256/{hex}.md
+    command: https://github.com/finos-hack/cdm-collateral/blob/{ref}/.konspekt/instance/commands/sha-256/{hex}.md
+    entity: https://github.com/finos-hack/cdm-collateral/blob/{ref}/.konspekt/instance/{path}
+    edges: https://github.com/finos-hack/cdm-collateral/blob/{ref}/.konspekt/instance/edges/edges.md
+    checkpoints: https://github.com/finos-hack/cdm-collateral/blob/{ref}/.konspekt/instance/checkpoints/checkpoints.md
+locators:
+  allow: []
 createdAt: 2026-10-14T23:04:53Z
 updatedAt: 2026-10-14T23:04:53Z
 ```

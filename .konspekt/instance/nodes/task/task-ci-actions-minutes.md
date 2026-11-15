@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: gmsla-rebate
-  sourceRef: 23cb42d62c48a430012c9c96c6f18443f9941fbf
-  contentHash: 23cb42d62c48a430012c9c96c6f18443f9941fbf
+  sourceRef: ni:///sha-256;MkiMPYZRrEaQRBWxbmX6k4r9J2ipKjghlZpI2z9Hv1U
   timestamp: 2026-11-11T23:11:59Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 23cb42d62c48a430012c9c96c6f18443f9941fbf
+    contentHash: 23cb42d62c48a430012c9c96c6f18443f9941fbf
 createdAt: 2026-11-11T23:11:59Z
 updatedAt: 2026-11-11T23:11:59Z
 ```

@@ -5,9 +5,12 @@ timestamp: 2026-11-03T17:05:51Z
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
-  sourceRef: db38e95ee8c10dee9650ada2a61e3c4905116a3a
-  contentHash: db38e95ee8c10dee9650ada2a61e3c4905116a3a
+  sourceRef: ni:///sha-256;IJciepOEqgHnadLWMJv48SpKG10HaQI_3vV5NFKK0xc
   timestamp: 2026-11-03T17:05:51Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: db38e95ee8c10dee9650ada2a61e3c4905116a3a
+    contentHash: db38e95ee8c10dee9650ada2a61e3c4905116a3a
 createdAt: 2026-11-03T17:05:51Z
 updatedAt: 2026-11-11T23:11:59Z
 ```

@@ -6,10 +6,13 @@ status: open
 review: accepted
 provenance:
   conversationId: triparty-terms-profile
-  sourceRef: 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33
-  contentHash: 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33
+  sourceRef: ni:///sha-256;AgQB7ZI3RfjJfdb1Rt1wDzqbECK7Lk9ZaYGCGoJqyPM
   timestamp: 2026-11-12T00:45:37Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33
+    contentHash: 6d0f24d02ec0a2e8263d04901b8f42e3e7519c33
 createdAt: 2026-11-12T00:45:37Z
 updatedAt: 2026-11-12T01:07:01Z
 ```

@@ -6,10 +6,13 @@ timestamp: 2026-11-12T19:01:00Z
 review: accepted
 provenance:
   conversationId: ccp-membership
-  sourceRef: 041be7509af8f3a7990e6b1056c58cb4967eb42a
-  contentHash: 041be7509af8f3a7990e6b1056c58cb4967eb42a
+  sourceRef: ni:///sha-256;Q3FCu-uTUmAF5KOP3mhMpPBE4mJ2cn6PTpZ012TENfo
   timestamp: 2026-11-12T19:01:00Z
   confidence: 0.55
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 041be7509af8f3a7990e6b1056c58cb4967eb42a
+    contentHash: 041be7509af8f3a7990e6b1056c58cb4967eb42a
 createdAt: 2026-11-12T19:01:00Z
 updatedAt: 2026-11-12T19:01:00Z
 ```

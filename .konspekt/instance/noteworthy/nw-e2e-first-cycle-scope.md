@@ -4,10 +4,13 @@ kind: constraint
 review: accepted
 provenance:
   conversationId: e2e-wiring
-  sourceRef: 24bd077f551581c621a2d292b02f359e99aa3f75
-  contentHash: 24bd077f551581c621a2d292b02f359e99aa3f75
+  sourceRef: ni:///sha-256;JSEksj1FDFsJXCHBJMaVy5nn08H1Zgw6sEftIyRItKk
   timestamp: 2026-10-24T20:12:31Z
   confidence: 0.8
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 24bd077f551581c621a2d292b02f359e99aa3f75
+    contentHash: 24bd077f551581c621a2d292b02f359e99aa3f75
 createdAt: 2026-10-24T20:12:31Z
 updatedAt: 2026-10-25T01:16:38Z
 ```

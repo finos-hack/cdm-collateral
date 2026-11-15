@@ -4,10 +4,13 @@ kind: decision
 review: accepted
 provenance:
   conversationId: adr-asr-traceability
-  sourceRef: 78166fa212300a29ebb5956aa5db810841378e26
-  contentHash: 78166fa212300a29ebb5956aa5db810841378e26
+  sourceRef: ni:///sha-256;wltepP9ghUCCN6rdqXxoIIfNaZ_tGhzlNL7AoxugrOo
   timestamp: 2026-11-06T21:49:38Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 78166fa212300a29ebb5956aa5db810841378e26
+    contentHash: 78166fa212300a29ebb5956aa5db810841378e26
 createdAt: 2026-11-06T21:49:38Z
 updatedAt: 2026-11-06T21:53:08Z
 ```

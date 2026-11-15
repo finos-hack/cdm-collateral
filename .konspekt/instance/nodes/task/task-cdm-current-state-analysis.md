@@ -6,9 +6,12 @@ status: resolved
 review: accepted
 provenance:
   conversationId: cdm-data-taxonomy
-  sourceRef: c06f71f1e33136d841554b3edcac893f013a932a
-  contentHash: c06f71f1e33136d841554b3edcac893f013a932a
+  sourceRef: ni:///sha-256;IK4gaMTs7JwEwzhEwg5g332Y1rorxNwaBs4p4GFgRhw
   timestamp: 2026-10-15T12:24:36Z
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: c06f71f1e33136d841554b3edcac893f013a932a
+    contentHash: c06f71f1e33136d841554b3edcac893f013a932a
 createdAt: 2026-10-15T12:24:36Z
 updatedAt: 2026-10-15T22:55:58Z
 ```

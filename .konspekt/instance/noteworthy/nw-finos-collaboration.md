@@ -5,11 +5,14 @@ createdAt: 2026-10-24T00:00:00Z
 updatedAt: 2026-10-24T14:54:16Z
 review: accepted
 provenance:
-  sourceRef: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
-  contentHash: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
+  sourceRef: ni:///sha-256;zSo_obkmH_WlTo1ceb7X_gpAqLWPwU7qDSl3K6Gc13Q
   conversationId: spec-writer-2026-10-24
   timestamp: 2026-10-24T14:28:19.786Z
   confidence: 0.6
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
+    contentHash: 9f8c9a1ebde86329599e8abb73549d3bb31d60dc
 ```
 # Statement: the project is carried out in collaboration with FINOS
 

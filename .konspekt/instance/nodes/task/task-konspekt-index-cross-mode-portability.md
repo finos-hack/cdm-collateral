@@ -6,10 +6,13 @@ status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-cross-mode-portability
-  sourceRef: d88914e2fa4bc037b42cbbff68355e13232ed16d
-  contentHash: d88914e2fa4bc037b42cbbff68355e13232ed16d
+  sourceRef: ni:///sha-256;-lLwoIar8HH6jxxEZeH42SGBPMqqTm_j4heO9-acA9A
   timestamp: 2026-11-04T02:34:39Z
   confidence: 0.9
+  deprecated:
+    migratedAt: 2026-11-15T16:01:12Z
+    sourceRef: d88914e2fa4bc037b42cbbff68355e13232ed16d
+    contentHash: d88914e2fa4bc037b42cbbff68355e13232ed16d
 createdAt: 2026-11-04T02:34:39Z
 updatedAt: 2026-11-04T02:59:07Z
 ```
