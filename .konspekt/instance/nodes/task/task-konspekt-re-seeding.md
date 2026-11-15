@@ -35,3 +35,5 @@ Scope: migrate this instance to the `ni:///sha-256` references of konspekt `main
   the script re-run.
 - Checks: a second run changes no file; `validate.mjs` 0 errors (1 pre-existing orphan warning, `node-app-setup`);
   binding audit clean.
+- Rechecked against konspekt `11626c1` (PR #113, the `migrate-ni.mjs` blank-line fix, `nw-migrate-ni-table-blank-line`):
+  `--check` unchanged and a re-run changes no file. This session's commands are recorded in `commands/executed.md`.
