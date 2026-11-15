@@ -9,6 +9,7 @@ summary:
 personas: [engineer]
 binding: required
 basis: proposed
+references: ni
 store:
   kind: git
   ref: main
