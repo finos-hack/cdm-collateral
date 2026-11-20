@@ -446,3 +446,13 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-ccpprt-smeccpprt | links | node:task-ccp-porting | node:task-sme-ccp-porting |  | accepted |
 | e-dec-adoption-docsreadme | decomposes | node:goal-adoption | node:task-docs-readme-organization |  | accepted |
 | e-dec-konspektadopt-reseeding | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-re-seeding |  | accepted |
+| e-lnk-tokcoll-gapclosure | links | node:goal-tokenized-collateral | node:task-cdm-gap-closure |  | accepted |
+| e-lnk-tokcoll-smeregistered | links | node:goal-tokenized-collateral | node:task-sme-registered-asset-completion |  | accepted |
+| e-lnk-tokcoll-blockchain | links | node:goal-tokenized-collateral | node:task-blockchain-smart-contracts-applicability |  | accepted |
+| e-men-tokcoll-onchain-asset-identity | mentions | node:goal-tokenized-collateral | concept:concept-asr-onchain-asset-identity |  | accepted |
+| e-dec-tokcoll-authrecord | decomposes | node:goal-tokenized-collateral | node:task-authoritative-record-settlement-enforcement |  | proposed |
+| e-dec-tokcoll-dticheck | decomposes | node:goal-tokenized-collateral | node:task-dti-format-check |  | proposed |
+| e-dec-tokcoll-secondledger | decomposes | node:goal-tokenized-collateral | node:task-second-ledger-token-identity |  | proposed |
+| e-lnk-authrecord-smeregistered | links | node:task-authoritative-record-settlement-enforcement | node:task-sme-registered-asset-completion |  | proposed |
+| e-men-dticheck-onchain-asset-identity | mentions | node:task-dti-format-check | concept:concept-asr-onchain-asset-identity |  | proposed |
+| e-men-secondledger-ledger-neutrality | mentions | node:task-second-ledger-token-identity | concept:concept-asr-ledger-neutrality |  | proposed |

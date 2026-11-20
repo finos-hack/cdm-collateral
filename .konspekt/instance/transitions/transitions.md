@@ -1537,3 +1537,26 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-re-seeding | review | proposed | accepted | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
 | node:task-konspekt-re-seeding | status | open | resolved | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
 | edge:e-dec-konspektadopt-reseeding | review | proposed | accepted | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
+| node:goal-tokenized-collateral | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
+| node:goal-tokenized-collateral | status |  | active | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
+| edge:e-lnk-tokcoll-gapclosure | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
+| edge:e-lnk-tokcoll-smeregistered | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
+| edge:e-lnk-tokcoll-blockchain | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
+| edge:e-men-tokcoll-onchain-asset-identity | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
+| node:goal-tokenized-collateral | review | proposed | accepted | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ | denisurusov |
+| edge:e-lnk-tokcoll-gapclosure | review | proposed | accepted | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ | denisurusov |
+| edge:e-lnk-tokcoll-smeregistered | review | proposed | accepted | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ | denisurusov |
+| edge:e-lnk-tokcoll-blockchain | review | proposed | accepted | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ | denisurusov |
+| edge:e-men-tokcoll-onchain-asset-identity | review | proposed | accepted | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ | denisurusov |
+| node:task-authoritative-record-settlement-enforcement | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| node:task-authoritative-record-settlement-enforcement | status |  | open | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| node:task-dti-format-check | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| node:task-dti-format-check | status |  | open | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| node:task-second-ledger-token-identity | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| node:task-second-ledger-token-identity | status |  | open | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| edge:e-dec-tokcoll-authrecord | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| edge:e-dec-tokcoll-dticheck | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| edge:e-dec-tokcoll-secondledger | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| edge:e-lnk-authrecord-smeregistered | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| edge:e-men-dticheck-onchain-asset-identity | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| edge:e-men-secondledger-ledger-neutrality | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
