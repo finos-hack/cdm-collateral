@@ -3,14 +3,14 @@ id: task-dti-format-check
 type: task
 title: Check the format of a token's ISO 24165 DTI
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   sourceRef: ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.75
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-20T20:06:53Z
+updatedAt: 2026-11-20T21:22:45Z
 ```
 # Task: check the format of a token's ISO 24165 DTI
 

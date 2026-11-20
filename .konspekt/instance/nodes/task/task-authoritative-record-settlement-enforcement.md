@@ -3,14 +3,14 @@ id: task-authoritative-record-settlement-enforcement
 type: task
 title: Make settlement and enforcement depend on the token's authoritative record
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   sourceRef: ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.8
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-20T20:06:53Z
+updatedAt: 2026-11-20T21:22:45Z
 ```
 # Task: make settlement and enforcement depend on the token's authoritative record
 

@@ -1560,3 +1560,12 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-authrecord-smeregistered | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
 | edge:e-men-dticheck-onchain-asset-identity | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
 | edge:e-men-secondledger-ledger-neutrality | review |  | proposed | 2026-11-20T20:06:53Z | ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ |  |
+| node:task-authoritative-record-settlement-enforcement | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| node:task-dti-format-check | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| node:task-second-ledger-token-identity | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| edge:e-dec-tokcoll-authrecord | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| edge:e-dec-tokcoll-dticheck | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| edge:e-dec-tokcoll-secondledger | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| edge:e-lnk-authrecord-smeregistered | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| edge:e-men-dticheck-onchain-asset-identity | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| edge:e-men-secondledger-ledger-neutrality | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |

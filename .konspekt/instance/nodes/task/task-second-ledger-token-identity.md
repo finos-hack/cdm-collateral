@@ -3,14 +3,14 @@ id: task-second-ledger-token-identity
 type: task
 title: Represent tokenized collateral on a second ledger to test that token identity is ledger-neutral
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   sourceRef: ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.7
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-20T20:06:53Z
+updatedAt: 2026-11-20T21:22:45Z
 ```
 # Task: represent tokenized collateral on a second ledger
 
