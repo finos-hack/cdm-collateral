@@ -29,7 +29,7 @@ its full statement, evidence and line references are kept.
 | O | O1–O3, O8–O12 | A finding for the other agreement families (repo, securities lending, triparty, CCP margin) | [`findings.md`](findings.md); detail in [`cdm-other-agreements-coverage-matrix.md`](cdm-other-agreements-coverage-matrix.md) |
 | X | X1–X3 | A finding found while building the local extension against CDM 7.7.0 | [`findings.md`](findings.md) |
 | B | B1–B5 | A tokenization or on-chain consequence | [`../architecture/blockchain-applicability.md`](../architecture/blockchain-applicability.md) (§4) |
-| G | G1–G39 | A gap in the gap register | [`gap-register.md`](gap-register.md) |
+| G | G1–G40 | A gap in the gap register | [`gap-register.md`](gap-register.md) |
 | D | D9–D15 | A CDM defect | [`defects.md`](defects.md) |
 
 Three prefixes are defined in this document and nowhere else: **V1–V7** are the value claims (§3), **C1–C2** are the
@@ -106,9 +106,9 @@ goals apply to, and §6 states the first milestone toward them.
 **C1 — Close every known in-scope gap.** Every gap that
 [`gap-register.md`](gap-register.md) classifies P1, P2 or P3 is closed by a
 local extension in `cdm-ext/` (`wp-adr-cdm-local-extensions`), with tests (G29). A gap whose register closure kind is
-"none locally" or "none for now" (G32, G33) counts as closed when it is documented as a note in the register. The register holds 39 gaps: 15 P1, 12 P2, 9 P3 and 3
-classified out of scope. Its closure-status table records G1, G2, G4, G6 and G39 as closed (G1 and G4 proposed, for
-review) and G3 as partial; the other 33 are open. The register is the list of record: this document does not copy
+"none locally" or "none for now" (G32, G33) counts as closed when it is documented as a note in the register. The register holds 40 gaps: 15 P1, 12 P2, 11 P3 and 2
+classified out of scope. Its closure-status table (2026-11-21) records 21 as closed, 7 as partial, 1 as deferred by
+the project owner (G26) and 9 as open (G11, G27, G28, G30, G31, G32, G37, G38, G40). The register is the list of record: this document does not copy
 it, and a gap added to the register is added to C1.
 
 **C2 — Support every known flow for all five agreement families.** Every lifecycle step in the flow of each family
@@ -122,7 +122,7 @@ in [`collateral-flows.md`](collateral-flows.md) runs through CDM objects built b
 | Triparty | collateral giver, collateral receiver, triparty agent | [Triparty](collateral-flows.md#triparty) | G22, G34 |
 | CCP margin | clearing member (and clients), CCP | [CCP margin](collateral-flows.md#ccp-margin) | G23, G15 |
 
-Gaps not listed against a family apply across families: G11, G16, G24–G29, G31, G32, G37 and G39 (closed). G13
+Gaps not listed against a family apply across families: G11, G16, G24–G29, G31, G32, G37, G39 (closed) and G40. G13
 and G36 are the register's out-of-scope gaps, and G35 was until 2026-11-07; all three are discussed below.
 
 **Gaps outside C1.** The three gaps the register classified out of scope — G13 (ISDA SIMM: the IM amount comes from a
