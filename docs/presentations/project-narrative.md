@@ -357,7 +357,7 @@ As of 4 November 2026:
 - **CDM extension:** the margin call lifecycle, events and transfers, valuation, balances, concentration, variation
   margin amounts, exposure netting, enforcement, partial close-out and substitution, disputes, and token and ledger
   identity, all in Rune on CDM 7.7.0, built with CDM's Java toolchain.
-- **Analysis:** coverage matrices for five agreement families, standards and taxonomy inventories, 40 gaps and 17
+- **Analysis:** coverage matrices for five agreement families, standards and taxonomy inventories, 40 gaps and 30
   defects recorded for FINOS.
 
 Open work, in the agreed order: the remaining CSA workflows (interest, amendment, cancellation, settlement netting,
