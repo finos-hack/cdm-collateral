@@ -1691,3 +1691,14 @@ excluded.
 | goal-tokenized-collateral | 92dd78dc34b5f5a41fb6e38359e5928e3146687a | docs/analysis/business-case.md | 2026-11-21T20:20:07Z |
 | goal-tokenized-collateral | 92dd78dc34b5f5a41fb6e38359e5928e3146687a | docs/presentations/project-narrative.md | 2026-11-21T20:20:07Z |
 | goal-tokenized-collateral | 9cb111083dcf44bf90f9ac53eec9bca02226e938 | docs/presentations/project-narrative.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | README.md | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/analysis/business-case.md | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/analysis/findings.md | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/analysis/gap-register.md | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/analysis/sme-question-ledger.md | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/gap-register.html | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/index.html | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/presentations/intro_deck/slides/gaps.html | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/presentations/intro_deck/slides/sme.html | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/presentations/project-narrative.md | 2026-11-21T21:43:25Z |
+| goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/sme-questions.html | 2026-11-21T21:43:25Z |
