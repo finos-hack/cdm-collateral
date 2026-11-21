@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.8
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-20T21:22:45Z
+updatedAt: 2026-11-21T20:16:21Z
 ```
 # Task: make settlement and enforcement depend on the token's authoritative record
 
@@ -26,3 +26,6 @@ Done when:
 - Tests cover each of the three values.
 
 Blocked on the SME's answer to what the confirmation is ([[task-sme-registered-asset-completion]]).
+Unblocked 2026-11-21 by the project owner's interim decisions recorded there (confirmation required for
+settlement and enforcement; a record-keeper control agreement for eligibility; the record keeper's record prevails,
+a mismatch is a break). The SME's answers may still change them.
