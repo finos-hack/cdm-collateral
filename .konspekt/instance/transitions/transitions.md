@@ -1570,3 +1570,19 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-authrecord-smeregistered | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
 | edge:e-men-dticheck-onchain-asset-identity | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
 | edge:e-men-secondledger-ledger-neutrality | review | proposed | accepted | 2026-11-20T21:22:45Z | ni:///sha-256;jsnT6sVVjToL-5wexMGp65tOXPIdeeeurGXdRPtX3xc | denisurusov |
+| node:task-document-provenance | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| node:task-document-provenance | status |  | open | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| node:task-sme-document-provenance | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| node:task-sme-document-provenance | status |  | open | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| edge:e-dec-tokcoll-docprov | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| edge:e-lnk-tokcoll-smedocprov | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| edge:e-lnk-docprov-smedocprov | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| edge:e-lnk-docprov-smeregistered | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| edge:e-men-docprov-onchain-asset-identity | review |  | proposed | 2026-11-21T21:42:22Z | ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4 |  |
+| node:task-document-provenance | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| node:task-sme-document-provenance | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| edge:e-dec-tokcoll-docprov | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| edge:e-lnk-tokcoll-smedocprov | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| edge:e-lnk-docprov-smedocprov | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| edge:e-lnk-docprov-smeregistered | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| edge:e-men-docprov-onchain-asset-identity | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |

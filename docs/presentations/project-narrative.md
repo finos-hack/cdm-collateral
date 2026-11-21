@@ -160,7 +160,7 @@ tests. Each grid cell shows its CDM coverage score, which connects the user inte
 On 17 October the analysis was consolidated into a gap register: 36 gaps, each with its sources, its lowest CDM
 score, the scenarios that need it, a priority and the kind of closure required. Fourteen were P1, meaning the ISDA
 initial and variation margin scenarios already built in the console depend on them
-[`artifact-cdm-gap-register`]. The register has since grown to 40.
+[`artifact-cdm-gap-register`]. The register has since grown to 41.
 
 Three decisions defined how the gaps would be closed:
 
@@ -357,7 +357,7 @@ As of 4 November 2026:
 - **CDM extension:** the margin call lifecycle, events and transfers, valuation, balances, concentration, variation
   margin amounts, exposure netting, enforcement, partial close-out and substitution, disputes, and token and ledger
   identity, all in Rune on CDM 7.7.0, built with CDM's Java toolchain.
-- **Analysis:** coverage matrices for five agreement families, standards and taxonomy inventories, 40 gaps and 30
+- **Analysis:** coverage matrices for five agreement families, standards and taxonomy inventories, 41 gaps and 30
   defects recorded for FINOS.
 
 Open work, in the agreed order: the remaining CSA workflows (interest, amendment, cancellation, settlement netting,

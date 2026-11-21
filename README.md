@@ -25,7 +25,7 @@ All analysis is in [`docs/analysis/`](docs/analysis/). CDM versions: the analysi
 | [`cdm-other-agreements-coverage-matrix.md`](docs/analysis/cdm-other-agreements-coverage-matrix.md) | The same for repo (GMRA), securities lending (GMSLA), triparty and CCP margin |
 | [`findings.md`](docs/analysis/findings.md) | What CDM does not cover (modelling gaps), with evidence |
 | [`defects.md`](docs/analysis/defects.md) | What CDM gets wrong (D1 to D30), and whether this repository fixed each one ([section 2](#2-cdm-defects-fixed-and-not-fixed)) |
-| [`gap-register.md`](docs/analysis/gap-register.md) | Findings and defects consolidated into 40 gaps (G1 to G40), with priority and closure status ([section 3](#3-cdm-gaps-closed-deferred-to-smes-open)) |
+| [`gap-register.md`](docs/analysis/gap-register.md) | Findings and defects consolidated into 41 gaps (G1 to G41), with priority and closure status ([section 3](#3-cdm-gaps-closed-deferred-to-smes-open)) |
 | [`cdm-workflow-task-map.md`](docs/analysis/cdm-workflow-task-map.md) | One row per collateral workflow: CDM status, what `cdm-ext` adds, the prototype flow, its live spec and PR ([section 4](#4-flows-built)) |
 | [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md) | Every question for a business SME, with the project owner's interim decision |
 | [`collateral-conceptual-model.md`](docs/analysis/collateral-conceptual-model.md), [`collateral-flows.md`](docs/analysis/collateral-flows.md) | The conceptual model and one flow diagram per agreement family, coloured by CDM coverage |
@@ -61,7 +61,7 @@ how it was fixed: [`defects.md`, In this repository](docs/analysis/defects.md#in
 
 ## 3. CDM gaps: closed, deferred to SMEs, open
 
-The gap register consolidates the findings and defects into 40 gaps. They are closed by local extensions in this
+The gap register consolidates the findings and defects into 41 gaps. They are closed by local extensions in this
 repository only; nothing is proposed to FINOS. Per gap: [`gap-register.md`, Closure status](docs/analysis/gap-register.md#closure-status) (also as a page:
 [`docs/gap-register.html`](docs/gap-register.html)).
 
@@ -70,11 +70,11 @@ repository only; nothing is proposed to FINOS. Per gap: [`gap-register.md`, Clos
 | Closed | 21 | G1 to G10 (margin call lifecycle, proposals, disputes, settlement, portfolio, returns, valuation, concentration, VM amounts, exposure netting); G12 repo and lending exposure; G14 enforcement; G18 recall; G19 and G20 GMRA and GMSLA terms; G22 triparty; G23 CCP; G24 and G25 tokenized assets and ledger anchors; G29 tests; G39 Java toolchain |
 | Partial | 7 | G15 close-out (open: ISDA Termination Events); G16 substitution (open: at a CCP); G17 interest and income (open: GMSLA manufactured payments, CCP interest); G21 GMSLA clause library; G33 CDM's Java lending workflows; G34 allocation (open: cost optimisation); G35 reconciliation (open: CCP) |
 | Deferred by the project owner | 1 | G26 mapping to ISO 20022 and FpML collateral messages |
-| Open | 9 | G11 rating eligibility; G27 taxonomy mapping; G28 regulatory references; G30, G31 and G32 not hit by the prototype or not fixable locally; G37 and G38 transfer type and title-transfer roles; G40 physical assets such as aircraft and asset-finance agreements |
+| Open | 10 | G11 rating eligibility; G27 taxonomy mapping; G28 regulatory references; G30, G31 and G32 not hit by the prototype or not fixable locally; G37 and G38 transfer type and title-transfer roles; G40 physical assets such as aircraft and asset-finance agreements; G41 provenance linking identities and legal documents |
 | Out of scope | 2 | G13 ISDA SIMM; G36 regulatory reporting |
 
 **Deferred to SMEs.** Fifteen of the closed or partial gaps rest on an interim assumption of the project owner. Their
-open questions are in [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md): 227 questions in 39 sections,
+open questions are in [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md): 229 questions in 40 sections,
 one section per `task-sme-*` task, none answered yet. The same questions as a page:
 [`docs/sme-questions.html`](docs/sme-questions.html). Which sections belong to which gap:
 [`gap-register.md`, Questions deferred to SMEs](docs/analysis/gap-register.md#questions-deferred-to-smes).

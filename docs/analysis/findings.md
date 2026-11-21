@@ -43,6 +43,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | X2 | `UnscheduledTransferEnum` has no value for a collateral delivery or a collateral return (its `Return` is the securities-lending return) | Taxonomy | open |
 | X3 | `PartyRoleEnum` has `Pledgor` (New York law), `Chargor` (English law) and `SecuredParty`, but no transferor or transferee role for title-transfer collateral (English-law VM CSA); `RegIMRoleEnum` repeats pledgor and secured party with other spellings (`Secured`) | Parties | open |
 | N1 | CDM has no asset type for a physical asset such as an aircraft (no airframe, engine or MSN identifier) and no agreement type for asset finance (aircraft mortgage or security agreement); a token backed by such an asset has nothing to point to | Assets | open |
+| N2 | No provenance record links a collateral asset, its token, the parties and the legal documents: CDM attachments carry no content hash, `relatedAgreements` links agreements only to other agreements, and nothing links an agreement, a registry entry or a valuation to an asset or a token | Provenance | open |
 
 ## Details
 
@@ -170,6 +171,17 @@ BrokerConfirmation, Confirmation, CreditSupportAgreement, MasterAgreement, Maste
 Convention, its Aircraft Protocol or the International Registry anywhere in the model. The loan itself can be held as
 `Instrument -> Loan`; the aircraft, its mortgage and the link from a token to the aircraft cannot.
 
+### N2 — Document provenance (CDM 7.7.0, 2026-11-21)
+
+**N2.** Found under `goal-tokenized-collateral`, from the aircraft case (N1). `legaldocumentation-common-type.rosetta`:
+`LegalAgreementBase` has agreement and effective dates, identifiers, governing law, the two contractual parties, other
+party roles and `attachment Resource (0..*)`. `Resource` has `resourceId`, `resourceType`, `language`, `sizeInBytes`,
+`length`, `mimeType`, `name`, `comments`, and either the text (`string`) or a `url`; it has no content hash and no
+signature, so nothing shows that an attachment is the executed version. `LegalAgreement.relatedAgreements` links an
+agreement to the agreements that govern it; no attribute links an agreement to an asset, a token, a registry entry
+(for example an International Registry filing) or a valuation. In `cdm-ext`, `TokenizedAsset` records the token but not
+the document that makes the token represent the asset, and `AnchoredRecordEnum` anchors only `MarginCallStep`,
+`Enforcement` and `Substitution` instructions, not legal documents.
 
 ## Moved to defects.md
 
