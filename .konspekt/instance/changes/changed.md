@@ -1702,3 +1702,6 @@ excluded.
 | goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/presentations/intro_deck/slides/sme.html | 2026-11-21T21:43:25Z |
 | goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/presentations/project-narrative.md | 2026-11-21T21:43:25Z |
 | goal-tokenized-collateral | 1c11418cdb5c65c32da25e35fa941e020d797bae | docs/sme-questions.html | 2026-11-21T21:43:25Z |
+| task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | cdm-ext/rosetta/cdmx-collateral-ledger-type.rosetta | 2026-11-21T17:59:11Z |
+| task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | cdm-ext/src/test/java/cdmx/LedgerTest.java | 2026-11-21T17:59:11Z |
+| task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | docs/analysis/gap-register.md | 2026-11-21T17:59:11Z |
