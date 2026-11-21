@@ -3,14 +3,14 @@ id: task-sme-document-provenance
 type: task
 title: Confirm with a business SME who keeps each link from a token to its asset, and what counts as evidence
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   sourceRef: ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.7
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-21T21:42:22Z
+updatedAt: 2026-11-21T22:25:05Z
 ```
 # Task: who keeps each link from a token to its asset, and what counts as evidence
 

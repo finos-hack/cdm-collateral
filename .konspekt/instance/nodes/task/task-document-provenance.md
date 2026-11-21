@@ -3,14 +3,14 @@ id: task-document-provenance
 type: task
 title: Provenance record linking a tokenized asset to its identities and legal documents
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   sourceRef: ni:///sha-256;hLFf7CFgc6WW1OwyK7s2p6b7LR0GXiCsU-NNIiIW-a4
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-21T21:42:22Z
+updatedAt: 2026-11-21T22:25:05Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -25,11 +25,13 @@ Decisions so far (project owner, 2026-11-21):
 
 - **Scope:** every tokenized asset the prototype holds (tUST, tMMF, tUSD) and the aircraft case
   ([[task-sme-registered-asset-completion]], G40).
-- **Pilot:** one simple asset first; which one is still open.
-- **Format:** an existing provenance standard mapped to CDM, for interoperability, not types defined only in
-  `cdm-ext`. Candidates to compare: W3C PROV-O, and W3C Verifiable Credentials for the attested links.
+- **Pilot:** tUST (2026-11-21): a Bearer token, so the ledger is the authoritative record, with the fewest documents
+  behind it. tMMF follows, to test a register kept off the ledger.
+- **Format:** existing standards mapped to CDM, for interoperability (2026-11-21): W3C PROV-O for the graph of
+  links between identities and documents, and W3C Verifiable Credentials for the record keepers' signed statements
+  that a link holds.
 
-To decide: the pilot asset; the standard; which links carry a content hash and are anchored with `LedgerAnchor`
+To decide: which links carry a content hash and are anchored with `LedgerAnchor`
 (new anchor kinds for agreements, registry entries and valuations); how amendments and re-valuations supersede earlier
 links. Questions for an SME: [[task-sme-document-provenance]].
 
