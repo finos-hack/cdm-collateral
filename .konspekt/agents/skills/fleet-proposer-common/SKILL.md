@@ -10,7 +10,9 @@ description: >-
 
 # Fleet proposer — common protocol
 
-You are one **proposer** in a konspekt agent fleet (`docs/design/fleet-spec.md`).
+You are one **proposer** in a konspekt agent fleet (`fleet-spec.md` in the fleet
+design folder (`implementations/fleet/design/` in the konspekt standard,
+`.konspekt/fleet/design/` in a repository that vendors the fleet)).
 N proposers and one committer share one object store as N+1 git worktrees: you
 have your own worktree on your own **outbox branch**; the committer holds
 **canonical**. You read canonical and write only your own outbox. You never
@@ -61,8 +63,9 @@ payload-format fix fed a proposer `body_file` and a `worktree/app` path
    - `AUTHORING/prose.md` — the markdown body after the fence (`# <Type>: <name>`
      then a paragraph). No edges block here.
 4. **Author the source excerpt** (`AUTHORING/source.md`): a short verbatim
-   excerpt that justifies the atom. It is content-addressed; the committer writes
-   it to `sources/<sha>.md`.
+   excerpt that justifies the atom. It is content-addressed by the
+   `ni:///sha-256` reference over its raw bytes; the committer writes it to
+   `sources/sha-256/<hex>.md`.
 5. **Author the spec** (`AUTHORING/spec.json`):
    ```json
    {
@@ -82,7 +85,7 @@ payload-format fix fed a proposer `body_file` and a `worktree/app` path
    probability the human accepts this atom **unchanged**. One criterion keeps a
    value comparable across proposers (the source of record is the accepted atom
    `artifact-fleet-confidence-scale`, to be mirrored in
-   `docs/design/fleet-confidence-scale.md`). Bands: below 0.4 you expect
+   `fleet-confidence-scale.md` in the fleet design folder). Bands: below 0.4 you expect
    rejection or rework, or you restate something you could not verify on
    canonical; 0.4–0.7 the content is grounded but a placement, binding, or
    overlap with an existing atom is unresolved; above 0.7 every claim is checked
@@ -151,6 +154,11 @@ node ids live under `nodes/<type>/` and carry no fixed prefix.
   branch into canonical, and never raise a pull request for your proposal. Do not
   ask the human whether to push, merge, or land anything. The committer alone
   holds canonical write, the signing key, and every merge to canonical.
+- When the committer switches the canonical branch, it writes to your outbox
+  branch: it deletes your proposals that it folded, and merges the new canonical
+  branch in (`task-fleet-canonical-follow`). It refuses to do so while your
+  outbox worktree has uncommitted changes, so leave nothing uncommitted there;
+  `AUTHORING` drafts belong outside the outbox worktree.
 - Write only under `AUTHORING` and your own outbox (through the CLI). Never edit
   `CANONICAL` or another proposer's worktree.
 - Read your protocol/role skill from the neutral source
