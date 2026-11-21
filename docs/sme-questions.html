@@ -27,12 +27,12 @@ footer { max-width: 1100px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <header>
 <p class="kicker">CDM COLLATERAL PROTOTYPE · <a href="index.html">BACK TO THE DECK</a></p>
 <h1>Open questions for collateral SMEs</h1>
-<p>227 questions in 39 topics, 227 of them open. Each topic is one konspekt task in
+<p>229 questions in 40 topics, 229 of them open. Each topic is one konspekt task in
 <code>.konspekt/instance/nodes/task/</code>, which records the question's context and the interim rule the prototype
 uses until an SME answers. Related: <a href="gap-register.html">gap register</a> (which gaps rest on these
 questions), <a href="analysis/sme-question-ledger.md">the ledger in Markdown</a>.</p>
 <nav class="toc"><ul>
-<li><a href="#f1">Variation and initial margin rules</a> (16)</li>
+<li><a href="#f1">Variation and initial margin rules</a> (23)</li>
 <li><a href="#f2">Call lifecycle and settlement</a> (17)</li>
 <li><a href="#f3">Allocation and reconciliation</a> (14)</li>
 <li><a href="#f4">Repo under the GMRA</a> (59)</li>
@@ -68,6 +68,14 @@ questions), <a href="analysis/sme-question-ledger.md">the ledger in Markdown</a>
 <tr id="REG-8"><td class="id">REG-8</td><td>If the aircraft is already mortgaged to the lender and the mortgage is registered as an international interest, what consent does issuing the tokens need, and how does the token holders' claim rank against the mortgage?</td><td class="st open">open</td><td></td></tr>
 <tr id="REG-9"><td class="id">REG-9</td><td>Which document sets the number of tokens, the issue price and the value of the aircraft at tokenization (an appraisal, for example by an ISTAT-certified appraiser), and what in the token terms decides whether the token's price follows the aircraft's value afterwards (published NAV, redemption rights, an oracle feed)?</td><td class="st open">open</td><td></td></tr>
 <tr id="REG-10"><td class="id">REG-10</td><td>Can a token backed by a physical asset be eligible collateral under a CSA, GMRA or GMSLA at all (it is not financial collateral in the Financial Collateral Directive's sense), or does it belong only in an asset-finance agreement? If the prototype should model it, which CDM additions does G40 need first: an asset type, an MSN identifier, an asset-finance agreement type?</td><td class="st open">open</td><td></td></tr>
+</tbody></table>
+</section>
+<section class="task" id="task-sme-document-provenance">
+<h3>Who keeps each link from a token to its asset, and what counts as evidence</h3>
+<p class="task-id">Task <code>task-sme-document-provenance</code> · 2 questions</p>
+<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+<tr id="PROV-1"><td class="id">PROV-1</td><td>For each link from a pledged token back to its underlying asset (the security or loan agreement, the registry entry, the SPV's constitution, the token terms, the valuation), who keeps the authoritative copy? Would a hash of that copy anchored on the ledger, with the copy itself held off the ledger, be accepted as evidence of the link by a court, a regulator or an auditor?</td><td class="st open">open</td><td></td></tr>
+<tr id="PROV-2"><td class="id">PROV-2</td><td>Which of those links must a secured party verify before it accepts a tokenized asset as collateral, and when must it verify them again: at each pledge, at each revaluation, or only when a document is amended?</td><td class="st open">open</td><td></td></tr>
 </tbody></table>
 </section>
 <section class="task" id="task-sme-two-way-im-rules">

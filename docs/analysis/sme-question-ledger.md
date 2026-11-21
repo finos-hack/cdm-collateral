@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 227 questions in 39 tasks, all open. The same questions as a page: [`docs/sme-questions.html`](../sme-questions.html).
+Status of the ledger: 229 questions in 40 tasks, all open. The same questions as a page: [`docs/sme-questions.html`](../sme-questions.html).
 
 ## Variation and initial margin rules
 
@@ -32,6 +32,13 @@ Status of the ledger: 227 questions in 39 tasks, all open. The same questions as
 | REG-8 | If the aircraft is already mortgaged to the lender and the mortgage is registered as an international interest, what consent does issuing the tokens need, and how does the token holders' claim rank against the mortgage? | open | |
 | REG-9 | Which document sets the number of tokens, the issue price and the value of the aircraft at tokenization (an appraisal, for example by an ISTAT-certified appraiser), and what in the token terms decides whether the token's price follows the aircraft's value afterwards (published NAV, redemption rights, an oracle feed)? | open | |
 | REG-10 | Can a token backed by a physical asset be eligible collateral under a CSA, GMRA or GMSLA at all (it is not financial collateral in the Financial Collateral Directive's sense), or does it belong only in an asset-finance agreement? If the prototype should model it, which CDM additions does G40 need first: an asset type, an MSN identifier, an asset-finance agreement type? | open | |
+
+### `task-sme-document-provenance`: who keeps each link from a token to its asset, and what counts as evidence
+
+| ID | Question | Status | Answer |
+|----|----------|--------|--------|
+| PROV-1 | For each link from a pledged token back to its underlying asset (the security or loan agreement, the registry entry, the SPV's constitution, the token terms, the valuation), who keeps the authoritative copy? Would a hash of that copy anchored on the ledger, with the copy itself held off the ledger, be accepted as evidence of the link by a court, a regulator or an auditor? | open | |
+| PROV-2 | Which of those links must a secured party verify before it accepts a tokenized asset as collateral, and when must it verify them again: at each pledge, at each revaluation, or only when a document is amended? | open | |
 
 ### `task-sme-two-way-im-rules`: two-way initial margin and the pledgor's reclaim on default
 

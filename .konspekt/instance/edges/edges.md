@@ -456,3 +456,8 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-authrecord-smeregistered | links | node:task-authoritative-record-settlement-enforcement | node:task-sme-registered-asset-completion |  | accepted |
 | e-men-dticheck-onchain-asset-identity | mentions | node:task-dti-format-check | concept:concept-asr-onchain-asset-identity |  | accepted |
 | e-men-secondledger-ledger-neutrality | mentions | node:task-second-ledger-token-identity | concept:concept-asr-ledger-neutrality |  | accepted |
+| e-dec-tokcoll-docprov | decomposes | node:goal-tokenized-collateral | node:task-document-provenance |  | proposed |
+| e-lnk-tokcoll-smedocprov | links | node:goal-tokenized-collateral | node:task-sme-document-provenance |  | proposed |
+| e-lnk-docprov-smedocprov | links | node:task-document-provenance | node:task-sme-document-provenance |  | proposed |
+| e-lnk-docprov-smeregistered | links | node:task-document-provenance | node:task-sme-registered-asset-completion |  | proposed |
+| e-men-docprov-onchain-asset-identity | mentions | node:task-document-provenance | concept:concept-asr-onchain-asset-identity |  | proposed |

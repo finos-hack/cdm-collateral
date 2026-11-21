@@ -22,7 +22,7 @@ footer { max-width: 1200px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <p class="kicker">CDM COLLATERAL PROTOTYPE · <a href="index.html">BACK TO THE DECK</a> · <a href="sme-questions.html">SME QUESTIONS</a></p>
 <h1 id="cdm-760-gap-register-for-collateral-management">CDM 7.6.0 gap register for collateral management</h1>
 <p>Output of <code>task-cdm-gap-analysis</code> (goal <code>goal-cdm-development</code>). <strong>Consolidation of existing analysis, no new analysis of the CDM source.</strong> Every gap below cites the finding, defect, capability row or blockchain consequence it comes from; the evidence (files, line numbers, scores) stays in those documents. Gap closure is by <strong>local extensions in this repository only</strong> (<code>wp-adr-cdm-local-extensions</code>); nothing is proposed to FINOS.</p>
-<p>Sources: <a href="analysis/findings.md">findings</a> (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3, N1) · <a href="analysis/defects.md">defects</a> (D1–D16) · <a href="analysis/cdm-csa-coverage-matrix.md">CSA coverage matrix</a> (rows 1–25) · <a href="analysis/cdm-other-agreements-coverage-matrix.md">other agreements matrix</a> (R1–R25, S1–S27, T1–T16, C1–C18) · <a href="architecture/blockchain-applicability.md">blockchain applicability</a> §4 (B1–B5). CDM release analysed: 7.6.0 (commit f685b4b). <strong>Base release switched to 7.7.0 on 2026-10-17</strong>: 7.7.0 changes six files, all interest-rate reset instruction composition, so every gap here holds for 7.7.0 unchanged.</p>
+<p>Sources: <a href="analysis/findings.md">findings</a> (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3, N1, N2) · <a href="analysis/defects.md">defects</a> (D1–D16) · <a href="analysis/cdm-csa-coverage-matrix.md">CSA coverage matrix</a> (rows 1–25) · <a href="analysis/cdm-other-agreements-coverage-matrix.md">other agreements matrix</a> (R1–R25, S1–S27, T1–T16, C1–C18) · <a href="architecture/blockchain-applicability.md">blockchain applicability</a> §4 (B1–B5). CDM release analysed: 7.6.0 (commit f685b4b). <strong>Base release switched to 7.7.0 on 2026-10-17</strong>: 7.7.0 changes six files, all interest-rate reset instruction composition, so every gap here holds for 7.7.0 unchanged.</p>
 <h2 id="how-to-read-it">How to read it</h2>
 <ul><li><strong>CDM score:</strong> the lowest coverage score among the capability rows behind the gap (0 absent, 1 enum only, 2 data types, 3 functions, 4 events, 5 samples or tests).</li>
 <li><strong>Needed by:</strong> the console scenarios (<code>../../console/src/scenarios/scenarios.ts</code>) or planned grid columns that rely on the gap being closed. A scenario that "needs" a gap currently does that step in the prototype's own rule engine, outside CDM.</li>
@@ -74,6 +74,7 @@ footer { max-width: 1200px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <tr><td>G24</td><td>No identity for a tokenized asset: no DTI (ISO 24165), network, token contract, token standard, or which record is legally authoritative; <code>DigitalAsset</code> excludes tokenized assets</td><td>B1, B5, S2; ASR <code>concept-asr-onchain-asset-identity</code></td><td>0</td><td>all IM and VM scenarios (tUST, tMMF, tUSD)</td><td>P1</td><td>types</td></tr>
 <tr><td>G25</td><td>No reference from a CDM event or margin call to the ledger record (transaction, block, content hash)</td><td>B2; ADR <code>wp-adr-margin-call-state-onchain</code>, ASR <code>concept-asr-onchain-call-state</code></td><td>0</td><td>all scenarios</td><td>P1</td><td>types</td></tr>
 <tr><td>G40</td><td>No physical asset or asset-finance agreement: no <code>Asset</code> choice for an aircraft (airframe, engine), no MSN or registration-mark identifier, no aircraft mortgage or asset-finance security agreement, no reference to the Cape Town Convention or the International Registry; a token issued on an asset-holding SPV has no CDM asset to point to</td><td>N1</td><td>0</td><td>none (worked case only: aircraft pledged for a $100M loan, tokens on the SPV; <code>task-sme-registered-asset-completion</code> REG-6 to REG-10)</td><td>P3</td><td>types</td></tr>
+<tr><td>G41</td><td>No provenance record linking identities and legal documents: attachments carry no content hash, agreements link only to other agreements, and nothing links an agreement, a registry entry or a valuation to an asset or a token; <code>LedgerAnchor</code> anchors CDM instructions only</td><td>N2; ASR <code>concept-asr-onchain-asset-identity</code></td><td>2</td><td>every tokenized asset (tUST, tMMF, tUSD, the aircraft case); pilot on one asset first (<code>task-document-provenance</code>)</td><td>P2</td><td>types, mapping</td></tr>
 </tbody></table>
 <h3 id="messaging-taxonomies-regulation">Messaging, taxonomies, regulation</h3>
 <table><thead><tr><th>ID</th><th>Gap</th><th>Sources</th><th>CDM score</th><th>Needed by</th><th>Priority</th><th>Closure kind</th></tr></thead><tbody>
@@ -144,9 +145,10 @@ footer { max-width: 1200px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <tr><td>G36</td><td>out of scope</td><td>Regulatory reporting (priority Out)</td></tr>
 <tr><td>G37, G38</td><td>open</td><td>Found while closing G4 (findings X2, X3); the extension leaves <code>transferType</code> absent and reads pledge roles only</td></tr>
 <tr><td>G40</td><td>open</td><td>Added 2026-11-21 (project owner) under <code>goal-tokenized-collateral</code>, finding N1. No flow depends on it; scope (whether non-financial collateral is modelled at all) waits on REG-6 to REG-10</td></tr>
+<tr><td>G41</td><td>open</td><td>Added 2026-11-21 (project owner) under <code>goal-tokenized-collateral</code>, finding N2. <code>task-document-provenance</code>: every tokenized asset in scope, a pilot on one asset first, an existing provenance standard mapped to CDM</td></tr>
 <tr><td>G39</td><td>closed</td><td>Moved to Java (<code>wp-adr-java-cdm-stack</code>, 2026-10-18): CDM's Java distribution and the extension generated to Java run the 23 tests with no workarounds and with CDM's full validation; the Python build is retired (kept at commit <code>e1a2e6f</code> as a reproduction of D14–D16)</td></tr>
 </tbody></table>
-<p>Counts (2026-11-13, after workflow map rows 1 to 30; G40 added 2026-11-21): <strong>21 closed</strong>, <strong>7 partial</strong>, <strong>1 deferred</strong> by the project owner (G26), <strong>9 open</strong> (G11, G27, G28, G30, G31, G32, G37, G38, G40), <strong>2 out of scope</strong> (G13, G36).</p>
+<p>Counts (2026-11-13, after workflow map rows 1 to 30; G40 and G41 added 2026-11-21): <strong>21 closed</strong>, <strong>7 partial</strong>, <strong>1 deferred</strong> by the project owner (G26), <strong>10 open</strong> (G11, G27, G28, G30, G31, G32, G37, G38, G40, G41), <strong>2 out of scope</strong> (G13, G36).</p>
 <h3 id="questions-deferred-to-smes">Questions deferred to SMEs</h3>
 <p>Each gap below was closed or partly closed on an interim assumption of the project owner; the open questions are in <a href="sme-questions.html"><code>sme-question-ledger.md</code></a>, one section per <code>task-sme-*</code> task. The ledger has no gap column, so the sections are matched to gaps by topic.</p>
 <table><thead><tr><th>Gap</th><th>SME ledger sections</th></tr></thead><tbody>
@@ -160,6 +162,7 @@ footer { max-width: 1200px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <tr><td>G22</td><td>the six <code>task-sme-triparty-*</code> sections</td></tr>
 <tr><td>G23</td><td>the five <code>task-sme-ccp-*</code> sections</td></tr>
 <tr><td>G24, G25, G40</td><td><code>task-sme-registered-asset-completion</code></td></tr>
+<tr><td>G41</td><td><code>task-sme-document-provenance</code></td></tr>
 <tr><td>G33</td><td><code>task-sme-repo-buy-sell-back-rules</code></td></tr>
 <tr><td>G34</td><td><code>task-sme-allocation-ranking</code>, <code>task-sme-allocation-concentration</code>, <code>task-sme-triparty-trade-start</code></td></tr>
 <tr><td>G35</td><td><code>task-sme-reconciliation-rules</code>, <code>task-sme-triparty-reporting</code></td></tr>
@@ -178,7 +181,7 @@ footer { max-width: 1200px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <tr><td>S2</td><td>G24, G28</td><td>D8</td><td>G11</td><td>O3</td><td>G12</td></tr>
 <tr><td>S3</td><td>G28</td><td>D9–D12</td><td>G32</td><td>O8</td><td>G1</td></tr>
 <tr><td>D14, D15, D16</td><td>G39</td><td>X1</td><td>G1 (context)</td><td>X2</td><td>G37</td></tr>
-<tr><td>X3</td><td>G38</td><td>N1</td><td>G40</td><td></td><td></td></tr>
+<tr><td>X3</td><td>G38</td><td>N1</td><td>G40</td><td>N2</td><td>G41</td></tr>
 <tr><td>S4</td><td>G28</td><td>D13</td><td>G30</td><td>O9</td><td>G22</td></tr>
 <tr><td>TX1</td><td>G27</td><td>TX4</td><td>G27</td><td>O10</td><td>G23</td></tr>
 <tr><td>TX2</td><td>G3, G26</td><td>TX5</td><td>G1, G16</td><td>O11, O12</td><td>G33</td></tr>
@@ -186,7 +189,7 @@ footer { max-width: 1200px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 </tbody></table>
 <p>Capability rows scored 0–2 are listed in the Sources column of the gap they belong to. Rows scored 3–5 with no defect (for example row 1 agreement terms 5, row 3 eligibility 5, R11 repo substitution 5) are not gaps.</p>
 <h2 id="totals">Totals</h2>
-<p>40 gaps: 15 P1 (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G14, G24, G25, G29, G39), 12 P2, 11 P3, 2 out of scope (G35 moved from out of scope to P3 on 2026-11-07). G37–G39 added 2026-10-17 during gap closure (proposed, for review). G40 added 2026-11-21 (project owner, finding N1).</p>
+<p>41 gaps: 15 P1 (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G14, G24, G25, G29, G39), 13 P2, 11 P3, 2 out of scope (G35 moved from out of scope to P3 on 2026-11-07). G37–G39 added 2026-10-17 during gap closure (proposed, for review). G40 added 2026-11-21 (project owner, finding N1). G41 added 2026-11-21 (project owner, finding N2).</p>
 </main>
 <footer>Generated by <code>docs/presentations/intro_deck/build_site.mjs</code> from
 <code>docs/analysis/gap-register.md</code>. Edit the register, then run the script again.</footer>
