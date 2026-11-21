@@ -1705,3 +1705,5 @@ excluded.
 | task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | cdm-ext/rosetta/cdmx-collateral-ledger-type.rosetta | 2026-11-21T17:59:11Z |
 | task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | cdm-ext/src/test/java/cdmx/LedgerTest.java | 2026-11-21T17:59:11Z |
 | task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | docs/analysis/gap-register.md | 2026-11-21T17:59:11Z |
+| task-dti-format-check | efe9e19640504e65880cb2b3494894e44232d185 | cdm-ext/rosetta/cdmx-collateral-ledger-type.rosetta | 2026-11-21T18:56:23Z |
+| task-dti-format-check | efe9e19640504e65880cb2b3494894e44232d185 | contracts/scripts/deploy.ts | 2026-11-21T18:56:23Z |
