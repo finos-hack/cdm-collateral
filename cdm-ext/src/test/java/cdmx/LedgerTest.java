@@ -131,6 +131,27 @@ class LedgerTest {
         assertTrue(failedText(load(TokenizedAsset.class, doc)).contains("RecordKeeperOffLedger"));
     }
 
+    /** task-dti-format-check: published DTIs pass (Ether X9J9K872S, the EIB bond WGHBLG826, from the DTIF FAQ). */
+    @Test
+    void aWellFormedDtiPasses() {
+        for (String dti : List.of("X9J9K872S", "WGHBLG826")) {
+            Map<String, Object> doc = tokenDoc("XS0000TUST01", TUST, "Bearer");
+            doc.put("dti", dti);
+            assertEquals("", failedText(load(TokenizedAsset.class, doc)), dti);
+        }
+    }
+
+    /** Wrong length, a vowel or Y in the base number, a leading zero, lower case, a symbol: each is rejected. */
+    @Test
+    void aMalformedDtiIsRejectedWithItsReason() {
+        for (String dti : List.of("X9J9K872", "X9J9K872SS", "QUSD00000", "QAGY00000", "0X9J9K87S", "x9j9k872s", "X9J9K87-S")) {
+            Map<String, Object> doc = tokenDoc("XS0000TUST01", TUST, "Bearer");
+            doc.put("dti", dti);
+            String failed = failedText(load(TokenizedAsset.class, doc));
+            assertTrue(failed.contains("dti") && failed.contains(dti), dti + " -> " + failed);
+        }
+    }
+
     @Test
     void anotherStandardIsNamed() {
         Map<String, Object> doc = tokenDoc("XS0000TUST01", TUST, "Bearer");
