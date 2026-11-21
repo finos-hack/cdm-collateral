@@ -38,9 +38,9 @@ const RPC: Record<string, string> = {
 const TOKENS = [
   { sym: "tUST", name: "Tokenized US Treasury 4.25% 2034", isin: "US912810TM60", cusip: "912810TM6", dti: "QX4V2W9N3", price: 984n * SCALE / 10n, haircutBps: 200 },
   { sym: "tMMF", name: "Tokenized USD government MMF", isin: "US9128100000", cusip: "912810000", dti: "QZ0000000", price: 1n * SCALE, haircutBps: 400 },
-  { sym: "tUSD", name: "USD deposit token", isin: "US0000000USD", cusip: "000000USD", dti: "QUSD00000", price: 1n * SCALE, haircutBps: 0 },
+  { sym: "tUSD", name: "USD deposit token", isin: "US0000000USD", cusip: "000000USD", dti: "QSD000000", price: 1n * SCALE, haircutBps: 0 },
   // Loan collateral only (wp-adr-gmsla-substitution): the substitute for tUST under the GMSLA; not CSA-eligible.
-  { sym: "tAGY", name: "Tokenized US agency bond 4.50% 2031", isin: "US3137EAGY10", cusip: "3137EAGY1", dti: "QAGY00000", price: 992n * SCALE / 10n, haircutBps: 300, csa: false },
+  { sym: "tAGY", name: "Tokenized US agency bond 4.50% 2031", isin: "US3137EAGY10", cusip: "3137EAGY1", dti: "QGNC00000", price: 992n * SCALE / 10n, haircutBps: 300, csa: false },
 ];
 
 // Opening balances (whole units) — union of the IM and VM starting positions in scenarios.ts.

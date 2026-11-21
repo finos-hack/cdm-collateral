@@ -2,7 +2,7 @@
 id: task-dti-format-check
 type: task
 title: Check the format of a token's ISO 24165 DTI
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: tokenized-collateral
@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.75
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-21T17:59:11Z
+updatedAt: 2026-11-21T18:16:20Z
 ```
 # Task: check the format of a token's ISO 24165 DTI
 
@@ -34,6 +34,11 @@ Rules, from the DTIF's DTI Implementation Guide 2.0 and DTI FAQ: nine characters
 check character "computed using the method specified in Annex A of ISO standard 24165"; the base number excludes
 A, E, I, O, U and Y; a DTI does not start with zero. Annex A is not available, so the check character's value is not
 verified, only that it is a digit or an upper-case letter. Upper case only is an assumption.
+
+Decisions by the project owner (2026-11-21): leave the check character unverified and say so in the model;
+keep upper case only as a noted assumption (every published DTI is upper case; no source found says lower case is
+invalid). The `deploy.ts` DTIs `QUSD00000` and `QAGY00000` broke the rule and were replaced with `QSD000000` and
+`QGNC00000`. Resolved by the project owner.
 
 `LedgerTest`: published DTIs pass (X9J9K872S, WGHBLG826); wrong length, a vowel or Y, a leading zero, lower case and a
 symbol are rejected, the failure naming `dti` and the value.

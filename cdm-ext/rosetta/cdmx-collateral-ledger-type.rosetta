@@ -22,8 +22,8 @@ enum AuthoritativeRecordEnum: <"Which record decides who holds the asset.">
 // task-dti-format-check. Rules from the DTIF's DTI Implementation Guide 2.0 and DTI FAQ (ISO 24165-1): nine
 // characters, an eight-character base number then a check character; the base excludes the vowels A, E, I, O, U and
 // the letter Y; a DTI does not start with zero. The check character is computed by ISO 24165 Annex A, which is not
-// available here, so its value is not checked: only that it is a digit or an upper-case letter. Upper case only is
-// an assumption (every published example is upper case).
+// available here, so its value is not checked (project owner, 2026-11-21): only that it is a digit or an upper-case
+// letter. Upper case only is a noted assumption (every published example is upper case).
 typeAlias DigitalTokenIdentifier: <"ISO 24165 Digital Token Identifier: an eight-character base number (digits and consonants other than Y, not starting with 0) and a check character.">
     string(pattern: "[1-9B-DF-HJ-NP-TV-XZ][0-9B-DF-HJ-NP-TV-XZ]{7}[0-9A-Z]")
 

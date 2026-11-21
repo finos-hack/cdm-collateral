@@ -1586,3 +1586,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-docprov-smedocprov | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
 | edge:e-lnk-docprov-smeregistered | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
 | edge:e-men-docprov-onchain-asset-identity | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| node:task-dti-format-check | status | open | resolved | 2026-11-21T18:16:20Z |  | denisurusov |
