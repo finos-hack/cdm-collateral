@@ -1537,6 +1537,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-re-seeding | review | proposed | accepted | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
 | node:task-konspekt-re-seeding | status | open | resolved | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
 | edge:e-dec-konspektadopt-reseeding | review | proposed | accepted | 2026-11-15T16:16:33Z | ni:///sha-256;IdkCgyJ2Trhzht84jTS8Ij9ktdaSml3_G3dewCNlJTA | denisurusov |
+| node:task-docs-readme-organization | status | open | resolved | 2026-11-20T12:40:31Z |  | denisurusov |
 | node:goal-tokenized-collateral | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
 | node:goal-tokenized-collateral | status |  | active | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
 | edge:e-lnk-tokcoll-gapclosure | review |  | proposed | 2026-11-20T19:51:36Z | ni:///sha-256;zMz4c0RLlkKvHZJaqJm9O9mYoExmGssJv5XXBjuc76Q |  |
