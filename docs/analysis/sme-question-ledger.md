@@ -4,7 +4,7 @@ Every question to revisit with a business subject-matter expert (SME), one row p
 konspekt task, which holds the question's context and the project owner's interim decision. Add a row whenever a task
 records a new assumption or question for an SME; set **Status** to `answered` and fill **Answer** when an SME replies.
 
-Status of the ledger: 222 questions in 39 tasks, all open. The same questions as a page: [`docs/sme-questions.html`](../sme-questions.html).
+Status of the ledger: 227 questions in 39 tasks, all open. The same questions as a page: [`docs/sme-questions.html`](../sme-questions.html).
 
 ## Variation and initial margin rules
 
@@ -27,6 +27,11 @@ Status of the ledger: 222 questions in 39 tasks, all open. The same questions as
 | REG-3 | What gives the secured party control for each record type (for example UCC Articles 8, 9 and 12, or the English law equivalent), and is the escrow contract enough? | open | |
 | REG-4 | On enforcement, who must act for each record type, and can the secured party enforce without the record keeper? | open | |
 | REG-5 | If the chain and the register disagree, which prevails, and how is the difference resolved? | open | |
+| REG-6 | Worked case: an asset manager pledges an aircraft to a bank for a $100M loan, and tokens are issued on the SPV that holds it. Is the aircraft a Registered asset in the prototype's terms, with the International Registry (Cape Town Convention) and the national registry (FAA in the US) as the authoritative records, and does the on-chain record count for anything legally? | open | |
+| REG-7 | In that case, what does one token represent: a share of the SPV, a note it issues, or a beneficial interest in the aircraft? Which document fixes it (offering memorandum, token terms, trust deed), and which party keeps the record of who holds the tokens? | open | |
+| REG-8 | If the aircraft is already mortgaged to the lender and the mortgage is registered as an international interest, what consent does issuing the tokens need, and how does the token holders' claim rank against the mortgage? | open | |
+| REG-9 | Which document sets the number of tokens, the issue price and the value of the aircraft at tokenization (an appraisal, for example by an ISTAT-certified appraiser), and what in the token terms decides whether the token's price follows the aircraft's value afterwards (published NAV, redemption rights, an oracle feed)? | open | |
+| REG-10 | Can a token backed by a physical asset be eligible collateral under a CSA, GMRA or GMSLA at all (it is not financial collateral in the Financial Collateral Directive's sense), or does it belong only in an asset-finance agreement? If the prototype should model it, which CDM additions does G40 need first: an asset type, an MSN identifier, an asset-finance agreement type? | open | |
 
 ### `task-sme-two-way-im-rules`: two-way initial margin and the pledgor's reclaim on default
 

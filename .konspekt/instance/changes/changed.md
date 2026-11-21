@@ -1679,3 +1679,15 @@ excluded.
 | task-konspekt-re-seeding | 30fea910589de5a4b3f6f025703b955b022e6a39 | docs/setup/setup-windows.md | 2026-11-15T16:25:13Z |
 | task-konspekt-re-seeding | 22b36978730483fe656c8ad12f7f100128e6ce81 | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-15T16:29:10Z |
 | task-konspekt-re-seeding | 96f5aeabc851bcc70bf462851b7e0f3fe3a0f805 | .konspekt/lib/conformance.mjs | 2026-11-15T19:15:51Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | README.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/analysis/findings.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/analysis/gap-register.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/analysis/sme-question-ledger.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/gap-register.html | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/index.html | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/presentations/intro_deck/slides/sme.html | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | ea745b0ae817597a0611cf2b8a64b8c426d18ed3 | docs/sme-questions.html | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | 92dd78dc34b5f5a41fb6e38359e5928e3146687a | docs/analysis/business-case.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | 92dd78dc34b5f5a41fb6e38359e5928e3146687a | docs/presentations/project-narrative.md | 2026-11-21T20:20:07Z |
+| goal-tokenized-collateral | 9cb111083dcf44bf90f9ac53eec9bca02226e938 | docs/presentations/project-narrative.md | 2026-11-21T20:20:07Z |

@@ -27,7 +27,7 @@ footer { max-width: 1100px; margin: 48px auto; padding: 0 24px; color: #4A5568; 
 <header>
 <p class="kicker">CDM COLLATERAL PROTOTYPE · <a href="index.html">BACK TO THE DECK</a></p>
 <h1>Open questions for collateral SMEs</h1>
-<p>222 questions in 39 topics, 222 of them open. Each topic is one konspekt task in
+<p>227 questions in 39 topics, 227 of them open. Each topic is one konspekt task in
 <code>.konspekt/instance/nodes/task/</code>, which records the question's context and the interim rule the prototype
 uses until an SME answers. Related: <a href="gap-register.html">gap register</a> (which gaps rest on these
 questions), <a href="analysis/sme-question-ledger.md">the ledger in Markdown</a>.</p>
@@ -56,13 +56,18 @@ questions), <a href="analysis/sme-question-ledger.md">the ledger in Markdown</a>
 </section>
 <section class="task" id="task-sme-registered-asset-completion">
 <h3>What completes settlement and enforcement of registered and claim-based tokens</h3>
-<p class="task-id">Task <code>task-sme-registered-asset-completion</code> · 5 questions</p>
+<p class="task-id">Task <code>task-sme-registered-asset-completion</code> · 10 questions</p>
 <table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
 <tr id="REG-1"><td class="id">REG-1</td><td>For a Registered asset, is a pledge or title transfer complete at the on-chain transfer, or when the transfer agent updates the register? Is the on-chain transfer an instruction to the register or evidence of it?</td><td class="st open">open</td><td></td></tr>
 <tr id="REG-2"><td class="id">REG-2</td><td>For a Claim asset, what must the intermediary confirm, and does the token holder have a proprietary claim or only a contractual one?</td><td class="st open">open</td><td></td></tr>
 <tr id="REG-3"><td class="id">REG-3</td><td>What gives the secured party control for each record type (for example UCC Articles 8, 9 and 12, or the English law equivalent), and is the escrow contract enough?</td><td class="st open">open</td><td></td></tr>
 <tr id="REG-4"><td class="id">REG-4</td><td>On enforcement, who must act for each record type, and can the secured party enforce without the record keeper?</td><td class="st open">open</td><td></td></tr>
 <tr id="REG-5"><td class="id">REG-5</td><td>If the chain and the register disagree, which prevails, and how is the difference resolved?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-6"><td class="id">REG-6</td><td>Worked case: an asset manager pledges an aircraft to a bank for a $100M loan, and tokens are issued on the SPV that holds it. Is the aircraft a Registered asset in the prototype's terms, with the International Registry (Cape Town Convention) and the national registry (FAA in the US) as the authoritative records, and does the on-chain record count for anything legally?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-7"><td class="id">REG-7</td><td>In that case, what does one token represent: a share of the SPV, a note it issues, or a beneficial interest in the aircraft? Which document fixes it (offering memorandum, token terms, trust deed), and which party keeps the record of who holds the tokens?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-8"><td class="id">REG-8</td><td>If the aircraft is already mortgaged to the lender and the mortgage is registered as an international interest, what consent does issuing the tokens need, and how does the token holders' claim rank against the mortgage?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-9"><td class="id">REG-9</td><td>Which document sets the number of tokens, the issue price and the value of the aircraft at tokenization (an appraisal, for example by an ISTAT-certified appraiser), and what in the token terms decides whether the token's price follows the aircraft's value afterwards (published NAV, redemption rights, an oracle feed)?</td><td class="st open">open</td><td></td></tr>
+<tr id="REG-10"><td class="id">REG-10</td><td>Can a token backed by a physical asset be eligible collateral under a CSA, GMRA or GMSLA at all (it is not financial collateral in the Financial Collateral Directive's sense), or does it belong only in an asset-finance agreement? If the prototype should model it, which CDM additions does G40 need first: an asset type, an MSN identifier, an asset-finance agreement type?</td><td class="st open">open</td><td></td></tr>
 </tbody></table>
 </section>
 <section class="task" id="task-sme-two-way-im-rules">
