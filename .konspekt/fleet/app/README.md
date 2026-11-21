@@ -7,7 +7,7 @@ agents each write to their own git **outbox** branch; one deterministic
 
 This README explains **when, how, and why each `.mjs` runs**. For the design
 and rationale see `../docs/DESIGN.md`; for the fleet model see
-`../../../docs/design/fleet-spec.md`; `spec/` governs on any conflict.
+`../design/fleet-spec.md`; `spec/` governs on any conflict.
 
 ## What triggers the code
 
@@ -43,6 +43,8 @@ in-memory state between commands.
 | `bless --accept … --reject …` | operator | after the human decides | one field-only commit per atom: flip `review`, append the decision record |
 | `accept-release --claim … --by …` | operator | to apply a pending release | flip the worked node `active → resolved\|abandoned`, attributed to the human acceptor |
 | `teardown` | operator | to dismantle | remove the proposer worktrees (keeps canonical, the object store, and the outbox branches) |
+| `switch-canonical --to <branch> [--create]` | operator | to move the fleet to another canonical branch | fleet mode only; refuse unless every worktree is clean and every pending proposal verifies; drain onto the current branch; delete the drained items from each outbox; switch canonical; write `canonicalBranch` into the config; merge the new branch into each outbox |
+| `follow-canonical [--from <branch>]` | operator | after switching the canonical worktree by hand | the same follow, draining onto the previous branch through a temporary worktree; `run-pass --watch` runs it on its own when it observes the switch |
 
 Attach model: config-driven commands take `--canonical <path>` and read the
 committed `.konspekt/fleet/config/fleet.json` — no hand-written manifest, and the
@@ -73,7 +75,8 @@ is the execution order; steps map to `fleet-spec.md` § Committer protocol.
    `cli.mjs` → `outbox.mjs` (`assembleProposal` authors the stored-form atom:
    a ```yaml fence with `review: proposed` and provenance, plus the source,
    wiring edges, and a fleet envelope) → `payload.mjs` (content-address
-   `entity.md` and `source.md` via `lib/conformance.mjs gitBlobSha`) → `git.mjs`
+   `entity.md` by hex SHA-256 via `lib/conformance.mjs sha256Hex` and
+   `source.md` by its `ni:` reference via `niRef`) → `git.mjs`
    (commit onto the outbox branch). Result: `proposals/<id>/` on that agent's
    outbox, nowhere else.
 3. **Dry pass** — operator runs `run-pass --dry-run`. → `committer.mjs`
@@ -112,18 +115,19 @@ proposer agent only ever touches step 2, only on its own branch.
 | `cli.mjs` | the shell | the only entry point; parses flags and dispatches the five commands |
 | `worktrees.mjs` | `init`, and every command via `loadFleet` | stand up / attach the N+1 worktrees; map outbox branch → owner handle (`fleet.json`) |
 | `outbox.mjs` | `propose` | proposer side: author a stored-form atom (`entity.md`, `source.md`, `edges.md`, `meta.json`), write `proposals/<id>/`, commit to the outbox |
-| `payload.mjs` | `outbox.mjs`, `verify.mjs`, `committer.mjs` | content-address the atom: canonicalize `entity.md` and compute its git blob SHA (the proposal id); hash `source.md` |
-| `verify.mjs` | `run-pass` (both modes) via `committer.mjs` | per-proposal checks (source hash vs the atom's `contentHash`, origin == branch owner, entity_type within grant, `review: proposed`, confidence + binding present, `depends_on`); failures set aside |
+| `payload.mjs` | `outbox.mjs`, `verify.mjs`, `committer.mjs` | content-address the atom: canonicalize `entity.md` and compute its hex SHA-256 (the proposal id); compute the `ni:///sha-256` reference of `source.md` (the atom's `sourceRef`) |
+| `verify.mjs` | `run-pass` (both modes) via `committer.mjs` | per-proposal checks (the `ni:` reference of `source.md` vs the atom's `sourceRef`, origin == branch owner, entity_type within grant, `review: proposed`, confidence + binding present, `depends_on`); failures set aside |
 | `order.mjs` | `run-pass` (fold) | fold order (arrival) kept apart from bless order (`depends_on` gate) |
 | `fold.mjs` | `run-pass` (fold) | verify-and-append: write the proposer's `entity.md` onto canonical unchanged, append its edges and birth transition rows, write the source excerpt |
 | `proposed-ref.mjs` | `run-pass` (fold) and `rebuild-index` | append the fold log; build/rebuild the derived index from canonical |
 | `bless.mjs` | `bless` | field-only accept (flip `review`, append accept record) and reject tombstone |
 | `committer.mjs` | `run-pass`, `bless` | the deterministic passes: `verifyPass`, `foldPass`, `blessPass` — read every outbox, apply one pass, commit |
-| `git.mjs` | most of the above | plumbing: `hash-object`, worktree add/remove, commit with DCO sign-off, post-write SHA recheck |
+| `follow.mjs` | `switch-canonical`, `follow-canonical`, `run-pass --watch` | canonical branch following: clean check, drain onto the old branch, outbox clear, config write, outbox merge, recorded branch in `.konspekt-fleet/canonical-branch` (task-fleet-canonical-follow) |
+| `git.mjs` | most of the above | git commands: worktree add/remove, branch switch and merge, commit with DCO sign-off, reading a file at a revision |
 
 The modules that touch the stored form (`payload`, `verify`, `fold`,
 `committer`, `proposed-ref`, `bless`) reuse the shared data model from
-`../../../lib/conformance.mjs` (`gitBlobSha`, `splitEntityFile`,
+`../../lib/conformance.mjs` (`sha256Hex`, `niRef`, `parseNiRef`, `resolveContentRef`, `splitEntityFile`,
 `loadInstance`, `parseYamlSubset`) rather than re-implementing it.
 
 ## State on disk
@@ -132,8 +136,8 @@ The modules that touch the stored form (`payload`, `verify`, `fold`,
   atoms. Authoritative.
 - **`outbox/<handle>` branches** — each proposer's `proposals/<id>/` stored-form
   atoms (`entity.md`, `source.md`, `edges.md`, `meta.json`).
-- **`.konspekt-fleet/`** (gitignored) — `folded.md`, `decisions.md`, and the
-  materialized index. Runtime logs, rebuildable from canonical, never committed
+- **`.konspekt-fleet/`** (gitignored) — `folded.md`, `decisions.md`, the
+  materialized index, and `canonical-branch` (the last branch folded onto). Runtime logs, rebuildable from canonical, never committed
   (`fleet-spec.md` § Runtime state outside history).
 - **`fleet.json`** (at the fleet root) — the session manifest: canonical path
   and branch, and each proposer's handle/path/branch. `loadFleet` reads it.

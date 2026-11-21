@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "canonicalBranch": "e2e-wiring",
+  "canonicalBranch": "main",
   "topology": "worktree",
   "agents": [
     { "handle": "spec-writer", "role": "fleet-spec-writer", "entityTypes": ["artifact", "noteworthy"] }
