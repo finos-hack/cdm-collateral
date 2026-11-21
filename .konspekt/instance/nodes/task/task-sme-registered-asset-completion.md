@@ -14,7 +14,7 @@ provenance:
     sourceRef: 67989287b51231983b6e1159a2195a185f5d16b3
     contentHash: 67989287b51231983b6e1159a2195a185f5d16b3
 createdAt: 2026-11-04T02:21:16Z
-updatedAt: 2026-11-04T02:21:16Z
+updatedAt: 2026-11-21T19:45:00Z
 ```
 # Task: confirm completion for registered and claim-based tokenized collateral
 
@@ -34,3 +34,23 @@ title, which affects whether the secured party's interest is perfected and enfor
 5. If the chain and the register disagree, which one prevails, and how is the difference resolved?
 
 The answers set the completion rules in item 6 of [[nw-ledger-anchor-redesign]].
+
+**Worked case (project owner, 2026-11-21, under [[goal-tokenized-collateral]]).** An asset manager pledges an aircraft
+to a bank for a $100M loan, and tokens are issued on the SPV that holds it. The aircraft is identified by
+manufacturer, model and manufacturer's serial number (MSN) on the International Registry (Cape Town Convention and
+Aircraft Protocol); the loan agreement and an aircraft mortgage, registered as an international interest, link it to
+the $100M; the token's offering memorandum and terms, an appraisal and the smart contract (with its DTI) link it to
+the tokens. CDM 7.7.0 can hold the loan but not the aircraft or its mortgage (gap G40, finding N1). Further questions:
+
+6. Is the aircraft a Registered asset in the prototype's terms, with the International Registry and the national
+   registry as authoritative records, and does the on-chain record count for anything legally?
+7. What does one token represent (SPV share, note, beneficial interest), which document fixes it, and who keeps the
+   record of holders?
+8. If the aircraft is already mortgaged to the lender, what consent does issuing the tokens need, and how does the
+   token holders' claim rank against the registered mortgage?
+9. Which document sets the token count, issue price and value at tokenization, and what in the token terms decides
+   whether the token price follows the aircraft's value afterwards (NAV, redemption rights, oracle feed)?
+10. Can a token backed by a physical asset be eligible collateral under a CSA, GMRA or GMSLA, or only under an
+    asset-finance agreement? If the prototype should model it, which CDM additions does G40 need first?
+
+Questions 6 to 10 are REG-6 to REG-10 in `docs/analysis/sme-question-ledger.md`.

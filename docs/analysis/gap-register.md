@@ -6,7 +6,7 @@ comes from; the evidence (files, line numbers, scores) stays in those documents.
 in this repository only** (`wp-adr-cdm-local-extensions`); nothing is proposed to FINOS.
 
 Sources:
-[findings](findings.md) (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3) ·
+[findings](findings.md) (F2, M1–M5, S1–S4, TX1–TX5, O1–O3, O8–O12, X1–X3, N1) ·
 [defects](defects.md) (D1–D16) ·
 [CSA coverage matrix](cdm-csa-coverage-matrix.md) (rows 1–25) ·
 [other agreements matrix](cdm-other-agreements-coverage-matrix.md) (R1–R25, S1–S27, T1–T16, C1–C18) ·
@@ -85,6 +85,7 @@ interest-rate reset instruction composition, so every gap here holds for 7.7.0 u
 |---|---|---|---|---|---|---|
 | G24 | No identity for a tokenized asset: no DTI (ISO 24165), network, token contract, token standard, or which record is legally authoritative; `DigitalAsset` excludes tokenized assets | B1, B5, S2; ASR `concept-asr-onchain-asset-identity` | 0 | all IM and VM scenarios (tUST, tMMF, tUSD) | P1 | types |
 | G25 | No reference from a CDM event or margin call to the ledger record (transaction, block, content hash) | B2; ADR `wp-adr-margin-call-state-onchain`, ASR `concept-asr-onchain-call-state` | 0 | all scenarios | P1 | types |
+| G40 | No physical asset or asset-finance agreement: no `Asset` choice for an aircraft (airframe, engine), no MSN or registration-mark identifier, no aircraft mortgage or asset-finance security agreement, no reference to the Cape Town Convention or the International Registry; a token issued on an asset-holding SPV has no CDM asset to point to | N1 | 0 | none (worked case only: aircraft pledged for a $100M loan, tokens on the SPV; `task-sme-registered-asset-completion` REG-6 to REG-10) | P3 | types |
 
 ### Messaging, taxonomies, regulation
 
@@ -165,11 +166,12 @@ Local extension in [`../../cdm-ext`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | G33 | partial | Buy/sell-back closed (`BuySellBackSellBackPrice` and related, row C10). Securities lending delivery and return are built in Rune over `Create_BusinessEvent` (`GmslaLoanSettlement`, row C13), not on CDM's Java workflows; partial (project owner, 2026-11-13) |
 | G36 | out of scope | Regulatory reporting (priority Out) |
 | G37, G38 | open | Found while closing G4 (findings X2, X3); the extension leaves `transferType` absent and reads pledge roles only |
+| G40 | open | Added 2026-11-21 (project owner) under `goal-tokenized-collateral`, finding N1. No flow depends on it; scope (whether non-financial collateral is modelled at all) waits on REG-6 to REG-10 |
 | G39 | closed | Moved to Java (`wp-adr-java-cdm-stack`, 2026-10-18): CDM's Java distribution and the extension generated to Java run the 23 tests with no workarounds and with CDM's full validation; the Python build is retired (kept at commit `e1a2e6f` as a reproduction of D14–D16) |
 
 
-Counts (2026-11-13, after workflow map rows 1 to 30): **21 closed**, **7 partial**, **1 deferred** by the project owner
-(G26), **8 open** (G11, G27, G28, G30, G31, G32, G37, G38), **2 out of scope** (G13, G36).
+Counts (2026-11-13, after workflow map rows 1 to 30; G40 added 2026-11-21): **21 closed**, **7 partial**, **1 deferred** by the project owner
+(G26), **9 open** (G11, G27, G28, G30, G31, G32, G37, G38, G40), **2 out of scope** (G13, G36).
 
 ### Questions deferred to SMEs
 
@@ -188,7 +190,7 @@ column, so the sections are matched to gaps by topic.
 | G19, G21 | `task-sme-gmsla-terms-baseline` |
 | G22 | the six `task-sme-triparty-*` sections |
 | G23 | the five `task-sme-ccp-*` sections |
-| G24, G25 | `task-sme-registered-asset-completion` |
+| G24, G25, G40 | `task-sme-registered-asset-completion` |
 | G33 | `task-sme-repo-buy-sell-back-rules` |
 | G34 | `task-sme-allocation-ranking`, `task-sme-allocation-concentration`, `task-sme-triparty-trade-start` |
 | G35 | `task-sme-reconciliation-rules`, `task-sme-triparty-reporting` |
@@ -212,7 +214,7 @@ Every source ID and where it went.
 | S2 | G24, G28 | D8 | G11 | O3 | G12 |
 | S3 | G28 | D9–D12 | G32 | O8 | G1 |
 | D14, D15, D16 | G39 | X1 | G1 (context) | X2 | G37 |
-| X3 | G38 | | | | |
+| X3 | G38 | N1 | G40 | | |
 | S4 | G28 | D13 | G30 | O9 | G22 |
 | TX1 | G27 | TX4 | G27 | O10 | G23 |
 | TX2 | G3, G26 | TX5 | G1, G16 | O11, O12 | G33 |
@@ -223,4 +225,4 @@ defect (for example row 1 agreement terms 5, row 3 eligibility 5, R11 repo subst
 
 ## Totals
 
-39 gaps: 15 P1 (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G14, G24, G25, G29, G39), 12 P2, 10 P3, 2 out of scope (G35 moved from out of scope to P3 on 2026-11-07). G37–G39 added 2026-10-17 during gap closure (proposed, for review).
+40 gaps: 15 P1 (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G14, G24, G25, G29, G39), 12 P2, 11 P3, 2 out of scope (G35 moved from out of scope to P3 on 2026-11-07). G37–G39 added 2026-10-17 during gap closure (proposed, for review). G40 added 2026-11-21 (project owner, finding N1).

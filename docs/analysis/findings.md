@@ -42,6 +42,7 @@ ID it has in its source document. CDM version for all findings: release `7.6.0`,
 | X1 | CDM's lifecycle events are trade-based: `BusinessEvent` records `TradeState`s and `Create_Transfer` builds transfers from a `TradeState`; a margin call has no trade, so no CDM event type records its steps | Lifecycle | open (extension: own event type, `wp-adr-cdm-collateral-events`) |
 | X2 | `UnscheduledTransferEnum` has no value for a collateral delivery or a collateral return (its `Return` is the securities-lending return) | Taxonomy | open |
 | X3 | `PartyRoleEnum` has `Pledgor` (New York law), `Chargor` (English law) and `SecuredParty`, but no transferor or transferee role for title-transfer collateral (English-law VM CSA); `RegIMRoleEnum` repeats pledgor and secured party with other spellings (`Secured`) | Parties | open |
+| N1 | CDM has no asset type for a physical asset such as an aircraft (no airframe, engine or MSN identifier) and no agreement type for asset finance (aircraft mortgage or security agreement); a token backed by such an asset has nothing to point to | Assets | open |
 
 ## Details
 
@@ -154,6 +155,21 @@ describes a margin delivery or the return of excess collateral. The extension le
 Law", `Chargor` "under English Law", `SecuredParty` "receives credit support under New York or English Law". No
 value names the parties of a title transfer. `event-common-enum.rosetta`, `RegIMRoleEnum`: `Pledgor`, `Secured`. The
 extension reads `Pledgor` and `SecuredParty` only.
+
+### N1 — Non-financial collateral (CDM 7.7.0, 2026-11-21)
+
+**N1.** Found under `goal-tokenized-collateral` while working through a worked case: an aircraft pledged to a lender
+for a $100M loan, and tokens issued on the SPV that holds it. `base-staticdata-asset-common-type.rosetta`, `Asset`:
+a choice of `Cash`, `Commodity`, `DigitalAsset` (which "excludes the digital representation of other Assets") and
+`Instrument` (`ListedDerivative`, `Loan`, `Security`). No choice holds a physical asset. `AssetIdTypeEnum` has
+security, exchange and vendor codes (ISIN, CUSIP, FIGI, SEDOL and others) and `Other`; no manufacturer serial number
+(MSN), engine serial number or registration mark. `AssetTypeEnum` (eligibility): Security, Cash, Commodity,
+ListedDerivative, Loan, LetterOfCredit, Other. `legaldocumentation-common-enum.rosetta`, `LegalAgreementTypeEnum`:
+BrokerConfirmation, Confirmation, CreditSupportAgreement, MasterAgreement, MasterConfirmation, SecurityAgreement
+(related to a CTA), Other; no aircraft mortgage or asset-finance security agreement. No reference to the Cape Town
+Convention, its Aircraft Protocol or the International Registry anywhere in the model. The loan itself can be held as
+`Instrument -> Loan`; the aircraft, its mortgage and the link from a token to the aircraft cannot.
+
 
 ## Moved to defects.md
 
