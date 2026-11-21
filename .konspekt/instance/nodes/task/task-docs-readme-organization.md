@@ -2,7 +2,7 @@
 id: task-docs-readme-organization
 type: task
 title: Organise the docs behind a clean README
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: clean-up-and-prep

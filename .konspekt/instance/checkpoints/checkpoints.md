@@ -17,3 +17,4 @@ open, `resume` reads the last row.
 | 2026-11-12T23:37:23Z | task-ccp-clearing | ni:///sha-256;T2Rbxoi0aS_bgCIkEXn378DstcnppM2WnaNBzX3ziOw | claude-code-cloud | claude-opus-5-5 | denisurusov |
 | 2026-11-13T03:21:32Z | task-ccp-margin | ni:///sha-256;5_hBvUoF1L1NdOPVHcFA2wWadssBOfw40uSaUNFk1Os | claude-code-cli | claude-opus-5-5 | denisurusov |
 | 2026-11-13T03:23:59Z | task-ccp-margin | ni:///sha-256;e79AVjwMIAaXQGqr-G___D30xDctzDv5I_lBbStJ-9c | claude-code-cli | claude-opus-5-5 | denisurusov |
+| 2026-11-20T21:23:32Z | goal-tokenized-collateral | ni:///sha-256;XfCS8PZ-4UdC8EfE5dx4hYLtyO-6dGZWG5z8pyV8RqA | claude-code-cli | claude-opus-5-5 | denisurusov |

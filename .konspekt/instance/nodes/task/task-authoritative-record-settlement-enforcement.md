@@ -1,0 +1,28 @@
+```yaml
+id: task-authoritative-record-settlement-enforcement
+type: task
+title: Make settlement and enforcement depend on the token's authoritative record
+status: open
+review: accepted
+provenance:
+  conversationId: tokenized-collateral
+  sourceRef: ni:///sha-256;aJTyNDE7zn5LV5S5ukttpknDpzHaSsIWhmvpRGu1YQQ
+  timestamp: 2026-11-20T20:06:53Z
+  confidence: 0.8
+createdAt: 2026-11-20T20:06:53Z
+updatedAt: 2026-11-20T21:22:45Z
+```
+# Task: make settlement and enforcement depend on the token's authoritative record
+
+Under [[goal-tokenized-collateral]]. G24 ([[task-cdm-gap-closure]]) records for each token which record is legally
+authoritative (`AuthoritativeRecordEnum`: Bearer, Registered, Claim). Settlement (G4) and enforcement (G14) do not read
+it: a mined on-chain transfer counts as complete for every asset.
+
+Done when:
+
+- For a Bearer asset, settlement and enforcement behave as today.
+- For a Registered or Claim asset (tMMF in the prototype), a movement or enforcement is complete only after the record
+  keeper's confirmation, in the extension (`cdm-ext`) and in the prototype services.
+- Tests cover each of the three values.
+
+Blocked on the SME's answer to what the confirmation is ([[task-sme-registered-asset-completion]]).
