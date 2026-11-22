@@ -1859,3 +1859,6 @@ excluded.
 | task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/spec/personas/engineer/AGENTS.md | 2026-11-22T20:01:28Z |
 | task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/spec/personas/engineer/SPEC.md | 2026-11-22T20:01:28Z |
 | task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/spec/personas/engineer/registry.mjs | 2026-11-22T20:01:28Z |
+| task-substitution-ledger-anchors | bb2494192badaa80c17ac417e51a396aac41aa7b | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T20:04:33Z |
+| task-substitution-ledger-anchors | bb2494192badaa80c17ac417e51a396aac41aa7b | docs/analysis/gap-register.md | 2026-11-22T20:04:33Z |
+| task-substitution-ledger-anchors | bb2494192badaa80c17ac417e51a396aac41aa7b | docs/gap-register.html | 2026-11-22T20:04:33Z |
