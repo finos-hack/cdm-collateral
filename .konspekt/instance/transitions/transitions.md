@@ -1642,3 +1642,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-kit-refresh-rest-fallback | review |  | accepted | 2026-11-22T21:21:07Z | ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI | denisurusov |
 | node:task-konspekt-kit-refresh-rest-fallback | status |  | open | 2026-11-22T21:21:07Z | ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI | denisurusov |
 | edge:e-dec-konspektadopt-kitrefreshrest | review |  | accepted | 2026-11-22T21:21:07Z | ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI | denisurusov |
+| node:task-konspekt-review-units-graphql-error | review |  | proposed | 2026-11-22T21:38:22Z | ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c |  |
+| node:task-konspekt-review-units-graphql-error | status |  | open | 2026-11-22T21:38:22Z | ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c |  |
+| edge:e-dec-konspektadopt-reviewunitsgqlerror | review |  | proposed | 2026-11-22T21:38:22Z | ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c |  |
