@@ -26,12 +26,16 @@ public final class ProvRecords {
     public static final String PROV = "http://www.w3.org/ns/prov#";
     public static final String CDMX = "https://github.com/finos-hack/cdm-collateral/ns/provenance#";
 
-    /** The relations of a token's provenance path (whiteboard artifact-provenance-whiteboard, mapped to tUST in the ADR). */
+    /** The relations of a token's provenance path (whiteboard artifact-provenance-whiteboard, mapped to tUST and tMMF). */
     public static final String ISSUED_AGAINST = "cdmx:IssuedAgainst";
     public static final String TOKEN_TERMS = "cdmx:TokenTerms";
     public static final String CUSTODY = "cdmx:Custody";
     public static final String CONSTITUTION = "cdmx:Constitution";
     public static final String VALUATION = "cdmx:Valuation";
+    /** For a Registered or Claim token: the record keeper's statement of what its register holds for the token. */
+    public static final String REGISTER = "cdmx:Register";
+    /** For a Registered or Claim token: the control agreement under which the record keeper follows the secured party. */
+    public static final String CONTROL_AGREEMENT = "cdmx:ControlAgreement";
 
     private ProvRecords() {}
 

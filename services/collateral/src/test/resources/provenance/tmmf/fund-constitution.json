@@ -1,0 +1,8 @@
+{
+  "fixture": "tMMF provenance (task-document-provenance). Synthetic prospectus extract.",
+  "document": "Fund constitution and prospectus extract",
+  "fund": "Fixture Fund",
+  "type": "US government money market fund, stable NAV",
+  "transferAgent": "MMF Transfer Agent",
+  "shareClass": "Institutional"
+}

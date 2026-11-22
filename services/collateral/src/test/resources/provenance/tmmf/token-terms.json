@@ -1,0 +1,11 @@
+{
+  "fixture": "tMMF provenance (task-document-provenance). Synthetic terms.",
+  "document": "Token terms",
+  "token": "tMMF",
+  "dti": "QZ0000000",
+  "represents": "One share of the fund per token, registered in the name of the nominee for the token holders",
+  "authoritativeRecord": "Registered: the transfer agent's share register prevails over the ledger (interim rule REG-5)",
+  "transfer": "Complete when the transfer agent confirms its register shows the ledger transaction (REG-1)",
+  "governingLaw": "New York",
+  "version": "1"
+}

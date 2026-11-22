@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T15:08:42Z
+updatedAt: 2026-11-22T15:20:46Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -66,6 +66,15 @@ document missing or altered, unattested or bad credential, and superseded agains
 at the pledge. By asset: issuance against a holding other than the custody record's, issuance beyond the face amount
 held, a second token on the same holding (double tokenization), and units on the ledger beyond the units issued.
 
+**tMMF case built (2026-11-22).** `ProvenanceCheck` takes the token's profile from the gateway's registry
+(`authoritativeRecord`, `recordKeeper`, `controlAgreement`) and the pledge's secured party. For a Registered or Claim
+token the path is issuance, token terms, the record keeper's register statement (in place of the custody record),
+constitution, valuation and the control agreement (interim rule REG-3 of [[task-sme-registered-asset-completion]]).
+It also reports a register statement or control agreement not from the token's record keeper, a control agreement
+other than the one the token names, and one with another secured party. The holding terms are now `amountBacking`
+(issuance) and `amountHeld` (custody record or register statement), since fund shares have no face amount. Fixture
+documents under `src/test/resources/provenance/tmmf/`; `ProvenanceTmmfTest` (10 tests).
+
 Not yet done: deploying `ProvenanceAnchors` and reading its events through the gateway into the collateral service, a
-console view and a live spec; the tMMF case (record keeper's register, control agreement); `RegistryEntry` links (the
-aircraft case, G40). The credential proofs are not checked against the W3C Data Integrity test suite.
+console view and a live spec; `RegistryEntry` links (the aircraft case, G40). The credential proofs are not checked
+against the W3C Data Integrity test suite.

@@ -1,0 +1,11 @@
+{
+  "fixture": "tMMF provenance (task-document-provenance). Synthetic: no real fund, transfer agent or nominee.",
+  "document": "Issuance record",
+  "token": {"symbol": "tMMF", "name": "Tokenized USD government MMF", "dti": "QZ0000000", "network": "besu-prototype", "chainId": 1337},
+  "asset": {"isin": "US9128100000", "description": "Fund shares, one token per share"},
+  "holding": "urn:cdmx:register:mmf-transfer-agent:nominee-0042",
+  "sharesBacking": "5000000",
+  "unitsIssued": "5000000",
+  "issuedBy": "Fixture Fund (through its transfer agent)",
+  "issueDate": "2026-11-03"
+}

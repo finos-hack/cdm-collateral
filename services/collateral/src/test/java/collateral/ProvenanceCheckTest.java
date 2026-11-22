@@ -69,7 +69,7 @@ class ProvenanceCheckTest {
             add(issuance(TUST, "100000000", "100000", null), tokenizer, "issuance-record");
             add(link("urn:cdmx:link:tUST:terms", ProvRecords.TOKEN_TERMS, TUST, tokenizer.did(), DOCS.get("token-terms"), tokenizer, null, Map.of()), tokenizer, "token-terms");
             add(link("urn:cdmx:link:tUST:custody", ProvRecords.CUSTODY, tokenizer.did(), BOND, DOCS.get("custody-record"), custodian, null,
-                Map.of("asset", BOND, "holding", HOLDING, "faceAmountHeld", "100000000")), custodian, "custody-record");
+                Map.of("asset", BOND, "holding", HOLDING, "amountHeld", "100000000")), custodian, "custody-record");
             add(link("urn:cdmx:link:tUST:constitution", ProvRecords.CONSTITUTION, sponsor.did(), tokenizer.did(), DOCS.get("tokenizer-constitution"), sponsor, null, Map.of()), sponsor, "tokenizer-constitution");
             add(link("urn:cdmx:link:tUST:valuation", ProvRecords.VALUATION, oracle.did(), BOND, DOCS.get("valuation"), oracle, null, Map.of("price", "98.40")), oracle, "valuation");
         }
@@ -82,7 +82,7 @@ class ProvenanceCheckTest {
         static ObjectNode issuance(String token, String face, String units, String revisionOf) {
             ObjectNode r = ProvRecords.link("urn:cdmx:link:" + token + ":issuance", ProvRecords.ISSUED_AGAINST, token, token, BOND,
                 DOCS.get("issuance-record"), tokenizer.did(), AT, revisionOf,
-                Map.of("asset", BOND, "holding", HOLDING, "faceAmount", face, "unitsIssued", units));
+                Map.of("asset", BOND, "holding", HOLDING, "amountBacking", face, "unitsIssued", units));
             return r;
         }
 
@@ -113,7 +113,7 @@ class ProvenanceCheckTest {
         }
 
         ProvenanceCheck.Result check() {
-            return ProvenanceCheck.check(new ProvenanceCheck.Input(TUST, records, credentials, documents, observed, pinned, unitsOnLedger));
+            return ProvenanceCheck.check(new ProvenanceCheck.Input(TUST, ProvenanceCheck.TokenProfile.BEARER, records, credentials, documents, observed, pinned, unitsOnLedger));
         }
     }
 

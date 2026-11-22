@@ -20,40 +20,85 @@ import java.util.stream.Collectors;
 /**
  * Walks the provenance path of a pledged token back to its asset (task-document-provenance, gap G41,
  * wp-adr-document-provenance) and reports every link that is missing, unanchored, unattested, altered or superseded,
- * and any issuance the custody record does not cover.
+ * and any issuance the holding record does not cover.
  *
- * <p>For each relation of the path (issuance, token terms, custody, constitution, valuation) the current record is the
- * one whose hash is anchored on the ledger and that no other anchored record of the same link revises
- * ({@code prov:wasRevisionOf}). For that record the check confirms:
+ * <p>The path depends on the token's authoritative record (cdm-ext {@code AuthoritativeRecordEnum}):
  * <ul>
- *   <li>its anchor is complete ({@code Create_LedgerAnchor}, {@code AnchorStatus}, kind {@code AssetDocument} or
- *       {@code Valuation});</li>
- *   <li>the document behind it is held and hashes to the hash the record names;</li>
- *   <li>its record keeper attests it with a Verifiable Credential that verifies ({@link ProvCredentials});</li>
- *   <li>it is the version the secured party relied on, if one was pinned at the pledge.</li>
+ *   <li><b>Bearer</b> (tUST): issuance, token terms, custody record, constitution, valuation. The ledger is the register
+ *       of holders; the custodian's record holds the asset behind the token.</li>
+ *   <li><b>Registered or Claim</b> (tMMF): issuance, token terms, the record keeper's register statement, constitution,
+ *       valuation, and the control agreement (interim rule REG-3 of task-sme-registered-asset-completion: such a token
+ *       is eligible only under a control agreement with its record keeper). The register statement takes the custody
+ *       record's place as the holding record.</li>
  * </ul>
- * The issuance record is also checked by asset: it must name the same asset and holding as the custody record, and the
- * face amount that every token's current issuance record claims against that holding must not exceed the face amount
- * the custody record holds (double tokenization). The units on the ledger must not exceed the units issued.
+ *
+ * <p>For each relation the current record is the one whose hash is anchored on the ledger and that no other anchored
+ * record of the same link revises ({@code prov:wasRevisionOf}). For that record the check confirms its anchor is
+ * complete ({@code Create_LedgerAnchor}, {@code AnchorStatus}), the document behind it is held and unaltered, its record
+ * keeper attests it with a Verifiable Credential that verifies ({@link ProvCredentials}), and it is the version the
+ * secured party relied on, if one was pinned at the pledge.
+ *
+ * <p>By asset: the issuance record must name the same asset and holding as the holding record; the amount every token's
+ * current issuance record claims against that holding must not exceed the amount held (double tokenization); the units
+ * on the ledger must not exceed the units issued. For a Registered or Claim token the register statement and the control
+ * agreement must come from the token's record keeper, and the control agreement must be the one the token's profile
+ * names, with the secured party of the pledge.
  */
 public final class ProvenanceCheck {
     private ProvenanceCheck() {}
 
-    /** The relations a token's path must have, in the order the check reports them. */
+    /** The path of a Bearer token, in the order the check reports it. */
     public static final List<String> PATH = List.of(ProvRecords.ISSUED_AGAINST, ProvRecords.TOKEN_TERMS,
         ProvRecords.CUSTODY, ProvRecords.CONSTITUTION, ProvRecords.VALUATION);
 
+    /** The path of a Registered or Claim token. */
+    public static final List<String> PATH_UNDER_CONTROL = List.of(ProvRecords.ISSUED_AGAINST, ProvRecords.TOKEN_TERMS,
+        ProvRecords.REGISTER, ProvRecords.CONSTITUTION, ProvRecords.VALUATION, ProvRecords.CONTROL_AGREEMENT);
+
     public enum BreakKind {
         Missing, NotAnchored, AnchorNotComplete, Conflict, DocumentMissing, DocumentAltered, Unattested,
-        BadCredential, Superseded, HoldingMismatch, DoubleTokenized, OverIssued
+        BadCredential, Superseded, HoldingMismatch, DoubleTokenized, OverIssued, RecordKeeperMismatch,
+        ControlAgreementMismatch
     }
 
     public record Break(BreakKind kind, String relation, String detail) {}
 
     /**
+     * What the deployment says about the token (the gateway's token registry; cdm-ext {@code TokenizedAsset}).
+     *
+     * @param authoritativeRecord Bearer, Registered or Claim
+     * @param recordKeeper        the record keeper's name, for a Registered or Claim token (for example "MMF Transfer Agent")
+     * @param controlAgreement    the control agreement's reference, for a Registered or Claim token
+     * @param securedParty        the secured party of the pledge being checked, or null if not checked
+     */
+    public record TokenProfile(String authoritativeRecord, String recordKeeper, String controlAgreement, String securedParty) {
+        public static final TokenProfile BEARER = new TokenProfile("Bearer", null, null, null);
+
+        /** From one token entry of the gateway's registry, for a pledge to {@code securedParty} (may be null). */
+        public static TokenProfile fromRegistry(JsonNode token, String securedParty) {
+            return new TokenProfile(token.path("authoritativeRecord").asText("Bearer"), token.path("recordKeeper").asText(null),
+                token.path("controlAgreement").asText(null), securedParty);
+        }
+
+        public boolean underControl() {
+            return "Registered".equals(authoritativeRecord) || "Claim".equals(authoritativeRecord);
+        }
+
+        public List<String> path() {
+            return underControl() ? PATH_UNDER_CONTROL : PATH;
+        }
+
+        /** The relation that records the holding the token is issued against. */
+        public String holdingRelation() {
+            return underControl() ? ProvRecords.REGISTER : ProvRecords.CUSTODY;
+        }
+    }
+
+    /**
      * What the check reads.
      *
      * @param token         the pledged token, as a URN (for example "urn:dti:QX4V2W9N3")
+     * @param profile       the token's authoritative record, record keeper and control agreement
      * @param records       every link record known, of any token (issuance records of other tokens are needed for the
      *                      double-tokenization check)
      * @param credentials   the record keepers' credentials
@@ -62,8 +107,9 @@ public final class ProvenanceCheck {
      * @param pinned        the record hash the secured party relied on at the pledge, by relation; may be empty
      * @param unitsOnLedger the token's units on the ledger (total supply), or null if not checked
      */
-    public record Input(String token, List<JsonNode> records, List<JsonNode> credentials, Map<String, String> documents,
-                        List<LedgerTransaction> observed, Map<String, String> pinned, BigInteger unitsOnLedger) {}
+    public record Input(String token, TokenProfile profile, List<JsonNode> records, List<JsonNode> credentials,
+                        Map<String, String> documents, List<LedgerTransaction> observed, Map<String, String> pinned,
+                        BigInteger unitsOnLedger) {}
 
     /** The breaks found, the current record hash of each relation, and every token whose issuance claims the asset. */
     public record Result(List<Break> breaks, Map<String, String> current, List<String> tokensOnAsset) {
@@ -71,9 +117,10 @@ public final class ProvenanceCheck {
     }
 
     public static Result check(Input in) {
+        TokenProfile profile = in.profile() == null ? TokenProfile.BEARER : in.profile();
         List<Break> breaks = new ArrayList<>();
         Map<String, JsonNode> current = new LinkedHashMap<>();
-        for (String relation : PATH) {
+        for (String relation : profile.path()) {
             JsonNode head = head(in, in.token(), relation, breaks);
             if (head == null) continue;
             current.put(relation, head);
@@ -86,7 +133,8 @@ public final class ProvenanceCheck {
                 breaks.add(new Break(BreakKind.Superseded, relation,
                     "relied on " + pinned + "; the current anchored record is " + hash));
         }
-        List<String> onAsset = issuance(in, current, breaks);
+        if (profile.underControl()) control(profile, current, breaks);
+        List<String> onAsset = issuance(in, profile, current, breaks);
         Map<String, String> hashes = new LinkedHashMap<>();
         current.forEach((k, v) -> hashes.put(k, ProvRecords.hash(v)));
         return new Result(List.copyOf(breaks), hashes, onAsset);
@@ -163,10 +211,39 @@ public final class ProvenanceCheck {
                 "no credential for " + ProvRecords.id(head) + " is issued by its record keeper and verifies"));
     }
 
-    /** Issuance against the custody holding, across every token that claims the same asset and holding. */
-    private static List<String> issuance(Input in, Map<String, JsonNode> current, List<Break> breaks) {
+    /**
+     * A Registered or Claim token: the register statement and the control agreement come from the token's record keeper
+     * (the same key attests both, and the register statement names the record keeper the profile names); the control
+     * agreement is the one the profile names, with the pledge's secured party.
+     */
+    private static void control(TokenProfile profile, Map<String, JsonNode> current, List<Break> breaks) {
+        JsonNode register = current.get(ProvRecords.REGISTER);
+        JsonNode agreement = current.get(ProvRecords.CONTROL_AGREEMENT);
+        if (register != null && profile.recordKeeper() != null
+            && !profile.recordKeeper().equals(ProvRecords.term(register, "recordKeeperName")))
+            breaks.add(new Break(BreakKind.RecordKeeperMismatch, ProvRecords.REGISTER,
+                "the register statement is kept by " + ProvRecords.term(register, "recordKeeperName")
+                    + "; the token's record keeper is " + profile.recordKeeper()));
+        if (register != null && agreement != null
+            && !ProvRecords.recordKeeper(register).equals(ProvRecords.recordKeeper(agreement)))
+            breaks.add(new Break(BreakKind.RecordKeeperMismatch, ProvRecords.CONTROL_AGREEMENT,
+                "the control agreement is attested by " + ProvRecords.recordKeeper(agreement)
+                    + ", not by the register's record keeper " + ProvRecords.recordKeeper(register)));
+        if (agreement == null) return;
+        String ref = ProvRecords.term(agreement, "reference");
+        if (profile.controlAgreement() == null || !profile.controlAgreement().equals(ref))
+            breaks.add(new Break(BreakKind.ControlAgreementMismatch, ProvRecords.CONTROL_AGREEMENT,
+                "the record is control agreement " + ref + "; the token names " + profile.controlAgreement()));
+        if (profile.securedParty() != null && !profile.securedParty().equals(ProvRecords.term(agreement, "securedParty")))
+            breaks.add(new Break(BreakKind.ControlAgreementMismatch, ProvRecords.CONTROL_AGREEMENT,
+                "the control agreement's secured party is " + ProvRecords.term(agreement, "securedParty")
+                    + "; the pledge is to " + profile.securedParty()));
+    }
+
+    /** Issuance against the holding record, across every token that claims the same asset and holding. */
+    private static List<String> issuance(Input in, TokenProfile profile, Map<String, JsonNode> current, List<Break> breaks) {
         JsonNode issued = current.get(ProvRecords.ISSUED_AGAINST);
-        JsonNode custody = current.get(ProvRecords.CUSTODY);
+        JsonNode held = current.get(profile.holdingRelation());
         if (issued == null) return List.of();
         String asset = ProvRecords.term(issued, "asset");
         List<String> onAsset = asset == null ? List.of() : tokensIssuedAgainst(in, asset);
@@ -176,27 +253,27 @@ public final class ProvenanceCheck {
                 breaks.add(new Break(BreakKind.OverIssued, ProvRecords.ISSUED_AGAINST,
                     in.unitsOnLedger() + " units on the ledger; the issuance record issues " + units));
         }
-        if (custody == null || asset == null) return onAsset;
+        if (held == null || asset == null) return onAsset;
         String holding = ProvRecords.term(issued, "holding");
-        if (!asset.equals(ProvRecords.term(custody, "asset")) || !Objects.equals(holding, ProvRecords.term(custody, "holding"))) {
+        if (!asset.equals(ProvRecords.term(held, "asset")) || !Objects.equals(holding, ProvRecords.term(held, "holding"))) {
             breaks.add(new Break(BreakKind.HoldingMismatch, ProvRecords.ISSUED_AGAINST,
-                "issued against " + asset + " in " + holding + "; custody holds " + ProvRecords.term(custody, "asset")
-                    + " in " + ProvRecords.term(custody, "holding")));
+                "issued against " + asset + " in " + holding + "; the holding record shows " + ProvRecords.term(held, "asset")
+                    + " in " + ProvRecords.term(held, "holding")));
             return onAsset;
         }
-        BigInteger held = amount(custody, "faceAmountHeld");
+        BigInteger amountHeld = amount(held, "amountHeld");
         BigInteger claimed = BigInteger.ZERO;
         List<String> sharing = new ArrayList<>();
         for (String t : onAsset) {
             JsonNode h = head(in, t, ProvRecords.ISSUED_AGAINST, null);
             if (h == null || !Objects.equals(holding, ProvRecords.term(h, "holding"))) continue;
-            BigInteger f = amount(h, "faceAmount");
-            if (f != null) claimed = claimed.add(f);
+            BigInteger a = amount(h, "amountBacking");
+            if (a != null) claimed = claimed.add(a);
             if (!t.equals(in.token())) sharing.add(t);
         }
-        if (held != null && claimed.compareTo(held) > 0)
+        if (amountHeld != null && claimed.compareTo(amountHeld) > 0)
             breaks.add(new Break(sharing.isEmpty() ? BreakKind.OverIssued : BreakKind.DoubleTokenized, ProvRecords.ISSUED_AGAINST,
-                "issuance records claim " + claimed + " face of " + asset + " in " + holding + "; custody holds " + held
+                "issuance records claim " + claimed + " of " + asset + " in " + holding + "; the holding record shows " + amountHeld
                     + (sharing.isEmpty() ? "" : "; also claimed by " + String.join(", ", sharing))));
         return onAsset;
     }

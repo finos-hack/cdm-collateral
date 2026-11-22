@@ -1,0 +1,11 @@
+{
+  "fixture": "tMMF provenance (task-document-provenance). Synthetic control agreement.",
+  "document": "Control agreement",
+  "reference": "CA-TMMF-2026-01",
+  "recordKeeper": "MMF Transfer Agent",
+  "pledgor": "BANK-A",
+  "securedParty": "BANK-B",
+  "asset": {"isin": "US9128100000"},
+  "terms": "The transfer agent follows the secured party's instructions about the pledged shares without the pledgor's further consent (UCC 8-106(c), (d))",
+  "governingLaw": "New York"
+}
