@@ -36,6 +36,14 @@ public final class ProvRecords {
     public static final String REGISTER = "cdmx:Register";
     /** For a Registered or Claim token: the control agreement under which the record keeper follows the secured party. */
     public static final String CONTROL_AGREEMENT = "cdmx:ControlAgreement";
+    /** For an asset kept in a registry outside the ledger (an aircraft): the registry's entry of who owns it, for example
+     *  the FAA registration of the SPV. Anchored as a RegistryEntry; it takes the custody record's place as the holding record. */
+    public static final String REGISTRATION = "cdmx:Registration";
+    /** An interest in the asset entered in a registry, for example a mortgage registered as an international interest in
+     *  the International Registry (Cape Town Convention). Anchored as a RegistryEntry; looked up by asset. */
+    public static final String REGISTERED_INTEREST = "cdmx:RegisteredInterest";
+    /** The holder of a registered interest consents to the asset being tokenized (interim rule, pending REG-8). */
+    public static final String INTEREST_CONSENT = "cdmx:InterestConsent";
 
     private ProvRecords() {}
 

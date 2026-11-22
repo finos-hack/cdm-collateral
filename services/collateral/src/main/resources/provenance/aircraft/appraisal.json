@@ -1,0 +1,8 @@
+{
+  "fixture": "Aircraft provenance (task-document-provenance, G40). Synthetic appraisal.",
+  "document": "Appraisal",
+  "aircraft": {"manufacturer": "Fixture Aerospace", "model": "FX-320", "msn": "7781"},
+  "appraiser": "Fixture Appraisers (ISTAT-certified, fictitious)",
+  "currentMarketValueUsd": "142000000",
+  "asOf": "2026-11-01"
+}

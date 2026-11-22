@@ -26,6 +26,10 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li><b>Bearer</b> (tUST): issuance, token terms, custody record, constitution, valuation. The ledger is the register
  *       of holders; the custodian's record holds the asset behind the token.</li>
+ *   <li><b>Asset kept in a registry</b> (the aircraft case, G40): issuance, token terms, the registry's registration of
+ *       the owner (in place of the custody record), constitution, valuation; and for every interest in the asset entered
+ *       in a registry (a mortgage registered as an international interest), the interest holder's consent to the
+ *       tokenization (interim rule pending REG-8 of task-sme-registered-asset-completion).</li>
  *   <li><b>Registered or Claim</b> (tMMF): issuance, token terms, the record keeper's register statement, constitution,
  *       valuation, and the control agreement (interim rule REG-3 of task-sme-registered-asset-completion: such a token
  *       is eligible only under a control agreement with its record keeper). The register statement takes the custody
@@ -51,6 +55,10 @@ public final class ProvenanceCheck {
     public static final List<String> PATH = List.of(ProvRecords.ISSUED_AGAINST, ProvRecords.TOKEN_TERMS,
         ProvRecords.CUSTODY, ProvRecords.CONSTITUTION, ProvRecords.VALUATION);
 
+    /** The path of a token whose asset is kept in a registry outside the ledger (an aircraft). */
+    public static final List<String> PATH_REGISTRY_ASSET = List.of(ProvRecords.ISSUED_AGAINST, ProvRecords.TOKEN_TERMS,
+        ProvRecords.REGISTRATION, ProvRecords.CONSTITUTION, ProvRecords.VALUATION);
+
     /** The path of a Registered or Claim token. */
     public static final List<String> PATH_UNDER_CONTROL = List.of(ProvRecords.ISSUED_AGAINST, ProvRecords.TOKEN_TERMS,
         ProvRecords.REGISTER, ProvRecords.CONSTITUTION, ProvRecords.VALUATION, ProvRecords.CONTROL_AGREEMENT);
@@ -58,7 +66,7 @@ public final class ProvenanceCheck {
     public enum BreakKind {
         Missing, NotAnchored, AnchorNotComplete, Conflict, DocumentMissing, DocumentAltered, Unattested,
         BadCredential, Superseded, HoldingMismatch, DoubleTokenized, OverIssued, RecordKeeperMismatch,
-        ControlAgreementMismatch
+        ControlAgreementMismatch, InterestNotConsented
     }
 
     public record Break(BreakKind kind, String relation, String detail) {}
@@ -70,27 +78,38 @@ public final class ProvenanceCheck {
      * @param recordKeeper        the record keeper's name, for a Registered or Claim token (for example "MMF Transfer Agent")
      * @param controlAgreement    the control agreement's reference, for a Registered or Claim token
      * @param securedParty        the secured party of the pledge being checked, or null if not checked
+     * @param assetRegistry       the registry the asset is kept in, for an asset outside the financial system (for example
+     *                            "FAA Aircraft Registry"), or null
      */
-    public record TokenProfile(String authoritativeRecord, String recordKeeper, String controlAgreement, String securedParty) {
-        public static final TokenProfile BEARER = new TokenProfile("Bearer", null, null, null);
+    public record TokenProfile(String authoritativeRecord, String recordKeeper, String controlAgreement, String securedParty,
+                               String assetRegistry) {
+        public static final TokenProfile BEARER = new TokenProfile("Bearer", null, null, null, null);
+
+        public TokenProfile(String authoritativeRecord, String recordKeeper, String controlAgreement, String securedParty) {
+            this(authoritativeRecord, recordKeeper, controlAgreement, securedParty, null);
+        }
 
         /** From one token entry of the gateway's registry, for a pledge to {@code securedParty} (may be null). */
         public static TokenProfile fromRegistry(JsonNode token, String securedParty) {
             return new TokenProfile(token.path("authoritativeRecord").asText("Bearer"), token.path("recordKeeper").asText(null),
-                token.path("controlAgreement").asText(null), securedParty);
+                token.path("controlAgreement").asText(null), securedParty, token.path("assetRegistry").asText(null));
         }
 
         public boolean underControl() {
             return "Registered".equals(authoritativeRecord) || "Claim".equals(authoritativeRecord);
         }
 
+        public boolean registryAsset() {
+            return assetRegistry != null;
+        }
+
         public List<String> path() {
-            return underControl() ? PATH_UNDER_CONTROL : PATH;
+            return underControl() ? PATH_UNDER_CONTROL : registryAsset() ? PATH_REGISTRY_ASSET : PATH;
         }
 
         /** The relation that records the holding the token is issued against. */
         public String holdingRelation() {
-            return underControl() ? ProvRecords.REGISTER : ProvRecords.CUSTODY;
+            return underControl() ? ProvRecords.REGISTER : registryAsset() ? ProvRecords.REGISTRATION : ProvRecords.CUSTODY;
         }
     }
 
@@ -134,6 +153,7 @@ public final class ProvenanceCheck {
                     "relied on " + pinned + "; the current anchored record is " + hash));
         }
         if (profile.underControl()) control(profile, current, breaks);
+        if (profile.registryAsset()) interests(in, current, breaks);
         List<String> onAsset = issuance(in, profile, current, breaks);
         Map<String, String> hashes = new LinkedHashMap<>();
         current.forEach((k, v) -> hashes.put(k, ProvRecords.hash(v)));
@@ -174,12 +194,26 @@ public final class ProvenanceCheck {
         return heads.get(0);
     }
 
+    /** The current record of one link (by @id): anchored and not revised by another anchored record of it; null if none or several. */
+    private static JsonNode headOfLink(Input in, String id) {
+        List<JsonNode> anchored = in.records().stream()
+            .filter(r -> id.equals(ProvRecords.id(r)) && anchored(in, ProvRecords.hash(r))).toList();
+        Set<String> revised = anchored.stream().map(ProvRecords::revisionOf).filter(Objects::nonNull)
+            .map(String::toLowerCase).collect(Collectors.toSet());
+        List<JsonNode> heads = anchored.stream().filter(r -> !revised.contains(ProvRecords.hash(r))).toList();
+        return heads.size() == 1 ? heads.get(0) : null;
+    }
+
     private static boolean anchored(Input in, String hash) {
         return in.observed().stream().anyMatch(t -> hash.equalsIgnoreCase(t.getRecordedHash()));
     }
 
     private static void anchorStatus(Input in, JsonNode head, String hash, String relation, List<Break> breaks) {
-        AnchoredRecordEnum kind = ProvRecords.VALUATION.equals(relation) ? AnchoredRecordEnum.VALUATION : AnchoredRecordEnum.ASSET_DOCUMENT;
+        AnchoredRecordEnum kind = switch (relation) {
+            case ProvRecords.VALUATION -> AnchoredRecordEnum.VALUATION;
+            case ProvRecords.REGISTRATION, ProvRecords.REGISTERED_INTEREST -> AnchoredRecordEnum.REGISTRY_ENTRY;
+            default -> AnchoredRecordEnum.ASSET_DOCUMENT;
+        };
         LedgerAnchor anchor = CdmRuntime.fn(Create_LedgerAnchor.class).evaluate(kind, ProvRecords.id(head), hash, in.observed());
         AnchorStatusEnum s = CdmRuntime.fn(AnchorStatus.class).evaluate(anchor, 1);
         if (s != AnchorStatusEnum.COMPLETE)
@@ -238,6 +272,47 @@ public final class ProvenanceCheck {
             breaks.add(new Break(BreakKind.ControlAgreementMismatch, ProvRecords.CONTROL_AGREEMENT,
                 "the control agreement's secured party is " + ProvRecords.term(agreement, "securedParty")
                     + "; the pledge is to " + profile.securedParty()));
+    }
+
+    /**
+     * An asset kept in a registry: every interest the registry shows in the asset (each current, anchored and attested
+     * RegisteredInterest record naming the asset, of any token) needs the interest holder's consent to this token, as a
+     * current InterestConsent record of this token that names the interest and is attested by the holder. Interim rule,
+     * pending REG-8 (task-sme-registered-asset-completion): without the consent the token holders' claim would rank
+     * behind the registered interest, and tokenizing may breach the loan agreement's negative pledge.
+     */
+    private static void interests(Input in, Map<String, JsonNode> current, List<Break> breaks) {
+        JsonNode issued = current.get(ProvRecords.ISSUED_AGAINST);
+        if (issued == null) return;
+        String asset = ProvRecords.term(issued, "asset");
+        // An asset can carry several interests (several links), so the current record is taken per link, not per relation.
+        List<JsonNode> interests = in.records().stream()
+            .filter(r -> ProvRecords.REGISTERED_INTEREST.equals(ProvRecords.relation(r)) && Objects.equals(asset, ProvRecords.term(r, "asset")))
+            .map(ProvRecords::id).distinct().sorted()
+            .map(id -> headOfLink(in, id)).filter(Objects::nonNull).toList();
+        for (JsonNode interest : interests) {
+            String hash = ProvRecords.hash(interest);
+            List<Break> own = new ArrayList<>();
+            attestation(in, interest, hash, ProvRecords.REGISTERED_INTEREST, own);
+            document(in, interest, ProvRecords.REGISTERED_INTEREST, own);
+            breaks.addAll(own);
+            String id = ProvRecords.id(interest);
+            String holder = ProvRecords.term(interest, "holder");
+            boolean consented = in.records().stream()
+                .filter(r -> in.token().equals(ProvRecords.token(r)) && ProvRecords.INTEREST_CONSENT.equals(ProvRecords.relation(r))
+                    && id.equals(ProvRecords.term(r, "interest")))
+                .filter(r -> anchored(in, ProvRecords.hash(r)) && holder != null && holder.equals(ProvRecords.recordKeeper(r)))
+                .anyMatch(r -> {
+                    List<Break> b = new ArrayList<>();
+                    attestation(in, r, ProvRecords.hash(r), ProvRecords.INTEREST_CONSENT, b);
+                    document(in, r, ProvRecords.INTEREST_CONSENT, b);
+                    return b.isEmpty();
+                });
+            if (!consented)
+                breaks.add(new Break(BreakKind.InterestNotConsented, ProvRecords.REGISTERED_INTEREST,
+                    "the registry shows " + ProvRecords.term(interest, "interestType") + " " + id + " held by " + holder
+                        + "; no anchored, attested consent from the holder to " + in.token()));
+        }
     }
 
     /** Issuance against the holding record, across every token that claims the same asset and holding. */

@@ -1,0 +1,9 @@
+{
+  "fixture": "Aircraft provenance (task-document-provenance, G40). Synthetic registration.",
+  "document": "Certificate of aircraft registration",
+  "registry": "FAA Aircraft Registry",
+  "registrationMark": "N781FX",
+  "aircraft": {"manufacturer": "Fixture Aerospace", "model": "FX-320", "msn": "7781"},
+  "registeredOwner": "Fixture Aircraft SPV",
+  "issued": "2026-10-01"
+}

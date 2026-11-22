@@ -1,0 +1,9 @@
+{
+  "fixture": "Aircraft provenance (task-document-provenance, G40). Synthetic consent.",
+  "document": "Consent to tokenization",
+  "from": "Fixture Lender",
+  "interest": "IR-FIXTURE-0001",
+  "consentsTo": "The issue of tAIR tokens representing shares of Fixture Aircraft SPV",
+  "conditions": "The token holders' claim ranks behind the registered mortgage; no further encumbrance without consent",
+  "date": "2026-11-05"
+}
