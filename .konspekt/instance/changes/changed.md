@@ -1710,3 +1710,7 @@ excluded.
 | task-sme-registered-asset-completion | 0be063fdb7c834e6853a8dcdea6e1294ca8a23f6 | README.md | 2026-11-22T01:55:06Z |
 | task-sme-registered-asset-completion | 0be063fdb7c834e6853a8dcdea6e1294ca8a23f6 | docs/analysis/sme-brief-registered-assets.md | 2026-11-22T01:55:06Z |
 | task-sme-registered-asset-completion | 0be063fdb7c834e6853a8dcdea6e1294ca8a23f6 | docs/analysis/sme-question-ledger.md | 2026-11-22T01:55:06Z |
+| task-sme-interim-decision-catalog | 9db1994bf1305399b0dc6f3f68a47fd76bb29d39 | docs/analysis/sme-question-ledger.md | 2026-11-22T01:58:23Z |
+| task-sme-interim-decision-catalog | 9db1994bf1305399b0dc6f3f68a47fd76bb29d39 | docs/gap-register.html | 2026-11-22T01:58:23Z |
+| task-sme-interim-decision-catalog | 9db1994bf1305399b0dc6f3f68a47fd76bb29d39 | docs/presentations/intro_deck/build_site.mjs | 2026-11-22T01:58:23Z |
+| task-sme-interim-decision-catalog | 9db1994bf1305399b0dc6f3f68a47fd76bb29d39 | docs/sme-questions.html | 2026-11-22T01:58:23Z |
