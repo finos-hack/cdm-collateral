@@ -1887,3 +1887,15 @@ excluded.
 | task-v02-demo-release-summary | e8ddf56d6121e3e4cf85299a8cbf6c3b123d9fca | gateway/README.md | 2026-11-22T21:08:51Z |
 | task-v02-demo-release-summary | e8ddf56d6121e3e4cf85299a8cbf6c3b123d9fca | services/collateral/README.md | 2026-11-22T21:08:51Z |
 | task-v02-demo-release-summary | e8ddf56d6121e3e4cf85299a8cbf6c3b123d9fca | services/oracle/README.md | 2026-11-22T21:08:51Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | README.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | architecture/README.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | console/README.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/analysis/business-case.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/analysis/gap-register.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/gap-register.html | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/index.html | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/presentations/intro_deck/intro_deck.pdf | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/presentations/project-narrative.md | 2026-11-22T21:13:42Z |
+| task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/releases/v0.2-demo.md | 2026-11-22T21:13:42Z |

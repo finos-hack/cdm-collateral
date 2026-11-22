@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T20:56:04Z
   confidence: 0.8
 createdAt: 2026-11-22T20:56:04Z
-updatedAt: 2026-11-22T21:08:51Z
+updatedAt: 2026-11-22T21:13:42Z
 ```
 # Task: v0.2-demo release summary
 
@@ -34,5 +34,7 @@ updated, `docs/index.html`, `docs/sme-questions.html` and `docs/gap-register.htm
 re-rendered. Tests run: contracts 147 passing; `cdm-ext` 332 and collateral service 204, 0 failures. The live suite
 was not run.
 
-Open for the project owner: the G40 and G41 rows in the task map's "Gaps with no workflow row" table are proposed;
-whether G41 moves from open to partial; whether to tag `v0.2-demo`.
+**Project owner's answers, 2026-11-22** (source `ni:///sha-256;MQNx5vh8ba__s7udHjHyUEPwZD5jhL8KDGl3GHWrJJc`): the reasons for the G40 and G41 rows in the task
+map's "Gaps with no workflow row" table are accepted; G41 is partial (21 closed, 8 partial, 1 deferred, 9 open, 2 out
+of scope); the project narrative (5 to 22 November), `architecture/README.md` and `console/README.md` are rewritten in
+this task; a pull request is opened, and `v0.2-demo` is tagged on its merge commit.
