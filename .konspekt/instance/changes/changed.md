@@ -1780,3 +1780,10 @@ excluded.
 | task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/register-statement.json | 2026-11-22T15:20:46Z |
 | task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/token-terms.json | 2026-11-22T15:20:46Z |
 | task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/valuation.json | 2026-11-22T15:20:46Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | console/e2e/live.spec.ts | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | gateway/src/besu.ts | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | gateway/src/server.ts | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/main/java/collateral/App.java | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/main/java/collateral/CdmRecordKeeper.java | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/test/java/collateral/CdmRecordKeeperTest.java | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | e3426dc72e15b134e4085994500ac9e3602b62b4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:22:27Z |
