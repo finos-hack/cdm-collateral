@@ -1854,3 +1854,12 @@ excluded.
 | task-substitution-ledger-anchors | 20ec5e719068718a807c94f85c62822aa57ce991 | services/collateral/src/main/java/collateral/CdmAnchors.java | 2026-11-22T19:06:18Z |
 | task-substitution-ledger-anchors | 20ec5e719068718a807c94f85c62822aa57ce991 | services/collateral/src/main/java/collateral/CdmRecordKeeper.java | 2026-11-22T19:06:18Z |
 | task-substitution-ledger-anchors | 20ec5e719068718a807c94f85c62822aa57ce991 | services/collateral/src/test/java/collateral/CdmRecordKeeperTest.java | 2026-11-22T19:06:18Z |
+| task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/lib/binding-audit.mjs | 2026-11-22T20:01:28Z |
+| task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/lib/conformance.mjs | 2026-11-22T20:01:28Z |
+| task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/spec/personas/engineer/AGENTS.md | 2026-11-22T20:01:28Z |
+| task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/spec/personas/engineer/SPEC.md | 2026-11-22T20:01:28Z |
+| task-konspekt-kit-refresh | ce8e1a73a6385389d09864737f06e1db2c0c05aa | .konspekt/spec/personas/engineer/registry.mjs | 2026-11-22T20:01:28Z |
+| task-substitution-ledger-anchors | bb2494192badaa80c17ac417e51a396aac41aa7b | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T20:04:33Z |
+| task-substitution-ledger-anchors | bb2494192badaa80c17ac417e51a396aac41aa7b | docs/analysis/gap-register.md | 2026-11-22T20:04:33Z |
+| task-substitution-ledger-anchors | bb2494192badaa80c17ac417e51a396aac41aa7b | docs/gap-register.html | 2026-11-22T20:04:33Z |
+| task-konspekt-kit-refresh | 4f27a88183ac4a520e4e593ef4e6ceae6df2277d | .konspekt/lib/review-units.mjs | 2026-11-22T20:05:41Z |

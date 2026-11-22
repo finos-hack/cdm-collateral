@@ -1625,3 +1625,10 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-onchainid-docprovadr | review | proposed | accepted | 2026-11-22T14:57:02Z | ni:///sha-256;NsuxkeNc2uUCWepWhEN-9uV2abTpGg1EQqIJy5aNCWI | denisurusov |
 | node:task-console-record-keeper-completion | status | open | resolved | 2026-11-22T15:20:15Z |  | denisurusov |
 | node:task-authoritative-record-other-flows | status | open | resolved | 2026-11-22T16:47:09Z |  | denisurusov |
+| node:task-konspekt-kit-refresh | review |  | proposed | 2026-11-22T19:59:28Z | ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k |  |
+| node:task-konspekt-kit-refresh | status |  | open | 2026-11-22T19:59:28Z | ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k |  |
+| edge:e-dec-konspektadopt-kitrefresh | review |  | proposed | 2026-11-22T19:59:28Z | ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k |  |
+| node:task-substitution-ledger-anchors | status | open | resolved | 2026-11-22T20:04:22Z |  | denisurusov |
+| node:task-konspekt-kit-refresh | review | proposed | accepted | 2026-11-22T20:05:41Z | ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k | denisurusov |
+| edge:e-dec-konspektadopt-kitrefresh | review | proposed | accepted | 2026-11-22T20:05:41Z | ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k | denisurusov |
+| node:task-konspekt-kit-refresh | status | open | resolved | 2026-11-22T20:05:41Z | ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k | denisurusov |
