@@ -1839,3 +1839,4 @@ excluded.
 | task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/main/java/collateral/App.java | 2026-11-22T17:34:43Z |
 | task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/main/java/collateral/ProvenanceLive.java | 2026-11-22T17:34:43Z |
 | task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/test/java/collateral/ProvenanceLiveTest.java | 2026-11-22T17:34:43Z |
+| task-document-provenance | b361461695a6c622e0176c39547116da74802584 | services/collateral/src/main/java/collateral/App.java | 2026-11-22T19:03:09Z |
