@@ -6,6 +6,8 @@ import cdmx.collateral.ledger.LedgerAnchor;
 import cdmx.collateral.ledger.LedgerNetwork;
 import cdmx.collateral.ledger.LedgerTransaction;
 import cdmx.collateral.ledger.LedgerTransactionStatusEnum;
+import cdmx.collateral.ledger.functions.AnchorFor;
+import cdmx.collateral.ledger.functions.AnchorStatus;
 import cdmx.collateral.ledger.functions.Create_LedgerAnchor;
 import cdmx.collateral.ledger.functions.MarginCallStepAnchorStatus;
 import cdmx.collateral.margincall.MarginCallState;
@@ -83,6 +85,36 @@ public final class CdmAnchors {
             anchors.add(create.evaluate(AnchoredRecordEnum.MARGIN_CALL_STEP, "S-" + (i + 1),
                 Cdm.keccakHex(foldedDocs.get(i)).toLowerCase(), observed));
         return anchors;
+    }
+
+    /** The Substitution anchor of each folded substitution step (task-substitution-ledger-anchors). A step is identified
+     *  by its name (request, consent, settle): the control contract records each at most once for a substitution. Its
+     *  document hash is computed here from the SubstitutionInstruction payload, as for a margin call step. */
+    static List<LedgerAnchor> substitutionAnchors(JsonNode steps, List<String> foldedDocs) {
+        List<LedgerTransaction> observed = observed(steps);
+        Create_LedgerAnchor create = CdmRuntime.fn(Create_LedgerAnchor.class);
+        List<LedgerAnchor> anchors = new ArrayList<>();
+        for (int i = 0; i < foldedDocs.size(); i++)
+            anchors.add(create.evaluate(AnchoredRecordEnum.SUBSTITUTION, steps.get(i).get("step").asText(),
+                Cdm.keccakHex(foldedDocs.get(i)).toLowerCase(), observed));
+        return anchors;
+    }
+
+    /** Each folded substitution step's anchor status (AnchorStatus of its anchor, one transaction a step), in step order. */
+    static List<Map<String, Object>> substitutionStatuses(JsonNode steps, int folded, List<LedgerAnchor> anchors) {
+        AnchorFor anchorFor = CdmRuntime.fn(AnchorFor.class);
+        AnchorStatus status = CdmRuntime.fn(AnchorStatus.class);
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (int i = 0; i < folded; i++) {
+            String step = steps.get(i).get("step").asText();
+            LedgerAnchor a = anchorFor.evaluate(anchors, AnchoredRecordEnum.SUBSTITUTION, step);
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("identifier", step);
+            m.put("status", status.evaluate(a, 1).toDisplayString());
+            m.put("transactions", a == null ? 0 : a.getTransaction().size());
+            out.add(m);
+        }
+        return out;
     }
 
     /** Each folded step's anchor status (MarginCallStepAnchorStatus), in step order. */

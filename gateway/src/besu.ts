@@ -117,6 +117,11 @@ export interface SubstitutionStep {
   timestamp: number;
   logIndex: number;
   txHash: Hex;
+  /** What the CDM LedgerAnchor of the step needs (task-substitution-ledger-anchors), as for a CallStep. */
+  contract: string;
+  network: { name: string; platform: string; chainId: number };
+  status: "Final" | "Reverted";
+  txLogs: { contract: string; logIndex: number; event?: string }[];
 }
 
 /** One close-out on default as the ClosedOut event records it (flow-close-out-netting). */
@@ -1555,19 +1560,19 @@ export class BesuAdapter implements LedgerAdapter {
       { name: "SubstitutionDecided", step: "consent" },
       { name: "SubstitutionSettled", step: "settle" },
     ];
-    const rows: (SubstitutionStep & { bn: bigint })[] = [];
+    const rows: (Omit<SubstitutionStep, "network" | "status" | "txLogs"> & { bn: bigint })[] = [];
     for (const s of specs) {
       for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, s.name, { substitutionId })) {
         const a = l.args as { cdmHash: Hex; consent?: boolean };
         rows.push({
           step: s.step, event: s.name, cdmHash: a.cdmHash, consent: a.consent, block: l.blockNumber.toString(), timestamp: 0,
-          logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex, bn: l.blockNumber,
+          logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex, contract: (l.address as string).toLowerCase(), bn: l.blockNumber,
         });
       }
     }
     rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
     for (const r of rows) r.timestamp = Number((await this.pub.getBlock({ blockNumber: r.bn })).timestamp);
-    return rows.map(({ bn, ...r }) => r);
+    return (await this.withTxLogs(rows)).map(({ bn, ...r }) => r);
   }
 
   /** The escrow between a pledgor and a secured party and the feed prices, as of the end of `block`. Both parties read
@@ -2177,15 +2182,21 @@ export class BesuAdapter implements LedgerAdapter {
       }
     }
     rows.sort((x, y) => (x.bn === y.bn ? x.logIndex - y.logIndex : x.bn < y.bn ? -1 : 1));
+    return (await this.withTxLogs(rows)).map(({ bn, ...r }) => r);
+  }
+
+  /** Adds to each step event what its CDM LedgerAnchor needs (G25): the network, the transaction status, and the other
+   * events of the same transaction (for a settlement, the token Transfer logs). */
+  private async withTxLogs<T extends { txHash: Hex; logIndex: number }>(rows: T[]) {
     const network = { name: "besu-prototype", platform: "Hyperledger Besu", chainId: this.reg.chainId };
     const receipts = new Map<Hex, Awaited<ReturnType<PublicClient["getTransactionReceipt"]>>>();
     for (const r of rows) if (!receipts.has(r.txHash)) receipts.set(r.txHash, await this.receipt(r.txHash));
-    return rows.map(({ bn, ...r }) => {
+    return rows.map((r) => {
       const receipt = receipts.get(r.txHash)!;
       const txLogs = receipt.logs
         .filter((x) => Number(x.logIndex) !== r.logIndex)
         .map((x) => ({ contract: x.address.toLowerCase(), logIndex: Number(x.logIndex), event: EVENT_BY_TOPIC.get((x.topics[0] ?? "").toLowerCase()) }));
-      return { ...r, network, status: receipt.status === "success" ? "Final" : "Reverted", txLogs };
+      return { ...r, network, status: (receipt.status === "success" ? "Final" : "Reverted") as "Final" | "Reverted", txLogs };
     });
   }
 

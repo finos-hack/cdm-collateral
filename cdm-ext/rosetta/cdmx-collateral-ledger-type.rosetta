@@ -63,6 +63,9 @@ enum AnchoredRecordEnum: <"The kind of CDM record an anchor is for, which also f
     AssetDocument <"A document that belongs to a token or its asset, not to a pair of parties: an issuance record, token terms, a custody record, a constitution (wp-adr-document-provenance). The hashed document is the provenance link record (W3C PROV-O JSON-LD), hashed over its JCS canonical form (RFC 8785).">
     Valuation <"A valuation of a token's asset at a time, as a provenance link record; hashed as for AssetDocument.">
     RegistryEntry <"An entry in a registry outside the ledger that records or perfects a link, for example an International Registry filing (G40), as a provenance link record; hashed as for AssetDocument.">
+    Repo <"A repo movement: a transaction of the repo contract that moves securities, for example a purchase or repurchase settlement, a substitution or a close-out (task-substitution-ledger-anchors). The hashed document is the one the transaction's repo event carries.">
+    SecuritiesLoan <"A securities loan movement: a transaction of the loan contract that moves securities, for example a delivery, a return or a substitution; hashed as for Repo.">
+    Triparty <"A triparty movement: a transaction of the triparty contract that moves securities, for example an allocation, a substitution or a repurchase; hashed as for Repo.">
 
 enum AnchorStatusEnum: <"Whether a CDM record and the ledger agree.">
     Missing <"No anchor: the ledger has not recorded the record's hash.">

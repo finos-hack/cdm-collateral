@@ -74,4 +74,48 @@ class CdmAnchorsTest {
     void aPayloadThatIsNotOnChainHasNoAnchor() throws Exception {
         assertThrows(RuntimeException.class, () -> CdmAnchors.anchors(steps("Final"), List.of("{\"other\":0}")));
     }
+
+    // task-substitution-ledger-anchors: the same anchors for the substitution steps of the control contract.
+    private static final String REQUEST = "{\"request\":1}";
+    private static final String SUB_SETTLE = "{\"settle\":1}";
+    private static final String TMMF = "0x" + "a2".repeat(20);
+
+    private static JsonNode substitutionSteps(String settleStatus) throws Exception {
+        String network = "{\"name\":\"besu-prototype\",\"platform\":\"Hyperledger Besu\",\"chainId\":1337}";
+        return new ObjectMapper().readTree("[" +
+            "{\"step\":\"request\",\"event\":\"SubstitutionRequested\",\"cdmHash\":\"" + Cdm.keccakHex(REQUEST) + "\",\"block\":\"20\",\"timestamp\":0,\"logIndex\":0," +
+            "\"txHash\":\"" + TX1 + "\",\"contract\":\"" + CONTROL + "\",\"network\":" + network + ",\"status\":\"Final\",\"txLogs\":[]}," +
+            "{\"step\":\"settle\",\"event\":\"SubstitutionSettled\",\"cdmHash\":\"" + Cdm.keccakHex(SUB_SETTLE) + "\",\"block\":\"22\",\"timestamp\":0,\"logIndex\":2," +
+            "\"txHash\":\"" + TX2 + "\",\"contract\":\"" + CONTROL + "\",\"network\":" + network + ",\"status\":\"" + settleStatus + "\",\"txLogs\":[" +
+            "{\"contract\":\"" + TMMF + "\",\"logIndex\":0,\"event\":\"Transfer\"}," +
+            "{\"contract\":\"" + TUST + "\",\"logIndex\":1,\"event\":\"Transfer\"}]}" +
+            "]");
+    }
+
+    @Test
+    void eachSubstitutionStepIsAnchoredByItsName() throws Exception {
+        List<LedgerAnchor> anchors = CdmAnchors.substitutionAnchors(substitutionSteps("Final"), List.of(REQUEST, SUB_SETTLE));
+        assertEquals(List.of("request", "settle"), anchors.stream().map(LedgerAnchor::getRecordIdentifier).toList());
+        assertTrue(anchors.stream().allMatch(a -> a.getRecordKind() == cdmx.collateral.ledger.AnchoredRecordEnum.SUBSTITUTION));
+        assertEquals(List.of("Transfer", "Transfer", "SubstitutionSettled"),
+            anchors.get(1).getTransaction().stream().map(LedgerTransaction::getEventName).toList());
+        anchors.forEach(a -> assertEquals(List.of(), CdmRuntime.failures(a)));
+        var statuses = CdmAnchors.substitutionStatuses(substitutionSteps("Final"), 2, anchors);
+        assertEquals(List.of("Complete", "Complete"), statuses.stream().map(m -> m.get("status")).toList());
+        assertEquals(3, statuses.get(1).get("transactions"));
+    }
+
+    @Test
+    void bothPartiesBuildTheSameSubstitutionAnchors() throws Exception {
+        String mine = CdmRuntime.toJson(CdmAnchors.substitutionAnchors(substitutionSteps("Final"), List.of(REQUEST, SUB_SETTLE)));
+        String theirs = CdmRuntime.toJson(CdmAnchors.substitutionAnchors(substitutionSteps("Final"), List.of(REQUEST, SUB_SETTLE)));
+        assertEquals(Cdm.keccakHex(mine), Cdm.keccakHex(theirs));
+    }
+
+    @Test
+    void aRevertedSubstitutionSettlementFails() throws Exception {
+        List<LedgerAnchor> anchors = CdmAnchors.substitutionAnchors(substitutionSteps("Reverted"), List.of(REQUEST, SUB_SETTLE));
+        var statuses = CdmAnchors.substitutionStatuses(substitutionSteps("Reverted"), 2, anchors);
+        assertEquals(List.of("Complete", "Failed"), statuses.stream().map(m -> m.get("status")).toList());
+    }
 }

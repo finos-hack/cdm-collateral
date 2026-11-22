@@ -6999,6 +6999,20 @@ public final class App {
                 result.put("status", "invalid");
                 result.put("error", String.valueOf(e.getMessage()));
             }
+            // Each folded step's Substitution ledger anchor (task-substitution-ledger-anchors), built by both parties from
+            // the same chain events and kept apart from the state, as for margin call steps. A failure is reported.
+            try {
+                List<String> docs = new ArrayList<>();
+                for (int i = 0; i < fold.size(); i++) docs.add(fold.get(i).doc());
+                List<cdmx.collateral.ledger.LedgerAnchor> anchors = CdmAnchors.substitutionAnchors(steps, docs);
+                List<Map<String, Object>> statuses = CdmAnchors.substitutionStatuses(steps, fold.size(), anchors);
+                result.put("anchors", statuses);
+                result.put("anchorHash", Cdm.keccakHex(CdmRuntime.toJson(anchors)));
+                result.put("anchored", statuses.stream().allMatch(s -> "Complete".equals(s.get("status"))));
+            } catch (RuntimeException e) {
+                result.put("anchored", false);
+                result.put("anchorError", String.valueOf(e.getMessage()));
+            }
         }
         result.put("converged", converged);
         if (converged) substitutionCache.put(id, new FoldCache(sig.toString(), result));
