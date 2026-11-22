@@ -44,6 +44,8 @@ export interface Registry {
     ccpClearing?: `0x${string}`;
     /** Absent in a deployment made before task-authoritative-record-settlement-enforcement. */
     recordKeeperRegister?: `0x${string}`;
+    /** Absent in a deployment made before task-document-provenance's live wiring. */
+    provenanceAnchors?: `0x${string}`;
   };
   priceScale: string;
   tokens: Record<string, TokenInfo>;

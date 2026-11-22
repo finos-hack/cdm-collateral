@@ -4769,3 +4769,47 @@ test("flow-ccp-porting: A's repo of tUST to B is cleared and purchased and the i
   await call(`${SERVICE_T}/ccp/leave`, "POST", {});
   await expect.poll(async () => (await ccpMemberOf("T"))?.paid ?? true, { timeout: 60_000 }).toBe(false);
 });
+
+// task-document-provenance (wp-adr-document-provenance): each token's path back to its asset, anchored in
+// ProvenanceAnchors and held in the payload store. A seeds the fixture provenance of tUST and tMMF through its console
+// (once per chain); both parties then read the same complete paths from the ledger and the store, and a pledge of tMMF
+// to a secured party its control agreement does not name is not covered.
+test("flow-provenance: A seeds tUST and tMMF provenance -> both parties read each path complete from the ledger and the store", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  type Prov = { deployed: boolean; anchors: number; tokens: { symbol: string; complete: boolean; links: { relation: string; recordHash: string | null }[]; breaks: { kind: string }[] }[] };
+  const before = await call<Prov>(`${SERVICE.A}/provenance?securedParty=bank-b`);
+  expect(before.deployed).toBe(true);
+
+  await page.goto("/#/live/A");
+  await expect(page.getByTestId("provenance")).toBeVisible({ timeout: STEP_TIMEOUT });
+  if (before.anchors === 0) {
+    await page.getByTestId("provenance-seed").click();
+  } else {
+    await page.getByTestId("provenance-check").click();
+  }
+  await expect(page.getByTestId("provenance-tUST")).toContainText("provenance complete ✓", { timeout: 180_000 });
+  await expect(page.getByTestId("provenance-tMMF")).toContainText("provenance complete ✓", { timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId("provenance-tMMF-ControlAgreement")).toContainText("✓");
+  await expect(page.getByTestId("provenance-tMMF")).toContainText("Register statement");
+
+  // B reads the same paths, link by link, from its own gateway and the shared store.
+  const a = await call<Prov>(`${SERVICE.A}/provenance?securedParty=bank-b`);
+  const b = await call<Prov>(`${SERVICE.B}/provenance?securedParty=bank-b`);
+  for (const sym of ["tUST", "tMMF"]) {
+    const ta = a.tokens.find((t) => t.symbol === sym)!;
+    const tb = b.tokens.find((t) => t.symbol === sym)!;
+    expect(tb.complete).toBe(true);
+    expect(tb.links.map((l) => l.recordHash)).toEqual(ta.links.map((l) => l.recordHash));
+  }
+  expect(a.tokens.find((t) => t.symbol === "tUST")!.links).toHaveLength(5);
+  expect(a.tokens.find((t) => t.symbol === "tMMF")!.links).toHaveLength(6);
+
+  // tMMF's control agreement names bank-b; a pledge to bank-c is not covered (interim rule REG-3).
+  const other = await call<Prov["tokens"][number]>(`${SERVICE.A}/provenance/tMMF?securedParty=bank-c`);
+  expect(other.complete).toBe(false);
+  expect(other.breaks.map((x) => x.kind)).toContain("ControlAgreementMismatch");
+
+  // A second seed leaves the anchored provenance as it is.
+  const again = await call<{ tokens: { symbol: string; seeded: boolean }[] }>(`${SERVICE.A}/provenance/seed`, "POST", {});
+  expect(again.tokens.every((t) => !t.seeded)).toBe(true);
+});

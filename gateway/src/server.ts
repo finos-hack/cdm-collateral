@@ -130,6 +130,20 @@ route("GET", "/ledger/v1/register/transfers", async (_p, _b, url) =>
 
 route("GET", "/ledger/v1/register/confirmations", async () => J(await adapter.registerConfirmations()));
 
+// --- provenance anchors (task-document-provenance, wp-adr-document-provenance) ---
+
+route("GET", "/ledger/v1/provenance/anchors", async (_p, _b, url) => {
+  const token = url.searchParams.get("token");
+  return J(await adapter.provenanceAnchors(token ? (getAddress(token) as Address) : undefined));
+});
+
+route("GET", "/ledger/v1/provenance/head/:linkId", async (p) => J({ head: await adapter.provenanceHead(p.linkId as Hex) }));
+
+route("POST", "/ledger/v1/provenance/anchor", async (_p, b) => {
+  const { token, linkId, cdmHash, revisionOf } = b as { token: Address; linkId: Hex; cdmHash: Hex; revisionOf?: Hex };
+  return J(await adapter.anchorProvenance(getAddress(token) as Address, linkId, cdmHash, (revisionOf ?? ("0x" + "00".repeat(32))) as Hex));
+});
+
 // The tokens whose authoritative record is kept off the ledger (Registered or Claim), with their record keeper.
 route("GET", "/ledger/v1/register/tokens", async () => {
   const reg = (await import("./registry.ts")).loadRegistry();

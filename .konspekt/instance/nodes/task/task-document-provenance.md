@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T15:20:46Z
+updatedAt: 2026-11-22T15:40:28Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -75,6 +75,17 @@ other than the one the token names, and one with another secured party. The hold
 (issuance) and `amountHeld` (custody record or register statement), since fund shares have no face amount. Fixture
 documents under `src/test/resources/provenance/tmmf/`; `ProvenanceTmmfTest` (10 tests).
 
-Not yet done: deploying `ProvenanceAnchors` and reading its events through the gateway into the collateral service, a
-console view and a live spec; `RegistryEntry` links (the aircraft case, G40). The credential proofs are not checked
-against the W3C Data Integrity test suite.
+**Wired to the live stack (2026-11-22).** `deploy.ts` deploys `ProvenanceAnchors` and records it in the registry
+(`contracts.provenanceAnchors`; a deployment made before this has none, and needs a reset to get it). The gateway reads
+its events (`GET /ledger/v1/provenance/anchors`, `GET /ledger/v1/provenance/head/:linkId`) and anchors through the
+party's key (`POST /ledger/v1/provenance/anchor`). The collateral service checks every token from what the ledger and
+the payload store hold, nothing from its own state (`ProvenanceLive`; `GET /api/v1/provenance`,
+`GET /api/v1/provenance/{symbol}`, with `?securedParty=`), so both parties read the same result. Each anchored hash is a
+PROV-O link record or a record keeper's credential, which is anchored under its own link so the check can find it.
+`POST /api/v1/provenance/seed` writes the fixture provenance of tUST and tMMF once (`ProvenanceFixtures`: synthetic
+documents, moved to `src/main/resources/provenance/`; record keeper keys made for the fixture and not kept). The party
+consoles show a Provenance card (`ProvenanceCard`). Live spec `flow-provenance`: A seeds through its console, both
+parties read each path complete and identical, and a pledge of tMMF to bank-c is not covered by its control agreement.
+
+Not yet done: `RegistryEntry` links (the aircraft case, G40); the provenance check is not yet a condition of accepting
+a pledge, only a report. The credential proofs are not checked against the W3C Data Integrity test suite.
