@@ -1768,3 +1768,15 @@ excluded.
 | task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T15:15:37Z |
 | task-console-record-keeper-completion | 557d8af383a59b533e37d15d33f5d7c1d717107c | docs/analysis/gap-register.md | 2026-11-22T15:20:23Z |
 | task-console-record-keeper-completion | 557d8af383a59b533e37d15d33f5d7c1d717107c | docs/gap-register.html | 2026-11-22T15:20:23Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | docs/analysis/gap-register.md | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | docs/gap-register.html | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/main/java/collateral/ProvRecords.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/main/java/collateral/ProvenanceCheck.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/java/collateral/ProvenanceCheckTest.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/java/collateral/ProvenanceTmmfTest.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/control-agreement.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/fund-constitution.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/issuance-record.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/register-statement.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/token-terms.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/valuation.json | 2026-11-22T15:20:46Z |
