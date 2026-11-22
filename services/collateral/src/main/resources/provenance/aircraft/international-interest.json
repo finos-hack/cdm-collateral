@@ -1,0 +1,12 @@
+{
+  "fixture": "Aircraft provenance (task-document-provenance, G40). Synthetic registry entry.",
+  "document": "International Registry priority search certificate",
+  "registry": "International Registry (Cape Town Convention)",
+  "fileNumber": "IR-FIXTURE-0001",
+  "interestType": "International interest (aircraft mortgage)",
+  "aircraft": {"manufacturer": "Fixture Aerospace", "model": "FX-320", "msn": "7781"},
+  "debtor": "Fixture Aircraft SPV",
+  "creditor": "Fixture Lender",
+  "securedAmountUsd": "100000000",
+  "registered": "2026-10-02"
+}

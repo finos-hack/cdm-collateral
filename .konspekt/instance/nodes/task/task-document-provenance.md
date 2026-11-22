@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T15:40:28Z
+updatedAt: 2026-11-22T16:51:29Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -87,5 +87,15 @@ documents, moved to `src/main/resources/provenance/`; record keeper keys made fo
 consoles show a Provenance card (`ProvenanceCard`). Live spec `flow-provenance`: A seeds through its console, both
 parties read each path complete and identical, and a pledge of tMMF to bank-c is not covered by its control agreement.
 
-Not yet done: `RegistryEntry` links (the aircraft case, G40); the provenance check is not yet a condition of accepting
-a pledge, only a report. The credential proofs are not checked against the W3C Data Integrity test suite.
+**Registry entries: the aircraft case (2026-11-22).** For a token whose asset is kept in registries outside the ledger
+(profile `assetRegistry`, for example "FAA Aircraft Registry"), the path is issuance, token terms, the registry's
+registration of the owner (`cdmx:Registration`, in place of the custody record), constitution and valuation. Every
+interest the registry shows in the asset (`cdmx:RegisteredInterest`, for example a mortgage registered as an
+international interest in the International Registry) needs the interest holder's consent to the token
+(`cdmx:InterestConsent`, attested by the holder), else `InterestNotConsented`. That consent rule is interim, pending
+REG-8 of [[task-sme-registered-asset-completion]]. Registrations and interests are anchored as `RegistryEntry`.
+Interests are taken per link, since an asset can carry several. Fixture documents under
+`src/main/resources/provenance/aircraft/`; `ProvenanceAircraftTest` (8 tests). There is no aircraft token in the
+deployment: CDM 7.7.0 has no asset type for it (G40), and the asset is a URN of manufacturer, model and MSN.
+
+Not yet done: the provenance check is not yet a condition of accepting a pledge, only a report. The credential proofs are not checked against the W3C Data Integrity test suite.

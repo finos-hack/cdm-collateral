@@ -1,0 +1,9 @@
+{
+  "fixture": "Aircraft provenance (task-document-provenance, G40). Synthetic terms.",
+  "document": "Token terms",
+  "token": "tAIR",
+  "represents": "Shares of Fixture Aircraft SPV, the registered owner of MSN 7781; 1,000,000 tokens are the whole share capital",
+  "valuation": "Net asset value from the latest appraisal, less the SPV's debt",
+  "governingLaw": "New York",
+  "version": "1"
+}
