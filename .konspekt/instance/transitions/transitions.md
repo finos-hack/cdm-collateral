@@ -1611,3 +1611,7 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-tokcoll-consolerk | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
 | edge:e-lnk-docprov-subanchors | review |  | proposed | 2026-11-22T03:51:06Z | ni:///sha-256;WMqZKRo8qhPsHGZNTDs8OfhI0QlpyQre1rcv1XPe0fk |  |
 | edge:e-lnk-docprov-subanchors | review | proposed | accepted | 2026-11-22T04:24:30Z | ni:///sha-256;3xckuHhf2vR7SAzWShzGIvOyFhntLXrftATavEzljRA | denisurusov |
+| waypoint:wp-adr-document-provenance | review |  | proposed | 2026-11-22T14:19:31Z | ni:///sha-256;KrvGiaznHsLxI2I87q5pYkF9Avm4gXWpohvIBSkiICI |  |
+| edge:e-mrk-docprovadr-docprov | review |  | proposed | 2026-11-22T14:19:31Z | ni:///sha-256;KrvGiaznHsLxI2I87q5pYkF9Avm4gXWpohvIBSkiICI |  |
+| edge:e-drv-cdmdata-docprovadr | review |  | proposed | 2026-11-22T14:19:31Z | ni:///sha-256;KrvGiaznHsLxI2I87q5pYkF9Avm4gXWpohvIBSkiICI |  |
+| edge:e-drv-onchainid-docprovadr | review |  | proposed | 2026-11-22T14:19:31Z | ni:///sha-256;KrvGiaznHsLxI2I87q5pYkF9Avm4gXWpohvIBSkiICI |  |
