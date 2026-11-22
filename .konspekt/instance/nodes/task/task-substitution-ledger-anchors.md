@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-22T03:05:00Z
   confidence: 0.8
 createdAt: 2026-11-22T03:05:00Z
-updatedAt: 2026-11-22T03:15:57Z
+updatedAt: 2026-11-22T16:47:09Z
 ```
 # Task: build ledger anchors for collateral substitutions
 
@@ -19,3 +19,9 @@ substitution events carry the CDM hash, but the collateral service builds no sub
 
 Done when the service builds the `LedgerAnchor` of each substitution record from the chain events, both parties build
 the same anchor, the substitution state reports its status, and the flow-substitution live spec checks it.
+
+Scope extended 2026-11-22 (project owner): the same `AnchoredRecordEnum` extension also gives the repo, securities loan
+and triparty movement records anchor kinds of their own, so `CdmRecordKeeper.movements` passes the record's
+`AnchorStatus` to `TransferComplete` in place of the transaction's finality
+([[task-authoritative-record-other-flows]]). The extension is agreed with [[task-document-provenance]], which adds kinds
+for agreements, registry entries and valuations, before either changes it.

@@ -45,6 +45,29 @@ class CdmTripartyTest {
         assertThrows(IllegalStateException.class, () -> CdmTriparty.verify("{}", "BANK-A", "BANK-B", CdmTriparty.AGENT, UST, AGY));
     }
 
+    // task-authoritative-record-other-flows: the giver may add tMMF, a Registered token, to the profile.
+    static final String MMF = "US9128100000";
+
+    @Test
+    void theProfileMayAddTMmfAtTheBaselineHaircut() {
+        var t = CdmTriparty.build("BANK-A", "BANK-B", CdmTriparty.AGENT, GMRA, EFFECTIVE, UST, AGY, MMF);
+        assertEquals("", String.join("; ", CdmRuntime.failures(t.terms()).stream().map(Object::toString).toList()));
+        @SuppressWarnings("unchecked") List<Map<String, Object>> p = (List<Map<String, Object>>) CdmTriparty.view(t.terms()).get("profile");
+        assertEquals(List.of(UST, AGY, MMF), p.stream().map(e -> e.get("isin")).toList());
+        assertEquals(400, p.get(2).get("haircutBps"));
+        assertNull(p.get(2).get("concentrationLimit"));
+        assertNotEquals(terms().hash(), t.hash());
+    }
+
+    @Test
+    void aPartyAcceptsTheTMmfProfileOnlyWhenItAdmitsTMmf() {
+        var withMmf = CdmTriparty.build("BANK-A", "BANK-B", CdmTriparty.AGENT, GMRA, EFFECTIVE, UST, AGY, MMF);
+        assertEquals(withMmf.hash(), CdmTriparty.verify(withMmf.json(), "BANK-A", "BANK-B", CdmTriparty.AGENT, UST, AGY, MMF).hash());
+        assertThrows(IllegalStateException.class, () -> CdmTriparty.verify(withMmf.json(), "BANK-A", "BANK-B", CdmTriparty.AGENT, UST, AGY));
+        // The baseline still verifies for a party that admits tMMF.
+        assertEquals(terms().hash(), CdmTriparty.verify(terms().json(), "BANK-A", "BANK-B", CdmTriparty.AGENT, UST, AGY, MMF).hash());
+    }
+
     @Test
     void termsNamingTwoPartiesFailValidation() {
         assertThrows(RuntimeException.class, () -> CdmTriparty.build("BANK-A", "BANK-A", CdmTriparty.AGENT, GMRA, EFFECTIVE, UST, AGY));

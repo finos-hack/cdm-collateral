@@ -57,7 +57,7 @@ final class CdmTriparty {
     static final String AGENT = "BANK-T";
     static final String BASE_CURRENCY = "USD";
     /** The profile (wp-adr-triparty-terms-profile): the CSA baseline haircuts, tAGY up to half of the allocated value. */
-    static final int UST_HAIRCUT_BPS = 200, AGY_HAIRCUT_BPS = 300;
+    static final int UST_HAIRCUT_BPS = 200, AGY_HAIRCUT_BPS = 300, MMF_HAIRCUT_BPS = 400;
     static final BigDecimal AGY_LIMIT = new BigDecimal("0.5");
 
     private CdmTriparty() {}
@@ -98,15 +98,29 @@ final class CdmTriparty {
 
     /** The baseline profile over the deployment's tUST and tAGY. */
     static EligibleCollateralSpecification profile(String ustIsin, String agyIsin) {
-        return CdmRuntime.load(EligibleCollateralSpecification.class,
-                o("criteria", l(criterion(ustIsin, UST_HAIRCUT_BPS, null), criterion(agyIsin, AGY_HAIRCUT_BPS, AGY_LIMIT))));
+        return profile(ustIsin, agyIsin, null);
+    }
+
+    /**
+     * The profile with, when mmfIsin is given, tMMF added at the CSA baseline haircut and with no concentration limit
+     * (task-authoritative-record-other-flows). tMMF is a Registered token: the giver adds it only when it is eligible under
+     * a control agreement (EligibleUnderControl), and each movement of it completes on its record keeper's confirmation.
+     */
+    static EligibleCollateralSpecification profile(String ustIsin, String agyIsin, String mmfIsin) {
+        List<Object> criteria = new ArrayList<>(List.of(criterion(ustIsin, UST_HAIRCUT_BPS, null), criterion(agyIsin, AGY_HAIRCUT_BPS, AGY_LIMIT)));
+        if (mmfIsin != null) criteria.add(criterion(mmfIsin, MMF_HAIRCUT_BPS, null));
+        return CdmRuntime.load(EligibleCollateralSpecification.class, o("criteria", criteria));
     }
 
     static Terms build(String giver, String receiver, String agent, String gmraTermsHash, LocalDate effective, String ustIsin, String agyIsin) {
+        return build(giver, receiver, agent, gmraTermsHash, effective, ustIsin, agyIsin, null);
+    }
+
+    static Terms build(String giver, String receiver, String agent, String gmraTermsHash, LocalDate effective, String ustIsin, String agyIsin, String mmfIsin) {
         Map<String, Object> doc = o("giver", party(giver), "receiver", party(receiver),
                 "agent", o("partyReference", party(agent), "role", "TripartyAgent"),
                 "gmraTermsHash", gmraTermsHash, "baseCurrency", BASE_CURRENCY, "effectiveDate", effective.toString(),
-                "profile", CdmRuntime.JSON.convertValue(profile(ustIsin, agyIsin), Map.class));
+                "profile", CdmRuntime.JSON.convertValue(profile(ustIsin, agyIsin, mmfIsin), Map.class));
         TripartyTerms t = CdmRuntime.load(TripartyTerms.class, doc);
         CdmRuntime.validate(t);
         String json = CdmRuntime.toJson(t);
@@ -128,14 +142,24 @@ final class CdmTriparty {
     /** Check a proposed document: it parses, names these three parties, and equals the terms this service builds with
      *  the effective date and GMRA terms hash it states. Returns the terms; throws with the reason otherwise. */
     static Terms verify(String json, String giver, String receiver, String agent, String ustIsin, String agyIsin) {
+        return verify(json, giver, receiver, agent, ustIsin, agyIsin, null);
+    }
+
+    /** As above; the document may also be the profile with tMMF (mmfIsin, when this party admits it), and must equal one
+     *  of the two builds. */
+    static Terms verify(String json, String giver, String receiver, String agent, String ustIsin, String agyIsin, String mmfIsin) {
         TripartyTerms p = parse(json);
         var failures = CdmRuntime.failures(p);
         if (!failures.isEmpty()) throw new IllegalStateException("the terms fail CDM validation: " + failures.get(0));
         if (!giver.equals(name(p.getGiver())) || !receiver.equals(name(p.getReceiver())) || !agent.equals(name(p.getAgent().getPartyReference().getValue())))
             throw new IllegalStateException("the terms name other parties");
         Terms again = build(giver, receiver, agent, p.getGmraTermsHash(), p.getEffectiveDate().toLocalDate(), ustIsin, agyIsin);
-        if (!again.json().equals(json)) throw new IllegalStateException("the terms differ from the terms this party builds");
-        return again;
+        if (again.json().equals(json)) return again;
+        if (mmfIsin != null) {
+            Terms withMmf = build(giver, receiver, agent, p.getGmraTermsHash(), p.getEffectiveDate().toLocalDate(), ustIsin, agyIsin, mmfIsin);
+            if (withMmf.json().equals(json)) return withMmf;
+        }
+        throw new IllegalStateException("the terms differ from the terms this party builds");
     }
 
     // --- trade start (task-triparty-trade-start, wp-adr-triparty-trade-start)
