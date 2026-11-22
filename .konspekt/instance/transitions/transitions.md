@@ -1609,3 +1609,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-dec-tokcoll-authrecordflows | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
 | edge:e-dec-tokcoll-subanchors | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
 | edge:e-dec-tokcoll-consolerk | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-lnk-docprov-subanchors | review |  | proposed | 2026-11-22T03:51:06Z | ni:///sha-256;WMqZKRo8qhPsHGZNTDs8OfhI0QlpyQre1rcv1XPe0fk |  |
