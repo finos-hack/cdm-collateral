@@ -1899,3 +1899,5 @@ excluded.
 | task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/presentations/intro_deck/slides/gaps.html | 2026-11-22T21:13:42Z |
 | task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/presentations/project-narrative.md | 2026-11-22T21:13:42Z |
 | task-v02-demo-release-summary | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | docs/releases/v0.2-demo.md | 2026-11-22T21:13:42Z |
+| task-calm-model-contracts | 3f823d64e42655f0f3eec55a37c93535d4187c53 | architecture/README.md | 2026-11-22T21:19:00Z |
+| task-calm-model-contracts | 3f823d64e42655f0f3eec55a37c93535d4187c53 | architecture/prototype.architecture.json | 2026-11-22T21:19:00Z |

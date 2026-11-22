@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T21:17:53Z
   confidence: 0.8
 createdAt: 2026-11-22T21:17:53Z
-updatedAt: 2026-11-22T21:17:53Z
+updatedAt: 2026-11-22T21:19:00Z
 ```
 # Task: add the CCP clearing, record keeper register and provenance anchors contracts to the CALM model
 
@@ -22,3 +22,10 @@ Under [[goal-architecture-design]]. Follows [[task-v02-demo-release-summary]], w
 Done when the three contracts are nodes of the CALM file, in the prototype's composition and deployed on the Besu
 network, with their relationships to the contracts and services that use them, and `calm validate --strict` reports
 0 errors.
+
+**Done 2026-11-22**, on branch `calm-model-contracts`, for review: the three contract nodes, their place in the
+prototype's composition and on the Besu network, relationships `ccp-to-repo-settlement`, `ccp-to-oracle-feed` and
+`ccp-to-tokens`; the oracle service's description names its transfer agent role and `oracle-to-gateway` its register
+confirmations; the triparty contract's description and the metadata status are brought to `v0.2-demo`.
+`calm validate --strict` (CALM CLI 1.40.0): 0 errors, 0 warnings. Not modelled: an actor for the CCP's operations
+(BANK-C), which has its own console (`#/live/C`) as the triparty agent has (`triparty-agent-ops`).
