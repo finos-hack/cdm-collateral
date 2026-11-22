@@ -2,14 +2,14 @@
 id: task-substitution-ledger-anchors
 type: task
 title: Build ledger anchors for collateral substitutions
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: tokenized-collateral
   timestamp: 2026-11-22T03:05:00Z
   confidence: 0.8
 createdAt: 2026-11-22T03:05:00Z
-updatedAt: 2026-11-22T18:57:53Z
+updatedAt: 2026-11-22T20:04:22Z
 ```
 # Task: build ledger anchors for collateral substitutions
 
@@ -29,3 +29,12 @@ for agreements, registry entries and valuations, before either changes it.
 Decided 2026-11-22 (project owner): the triparty profile's `Deposited` and `Withdrawn` carry no CDM document, so they
 have no anchor and keep the transaction's finality as their anchor status in `CdmRecordKeeper.movements`; every other
 repo, loan and triparty movement passes its record's `AnchorStatus`.
+
+Resolved 2026-11-22 (project owner), PRs #88 and #90. The collateral service builds the `Substitution` anchor of each
+folded substitution step from the gateway's step events (`CdmAnchors.substitutionAnchors`), and the substitution
+`cdm-state` reports `anchors`, `anchored` and `anchorHash`; `flow-substitution` checks that the three anchors are
+Complete and equal on both parties. `AnchoredRecordEnum` has `Repo`, `SecuritiesLoan` and `Triparty`: the gateway's
+`/register/movements` reports each movement's document hash, and `CdmRecordKeeper.movements` passes the movement
+anchor's status to `TransferComplete` (`flow-registered-collateral-gmsla` checks the delivery's anchor on both parties).
+The triparty profile's `Deposited` and `Withdrawn` keep the transaction's finality. Not yet exercised against chain
+data: close-out and triparty purchase movements of tMMF.

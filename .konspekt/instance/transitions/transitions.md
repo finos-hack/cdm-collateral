@@ -1628,3 +1628,4 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-kit-refresh | review |  | proposed | 2026-11-22T19:59:28Z | ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k |  |
 | node:task-konspekt-kit-refresh | status |  | open | 2026-11-22T19:59:28Z | ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k |  |
 | edge:e-dec-konspektadopt-kitrefresh | review |  | proposed | 2026-11-22T19:59:28Z | ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k |  |
+| node:task-substitution-ledger-anchors | status | open | resolved | 2026-11-22T20:04:22Z |  | denisurusov |
