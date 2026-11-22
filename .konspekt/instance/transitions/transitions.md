@@ -1635,3 +1635,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-v02-demo-release-summary | review |  | proposed | 2026-11-22T20:56:04Z | ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag |  |
 | node:task-v02-demo-release-summary | status |  | open | 2026-11-22T20:56:04Z | ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag |  |
 | edge:e-dec-adoption-v02summary | review |  | proposed | 2026-11-22T20:56:04Z | ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag |  |
+| node:task-collateral-service-unit-tests | status | open | resolved | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c | denisurusov |
+| node:task-calm-model-contracts | review |  | proposed | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c |  |
+| node:task-calm-model-contracts | status |  | open | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c |  |
+| edge:e-dec-archdesign-calmcontracts | review |  | proposed | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c |  |
