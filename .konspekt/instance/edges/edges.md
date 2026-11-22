@@ -461,3 +461,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-docprov-smedocprov | links | node:task-document-provenance | node:task-sme-document-provenance |  | accepted |
 | e-lnk-docprov-smeregistered | links | node:task-document-provenance | node:task-sme-registered-asset-completion |  | accepted |
 | e-men-docprov-onchain-asset-identity | mentions | node:task-document-provenance | concept:concept-asr-onchain-asset-identity |  | accepted |
+| e-dec-cdmdev-interimcatalog | decomposes | node:goal-cdm-development | node:task-sme-interim-decision-catalog |  | proposed |
