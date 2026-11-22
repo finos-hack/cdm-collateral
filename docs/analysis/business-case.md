@@ -107,8 +107,8 @@ goals apply to, and §6 states the first milestone toward them.
 [`gap-register.md`](gap-register.md) classifies P1, P2 or P3 is closed by a
 local extension in `cdm-ext/` (`wp-adr-cdm-local-extensions`), with tests (G29). A gap whose register closure kind is
 "none locally" or "none for now" (G32, G33) counts as closed when it is documented as a note in the register. The register holds 41 gaps: 15 P1, 13 P2, 11 P3 and 2
-classified out of scope. Its closure-status table (2026-11-21) records 21 as closed, 7 as partial, 1 as deferred by
-the project owner (G26) and 10 as open (G11, G27, G28, G30, G31, G32, G37, G38, G40, G41). The register is the list of record: this document does not copy
+classified out of scope. Its closure-status table (2026-11-22) records 21 as closed, 8 as partial, 1 as deferred by
+the project owner (G26) and 9 as open (G11, G27, G28, G30, G31, G32, G37, G38, G40). The register is the list of record: this document does not copy
 it, and a gap added to the register is added to C1.
 
 **C2 — Support every known flow for all five agreement families.** Every lifecycle step in the flow of each family

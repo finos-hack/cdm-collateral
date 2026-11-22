@@ -70,12 +70,12 @@ repository only; nothing is proposed to FINOS. Per gap: [`gap-register.md`, Clos
 | Status | Count | Gaps |
 |---|---|---|
 | Closed | 21 | G1 to G10 (margin call lifecycle, proposals, disputes, settlement, portfolio, returns, valuation, concentration, VM amounts, exposure netting); G12 repo and lending exposure; G14 enforcement; G18 recall; G19 and G20 GMRA and GMSLA terms; G22 triparty; G23 CCP; G24 and G25 tokenized assets and ledger anchors; G29 tests; G39 Java toolchain |
-| Partial | 7 | G15 close-out (open: ISDA Termination Events); G16 substitution (open: at a CCP); G17 interest and income (open: GMSLA manufactured payments, CCP interest); G21 GMSLA clause library; G33 CDM's Java lending workflows; G34 allocation (open: cost optimisation); G35 reconciliation (open: CCP) |
+| Partial | 8 | G15 close-out (open: ISDA Termination Events); G16 substitution (open: at a CCP); G17 interest and income (open: GMSLA manufactured payments, CCP interest); G21 GMSLA clause library; G33 CDM's Java lending workflows; G34 allocation (open: cost optimisation); G35 reconciliation (open: CCP); G41 document provenance (open: tUSD, checks at revaluation or amendment) |
 | Deferred by the project owner | 1 | G26 mapping to ISO 20022 and FpML collateral messages |
-| Open | 10 | G11 rating eligibility; G27 taxonomy mapping; G28 regulatory references; G30, G31 and G32 not hit by the prototype or not fixable locally; G37 and G38 transfer type and title-transfer roles; G40 physical assets such as aircraft and asset-finance agreements; G41 provenance linking identities and legal documents |
+| Open | 9 | G11 rating eligibility; G27 taxonomy mapping; G28 regulatory references; G30, G31 and G32 not hit by the prototype or not fixable locally; G37 and G38 transfer type and title-transfer roles; G40 physical assets such as aircraft and asset-finance agreements |
 | Out of scope | 2 | G13 ISDA SIMM; G36 regulatory reporting |
 
-**Deferred to SMEs.** Fifteen of the closed or partial gaps rest on an interim assumption of the project owner. Their
+**Deferred to SMEs.** Sixteen of the closed or partial gaps rest on an interim assumption of the project owner. Their
 open questions are in [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md): 229 questions in 40 sections,
 one section per `task-sme-*` task, none answered yet. The same questions as a page:
 [`docs/sme-questions.html`](docs/sme-questions.html). Which sections belong to which gap:

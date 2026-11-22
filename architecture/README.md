@@ -1,11 +1,15 @@
-# Prototype architecture (sketch)
+# Prototype architecture
 
-Part of `task-local-environment-setup` (goal `goal-architecture-design`). **Partially built** (`task-e2e-wiring`): the
-IM and VM margin call lifecycles — issue, respond (full / partial / dispute), propose, accept / reject, settle, and
-three-step returns — run live on the contracts, the ledger gateway, the collateral workflow service, the CDM payload
-store and the console. The oracle service and flows 2, 3 and 5 below are design only. Component READMEs hold the
-implemented interfaces: [`../gateway`](../gateway/README.md), [`../services/collateral`](../services/collateral/README.md),
-[`../store`](../store/README.md), [`../contracts`](../contracts/README.md).
+Part of `task-local-environment-setup` (goal `goal-architecture-design`). **Built** (`task-e2e-wiring` and the tasks of
+the workflow map): all 47 workflows of [`../docs/analysis/cdm-workflow-task-map.md`](../docs/analysis/cdm-workflow-task-map.md)
+in the ISDA CSA, repo (GMRA), securities lending (GMSLA), triparty and CCP families run live on the contracts, a ledger
+gateway and a collateral workflow service per participant, the oracle service, the CDM payload store and the console,
+with 57 live specs (release `v0.2-demo`, [`../docs/releases/v0.2-demo.md`](../docs/releases/v0.2-demo.md)). The oracle
+service also acts as the tMMF transfer agent (record keeper). This document began as the design sketch and keeps its
+structure; the component READMEs hold the implemented interfaces and are the authority:
+[`../gateway`](../gateway/README.md), [`../services/collateral`](../services/collateral/README.md),
+[`../services/oracle`](../services/oracle/README.md), [`../store`](../store/README.md),
+[`../contracts`](../contracts/README.md), [`../console`](../console/README.md).
 
 The architecture is expressed in [FINOS CALM](https://github.com/finos/architecture-as-code) (Common Architecture
 Language Model), schema release 1.2: [`prototype.architecture.json`](prototype.architecture.json). It validates with
@@ -83,8 +87,8 @@ flowchart LR
 
 ## Endpoints
 
-Collateral workflow service, ledger gateway and payload store: implemented routes, summarised here; the component
-READMEs are the authority. Oracle service: design only.
+The CSA margin call routes of each service, summarised here; the other families' routes, the record keeper routes and
+the provenance routes are in the component READMEs, which are the authority.
 
 | Service | Endpoint | Purpose |
 |---|---|---|
@@ -96,10 +100,10 @@ READMEs are the authority. Oracle service: design only.
 | | `GET /api/v1/calls/{id}/cdm-state` | The call's folded `MarginCallState` and its keccak `stateHash` |
 | | `GET /api/v1/events` | Server-Sent Events: chain events relayed from its own gateway |
 | CDM payload store `:8300` (shared) | `POST /store/v1/docs` · `GET /store/v1/docs/{hash}` | Write a step's CDM document under its keccak-256 hash; read it by the on-chain `cdmHash`. Bearer token per party; per-document reader allowlist |
-| Oracle service `:8100` (shared, design only) | `GET /oracle/v1/prices/{assetId}` · `GET /oracle/v1/ratings/{assetId}` | Valuation and eligibility data |
-| | `PUT /oracle/v1/market-data/{assetId}` | Market operator changes mock NAV, price or rating |
-| | `POST /oracle/v1/publish` | Push current prices and ratings on-chain |
-| | `POST /oracle/v1/default-notices` | Relay a default notice to the on-chain feed |
+| Oracle service `:8100` (shared, market operator) | `GET /oracle/v1/market-data` · `PUT /oracle/v1/market-data/{symbol}` | Mock price and rating per token; a price change is published to the feed |
+| | `POST /oracle/v1/prices/publish` | Push the current prices on-chain through the operator's gateway |
+| | `POST /oracle/v1/defaults` · `GET /oracle/v1/defaults/{party}` | Relay a default notice to the on-chain feed; read a party's default status |
+| | `GET /oracle/v1/register/{symbol}` · `PUT /oracle/v1/register/paused` | The transfer agent's register of a Registered token (tMMF); pause its on-chain confirmations for tests |
 | Ledger gateway `:8200+n` (per participant) | `POST /ledger/v1/calls` · `POST /ledger/v1/calls/{id}/response` | Record a call or a response on-chain (state, amounts, `cdmHash`), signed with its own key |
 | | `POST /ledger/v1/calls/{id}/proposals` · `POST /ledger/v1/calls/{id}/decision` | Record a collateral proposal (assets, quantities, `cdmHash`) or its acceptance / rejection (`cdmHash`) |
 | | `POST /ledger/v1/calls/{id}/pledge` · `/transfer` · `/return` · `/return-transfer` | Settle with the settle step's `cdmHash`: IM pledge, VM transfer, IM release, VM transfer back |
@@ -108,6 +112,10 @@ READMEs are the authority. Oracle service: design only.
 | | `GET /ledger/v1/events` | Server-Sent Events: one `eth_subscribe` subscription on its Besu node, fanned out |
 
 ## Flows (in the CALM file)
+
+The CSA flows below are in the CALM file. The repo, securities lending, triparty and CCP flows, and the tokenized
+collateral changes of `v0.2-demo` (completion by the record keeper, document provenance), are described in the
+workflow map and the component READMEs; the CALM file does not model them all yet.
 
 1. **Initial margin call, collateral proposal and on-chain pledge** — the secured party writes the call's CDM document
    to the payload store and records the call with its `cdmHash` on-chain; the pledgor's gateway pushes the event, and the
