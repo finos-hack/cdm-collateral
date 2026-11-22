@@ -12,11 +12,18 @@
 // (flow-reconciliation).
 // Two-way initial margin (wp-adr-two-way-im): each party pledges on one leg and secures the other. The leg selector
 // picks the leg the role-specific panels act on; it starts on the leg A pledges on.
+// A call that moved a Registered or Claim token (tMMF) shows whether its record keeper has confirmed the step and the
+// enforcement, and the console shows each such token's register against the ledger: settled on-chain is not complete
+// until then (task-console-record-keeper-completion, interim rules REG-1 to REG-5).
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
   serviceUrl,
   type LiveCall,
+  type LiveCallCompletion,
+  type LiveEnforcement,
+  type LiveRecordCompletion,
+  type LiveRegisterBreaks,
   type LiveCloseOut,
   type LiveContext,
   type LiveInterest,
@@ -78,6 +85,14 @@ export function LiveConsole({ party }: { party: LiveParty }) {
   const [nettings, setNettings] = useState<LiveNetting[]>([]);
   const [recons, setRecons] = useState<LivePortfolioReconciliation[]>([]);
   const [legPledgor, setLegPledgor] = useState<LiveParty>("A");
+  const [completions, setCompletions] = useState<Record<string, CallCompletion>>({});
+  const [register, setRegister] = useState<LiveRegisterBreaks | null>(null);
+
+  // Completion by the record keeper (task-console-record-keeper-completion). offLedger holds the Registered and Claim
+  // token symbols from the context; with none, the console fetches nothing extra. A result is kept in done once it is
+  // complete, which it stays, so a call is read again only while its record keeper has not confirmed.
+  const offLedger = useRef<Set<string>>(new Set());
+  const done = useRef<Record<string, CallCompletion>>({});
 
   // One refresh in flight at a time (task-live-read-latency): a refresh asked for while one runs (an SSE step, the
   // fallback poll, an action) is merged into one more pass after it, so requests do not pile up behind the browser's
@@ -112,8 +127,15 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         ccpApi.ccp(party).then((c) => setCcp(c && "rulebook" in c ? c : null)).catch(() => setCcp(null)),
         ccpApi.clearings(party).then((c) => setClearings(Array.isArray(c?.clearings) ? c.clearings : [])).catch(() => setClearings([])),
       );
-      setState(await api.state(party));
+      const st = await api.state(party);
+      setState(st);
       setError(null);
+      if (offLedger.current.size > 0) {
+        panels.push(
+          api.registerBreaks(party).then((r) => setRegister(Array.isArray(r?.tokens) ? r : null)).catch(() => setRegister(null)),
+          readCompletions(party, st.calls ?? [], offLedger.current, done.current).then(setCompletions),
+        );
+      }
       await Promise.all(panels);
     } catch (e) {
       setError(`service ${party} unreachable: ${(e as Error).message}`);
@@ -140,7 +162,9 @@ export function LiveConsole({ party }: { party: LiveParty }) {
     let live = true;
     api.context(party).then((c) => {
       securedRef.current = legRef.current !== c.party;
+      offLedger.current = new Set((c.tokens ?? []).filter((t) => t.authoritativeRecord && t.authoritativeRecord !== "Bearer").map((t) => t.symbol));
       setCtx(c);
+      if (offLedger.current.size > 0) refresh(); // the first pass may have run before the context named these tokens
     }).catch((e) => setError((e as Error).message));
     refresh();
     // Push: subscribe to the service's live event stream (Besu ws -> gateway -> service -> here) and refresh on each
@@ -454,11 +478,13 @@ export function LiveConsole({ party }: { party: LiveParty }) {
         </div>
       )}
 
+      {register && register.tokens.length > 0 && <RegisterCard register={register} />}
+
       <div className="card">
         <h3>Margin calls</h3>
         {!state?.calls.length && <div className="small">No calls yet.</div>}
         {state?.calls.map((c) => (
-          <CallRow key={c.callId} call={c} party={party} hasPledged={c.leg ? legHasPledged(c.leg) : hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} reconciliation={recons[0] ?? null} />
+          <CallRow key={c.callId} call={c} party={party} hasPledged={c.leg ? legHasPledged(c.leg) : hasPledged} busy={busy} token={token} qty={qty} setToken={setToken} setQty={setQty} run={run} reconciliation={recons[0] ?? null} completion={completions[c.callId]} />
         ))}
       </div>
     </div>
@@ -477,8 +503,10 @@ function CallRow(props: {
   run: (fn: () => Promise<unknown>) => void;
   /** The latest portfolio reconciliation; a dispute can cite it when it has breaks (flow-reconciliation). */
   reconciliation?: LivePortfolioReconciliation | null;
+  /** Completion by the record keeper of the call's steps and enforcement (task-console-record-keeper-completion). */
+  completion?: CallCompletion;
 }) {
-  const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run, reconciliation } = props;
+  const { call: c, party, hasPledged, busy, token, qty, setToken, setQty, run, reconciliation, completion } = props;
   const [partialUsd, setPartialUsd] = useState(0);
   const [staged, setStaged] = useState<{ token: string; qty: number }[]>([]); // multi-asset proposal basket
   const [allocNote, setAllocNote] = useState<string | null>(null); // result of "Suggest allocation" (flow-allocation)
@@ -636,7 +664,16 @@ function CallRow(props: {
           </>
         )}
         {settled && <span className="ok">settled on-chain ✓</span>}
+        {completion?.call?.recordKeeperError && (
+          <span className="bad" data-testid="record-keeper">record keeper status unavailable: {completion.call.recordKeeperError}</span>
+        )}
+        {keeperLines(completion?.call?.recordKeeper?.flatMap((r) => r.tokens) ?? []).map((k) => (
+          <KeeperStatus key={k.keeper} line={k} />
+        ))}
         {c.enforced && <span className="bad">enforced ✓</span>}
+        {keeperLines(completion?.enforcement?.tokens ?? []).map((k) => (
+          <KeeperStatus key={k.keeper} line={k} prefix="enforcement: " />
+        ))}
       </div>
 
       {c.messages.length > 0 && (
@@ -647,6 +684,101 @@ function CallRow(props: {
           ))}
         </details>
       )}
+    </div>
+  );
+}
+
+/** What the service reports about a call's completion by authoritative record. */
+type CallCompletion = { call?: LiveCallCompletion; enforcement?: LiveEnforcement };
+
+const isSettled = (c: LiveCall) => c.state === "settled" || c.state === "settled (agreed part)";
+
+/**
+ * Read the completion of the calls that can wait on a record keeper: a settled call whose accepted proposal moved a
+ * Registered or Claim token, a settled return call (its assets are not in the call state), and an enforced call. The
+ * reads run one after another, so they take one of the browser's per-host connections (task-live-read-latency); a
+ * result already complete in done is not read again. A failed read leaves the call without a result.
+ */
+async function readCompletions(party: LiveParty, calls: LiveCall[], offLedger: Set<string>, done: Record<string, CallCompletion>) {
+  const out: Record<string, CallCompletion> = {};
+  for (const c of calls) {
+    const prior = done[c.callId] ?? {};
+    const r: CallCompletion = { ...prior };
+    const movedOffLedger = c.proposals.some((p) => p.state === "accepted" && p.assets.some((a) => offLedger.has(a.token)));
+    if (isSettled(c) && (movedOffLedger || c.kind === "Return") && !prior.call) {
+      const f = await api.callCompletion(party, c.callId).catch(() => null);
+      if (f && (f.recordKeeper || f.recordKeeperError)) r.call = f;
+      if (f?.settlementComplete === true) done[c.callId] = { ...done[c.callId], call: f };
+    }
+    if (c.enforced && !prior.enforcement) {
+      const e = await api.enforcement(party, c.callId).catch(() => null);
+      if (e && e.enforced) r.enforcement = e;
+      if (e?.complete === true) done[c.callId] = { ...done[c.callId], enforcement: e };
+    }
+    if (r.call || r.enforcement) out[c.callId] = r;
+  }
+  return out;
+}
+
+/** One record keeper's tokens in a record and whether it has confirmed them all. Bearer tokens name no record keeper. */
+type KeeperLine = { keeper: string; symbols: string[]; complete: boolean };
+
+function keeperLines(tokens: LiveRecordCompletion["tokens"]): KeeperLine[] {
+  const by = new Map<string, KeeperLine>();
+  for (const t of tokens) {
+    if (!t.recordKeeper) continue;
+    const k = by.get(t.recordKeeper) ?? { keeper: t.recordKeeper, symbols: [], complete: true };
+    if (!k.symbols.includes(t.symbol)) k.symbols.push(t.symbol);
+    k.complete &&= t.complete;
+    by.set(t.recordKeeper, k);
+  }
+  return [...by.values()];
+}
+
+function KeeperStatus({ line, prefix = "" }: { line: KeeperLine; prefix?: string }) {
+  const symbols = line.symbols.join(", ");
+  return line.complete ? (
+    <span className="ok" data-testid="record-keeper">{prefix}{symbols} confirmed by {line.keeper} ✓</span>
+  ) : (
+    <span className="bad" data-testid="record-keeper">{prefix}{symbols} awaiting {line.keeper} confirmation, not complete</span>
+  );
+}
+
+/**
+ * REG-5: each Registered or Claim token's register, as its record keeper reports it, against the ledger. A break shows
+ * a movement the register does not show yet, or the reverse; the record keeper's register prevails.
+ */
+function RegisterCard({ register }: { register: LiveRegisterBreaks }) {
+  return (
+    <div className="card" data-testid="register-breaks">
+      <h3>Record keeper registers</h3>
+      {register.tokens.map((t) => (
+        <div key={t.symbol} className="subcard" data-testid={`register-${t.symbol}`}>
+          <span className="mono">{t.symbol}</span> ·{" "}
+          {t.reconciled ? (
+            <span className="ok">register matches the ledger ✓</span>
+          ) : (
+            <span className="bad">{t.breaks.length} register {t.breaks.length === 1 ? "break" : "breaks"}</span>
+          )}
+          {t.breaks.length > 0 && (
+            <table className="tbl">
+              <thead>
+                <tr><th>Holder</th><th>Break</th><th>Register</th><th>Ledger</th></tr>
+              </thead>
+              <tbody>
+                {t.breaks.map((b) => (
+                  <tr key={b.record}>
+                    <td className="mono">{short(b.record.split("/").pop() ?? b.record)}</td>
+                    <td>{b.breakType}</td>
+                    <td>{b.registerValue ?? "—"}</td>
+                    <td>{b.ledgerValue ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

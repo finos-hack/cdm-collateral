@@ -1761,6 +1761,13 @@ excluded.
 | task-document-provenance | b6871425b5a1da367125a15dfdfa465069bd7b54 | services/collateral/src/test/resources/provenance/tust/token-terms.json | 2026-11-22T15:08:43Z |
 | task-document-provenance | b6871425b5a1da367125a15dfdfa465069bd7b54 | services/collateral/src/test/resources/provenance/tust/tokenizer-constitution.json | 2026-11-22T15:08:43Z |
 | task-document-provenance | b6871425b5a1da367125a15dfdfa465069bd7b54 | services/collateral/src/test/resources/provenance/tust/valuation.json | 2026-11-22T15:08:43Z |
+| task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | console/e2e/live.spec.ts | 2026-11-22T15:15:37Z |
+| task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | console/src/components/LiveConsole.test.tsx | 2026-11-22T15:15:37Z |
+| task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | console/src/components/LiveConsole.tsx | 2026-11-22T15:15:37Z |
+| task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | console/src/domain/liveApi.ts | 2026-11-22T15:15:37Z |
+| task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T15:15:37Z |
+| task-console-record-keeper-completion | 557d8af383a59b533e37d15d33f5d7c1d717107c | docs/analysis/gap-register.md | 2026-11-22T15:20:23Z |
+| task-console-record-keeper-completion | 557d8af383a59b533e37d15d33f5d7c1d717107c | docs/gap-register.html | 2026-11-22T15:20:23Z |
 | task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | docs/analysis/gap-register.md | 2026-11-22T15:20:46Z |
 | task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | docs/gap-register.html | 2026-11-22T15:20:46Z |
 | task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/main/java/collateral/ProvRecords.java | 2026-11-22T15:20:46Z |
