@@ -191,6 +191,24 @@ export interface RegisterTransfer {
 }
 
 /** One RegisterConfirmed event: the record keeper's register shows the token movements of transaction txHash. */
+/**
+ * One provenance anchor (task-document-provenance): the hash of a token's link record or of a record keeper's credential,
+ * with what the CDM LedgerAnchor needs (network, contract, transaction, block, log index, status).
+ */
+export interface ProvenanceAnchor {
+  token: Address;
+  linkId: Hex;
+  cdmHash: Hex;
+  revisionOf: Hex;
+  anchoredBy: Address;
+  block: string;
+  logIndex: number;
+  txHash: Hex;
+  contract: string;
+  network: { name: string; platform: string; chainId: number };
+  status: "Final" | "Reverted";
+}
+
 export interface RegisterConfirmation {
   txHash: Hex;
   token: Address;
@@ -232,6 +250,7 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "Returned(bytes32,address,address)",
     "Enforced(bytes32,address,address,bytes32)",
     "RegisterConfirmed(bytes32,address,string)",
+    "ProvenanceAnchored(address,bytes32,bytes32,bytes32,address)",
     "ClosedOut(bytes32,address,address,uint256,uint256,bytes32)",
     "Reclaimed(bytes32,address,address,bytes32)",
     "SubstitutionRequested(bytes32,address,address,bytes32)",
@@ -782,6 +801,13 @@ const registerAbi = parseAbi([
   "event RegisterConfirmed(bytes32 indexed txHash, address indexed token, string ref)",
 ]);
 
+// Anchors of a token's provenance link records and credentials (task-document-provenance, wp-adr-document-provenance).
+const provenanceAbi = parseAbi([
+  "function anchor(address token, bytes32 linkId, bytes32 cdmHash, bytes32 revisionOf)",
+  "function head(bytes32 linkId) view returns (bytes32)",
+  "event ProvenanceAnchored(address indexed token, bytes32 indexed linkId, bytes32 cdmHash, bytes32 revisionOf, address indexed anchoredBy)",
+]);
+
 const transferAbi = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
 
 const erc20Abi = parseAbi([
@@ -813,6 +839,12 @@ export interface LedgerAdapter {
   registerTransfers(token: Address): Promise<RegisterTransfer[]>;
   /** The record keeper's confirmations, in chain order. */
   registerConfirmations(): Promise<RegisterConfirmation[]>;
+  /** The provenance anchors of a token, or of every token, in chain order (task-document-provenance). */
+  provenanceAnchors(token?: Address): Promise<ProvenanceAnchor[]>;
+  /** The current head of a provenance link (0 before its first record). */
+  provenanceHead(linkId: Hex): Promise<Hex>;
+  /** Anchor a provenance record's or credential's hash; revisionOf must be the link's current head. */
+  anchorProvenance(token: Address, linkId: Hex, cdmHash: Hex, revisionOf: Hex): Promise<{ txHash: Hex; block: bigint }>;
   /** The record keeper confirms that its register shows a transaction's movements of a token (record keeper's key). */
   confirmRegister(txHash: Hex, token: Address, ref: string): Promise<{ txHash: Hex; block: bigint }>;
   closeOut(closeOutId: Hex, pledgor: Address, owed: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
@@ -1206,6 +1238,34 @@ export class BesuAdapter implements LedgerAdapter {
     const a = this.reg.contracts.recordKeeperRegister;
     if (!a) throw new Error("this deployment has no RecordKeeperRegister; redeploy (task-authoritative-record-settlement-enforcement)");
     return a;
+  }
+
+  private provenanceAddress(): Address {
+    const a = this.reg.contracts.provenanceAnchors;
+    if (!a) throw new Error("this deployment has no ProvenanceAnchors; redeploy (task-document-provenance)");
+    return a;
+  }
+
+  async provenanceAnchors(token?: Address): Promise<ProvenanceAnchor[]> {
+    const network = { name: "besu-prototype", platform: "Hyperledger Besu", chainId: this.reg.chainId };
+    const logs = await this.scan(this.provenanceAddress(), provenanceAbi, "ProvenanceAnchored", token ? { token: getAddress(token) } : {});
+    return logs.map((l) => {
+      const a = l.args as { token: Address; linkId: Hex; cdmHash: Hex; revisionOf: Hex; anchoredBy: Address };
+      return {
+        token: getAddress(a.token), linkId: a.linkId.toLowerCase() as Hex, cdmHash: a.cdmHash.toLowerCase() as Hex,
+        revisionOf: a.revisionOf.toLowerCase() as Hex, anchoredBy: getAddress(a.anchoredBy),
+        block: l.blockNumber.toString(), logIndex: Number(l.logIndex), txHash: (l.transactionHash as string).toLowerCase() as Hex,
+        contract: (l.address as string).toLowerCase(), network, status: "Final" as const, // a log exists only in a successful transaction
+      };
+    });
+  }
+
+  async provenanceHead(linkId: Hex): Promise<Hex> {
+    return (await this.pub.readContract({ address: this.provenanceAddress(), abi: provenanceAbi, functionName: "head", args: [linkId] })) as Hex;
+  }
+
+  anchorProvenance(token: Address, linkId: Hex, cdmHash: Hex, revisionOf: Hex) {
+    return this.send(this.provenanceAddress(), provenanceAbi, "anchor", [getAddress(token), linkId, cdmHash, revisionOf]);
   }
 
   async registerConfirmations(): Promise<RegisterConfirmation[]> {
