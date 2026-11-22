@@ -65,8 +65,50 @@ time). Deferred, and tracked as open items:
   single shared instance and the scheme is a shared secret (the store is the trusted verifier) — production would use
   mutual TLS or signed requests, and per-party or content-addressed (IPFS) stores. The oracle service is not run;
   prices are already on the on-chain feed from deploy.
-- **Scope.** The two ISDA CSA agreements (IM, VM) are wired, with multi-asset proposals and settlement; the other
-  agreement families in the analysis (repo, securities lending, triparty, CCP) are not.
+- **Scope.** The ISDA CSA agreements (IM, VM) and the repo (GMRA), securities lending (GMSLA), triparty and CCP
+  flows are wired; see the REST API below and `docs/analysis/cdm-workflow-task-map.md`.
+
+## Registered tokens, ledger anchors and provenance (since `v0.1-demo`)
+
+- **Completion by authoritative record** (`task-authoritative-record-settlement-enforcement`,
+  `task-authoritative-record-other-flows`; interim rules REG-1 to REG-5 of `task-sme-registered-asset-completion`). For
+  a Registered or Claim token (tMMF, kept by the transfer agent in `../oracle`), a movement or an enforcement is
+  complete only with cdm-ext `TransferComplete`: its ledger anchor is Complete and the record keeper has confirmed it on
+  `RecordKeeperRegister` (`CdmRecordKeeper`, outside the fold cache). `GET /calls/{id}/cdm-state` reports
+  `recordKeeper` and `settlementComplete`; `GET /calls/{id}/enforcement` reports the enforcement's anchor and
+  completion; `GET /register/breaks` compares each register with the ledger (cdm-ext `RegisterBreaks`). The `/repos`,
+  `/loans` and `/triparty` views report `recordKeeper` and `settlementComplete` for each record that moved such a
+  token. Eligibility applies cdm-ext `EligibleUnderControl` (REG-3) in the CSA baseline schedule, repo booking and
+  substitution, GMSLA collateral and its substitution, triparty deposits, and a triparty profile with tMMF
+  (`registeredCollateral`).
+- **Enforcement record.** `enforce` builds a CDM `CollateralEnforcement` with `Create_CollateralEnforcement`, stores it
+  in the payload store and passes its hash to `CollateralControl.enforce`, so the Enforcement `LedgerAnchor` can be
+  built (`CdmEnforcement`).
+- **Ledger anchors** (`task-substitution-ledger-anchors`). `CdmAnchors.substitutionAnchors` builds the `Substitution`
+  anchor of each folded substitution step; `GET /substitutions/{id}/cdm-state` reports `anchors`, `anchored` and
+  `anchorHash`. For a repo, securities loan or triparty movement the service builds its `Repo`, `SecuritiesLoan` or
+  `Triparty` anchor from the gateway's `/register/movements` when it holds the document with that hash (else the status
+  is Missing), and passes the anchor's status to `TransferComplete`. The triparty profile's deposits and withdrawals
+  carry no CDM document and keep the transaction's finality (project owner, 2026-11-22).
+- **Provenance** (`task-document-provenance`, `wp-adr-document-provenance`; gap G41). `ProvRecords` (PROV-O JSON-LD link
+  records), `Jcs` (RFC 8785 canonical form, integers only), `ProvCredentials` (W3C Verifiable Credentials on P-256
+  `did:key`, `ecdsa-jcs-2019`) and `ProvenanceCheck` (the walk from a pledged token to its asset's authoritative record,
+  reporting each missing, unanchored, altered, unattested or superseded link, and by asset over-issuance and double
+  tokenization). The path depends on the token's profile: a Bearer token (tUST) goes through the custody record; a
+  Registered or Claim token (tMMF) through the record keeper's register statement and the control agreement; an asset
+  kept in a registry outside the ledger (the aircraft fixtures) through the registry's registration and each registered
+  interest with the interest holder's consent. `ProvenanceLive` checks every token from what the ledger and the payload
+  store hold, nothing from the service's own state: `GET /provenance`, `GET /provenance/{symbol}` (both with
+  `?securedParty=`), and `POST /provenance/seed`, which anchors the synthetic fixture provenance of tUST and tMMF once
+  (`ProvenanceFixtures`, documents under `src/main/resources/provenance/`; the fixture's record keeper keys are not
+  kept).
+- **Provenance gate.** For a token the deployment marks `provenanceRequired` (tUST and tMMF), the receiving party's
+  service refuses the step at which it takes the collateral when the token's provenance path for a pledge to it is not
+  complete (`ProvenanceLive.refusal`): accepting a CSA margin call proposal and consenting to a CSA substitution; the
+  repo buyer's affirmation and its agreement to a substitution; the securities lender's booking and its agreement to a
+  collateral substitution; the triparty receiver's settlement against the allocation and the agent's substitution for
+  the receiver; the CCP's acceptance of a repo for clearing. Unmarked tokens, and deployments without the mark, are not
+  checked.
 
 ## Prerequisites
 

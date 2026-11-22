@@ -7,8 +7,8 @@
 <p style="font-size:24px;color:#C9D6E3;line-height:1.4">Besu nodes: 4 QBFT validators with deterministic finality, and the CCP’s node</p>
 </div>
 <div style="display:flex;flex-direction:column;gap:12px;padding:40px;border:1px solid #3A4A6B;border-radius:16px">
-<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">9</p>
-<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Solidity contracts: margin call, collateral control, repo, securities loan, triparty, CCP clearing, reconciliation, oracle feed, tokens</p>
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">11</p>
+<p style="font-size:24px;color:#C9D6E3;line-height:1.4">Solidity contracts: margin call, collateral control, repo, securities loan, triparty, CCP clearing, reconciliation, oracle feed, tokens, record keeper register, provenance anchors</p>
 </div>
 <div style="display:flex;flex-direction:column;gap:12px;padding:40px;border:1px solid #3A4A6B;border-radius:16px">
 <p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:700;color:#E8A04E">ERC-20</p>
@@ -21,5 +21,5 @@
 </div>
 <p style="font-size:32px;color:#F6F5F0;line-height:1.4">CDM computes off-chain; the ledger records call state, escrow and settlement that both parties share.</p>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#C9D6E3">Repository: github.com/finos-hack/cdm-collateral · besu/, contracts/</p>
-<aside>Besu is the first ledger, not the only one: DTCC also runs Canton. The CDM extension keeps ledger identity (network, token contract, DTI) as data, gap G24.</aside>
+<aside>Besu is the first ledger, not the only one: DTCC also runs Canton. The CDM extension keeps ledger identity (network, token contract, DTI) as data, gap G24. Since v0.2-demo a tMMF movement is complete only when its transfer agent confirms it on chain, and tUST and tMMF are accepted only with a complete provenance path to their documents.</aside>
 </section>

@@ -1,6 +1,6 @@
 # CDM Collateral: how the project developed
 
-This document tells the history of the project from 14 October to 4 November 2026. It is written from the konspekt
+This document tells the history of the project from 14 October to 22 November 2026. It is written from the konspekt
 graph in `../../.konspekt/instance` (goals, tasks, decision records, notes, artifacts and the transitions log). Every claim
 can be traced to a record there; record IDs are given in brackets where a reader may want to follow one up. The
 records hold the detail and remain authoritative. This document gives the order of events and the reasons behind them.
@@ -345,27 +345,116 @@ proposed.
 By early 4 November the extension had 120 passing tests, the collateral service built against each new version, and
 every P1 gap was closed or proposed as closed.
 
-## 11. Where the project stands
+## 11. The ISDA CSA workflows completed (5 to 7 November)
 
-As of 4 November 2026:
+Section B of the workflow map was built in the order fixed on 3 November, one pull request per workflow (PRs #25 to
+#37): close-out netting and substitution, interest on cash collateral, amendment of agreement terms, call cancellation
+and replacement, settlement netting, allocation and reconciliation. Each workflow has an ADR for the choices it made
+and a live spec. Where a business rule was not fixed by the ISDA text or by CDM, the project owner chose an interim
+reading and a `task-sme-*` task holds the questions for an expert, for example the cancellation rules, the daily
+balances of an Interest Period, the settlement netting rules and the matching tolerances of reconciliation.
 
-- **Built and running:** four Besu validators, Solidity contracts, two ledger gateways, two Java collateral services,
-  an oracle service, a content-addressed CDM payload store and a React console. Six live flows (initial margin pledge,
-  variation margin transfer, return, default and enforcement, oracle update, revaluation and top-up) pass end to end
-  in CI on a fresh chain and locally after a chain reset. In Codespaces the browser path was verified with an initial
-  margin call.
-- **CDM extension:** the margin call lifecycle, events and transfers, valuation, balances, concentration, variation
-  margin amounts, exposure netting, enforcement, partial close-out and substitution, disputes, and token and ledger
-  identity, all in Rune on CDM 7.7.0, built with CDM's Java toolchain.
-- **Analysis:** coverage matrices for five agreement families, standards and taxonomy inventories, 41 gaps and 30
-  defects recorded for FINOS.
+Two scope decisions were made on the way. Allocation suggests a basket off-chain in the pledgor's ranking order; the
+pledgor still proposes, and cost optimisation is a separate task [`wp-adr-allocation-scope`,
+`task-csa-allocation-optimisation`]. Reconciliation (G35), out of scope since October, returned on 7 November: each
+party checks its CDM records against the chain, and the two parties match their trade portfolios off-chain with only
+hashes on-chain [`wp-adr-reconciliation-scope`]. Two-way initial margin was decided and built the same day (PR #40) [`wp-adr-two-way-im`].
 
-Open work, in the agreed order: the remaining CSA workflows (interest, amendment, cancellation, settlement netting,
-allocation), then repo, securities lending, triparty and CCP. Also open: on-chain privacy (designed, not built), two-way
-initial margin (designed, not built), unit tests for the collateral service, test amounts sized to available balances,
-and two questions waiting for a subject-matter expert (how a top-up is modelled, and what an Enforcement Event means).
+The live suite had grown to 14 specs taking 7.6 minutes, and the project owner asked what took so long
+[`task-live-spec-duration`]. The gateway waited 4 s for each transaction receipt and rescanned the chain on each read;
+both were fixed [`task-gateway-receipt-poll`, `task-live-read-latency`]. Shortening the Besu block period to 1 s was
+accepted and then deferred [`task-test-chain-block-period`].
 
-## 12. Patterns in how decisions were made
+## 12. Repo, securities lending, triparty and CCP (7 to 13 November)
+
+Each agreement family started with a check of what CDM 7.7.0 can do for it and a scope ADR with the project owner's
+choices, then one task per workflow:
+
+- **Repo under the GMRA** (7 to 11 November, PRs #43 to #58): all ten workflows the analysis lists, and default and
+  close-out. Each repo is a CDM `TradeState` held by both parties' services; the purchase and the repurchase settle
+  on-chain as delivery versus payment, and margin is maintained on Net Exposure by title transfer
+  [`wp-adr-repo-gmra-scope`].
+- **Securities lending under the GMSLA** (11 November, PRs #59 to #63 and the default close-out): terms, loan delivery
+  and return, marking, recall, substitution, rebate and lending fee, against cash and non-cash collateral, on a new
+  `SecuritiesLoan` contract [`wp-adr-securities-lending-gmsla-scope`].
+- **Triparty repo** (11 to 12 November, PR #65): a third test party, BANK-T, acts as the agent, with its own service
+  and gateway and a `TripartySettlement` contract that holds its books; the agent allocates, revalues, substitutes,
+  ends the trade and reports [`wp-adr-triparty-scope`].
+- **CCP clearing** (12 to 13 November, PR #66): a fourth test party, BANK-C, clears the prototype's repo by novation,
+  runs daily variation and initial margin, manages a member default with a default fund waterfall, and ports a cleared
+  repo between members [`wp-adr-ccp-scope`].
+
+The build found further CDM defects (D19 to D30), among them a repricing qualification that cannot hold for a repo, a
+pair-off that fails CDM's own validation and a lending return event with no instruction; each is fixed or worked around
+in `cdm-ext` or the prototype and recorded in `defects.md`. The SME question ledger grew with every family. On
+13 November every row of the workflow map was built and the full live suite of 53 specs passed locally on a reset
+chain.
+
+## 13. Presentation, CI minutes and the first release (9 to 15 November)
+
+On 9 November the project owner added the goal *Adoption* and a presentation task: a deck for collateral SMEs and
+potential partners [`goal-adoption`, `task-presentation`]. The deck lives in the repository and is published as
+`docs/index.html` with the SME questions and the gap register beside it. On 10 November the project owner deferred the
+mapping from ISO 20022 and FpML messages to CDM (G26): a proof of concept of CDM over Besu comes first
+[`nw-defer-message-standard-mapping`].
+
+On 11 November the repository ran short of GitHub Actions minutes: the live-stack workflow took about 21 minutes a run
+and ran twice per pull request. It now runs on demand, and the full live suite runs locally before each pull request
+with its result in the pull request body [`task-ci-actions-minutes`].
+
+On 13 November the README was reorganised into the analysis, the CDM defects (fixed and not fixed), the CDM gaps
+(closed, deferred to SMEs, open) and the flows built [`task-docs-readme-organization`]. On 15 November the repository
+moved from `denisurusov` to the `finos-hack` organisation, the konspekt instance was migrated to `ni:///sha-256`
+references [`task-konspekt-re-seeding`], and the state of `main` after PR #70 was tagged `v0.1-demo`.
+
+## 14. Tokenized collateral as it exists on its ledger (20 to 22 November)
+
+On 20 November the project owner set a new goal: a tokenized collateral asset is represented as it exists on its
+ledger, including which record is legally authoritative, and settlement and enforcement respect that record
+[`goal-tokenized-collateral`]. G24 already recorded the authoritative record of each token (Bearer, Registered or
+Claim), but nothing read it: a mined transfer counted as complete for every asset.
+
+- **The DTI format** is checked in the model, by a Rune pattern, once it was found that Rune has one
+  [`task-dti-format-check`].
+- **Completion by the record keeper.** While an SME is asked what completes a pledge of a registered token, the
+  project owner chose interim rules on 21 November (REG-1 to REG-5): a Registered or Claim token moves or is enforced
+  only when its record keeper confirms the register update, is eligible only under a control agreement, and the record
+  keeper's record prevails. The transfer agent of tMMF became a role of the oracle service, confirming on a
+  `RecordKeeperRegister` contract; the rules apply to the CSA flows, then to the repo, lending and triparty flows, and the
+  consoles show the confirmation [`task-sme-registered-asset-completion`,
+  `task-authoritative-record-settlement-enforcement`, `task-authoritative-record-other-flows`,
+  `task-console-record-keeper-completion`].
+- **Ledger anchors** were extended to substitutions and to repo, loan and triparty movements, so a movement completes
+  on its own anchor [`task-substitution-ledger-anchors`].
+- **The aircraft case.** The project owner asked how an aircraft pledged for a loan, with tokens issued on the SPV
+  that holds it, would fit. CDM has no asset type for it (G40), and nothing links a token to the documents and
+  identities behind it (G41) [`artifact-provenance-whiteboard`].
+- **Document provenance** for G41: W3C PROV-O link records with their hashes anchored on the ledger, and W3C
+  Verifiable Credentials for the record keepers' statements [`wp-adr-document-provenance`]. Built for tUST, then tMMF,
+  then the aircraft's registry entries, wired through the live stack, and on 22 November made a gate: a party refuses
+  to take tUST or tMMF as collateral when its provenance path is not complete [`task-document-provenance`].
+
+The state of `main` after PR #92 is summarised in [`../releases/v0.2-demo.md`](../releases/v0.2-demo.md).
+
+## 15. Where the project stands
+
+As of 22 November 2026:
+
+- **Built and running:** four Besu validators and the CCP's node, eleven Solidity contracts, a ledger gateway per participant (BANK-A, BANK-B, the triparty agent BANK-T, the CCP
+  BANK-C and the market operator), a collateral service for each of the four banks, an oracle service that
+  also acts as the tMMF transfer agent, a content-addressed CDM payload store and a React console. All 47 workflows of
+  the workflow map, in five agreement families, are built; the live suite of 57 specs passed locally on a reset chain
+  on 22 November.
+- **CDM extension:** every flow's CDM work in Rune on CDM 7.7.0, built with CDM's Java toolchain, with 332 tests.
+- **Analysis:** coverage matrices for five agreement families, standards and taxonomy inventories, 41 gaps (21 closed,
+  8 partial) and 30 defects, 16 of them fixed in `cdm-ext`; 229 questions for SMEs in 40 topics, each with the interim
+  decision the prototype uses.
+
+Open work: document provenance beyond the built cases, a second ledger to test that token identity is ledger-neutral
+[`task-second-ledger-token-identity`], on-chain privacy (designed, not built), cost optimisation of allocation, the
+1 s block period, and every SME question.
+
+## 16. Patterns in how decisions were made
 
 Four patterns recur across the records.
 

@@ -49,6 +49,15 @@ JSON-RPC batches (`task-live-read-latency`). The index lives in the gateway proc
 | POST | `/calls/:id/return` | release escrowed IM for an agreed return call |
 | POST | `/calls/:id/return-transfer` | approve and transfer equivalent VM back for a return call |
 | POST | `/calls/:id/enforce` | seize the pledgor's escrowed IM once the oracle feed records its default (secured party key) |
+| GET | `/calls/:id/enforcement` | the call's `Enforced` step in the same shape as `/calls/:id/steps` (CDM hash, transaction, status, `txLogs`), for its Enforcement ledger anchor; `POST /calls/:id/enforce` takes `{cdmHash}`, the hash of the CDM `CollateralEnforcement` (`task-authoritative-record-settlement-enforcement`) |
+| GET | `/register/tokens` | the registry tokens whose authoritative record is kept off the ledger (Registered or Claim), with their record keeper |
+| GET | `/register/transfers?token=0x…` | the ledger transfers of such a token, which the record keeper applies to its register |
+| GET | `/register/confirmations` | the record keeper's `RegisterConfirmed` events on `RecordKeeperRegister` |
+| POST | `/register/confirmations` | `{txHash, token, ref}`: confirm that the register shows a transaction's movements; only the record keeper's gateway (`NODE=mkt`) can write, any other key reverts `NotRecordKeeper` |
+| GET | `/register/movements?flow=repo\|loan\|triparty` | the repo, securities loan or triparty transactions that moved a Registered or Claim token, by record, each with the movement's document hash, for its `Repo`, `SecuritiesLoan` or `Triparty` ledger anchor (`task-authoritative-record-other-flows`, `task-substitution-ledger-anchors`); the triparty profile's `Deposited` and `Withdrawn` carry no document |
+| GET | `/provenance/anchors?token=0x…` | `ProvenanceAnchored` events, for one token or all (`task-document-provenance`) |
+| GET | `/provenance/head/:linkId` | the hash of a provenance link's current record |
+| POST | `/provenance/anchor` | `{token, linkId, cdmHash, revisionOf?}`: anchor a provenance link record or a record keeper's credential through this party's key; a revision names the link's current head |
 | POST | `/close-outs` | `{closeOutId, pledgor, owed, cdmHash}`: close out after the pledgor's default; the control contract applies escrowed IM to `owed` and returns the surplus (secured party key, `flow-close-out-netting`) |
 | GET | `/close-outs?party=0x…` | close-outs the party is in (from `ClosedOut` logs): owed, applied value, statement hash |
 | POST | `/substitutions` | `{substitutionId, securedParty, original, substitute, cdmHash}`: request a substitution of escrowed IM (pledgor key, `flow-substitution`) |
@@ -83,7 +92,7 @@ JSON-RPC batches (`task-live-read-latency`). The index lives in the gateway proc
 Amounts and quantities cross the wire as decimal strings (they exceed the JSON safe-integer range). The event stream
 carries a lightweight change signal per on-chain step (`callId`, `step`, `cdmHash`), plus the `Returned`, `Enforced`,
 `ClosedOut`, `Substitution{Requested,Decided,Settled}`, `Interest{Stated,Settled}`, `SettlementNetted` and `Amendment{Proposed,Decided}` events
-of the collateral control contract and `DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId`,
+of the collateral control contract, `RegisterConfirmed` of the record keeper register and `DefaultPublished` of the oracle feed (`event`, `callId`, `closeOutId`,
 `substitutionId`, `interestId`, `nettingId` or `amendmentId`, and/or `party`);
 the workflow service records the latter and relays everything to the console so state changes push instead of being
 polled.
