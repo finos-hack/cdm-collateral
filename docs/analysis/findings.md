@@ -186,6 +186,13 @@ the document that makes the token represent the asset, and `AnchoredRecordEnum` 
 instructions (UCC 8-106(c), (d)): a link from the token to a legal document, held as a plain string with no content
 hash and no record of who keeps the agreement.
 
+Correction (2026-11-22): agreements between two parties are anchored by hash elsewhere in the prototype.
+`CollateralControl` keeps a chain of agreed CSA terms per pair (`agreementHash`; each amendment names the hash it
+replaces, `beforeHash`) and one per agreement kind and pair for master agreements such as the GMRA (`termsHash`);
+`TripartySettlement` takes triparty terms proposed and affirmed by hash; the services keep each document in a store
+keyed by its hash. What has no anchor is a document that belongs to a token or an asset and not to a pair: token
+terms, valuations, registry entries, the control agreement.
+
 ## Moved to defects.md
 
 F1 (CSA matrix) and O4–O7 (other-agreements analysis) were removed from the findings at the project owner's request on

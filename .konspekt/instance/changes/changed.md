@@ -1742,3 +1742,6 @@ excluded.
 | goal-tokenized-collateral | 3bb563359c739b9b7b663d1179d3442599fc1a6b | docs/analysis/findings.md | 2026-11-22T03:51:06Z |
 | goal-tokenized-collateral | 3bb563359c739b9b7b663d1179d3442599fc1a6b | docs/analysis/gap-register.md | 2026-11-22T03:51:06Z |
 | goal-tokenized-collateral | 3bb563359c739b9b7b663d1179d3442599fc1a6b | docs/gap-register.html | 2026-11-22T03:51:06Z |
+| goal-tokenized-collateral | 45cf16d88138bbd3b4e6146f6697927c168b2769 | docs/analysis/findings.md | 2026-11-22T14:20:20Z |
+| goal-tokenized-collateral | 45cf16d88138bbd3b4e6146f6697927c168b2769 | docs/analysis/gap-register.md | 2026-11-22T14:20:20Z |
+| goal-tokenized-collateral | 45cf16d88138bbd3b4e6146f6697927c168b2769 | docs/gap-register.html | 2026-11-22T14:20:20Z |
