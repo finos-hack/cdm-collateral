@@ -1806,3 +1806,10 @@ excluded.
 | task-document-provenance | eb932fd3363890047c87b07480449a3750e1b0f3 | services/collateral/src/main/resources/provenance/tust/tokenizer-constitution.json | 2026-11-22T16:19:02Z |
 | task-document-provenance | eb932fd3363890047c87b07480449a3750e1b0f3 | services/collateral/src/main/resources/provenance/tust/valuation.json | 2026-11-22T16:19:02Z |
 | task-document-provenance | eb932fd3363890047c87b07480449a3750e1b0f3 | services/collateral/src/test/java/collateral/ProvenanceLiveTest.java | 2026-11-22T16:19:02Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | console/e2e/live.spec.ts | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | gateway/src/besu.ts | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | gateway/src/server.ts | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/main/java/collateral/App.java | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/main/java/collateral/CdmRecordKeeper.java | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/test/java/collateral/CdmRecordKeeperTest.java | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | e3426dc72e15b134e4085994500ac9e3602b62b4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:22:27Z |

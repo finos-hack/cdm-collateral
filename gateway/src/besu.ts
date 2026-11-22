@@ -190,6 +190,20 @@ export interface RegisterTransfer {
   confirmed: boolean;
 }
 
+/**
+ * A transaction of a repo, securities loan or triparty contract that moved a Registered or Claim token
+ * (task-authoritative-record-other-flows). recordId is the first indexed topic of the flow contract's logs in it: the
+ * repoId, loanId or triparty termsId. txLogs has the shape of a CallStep's, holding the token Transfer logs.
+ */
+export interface RegisterMovement {
+  recordId: Hex;
+  txHash: Hex;
+  block: string;
+  events: string[];
+  status: "Final";
+  txLogs: { contract: string; logIndex: number; event: "Transfer" }[];
+}
+
 /** One RegisterConfirmed event: the record keeper's register shows the token movements of transaction txHash. */
 /**
  * One provenance anchor (task-document-provenance): the hash of a token's link record or of a record keeper's credential,
@@ -837,6 +851,8 @@ export interface LedgerAdapter {
   enforcement(callId: Hex): Promise<CallStep[]>;
   /** Every Transfer of a token, in chain order, each marked confirmed when the record keeper's register shows it. */
   registerTransfers(token: Address): Promise<RegisterTransfer[]>;
+  /** The transactions of a flow contract (repo, loan or triparty) that moved Registered or Claim tokens, by record. */
+  registerMovements(flow: "repo" | "loan" | "triparty", tokens: Address[]): Promise<RegisterMovement[]>;
   /** The record keeper's confirmations, in chain order. */
   registerConfirmations(): Promise<RegisterConfirmation[]>;
   /** The provenance anchors of a token, or of every token, in chain order (task-document-provenance). */
@@ -1282,6 +1298,41 @@ export class BesuAdapter implements LedgerAdapter {
       const txHash = (l.transactionHash as string).toLowerCase() as Hex;
       return { txHash, block: l.blockNumber.toString(), logIndex: Number(l.logIndex), from: getAddress(a.from), to: getAddress(a.to), value: a.value.toString(), confirmed: confirmed.has(txHash) };
     });
+  }
+
+  /**
+   * Each register token's Transfer logs joined on the transaction hash with the flow contract's logs. Both come from
+   * the cached log index, so no receipt is read; a reverted transaction leaves no logs, so every movement is Final.
+   * A transaction whose flow logs name more than one record (a pair-off) is reported once for each.
+   */
+  async registerMovements(flow: "repo" | "loan" | "triparty", tokens: Address[]): Promise<RegisterMovement[]> {
+    const c = this.reg.contracts;
+    const address = (flow === "repo" ? c.repoSettlement : flow === "loan" ? c.securitiesLoan : c.tripartySettlement) as Address | undefined;
+    if (!address) return [];
+    const transferTopic = toEventSelector(transferAbi[0]).toLowerCase();
+    const moved = new Map<string, RegisterMovement["txLogs"]>();
+    for (const token of tokens) {
+      for (const l of await this.contractLogs(token)) {
+        if ((l.topics[0] ?? "").toLowerCase() !== transferTopic) continue;
+        const tx = (l.transactionHash as string).toLowerCase();
+        const logs = moved.get(tx) ?? [];
+        logs.push({ contract: (l.address as string).toLowerCase(), logIndex: Number(l.logIndex), event: "Transfer" });
+        moved.set(tx, logs);
+      }
+    }
+    const byRecord = new Map<string, RegisterMovement>();
+    for (const l of await this.contractLogs(address)) {
+      const tx = (l.transactionHash as string).toLowerCase();
+      const txLogs = moved.get(tx);
+      const recordId = l.topics[1] as Hex | undefined;
+      if (!txLogs || !recordId) continue;
+      const key = tx + "/" + recordId.toLowerCase();
+      const m: RegisterMovement = byRecord.get(key) ?? { recordId: recordId.toLowerCase() as Hex, txHash: tx as Hex, block: l.blockNumber.toString(), events: [], status: "Final", txLogs };
+      const name = EVENT_BY_TOPIC.get((l.topics[0] ?? "").toLowerCase());
+      if (name && !m.events.includes(name)) m.events.push(name);
+      byRecord.set(key, m);
+    }
+    return [...byRecord.values()];
   }
 
   confirmRegister(txHash: Hex, token: Address, ref: string) {

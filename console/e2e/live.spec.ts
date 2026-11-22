@@ -528,6 +528,76 @@ test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not com
   }
 });
 
+// --- flow-registered-collateral in a GMSLA loan (task-authoritative-record-other-flows) ---
+// The same interim rules in the securities lending flows: a delivery or a return of tMMF, the loaned security, is complete
+// only once the transfer agent confirms its register shows it. The loans view reports it as the CSA cdm-state does
+// (recordKeeper, settlementComplete), from the SecuritiesLoan transactions that moved tMMF.
+type LoanCompletion = {
+  loanId: string; state: string; quantity: string; settlementComplete?: boolean; recordKeeperError?: string;
+  recordKeeper?: { identifier: string; complete: boolean; tokens: { symbol: string; confirmed?: boolean; complete: boolean }[] }[];
+};
+
+test("flow-registered-collateral-gmsla: A lends tMMF to B -> the delivery is open on-chain but not complete until the transfer agent confirms -> the return waits for it too", async () => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const loanOf = async (svc: string, id: string) => (await call<{ loans: LoanCompletion[] }>(`${svc}/loans`)).loans.find((l) => l.loanId === id);
+  const quantity = 50_000 + (Date.now() % 9000);
+  let loanId: string | undefined;
+  let returned = false;
+  try {
+    await setTransferAgentPaused(true);
+    ({ loanId } = await call<{ loanId: string }>(`${SERVICE.A}/loans`, "POST", { security: "tMMF", quantity, collateral: "tUSD", ratePercent: "4" }));
+    await call(`${SERVICE.B}/loans/${loanId}/affirm`, "POST", {});
+    await call(`${SERVICE.A}/loans/${loanId}/deliver`, "POST", {});
+    await call(`${SERVICE.B}/loans/${loanId}/deliver`, "POST", {});
+
+    // Delivered on chain; the transfer agent has not confirmed, so neither party treats the delivery as complete.
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await loanOf(svc, loanId!))?.state, { timeout: STEP_TIMEOUT }).toBe("open");
+      await expect.poll(async () => (await loanOf(svc, loanId!))?.recordKeeper?.length ?? 0, { timeout: 60_000 }).toBeGreaterThan(0);
+      const l = (await loanOf(svc, loanId!))!;
+      expect(l.recordKeeperError).toBeUndefined();
+      expect(l.settlementComplete).toBe(false);
+      expect(l.recordKeeper![0].identifier).toContain("LoanDelivered");
+      expect(l.recordKeeper![0].tokens.find((t) => t.symbol === "tMMF")).toMatchObject({ confirmed: false, complete: false });
+    }
+    expect((await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`)).tokens.find((t) => t.symbol === "tMMF")!.reconciled).toBe(false);
+
+    // The transfer agent confirms: the delivery is complete for both parties.
+    await setTransferAgentPaused(false);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await loanOf(svc, loanId!))?.settlementComplete, { timeout: 60_000 }).toBe(true);
+    }
+
+    // The return of the tMMF waits for the transfer agent in the same way.
+    await setTransferAgentPaused(true);
+    await call(`${SERVICE.B}/loans/${loanId}/return`, "POST", { quantity });
+    await call(`${SERVICE.A}/loans/${loanId}/return`, "POST", {});
+    await expect.poll(async () => (await loanOf(SERVICE.A, loanId!))?.state, { timeout: STEP_TIMEOUT }).toBe("returned");
+    returned = true;
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await loanOf(svc, loanId!))?.recordKeeper?.length ?? 0, { timeout: 60_000 }).toBe(2);
+      const l = (await loanOf(svc, loanId!))!;
+      expect(l.settlementComplete).toBe(false);
+      expect(l.recordKeeper!.map((r) => r.complete)).toEqual([true, false]);
+    }
+    await setTransferAgentPaused(false);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await loanOf(svc, loanId!))?.settlementComplete, { timeout: 60_000 }).toBe(true);
+    }
+    await expect.poll(async () => (await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`)).tokens.find((t) => t.symbol === "tMMF")!.reconciled, { timeout: 60_000 }).toBe(true);
+  } finally {
+    await setTransferAgentPaused(false);
+    if (loanId && !returned) {
+      // Leave no open loan for the GMSLA specs: return it in full.
+      const l = await loanOf(SERVICE.A, loanId).catch(() => undefined);
+      if (l?.state === "open") {
+        await call(`${SERVICE.B}/loans/${loanId}/return`, "POST", { quantity: Number(l.quantity) }).catch(() => undefined);
+        await call(`${SERVICE.A}/loans/${loanId}/return`, "POST", {}).catch(() => undefined);
+      }
+    }
+  }
+});
+
 test("flow-revaluation-top-up: operator lowers a price -> secured party revalues -> top-up IM call settled, shortfall closed", async ({ page }) => {
   test.setTimeout(TEST_TIMEOUT);
   const usd = (n: number | string) => `USD ${Number(n).toLocaleString("en-US")}`;

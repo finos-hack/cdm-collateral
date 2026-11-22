@@ -96,6 +96,52 @@ class CdmRecordKeeperTest {
         assertEquals(true, done.get("complete"));
     }
 
+    // task-authoritative-record-other-flows: the repo, securities loan and triparty movements the gateway reads from the
+    // flow contract's logs (/register/movements), grouped by the record id.
+    private static final String LOAN = "0x" + "1a".repeat(32);
+    private static final String OTHER_LOAN = "0x" + "1b".repeat(32);
+
+    private static JsonNode movements(String... recordAndToken) throws Exception {
+        StringBuilder b = new StringBuilder("[");
+        for (int i = 0; i < recordAndToken.length; i += 2) {
+            if (i > 0) b.append(',');
+            String tx = i == 0 ? TX : "0x" + ("4" + (i / 2)).repeat(32); // a distinct transaction per movement
+            b.append("{\"recordId\":\"").append(recordAndToken[i]).append("\",\"txHash\":\"").append(tx)
+                .append("\",\"block\":\"20\",\"events\":[\"LoanDelivered\"],\"status\":\"Final\",\"txLogs\":[{\"contract\":\"")
+                .append(recordAndToken[i + 1]).append("\",\"logIndex\":0,\"event\":\"Transfer\"}]}");
+        }
+        return M.readTree(b.append(']').toString());
+    }
+
+    @Test
+    void aLoanDeliveryOfTMmfWaitsForTheRecordKeeper() throws Exception {
+        Map<String, Map<String, Object>> waiting = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF), M.readTree("[]"));
+        assertEquals(false, waiting.get(LOAN).get("complete"));
+        Map<String, Map<String, Object>> done = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF), confirmed(TMMF));
+        assertEquals(true, done.get(LOAN).get("complete"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rec = ((List<Map<String, Object>>) done.get(LOAN).get("records")).get(0);
+        assertEquals("LoanDelivered", rec.get("identifier"));
+        assertEquals(TX, rec.get("txHash"));
+    }
+
+    @Test
+    void aRecordIsCompleteOnlyWhenEachOfItsMovementsIs() throws Exception {
+        // LOAN moved tMMF twice: the first transaction is confirmed (TX), the second is not.
+        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF, LOAN, TMMF), confirmed(TMMF));
+        assertEquals(2, ((List<?>) r.get(LOAN).get("records")).size());
+        assertEquals(false, r.get(LOAN).get("complete"));
+    }
+
+    @Test
+    void movementsAreKeptApartByRecordAndOnlyRegisteredTokensCount() throws Exception {
+        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF, OTHER_LOAN, TUST), M.readTree("[]"));
+        assertEquals(false, r.get(LOAN).get("complete"));
+        // The Bearer movement is complete on the ledger alone.
+        assertEquals(true, r.get(OTHER_LOAN).get("complete"));
+        assertEquals(Map.of(), CdmRecordKeeper.movements(registry(true), M.readTree("[]"), M.readTree("[]")));
+    }
+
     @Test
     void theRegisterAndTheLedgerAreReconciledHolderByHolder() {
         Map<String, Object> same = CdmRecordKeeper.breaks("tMMF", Map.of("0xaa", "100"), Map.of("0xaa", "100", "0xbb", "0"));
