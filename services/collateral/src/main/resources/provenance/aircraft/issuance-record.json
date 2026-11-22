@@ -1,0 +1,10 @@
+{
+  "fixture": "Aircraft provenance (task-document-provenance, G40). Synthetic: no real aircraft, SPV, lender or registry entry.",
+  "document": "Issuance record",
+  "token": {"symbol": "tAIR", "name": "Tokenized interest in a narrow-body aircraft", "dti": "QAIR00000", "network": "besu-prototype", "chainId": 1337},
+  "asset": {"manufacturer": "Fixture Aerospace", "model": "FX-320", "msn": "7781", "registrationMark": "N781FX"},
+  "holding": "Registered owner: Fixture Aircraft SPV",
+  "unitsIssued": "1000000",
+  "issuedBy": "Fixture Aircraft SPV",
+  "issueDate": "2026-11-10"
+}
