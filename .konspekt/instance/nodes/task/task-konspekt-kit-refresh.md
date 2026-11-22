@@ -2,15 +2,15 @@
 id: task-konspekt-kit-refresh
 type: task
 title: Refresh the vendored konspekt kit from konspekt main
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: konspekt-kit-refresh
   sourceRef: ni:///sha-256;6GeYYxRpR9dtmUBSchT0VVVfCSN768IF6r1HjN6e84k
   timestamp: 2026-11-22T19:59:28Z
   confidence: 0.75
 createdAt: 2026-11-22T19:59:28Z
-updatedAt: 2026-11-22T19:59:28Z
+updatedAt: 2026-11-22T20:05:41Z
 ```
 # Task: Refresh the vendored konspekt kit from konspekt main
 
@@ -28,3 +28,11 @@ Scope: regenerate this repository's projections of the konspekt kit from konspek
   (task-ci-actions-minutes).
 - Leave the files whose drift is line endings only.
 - Checks: `init.mjs --check`, `.konspekt/lib/validate.mjs`, `.konspekt/lib/binding-audit.mjs`.
+
+**Done 2026-11-22**, locally on `movement-ledger-anchors`, not pushed: `da5a687` refreshes `.konspekt/lib/conformance.mjs`,
+`binding-audit.mjs` and the engineer persona from konspekt `8a5c53e`; `4f27a88` installs `.konspekt/lib/review-units.mjs`
+from konspekt `5b47860`. Checks: validate 0 errors (1 pre-existing orphan warning, `node-app-setup`), binding audit clean,
+fleet app tests 142/142. `init.mjs --check` still lists 5 files: four with line-ending drift only, and
+`konspekt-conformance.yml` with this repository's no-push-to-main trigger.
+
+**Accepted and resolved 2026-11-22** by the project owner (source `ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k`).

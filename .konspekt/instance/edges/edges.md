@@ -470,4 +470,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-drv-cdmdata-docprovadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-document-provenance |  | accepted |
 | e-drv-onchainid-docprovadr | drives | concept:concept-asr-onchain-asset-identity | waypoint:wp-adr-document-provenance |  | accepted |
 | e-prod-docprov-provboard | produces | node:task-document-provenance | artifact:artifact-provenance-whiteboard |  | accepted |
-| e-dec-konspektadopt-kitrefresh | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-kit-refresh |  | proposed |
+| e-dec-konspektadopt-kitrefresh | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-kit-refresh |  | accepted |
