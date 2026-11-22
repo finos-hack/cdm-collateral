@@ -473,3 +473,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-konspektadopt-kitrefresh | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-kit-refresh |  | accepted |
 | e-dec-adoption-v02summary | decomposes | node:goal-adoption | node:task-v02-demo-release-summary |  | proposed |
 | e-dec-archdesign-calmcontracts | decomposes | node:goal-architecture-design | node:task-calm-model-contracts |  | proposed |
+| e-dec-konspektadopt-kitrefreshrest | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-kit-refresh-rest-fallback |  | accepted |

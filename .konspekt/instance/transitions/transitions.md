@@ -1639,3 +1639,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-calm-model-contracts | review |  | proposed | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c |  |
 | node:task-calm-model-contracts | status |  | open | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c |  |
 | edge:e-dec-archdesign-calmcontracts | review |  | proposed | 2026-11-22T21:17:53Z | ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c |  |
+| node:task-konspekt-kit-refresh-rest-fallback | review |  | accepted | 2026-11-22T21:21:07Z | ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI | denisurusov |
+| node:task-konspekt-kit-refresh-rest-fallback | status |  | open | 2026-11-22T21:21:07Z | ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI | denisurusov |
+| edge:e-dec-konspektadopt-kitrefreshrest | review |  | accepted | 2026-11-22T21:21:07Z | ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI | denisurusov |
