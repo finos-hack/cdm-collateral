@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T21:38:22Z
   confidence: 0.8
 createdAt: 2026-11-22T21:38:22Z
-updatedAt: 2026-11-22T21:44:54Z
+updatedAt: 2026-11-22T21:54:44Z
 ```
 # Task: report a one-line error, not a stack trace, when `review-units.mjs --api graphql` cannot reach GraphQL
 
@@ -29,4 +29,4 @@ Done when, with `--api graphql` forced and GraphQL unavailable, the tool prints 
 (`tools/review-units.mjs`), reported there as an issue or pull request; this repository takes it by re-vendoring the
 tool, as in [[task-konspekt-kit-refresh-rest-fallback]].
 
-**Accepted 2026-11-22** by the project owner, with its decomposes edge (source `ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU`). How it reaches konspekt (an issue on `finos-labs/konspekt` or a pull request with the fix) is not yet decided.
+**Accepted 2026-11-22** by the project owner, with its decomposes edge (source `ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU`). Reported to konspekt 2026-11-22, as the project owner directed: task atom `task-review-units-graphql-error` in the konspekt instance (`finos-labs/konspekt` `05ea9a0`, `review: proposed`, under `investigation-task-pr-map`), and a konspekt checkpoint on it (`a6e0186`) so that it is offered when konspekt work resumes. This task closes when the fix is re-vendored here.
