@@ -3,13 +3,13 @@ id: task-console-record-keeper-completion
 type: task
 title: Show completion by the record keeper in the party consoles
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   timestamp: 2026-11-22T03:05:00Z
   confidence: 0.7
 createdAt: 2026-11-22T03:05:00Z
-updatedAt: 2026-11-22T03:05:00Z
+updatedAt: 2026-11-22T03:15:57Z
 ```
 # Task: show completion by the record keeper in the party consoles
 

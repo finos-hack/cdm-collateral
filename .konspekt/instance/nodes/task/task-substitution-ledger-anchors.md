@@ -3,13 +3,13 @@ id: task-substitution-ledger-anchors
 type: task
 title: Build ledger anchors for collateral substitutions
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   timestamp: 2026-11-22T03:05:00Z
   confidence: 0.8
 createdAt: 2026-11-22T03:05:00Z
-updatedAt: 2026-11-22T03:05:00Z
+updatedAt: 2026-11-22T03:15:57Z
 ```
 # Task: build ledger anchors for collateral substitutions
 

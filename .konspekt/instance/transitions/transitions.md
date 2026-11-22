@@ -1603,3 +1603,9 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-console-record-keeper-completion | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
 | node:task-console-record-keeper-completion | status |  | open | 2026-11-22T03:05:00Z |  |  |
 | edge:e-dec-tokcoll-consolerk | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-authoritative-record-other-flows | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| node:task-substitution-ledger-anchors | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| node:task-console-record-keeper-completion | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-dec-tokcoll-authrecordflows | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-dec-tokcoll-subanchors | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-dec-tokcoll-consolerk | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |

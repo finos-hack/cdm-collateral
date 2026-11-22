@@ -3,13 +3,13 @@ id: task-authoritative-record-other-flows
 type: task
 title: Apply completion by authoritative record to the repo, GMSLA and triparty flows
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   timestamp: 2026-11-22T03:05:00Z
   confidence: 0.75
 createdAt: 2026-11-22T03:05:00Z
-updatedAt: 2026-11-22T03:05:00Z
+updatedAt: 2026-11-22T03:15:57Z
 ```
 # Task: apply completion by authoritative record to the repo, GMSLA and triparty flows
 
