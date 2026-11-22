@@ -20,6 +20,8 @@ Status of the ledger: 229 questions in 40 tasks, all open. The same questions as
 
 ### `task-sme-registered-asset-completion`: what completes settlement and enforcement of registered and claim-based tokens
 
+Brief for the SME, with research and the interim rules: [`sme-brief-registered-assets.md`](sme-brief-registered-assets.md).
+
 | ID | Question | Status | Answer |
 |----|----------|--------|--------|
 | REG-1 | For a Registered asset, is a pledge or title transfer complete at the on-chain transfer, or when the transfer agent updates the register? Is the on-chain transfer an instruction to the register or evidence of it? | open | |

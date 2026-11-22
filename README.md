@@ -28,6 +28,7 @@ All analysis is in [`docs/analysis/`](docs/analysis/). CDM versions: the analysi
 | [`gap-register.md`](docs/analysis/gap-register.md) | Findings and defects consolidated into 41 gaps (G1 to G41), with priority and closure status ([section 3](#3-cdm-gaps-closed-deferred-to-smes-open)) |
 | [`cdm-workflow-task-map.md`](docs/analysis/cdm-workflow-task-map.md) | One row per collateral workflow: CDM status, what `cdm-ext` adds, the prototype flow, its live spec and PR ([section 4](#4-flows-built)) |
 | [`sme-question-ledger.md`](docs/analysis/sme-question-ledger.md) | Every question for a business SME, with the project owner's interim decision |
+| [`sme-brief-registered-assets.md`](docs/analysis/sme-brief-registered-assets.md) | Brief for an SME on registered and claim-based tokens (REG-1 to REG-5): research and interim rules |
 | [`collateral-conceptual-model.md`](docs/analysis/collateral-conceptual-model.md), [`collateral-flows.md`](docs/analysis/collateral-flows.md) | The conceptual model and one flow diagram per agreement family, coloured by CDM coverage |
 | [`collateral-standards-inventory.md`](docs/analysis/collateral-standards-inventory.md) | Standards a CDM-based collateral implementation should know, and whether CDM uses each |
 | [`collateral-taxonomy-inventory.md`](docs/analysis/collateral-taxonomy-inventory.md), [`collateral-asset-taxonomy-mapping.md`](docs/analysis/collateral-asset-taxonomy-mapping.md) | Classification schemes for collateral data, and the four ways CDM can classify an eligible asset |
