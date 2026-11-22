@@ -1736,3 +1736,6 @@ excluded.
 | task-authoritative-record-settlement-enforcement | 3d42335b8c14029a90406a357150fa61fb1c89fa | services/oracle/src/main/java/oracle/App.java | 2026-11-22T02:58:01Z |
 | task-authoritative-record-settlement-enforcement | 3d42335b8c14029a90406a357150fa61fb1c89fa | services/oracle/src/main/java/oracle/OperatorGateway.java | 2026-11-22T02:58:01Z |
 | task-authoritative-record-settlement-enforcement | 3d42335b8c14029a90406a357150fa61fb1c89fa | services/oracle/src/main/java/oracle/TransferAgent.java | 2026-11-22T02:58:01Z |
+| task-cdm-gap-closure | 95134c4a2459c377009a5d5a1d3b552b462a8192 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T03:05:08Z |
+| task-cdm-gap-closure | 95134c4a2459c377009a5d5a1d3b552b462a8192 | docs/analysis/gap-register.md | 2026-11-22T03:05:08Z |
+| task-cdm-gap-closure | 95134c4a2459c377009a5d5a1d3b552b462a8192 | docs/gap-register.html | 2026-11-22T03:05:08Z |
