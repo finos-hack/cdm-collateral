@@ -1813,3 +1813,11 @@ excluded.
 | task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/main/java/collateral/CdmRecordKeeper.java | 2026-11-22T16:22:27Z |
 | task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/test/java/collateral/CdmRecordKeeperTest.java | 2026-11-22T16:22:27Z |
 | task-authoritative-record-other-flows | e3426dc72e15b134e4085994500ac9e3602b62b4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:22:27Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | console/e2e/live.spec.ts | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | services/collateral/src/main/java/collateral/App.java | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | services/collateral/src/main/java/collateral/CdmTriparty.java | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | services/collateral/src/test/java/collateral/CdmTripartyTest.java | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e383b5fab7c0b8e41ea0e8dfc3f89e055923e8af | gateway/src/besu.ts | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/analysis/gap-register.md | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/gap-register.html | 2026-11-22T16:52:20Z |
