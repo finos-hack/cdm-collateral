@@ -1632,3 +1632,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-kit-refresh | review | proposed | accepted | 2026-11-22T20:05:41Z | ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k | denisurusov |
 | edge:e-dec-konspektadopt-kitrefresh | review | proposed | accepted | 2026-11-22T20:05:41Z | ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k | denisurusov |
 | node:task-konspekt-kit-refresh | status | open | resolved | 2026-11-22T20:05:41Z | ni:///sha-256;Ro6tTs7j-8VzyJ6EAm276xnWWKiCFMo0ECxGewUmP-k | denisurusov |
+| node:task-v02-demo-release-summary | review |  | proposed | 2026-11-22T20:56:04Z | ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag |  |
+| node:task-v02-demo-release-summary | status |  | open | 2026-11-22T20:56:04Z | ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag |  |
+| edge:e-dec-adoption-v02summary | review |  | proposed | 2026-11-22T20:56:04Z | ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag |  |
