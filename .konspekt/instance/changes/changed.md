@@ -1739,3 +1739,6 @@ excluded.
 | task-cdm-gap-closure | 156510b712e776c8efb18725bcf5f72f601206a2 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T03:05:08Z |
 | task-cdm-gap-closure | 156510b712e776c8efb18725bcf5f72f601206a2 | docs/analysis/gap-register.md | 2026-11-22T03:05:08Z |
 | task-cdm-gap-closure | 156510b712e776c8efb18725bcf5f72f601206a2 | docs/gap-register.html | 2026-11-22T03:05:08Z |
+| goal-tokenized-collateral | 3bb563359c739b9b7b663d1179d3442599fc1a6b | docs/analysis/findings.md | 2026-11-22T03:51:06Z |
+| goal-tokenized-collateral | 3bb563359c739b9b7b663d1179d3442599fc1a6b | docs/analysis/gap-register.md | 2026-11-22T03:51:06Z |
+| goal-tokenized-collateral | 3bb563359c739b9b7b663d1179d3442599fc1a6b | docs/gap-register.html | 2026-11-22T03:51:06Z |

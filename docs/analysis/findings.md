@@ -181,7 +181,10 @@ signature, so nothing shows that an attachment is the executed version. `LegalAg
 agreement to the agreements that govern it; no attribute links an agreement to an asset, a token, a registry entry
 (for example an International Registry filing) or a valuation. In `cdm-ext`, `TokenizedAsset` records the token but not
 the document that makes the token represent the asset, and `AnchoredRecordEnum` anchors only `MarginCallStep`,
-`Enforcement` and `Substitution` instructions, not legal documents.
+`Enforcement` and `Substitution` instructions, not legal documents. Since PR #75 (2026-11-21), `TokenizedAsset` has
+`controlAgreement`, the reference of the control agreement under which the record keeper follows the secured party's
+instructions (UCC 8-106(c), (d)): a link from the token to a legal document, held as a plain string with no content
+hash and no record of who keeps the agreement.
 
 ## Moved to defects.md
 

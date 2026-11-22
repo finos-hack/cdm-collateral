@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-21T22:25:05Z
+updatedAt: 2026-11-22T03:51:06Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -34,6 +34,17 @@ Decisions so far (project owner, 2026-11-21):
 To decide: which links carry a content hash and are anchored with `LedgerAnchor`
 (new anchor kinds for agreements, registry entries and valuations); how amendments and re-valuations supersede earlier
 links. Questions for an SME: [[task-sme-document-provenance]].
+
+Overlaps with work merged since (PR #75, 2026-11-21):
+
+- `TokenizedAsset.controlAgreement` references the control agreement (UCC 8-106) as a plain string. It is one of the
+  links this record covers: it needs a content hash, a record keeper and validity dates like the others. It matters
+  for tMMF and other Registered or Claim tokens, not for the tUST pilot (a Bearer token needs no control agreement).
+- The record keeper's register (`CdmRecordKeeper`, the transfer-agent stand-in, `LedgerFact` and the register
+  reconciliation) is where a record keeper's signed statements about holdings would come from.
+- [[task-substitution-ledger-anchors]] builds substitution anchors in the collateral service. New anchor kinds for
+  agreements, registry entries and valuations extend the same `AnchoredRecordEnum` and the same anchor-building code,
+  so the two tasks agree on the extension before either changes it.
 
 Done when, for the pilot asset, a function walks the path from a pledged token to the asset's authoritative record,
 checks each document hash against its anchor, and reports any link that is missing or superseded, with tests.

@@ -465,3 +465,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-tokcoll-authrecordflows | decomposes | node:goal-tokenized-collateral | node:task-authoritative-record-other-flows |  | accepted |
 | e-dec-tokcoll-subanchors | decomposes | node:goal-tokenized-collateral | node:task-substitution-ledger-anchors |  | accepted |
 | e-dec-tokcoll-consolerk | decomposes | node:goal-tokenized-collateral | node:task-console-record-keeper-completion |  | accepted |
+| e-lnk-docprov-subanchors | links | node:task-document-provenance | node:task-substitution-ledger-anchors |  | accepted |
