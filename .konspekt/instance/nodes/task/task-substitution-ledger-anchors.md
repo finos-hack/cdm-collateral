@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-22T03:05:00Z
   confidence: 0.8
 createdAt: 2026-11-22T03:05:00Z
-updatedAt: 2026-11-22T16:47:09Z
+updatedAt: 2026-11-22T18:57:53Z
 ```
 # Task: build ledger anchors for collateral substitutions
 
@@ -25,3 +25,7 @@ and triparty movement records anchor kinds of their own, so `CdmRecordKeeper.mov
 `AnchorStatus` to `TransferComplete` in place of the transaction's finality
 ([[task-authoritative-record-other-flows]]). The extension is agreed with [[task-document-provenance]], which adds kinds
 for agreements, registry entries and valuations, before either changes it.
+
+Decided 2026-11-22 (project owner): the triparty profile's `Deposited` and `Withdrawn` carry no CDM document, so they
+have no anchor and keep the transaction's finality as their anchor status in `CdmRecordKeeper.movements`; every other
+repo, loan and triparty movement passes its record's `AnchorStatus`.
