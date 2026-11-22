@@ -1707,3 +1707,6 @@ excluded.
 | task-dti-format-check | 6f96bc4b58de0b548ad71c2ca01c388ccce35429 | docs/analysis/gap-register.md | 2026-11-21T17:59:11Z |
 | task-dti-format-check | efe9e19640504e65880cb2b3494894e44232d185 | cdm-ext/rosetta/cdmx-collateral-ledger-type.rosetta | 2026-11-21T18:56:23Z |
 | task-dti-format-check | efe9e19640504e65880cb2b3494894e44232d185 | contracts/scripts/deploy.ts | 2026-11-21T18:56:23Z |
+| task-sme-registered-asset-completion | 0be063fdb7c834e6853a8dcdea6e1294ca8a23f6 | README.md | 2026-11-22T01:55:06Z |
+| task-sme-registered-asset-completion | 0be063fdb7c834e6853a8dcdea6e1294ca8a23f6 | docs/analysis/sme-brief-registered-assets.md | 2026-11-22T01:55:06Z |
+| task-sme-registered-asset-completion | 0be063fdb7c834e6853a8dcdea6e1294ca8a23f6 | docs/analysis/sme-question-ledger.md | 2026-11-22T01:55:06Z |
