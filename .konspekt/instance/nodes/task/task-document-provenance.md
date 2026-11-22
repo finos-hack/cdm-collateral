@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T17:34:42Z
+updatedAt: 2026-11-22T18:19:01Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -102,4 +102,8 @@ deployment: CDM 7.7.0 has no asset type for it (G40), and the asset is a URN of 
 refuses to accept a margin call proposal, or to consent to a substitution, with a marked token whose provenance path
 for a pledge to it is not complete (`ProvenanceLive.refusal`); unmarked tokens are not checked, and a deployment without
 the mark behaves as before. `scripts/live-e2e.sh up` seeds the fixture provenance when the deployment requires it and
-nothing is anchored. Not yet gated: the repo, securities loan, triparty and CCP flows' own collateral acceptance. The credential proofs are not checked against the W3C Data Integrity test suite.
+nothing is anchored. The other flows apply the same gate at the step where the receiving party takes the collateral (2026-11-22): the
+repo buyer's affirmation and its agreement to a substitution (the purchased securities); the securities lender's booking
+and its agreement to a collateral substitution; the triparty receiver's settlement of the purchase against the
+allocation, and the agent's substitution for the receiver; and the CCP's acceptance of a repo for clearing. CCP margin
+and default fund payments are in tUSD, which is not marked. The credential proofs are not checked against the W3C Data Integrity test suite.
