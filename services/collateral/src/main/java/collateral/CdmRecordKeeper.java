@@ -161,6 +161,39 @@ public final class CdmRecordKeeper {
     }
 
     /**
+     * Completion of the repo, securities loan and triparty movements of Registered or Claim tokens
+     * (task-authoritative-record-other-flows): movements is the gateway's /register/movements for one flow contract, each
+     * a transaction with the record id its flow logs carry. These records have no LedgerAnchor kind yet
+     * (AnchoredRecordEnum covers margin call steps, enforcements and substitutions), so the anchor status passed to
+     * TransferComplete is the transaction's: Complete, because a movement is read from the logs of a mined transaction
+     * and a reverted one leaves none. Returns, by record id, {records: [...], complete} as {@link #steps} does; a record
+     * that moved no such token is absent.
+     */
+    static Map<String, Map<String, Object>> movements(JsonNode registry, JsonNode movements, JsonNode chainConfirmations) {
+        Map<String, TokenizedAsset> tokens = tokens(registry);
+        Map<String, Map<String, Object>> out = new LinkedHashMap<>();
+        for (JsonNode m : movements) {
+            String recordId = m.get("recordId").asText().toLowerCase();
+            List<String> events = new ArrayList<>();
+            m.path("events").forEach(e -> events.add(e.asText()));
+            String identifier = events.isEmpty() ? "Transfer" : String.join("+", events);
+            AnchorStatusEnum status = "Final".equals(m.path("status").asText()) ? AnchorStatusEnum.COMPLETE : AnchorStatusEnum.PENDING;
+            Map<String, Object> r = record(tokens, identifier, m, status, chainConfirmations);
+            if (((List<?>) r.get("tokens")).isEmpty()) continue;
+            Map<String, Object> rec = out.computeIfAbsent(recordId, k -> {
+                Map<String, Object> x = new LinkedHashMap<>();
+                x.put("records", new ArrayList<Map<String, Object>>());
+                x.put("complete", true);
+                return x;
+            });
+            @SuppressWarnings("unchecked") List<Map<String, Object>> list = (List<Map<String, Object>>) rec.get("records");
+            list.add(r);
+            rec.put("complete", Boolean.TRUE.equals(rec.get("complete")) && Boolean.TRUE.equals(r.get("complete")));
+        }
+        return out;
+    }
+
+    /**
      * Completion of a call's enforcement (REG-4): the Enforcement LedgerAnchor of the CDM CollateralEnforcement record,
      * built from the Enforced event and its transaction, and TransferComplete for each token it moved.
      */

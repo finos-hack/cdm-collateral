@@ -130,6 +130,16 @@ route("GET", "/ledger/v1/register/transfers", async (_p, _b, url) =>
 
 route("GET", "/ledger/v1/register/confirmations", async () => J(await adapter.registerConfirmations()));
 
+// The repo, securities loan or triparty transactions that moved a Registered or Claim token, by record
+// (task-authoritative-record-other-flows): ?flow=repo|loan|triparty.
+route("GET", "/ledger/v1/register/movements", async (_p, _b, url) => {
+  const flow = url.searchParams.get("flow");
+  if (flow !== "repo" && flow !== "loan" && flow !== "triparty") throw new Error("flow is repo, loan or triparty");
+  const reg = (await import("./registry.ts")).loadRegistry();
+  const tokens = Object.values(reg.tokens).filter((t) => (t.authoritativeRecord ?? "Bearer") !== "Bearer").map((t) => getAddress(t.address) as Address);
+  return J(await adapter.registerMovements(flow, tokens));
+});
+
 // The tokens whose authoritative record is kept off the ledger (Registered or Claim), with their record keeper.
 route("GET", "/ledger/v1/register/tokens", async () => {
   const reg = (await import("./registry.ts")).loadRegistry();

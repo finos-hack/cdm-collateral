@@ -459,6 +459,7 @@ public final class App {
     /** The triparty terms this party is named in, newest first, with the document checked and the steps open to it. */
     private void triparty(Context ctx) {
         JsonNode all = gw.getQuery("/triparty/terms", Map.of("party", cfg.myAddress));
+        Map<String, Map<String, Object>> completion = movementCompletion("triparty");
         List<Map<String, Object>> terms = new ArrayList<>();
         boolean open = false;
         for (int i = all.size() - 1; i >= 0; i--) {
@@ -498,9 +499,12 @@ public final class App {
             boolean effective = state.equals("effective");
             m.put("canDeposit", effective && giver && problem.isEmpty());
             m.put("canRequest", effective && giver && problem.isEmpty());
+            withMovementCompletion(m, t.get("termsId").asText(), completion); // deposits and withdrawals
             if (effective) {
                 m.put("free", tripartyFreeView(t.get("termsId").asText()));
-                m.put("repos", tripartyRepos(t, problem.isEmpty()));
+                List<Map<String, Object>> repos = tripartyRepos(t, problem.isEmpty());
+                for (Map<String, Object> r : repos) withMovementCompletion(r, String.valueOf(r.get("repoId")), completion);
+                m.put("repos", repos);
                 tripartyReportView(m, t, agent);
                 m.put("canSendReport", agent && problem.isEmpty());
             }
@@ -1683,6 +1687,7 @@ public final class App {
         Map<String, Object> b = body(ctx);
         String sym = String.valueOf(b.get("token"));
         if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new IllegalArgumentException("not a security token: " + sym);
+        requireUnderControl(sym);
         long amount = Long.parseLong(String.valueOf(b.get("amount")));
         int rank = Integer.parseInt(String.valueOf(b.get("rank")));
         if (amount <= 0 || rank <= 0) throw new IllegalArgumentException("the amount and the rank are positive");
@@ -3168,6 +3173,7 @@ public final class App {
         JsonNode r = l.get("pendingReturn");
         if (!r.get("lender").asText().equals(ZERO_HASH) || !r.get("borrower").asText().equals(ZERO_HASH)) throw new RuntimeException("a return of loan " + id + " is pending");
         if ("tUSD".equals(sym)) throw new RuntimeException("cash is not a substitute: only non-cash collateral is substituted");
+        requireUnderControl(sym);
         LoanCurrent c = loanCurrent(l);
         if (c == null) throw new RuntimeException("the loan document is not in the payload store");
         String problem = loanProblem(l, c);
@@ -3432,7 +3438,12 @@ public final class App {
     /** This party's loans, newest first, with the business date. */
     private void loans(Context ctx) {
         List<Map<String, Object>> out = new ArrayList<>();
-        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress))) out.add(0, loanView(l));
+        Map<String, Map<String, Object>> completion = movementCompletion("loan");
+        for (JsonNode l : gw.getQuery("/loans", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> v = loanView(l);
+            withMovementCompletion(v, l.get("loanId").asText(), completion);
+            out.add(0, v);
+        }
         ctx.json(Map.of("businessDate", businessDate.toString(), "loans", out));
     }
 
@@ -3446,6 +3457,7 @@ public final class App {
         String col = String.valueOf(b.getOrDefault("collateral", "tUSD"));
         if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new RuntimeException("not a security token: " + sym);
         if (col.equals(sym) || !cfg.registry.get("tokens").has(col)) throw new RuntimeException("not a collateral token for " + sym + ": " + col);
+        requireUnderControl(col); // the collateral, not the loaned security
         long quantity = Long.parseLong(String.valueOf(b.get("quantity")));
         if (quantity < 1) throw new RuntimeException("the quantity is at least one");
         BigDecimal rate = new BigDecimal(String.valueOf(b.get("ratePercent"))).movePointLeft(2);
@@ -3676,7 +3688,12 @@ public final class App {
     /** This party's repos, newest first, with the business date. */
     private void repos(Context ctx) {
         List<Map<String, Object>> out = new ArrayList<>();
-        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) out.add(0, repoView(r));
+        Map<String, Map<String, Object>> completion = movementCompletion("repo");
+        for (JsonNode r : gw.getQuery("/repos", Map.of("party", cfg.myAddress))) {
+            Map<String, Object> v = repoView(r);
+            withMovementCompletion(v, r.get("repoId").asText(), completion);
+            out.add(0, v);
+        }
         ctx.json(Map.of("businessDate", businessDate.toString(), "repos", out));
     }
 
@@ -3688,6 +3705,7 @@ public final class App {
         Map<String, Object> b = body(ctx);
         String sym = String.valueOf(b.getOrDefault("security", "tUST"));
         if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new RuntimeException("not a security token: " + sym);
+        requireUnderControl(sym);
         long purchasePrice = Long.parseLong(String.valueOf(b.get("purchasePrice")));
         BigDecimal rate = new BigDecimal(String.valueOf(b.get("ratePercent"))).movePointLeft(2);
         int termDays = Integer.parseInt(String.valueOf(b.getOrDefault("termDays", "7")));
@@ -4242,6 +4260,7 @@ public final class App {
     private Replacement substitutionLeg(JsonNode r, String symbol) {
         CdmRepo.Booking b = replaceable(r);
         if (b == null) throw new RuntimeException("repo " + r.get("repoId").asText() + " is due for repurchase");
+        requireUnderControl(symbol);
         String newSecurity = cfg.tokenAddress(symbol);
         CdmRepo.Substituted next = CdmRepo.substitute(b.trade(), cfg.isin(symbol), feedPrice(r.get("security").asText()), feedPrice(newSecurity), businessDate);
         boolean seller = r.get("seller").asText().equalsIgnoreCase(cfg.myAddress);
@@ -5027,6 +5046,45 @@ public final class App {
         } catch (RuntimeException e) {
             return Config.MAPPER.createArrayNode();
         }
+    }
+
+    /**
+     * Completion by authoritative record of the repo, securities loan or triparty records (flow: repo, loan or triparty)
+     * that moved a Registered or Claim token (task-authoritative-record-other-flows), by record id. Read on every view,
+     * because the record keeper confirms after the movement is mined. A deployment without registered tokens or without
+     * a RecordKeeperRegister returns no records, and a failed read is reported in place of the records.
+     */
+    private Map<String, Map<String, Object>> movementCompletion(String flow) {
+        if (CdmRecordKeeper.tokens(cfg.registry).values().stream().allMatch(t -> "Bearer".equals(t.getAuthoritativeRecord().toDisplayString())))
+            return Map.of();
+        try {
+            return CdmRecordKeeper.movements(cfg.registry, gw.getQuery("/register/movements", Map.of("flow", flow)), registerConfirmations());
+        } catch (RuntimeException e) {
+            return Map.of("error", Map.of("recordKeeperError", String.valueOf(e.getMessage())));
+        }
+    }
+
+    /** Adds recordKeeper and settlementComplete to a record's view when it moved a Registered or Claim token. */
+    private static void withMovementCompletion(Map<String, Object> view, String recordId, Map<String, Map<String, Object>> completion) {
+        Map<String, Object> error = completion.get("error");
+        if (error != null) { // which records moved such a token is not known, so none is reported complete or not
+            view.putAll(error);
+            return;
+        }
+        Map<String, Object> c = completion.get(recordId.toLowerCase());
+        if (c == null) return;
+        view.put("recordKeeper", c.get("records"));
+        view.put("settlementComplete", c.get("complete"));
+    }
+
+    /**
+     * REG-3: a Registered or Claim token is taken as collateral (or as the purchased securities of a repo) only with a
+     * recorded control agreement with its record keeper (EligibleUnderControl), as the CSA eligibility applies it.
+     */
+    private void requireUnderControl(String sym) {
+        var t = CdmRecordKeeper.tokens(cfg.registry).get(sym);
+        if (t != null && !CdmRecordKeeper.eligible(t))
+            throw new IllegalArgumentException(sym + " is not eligible: its authoritative record is kept by its record keeper and no control agreement is recorded (EligibleUnderControl)");
     }
 
     /**
