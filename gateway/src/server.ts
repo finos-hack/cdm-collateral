@@ -114,11 +114,35 @@ route("POST", "/ledger/v1/calls/:id/return-transfer", async (p, b) => {
   return J({ approvals, transfer });
 });
 
-route("POST", "/ledger/v1/calls/:id/enforce", async (p) =>
+route("POST", "/ledger/v1/calls/:id/enforce", async (p, b) =>
   // Default enforcement: the secured party's gateway seizes the escrowed initial margin once the oracle feed records
   // the pledgor's default (flow-default-enforcement transition 5).
-  J(await adapter.enforce(p.id as Hex)),
+  J(await adapter.enforce(p.id as Hex, ((b as { cdmHash?: Hex } | undefined)?.cdmHash ?? ("0x" + "00".repeat(32))) as Hex)),
 );
+
+route("GET", "/ledger/v1/calls/:id/enforcement", async (p) => J(await adapter.enforcement(p.id as Hex)));
+
+// --- record keeper register (task-authoritative-record-settlement-enforcement, interim rules REG-1 to REG-5) ---
+
+route("GET", "/ledger/v1/register/transfers", async (_p, _b, url) =>
+  J(await adapter.registerTransfers(getAddress(url.searchParams.get("token")!) as Address)),
+);
+
+route("GET", "/ledger/v1/register/confirmations", async () => J(await adapter.registerConfirmations()));
+
+// The tokens whose authoritative record is kept off the ledger (Registered or Claim), with their record keeper.
+route("GET", "/ledger/v1/register/tokens", async () => {
+  const reg = (await import("./registry.ts")).loadRegistry();
+  return J(Object.entries(reg.tokens)
+    .filter(([, t]) => (t.authoritativeRecord ?? "Bearer") !== "Bearer")
+    .map(([symbol, t]) => ({ symbol, token: t.address, authoritativeRecord: t.authoritativeRecord, recordKeeper: t.recordKeeper ?? null })));
+});
+
+route("POST", "/ledger/v1/register/confirmations", async (_p, b) => {
+  // Only the record keeper's gateway can write: the contract reverts NotRecordKeeper for any other key.
+  const body = b as { txHash: Hex; token: Address; ref?: string };
+  return J(await adapter.confirmRegister(body.txHash, getAddress(body.token) as Address, body.ref ?? ""));
+});
 
 // --- close-out netting on default (flow-close-out-netting, G15) ---
 

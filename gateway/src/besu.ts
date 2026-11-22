@@ -68,7 +68,11 @@ export interface LedgerEvent {
     | "ClearingAccepted"
     | "ClearingRefused"
     | "ClearedLegInstructed"
-    | "ClearedRepoSettled";
+    | "ClearedRepoSettled"
+    | "RegisterConfirmed";
+  /** RegisterConfirmed: the ledger transaction the record keeper's register now shows, and the token. */
+  txHash?: Hex;
+  token?: Address;
   /** RepoBooked, RepoAffirmed, RepoInstructed, RepoSettled (flow-repo-purchase-repurchase). */
   repoId?: Hex;
   callId?: Hex;
@@ -175,6 +179,27 @@ export interface OnChainAmendment {
   terms: HaircutTermArg[];
 }
 
+/** One Transfer of a Registered or Claim token, and whether the record keeper has confirmed its transaction. */
+export interface RegisterTransfer {
+  txHash: Hex;
+  block: string;
+  logIndex: number;
+  from: Address;
+  to: Address;
+  value: string;
+  confirmed: boolean;
+}
+
+/** One RegisterConfirmed event: the record keeper's register shows the token movements of transaction txHash. */
+export interface RegisterConfirmation {
+  txHash: Hex;
+  token: Address;
+  ref: string;
+  block: string;
+  /** The transaction that carried the confirmation. */
+  confirmationTx: Hex;
+}
+
 /** One lifecycle step as callSteps reads it from the chain, with what the CDM LedgerAnchor needs (G25). */
 export interface CallStep {
   step: string;
@@ -205,7 +230,8 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "Pledged(bytes32,address,address,uint256)",
     "Transferred(bytes32,address,address,uint256)",
     "Returned(bytes32,address,address)",
-    "Enforced(bytes32,address,address)",
+    "Enforced(bytes32,address,address,bytes32)",
+    "RegisterConfirmed(bytes32,address,string)",
     "ClosedOut(bytes32,address,address,uint256,uint256,bytes32)",
     "Reclaimed(bytes32,address,address,bytes32)",
     "SubstitutionRequested(bytes32,address,address,bytes32)",
@@ -307,7 +333,7 @@ const controlAbi = parseAbi([
   "function returnCollateral(bytes32 callId, Asset[] release, bytes32 cdmHash)",
   "function returnByTransfer(bytes32 callId, Asset[] assets, bytes32 cdmHash)",
   "struct Substitution { address pledgor; address securedParty; uint8 state; bytes32 requestCdmHash; bytes32 decisionCdmHash; bytes32 settleCdmHash; }",
-  "function enforce(bytes32 callId)",
+  "function enforce(bytes32 callId, bytes32 cdmHash)",
   "function closeOut(bytes32 closeOutId, address pledgor, uint256 owed, bytes32 cdmHash)",
   "function reclaim(bytes32 reclaimId, address securedParty, bytes32 cdmHash)",
   "function requestSubstitution(bytes32 substitutionId, address securedParty, Asset[] original, Asset[] substitute, bytes32 cdmHash)",
@@ -343,7 +369,7 @@ const controlAbi = parseAbi([
   "function pledgedBalance(address pledgor, address securedParty, address token) view returns (uint256)",
   "function pledgedTokens(address pledgor, address securedParty) view returns (address[])",
   "event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
-  "event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor)",
+  "event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor, bytes32 cdmHash)",
   "event ClosedOut(bytes32 indexed closeOutId, address indexed securedParty, address indexed pledgor, uint256 owed, uint256 applied, bytes32 cdmHash)",
   "event Reclaimed(bytes32 indexed reclaimId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
   "event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash)",
@@ -749,6 +775,15 @@ export interface OnChainCcpRulebook {
   members: { member: Address; share: bigint; paid: boolean; contributed: bigint; imHeld: bigint; admissionHash: Hex }[];
 }
 
+// The record keeper's confirmations for Registered and Claim tokens (task-authoritative-record-settlement-enforcement).
+const registerAbi = parseAbi([
+  "function confirm(bytes32 txHash, address token, string ref)",
+  "function confirmed(bytes32 txHash, address token) view returns (bool)",
+  "event RegisterConfirmed(bytes32 indexed txHash, address indexed token, string ref)",
+]);
+
+const transferAbi = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
+
 const erc20Abi = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
@@ -771,7 +806,15 @@ export interface LedgerAdapter {
   settleByTransfer(callId: Hex, proposalId: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   returnCollateral(callId: Hex, release: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   returnByTransfer(callId: Hex, assets: AssetArg[], cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
-  enforce(callId: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  enforce(callId: Hex, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
+  /** The Enforced event of a call with its transaction, as callSteps reads a step (for the Enforcement LedgerAnchor). */
+  enforcement(callId: Hex): Promise<CallStep[]>;
+  /** Every Transfer of a token, in chain order, each marked confirmed when the record keeper's register shows it. */
+  registerTransfers(token: Address): Promise<RegisterTransfer[]>;
+  /** The record keeper's confirmations, in chain order. */
+  registerConfirmations(): Promise<RegisterConfirmation[]>;
+  /** The record keeper confirms that its register shows a transaction's movements of a token (record keeper's key). */
+  confirmRegister(txHash: Hex, token: Address, ref: string): Promise<{ txHash: Hex; block: bigint }>;
   closeOut(closeOutId: Hex, pledgor: Address, owed: bigint, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   reclaim(reclaimId: Hex, securedParty: Address, cdmHash: Hex): Promise<{ txHash: Hex; block: bigint }>;
   listCloseOuts(party: Address): Promise<CloseOutRecord[]>;
@@ -1137,8 +1180,52 @@ export class BesuAdapter implements LedgerAdapter {
   }
 
   /** Seize the pledged initial margin after the oracle feed records the pledgor's default (secured party's key). */
-  enforce(callId: Hex) {
-    return this.send(this.reg.contracts.collateralControl, controlAbi, "enforce", [callId]);
+  enforce(callId: Hex, cdmHash: Hex) {
+    return this.send(this.reg.contracts.collateralControl, controlAbi, "enforce", [callId, cdmHash]);
+  }
+
+  async enforcement(callId: Hex): Promise<CallStep[]> {
+    const network = { name: "besu-prototype", platform: "Hyperledger Besu", chainId: this.reg.chainId };
+    const out: CallStep[] = [];
+    for (const l of await this.scan(this.reg.contracts.collateralControl, controlAbi, "Enforced", { callId })) {
+      const receipt = await this.receipt(l.transactionHash as Hex);
+      out.push({
+        step: "Enforce", event: "Enforced", cdmHash: (l.args as { cdmHash: Hex }).cdmHash,
+        block: l.blockNumber.toString(), logIndex: Number(l.logIndex), txHash: l.transactionHash as Hex,
+        contract: (l.address as string).toLowerCase(), network,
+        status: receipt.status === "success" ? "Final" : "Reverted",
+        txLogs: receipt.logs
+          .filter((x) => Number(x.logIndex) !== Number(l.logIndex))
+          .map((x) => ({ contract: x.address.toLowerCase(), logIndex: Number(x.logIndex), event: EVENT_BY_TOPIC.get((x.topics[0] ?? "").toLowerCase()) })),
+      });
+    }
+    return out;
+  }
+
+  private registerAddress(): Address {
+    const a = this.reg.contracts.recordKeeperRegister;
+    if (!a) throw new Error("this deployment has no RecordKeeperRegister; redeploy (task-authoritative-record-settlement-enforcement)");
+    return a;
+  }
+
+  async registerConfirmations(): Promise<RegisterConfirmation[]> {
+    return (await this.scan(this.registerAddress(), registerAbi, "RegisterConfirmed")).map((l) => {
+      const a = l.args as { txHash: Hex; token: Address; ref: string };
+      return { txHash: a.txHash.toLowerCase() as Hex, token: getAddress(a.token), ref: a.ref, block: l.blockNumber.toString(), confirmationTx: l.transactionHash as Hex };
+    });
+  }
+
+  async registerTransfers(token: Address): Promise<RegisterTransfer[]> {
+    const confirmed = new Set((await this.registerConfirmations()).filter((c) => c.token === getAddress(token)).map((c) => c.txHash));
+    return (await this.scan(token, transferAbi, "Transfer")).map((l) => {
+      const a = l.args as { from: Address; to: Address; value: bigint };
+      const txHash = (l.transactionHash as string).toLowerCase() as Hex;
+      return { txHash, block: l.blockNumber.toString(), logIndex: Number(l.logIndex), from: getAddress(a.from), to: getAddress(a.to), value: a.value.toString(), confirmed: confirmed.has(txHash) };
+    });
+  }
+
+  confirmRegister(txHash: Hex, token: Address, ref: string) {
+    return this.send(this.registerAddress(), registerAbi, "confirm", [txHash, token, ref]);
   }
 
   /** Close out after the pledgor's default (secured party's key, flow-close-out-netting): the control contract applies
@@ -2025,7 +2112,7 @@ export class BesuAdapter implements LedgerAdapter {
           const name = (log as any).eventName as LedgerEvent["event"];
           const a = ((log as any).args ?? {}) as { callId?: Hex; pledgor?: Address; payer?: Address; closeOutId?: Hex; substitutionId?: Hex; interestId?: Hex; cdmHash?: Hex };
           if (name === "Returned" || name === "Enforced") {
-            onEvent({ event: name, callId: a.callId, party: a.pledgor, ...meta(log) });
+            onEvent({ event: name, callId: a.callId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "ClosedOut") {
             onEvent({ event: name, closeOutId: a.closeOutId, cdmHash: a.cdmHash, party: a.pledgor, ...meta(log) });
           } else if (name === "Reclaimed") {
@@ -2094,11 +2181,27 @@ export class BesuAdapter implements LedgerAdapter {
           onError,
         })
       : () => undefined;
+    const register = this.reg.contracts.recordKeeperRegister;
+    const unwatchRegister = register
+      ? this.ws.watchContractEvent({
+          address: register,
+          abi: registerAbi,
+          eventName: "RegisterConfirmed",
+          onLogs: (logs) => {
+            for (const log of logs) {
+              const a = ((log as any).args ?? {}) as { txHash?: Hex; token?: Address };
+              onEvent({ event: "RegisterConfirmed", txHash: a.txHash, token: a.token, ...meta(log) });
+            }
+          },
+          onError,
+        })
+      : () => undefined;
     return () => {
       unwatchControl();
       unwatchOracle();
       unwatchRepo();
       unwatchCcp();
+      unwatchRegister();
     };
   }
 

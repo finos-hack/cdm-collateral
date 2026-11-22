@@ -2,7 +2,7 @@
 id: task-dti-format-check
 type: task
 title: Check the format of a token's ISO 24165 DTI
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: tokenized-collateral
@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.75
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-20T21:22:45Z
+updatedAt: 2026-11-21T18:16:20Z
 ```
 # Task: check the format of a token's ISO 24165 DTI
 
@@ -22,3 +22,23 @@ or both), and which rules it applies (length, character set, check character), t
 not from memory.
 
 Done when a malformed DTI is rejected with a stated reason and a test covers valid and invalid values.
+
+## Progress (2026-11-21)
+
+Rune does have a pattern match: `string(pattern: "...")` on a `typeAlias`, used by CDM 7.7.0 itself
+(`ESMAIndexName`). So the check runs in the model, where every `TokenizedAsset` is validated:
+`cdmx.collateral.ledger.DigitalTokenIdentifier`. The collateral service builds no `TokenizedAsset`, so there is no
+separate ingestion check.
+
+Rules, from the DTIF's DTI Implementation Guide 2.0 and DTI FAQ: nine characters, an eight-character base number and a
+check character "computed using the method specified in Annex A of ISO standard 24165"; the base number excludes
+A, E, I, O, U and Y; a DTI does not start with zero. Annex A is not available, so the check character's value is not
+verified, only that it is a digit or an upper-case letter. Upper case only is an assumption.
+
+Decisions by the project owner (2026-11-21): leave the check character unverified and say so in the model;
+keep upper case only as a noted assumption (every published DTI is upper case; no source found says lower case is
+invalid). The `deploy.ts` DTIs `QUSD00000` and `QAGY00000` broke the rule and were replaced with `QSD000000` and
+`QGNC00000`. Resolved by the project owner.
+
+`LedgerTest`: published DTIs pass (X9J9K872S, WGHBLG826); wrong length, a vowel or Y, a leading zero, lower case and a
+symbol are rejected, the failure naming `dti` and the value.

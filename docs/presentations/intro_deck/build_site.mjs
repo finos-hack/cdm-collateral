@@ -24,8 +24,8 @@ for (const line of ledger) {
     const m = line.slice(4).match(/^`([^`]+)`:\s*(.*)$/);
     family.tasks.push(task = { id: m ? m[1] : "", title: (t => t.charAt(0).toUpperCase() + t.slice(1))(m ? m[2] : line.slice(4)), rows: [] });
   } else if (/^\| [A-Z0-9]+-[0-9]+ \|/.test(line)) {
-    const [id, question, status, answer] = line.split("|").slice(1, -1).map(c => c.trim());
-    task.rows.push({ id, question, status, answer });
+    const [id, question, interim, status, answer] = line.split("|").slice(1, -1).map(c => c.trim());
+    task.rows.push({ id, question, interim, status, answer });
   }
 }
 const all = families.flatMap(f => f.tasks.flatMap(t => t.rows));
@@ -37,8 +37,8 @@ const qBody = families.map((f, fi) => `
 ${f.tasks.map(t => `<section class="task" id="${esc(t.id)}">
 <h3>${inline(t.title)}</h3>
 <p class="task-id">Task <code>${esc(t.id)}</code> · ${t.rows.length} question${t.rows.length === 1 ? "" : "s"}</p>
-<table><thead><tr><th>ID</th><th>Question</th><th>Status</th><th>Answer</th></tr></thead><tbody>
-${t.rows.map(r => `<tr id="${esc(r.id)}"><td class="id">${esc(r.id)}</td><td>${inline(r.question)}</td><td class="st ${esc(r.status)}">${esc(r.status)}</td><td>${inline(r.answer)}</td></tr>`).join("\n")}
+<table><thead><tr><th>ID</th><th>Question</th><th>Interim decision</th><th>Status</th><th>Answer</th></tr></thead><tbody>
+${t.rows.map(r => `<tr id="${esc(r.id)}"><td class="id">${esc(r.id)}</td><td>${inline(r.question)}</td><td>${inline(r.interim)}</td><td class="st ${esc(r.status)}">${esc(r.status)}</td><td>${inline(r.answer)}</td></tr>`).join("\n")}
 </tbody></table>
 </section>`).join("\n")}`).join("\n");
 

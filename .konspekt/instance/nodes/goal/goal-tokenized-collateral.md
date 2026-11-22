@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-20T19:51:36Z
   confidence: 0.85
 createdAt: 2026-11-20T19:51:36Z
-updatedAt: 2026-11-20T20:06:53Z
+updatedAt: 2026-11-21T18:16:20Z
 ```
 # Tokenized collateral represented as it exists on the ledger
 
@@ -33,6 +33,7 @@ Decomposed into (2026-11-20):
 
 - [[task-authoritative-record-settlement-enforcement]]: settlement (G4) and enforcement (G14) treat a mined on-chain
   transfer as complete for every asset; they do not yet depend on `AuthoritativeRecordEnum`.
-- [[task-dti-format-check]]: the DTI format is not checked (Rune has no pattern match).
+- [[task-dti-format-check]]: the DTI format is not checked. (Corrected 2026-11-21: Rune does have a pattern match,
+  `string(pattern: ...)`; the task added `DigitalTokenIdentifier`. Resolved.)
 - [[task-second-ledger-token-identity]]: only Besu is represented; a second ledger (DTCC also runs Canton) would test
   that the identity model is ledger-neutral.

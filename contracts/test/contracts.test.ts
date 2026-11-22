@@ -267,6 +267,7 @@ describe("CDM collateral contracts", async () => {
 
   describe("default and enforcement", () => {
     const C = id(4);
+    const EH = keccak256(toHex("cdm-enforcement"));
     const agreed = 1000n * SCALE;
 
     async function pledge11() {
@@ -280,22 +281,30 @@ describe("CDM collateral contracts", async () => {
 
     it("rejects enforcement before a default is on the feed", async () => {
       await pledge11();
-      await assert.rejects(control.write.enforce([C], { account: bankB.account })); // NoDefault
+      await assert.rejects(control.write.enforce([C, EH], { account: bankB.account })); // NoDefault
     });
 
     it("seizes pledged collateral after the default is published", async () => {
       await pledge11();
       await oracle.write.setDefault([aAddr, true], { account: operator.account });
-      await control.write.enforce([C], { account: bankB.account });
+      await control.write.enforce([C, EH], { account: bankB.account });
       assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 0n);
       assert.equal(await tUST.read.balanceOf([bAddr]), 11n);
+    });
+
+    it("records the CDM enforcement hash in the Enforced event", async () => {
+      await pledge11();
+      await oracle.write.setDefault([aAddr, true], { account: operator.account });
+      await control.write.enforce([C, EH], { account: bankB.account });
+      const [e] = await control.getEvents.Enforced({ callId: C });
+      assert.equal(e.args.cdmHash, EH);
     });
 
     it("property: total tUST supply is conserved across pledge and enforce", async () => {
       const supply = await tUST.read.totalSupply();
       await pledge11();
       await oracle.write.setDefault([aAddr, true], { account: operator.account });
-      await control.write.enforce([C], { account: bankB.account });
+      await control.write.enforce([C, EH], { account: bankB.account });
       const sum =
         (await tUST.read.balanceOf([aAddr])) +
         (await tUST.read.balanceOf([bAddr])) +
@@ -306,7 +315,7 @@ describe("CDM collateral contracts", async () => {
     it("rejects enforcement by anyone but the secured party", async () => {
       await pledge11();
       await oracle.write.setDefault([aAddr, true], { account: operator.account });
-      await assert.rejects(control.write.enforce([C], { account: bankA.account }));
+      await assert.rejects(control.write.enforce([C, EH], { account: bankA.account }));
     });
   });
 
@@ -343,7 +352,7 @@ describe("CDM collateral contracts", async () => {
     it("A defaults: B enforces against A's leg and reclaims its own", async () => {
       const { ca } = await pledgeBothLegs();
       await oracle.write.setDefault([aAddr, true], { account: operator.account });
-      await control.write.enforce([ca], { account: bankB.account });
+      await control.write.enforce([ca, keccak256(toHex("cdm-enforcement"))], { account: bankB.account });
       await control.write.reclaim([R, aAddr, H], { account: bankB.account });
       assert.equal(await tUST.read.balanceOf([bAddr]), 11n);
       assert.equal(await tMMF.read.balanceOf([bAddr]), 100n);
@@ -364,6 +373,23 @@ describe("CDM collateral contracts", async () => {
       await assert.rejects(control.write.reclaim([R, aAddr, H], { account: bankB.account })); // reused id
       await assert.rejects(control.write.reclaim([id(43), aAddr, H], { account: bankB.account })); // NothingPledged
       assert.equal(await control.read.pledgedBalance([aAddr, bAddr, tUST.address]), 11n); // A's leg untouched
+    });
+  });
+
+  describe("record keeper register confirmations (task-authoritative-record-settlement-enforcement)", () => {
+    const TX = keccak256(toHex("tx-1"));
+    it("the record keeper confirms a transaction's movements of a token once", async () => {
+      const register = await viem.deployContract("RecordKeeperRegister", [opAddr]);
+      await register.write.confirm([TX, tMMF.address, "TA-1"], { account: operator.account });
+      assert.equal(await register.read.confirmed([TX, tMMF.address]), true);
+      const [e] = await register.getEvents.RegisterConfirmed({ txHash: TX });
+      assert.equal(getAddress(e.args.token!), getAddress(tMMF.address));
+      assert.equal(e.args.ref, "TA-1");
+      await assert.rejects(register.write.confirm([TX, tMMF.address, "TA-1"], { account: operator.account })); // AlreadyConfirmed
+    });
+    it("rejects a confirmation from anyone but the record keeper", async () => {
+      const register = await viem.deployContract("RecordKeeperRegister", [opAddr]);
+      await assert.rejects(register.write.confirm([TX, tMMF.address, "x"], { account: bankA.account })); // NotRecordKeeper
     });
   });
 

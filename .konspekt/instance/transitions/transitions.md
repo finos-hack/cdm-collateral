@@ -1586,3 +1586,26 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-docprov-smedocprov | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
 | edge:e-lnk-docprov-smeregistered | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
 | edge:e-men-docprov-onchain-asset-identity | review | proposed | accepted | 2026-11-21T22:25:05Z | ni:///sha-256;IHv8NEjQCsHLKcMa-PSMVG-t6rWTYNPtky93xB1k3Ug | denisurusov |
+| node:task-dti-format-check | status | open | resolved | 2026-11-21T18:16:20Z |  | denisurusov |
+| node:task-sme-interim-decision-catalog | review |  | proposed | 2026-11-22T01:58:15Z |  |  |
+| node:task-sme-interim-decision-catalog | status |  | resolved | 2026-11-22T01:58:15Z |  |  |
+| edge:e-dec-cdmdev-interimcatalog | review |  | proposed | 2026-11-22T01:58:15Z |  |  |
+| node:task-sme-interim-decision-catalog | review | proposed | accepted | 2026-11-22T03:03:17Z |  | denisurusov |
+| edge:e-dec-cdmdev-interimcatalog | review | proposed | accepted | 2026-11-22T03:03:17Z |  | denisurusov |
+| node:task-authoritative-record-settlement-enforcement | status | open | resolved | 2026-11-22T03:03:17Z |  | denisurusov |
+
+| node:task-authoritative-record-other-flows | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-authoritative-record-other-flows | status |  | open | 2026-11-22T03:05:00Z |  |  |
+| edge:e-dec-tokcoll-authrecordflows | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-substitution-ledger-anchors | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-substitution-ledger-anchors | status |  | open | 2026-11-22T03:05:00Z |  |  |
+| edge:e-dec-tokcoll-subanchors | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-console-record-keeper-completion | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-console-record-keeper-completion | status |  | open | 2026-11-22T03:05:00Z |  |  |
+| edge:e-dec-tokcoll-consolerk | review |  | proposed | 2026-11-22T03:05:00Z |  |  |
+| node:task-authoritative-record-other-flows | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| node:task-substitution-ledger-anchors | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| node:task-console-record-keeper-completion | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-dec-tokcoll-authrecordflows | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-dec-tokcoll-subanchors | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |
+| edge:e-dec-tokcoll-consolerk | review | proposed | accepted | 2026-11-22T03:15:57Z |  | denisurusov |

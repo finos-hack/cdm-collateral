@@ -144,6 +144,8 @@ public final class App {
         app.post("/api/v1/calls/{id}/transfer", this::transfer);
         app.post("/api/v1/calls/{id}/return", this::returnCollateral);
         app.post("/api/v1/calls/{id}/enforce", this::enforce);
+        app.get("/api/v1/calls/{id}/enforcement", ctx -> ctx.json(enforcementStateFor(ctx.pathParam("id"))));
+        app.get("/api/v1/register/breaks", this::registerBreaks);
         app.post("/api/v1/calls/{id}/withdraw", this::withdrawCall);
         app.post("/api/v1/calls/{id}/cancellation", this::requestCancellation);
         app.post("/api/v1/calls/{id}/cancellation/decision", this::decideCancellation);
@@ -290,7 +292,9 @@ public final class App {
                 String event = e.get("event").asText();
                 String callId = e.hasNonNull("callId") ? e.get("callId").asText() : null;
                 String party = e.hasNonNull("party") ? e.get("party").asText() : null;
-                if (event.equals("ClosedOut")) {
+                if (event.equals("RegisterConfirmed")) {
+                    signalConsoles(data); // a step or enforcement may now be complete (task-authoritative-record-settlement-enforcement)
+                } else if (event.equals("ClosedOut")) {
                     onClosedOut(e, party, block, logIndex, data);
                 } else if (event.equals("Reclaimed")) {
                     String id = e.get("reclaimId").asText();
@@ -2329,7 +2333,10 @@ public final class App {
             Map<String, Integer> h = new LinkedHashMap<>();
             cfg.registry.get("tokens").fieldNames().forEachRemaining(sym -> {
                 JsonNode t = cfg.registry.get("tokens").get(sym);
-                if (t.path("csa").asBoolean(true)) h.put(cfg.isin(sym), t.get("haircutBps").asInt());
+                // REG-3 (task-authoritative-record-settlement-enforcement): a Registered or Claim token without a
+                // control agreement with its record keeper is not eligible (EligibleUnderControl).
+                if (t.path("csa").asBoolean(true) && CdmRecordKeeper.eligible(CdmRecordKeeper.tokens(cfg.registry).get(sym)))
+                    h.put(cfg.isin(sym), t.get("haircutBps").asInt());
             });
             return CdmAgreement.baselineTerms(cfg.bankName(partyIdOf(ps[1])), cfg.bankName(partyIdOf(ps[0])), h);
         });
@@ -4753,7 +4760,8 @@ public final class App {
             tokens.add(new LinkedHashMap<>(Map.of(
                     "symbol", sym, "address", t.get("address").asText(),
                     "isin", t.get("isin").asText(), "cusip", t.get("cusip").asText(),
-                    "dti", t.get("dti").asText(), "haircutBps", haircutBps(legParam(null), sym))));
+                    "dti", t.get("dti").asText(), "haircutBps", haircutBps(legParam(null), sym),
+                    "authoritativeRecord", t.path("authoritativeRecord").asText("Bearer"))));
         });
         ctx.json(new LinkedHashMap<>(Map.of(
                 "party", cfg.partyId, "role", cfg.role, "node", cfg.node, "address", cfg.myAddress,
@@ -4965,7 +4973,7 @@ public final class App {
             sig.append(s.get("cdmHash").asText()).append(';');
         }
         FoldCache cached = foldCache.get(callId);
-        if (cached != null && cached.sig().equals(sig.toString())) return cached.result();
+        if (cached != null && cached.sig().equals(sig.toString())) return withRecordKeeper(new LinkedHashMap<>(cached.result()), steps);
 
         // Fetch and verify the contiguous prefix of documents available to this party, then fold it.
         List<String> docs = new ArrayList<>();
@@ -5009,7 +5017,91 @@ public final class App {
         }
         result.put("converged", converged);
         if (converged) foldCache.put(callId, new FoldCache(sig.toString(), result)); // cache only once fully folded
+        return withRecordKeeper(new LinkedHashMap<>(result), steps);
+    }
+
+    /** The record keeper's confirmations on the chain, or an empty list for a deployment without a RecordKeeperRegister. */
+    private JsonNode registerConfirmations() {
+        try {
+            return gw.get("/register/confirmations");
+        } catch (RuntimeException e) {
+            return Config.MAPPER.createArrayNode();
+        }
+    }
+
+    /**
+     * Completion by authoritative record of the folded steps (task-authoritative-record-settlement-enforcement): read
+     * fresh on every call, outside the fold cache, because the record keeper confirms after the step is mined. A step
+     * that moved a Registered or Claim token is complete only once the record keeper confirms it (REG-1, REG-2).
+     */
+    private Map<String, Object> withRecordKeeper(Map<String, Object> result, JsonNode steps) {
+        Object anchors = result.get("anchors");
+        if (!(anchors instanceof List<?> list)) return result;
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> statuses = (List<Map<String, Object>>) list;
+        try {
+            Map<String, Object> rk = CdmRecordKeeper.steps(cfg.registry, steps, ((Number) result.get("foldedSteps")).intValue(), statuses, registerConfirmations());
+            result.put("recordKeeper", rk.get("records"));
+            result.put("settlementComplete", rk.get("complete"));
+        } catch (RuntimeException e) {
+            result.put("settlementComplete", false);
+            result.put("recordKeeperError", String.valueOf(e.getMessage()));
+        }
         return result;
+    }
+
+    /**
+     * The completion of a call's enforcement (REG-4): the CDM CollateralEnforcement record the Enforced event names,
+     * checked against its hash, its Enforcement LedgerAnchor and, for a Registered or Claim token, the record keeper's
+     * confirmation. Both parties read the same chain events and the same document, so both reach the same result.
+     */
+    private Map<String, Object> enforcementStateFor(String callId) {
+        JsonNode steps = gw.get("/calls/" + callId + "/enforcement");
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("callId", callId);
+        if (steps.isEmpty()) {
+            out.put("enforced", false);
+            out.put("complete", false);
+            return out;
+        }
+        String hash = steps.get(0).get("cdmHash").asText();
+        String doc = payloads.get(hash);
+        out.put("enforced", true);
+        out.put("cdmHash", hash);
+        if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) {
+            out.put("documentVerified", false);
+            out.put("complete", false);
+            return out;
+        }
+        var e = CdmEnforcement.verify(doc);
+        out.put("documentVerified", true);
+        out.put("eventQualifier", e.getEventQualifier());
+        out.putAll(CdmRecordKeeper.enforcement(cfg.registry, steps, e.getEventIdentifier(), hash, registerConfirmations()));
+        return out;
+    }
+
+    /**
+     * REG-5: each Registered or Claim token's register, as the record keeper (the oracle service's transfer agent) reports
+     * it, against the units each holder holds on the ledger. The record keeper's record prevails; a break means a
+     * movement the register does not show yet, or the reverse.
+     */
+    private void registerBreaks(Context ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (JsonNode t : gw.get("/register/tokens")) {
+            String sym = t.get("symbol").asText();
+            String token = t.get("token").asText();
+            JsonNode reg = oracle.get("/register/" + sym);
+            Map<String, String> register = new java.util.TreeMap<>();
+            reg.path("holdings").fields().forEachRemaining(f -> register.put(f.getKey().toLowerCase(), f.getValue().asText()));
+            // The holders to check on the ledger: everyone the register names, the parties and the escrow contract.
+            java.util.Set<String> holders = new java.util.TreeSet<>(register.keySet());
+            cfg.registry.get("parties").forEach(a -> holders.add(a.asText().toLowerCase()));
+            holders.add(cfg.registry.get("contracts").get("collateralControl").asText().toLowerCase());
+            Map<String, String> onLedger = new java.util.TreeMap<>();
+            for (String h : holders) onLedger.put(h, gw.getQuery("/balance", Map.of("token", token, "owner", h)).asText());
+            out.add(CdmRecordKeeper.breaks(sym, register, onLedger));
+        }
+        ctx.json(Map.of("tokens", out, "reconciled", out.stream().allMatch(m -> Boolean.TRUE.equals(m.get("reconciled")))));
     }
 
     /** The validated CDM state of a call, folded from every step document (throws if one is not readable yet). */
@@ -5542,9 +5634,30 @@ public final class App {
             throw new RuntimeException("only the secured party that issued the call (" + c.get("from").asText() + ") may enforce");
         String pledgor = c.get("to").asText();
         JsonNode notice = oracle.post("/defaults", Map.of("party", pledgor, "inDefault", true, "notifiedBy", cfg.bankName(cfg.partyId)));
-        JsonNode enforced = gw.post("/calls/" + callId + "/enforce", Map.of());
-        ctx.json(new LinkedHashMap<>(Map.of("ok", true, "pledgor", pledgor,
-                "defaultTx", notice.path("tx").path("txHash").asText(), "enforceTx", enforced.path("txHash").asText())));
+        // The CDM CollateralEnforcement of the escrow taken (G14), stored and shared before the chain records its hash,
+        // so both parties can check it and build its Enforcement LedgerAnchor (task-authoritative-record-settlement-enforcement).
+        String[] leg = {pledgor, cfg.myAddress};
+        Map<String, BigInteger> prices = feedPrices();
+        List<Map<String, Object>> positions = new ArrayList<>();
+        BigInteger value = BigInteger.ZERO;
+        for (Iterator<String> it = cfg.registry.get("tokens").fieldNames(); it.hasNext(); ) {
+            String sym = it.next();
+            String token = cfg.tokenAddress(sym);
+            BigInteger qty = new BigInteger(gw.getQuery("/pledged", Map.of("token", token, "pledgor", pledgor, "securedParty", cfg.myAddress)).asText());
+            if (qty.signum() == 0) continue;
+            positions.add(Map.of("isin", cfg.isin(sym), "units", qty.longValueExact()));
+            value = value.add(valueAfterHaircut(qty, prices.getOrDefault(token.toLowerCase(), BigInteger.ZERO), haircutBps(leg, sym)));
+        }
+        if (positions.isEmpty()) throw new RuntimeException("nothing is pledged by " + pledgor + " to enforce against");
+        CdmEnforcement en = CdmEnforcement.build(callId, cfg.bankName(partyIdOf(pledgor)), myBank(), positions, value.divide(cfg.priceScale).longValueExact());
+        store.recordDocument(callId, "CollateralEnforcement", "out", en.hash, en.json);
+        payloads.put(en.hash, en.json, callParties);
+        JsonNode enforced = gw.post("/calls/" + callId + "/enforce", Map.of("cdmHash", en.hash));
+        Map<String, Object> out = new LinkedHashMap<>(Map.of("ok", true, "pledgor", pledgor,
+                "defaultTx", notice.path("tx").path("txHash").asText(), "enforceTx", enforced.path("txHash").asText()));
+        out.put("cdmHash", en.hash);
+        out.put("eventQualifier", en.enforcement.getEventQualifier());
+        ctx.json(out);
     }
 
     // ---- GMRA default close-out (task-repo-default-close-out, wp-adr-repo-default-close-out) ----

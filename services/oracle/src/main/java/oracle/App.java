@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
  *   <li>Prices (flow-oracle-update): mock market data per token (oracle-to-market-data, transition 1), published on
  *       request (transitions 2-3). An operator's price edit publishes the new price at once. Ratings are mock values
  *       and stay off-chain; OracleFeed has no rating field.</li>
+ *   <li>Record keeper ({@link TransferAgent}, task-authoritative-record-settlement-enforcement): the transfer agent of
+ *       the Registered and Claim tokens keeps their register and confirms each ledger transaction that moves them.</li>
  * </ul>
  *
  * Environment: PORT (default 8100), GATEWAY_URL — the operator's gateway (default http://localhost:8200).
@@ -29,10 +31,12 @@ public final class App {
 
     private final OperatorGateway gateway;
     private final MarketData market;
+    private final TransferAgent transferAgent;
 
     public App(OperatorGateway gateway) {
         this.gateway = gateway;
         this.market = new MarketData(gateway);
+        this.transferAgent = new TransferAgent(gateway);
     }
 
     public static void main(String[] args) {
@@ -42,7 +46,9 @@ public final class App {
         System.setProperty("jdk.httpclient.keepalive.timeout", "3");
         int port = Integer.parseInt(env("PORT", "8100"));
         String gatewayUrl = env("GATEWAY_URL", "http://localhost:8200");
-        new App(new OperatorGateway(gatewayUrl)).create().start(port);
+        App oracle = new App(new OperatorGateway(gatewayUrl));
+        oracle.create().start(port);
+        oracle.transferAgent.start(Long.parseLong(env("TRANSFER_AGENT_PERIOD_MS", "1000")));
         System.out.printf("oracle service on http://localhost:%d/oracle/v1 -> operator gateway %s%n", port, gatewayUrl);
     }
 
@@ -64,6 +70,13 @@ public final class App {
         app.get("/oracle/v1/market-data", this::marketData);
         app.put("/oracle/v1/market-data/{symbol}", this::editMarketData);
         app.post("/oracle/v1/prices/publish", this::publishPrices);
+        app.get("/oracle/v1/register", ctx -> ctx.json(Map.of("tokens", transferAgent.symbols(), "paused", transferAgent.paused())));
+        app.get("/oracle/v1/register/{symbol}", ctx -> ctx.json(transferAgent.holdings(ctx.pathParam("symbol"))));
+        // A paused transfer agent confirms nothing: the live spec uses it to show a step waiting for the record keeper.
+        app.put("/oracle/v1/register/paused", ctx -> {
+            transferAgent.setPaused(Boolean.parseBoolean(String.valueOf(ctx.bodyAsClass(Map.class).get("paused"))));
+            ctx.json(Map.of("paused", transferAgent.paused()));
+        });
         return app;
     }
 

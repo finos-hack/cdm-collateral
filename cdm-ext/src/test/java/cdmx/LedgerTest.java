@@ -16,6 +16,11 @@ import cdmx.collateral.ledger.functions.Create_LedgerAnchor;
 import cdmx.collateral.ledger.functions.MarginCallStepAnchorStatus;
 import cdmx.collateral.ledger.functions.TokenForAsset;
 import cdmx.collateral.ledger.functions.TransferComplete;
+import cdmx.collateral.ledger.functions.EligibleUnderControl;
+import cdmx.collateral.ledger.functions.RegisterBreaks;
+import cdmx.collateral.reconciliation.LedgerBreak;
+import cdmx.collateral.reconciliation.LedgerBreakTypeEnum;
+import cdmx.collateral.reconciliation.LedgerFact;
 import cdmx.collateral.margincall.MarginCallInstruction;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.util.encoders.Hex;
@@ -129,6 +134,27 @@ class LedgerTest {
         Map<String, Object> doc = tokenDoc("XS0000TMMF01", TMMF, "Registered");
         doc.remove("recordKeeper");
         assertTrue(failedText(load(TokenizedAsset.class, doc)).contains("RecordKeeperOffLedger"));
+    }
+
+    /** task-dti-format-check: published DTIs pass (Ether X9J9K872S, the EIB bond WGHBLG826, from the DTIF FAQ). */
+    @Test
+    void aWellFormedDtiPasses() {
+        for (String dti : List.of("X9J9K872S", "WGHBLG826")) {
+            Map<String, Object> doc = tokenDoc("XS0000TUST01", TUST, "Bearer");
+            doc.put("dti", dti);
+            assertEquals("", failedText(load(TokenizedAsset.class, doc)), dti);
+        }
+    }
+
+    /** Wrong length, a vowel or Y in the base number, a leading zero, lower case, a symbol: each is rejected. */
+    @Test
+    void aMalformedDtiIsRejectedWithItsReason() {
+        for (String dti : List.of("X9J9K872", "X9J9K872SS", "QUSD00000", "QAGY00000", "0X9J9K87S", "x9j9k872s", "X9J9K87-S")) {
+            Map<String, Object> doc = tokenDoc("XS0000TUST01", TUST, "Bearer");
+            doc.put("dti", dti);
+            String failed = failedText(load(TokenizedAsset.class, doc));
+            assertTrue(failed.contains("dti") && failed.contains(dti), dti + " -> " + failed);
+        }
     }
 
     @Test
@@ -256,5 +282,41 @@ class LedgerTest {
     void anAnchorSurvivesARuneJsonRoundTrip() throws Exception {
         LedgerAnchor a = anchor(delivered(), "Final");
         assertEquals(a, JSON.readValue(toJson(a), LedgerAnchor.class));
+    }
+
+    // Interim rules of task-sme-registered-asset-completion (project owner, 2026-11-21)
+
+    /** REG-3: a Registered or Claim token is eligible only with a control agreement; a Bearer token always. */
+    @Test
+    void aRegisteredTokenIsEligibleOnlyUnderAControlAgreement() {
+        EligibleUnderControl eligible = fn(EligibleUnderControl.class);
+        assertTrue(eligible.evaluate(tokens().get(0)));
+        assertFalse(eligible.evaluate(tokens().get(1)));
+        Map<String, Object> doc = tokenDoc("XS0000TMMF01", TMMF, "Registered");
+        doc.put("controlAgreement", "CA-TMMF-1");
+        assertTrue(eligible.evaluate(load(TokenizedAsset.class, doc)));
+        Map<String, Object> claim = tokenDoc("XS0000TMMF01", TMMF, "Claim");
+        assertFalse(eligible.evaluate(load(TokenizedAsset.class, claim)));
+    }
+
+    private static LedgerFact fact(String record, String value) {
+        return LedgerFact.builder().setRecordIdentifier(record).setAttribute("units").setFactValue(value).build();
+    }
+
+    /** REG-5: the register and the ledger agree, or each disagreement is a break typed from the register's side. */
+    @Test
+    void theRegisterAndTheLedgerAreComparedHolderByHolder() {
+        RegisterBreaks breaks = fn(RegisterBreaks.class);
+        List<LedgerFact> register = List.of(fact("register/tMMF/bank-a", "100"), fact("register/tMMF/escrow", "50"));
+        assertTrue(breaks.evaluate(register, register).isEmpty());
+        List<LedgerFact> chain = List.of(fact("register/tMMF/bank-a", "60"), fact("register/tMMF/escrow", "50"), fact("register/tMMF/bank-b", "40"));
+        List<? extends LedgerBreak> found = breaks.evaluate(register, chain);
+        assertEquals(2, found.size());
+        LedgerBreak a = found.stream().filter(b -> b.getRecordIdentifier().endsWith("bank-a")).findFirst().orElseThrow();
+        assertEquals(LedgerBreakTypeEnum.VALUE_DIFFERS, a.getBreakType());
+        assertEquals("100", a.getRecordedValue());
+        assertEquals("60", a.getLedgerValue());
+        LedgerBreak b = found.stream().filter(x -> x.getRecordIdentifier().endsWith("bank-b")).findFirst().orElseThrow();
+        assertEquals(LedgerBreakTypeEnum.MISSING_FROM_RECORDS, b.getBreakType());
     }
 }

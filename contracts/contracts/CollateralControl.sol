@@ -52,7 +52,9 @@ contract CollateralControl is ReentrancyGuard {
     event Pledged(bytes32 indexed callId, address indexed pledgor, address indexed securedParty, uint256 value);
     event Transferred(bytes32 indexed callId, address indexed from, address indexed to, uint256 value);
     event Returned(bytes32 indexed callId, address indexed securedParty, address indexed pledgor);
-    event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor);
+    /// cdmHash: keccak-256 of the CDM CollateralEnforcement record (cdm-ext Create_CollateralEnforcement), so a LedgerAnchor
+    /// of kind Enforcement can be built for it (task-authoritative-record-settlement-enforcement).
+    event Enforced(bytes32 indexed callId, address indexed securedParty, address indexed pledgor, bytes32 cdmHash);
     event Reclaimed(bytes32 indexed reclaimId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash);
     event ClosedOut(bytes32 indexed closeOutId, address indexed securedParty, address indexed pledgor, uint256 owed, uint256 applied, bytes32 cdmHash);
     event SubstitutionRequested(bytes32 indexed substitutionId, address indexed pledgor, address indexed securedParty, bytes32 cdmHash);
@@ -320,7 +322,8 @@ contract CollateralControl is ReentrancyGuard {
     }
 
     /// @notice Seize all pledged collateral after the oracle feed records the pledgor's default (secured party's key).
-    function enforce(bytes32 callId) external nonReentrant {
+    /// cdmHash is the hash of the CDM CollateralEnforcement record the secured party's service built and stored.
+    function enforce(bytes32 callId, bytes32 cdmHash) external nonReentrant {
         Call memory c = marginCall.getCall(callId);
         if (c.kind != CallKind.IM) revert WrongKind();
         if (msg.sender != c.from) revert WrongParty();
@@ -338,7 +341,7 @@ contract CollateralControl is ReentrancyGuard {
             IERC20(tokens[i]).transfer(securedParty, held);
         }
         if (moved == 0) revert NothingPledged();
-        emit Enforced(callId, securedParty, pledgor);
+        emit Enforced(callId, securedParty, pledgor, cdmHash);
     }
 
     /// @notice Close out the netting set after the pledgor's default (ISDA 2002 MA Section 6(e); cdm-ext CloseOutNetting,

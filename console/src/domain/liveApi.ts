@@ -28,7 +28,7 @@ export interface LiveContext {
   counterparty: LiveParty;
   counterpartyAddress: string;
   priceScale: string;
-  tokens: { symbol: string; address: string; isin: string; cusip: string; dti: string; haircutBps: number }[];
+  tokens: { symbol: string; address: string; isin: string; cusip: string; dti: string; haircutBps: number; authoritativeRecord?: "Bearer" | "Registered" | "Claim" }[];
   agreement: string;
   /** Both legs of the initial margin (wp-adr-two-way-im): this party pledges on the first, secures the second. */
   legs?: { pledgor: LiveParty; securedParty: LiveParty }[];

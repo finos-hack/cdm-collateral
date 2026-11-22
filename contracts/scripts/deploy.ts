@@ -37,10 +37,12 @@ const RPC: Record<string, string> = {
 // price in USD, haircut in basis points; mirrors reference.ts.
 const TOKENS = [
   { sym: "tUST", name: "Tokenized US Treasury 4.25% 2034", isin: "US912810TM60", cusip: "912810TM6", dti: "QX4V2W9N3", price: 984n * SCALE / 10n, haircutBps: 200 },
-  { sym: "tMMF", name: "Tokenized USD government MMF", isin: "US9128100000", cusip: "912810000", dti: "QZ0000000", price: 1n * SCALE, haircutBps: 400 },
-  { sym: "tUSD", name: "USD deposit token", isin: "US0000000USD", cusip: "000000USD", dti: "QUSD00000", price: 1n * SCALE, haircutBps: 0 },
+  // tMMF mirrors the fund's share register, kept by its transfer agent (the mkt key, in the oracle service), under a
+  // control agreement with the transfer agent (interim rules REG-1 to REG-5, task-sme-registered-asset-completion).
+  { sym: "tMMF", name: "Tokenized USD government MMF", isin: "US9128100000", cusip: "912810000", dti: "QZ0000000", price: 1n * SCALE, haircutBps: 400, authoritativeRecord: "Registered", recordKeeper: "MMF Transfer Agent", controlAgreement: "CA-TMMF-2026-01" },
+  { sym: "tUSD", name: "USD deposit token", isin: "US0000000USD", cusip: "000000USD", dti: "QSD000000", price: 1n * SCALE, haircutBps: 0 },
   // Loan collateral only (wp-adr-gmsla-substitution): the substitute for tUST under the GMSLA; not CSA-eligible.
-  { sym: "tAGY", name: "Tokenized US agency bond 4.50% 2031", isin: "US3137EAGY10", cusip: "3137EAGY1", dti: "QAGY00000", price: 992n * SCALE / 10n, haircutBps: 300, csa: false },
+  { sym: "tAGY", name: "Tokenized US agency bond 4.50% 2031", isin: "US3137EAGY10", cusip: "3137EAGY1", dti: "QGNC00000", price: 992n * SCALE / 10n, haircutBps: 300, csa: false },
 ];
 
 // Opening balances (whole units) — union of the IM and VM starting positions in scenarios.ts.
@@ -115,7 +117,7 @@ async function main() {
 
   // Deploy with an explicit nonce; the address follows from the deployer and the nonce, so no lookup of the transaction
   // is needed before the receipt.
-  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan" | "TripartySettlement" | "CcpClearing">(name: N, args: readonly unknown[]) {
+  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan" | "TripartySettlement" | "CcpClearing" | "RecordKeeperRegister">(name: N, args: readonly unknown[]) {
     const { abi, bytecode } = await hre.artifacts.readArtifact(name);
     let address: `0x${string}` | undefined;
     await send(`deploy ${name}`, (nonce) => {
@@ -145,9 +147,12 @@ async function main() {
   // Clearing (task-ccp-clearing): CcpClearing novates repos on RepoSettlement, which accepts novate only from it.
   const ccpClearing = await deploy("CcpClearing", [repoSettlement.address, oracle.address]);
   console.log("CcpClearing          ", ccpClearing.address);
+  // The record keeper of Registered and Claim tokens confirms its register here (the mkt key, task-authoritative-record-settlement-enforcement).
+  const recordKeeperRegister = await deploy("RecordKeeperRegister", [parties.mkt]);
+  console.log("RecordKeeperRegister ", recordKeeperRegister.address);
   await send("RepoSettlement.setClearingHouse", (nonce) => repoSettlement.write.setClearingHouse([ccpClearing.address], { nonce }));
 
-  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean }> = {};
+  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean; authoritativeRecord: string; recordKeeper?: string; controlAgreement?: string }> = {};
   for (const t of TOKENS) {
     const token = await deploy("TokenizedCollateral", [t.name, t.sym, t.isin, t.cusip, t.dti]);
     console.log(`  ${t.sym.padEnd(6)}           `, token.address);
@@ -156,9 +161,16 @@ async function main() {
       const to = parties[node as keyof typeof parties];
       if (amount > 0n) await send(`${t.sym}.mint ${node}`, (nonce) => token.write.mint([to, amount], { nonce }));
     }
-    if (t.csa !== false) await send(`setEligibility ${t.sym}`, (nonce) => control.write.setEligibility([token.address, true, t.haircutBps], { nonce }));
+    // REG-3: a Registered or Claim token is eligible only under a control agreement with its record keeper.
+    const record = (t as { authoritativeRecord?: string }).authoritativeRecord ?? "Bearer";
+    const controlled = record === "Bearer" || !!(t as { controlAgreement?: string }).controlAgreement;
+    const csa = t.csa !== false && controlled;
+    if (csa) await send(`setEligibility ${t.sym}`, (nonce) => control.write.setEligibility([token.address, true, t.haircutBps], { nonce }));
     await send(`publishPrice ${t.sym}`, (nonce) => oracle.write.publishPrice([token.address, t.price], { account: deployer.account, nonce }));
-    tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti, csa: t.csa !== false };
+    tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti, csa,
+      authoritativeRecord: record,
+      ...((t as { recordKeeper?: string }).recordKeeper ? { recordKeeper: (t as { recordKeeper?: string }).recordKeeper } : {}),
+      ...((t as { controlAgreement?: string }).controlAgreement ? { controlAgreement: (t as { controlAgreement?: string }).controlAgreement } : {}) };
   }
 
   const registry = {
@@ -178,6 +190,7 @@ async function main() {
       securitiesLoan: securitiesLoan.address,
       tripartySettlement: tripartySettlement.address,
       ccpClearing: ccpClearing.address,
+      recordKeeperRegister: recordKeeperRegister.address,
     },
     priceScale: SCALE.toString(),
     tokens: tokenRegistry,
