@@ -1813,3 +1813,15 @@ excluded.
 | task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/main/java/collateral/CdmRecordKeeper.java | 2026-11-22T16:22:27Z |
 | task-authoritative-record-other-flows | 9c15510d3708f679f9510c01c730c20cbab80a0a | services/collateral/src/test/java/collateral/CdmRecordKeeperTest.java | 2026-11-22T16:22:27Z |
 | task-authoritative-record-other-flows | e3426dc72e15b134e4085994500ac9e3602b62b4 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:22:27Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | docs/analysis/gap-register.md | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | docs/gap-register.html | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/java/collateral/ProvRecords.java | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/java/collateral/ProvenanceCheck.java | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/appraisal.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/international-interest.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/issuance-record.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/lender-consent.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/registration.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/spv-constitution.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/token-terms.json | 2026-11-22T16:51:47Z |
+| task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/test/java/collateral/ProvenanceAircraftTest.java | 2026-11-22T16:51:47Z |
