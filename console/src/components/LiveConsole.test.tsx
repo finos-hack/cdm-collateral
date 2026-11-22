@@ -1135,3 +1135,74 @@ describe("flow-repo-default-close-out", () => {
     await waitFor(() => expect(posts).toEqual([{ path: "/repo-default/close-outs/0xc0ffee0000/pay", body: {} }]));
   });
 });
+
+// task-console-record-keeper-completion: a call that moved a Registered or Claim token shows whether the record keeper
+// confirmed, and the console shows each such token's register against the ledger (REG-1 to REG-5).
+describe("completion by the record keeper", () => {
+  const tokens = [
+    { symbol: "tUST", address: "0x1", isin: "", cusip: "", dti: "", haircutBps: 200, authoritativeRecord: "Bearer" },
+    { symbol: "tMMF", address: "0x2", isin: "", cusip: "", dti: "", haircutBps: 400, authoritativeRecord: "Registered" },
+  ];
+  const ctx = (party: LiveParty) => ({ ...CONTEXT[party], priceScale: "100000000", tokens, agreement: "IM CSA" });
+  const mmfCall = (over: Partial<LiveCall> = {}) =>
+    call({ state: "settled", proposals: [{ proposalId: 1, state: "accepted", assets: [{ token: "tMMF", qty: "60000" }] }], ...over });
+  const id = call({}).callId;
+  const mmfToken = (complete: boolean) => ({ symbol: "tMMF", authoritativeRecord: "Registered", recordKeeper: "MMF Transfer Agent", confirmed: complete, complete });
+  const fold = (complete: boolean) => ({ settlementComplete: complete, recordKeeper: [{ identifier: "S-5", complete, tokens: [mmfToken(complete)] }] });
+  const registerOf = (reconciled: boolean) => ({
+    reconciled,
+    tokens: [{
+      symbol: "tMMF", reconciled, checkedFacts: 6,
+      breaks: reconciled ? [] : [{ record: "register/tMMF/0xabcdef0123456789", breakType: "ValueDiffers", registerValue: "0", ledgerValue: "60000" }],
+    }],
+  });
+
+  it("a settled tMMF pledge the transfer agent has not confirmed reads as not complete, with the register break", async () => {
+    serve("A", { calls: [mmfCall()], balances: balances("0") }, NO_SHORTFALL, {
+      "/context": ctx("A"), [`/calls/${id}/cdm-state`]: fold(false), "/register/breaks": registerOf(false),
+    });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(within(row).getByText("settled on-chain ✓")).toBeInTheDocument();
+    expect(await within(row).findByText("tMMF awaiting MMF Transfer Agent confirmation, not complete")).toBeInTheDocument();
+    const reg = await screen.findByTestId("register-tMMF");
+    expect(within(reg).getByText("1 register break")).toBeInTheDocument();
+    expect(within(reg).getByText("ValueDiffers")).toBeInTheDocument();
+  });
+
+  it("once the transfer agent confirms, the pledge reads as confirmed and the register matches the ledger", async () => {
+    serve("B", { calls: [mmfCall()], balances: balances("0") }, NO_SHORTFALL, {
+      "/context": ctx("B"), [`/calls/${id}/cdm-state`]: fold(true), "/register/breaks": registerOf(true),
+    });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(await within(row).findByText("tMMF confirmed by MMF Transfer Agent ✓")).toBeInTheDocument();
+    expect(within(await screen.findByTestId("register-tMMF")).getByText("register matches the ledger ✓")).toBeInTheDocument();
+  });
+
+  it("an enforcement of tMMF waits on the transfer agent", async () => {
+    serve("B", { calls: [mmfCall({ enforced: true, events: ["Enforced"] })], balances: balances("0") }, NO_SHORTFALL, {
+      "/context": ctx("B"), [`/calls/${id}/cdm-state`]: fold(true), "/register/breaks": registerOf(false),
+      [`/calls/${id}/enforcement`]: { callId: id, enforced: true, documentVerified: true, anchorStatus: "Complete", identifier: "E-1", complete: false, tokens: [mmfToken(false)] },
+    });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    expect(await within(row).findByText("enforcement: tMMF awaiting MMF Transfer Agent confirmation, not complete")).toBeInTheDocument();
+    expect(within(row).getByText("tMMF confirmed by MMF Transfer Agent ✓")).toBeInTheDocument();
+  });
+
+  it("a tUST pledge names no record keeper and the console reads no completion", async () => {
+    serve("A", { calls: [call({ state: "settled", proposals: [{ proposalId: 1, state: "accepted", assets: [{ token: "tUST", qty: "60000" }] }] })], balances: balances("0") }, NO_SHORTFALL, {
+      "/context": ctx("A"), "/register/breaks": registerOf(true),
+    });
+    const row = (await screen.findByText(/IM · B → A/)).closest(".subcard") as HTMLElement;
+    await screen.findByTestId("register-tMMF");
+    expect(within(row).queryByTestId("record-keeper")).toBeNull();
+    const reads = (fetch as unknown as { mock: { calls: [string][] } }).mock.calls.map(([u]) => u);
+    expect(reads.some((u) => u.includes("/cdm-state"))).toBe(false);
+  });
+
+  it("a deployment without Registered or Claim tokens shows no register card", async () => {
+    serve("A", { calls: [mmfCall()], balances: balances("0") });
+    await screen.findByText(/IM · B → A/);
+    expect(screen.queryByTestId("register-breaks")).toBeNull();
+    expect(screen.queryByTestId("record-keeper")).toBeNull();
+  });
+});

@@ -534,9 +534,50 @@ export const tripartyApi = {
     req<{ outcome: string; revaluationHash: string; revaluation: LiveTripartyRevaluationDoc; txHash: string }>(p, "POST", `/triparty/repos/${repoId}/revalue`, {}),
 };
 
+/**
+ * Completion of one record (a call step or an enforcement) by authoritative record
+ * (task-authoritative-record-settlement-enforcement, interim rules REG-1 to REG-4): for each token its transaction
+ * moved, whether TransferComplete holds. recordKeeper and confirmed are present only for a Registered or Claim token.
+ */
+export interface LiveRecordCompletion {
+  identifier: string;
+  complete: boolean;
+  tokens: { symbol: string; authoritativeRecord?: string; recordKeeper?: string; confirmed?: boolean; reference?: string; complete: boolean }[];
+}
+
+/** The completion part of a call's /cdm-state: settlementComplete covers every folded step. */
+export interface LiveCallCompletion {
+  settlementComplete?: boolean;
+  recordKeeperError?: string;
+  recordKeeper?: LiveRecordCompletion[];
+}
+
+/** A call's enforcement and its completion (REG-4, /calls/{id}/enforcement). */
+export interface LiveEnforcement extends Partial<LiveRecordCompletion> {
+  callId: string;
+  enforced: boolean;
+  documentVerified?: boolean;
+  anchorStatus?: string;
+  complete: boolean;
+}
+
+/** REG-5: each Registered or Claim token's register, as the record keeper reports it, against the ledger. */
+export interface LiveRegisterBreaks {
+  reconciled: boolean;
+  tokens: {
+    symbol: string;
+    reconciled: boolean;
+    checkedFacts: number;
+    breaks: { record: string; breakType: string; registerValue?: string; ledgerValue?: string }[];
+  }[];
+}
+
 export const api = {
   context: (p: LiveParty) => req<LiveContext>(p, "GET", "/context"),
   state: (p: LiveParty) => req<LiveState>(p, "GET", "/state"),
+  callCompletion: (p: LiveParty, callId: string) => req<LiveCallCompletion>(p, "GET", `/calls/${callId}/cdm-state`),
+  enforcement: (p: LiveParty, callId: string) => req<LiveEnforcement>(p, "GET", `/calls/${callId}/enforcement`),
+  registerBreaks: (p: LiveParty) => req<LiveRegisterBreaks>(p, "GET", "/register/breaks"),
   issueCall: (p: LiveParty, toParty: LiveParty, amountUsd: number, kind = "IM", purpose?: "top-up") =>
     req<{ callId: string }>(p, "POST", "/calls", { kind, toParty, amountUsd, deadlineDays: 1, purpose }),
   /** Calling party: issue a call that replaces a cancelled one; kind and called party are the cancelled call's. */

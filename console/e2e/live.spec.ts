@@ -443,7 +443,9 @@ type Revaluation = { requiredUsd: string; valueUsd: string; shortfallUsd: string
 // tMMF mirrors the fund's register, kept by its transfer agent (the oracle service, mkt key). Interim rules REG-1 to
 // REG-5 (project owner, 2026-11-21, task-sme-registered-asset-completion): a pledge or an enforcement of tMMF is
 // complete only once the transfer agent confirms that its register shows it, and until then the register and the
-// ledger show a break. The spec pauses the transfer agent to see the step wait, then lets it confirm.
+// ledger show a break. The spec pauses the transfer agent to see the step wait, then lets it confirm. At each wait it
+// also checks the party consoles show it (task-console-record-keeper-completion): the call row names the transfer
+// agent's confirmation, and the register card shows the break.
 type RecordKeeperFold = {
   settlementComplete?: boolean; recordKeeperError?: string; anchorHash?: string;
   recordKeeper?: { identifier: string; complete: boolean; tokens: { symbol: string; confirmed?: boolean; complete: boolean }[] }[];
@@ -453,8 +455,14 @@ type RegisterBreaksView = { reconciled: boolean; tokens: { symbol: string; recon
 
 const setTransferAgentPaused = (paused: boolean) => call(`${ORACLE}/register/paused`, "PUT", { paused });
 
-test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not complete until the transfer agent confirms its register -> B enforces -> the enforcement completes only on the transfer agent's confirmation", async () => {
+test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not complete until the transfer agent confirms its register -> B enforces -> the enforcement completes only on the transfer agent's confirmation", async ({ page }) => {
   test.setTimeout(TEST_TIMEOUT * 2);
+  const KEEPER = "MMF Transfer Agent"; // contracts/scripts/deploy.ts
+  const callRow = (callId: string) => page.locator(".subcard", { hasText: shortId(callId) });
+  const consoleShows = async (party: "A" | "B", callId: string, text: string) => {
+    await page.goto(`/#/live/${party}`);
+    await expect(callRow(callId).getByText(text, { exact: true })).toBeVisible({ timeout: STEP_TIMEOUT });
+  };
   const p = await parties();
   const aWasInDefault = (await call<{ inDefault: boolean }>(`${GATEWAY.A}/defaults/${p.a}`)).inDefault;
   // tMMF is priced at 1 USD; its haircut is 4% at deployment and up to 12% after flow-agreement-amendment.
@@ -478,6 +486,8 @@ test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not com
     }
     const open = await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`);
     expect(open.tokens.find((t) => t.symbol === "tMMF")!.reconciled).toBe(false);
+    await consoleShows("A", callId, `tMMF awaiting ${KEEPER} confirmation, not complete`);
+    await expect(page.getByTestId("register-tMMF").getByText(/^\d+ register breaks?$/)).toBeVisible({ timeout: STEP_TIMEOUT });
 
     // The transfer agent updates its register and confirms on chain: both parties now treat the pledge as complete,
     // and the register reconciles with the ledger.
@@ -487,6 +497,8 @@ test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not com
     }
     await expectConvergedCdmState(callId);
     await expect.poll(async () => (await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`)).tokens.find((t) => t.symbol === "tMMF")!.reconciled, { timeout: 60_000 }).toBe(true);
+    await consoleShows("B", callId, `tMMF confirmed by ${KEEPER} ✓`);
+    await expect(page.getByTestId("register-tMMF").getByText("register matches the ledger ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
 
     // B declares A's default and enforces. The control contract records the hash of B's CDM CollateralEnforcement;
     // with the transfer agent paused the enforcement is anchored but not complete.
@@ -497,6 +509,7 @@ test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not com
       const e = await call<EnforcementView>(`${svc}/calls/${callId}/enforcement`);
       expect(e).toMatchObject({ enforced: true, anchorStatus: "Complete", complete: false, eventQualifier: "CollateralEnforced" });
     }
+    await consoleShows("B", callId, `enforcement: tMMF awaiting ${KEEPER} confirmation, not complete`);
 
     // The transfer agent confirms the enforcement: complete on both sides, with the same anchor.
     await setTransferAgentPaused(false);
@@ -506,6 +519,7 @@ test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not com
     const ea = await call<EnforcementView>(`${SERVICE.A}/calls/${callId}/enforcement`);
     const eb = await call<EnforcementView>(`${SERVICE.B}/calls/${callId}/enforcement`);
     expect(ea.anchorHash).toBe(eb.anchorHash);
+    await consoleShows("A", callId, `enforcement: tMMF confirmed by ${KEEPER} ✓`);
     expect(await pledgedOf(GATEWAY.A, p.tokens["tMMF"], p)).toBe(0n);
     await expect.poll(async () => (await call<RegisterBreaksView>(`${SERVICE.A}/register/breaks`)).reconciled, { timeout: 60_000 }).toBe(true);
   } finally {
