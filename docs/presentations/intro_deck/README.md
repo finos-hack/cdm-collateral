@@ -14,7 +14,9 @@ Nine-slide introduction for collateral SMEs and potential partners (task `task-p
 here, then regenerate the PDF. The files are in the Claude Slides artifact format. The deck began as the artifact
 https://claude.ai/artifact/1E2ZqCEhEoCbx73LRo1SUa (copied here on 2026-11-10 from version `1794230093-92bc`); that
 artifact is no longer maintained and is out of date since the update of 2026-11-13 (`gaps`, `sme`, `besu`, `app`
-and `coverage` slides to the figures of `main` after PR #66).
+and `coverage` slides to the figures of `main` after PR #66). On 2026-11-22 the `gaps`, `sme`, `besu` and `coverage` slides were updated to the figures of
+release `v0.2-demo` (`main` after PR #92; `task-v02-demo-release-summary`), and the bar at the bottom of `docs/index.html`
+links the release summary [`docs/releases/v0.2-demo.md`](../../releases/v0.2-demo.md).
 
 ## The web page: `docs/index.html`
 
@@ -27,7 +29,7 @@ node docs/presentations/intro_deck/build_site.mjs
 ```
 
 In the page, the arrow keys, Space, Page Up and Page Down move between slides, and N shows the speaker notes. The bar
-at the bottom links the gap register, the SME questions and the PDF. Links in the slides are relative to `docs/`.
+at the bottom links the release summary, the gap register, the SME questions and the PDF. Links in the slides are relative to `docs/`.
 
 ## Regenerating the PDF
 

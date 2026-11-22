@@ -44,6 +44,7 @@ Other documents:
 - History and presentation: [`docs/presentations/project-narrative.md`](docs/presentations/project-narrative.md) (14
   October to 4 November 2026) and the SME introduction deck: [`docs/index.html`](docs/index.html) (generated from
   [`docs/presentations/intro_deck/`](docs/presentations/intro_deck/), with the PDF there).
+- Releases: [`docs/releases/v0.2-demo.md`](docs/releases/v0.2-demo.md), the changes since tag `v0.1-demo`.
 - Decisions (ADRs `wp-adr-*`), tasks and the change log are konspekt records in
   [`.konspekt/instance/`](.konspekt/instance/).
 
@@ -83,8 +84,8 @@ one section per `task-sme-*` task, none answered yet. The same questions as a pa
 ## 4. Flows built
 
 All 47 workflows of the [workflow map](docs/analysis/cdm-workflow-task-map.md) are built and pass their live spec in
-[`console/e2e/live.spec.ts`](console/e2e/live.spec.ts) (53 specs; last full run 2026-11-13 on a reset chain). Each
-row lists its CDM status, the `cdm-ext` work, the prototype flow and the PR.
+[`console/e2e/live.spec.ts`](console/e2e/live.spec.ts) (57 specs; last full local run 2026-11-22 on a reset chain, 57
+passed, PR #89). Each row lists its CDM status, the `cdm-ext` work, the prototype flow and the PR.
 
 | Agreement family | Map rows | Workflows | PRs |
 |---|---|---|---|
@@ -94,6 +95,7 @@ row lists its CDM status, the `cdm-ext` work, the prototype flow and the PR.
 | Securities lending (GMSLA) | C12 to C19 | Terms and amendment; loan delivery and return; marking to market; recall; substitution; rebate; lending fee; default and close-out | #59 to #65 |
 | Triparty (GMRA repo, agent BANK-T) | C20 to C25 | Terms and collateral profile; trade start with the agent's allocation; daily revaluation; substitution; trade end; the agent's report | #65 |
 | CCP (GMRA repo, BANK-C) | C26 to C30 | Membership, rulebook and default fund; clearing by novation; daily VM and IM; member default and waterfall; porting | #66 |
+| Tokenized collateral (`goal-tokenized-collateral`), across the rows above | A2, A3, A6, B2, C2, C6, C13, C16, C20, C21, C23, C27 | Completion of a Registered or Claim token (tMMF) by the record keeper's confirmation; ledger anchors for substitutions and repo, loan and triparty movements; document provenance and the provenance gate at the step where the receiving party takes the collateral. Live specs `flow-registered-collateral`, `flow-registered-collateral-gmsla`, `flow-registered-collateral-triparty`, `flow-provenance` | #75, #80 to #90 |
 
 ## 5. Running the prototype
 

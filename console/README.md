@@ -22,6 +22,18 @@ Routes: `#/` scenario grid; `#/s/<scenario>/guided` and `#/s/<scenario>/free`.
   proposal is accepted, enforcement without a default on the oracle feed, a call below the minimum transfer amount,
   releasing more than the return amount) show the contract's reason in that party's console.
 
+## Live mode
+
+`#/live/A`, `#/live/B`, `#/live/T` (the triparty agent) and `#/live/C` (the CCP) run the console against that party's collateral service (`src/domain/liveApi.ts`,
+`src/components/LiveConsole.tsx`; see `../docs/setup/runbook-e2e.md`). Since `v0.1-demo`:
+
+- For a call that moved a Registered or Claim token (tMMF), the call row shows whether the record keeper has confirmed
+  the step and the enforcement, and each register is shown against the ledger with its breaks
+  (`task-console-record-keeper-completion`; live spec `flow-registered-collateral`).
+- A Provenance card (`src/components/ProvenanceCard.tsx`) shows each token's provenance path as the party's service
+  checks it from the ledger and the payload store, and seeds the fixture provenance (`task-document-provenance`; live
+  spec `flow-provenance`).
+
 ## Layout
 
 | Path | Contents |

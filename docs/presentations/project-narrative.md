@@ -1,6 +1,7 @@
 # CDM Collateral: how the project developed
 
-This document tells the history of the project from 14 October to 4 November 2026. It is written from the konspekt
+This document tells the history of the project from 14 October to 4 November 2026, with a status note for
+22 November (section 11). It is written from the konspekt
 graph in `../../.konspekt/instance` (goals, tasks, decision records, notes, artifacts and the transitions log). Every claim
 can be traced to a record there; record IDs are given in brackets where a reader may want to follow one up. The
 records hold the detail and remain authoritative. This document gives the order of events and the reasons behind them.
@@ -364,6 +365,20 @@ Open work, in the agreed order: the remaining CSA workflows (interest, amendment
 allocation), then repo, securities lending, triparty and CCP. Also open: on-chain privacy (designed, not built), two-way
 initial margin (designed, not built), unit tests for the collateral service, test amounts sized to available balances,
 and two questions waiting for a subject-matter expert (how a top-up is modelled, and what an Enforcement Event means).
+
+### Status at v0.2-demo (22 November 2026)
+
+This document does not yet tell the history from 5 to 22 November. The state of `main` at tag `v0.1-demo`
+(15 November) and the changes to 22 November are summarised in [`../releases/v0.2-demo.md`](../releases/v0.2-demo.md):
+
+- All 47 workflows of the workflow map are built, in the ISDA CSA, repo (GMRA), securities lending (GMSLA), triparty
+  and CCP families, with 57 live specs.
+- A new goal, tokenized collateral represented as it exists on its ledger [`goal-tokenized-collateral`], added
+  completion by the record keeper for Registered and Claim tokens (tMMF), ledger anchors for substitutions and for
+  repo, loan and triparty movements, and document provenance with a gate at the step where a party takes tUST or tMMF
+  as collateral [`task-document-provenance`].
+- The gap register holds 41 gaps (G40 physical assets, G41 document provenance added on 21 November); the SME
+  question ledger holds 229 questions in 40 topics, each with its interim decision.
 
 ## 12. Patterns in how decisions were made
 

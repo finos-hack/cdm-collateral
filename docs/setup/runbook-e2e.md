@@ -15,7 +15,7 @@ Start order is top to bottom. Each row depends on the rows above it.
 | # | Component | Process | Port(s) | Health check | Started by |
 |---|---|---|---|---|---|
 | 1 | Besu QBFT network (validators `mkt`, `bank-a`, `bank-b`, `bank-c`; non-validator `ccp` for the CCP BANK-C) | Docker containers `besu-<node>` | JSON-RPC 8545 / 8547 / 8549 / 8551 / 8553, WebSocket one port higher | `bash besu/check-network.sh` | `bash besu/start-network.sh` |
-| 2 | Contracts (margin call, collateral control, tokens, oracle feed) | one-off deploy | — | `../../contracts/deployments/besu.json` exists | `npm run deploy:besu` in `../../contracts` |
+| 2 | Contracts (margin call, collateral control, repo, securities loan, triparty, CCP clearing, reconciliation, tokens, oracle feed, record keeper register, provenance anchors) | one-off deploy | — | `../../contracts/deployments/besu.json` exists | `npm run deploy:besu` in `../../contracts` |
 | 3 | CDM payload store | `node store/src/server.ts` | 8300 | `curl localhost:8300/store/v1/health` | `../../orchestrate.mjs` |
 | 4 | Ledger gateway, bank-a | `node gateway/src/server.ts` (`NODE=bank-a`) | 8201 | `curl localhost:8201/ledger/v1/health` | `../../orchestrate.mjs` |
 | 4 | Ledger gateway, bank-b | `node gateway/src/server.ts` (`NODE=bank-b`) | 8202 | `curl localhost:8202/ledger/v1/health` | `../../orchestrate.mjs` |
@@ -111,6 +111,11 @@ The dev container runs `build` once when it is created and `up` every time it st
 5. Polls the seven health checks of step 5 every 3 s for up to 180 s. On success it prints them, the console status
    (`5173  HTTP 200`) and the two console URLs, then exits 0 with the stack still running. On timeout it prints the
    last state and exits 1.
+6. When the deployment marks tokens `provenanceRequired` (tUST and tMMF) and nothing is anchored yet, seeds their
+   fixture provenance once through service A (`POST /api/v1/provenance/seed`, `task-document-provenance`). If the seed
+   fails, it prints `provenance seed failed; seed it from the Provenance card in the console`. Until the provenance is
+   seeded, a secured party refuses tUST and tMMF as collateral (the provenance gate). A deployment made before
+   `ProvenanceAnchors` existed has no `contracts.provenanceAnchors` and needs a `reset`.
 
 It stops with `missing services/collateral/target/collateral-service.jar` (or `…/oracle-service.jar`) when a jar is
 not built. The script runs
@@ -599,7 +604,14 @@ fees moves; it restores A's default status as it found it), and `flow-triparty-t
 makes effective and leaves the second proposal refused). `flow-triparty-trade-start` leaves one open triparty repo per
 run, `flow-triparty-revaluation` and `flow-triparty-substitution` one each, until `flow-triparty-trade-end`
 ends every settled repo under the B-giver terms, returns B's collateral and terminates the terms; the next run's specs
-make new B-giver terms. The top-up before each run restores B's free balances
+make new B-giver terms. Since `v0.1-demo` four specs cover tokens whose record is kept off the ledger and document
+provenance: `flow-registered-collateral` (a tMMF pledge and its enforcement are settled on-chain but complete only when
+the transfer agent confirms its register; the spec pauses the agent with `PUT /oracle/v1/register/paused` and checks
+both consoles before and after), `flow-registered-collateral-gmsla` (delivery and return of a tMMF loan, with the
+delivery's ledger anchor on both parties), `flow-registered-collateral-triparty` (deposit and withdrawal of tMMF under
+terms whose profile includes it) and `flow-provenance` (A seeds the fixture provenance from its console if none is
+anchored, both parties read each path complete and identical, and a pledge of tMMF to bank-c is not covered by its
+control agreement). The top-up before each run restores B's free balances
 (`../../contracts/scripts/test-balances.json`, 20,000 tUST and 16,000 tAGY for bank-b).
 The return, default and revaluation
 specs set up their escrow through the service API, then drive

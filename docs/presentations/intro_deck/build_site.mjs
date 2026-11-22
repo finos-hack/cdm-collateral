@@ -221,6 +221,7 @@ ${slides.join("\n")}
 <div id="bar">
 <button id="prev" title="Previous (Left arrow)">&#8592;</button><span id="pos"></span><button id="next" title="Next (Right arrow or Space)">&#8594;</button>
 <span class="grow"></span>
+<a href="releases/v0.2-demo.md">Release v0.2-demo</a>
 <a href="gap-register.html">Gap register</a>
 <a href="sme-questions.html">SME questions (${all.length})</a>
 <a href="presentations/intro_deck/intro_deck.pdf">PDF</a>
