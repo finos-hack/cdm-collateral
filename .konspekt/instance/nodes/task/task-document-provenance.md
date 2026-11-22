@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T03:51:06Z
+updatedAt: 2026-11-22T15:08:42Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -48,3 +48,24 @@ Overlaps with work merged since (PR #75, 2026-11-21):
 
 Done when, for the pilot asset, a function walks the path from a pledged token to the asset's authoritative record,
 checks each document hash against its anchor, and reports any link that is missing or superseded, with tests.
+
+**tUST pilot built (2026-11-22, [[wp-adr-document-provenance]]).**
+
+- `cdm-ext`: `AnchoredRecordEnum` gains `AssetDocument`, `Valuation` and `RegistryEntry`; the record hash is keccak-256
+  over the record's JCS canonical form. `LedgerTest` covers an `AssetDocument` anchor.
+- `contracts/ProvenanceAnchors.sol`: emits `ProvenanceAnchored(token, linkId, cdmHash, revisionOf, anchoredBy)`, one
+  chain of revisions per link (a revision must name the current head). Agreements between two parties stay anchored in
+  `CollateralControl` and `TripartySettlement`; no existing contract was keyed by token, so the token-level anchor
+  events needed their own emitter.
+- `services/collateral`: `ProvRecords` (PROV-O JSON-LD link records), `Jcs` (RFC 8785, integers only),
+  `ProvCredentials` (Verifiable Credentials on P-256 `did:key`, `ecdsa-jcs-2019`), `ProvenanceCheck` (the path walk),
+  with fixture documents under `src/test/resources/provenance/tust/` and `ProvenanceCheckTest`.
+
+The check reports, per relation of the path: missing, not anchored, anchor not complete, conflicting current records,
+document missing or altered, unattested or bad credential, and superseded against the version the secured party pinned
+at the pledge. By asset: issuance against a holding other than the custody record's, issuance beyond the face amount
+held, a second token on the same holding (double tokenization), and units on the ledger beyond the units issued.
+
+Not yet done: deploying `ProvenanceAnchors` and reading its events through the gateway into the collateral service, a
+console view and a live spec; the tMMF case (record keeper's register, control agreement); `RegistryEntry` links (the
+aircraft case, G40). The credential proofs are not checked against the W3C Data Integrity test suite.

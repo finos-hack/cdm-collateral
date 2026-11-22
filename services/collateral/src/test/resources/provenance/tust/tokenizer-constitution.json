@@ -1,0 +1,8 @@
+{
+  "fixture": "tUST provenance pilot (task-document-provenance). Synthetic constitution.",
+  "document": "Constitution of the tokenizer",
+  "entity": "Fixture Tokenizer",
+  "form": "Special purpose vehicle, sole purpose: holding US Treasury securities for token holders",
+  "sponsor": "Fixture Sponsor",
+  "restrictions": "No other business; no borrowing; assets held only with the named custodian"
+}

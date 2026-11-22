@@ -466,7 +466,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-tokcoll-subanchors | decomposes | node:goal-tokenized-collateral | node:task-substitution-ledger-anchors |  | accepted |
 | e-dec-tokcoll-consolerk | decomposes | node:goal-tokenized-collateral | node:task-console-record-keeper-completion |  | accepted |
 | e-lnk-docprov-subanchors | links | node:task-document-provenance | node:task-substitution-ledger-anchors |  | accepted |
-| e-mrk-docprovadr-docprov | marks | waypoint:wp-adr-document-provenance | node:task-document-provenance |  | proposed |
-| e-drv-cdmdata-docprovadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-document-provenance |  | proposed |
-| e-drv-onchainid-docprovadr | drives | concept:concept-asr-onchain-asset-identity | waypoint:wp-adr-document-provenance |  | proposed |
-| e-prod-docprov-provboard | produces | node:task-document-provenance | artifact:artifact-provenance-whiteboard |  | proposed |
+| e-mrk-docprovadr-docprov | marks | waypoint:wp-adr-document-provenance | node:task-document-provenance |  | accepted |
+| e-drv-cdmdata-docprovadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-document-provenance |  | accepted |
+| e-drv-onchainid-docprovadr | drives | concept:concept-asr-onchain-asset-identity | waypoint:wp-adr-document-provenance |  | accepted |
+| e-prod-docprov-provboard | produces | node:task-document-provenance | artifact:artifact-provenance-whiteboard |  | accepted |

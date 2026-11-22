@@ -1,0 +1,9 @@
+{
+  "fixture": "tUST provenance pilot (task-document-provenance). Synthetic price.",
+  "document": "Valuation",
+  "asset": {"isin": "US912810TM60"},
+  "price": "98.40",
+  "priceType": "Clean, percent of face",
+  "source": "Prototype oracle",
+  "asOf": "2026-11-21T21:00:00Z"
+}

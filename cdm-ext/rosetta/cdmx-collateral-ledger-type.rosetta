@@ -60,6 +60,9 @@ enum AnchoredRecordEnum: <"The kind of CDM record an anchor is for, which also f
     MarginCallStep <"A margin call step; the hashed document is its MarginCallInstruction.">
     Enforcement <"An enforcement; the hashed document is its EnforcementInstruction.">
     Substitution <"A substitution step; the hashed document is its SubstitutionInstruction.">
+    AssetDocument <"A document that belongs to a token or its asset, not to a pair of parties: an issuance record, token terms, a custody record, a constitution (wp-adr-document-provenance). The hashed document is the provenance link record (W3C PROV-O JSON-LD), hashed over its JCS canonical form (RFC 8785).">
+    Valuation <"A valuation of a token's asset at a time, as a provenance link record; hashed as for AssetDocument.">
+    RegistryEntry <"An entry in a registry outside the ledger that records or perfects a link, for example an International Registry filing (G40), as a provenance link record; hashed as for AssetDocument.">
 
 enum AnchorStatusEnum: <"Whether a CDM record and the ledger agree.">
     Missing <"No anchor: the ledger has not recorded the record's hash.">
@@ -85,7 +88,7 @@ type LedgerAnchor: <"Where the ledger records one CDM record: the hash of the re
     [rootType]
     recordKind AnchoredRecordEnum (1..1)
     recordIdentifier string (1..1) <"The step identifier or the event identifier.">
-    documentHash string (1..1) <"keccak256 over the Rune JSON bytes of the record's instruction (Rune has no hash function; the caller computes it).">
+    documentHash string (1..1) <"keccak256 over the Rune JSON bytes of the record's instruction, or, for AssetDocument, Valuation and RegistryEntry, over the JCS canonical form of the provenance link record (Rune has no hash function; the caller computes it).">
     transaction LedgerTransaction (1..*)
 
     condition TransactionsCarryTheHash: <"A transaction that carries a hash carries this record's hash.">

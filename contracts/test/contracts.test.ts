@@ -393,6 +393,30 @@ describe("CDM collateral contracts", async () => {
     });
   });
 
+  describe("provenance anchors (task-document-provenance)", () => {
+    const LINK = keccak256(toHex("urn:cdmx:link:tUST:terms"));
+    const V1 = keccak256(toHex("terms record v1"));
+    const V2 = keccak256(toHex("terms record v2"));
+    it("anchors a link's records as one chain of revisions", async () => {
+      const anchors = await viem.deployContract("ProvenanceAnchors", []);
+      await anchors.write.anchor([tUST.address, LINK, V1, zeroHash], { account: bankA.account });
+      await anchors.write.anchor([tUST.address, LINK, V2, V1], { account: bankA.account });
+      assert.equal(await anchors.read.head([LINK]), V2);
+      const events = await anchors.getEvents.ProvenanceAnchored({ linkId: LINK }, { fromBlock: 0n });
+      assert.deepEqual(events.map((e: any) => [e.args.cdmHash, e.args.revisionOf]), [[V1, zeroHash], [V2, V1]]);
+      assert.equal(getAddress(events[0].args.token!), getAddress(tUST.address));
+      assert.equal(getAddress(events[0].args.anchoredBy!), aAddr);
+    });
+    it("rejects a revision of a version that is no longer current, and a zero hash", async () => {
+      const anchors = await viem.deployContract("ProvenanceAnchors", []);
+      await anchors.write.anchor([tUST.address, LINK, V1, zeroHash], { account: bankA.account });
+      await anchors.write.anchor([tUST.address, LINK, V2, V1], { account: bankA.account });
+      await assert.rejects(anchors.write.anchor([tUST.address, LINK, keccak256(toHex("v3")), V1], { account: bankA.account })); // NotHead
+      await assert.rejects(anchors.write.anchor([tUST.address, LINK, V1, zeroHash], { account: bankA.account })); // NotHead: not the first
+      await assert.rejects(anchors.write.anchor([tUST.address, keccak256(toHex("other")), zeroHash, zeroHash], { account: bankA.account })); // ZeroHash
+    });
+  });
+
   describe("variation margin: title transfer", () => {
     const C = id(5);
     const agreed = 500n * SCALE;
