@@ -2,7 +2,7 @@
 id: task-collateral-service-unit-tests
 type: task
 title: Add unit tests to the collateral service (services/collateral)
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
@@ -14,7 +14,7 @@ provenance:
     sourceRef: 6ffb4961a1429b5c0e5559ecd5f9decc0c2a1086
     contentHash: 6ffb4961a1429b5c0e5559ecd5f9decc0c2a1086
 createdAt: 2026-11-03T14:01:12Z
-updatedAt: 2026-11-09T00:28:03Z
+updatedAt: 2026-11-22T21:17:53Z
 ```
 # Task: add unit tests to the collateral service
 
@@ -28,3 +28,9 @@ eight classes in `src/main/java/collateral/` (about 1,200 lines, including `App`
 
 Done when `services/collateral` has JUnit tests that `mvn test` runs and passes, covering at least the HTTP
 endpoints in `App` against a stub gateway and payload store, and the CDM folding in `CdmFold`.
+
+**Resolved 2026-11-22** by the project owner (source `ni:///sha-256;tLPKtaJDaXLBydHSDQhLUTlGA11CPCXJ-_sojy2Jk1c`). `services/collateral/src/test/java/collateral/` holds 34
+JUnit 5 test classes; `mvn test` ran 204 tests with 0 failures on 2026-11-22 (`main` after PR #92). They cover the CDM
+builders and checks of every flow, `CdmAnchors`, `CdmRecordKeeper` and provenance, and `CdmFold`
+(`CdmCancellationTest`, `CdmReplacementTest`). Not met as written: no test runs the HTTP routes of `App` against a stub
+gateway and payload store; those routes are exercised by the live specs only.
