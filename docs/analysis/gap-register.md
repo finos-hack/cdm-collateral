@@ -168,7 +168,7 @@ Local extension in [`../../cdm-ext`](../../cdm-ext/) (`task-cdm-gap-closure`).
 | G36 | out of scope | Regulatory reporting (priority Out) |
 | G37, G38 | open | Found while closing G4 (findings X2, X3); the extension leaves `transferType` absent and reads pledge roles only |
 | G40 | open | Added 2026-11-21 (project owner) under `goal-tokenized-collateral`, finding N1. No flow depends on it; scope (whether non-financial collateral is modelled at all) waits on REG-6 to REG-10 |
-| G41 | open | Added 2026-11-21 (project owner) under `goal-tokenized-collateral`, finding N2. `task-document-provenance`: every tokenized asset in scope, a pilot on one asset first, an existing provenance standard mapped to CDM |
+| G41 | open | Added 2026-11-21 (project owner) under `goal-tokenized-collateral`, finding N2. `task-document-provenance`: every tokenized asset in scope, a pilot on one asset first, an existing provenance standard mapped to CDM. tUST pilot built 2026-11-22 (`ProvenanceCheck`, `ProvenanceAnchors`); not yet wired to the gateway |
 | G39 | closed | Moved to Java (`wp-adr-java-cdm-stack`, 2026-10-18): CDM's Java distribution and the extension generated to Java run the 23 tests with no workarounds and with CDM's full validation; the Python build is retired (kept at commit `e1a2e6f` as a reproduction of D14–D16) |
 
 

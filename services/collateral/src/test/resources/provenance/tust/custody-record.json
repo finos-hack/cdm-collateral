@@ -1,0 +1,10 @@
+{
+  "fixture": "tUST provenance pilot (task-document-provenance). Synthetic custody statement.",
+  "document": "Custody record",
+  "custodian": "Fixture Custodian",
+  "account": "account-7781",
+  "accountHolder": "Fixture Tokenizer",
+  "asset": {"isin": "US912810TM60"},
+  "faceAmountHeld": "100000000",
+  "asOf": "2026-11-02"
+}

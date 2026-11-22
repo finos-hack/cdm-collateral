@@ -319,4 +319,19 @@ class LedgerTest {
         LedgerBreak b = found.stream().filter(x -> x.getRecordIdentifier().endsWith("bank-b")).findFirst().orElseThrow();
         assertEquals(LedgerBreakTypeEnum.MISSING_FROM_RECORDS, b.getBreakType());
     }
+
+    // task-document-provenance (wp-adr-document-provenance): a provenance link record is anchored like a CDM record
+    @Test
+    void anAssetDocumentAnchorsItsProvenanceRecordHash() {
+        String recordHash = "0x" + "5a".repeat(32);
+        String anchors = "0x" + "c9".repeat(20);
+        List<LedgerTransaction> observed = List.of(
+            log(TX_A, 0, anchors, "ProvenanceAnchored", recordHash, "Final"),
+            log(TX_B, 0, anchors, "ProvenanceAnchored", "0x" + "5b".repeat(32), "Final"));
+        LedgerAnchor a = fn(Create_LedgerAnchor.class).evaluate(AnchoredRecordEnum.ASSET_DOCUMENT,
+            "urn:cdmx:link:tUST:custody", recordHash, observed);
+        assertEquals(1, a.getTransaction().size());
+        assertEquals(TX_A, a.getTransaction().get(0).getTransactionHash());
+        assertEquals(AnchorStatusEnum.COMPLETE, fn(AnchorStatus.class).evaluate(a, 1));
+    }
 }

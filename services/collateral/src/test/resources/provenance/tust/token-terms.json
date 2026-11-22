@@ -1,0 +1,11 @@
+{
+  "fixture": "tUST provenance pilot (task-document-provenance). Synthetic terms.",
+  "document": "Token terms",
+  "token": "tUST",
+  "dti": "QX4V2W9N3",
+  "represents": "Beneficial interest in US912810TM60 held by the custodian for the tokenizer, 1,000 face per unit",
+  "authoritativeRecord": "Bearer: the ledger is the register of holders",
+  "redemption": "At face value of the underlying holding, on request to the tokenizer",
+  "governingLaw": "New York",
+  "version": "1"
+}

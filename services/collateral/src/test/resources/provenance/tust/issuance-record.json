@@ -1,0 +1,12 @@
+{
+  "fixture": "tUST provenance pilot (task-document-provenance). Synthetic: no real issuer, custodian or holding.",
+  "document": "Issuance record",
+  "token": {"symbol": "tUST", "name": "Tokenized US Treasury 4.25% 2034", "dti": "QX4V2W9N3", "network": "besu-prototype", "chainId": 1337},
+  "asset": {"isin": "US912810TM60", "cusip": "912810TM6"},
+  "holding": "urn:cdmx:custody:fixture-custodian:account-7781",
+  "faceAmount": "100000000",
+  "faceAmountPerUnit": "1000",
+  "unitsIssued": "100000",
+  "issuedBy": "Fixture Tokenizer",
+  "issueDate": "2026-11-02"
+}
