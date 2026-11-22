@@ -3,16 +3,16 @@ id: wp-adr-document-provenance
 kind: decision
 subtype: adr
 timestamp: 2026-11-22T14:19:31Z
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   sourceRef: ni:///sha-256;KrvGiaznHsLxI2I87q5pYkF9Avm4gXWpohvIBSkiICI
   timestamp: 2026-11-22T14:19:31Z
   confidence: 0.6
 createdAt: 2026-11-22T14:19:31Z
-updatedAt: 2026-11-22T14:30:35Z
+updatedAt: 2026-11-22T14:57:02Z
 ```
-# ADR (proposed): document provenance recorded as PROV-O; token-level anchors in LedgerAnchor; tUST pilot with credentials on P-256 keys
+# ADR: document provenance recorded as PROV-O; token-level anchors in LedgerAnchor; tUST pilot with credentials on P-256 keys
 
 For [[task-document-provenance]] (gap G41, finding N2), under [[goal-tokenized-collateral]]. The project owner chose an
 existing standard mapped to CDM for interoperability: W3C PROV-O for the links, W3C Verifiable Credentials for record
