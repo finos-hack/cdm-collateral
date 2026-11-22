@@ -444,13 +444,19 @@ public final class App {
             String doc = payloads.get(hash);
             if (doc == null || !Cdm.keccakHex(doc).equalsIgnoreCase(hash)) return Optional.of("the terms are not in the payload store or their hash differs");
             CdmTriparty.Terms v = CdmTriparty.verify(doc, bankOf(t.get("giver").asText()), bankOf(t.get("receiver").asText()),
-                    bankOf(t.get("agent").asText()), cfg.isin("tUST"), cfg.isin("tAGY"));
+                    bankOf(t.get("agent").asText()), cfg.isin("tUST"), cfg.isin("tAGY"), admittedMmfIsin());
             if (!role.isEmpty() && !v.terms().getGmraTermsHash().equalsIgnoreCase(gmraTermsHashInForce()))
                 return Optional.of("the terms name GMRA terms other than those in force");
             return Optional.empty();
         } catch (Exception e) {
             return Optional.of(String.valueOf(e.getMessage()));
         }
+    }
+
+    /** The tMMF ISIN when this party admits tMMF in a triparty profile (eligible under a control agreement), else null. */
+    private String admittedMmfIsin() {
+        var t = CdmRecordKeeper.tokens(cfg.registry).get("tMMF");
+        return t != null && CdmRecordKeeper.eligible(t) ? cfg.isin("tMMF") : null;
     }
 
     private JsonNode tripartyOnChain(String termsId) {
@@ -522,14 +528,18 @@ public final class App {
         ctx.json(out);
     }
 
-    /** The giver proposes the baseline triparty terms with the counterparty as the receiver and BANK-T as the agent. */
+    /** The giver proposes the baseline triparty terms with the counterparty as the receiver and BANK-T as the agent.
+     *  registeredCollateral: true adds tMMF to the profile, when it is eligible under a control agreement
+     *  (task-authoritative-record-other-flows). */
     private void proposeTripartyTerms(Context ctx) {
         if (cfg.isAgent()) throw new IllegalArgumentException("the agent does not propose triparty terms");
         GmraFold f = gmraFold();
         if (!f.verified()) throw new IllegalStateException("the GMRA terms do not verify: " + f.problem());
         String receiver = counterparty();
+        boolean withMmf = Boolean.parseBoolean(String.valueOf(body(ctx).getOrDefault("registeredCollateral", "false")));
+        if (withMmf) requireUnderControl("tMMF");
         CdmTriparty.Terms t = CdmTriparty.build(cfg.bankName(cfg.partyId), cfg.bankName(receiver), CdmTriparty.AGENT,
-                gmraTermsHashInForce(), LocalDate.now(), cfg.isin("tUST"), cfg.isin("tAGY"));
+                gmraTermsHashInForce(), LocalDate.now(), cfg.isin("tUST"), cfg.isin("tAGY"), withMmf ? cfg.isin("tMMF") : null);
         payloads.put(t.hash(), t.json(), tripartyParties());
         JsonNode r = gw.post("/triparty/terms", Map.of("receiver", cfg.partyAddress(receiver), "agent", cfg.partyAddress("T"), "termsHash", t.hash()));
         ctx.json(Map.of("termsId", r.get("termsId").asText(), "termsHash", t.hash(), "txHash", r.get("txHash").asText()));

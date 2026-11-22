@@ -598,6 +598,89 @@ test("flow-registered-collateral-gmsla: A lends tMMF to B -> the delivery is ope
   }
 });
 
+// --- flow-registered-collateral in triparty (task-authoritative-record-other-flows) ---
+// The giver may add tMMF to the triparty profile (at the CSA baseline 4% haircut) when tMMF is eligible under a control
+// agreement; the receiver and the agent accept that profile under the same condition. In TripartySettlement only the
+// deposit and the withdrawal move securities (the agent allocates inside its book), so each of those movements of tMMF
+// is complete only once the transfer agent confirms it.
+type TripartyCompletion = TripartyTermsView & {
+  settlementComplete?: boolean; recordKeeperError?: string;
+  recordKeeper?: { identifier: string; complete: boolean; tokens: { symbol: string; confirmed?: boolean; complete: boolean }[] }[];
+};
+
+test("flow-registered-collateral-triparty: A proposes triparty terms with tMMF in the profile -> B and T check and affirm -> A deposits tMMF, not complete until the transfer agent confirms -> A withdraws it, which waits too -> A terminates the terms", async () => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const termsOf = async (svc: string, id: string) => (await call<{ terms: TripartyCompletion[] }>(`${svc}/triparty`)).terms.find((t) => t.termsId === id);
+  const amount = 10_000 + (Date.now() % 9000);
+  let id = "";
+  let deposited = false;
+  try {
+    // Setup: close A-giver terms an earlier run left open, so A can propose.
+    for (const t of (await call<TripartyView>(`${SERVICE.A}/triparty`)).terms.filter((x) => x.giver === "A")) {
+      if (t.state === "proposed") await call(`${SERVICE.A}/triparty/terms/${t.termsId}/refuse`, "POST", {});
+      if (t.state === "effective") await call(`${SERVICE.A}/triparty/terms/${t.termsId}/terminate`, "POST", {});
+    }
+    await expect.poll(async () => (await call<TripartyView>(`${SERVICE.A}/triparty`)).canPropose, { timeout: 60_000 }).toBe(true);
+
+    // A proposes the profile with tMMF; B and T each check it against their own build and affirm.
+    ({ termsId: id } = await call<{ termsId: string }>(`${SERVICE.A}/triparty/terms`, "POST", { registeredCollateral: true }));
+    for (const svc of [SERVICE.B, SERVICE_T]) {
+      await expect.poll(async () => (await termsOf(svc, id))?.canAffirm ?? false, { timeout: 60_000 }).toBe(true);
+      await call(`${svc}/triparty/terms/${id}/affirm`, "POST", {});
+    }
+    for (const svc of [SERVICE.A, SERVICE.B, SERVICE_T]) {
+      await expect.poll(async () => {
+        const t = await termsOf(svc, id);
+        return t?.state === "effective" && t.verified ? true : (t?.problem ?? t?.state ?? null);
+      }, { timeout: 60_000 }).toBe(true);
+    }
+    const t = (await termsOf(SERVICE_T, id))!;
+    expect(t.terms!.profile.map((e) => [e.token, e.haircutBps, e.concentrationLimit])).toEqual([["tUST", 200, null], ["tAGY", 300, "0.5"], ["tMMF", 400, null]]);
+
+    // A deposits tMMF with the agent while the transfer agent is paused: in the agent's book, not complete.
+    await setTransferAgentPaused(true);
+    await call(`${SERVICE.A}/triparty/terms/${id}/deposit`, "POST", { token: "tMMF", amount, rank: 1 });
+    deposited = true;
+    for (const svc of [SERVICE.A, SERVICE.B, SERVICE_T]) {
+      await expect.poll(async () => (await termsOf(svc, id))?.recordKeeper?.length ?? 0, { timeout: 60_000 }).toBe(1);
+      const v = (await termsOf(svc, id))!;
+      expect(v.recordKeeperError).toBeUndefined();
+      expect(v.settlementComplete).toBe(false);
+      expect(v.recordKeeper![0].identifier).toContain("Deposited");
+      expect(v.recordKeeper![0].tokens.find((x) => x.symbol === "tMMF")).toMatchObject({ confirmed: false, complete: false });
+    }
+    expect((await call<RegisterBreaksView>(`${SERVICE.A}/register/breaks`)).tokens.find((x) => x.symbol === "tMMF")!.reconciled).toBe(false);
+    await setTransferAgentPaused(false);
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await termsOf(svc, id))?.settlementComplete, { timeout: 60_000 }).toBe(true);
+    }
+
+    // The withdrawal waits for the transfer agent in the same way.
+    await setTransferAgentPaused(true);
+    await call(`${SERVICE.A}/triparty/terms/${id}/withdraw`, "POST", { token: "tMMF", amount });
+    deposited = false;
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await termsOf(svc, id))?.recordKeeper?.length ?? 0, { timeout: 60_000 }).toBe(2);
+      const v = (await termsOf(svc, id))!;
+      expect(v.settlementComplete).toBe(false);
+      expect(v.recordKeeper!.map((r) => r.complete)).toEqual([true, false]);
+    }
+    await setTransferAgentPaused(false);
+    for (const svc of [SERVICE.A, SERVICE_T]) {
+      await expect.poll(async () => (await termsOf(svc, id))?.settlementComplete, { timeout: 60_000 }).toBe(true);
+    }
+    await expect.poll(async () => (await call<RegisterBreaksView>(`${SERVICE.A}/register/breaks`)).tokens.find((x) => x.symbol === "tMMF")!.reconciled, { timeout: 60_000 }).toBe(true);
+  } finally {
+    await setTransferAgentPaused(false);
+    if (id) {
+      if (deposited) await call(`${SERVICE.A}/triparty/terms/${id}/withdraw`, "POST", { token: "tMMF", amount }).catch(() => undefined);
+      const t = await termsOf(SERVICE.A, id).catch(() => undefined);
+      if (t?.state === "effective") await call(`${SERVICE.A}/triparty/terms/${id}/terminate`, "POST", {}).catch(() => undefined);
+      if (t?.state === "proposed") await call(`${SERVICE.A}/triparty/terms/${id}/refuse`, "POST", {}).catch(() => undefined);
+    }
+  }
+});
+
 test("flow-revaluation-top-up: operator lowers a price -> secured party revalues -> top-up IM call settled, shortfall closed", async ({ page }) => {
   test.setTimeout(TEST_TIMEOUT);
   const usd = (n: number | string) => `USD ${Number(n).toLocaleString("en-US")}`;
