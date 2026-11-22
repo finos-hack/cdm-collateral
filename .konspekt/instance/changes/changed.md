@@ -1761,3 +1761,15 @@ excluded.
 | task-document-provenance | b6871425b5a1da367125a15dfdfa465069bd7b54 | services/collateral/src/test/resources/provenance/tust/token-terms.json | 2026-11-22T15:08:43Z |
 | task-document-provenance | b6871425b5a1da367125a15dfdfa465069bd7b54 | services/collateral/src/test/resources/provenance/tust/tokenizer-constitution.json | 2026-11-22T15:08:43Z |
 | task-document-provenance | b6871425b5a1da367125a15dfdfa465069bd7b54 | services/collateral/src/test/resources/provenance/tust/valuation.json | 2026-11-22T15:08:43Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | docs/analysis/gap-register.md | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | docs/gap-register.html | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/main/java/collateral/ProvRecords.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/main/java/collateral/ProvenanceCheck.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/java/collateral/ProvenanceCheckTest.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/java/collateral/ProvenanceTmmfTest.java | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/control-agreement.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/fund-constitution.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/issuance-record.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/register-statement.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/token-terms.json | 2026-11-22T15:20:46Z |
+| task-document-provenance | e1d0e620ccc62e5b2a7ec2f76a05cf87ad7906d1 | services/collateral/src/test/resources/provenance/tmmf/valuation.json | 2026-11-22T15:20:46Z |

@@ -1,0 +1,10 @@
+{
+  "fixture": "tMMF provenance (task-document-provenance). Synthetic register statement.",
+  "document": "Register statement",
+  "recordKeeper": "MMF Transfer Agent",
+  "fund": "Fixture Fund",
+  "account": "nominee-0042",
+  "accountHolder": "Fixture Nominee, for tMMF token holders",
+  "sharesHeld": "5000000",
+  "asOf": "2026-11-21"
+}

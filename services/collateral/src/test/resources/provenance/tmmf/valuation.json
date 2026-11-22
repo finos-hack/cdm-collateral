@@ -1,0 +1,9 @@
+{
+  "fixture": "tMMF provenance (task-document-provenance). Synthetic NAV.",
+  "document": "Valuation",
+  "asset": {"isin": "US9128100000"},
+  "nav": "1.00",
+  "priceType": "Net asset value per share",
+  "source": "Prototype oracle",
+  "asOf": "2026-11-21T21:00:00Z"
+}
