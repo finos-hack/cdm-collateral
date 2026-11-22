@@ -1590,3 +1590,6 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-sme-interim-decision-catalog | review |  | proposed | 2026-11-22T01:58:15Z |  |  |
 | node:task-sme-interim-decision-catalog | status |  | resolved | 2026-11-22T01:58:15Z |  |  |
 | edge:e-dec-cdmdev-interimcatalog | review |  | proposed | 2026-11-22T01:58:15Z |  |  |
+| node:task-sme-interim-decision-catalog | review | proposed | accepted | 2026-11-22T03:03:17Z |  | denisurusov |
+| edge:e-dec-cdmdev-interimcatalog | review | proposed | accepted | 2026-11-22T03:03:17Z |  | denisurusov |
+| node:task-authoritative-record-settlement-enforcement | status | open | resolved | 2026-11-22T03:03:17Z |  | denisurusov |

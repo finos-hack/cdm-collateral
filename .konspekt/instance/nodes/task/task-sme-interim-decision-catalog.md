@@ -3,13 +3,13 @@ id: task-sme-interim-decision-catalog
 type: task
 title: Catalog the decisions made while waiting for SMEs
 status: resolved
-review: proposed
+review: accepted
 provenance:
   conversationId: tokenized-collateral
   timestamp: 2026-11-22T01:58:15Z
   confidence: 0.8
 createdAt: 2026-11-22T01:58:15Z
-updatedAt: 2026-11-22T01:58:15Z
+updatedAt: 2026-11-22T03:03:17Z
 ```
 # Task: catalog the decisions made while waiting for SMEs
 
