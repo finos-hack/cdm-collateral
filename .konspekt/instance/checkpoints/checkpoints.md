@@ -21,3 +21,4 @@ open, `resume` reads the last row.
 | 2026-11-21T23:28:48Z | goal-tokenized-collateral | ni:///sha-256;uRSfrABxcVOj7urB5hvQMYL_VLCXE9y3pYw0rYjrMA4 | claude-ai-mobile | claude-opus-5-5 | denisurusov |
 | 2026-11-22T03:21:30Z | goal-tokenized-collateral | ni:///sha-256;1SgmbDrYwh2AUt-CROxU3cDfaQ7m0uyOSVoR6cbEt9Y | claude-code-cli | claude-opus-5-5 | denisurusov |
 | 2026-11-22T20:40:42Z | task-substitution-ledger-anchors | ni:///sha-256;mZiWSC-WoWqyOclndcijjoz4S5EWFBFZadnDlbtJJ7A | claude-code-cli | claude-opus-5-5 | denisurusov |
+| 2026-11-22T21:38:42Z | task-konspekt-kit-refresh-rest-fallback | ni:///sha-256;eCihjMm7OpWbhJzOjxl42r-h2IGkPvc2czge_HjODPo | claude-code-cloud | claude-opus-5-5 | denisurusov |
