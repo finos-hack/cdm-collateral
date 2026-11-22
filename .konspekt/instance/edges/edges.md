@@ -463,3 +463,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-men-docprov-onchain-asset-identity | mentions | node:task-document-provenance | concept:concept-asr-onchain-asset-identity |  | accepted |
 | e-dec-cdmdev-interimcatalog | decomposes | node:goal-cdm-development | node:task-sme-interim-decision-catalog |  | proposed |
 | e-dec-cdmdev-interimcatalog | decomposes | node:goal-cdm-development | node:task-sme-interim-decision-catalog |  | accepted |
+| e-dec-tokcoll-authrecordflows | decomposes | node:goal-tokenized-collateral | node:task-authoritative-record-other-flows |  | proposed |
+| e-dec-tokcoll-subanchors | decomposes | node:goal-tokenized-collateral | node:task-substitution-ledger-anchors |  | proposed |
+| e-dec-tokcoll-consolerk | decomposes | node:goal-tokenized-collateral | node:task-console-record-keeper-completion |  | proposed |

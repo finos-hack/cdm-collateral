@@ -128,8 +128,8 @@ reasons were accepted by the project owner on 2026-11-10 (source
 
 | Gap | Register status | Why no row |
 |---|---|---|
-| G24 | closed (proposed, for review): `cdmx.collateral.ledger` `TokenizedAsset` | Applies to every flow that moves a token (tUST, tMMF, tUSD), so no single workflow owns it. |
-| G25 | closed (proposed, for review): `LedgerAnchor`, built by the collateral service (`CdmAnchors`) | Applies to every flow: the service anchors each folded step and the live specs check both parties' anchors. |
+| G24 | closed: `cdmx.collateral.ledger` `TokenizedAsset` | Applies to every flow that moves a token (tUST, tMMF, tUSD), so no single workflow owns it. |
+| G25 | closed: `LedgerAnchor`, built by the collateral service (`CdmAnchors`) | Applies to every flow: the service anchors each folded step and the live specs check both parties' anchors. |
 | G29 | closed (proposed, for review): 120 tests in 12 classes (2026-11-04) | Tests ship with every extension, in each row's `cdm-ext` work. |
 | G39 | closed: Java toolchain (`wp-adr-java-cdm-stack`) | Applies to every extension and every flow. |
 | G26 | open, P2; **deferred** (`nw-defer-message-standard-mapping`, project owner, 2026-11-10) | **Deferred.** A mapping between CDM and ISO 20022 `colr` or FpML collateral messages. The first goal is a proof of concept of CDM over Besu; mapping from a message standard to CDM is important, even critical, but trivial. The prototype's parties exchange CDM documents (`wp-adr-cdm-payload-carrier`); this is the simplification stated under `nw-mimic-real-flows`. Business case criterion S8 is deferred with it. |
