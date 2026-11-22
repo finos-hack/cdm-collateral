@@ -119,4 +119,27 @@ public final class ProvenanceLive {
         if (!unreadable.isEmpty()) out.put("unreadable", unreadable);
         return out;
     }
+
+    /**
+     * The provenance gate (task-document-provenance): why the secured party may not accept these tokens, or null if it may.
+     * A token the registry marks {@code provenanceRequired} is accepted only when its provenance path, for a pledge to
+     * {@code securedParty}, is complete; a token without the mark is not checked.
+     */
+    public static String refusal(List<String> symbols, JsonNode registry, JsonNode anchors, Function<String, String> fetch,
+                                 String securedParty) {
+        List<String> reasons = new ArrayList<>();
+        for (String sym : symbols.stream().distinct().toList()) {
+            if (sym == null || !registry.path("tokens").path(sym).path("provenanceRequired").asBoolean(false)) continue;
+            Map<String, Object> r = check(sym, registry, anchors, fetch, securedParty);
+            if (Boolean.TRUE.equals(r.get("complete"))) continue;
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> breaks = (List<Map<String, String>>) r.get("breaks");
+            String kinds = breaks.stream().map(b -> b.get("kind")).distinct().reduce((a, b) -> a + ", " + b)
+                .orElse(r.containsKey("unreadable") ? "records not readable" : "incomplete");
+            reasons.add(sym + " (" + kinds + ")");
+        }
+        return reasons.isEmpty() ? null
+            : "the provenance of " + String.join("; ", reasons) + " is not complete, so it cannot be accepted as collateral"
+                + " (GET /api/v1/provenance shows each link)";
+    }
 }

@@ -139,6 +139,19 @@ deploy_if_needed() {
   fi
 }
 
+# The deployment marks tokens whose provenance the secured party requires (registry provenanceRequired, tUST and tMMF);
+# with nothing anchored yet, seed their fixture provenance once through party A's service (task-document-provenance).
+seed_provenance() {
+  grep -q '"provenanceRequired": *true' "$registry" 2>/dev/null || return 0
+  local anchors
+  anchors=$(curl -s --max-time 30 http://localhost:8001/api/v1/provenance | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).anchors??"")}catch{console.log("")}})')
+  if [ "$anchors" = "0" ]; then
+    say "seeding the fixture provenance of tUST and tMMF (POST /api/v1/provenance/seed)"
+    curl -s --max-time 600 -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8001/api/v1/provenance/seed > /dev/null \
+      || say "provenance seed failed; seed it from the Provenance card in the console"
+  fi
+}
+
 wait_healthy() {
   local i entry port path ok all
   for i in $(seq 1 60); do
@@ -183,6 +196,7 @@ cmd_up() {
   fi
   echo $! > "$pidfile"
   if wait_healthy; then
+    seed_provenance
     say ""
     say "live stack is up and running:"
     print_status

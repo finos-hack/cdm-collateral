@@ -98,4 +98,46 @@ class ProvenanceLiveTest {
         assertEquals(false, r.get("complete"));
         assertEquals(List.of(first), r.get("unreadable"));
     }
+
+    // The gate on accepting collateral: only a token the registry marks provenanceRequired is checked.
+    private static JsonNode required(JsonNode reg) {
+        ObjectNode r = reg.deepCopy();
+        ((ObjectNode) r.at("/tokens/tUST")).put("provenanceRequired", true);
+        ((ObjectNode) r.at("/tokens/tMMF")).put("provenanceRequired", true);
+        ((ObjectNode) r.path("tokens")).putObject("tUSD").put("address", "0x" + "a3".repeat(20)).put("isin", "US0000000USD")
+            .put("dti", "QSD000000").put("authoritativeRecord", "Bearer");
+        return r;
+    }
+
+    @Test
+    void theGateAcceptsTokensWhosePathIsComplete() throws Exception {
+        JsonNode reg = required(registry());
+        Ledger l = new Ledger();
+        l.seed("tUST", reg.at("/tokens/tUST"));
+        l.seed("tMMF", reg.at("/tokens/tMMF"));
+        assertNull(ProvenanceLive.refusal(List.of("tUST", "tMMF", "tUSD"), reg, l.anchors, l.store::get, "bank-b"));
+    }
+
+    @Test
+    void theGateRefusesARequiredTokenWithoutProvenanceAndIgnoresOthers() throws Exception {
+        JsonNode reg = required(registry());
+        Ledger l = new Ledger();
+        l.seed("tUST", reg.at("/tokens/tUST"));
+        String refusal = ProvenanceLive.refusal(List.of("tUST", "tMMF"), reg, l.anchors, l.store::get, "bank-b");
+        assertNotNull(refusal);
+        assertTrue(refusal.contains("tMMF (Missing)"), refusal);
+        assertFalse(refusal.contains("tUST"), refusal);
+        assertNull(ProvenanceLive.refusal(List.of("tUSD"), reg, l.anchors, l.store::get, "bank-b"));
+        assertNull(ProvenanceLive.refusal(List.of("tMMF"), registry(), l.anchors, l.store::get, "bank-b")); // not marked
+    }
+
+    @Test
+    void theGateRefusesTmmfToASecuredPartyItsControlAgreementDoesNotName() throws Exception {
+        JsonNode reg = required(registry());
+        Ledger l = new Ledger();
+        l.seed("tMMF", reg.at("/tokens/tMMF"));
+        String refusal = ProvenanceLive.refusal(List.of("tMMF"), reg, l.anchors, l.store::get, "bank-c");
+        assertNotNull(refusal);
+        assertTrue(refusal.contains("ControlAgreementMismatch"), refusal);
+    }
 }

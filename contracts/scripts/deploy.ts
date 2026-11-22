@@ -35,11 +35,13 @@ const RPC: Record<string, string> = {
 };
 
 // price in USD, haircut in basis points; mirrors reference.ts.
+// provenanceRequired: the secured party accepts the token only when its provenance path is complete
+// (task-document-provenance); tUST and tMMF have fixture provenance, seeded by scripts/live-e2e.sh up.
 const TOKENS = [
-  { sym: "tUST", name: "Tokenized US Treasury 4.25% 2034", isin: "US912810TM60", cusip: "912810TM6", dti: "QX4V2W9N3", price: 984n * SCALE / 10n, haircutBps: 200 },
+  { sym: "tUST", name: "Tokenized US Treasury 4.25% 2034", isin: "US912810TM60", cusip: "912810TM6", dti: "QX4V2W9N3", price: 984n * SCALE / 10n, haircutBps: 200 , provenanceRequired: true },
   // tMMF mirrors the fund's share register, kept by its transfer agent (the mkt key, in the oracle service), under a
   // control agreement with the transfer agent (interim rules REG-1 to REG-5, task-sme-registered-asset-completion).
-  { sym: "tMMF", name: "Tokenized USD government MMF", isin: "US9128100000", cusip: "912810000", dti: "QZ0000000", price: 1n * SCALE, haircutBps: 400, authoritativeRecord: "Registered", recordKeeper: "MMF Transfer Agent", controlAgreement: "CA-TMMF-2026-01" },
+  { sym: "tMMF", name: "Tokenized USD government MMF", isin: "US9128100000", cusip: "912810000", dti: "QZ0000000", price: 1n * SCALE, haircutBps: 400, authoritativeRecord: "Registered", recordKeeper: "MMF Transfer Agent", controlAgreement: "CA-TMMF-2026-01" , provenanceRequired: true },
   { sym: "tUSD", name: "USD deposit token", isin: "US0000000USD", cusip: "000000USD", dti: "QSD000000", price: 1n * SCALE, haircutBps: 0 },
   // Loan collateral only (wp-adr-gmsla-substitution): the substitute for tUST under the GMSLA; not CSA-eligible.
   { sym: "tAGY", name: "Tokenized US agency bond 4.50% 2031", isin: "US3137EAGY10", cusip: "3137EAGY1", dti: "QGNC00000", price: 992n * SCALE / 10n, haircutBps: 300, csa: false },
@@ -155,7 +157,7 @@ async function main() {
   console.log("ProvenanceAnchors    ", provenanceAnchors.address);
   await send("RepoSettlement.setClearingHouse", (nonce) => repoSettlement.write.setClearingHouse([ccpClearing.address], { nonce }));
 
-  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean; authoritativeRecord: string; recordKeeper?: string; controlAgreement?: string }> = {};
+  const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean; authoritativeRecord: string; recordKeeper?: string; controlAgreement?: string; provenanceRequired?: boolean }> = {};
   for (const t of TOKENS) {
     const token = await deploy("TokenizedCollateral", [t.name, t.sym, t.isin, t.cusip, t.dti]);
     console.log(`  ${t.sym.padEnd(6)}           `, token.address);
@@ -172,6 +174,7 @@ async function main() {
     await send(`publishPrice ${t.sym}`, (nonce) => oracle.write.publishPrice([token.address, t.price], { account: deployer.account, nonce }));
     tokenRegistry[t.sym] = { address: token.address, decimals: 0, haircutBps: t.haircutBps, isin: t.isin, cusip: t.cusip, dti: t.dti, csa,
       authoritativeRecord: record,
+      ...((t as { provenanceRequired?: boolean }).provenanceRequired ? { provenanceRequired: true } : {}),
       ...((t as { recordKeeper?: string }).recordKeeper ? { recordKeeper: (t as { recordKeeper?: string }).recordKeeper } : {}),
       ...((t as { controlAgreement?: string }).controlAgreement ? { controlAgreement: (t as { controlAgreement?: string }).controlAgreement } : {}) };
   }

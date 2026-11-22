@@ -19,6 +19,8 @@ export interface TokenInfo {
   recordKeeper?: string;
   /** Reference of the control agreement with the record keeper (interim rule REG-3). */
   controlAgreement?: string;
+  /** The secured party accepts the token only when its provenance path is complete (task-document-provenance). */
+  provenanceRequired?: boolean;
 }
 
 export interface Registry {
