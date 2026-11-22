@@ -146,6 +146,9 @@ public final class App {
         app.post("/api/v1/calls/{id}/enforce", this::enforce);
         app.get("/api/v1/calls/{id}/enforcement", ctx -> ctx.json(enforcementStateFor(ctx.pathParam("id"))));
         app.get("/api/v1/register/breaks", this::registerBreaks);
+        app.get("/api/v1/provenance", this::provenanceAll);
+        app.get("/api/v1/provenance/{symbol}", this::provenanceOf);
+        app.post("/api/v1/provenance/seed", this::provenanceSeed);
         app.post("/api/v1/calls/{id}/withdraw", this::withdrawCall);
         app.post("/api/v1/calls/{id}/cancellation", this::requestCancellation);
         app.post("/api/v1/calls/{id}/cancellation/decision", this::decideCancellation);
@@ -5160,6 +5163,78 @@ public final class App {
             out.add(CdmRecordKeeper.breaks(sym, register, onLedger));
         }
         ctx.json(Map.of("tokens", out, "reconciled", out.stream().allMatch(m -> Boolean.TRUE.equals(m.get("reconciled")))));
+    }
+
+    // --- provenance (task-document-provenance, wp-adr-document-provenance) ---
+
+    /** The provenance anchors of every token on the ledger, or an empty list in a deployment without ProvenanceAnchors. */
+    private JsonNode provenanceAnchors() {
+        if (!cfg.registry.path("contracts").has("provenanceAnchors")) return CdmRuntime.JSON.createArrayNode();
+        return gw.get("/provenance/anchors");
+    }
+
+    /** The provenance check of every token of the deployment (GET /api/v1/provenance?securedParty=bank-b). */
+    private void provenanceAll(Context ctx) {
+        JsonNode anchors = provenanceAnchors();
+        String securedParty = ctx.queryParam("securedParty");
+        List<Map<String, Object>> out = new ArrayList<>();
+        cfg.registry.path("tokens").fieldNames().forEachRemaining(sym ->
+            out.add(ProvenanceLive.check(sym, cfg.registry, anchors, payloads::get, securedParty)));
+        ctx.json(Map.of("deployed", cfg.registry.path("contracts").has("provenanceAnchors"), "anchors", anchors.size(), "tokens", out));
+    }
+
+    private void provenanceOf(Context ctx) {
+        ctx.json(ProvenanceLive.check(ctx.pathParam("symbol"), cfg.registry, provenanceAnchors(), payloads::get, ctx.queryParam("securedParty")));
+    }
+
+    /**
+     * Seed the fixture provenance of tUST and tMMF (ProvenanceFixtures): store each document, link record and credential in
+     * the payload store, readable by every party of the deployment, and anchor each record and credential hash through
+     * this party's gateway. A token that already has anchors is left as it is. Body (optional): {pledgor, securedParty},
+     * registry party names for tMMF's control agreement; defaults bank-a and bank-b.
+     */
+    private void provenanceSeed(Context ctx) {
+        if (!cfg.registry.path("contracts").has("provenanceAnchors")) {
+            ctx.status(409).json(Map.of("error", "this deployment has no ProvenanceAnchors; reset and redeploy"));
+            return;
+        }
+        JsonNode body;
+        try {
+            body = ctx.body().isBlank() ? CdmRuntime.JSON.createObjectNode() : CdmRuntime.JSON.readTree(ctx.body());
+        } catch (Exception e) {
+            ctx.status(400).json(Map.of("error", "the body is not JSON"));
+            return;
+        }
+        String pledgor = body.path("pledgor").asText("bank-a");
+        String securedParty = body.path("securedParty").asText("bank-b");
+        List<String> readers = new ArrayList<>();
+        cfg.registry.path("parties").forEach(a -> readers.add(a.asText()));
+        JsonNode anchors = provenanceAnchors();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (String sym : List.of("tUST", "tMMF")) {
+            JsonNode token = cfg.registry.path("tokens").path(sym);
+            if (token.isMissingNode()) continue;
+            String address = token.get("address").asText().toLowerCase();
+            boolean seeded = false;
+            for (JsonNode a : anchors) seeded |= a.get("token").asText().equalsIgnoreCase(address);
+            if (seeded) {
+                out.add(Map.of("symbol", sym, "seeded", false, "reason", "already has provenance anchors"));
+                continue;
+            }
+            ProvenanceFixtures.Build b = ProvenanceFixtures.build(sym, token, pledgor, securedParty, java.time.Instant.now().toString());
+            for (String doc : b.documents()) payloads.put(Cdm.keccakHex(doc), doc, readers);
+            List<String> txs = new ArrayList<>();
+            for (ProvenanceFixtures.Anchored a : b.anchored()) {
+                payloads.put(a.hash(), a.text(), readers);
+                Map<String, Object> req = new LinkedHashMap<>();
+                req.put("token", a.token());
+                req.put("linkId", a.linkId());
+                req.put("cdmHash", a.hash());
+                txs.add(gw.post("/provenance/anchor", req).path("txHash").asText());
+            }
+            out.add(Map.of("symbol", sym, "seeded", true, "anchored", b.anchored().size(), "transactions", txs));
+        }
+        ctx.json(Map.of("tokens", out));
     }
 
     /** The validated CDM state of a call, folded from every step document (throws if one is not readable yet). */

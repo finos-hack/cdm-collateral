@@ -16,6 +16,7 @@
 // enforcement, and the console shows each such token's register against the ledger: settled on-chain is not complete
 // until then (task-console-record-keeper-completion, interim rules REG-1 to REG-5).
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ProvenanceCard } from "./ProvenanceCard";
 import {
   api,
   serviceUrl,
@@ -479,6 +480,8 @@ export function LiveConsole({ party }: { party: LiveParty }) {
       )}
 
       {register && register.tokens.length > 0 && <RegisterCard register={register} />}
+
+      <ProvenanceCard party={party} legPledgor={legPledgor} />
 
       <div className="card">
         <h3>Margin calls</h3>

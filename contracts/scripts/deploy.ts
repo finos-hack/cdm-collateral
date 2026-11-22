@@ -117,7 +117,7 @@ async function main() {
 
   // Deploy with an explicit nonce; the address follows from the deployer and the nonce, so no lookup of the transaction
   // is needed before the receipt.
-  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan" | "TripartySettlement" | "CcpClearing" | "RecordKeeperRegister">(name: N, args: readonly unknown[]) {
+  async function deploy<N extends "MarginCall" | "OracleFeed" | "CollateralControl" | "TokenizedCollateral" | "PortfolioReconciliation" | "RepoSettlement" | "SecuritiesLoan" | "TripartySettlement" | "CcpClearing" | "RecordKeeperRegister" | "ProvenanceAnchors">(name: N, args: readonly unknown[]) {
     const { abi, bytecode } = await hre.artifacts.readArtifact(name);
     let address: `0x${string}` | undefined;
     await send(`deploy ${name}`, (nonce) => {
@@ -150,6 +150,9 @@ async function main() {
   // The record keeper of Registered and Claim tokens confirms its register here (the mkt key, task-authoritative-record-settlement-enforcement).
   const recordKeeperRegister = await deploy("RecordKeeperRegister", [parties.mkt]);
   console.log("RecordKeeperRegister ", recordKeeperRegister.address);
+  // Anchors of each token's provenance link records and credentials (task-document-provenance).
+  const provenanceAnchors = await deploy("ProvenanceAnchors", []);
+  console.log("ProvenanceAnchors    ", provenanceAnchors.address);
   await send("RepoSettlement.setClearingHouse", (nonce) => repoSettlement.write.setClearingHouse([ccpClearing.address], { nonce }));
 
   const tokenRegistry: Record<string, { address: string; decimals: number; haircutBps: number; isin: string; cusip: string; dti: string; csa: boolean; authoritativeRecord: string; recordKeeper?: string; controlAgreement?: string }> = {};
@@ -191,6 +194,7 @@ async function main() {
       tripartySettlement: tripartySettlement.address,
       ccpClearing: ccpClearing.address,
       recordKeeperRegister: recordKeeperRegister.address,
+      provenanceAnchors: provenanceAnchors.address,
     },
     priceScale: SCALE.toString(),
     tokens: tokenRegistry,

@@ -572,12 +572,51 @@ export interface LiveRegisterBreaks {
   }[];
 }
 
+/**
+ * The provenance check of a token (task-document-provenance, wp-adr-document-provenance): each link of its path from the
+ * token back to its asset, with the record keeper that attests it, and every break the check found.
+ */
+export interface LiveProvenanceLink {
+  relation: string;
+  recordHash?: string | null;
+  id?: string;
+  recordKeeper?: string;
+  documentHash?: string;
+  ok: boolean;
+  breaks: { kind: string; detail: string }[];
+}
+
+export interface LiveProvenanceToken {
+  symbol: string;
+  token: string;
+  authoritativeRecord: string;
+  recordKeeper?: string;
+  controlAgreement?: string;
+  securedParty?: string;
+  complete: boolean;
+  links: LiveProvenanceLink[];
+  breaks: { kind: string; relation: string; detail: string }[];
+  tokensOnAsset: string[];
+  anchors: number;
+  unreadable?: string[];
+}
+
+export interface LiveProvenance {
+  deployed: boolean;
+  anchors: number;
+  tokens: LiveProvenanceToken[];
+}
+
 export const api = {
   context: (p: LiveParty) => req<LiveContext>(p, "GET", "/context"),
   state: (p: LiveParty) => req<LiveState>(p, "GET", "/state"),
   callCompletion: (p: LiveParty, callId: string) => req<LiveCallCompletion>(p, "GET", `/calls/${callId}/cdm-state`),
   enforcement: (p: LiveParty, callId: string) => req<LiveEnforcement>(p, "GET", `/calls/${callId}/enforcement`),
   registerBreaks: (p: LiveParty) => req<LiveRegisterBreaks>(p, "GET", "/register/breaks"),
+  provenance: (p: LiveParty, securedParty?: string) =>
+    req<LiveProvenance>(p, "GET", securedParty ? `/provenance?securedParty=${encodeURIComponent(securedParty)}` : "/provenance"),
+  seedProvenance: (p: LiveParty, pledgor: string, securedParty: string) =>
+    req<{ tokens: { symbol: string; seeded: boolean; anchored?: number; reason?: string }[] }>(p, "POST", "/provenance/seed", { pledgor, securedParty }),
   issueCall: (p: LiveParty, toParty: LiveParty, amountUsd: number, kind = "IM", purpose?: "top-up") =>
     req<{ callId: string }>(p, "POST", "/calls", { kind, toParty, amountUsd, deadlineDays: 1, purpose }),
   /** Calling party: issue a call that replaces a cancelled one; kind and called party are the cancelled call's. */
