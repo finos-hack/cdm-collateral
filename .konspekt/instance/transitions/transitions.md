@@ -1624,3 +1624,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-cdmdata-docprovadr | review | proposed | accepted | 2026-11-22T14:57:02Z | ni:///sha-256;NsuxkeNc2uUCWepWhEN-9uV2abTpGg1EQqIJy5aNCWI | denisurusov |
 | edge:e-drv-onchainid-docprovadr | review | proposed | accepted | 2026-11-22T14:57:02Z | ni:///sha-256;NsuxkeNc2uUCWepWhEN-9uV2abTpGg1EQqIJy5aNCWI | denisurusov |
 | node:task-console-record-keeper-completion | status | open | resolved | 2026-11-22T15:20:15Z |  | denisurusov |
+| node:task-authoritative-record-other-flows | status | open | resolved | 2026-11-22T16:47:09Z |  | denisurusov |
