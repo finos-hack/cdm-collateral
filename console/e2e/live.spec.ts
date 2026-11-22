@@ -839,10 +839,14 @@ test("flow-close-out-netting: secured party closes out -> collateral applied to 
 // The pledgor asks to substitute part of its pledged tUST with tUSD (ISDA CSA Paragraph 4(d), cdm-ext
 // Create_CollateralSubstitution, G16); the secured party consents (the agreement elects consent, Paragraph 13 (f)(ii));
 // the pledgor settles and the control contract moves the substitute into escrow and the tUST back in one transaction.
-// Each service folds the three CDM steps with the same portfolio and reaches the same state.
+// Each service folds the three CDM steps with the same portfolio and reaches the same state, and builds the same
+// Substitution ledger anchor of each step from the chain events (task-substitution-ledger-anchors).
 type Substitution = {
   substitutionId: string; state: string;
-  cdm: { status: string; qualifiers?: string[]; stateHash?: string; converged: boolean; totalSteps: number; error?: string };
+  cdm: {
+    status: string; qualifiers?: string[]; stateHash?: string; converged: boolean; totalSteps: number; error?: string;
+    anchors?: { identifier: string; status: string; transactions: number }[]; anchorHash?: string; anchored?: boolean; anchorError?: string;
+  };
 };
 
 test("flow-substitution: pledgor requests -> secured party consents -> pledgor settles, substitute in escrow and CDM folded", async ({ page }) => {
@@ -906,6 +910,15 @@ test("flow-substitution: pledgor requests -> secured party consents -> pledgor s
   expect(a!.cdm.status.toLowerCase()).toBe("settled");
   expect(a!.cdm.qualifiers).toEqual(["SubstitutionRequested", "SubstitutionConsented", "CollateralSubstituted"]);
   expect(a!.cdm.stateHash).toMatch(/^0x[0-9a-f]{64}$/i);
+
+  // 14. Each step is anchored on its own final transaction, and both parties build the same anchors. The settlement's
+  // anchor also holds the token transfers of its transaction.
+  expect(a!.cdm.anchorError).toBeUndefined();
+  expect(a!.cdm.anchored).toBe(true);
+  expect(a!.cdm.anchors!.map((x) => [x.identifier, x.status])).toEqual([["request", "Complete"], ["consent", "Complete"], ["settle", "Complete"]]);
+  expect(a!.cdm.anchors![2].transactions).toBeGreaterThan(1);
+  expect(a!.cdm.anchorHash).toMatch(/^0x[0-9a-f]{64}$/i);
+  expect(b!.cdm.anchorHash).toBe(a!.cdm.anchorHash);
 
   // On-chain state through each party's gateway.
   expect(await pledgedOf(GATEWAY.B, tUST, p)).toBe(pledgedUstBefore - BigInt(originalQty));
