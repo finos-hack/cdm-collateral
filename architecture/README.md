@@ -13,7 +13,7 @@ structure; the component READMEs hold the implemented interfaces and are the aut
 
 The architecture is expressed in [FINOS CALM](https://github.com/finos/architecture-as-code) (Common Architecture
 Language Model), schema release 1.2: [`prototype.architecture.json`](prototype.architecture.json). It validates with
-`calm validate --strict` (CALM CLI 1.40.0): 0 errors, 0 warnings. The file is edited by hand; its `adrs` list is
+`calm validate --strict` (CALM CLI 1.40.0): 0 errors, 0 warnings (checked 2026-11-22). The file is edited by hand; its `adrs` list is
 refreshed from the konspekt ADR waypoints by [`sync_adrs.py`](sync_adrs.py) (`python sync_adrs.py prototype.architecture.json`).
 
 Related: [test framework plan](testing.md) · [GitHub Codespaces setup](../docs/setup/setup-codespaces.md) (primary) ·
@@ -84,6 +84,7 @@ flowchart LR
 | Oracle feed contract | contract | Solidity | Latest price / NAV, rating and default status; written only by the oracle publisher |
 | Record keeper register contract | contract | Solidity | Added after `v0.1-demo` (`RecordKeeperRegister`, `task-authoritative-record-settlement-enforcement`): the record keeper's on-chain confirmation that its off-ledger register shows a transaction's movements of a Registered or Claim token (tMMF); written only by the record keeper's key. The record keeper is the transfer agent in the oracle service |
 | Provenance anchors contract | contract | Solidity | Added after `v0.1-demo` (`ProvenanceAnchors`, `task-document-provenance`, `wp-adr-document-provenance`): the hashes of a token's PROV-O provenance link records and record keeper credentials, one chain of revisions per link; the records stay in the payload store |
+| CCP clearing contract | contract | Solidity | The CCP BANK-C's books (`wp-adr-ccp-scope`): rulebook, members and default fund; clearing of a repo settlement contract repo by novation; daily variation and initial margin; member default with the default fund waterfall; porting |
 
 ## Endpoints
 
@@ -113,9 +114,10 @@ the provenance routes are in the component READMEs, which are the authority.
 
 ## Flows (in the CALM file)
 
-The CSA flows below are in the CALM file. The repo, securities lending, triparty and CCP flows, and the tokenized
-collateral changes of `v0.2-demo` (completion by the record keeper, document provenance), are described in the
-workflow map and the component READMEs; the CALM file does not model them all yet.
+The CSA flows below are in the CALM file. Its nodes include every contract, among them the CCP clearing, record keeper
+register and provenance anchors contracts (`task-calm-model-contracts`). The repo, securities lending, triparty and CCP
+flows, and the tokenized collateral changes of `v0.2-demo` (completion by the record keeper, document provenance), are
+described in the workflow map and the component READMEs; the CALM file has no flows for them yet.
 
 1. **Initial margin call, collateral proposal and on-chain pledge** — the secured party writes the call's CDM document
    to the payload store and records the call with its `cdmHash` on-chain; the pledgor's gateway pushes the event, and the

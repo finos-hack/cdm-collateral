@@ -4,7 +4,7 @@
   "name": "CDM collateral prototype",
   "description": "Local prototype architecture for CDM-based initial-margin management with tokenized collateral on Hyperledger Besu.",
   "metadata": {
-    "status": "partially built: the IM and VM margin call lifecycles (flow-im-margin-call-pledge, flow-vm-margin-call-transfer, flow-return), flow-default-enforcement, flow-oracle-update and flow-revaluation-top-up run live on the contracts, ledger gateway, collateral service, oracle service (default notices and prices), CDM payload store and console (task-e2e-wiring, task-e2e-remaining-flows)",
+    "status": "built (release v0.2-demo): all 47 workflows of docs/analysis/cdm-workflow-task-map.md in the ISDA CSA, repo (GMRA), securities lending (GMSLA), triparty and CCP families run live on the contracts, a ledger gateway and a collateral service per participant, the oracle service (default notices, prices and the tMMF transfer agent), the CDM payload store and the console. The flows below model the CSA workflows; the other families are in the workflow map and the component READMEs",
     "goal": "goal-architecture-design",
     "task": "task-local-environment-setup",
     "asrs": [
@@ -230,7 +230,7 @@
       "unique-id": "oracle-service",
       "node-type": "service",
       "name": "Oracle service",
-      "description": "Off-chain oracle endpoints, shared, run by the market data operator. Reads price / NAV and rating data from the mock market data source, serves it to every participant's collateral service for valuation and eligibility, and publishes signed updates on-chain through the operator's ledger gateway. Also relays a default notice from the secured party to the on-chain default feed.",
+      "description": "Off-chain oracle endpoints, shared, run by the market data operator. Reads price / NAV and rating data from the mock market data source, serves it to every participant's collateral service for valuation and eligibility, and publishes signed updates on-chain through the operator's ledger gateway. Also relays a default notice from the secured party to the on-chain default feed. Since v0.2-demo it also acts as the transfer agent of tMMF, the record keeper of a Registered token: it keeps the tMMF register from the ledger's transfers and confirms each movement on the record keeper register contract through the operator's ledger gateway (task-authoritative-record-settlement-enforcement).",
       "interfaces": [
         {
           "unique-id": "oracle-rest-api",
@@ -400,7 +400,34 @@
       "unique-id": "triparty-settlement-contract",
       "node-type": "service",
       "name": "Triparty settlement contract",
-      "description": "The triparty agent's books (flow-triparty-terms, wp-adr-triparty-terms-profile): the giver proposes the hash of the cdm-ext TripartyTerms, the receiver and the agent each affirm the same hash, and the terms take effect when both have; any of the three may refuse a proposal, and the giver or the receiver may terminate terms in effect. Deposits and allocation by the agent come in task-triparty-trade-start.",
+      "description": "The triparty agent's books (flow-triparty-terms, wp-adr-triparty-terms-profile): the giver proposes the hash of the cdm-ext TripartyTerms, the receiver and the agent each affirm the same hash, and the terms take effect when both have; any of the three may refuse a proposal, and the giver or the receiver may terminate terms in effect. Under terms in effect the giver deposits and withdraws collateral with its ranking, and the agent allocates against a repo request, revalues, substitutes, ends the trade and records its reports, each with the hash of its cdm-ext document (wp-adr-triparty-trade-start, wp-adr-triparty-revaluation, wp-adr-triparty-substitution, wp-adr-triparty-trade-end, wp-adr-triparty-reporting).",
+      "metadata": {
+        "language": "Solidity"
+      }
+    },
+    {
+      "unique-id": "ccp-clearing-contract",
+      "node-type": "service",
+      "name": "CCP clearing contract",
+      "description": "The CCP's books (wp-adr-ccp-scope, task-ccp-workflows): BANK-C publishes its rulebook hash and pays its capital, and each member affirms the rulebook and pays its default fund share (wp-adr-ccp-membership); the seller of a repo booked on the repo settlement contract submits it for clearing with the hash of the cdm-ext CcpNovation, the buyer affirms, and on the CCP's acceptance the repo settlement contract closes the bilateral repo as Novated and the two cleared legs settle through this contract (wp-adr-ccp-clearing); daily margin rounds of variation and initial margin (wp-adr-ccp-margin); a member's default close-out with the default fund waterfall, which requires the default on the oracle feed (wp-adr-ccp-default); admission of a member and porting of a cleared repo (wp-adr-ccp-porting). Since v0.2-demo the CCP's service accepts a repo for clearing only when the purchased securities' provenance is complete, if the token requires it (task-document-provenance).",
+      "metadata": {
+        "language": "Solidity"
+      }
+    },
+    {
+      "unique-id": "record-keeper-register-contract",
+      "node-type": "service",
+      "name": "Record keeper register contract",
+      "description": "Confirmations of the record keeper of a token whose authoritative record is kept off the ledger (cdm-ext AuthoritativeRecordEnum Registered or Claim; tMMF in the prototype, kept by its transfer agent): confirm(txHash, token, ref) emits RegisterConfirmed once the record keeper's own register shows the token movements of a ledger transaction; only the record keeper's key may write. The register stays with the record keeper. Interim rules REG-1 to REG-5 (task-sme-registered-asset-completion): a Registered or Claim transfer or enforcement is complete only after this confirmation, which every collateral service reads to build the cdm-ext RecordKeeperConfirmation (task-authoritative-record-settlement-enforcement, task-authoritative-record-other-flows).",
+      "metadata": {
+        "language": "Solidity"
+      }
+    },
+    {
+      "unique-id": "provenance-anchors-contract",
+      "node-type": "service",
+      "name": "Provenance anchors contract",
+      "description": "Token-level provenance anchors (wp-adr-document-provenance, task-document-provenance, gap G41): anchor(token, linkId, cdmHash, revisionOf) emits ProvenanceAnchored for a W3C PROV-O link record or a record keeper's Verifiable Credential kept off the ledger in the CDM payload store, hashed with keccak-256 over its JCS canonical form; one chain of revisions per link, a revision naming the link's current head. Any account may anchor; the services verify the record keeper's credential. Each event is read into a cdm-ext LedgerAnchor of kind AssetDocument, Valuation or RegistryEntry. Agreements between two parties stay anchored in the collateral control and triparty settlement contracts.",
       "metadata": {
         "language": "Solidity"
       }
@@ -452,7 +479,10 @@
             "portfolio-reconciliation-contract",
             "repo-settlement-contract",
             "securities-loan-contract",
-            "triparty-settlement-contract"
+            "triparty-settlement-contract",
+            "ccp-clearing-contract",
+            "record-keeper-register-contract",
+            "provenance-anchors-contract"
           ]
         }
       }
@@ -499,7 +529,10 @@
             "portfolio-reconciliation-contract",
             "repo-settlement-contract",
             "securities-loan-contract",
-            "triparty-settlement-contract"
+            "triparty-settlement-contract",
+            "ccp-clearing-contract",
+            "record-keeper-register-contract",
+            "provenance-anchors-contract"
           ]
         }
       }
@@ -750,7 +783,7 @@
     },
     {
       "unique-id": "oracle-to-gateway",
-      "description": "Publishes price and default updates for the on-chain feed through the market operator's gateway instance.",
+      "description": "Publishes price and default updates for the on-chain feed, and the transfer agent's register confirmations, through the market operator's gateway instance.",
       "relationship-type": {
         "connects": {
           "source": {
@@ -872,6 +905,48 @@
           },
           "destination": {
             "node": "oracle-feed-contract"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "ccp-to-repo-settlement",
+      "description": "Reads a submitted repo and, on the CCP's acceptance, closes it as Novated on the repo settlement contract (EVM call).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ccp-clearing-contract"
+          },
+          "destination": {
+            "node": "repo-settlement-contract"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "ccp-to-oracle-feed",
+      "description": "Reads a member's default status before the default close-out (EVM call).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ccp-clearing-contract"
+          },
+          "destination": {
+            "node": "oracle-feed-contract"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "ccp-to-tokens",
+      "description": "Moves the CCP's capital, the default fund shares, margin and the cleared legs' securities and cash by ERC-20 transfer (EVM call).",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "ccp-clearing-contract"
+          },
+          "destination": {
+            "node": "tokenized-collateral"
           }
         }
       }
