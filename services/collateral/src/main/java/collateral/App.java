@@ -5183,6 +5183,14 @@ public final class App {
         return gw.get("/provenance/anchors");
     }
 
+    /** Refuses (throws) when a token the registry marks provenanceRequired has an incomplete path for a pledge to this party. */
+    private void requireProvenance(List<String> symbols) {
+        boolean required = symbols.stream().anyMatch(sym -> sym != null && cfg.registry.path("tokens").path(sym).path("provenanceRequired").asBoolean(false));
+        if (!required) return;
+        String refusal = ProvenanceLive.refusal(symbols, cfg.registry, provenanceAnchors(), payloads::get, cfg.node);
+        if (refusal != null) throw new RuntimeException(refusal);
+    }
+
     /** The provenance check of every token of the deployment (GET /api/v1/provenance?securedParty=bank-b). */
     private void provenanceAll(Context ctx) {
         JsonNode anchors = provenanceAnchors();
@@ -5657,6 +5665,12 @@ public final class App {
             long agreed = new BigInteger(gw.get("/calls/" + callId).get("agreed").asText()).divide(cfg.priceScale).longValue();
             if (master.equals("GMRA")) checkGmraCoverage(proposed, agreed);
             else checkGmslaCoverage(proposed, agreed);
+        }
+        if (accept) {
+            List<String> symbols = new ArrayList<>();
+            for (JsonNode a : gw.get("/calls/" + callId + "/proposals/" + proposalId + "/assets"))
+                symbols.add(symbolByAddress.get(a.get("token").asText().toLowerCase()));
+            requireProvenance(symbols);
         }
         Cdm cdm = Cdm.decide("P-" + proposalId, accept, reason);
         record(callId, "DecideProposal", cdm);
@@ -6888,6 +6902,12 @@ public final class App {
         String id = ctx.pathParam("id");
         Map<String, Object> b = body(ctx);
         boolean consent = Boolean.TRUE.equals(b.get("consent"));
+        if (consent) {
+            List<String> symbols = new ArrayList<>();
+            for (JsonNode a : gw.get("/substitutions/" + id).path("substitute"))
+                symbols.add(symbolByAddress.get(a.get("token").asText().toLowerCase()));
+            requireProvenance(symbols);
+        }
         CdmSubstitution d = CdmSubstitution.consent(id, consent, (String) b.get("reason"));
         store.recordDocument(id, "SubstitutionConsent", "out", d.hash, d.json);
         payloads.put(d.hash, d.json, callParties);

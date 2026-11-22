@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T16:51:29Z
+updatedAt: 2026-11-22T17:34:42Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -98,4 +98,8 @@ Interests are taken per link, since an asset can carry several. Fixture document
 `src/main/resources/provenance/aircraft/`; `ProvenanceAircraftTest` (8 tests). There is no aircraft token in the
 deployment: CDM 7.7.0 has no asset type for it (G40), and the asset is a URN of manufacturer, model and MSN.
 
-Not yet done: the provenance check is not yet a condition of accepting a pledge, only a report. The credential proofs are not checked against the W3C Data Integrity test suite.
+**Provenance gate (2026-11-22).** The deployment marks tUST and tMMF `provenanceRequired`. The secured party's service
+refuses to accept a margin call proposal, or to consent to a substitution, with a marked token whose provenance path
+for a pledge to it is not complete (`ProvenanceLive.refusal`); unmarked tokens are not checked, and a deployment without
+the mark behaves as before. `scripts/live-e2e.sh up` seeds the fixture provenance when the deployment requires it and
+nothing is anchored. Not yet gated: the repo, securities loan, triparty and CCP flows' own collateral acceptance. The credential proofs are not checked against the W3C Data Integrity test suite.

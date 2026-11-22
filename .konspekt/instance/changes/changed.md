@@ -1833,3 +1833,9 @@ excluded.
 | task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:52:20Z |
 | task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/analysis/gap-register.md | 2026-11-22T16:52:20Z |
 | task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/gap-register.html | 2026-11-22T16:52:20Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | contracts/scripts/deploy.ts | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | gateway/src/registry.ts | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | scripts/live-e2e.sh | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/main/java/collateral/App.java | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/main/java/collateral/ProvenanceLive.java | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/test/java/collateral/ProvenanceLiveTest.java | 2026-11-22T17:34:43Z |
