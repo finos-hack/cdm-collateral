@@ -469,3 +469,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-mrk-docprovadr-docprov | marks | waypoint:wp-adr-document-provenance | node:task-document-provenance |  | proposed |
 | e-drv-cdmdata-docprovadr | drives | concept:concept-asr-cdm-data-layer | waypoint:wp-adr-document-provenance |  | proposed |
 | e-drv-onchainid-docprovadr | drives | concept:concept-asr-onchain-asset-identity | waypoint:wp-adr-document-provenance |  | proposed |
+| e-prod-docprov-provboard | produces | node:task-document-provenance | artifact:artifact-provenance-whiteboard |  | proposed |
