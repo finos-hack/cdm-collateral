@@ -1846,3 +1846,4 @@ excluded.
 | task-substitution-ledger-anchors | 0959d21b9eee1fba58a9e0ec948a7e0e1090e96f | services/collateral/src/main/java/collateral/App.java | 2026-11-22T18:54:26Z |
 | task-substitution-ledger-anchors | 0959d21b9eee1fba58a9e0ec948a7e0e1090e96f | services/collateral/src/main/java/collateral/CdmAnchors.java | 2026-11-22T18:54:26Z |
 | task-substitution-ledger-anchors | 0959d21b9eee1fba58a9e0ec948a7e0e1090e96f | services/collateral/src/test/java/collateral/CdmAnchorsTest.java | 2026-11-22T18:54:26Z |
+| task-document-provenance | b361461695a6c622e0176c39547116da74802584 | services/collateral/src/main/java/collateral/App.java | 2026-11-22T19:03:09Z |

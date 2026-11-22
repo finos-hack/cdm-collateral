@@ -929,6 +929,7 @@ public final class App {
         if (!cfg.isCcp()) throw new IllegalArgumentException("only the CCP accepts a clearing");
         JsonNode c = ccpClearingOnChain(ctx.pathParam("id"));
         Map<String, Object> v = ccpClearingView(c);
+        requireProvenance(List.of(String.valueOf(v.get("security"))));
         if (!Boolean.TRUE.equals(v.get("canAccept"))) throw new IllegalStateException("the clearing cannot be accepted: " + (v.get("problem") != null ? v.get("problem") : "it is " + v.get("state")));
         ctx.json(gw.post("/ccp/clearings/" + ctx.pathParam("id") + "/accept", Map.of()));
     }
@@ -1793,6 +1794,9 @@ public final class App {
         JsonNode t = tripartyOnChain(r.get("termsId").asText());
         if (!t.get("receiver").asText().equalsIgnoreCase(cfg.myAddress)) throw new IllegalArgumentException("only the receiver settles the purchase");
         if (!r.get("state").asText().equals("allocated")) throw new IllegalStateException("the triparty repo is not allocated");
+        List<String> allocated = new ArrayList<>();
+        for (JsonNode a : r.path("allocation")) allocated.add(symbolByAddress.get(a.get("token").asText().toLowerCase()));
+        requireProvenance(allocated);
         Optional<String> problem = tripartyAllocationProblem(t, r);
         if (problem.isPresent()) throw new IllegalStateException("the allocation does not check: " + problem.get());
         ctx.json(gw.post("/triparty/repos/" + ctx.pathParam("id") + "/settle", Map.of("allocationHash", r.get("allocationHash").asText())));
@@ -1966,6 +1970,11 @@ public final class App {
         RevaluationInputs in = currentInputs(r);
         CdmTriparty.Substitution sub = CdmTriparty.substitute(tripartyTermsDoc(t), basis.trade(), basis.hash(), requestHash, request,
                 bankOf(t.get("giver").asText()), businessDate, in.held(), in.free());
+        if (sub.substituted()) {
+            List<String> incoming = new ArrayList<>();
+            sub.units().keySet().forEach(isin -> incoming.add(symbolOfIsin(isin)));
+            requireProvenance(incoming, nodeOf(t.get("receiver").asText()));
+        }
         payloads.put(sub.hash(), sub.json(), tripartyParties());
         JsonNode tx;
         if (sub.substituted()) {
@@ -3221,6 +3230,7 @@ public final class App {
         CdmLoanSubstitution.Substitution s = pendingSubstitution(l, sb);
         String sec = symbolByAddress.get(l.get("security").asText().toLowerCase());
         String sym = symbolByAddress.get(sb.get("collateral").asText().toLowerCase());
+        requireProvenance(List.of(sym));
         CdmLoanSubstitution.Substitution mine = CdmLoanSubstitution.substitute(c.trade(), c.terms(), cfg.isin(sym),
                 loanFeedPrice(sec), loanFeedPrice(sym), businessDate);
         if (!mine.hash().equalsIgnoreCase(s.hash()))
@@ -3471,6 +3481,7 @@ public final class App {
         if (sym.equals("tUSD") || !cfg.registry.get("tokens").has(sym)) throw new RuntimeException("not a security token: " + sym);
         if (col.equals(sym) || !cfg.registry.get("tokens").has(col)) throw new RuntimeException("not a collateral token for " + sym + ": " + col);
         requireUnderControl(col); // the collateral, not the loaned security
+        requireProvenance(List.of(col)); // the lender books, and takes the collateral
         long quantity = Long.parseLong(String.valueOf(b.get("quantity")));
         if (quantity < 1) throw new RuntimeException("the quantity is at least one");
         BigDecimal rate = new BigDecimal(String.valueOf(b.get("ratePercent"))).movePointLeft(2);
@@ -3751,6 +3762,7 @@ public final class App {
         JsonNode r = gw.get("/repos/" + id);
         if (!r.get("state").asText().equals("booked")) throw new RuntimeException("repo " + id + " is not booked");
         if (!r.get("buyer").asText().equalsIgnoreCase(cfg.myAddress)) throw new RuntimeException("only the buyer affirms a repo");
+        requireProvenance(List.of(symbolByAddress.getOrDefault(r.get("security").asText().toLowerCase(), ""))); // the purchased securities
         CdmRepo.Booking b = repoBooking(r);
         if (b == null) throw new RuntimeException("the booked document is not in the payload store");
         String problem = repoProblem(r, b);
@@ -4306,7 +4318,9 @@ public final class App {
         if (offered.equals(ZERO_HASH)) throw new RuntimeException("no substitution is requested");
         String doc = payloads.get(offered);
         if (doc == null) throw new RuntimeException("the requested substitution is not in the payload store");
-        Replacement leg = substitutionLeg(r, symbolOfIsin(CdmRepo.terms(CdmRepo.verify(doc).trade()).isin()));
+        String substitute = symbolOfIsin(CdmRepo.terms(CdmRepo.verify(doc).trade()).isin());
+        requireProvenance(List.of(substitute));
+        Replacement leg = substitutionLeg(r, substitute);
         if (!leg.next().hash().equalsIgnoreCase(offered))
             throw new RuntimeException("the substitution requested for repo " + leg.id() + " is not the one this service builds at the feed prices and business date " + businessDate);
         ctx.json(replacementRow(leg, instructReplacement(leg, totalPayments(List.of(leg)))));
@@ -5185,10 +5199,28 @@ public final class App {
 
     /** Refuses (throws) when a token the registry marks provenanceRequired has an incomplete path for a pledge to this party. */
     private void requireProvenance(List<String> symbols) {
+        requireProvenance(symbols, cfg.node);
+    }
+
+    /**
+     * As {@link #requireProvenance(List)}, for a pledge to {@code securedNode} (a registry party name): the triparty agent
+     * checks for the receiver, the CCP for itself. The result is the same whichever service runs the check.
+     */
+    private void requireProvenance(List<String> symbols, String securedNode) {
         boolean required = symbols.stream().anyMatch(sym -> sym != null && cfg.registry.path("tokens").path(sym).path("provenanceRequired").asBoolean(false));
         if (!required) return;
-        String refusal = ProvenanceLive.refusal(symbols, cfg.registry, provenanceAnchors(), payloads::get, cfg.node);
+        String refusal = ProvenanceLive.refusal(symbols, cfg.registry, provenanceAnchors(), payloads::get, securedNode);
         if (refusal != null) throw new RuntimeException(refusal);
+    }
+
+    /** The registry party name (for example "bank-b") of an address, or the address itself if the registry has none. */
+    private String nodeOf(String address) {
+        var it = cfg.registry.path("parties").fields();
+        while (it.hasNext()) {
+            var e = it.next();
+            if (e.getValue().asText().equalsIgnoreCase(address)) return e.getKey();
+        }
+        return address;
     }
 
     /** The provenance check of every token of the deployment (GET /api/v1/provenance?securedParty=bank-b). */
