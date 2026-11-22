@@ -1617,3 +1617,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-drv-onchainid-docprovadr | review |  | proposed | 2026-11-22T14:19:31Z | ni:///sha-256;KrvGiaznHsLxI2I87q5pYkF9Avm4gXWpohvIBSkiICI |  |
 | artifact:artifact-provenance-whiteboard | review |  | proposed | 2026-11-22T14:25:17Z | ni:///sha-256;i2FpMGjbdYLRkcrMU1OhsDLT_SYqPgG6E7N4xuFvQLM |  |
 | edge:e-prod-docprov-provboard | review |  | proposed | 2026-11-22T14:25:17Z | ni:///sha-256;i2FpMGjbdYLRkcrMU1OhsDLT_SYqPgG6E7N4xuFvQLM |  |
+| artifact:artifact-provenance-whiteboard | review | proposed | accepted | 2026-11-22T14:30:35Z | ni:///sha-256;WPhJ4xzqcCj4qAHiE9p2kg5a_ubNNPrvOI4ORa2QLF4 | denisurusov |
+| edge:e-prod-docprov-provboard | review | proposed | accepted | 2026-11-22T14:30:35Z | ni:///sha-256;WPhJ4xzqcCj4qAHiE9p2kg5a_ubNNPrvOI4ORa2QLF4 | denisurusov |

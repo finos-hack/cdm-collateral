@@ -4,8 +4,8 @@ name: "Whiteboard: tokenized collateral provenance, aircraft case"
 kind: diagram
 location: https://claude.ai/artifact/J67W5ETrt6TP2r8C51X1y9
 createdAt: 2026-11-21T21:50:00Z
-updatedAt: 2026-11-22T14:25:17Z
-review: proposed
+updatedAt: 2026-11-22T14:30:35Z
+review: accepted
 provenance:
   sourceRef: ni:///sha-256;i2FpMGjbdYLRkcrMU1OhsDLT_SYqPgG6E7N4xuFvQLM
   conversationId: tokenized-collateral
@@ -27,7 +27,8 @@ manager, the lender and the appraiser, and labels each link with the document be
 | Lender | Aircraft | mortgage, International Registry |
 | Lender | Asset manager | loan agreement, $100M |
 | Appraiser | Token | appraisal, issue price |
+| Aircraft | Token | issuance record: every token issued on this MSN (added 2026-11-22) |
 
 It marks the aircraft as missing from CDM (G40), notes that no link carries a document hash (G41), and lists what each
 link records: document, hash, record keeper, validity. The project owner named it as the source of the links for the
-tUST pilot (2026-11-22). The board lives in claude.ai, not in the repository; this entry records where it is.
+tUST pilot (2026-11-22), and found the issuance link missing; it was added to the board the same day. The board lives in claude.ai, not in the repository; this entry records where it is.

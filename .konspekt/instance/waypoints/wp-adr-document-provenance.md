@@ -10,14 +10,16 @@ provenance:
   timestamp: 2026-11-22T14:19:31Z
   confidence: 0.6
 createdAt: 2026-11-22T14:19:31Z
-updatedAt: 2026-11-22T14:19:31Z
+updatedAt: 2026-11-22T14:30:35Z
 ```
-# ADR (proposed): document provenance as cdm-ext types, exported as PROV-O; token-level anchors in LedgerAnchor; tUST pilot without credentials
+# ADR (proposed): document provenance recorded as PROV-O; token-level anchors in LedgerAnchor; tUST pilot with credentials on P-256 keys
 
 For [[task-document-provenance]] (gap G41, finding N2), under [[goal-tokenized-collateral]]. The project owner chose an
 existing standard mapped to CDM for interoperability: W3C PROV-O for the links, W3C Verifiable Credentials for record
-keepers' signed statements (2026-11-21). This ADR checks that choice against the alternatives and proposes an option for
-each of the four open questions. Each recommendation waits for the project owner's choice.
+keepers' signed statements (2026-11-21). This ADR checks that choice against the alternatives and settles four
+questions. The project owner chose on 2026-11-22: question 1 option B, question 2 option A, question 4 option B with
+separate P-256 keys; question 3 takes the links of [[artifact-provenance-whiteboard]], with the issuance link the
+project owner found missing.
 
 ## Standards checked (2026-11-22)
 
@@ -38,37 +40,62 @@ identity than self-issued credentials, but adds a second credential stack; it wa
 
 ## Question 1: representation
 
-- **A (recommended).** `cdm-ext` types for the links (`ProvenanceLink`: subject, relation, object, document reference with
+**Chosen: B** (project owner, 2026-11-22; the maintainer had recommended A).
+
+- **A.** `cdm-ext` types for the links (`ProvenanceLink`: subject, relation, object, document reference with
   content hash, record keeper, valid from, superseded by) with Rune conditions, and a Java exporter that writes them as
   PROV-O JSON-LD, with FIBO classes where one fits. Follows [[concept-asr-cdm-data-layer]]: CDM JSON first, checks in
   Rune.
-- **B.** PROV-O JSON-LD as the record; CDM documents refer to it by hash. Less work in `cdm-ext`, but the checks move
-  out of Rune and the record is no longer CDM JSON.
+- **B (chosen).** PROV-O JSON-LD as the record; CDM documents refer to it by hash. Less work in `cdm-ext`; any PROV
+  tool reads the record directly. The checks (a link has a hash, it has not been superseded) are written in Java over
+  the JSON-LD, and the provenance record is the prototype's one record that is not CDM JSON.
 
 ## Question 2: where token-level links are anchored
 
 Agreements between two parties are already anchored in `CollateralControl` (per-pair CSA and master-agreement chains)
 and `TripartySettlement`. Token terms, valuations, registry entries and the control agreement belong to the token.
 
-- **A (recommended).** New `AnchoredRecordEnum` kinds (`AssetDocument`, `Valuation`, `RegistryEntry`) in `LedgerAnchor`,
+**Chosen: A** (project owner, 2026-11-22).
+
+- **A (chosen).** New `AnchoredRecordEnum` kinds (`AssetDocument`, `Valuation`, `RegistryEntry`) in `LedgerAnchor`,
   keyed by token, agreed with [[task-substitution-ledger-anchors]], which builds anchors in the same code. Reuses the
   existing anchor status and checks.
 - **B.** A separate provenance contract keyed by token, with a chain per token like the per-pair chains.
 - **C.** EAS: one schema per link type, attested on the Besu network. Uses a widely deployed contract and gives
   revocation and expiry, but adds a dependency and departs from the prototype's own anchors.
 
-## Question 3: the tUST pilot's documents
+## Question 3: the tUST pilot's links
 
-tUST (ISIN US912810TM60, DTI QX4V2W9N3) is a Bearer token with no documents in the deployment. Proposed fixture links:
-token to ISIN (the security); ISIN to issuer (US Treasury); token to its token terms (a fixture document); token to its
-tokenizer and custodian (a fixture party); and a pledge of tUST under the CSA, through the existing per-pair chain.
-Valuation links come from the oracle's prices.
+The links come from [[artifact-provenance-whiteboard]] (the aircraft case), mapped to tUST (ISIN US912810TM60, DTI
+QX4V2W9N3), a Bearer token with no documents in the deployment today:
+
+| Whiteboard link | tUST link | Document |
+|-----------------|-----------|----------|
+| Aircraft → token: issuance record (added 2026-11-22) | The bond → tUST | Issuance record (fixture): the face amount of ISIN US912810TM60 held for the token, the units issued, the contract and DTI, the mint transactions |
+| Token holders → token: token register | Holders → tUST | None: the ledger is the record (Bearer) |
+| Token → SPV: token terms | tUST → tokenizer | Token terms (fixture) |
+| SPV → aircraft: title, FAA registry | Tokenizer → the bond | Custody record at the custodian (fixture) |
+| Asset manager → SPV: SPV constitution | Sponsor → tokenizer | The tokenizer's constitution (fixture) |
+| Lender → aircraft: mortgage | Secured party → tUST | The pledge under the CSA (existing per-pair chain) |
+| Lender → asset manager: loan | The CSA trade | Existing CDM trade |
+| Appraiser → token: appraisal | Oracle → tUST | The oracle's published price |
+
+**The issuance link is recorded by asset.** The record is keyed by the asset's identifier (ISIN; for an aircraft, the
+MSN) and lists every token issued against it, so a check can start from the asset and find every token that claims it.
+That lets the pilot check that the units issued do not exceed the face amount in custody, and that no second token
+claims the same holding (double tokenization), which a record keyed only by token cannot show.
 
 ## Question 4: Verifiable Credentials in the pilot
 
-- **A (recommended).** Not in the pilot: PROV links and anchored hashes only. Credentials come with tMMF, where a record
+**Chosen: B, with separate P-256 keys** (project owner, 2026-11-22), so that credentials do not depend on Besu keys.
+
+- **A.** Not in the pilot: PROV links and anchored hashes only. Credentials come with tMMF, where a record
   keeper's statement about its register matters.
-- **B.** In the pilot, signed with the parties' Besu keys. Adds key and DID handling to the smallest case.
+- **B (chosen).** In the pilot. W3C Data Integrity's ECDSA cryptosuites use P-256 or P-384, not the secp256k1 curve of
+  the Besu keys, so each party gets a separate P-256 key and signs with Data Integrity (`ecdsa-rdfc-2019` or
+  `ecdsa-jcs-2019`). The alternative, a JWT signed with ES256K and the Besu key (VC-JOSE-COSE), was not chosen, so that
+  credentials do not depend on the ledger's keys. Each record keeper's statement (custodian: holding; tokenizer:
+  issuance record) is a credential over the hash of the document it attests.
 
 ## Consequences
 
