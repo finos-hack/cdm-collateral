@@ -2,15 +2,15 @@
 id: task-v02-demo-release-summary
 type: task
 title: v0.2-demo release summary
-status: open
-review: proposed
+status: resolved
+review: accepted
 provenance:
   conversationId: v02-demo-release-summary
   sourceRef: ni:///sha-256;xAW0L5hnTNwr61J1XP5el8MYc7zYDGS4OZN19oaICag
   timestamp: 2026-11-22T20:56:04Z
   confidence: 0.8
 createdAt: 2026-11-22T20:56:04Z
-updatedAt: 2026-11-22T21:13:42Z
+updatedAt: 2026-11-22T21:44:54Z
 ```
 # Task: v0.2-demo release summary
 
@@ -38,3 +38,5 @@ was not run.
 map's "Gaps with no workflow row" table are accepted; G41 is partial (21 closed, 8 partial, 1 deferred, 9 open, 2 out
 of scope); the project narrative (5 to 22 November), `architecture/README.md` and `console/README.md` are rewritten in
 this task; a pull request is opened, and `v0.2-demo` is tagged on its merge commit.
+
+**Accepted and resolved 2026-11-22** by the project owner, with its decomposes edge (source `ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU`). Merged in PR #94 (`02ae9fa`), tagged `v0.2-demo`.

@@ -2,14 +2,14 @@
 id: task-konspekt-kit-refresh-rest-fallback
 type: task
 title: Refresh review-units.mjs from konspekt main for the REST fallback
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: konspekt-kit-refresh-rest-fallback
   sourceRef: ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI
   timestamp: 2026-11-22T21:21:07Z
 createdAt: 2026-11-22T21:21:07Z
-updatedAt: 2026-11-22T21:21:07Z
+updatedAt: 2026-11-22T21:44:54Z
 ```
 # Task: refresh review-units.mjs from konspekt main for the REST fallback
 
@@ -36,3 +36,5 @@ Steps, as written by the project owner:
    binding audit and conformance checks are green, then ask the project owner before resolving.
 
 Accepted, with its decomposes edge, by the project owner on 2026-11-22 (source `ni:///sha-256;hvZtMGBcgRmOfnaMzR0IwF1htyo2uGy3kt_XmQvMwhI`).
+
+**Resolved 2026-11-22** by the project owner (source `ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU`). Landed in PR #96 (`72ff842`); review-unit log regenerated on `main` (`f557183`, 324 rows); validator 0 errors, binding audit clean, the conformance and binding-audit workflows passed on `main` (`263146f`).

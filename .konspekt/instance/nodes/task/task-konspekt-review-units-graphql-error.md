@@ -3,14 +3,14 @@ id: task-konspekt-review-units-graphql-error
 type: task
 title: Report a one-line error, not a stack trace, when review-units.mjs --api graphql cannot reach GraphQL
 status: open
-review: proposed
+review: accepted
 provenance:
   conversationId: konspekt-kit-refresh-rest-fallback
   sourceRef: ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c
   timestamp: 2026-11-22T21:38:22Z
   confidence: 0.8
 createdAt: 2026-11-22T21:38:22Z
-updatedAt: 2026-11-22T21:38:22Z
+updatedAt: 2026-11-22T21:44:54Z
 ```
 # Task: report a one-line error, not a stack trace, when `review-units.mjs --api graphql` cannot reach GraphQL
 
@@ -28,3 +28,5 @@ Done when, with `--api graphql` forced and GraphQL unavailable, the tool prints 
 --api auto or --api rest`) and exits non-zero, with no stack trace. The fix belongs in konspekt
 (`tools/review-units.mjs`), reported there as an issue or pull request; this repository takes it by re-vendoring the
 tool, as in [[task-konspekt-kit-refresh-rest-fallback]].
+
+**Accepted 2026-11-22** by the project owner, with its decomposes edge (source `ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU`). How it reaches konspekt (an issue on `finos-labs/konspekt` or a pull request with the fix) is not yet decided.

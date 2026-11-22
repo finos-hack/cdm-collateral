@@ -1645,3 +1645,12 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-konspekt-review-units-graphql-error | review |  | proposed | 2026-11-22T21:38:22Z | ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c |  |
 | node:task-konspekt-review-units-graphql-error | status |  | open | 2026-11-22T21:38:22Z | ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c |  |
 | edge:e-dec-konspektadopt-reviewunitsgqlerror | review |  | proposed | 2026-11-22T21:38:22Z | ni:///sha-256;Y5OTivZPha4le_cJOqThz2JLJVHWYoHQIRPJP7Jxn7c |  |
+| node:task-konspekt-kit-refresh-rest-fallback | status | open | resolved | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| node:task-konspekt-review-units-graphql-error | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| edge:e-dec-konspektadopt-reviewunitsgqlerror | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| node:task-calm-model-contracts | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| edge:e-dec-archdesign-calmcontracts | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| node:task-calm-model-contracts | status | open | resolved | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| node:task-v02-demo-release-summary | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| edge:e-dec-adoption-v02summary | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| node:task-v02-demo-release-summary | status | open | resolved | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
