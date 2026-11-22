@@ -427,6 +427,7 @@ export function loadInstance(instanceDir, opts = {}) {
   const provRefKinds = {};
   let commandLog = null;
   let changeLog = null;
+  let reviewUnitLog = null;
   for (const reg of registries) {
     if (!reg) continue;
     Object.assign(subtypeDefs, reg.subtypes || {});
@@ -434,6 +435,7 @@ export function loadInstance(instanceDir, opts = {}) {
     Object.assign(provRefKinds, reg.provenanceRefs || {});
     if (reg.commandLog) commandLog = reg.commandLog;
     if (reg.changeLog) changeLog = reg.changeLog;
+    if (reg.reviewUnitLog) reviewUnitLog = reg.reviewUnitLog;
   }
   const edgeDomainRange = { ...EDGE_DOMAIN_RANGE, ...extraEdges };
   const edgeKinds = Object.keys(edgeDomainRange);
@@ -901,6 +903,7 @@ export function loadInstance(instanceDir, opts = {}) {
   // any provenance-ref. Validated only when a layer declares the log.
   const executedRows = []; // { row, entity } — read again by the basis checks
   const changedRows = [];  // { row, entity, timestamp }
+  const changedCommits = new Set(); // commit tokens, compared as strings by the review-unit log
   if (commandLog) {
     const clPath = join(instanceDir, commandLog.file);
     if (existsSync(clPath)) {
@@ -980,6 +983,86 @@ export function loadInstance(instanceDir, opts = {}) {
         }
         if (!file) {
           problem("error", "changed-incomplete", `changed log row ${row} has an empty file path`, entity);
+        }
+        if (commit) changedCommits.add(commit);
+      }
+    }
+  }
+
+  // ----- review-unit log (persona layer) -----
+  // A `| review unit | state | merge commit | commit | timestamp | landed | match |`
+  // table linking each commit bound in the changed-code log to the review unit (a
+  // pull request on GitHub) containing it, one row per (review unit, commit); a
+  // bound commit on the default branch in no unit has one `direct` row
+  // (nw-direct-commits-recorded), and `landed`/`match` name the default-branch
+  // commit carrying the change (nw-landed-commit-recorded). The two last columns
+  // are optional, so a five-column log stays valid. Rows are derived by a forge
+  // adapter (tools/review-units.mjs), not typed. The checker stays forge- and
+  // VCS-neutral: `commit` must equal a changed-code log token as a string, and
+  // nothing is resolved. Validated only when a layer declares the log.
+  if (reviewUnitLog) {
+    const ruPath = join(instanceDir, reviewUnitLog.file);
+    if (existsSync(ruPath)) {
+      const states = reviewUnitLog.states || ["open", "merged", "closed", "direct"];
+      const matches = reviewUnitLog.matches || ["same", "squash", "patch-id", "position"];
+      const seenPairs = new Set();
+      const rowCommits = new Set();
+      let row = 0;
+      for (const line of readFileSync(ruPath, "utf8").split("\n")) {
+        const t = line.trim();
+        if (!t.startsWith("|")) continue;
+        const cells = t.split("|").slice(1, -1).map((c) => c.trim());
+        if (cells.length < 4 || cells[0] === "review unit" || /^-+$/.test(cells[0])) continue;
+        row++;
+        const [unit, state, mergeCommit, commit, timestamp, landed = "", match = ""] = cells;
+        if (commit) rowCommits.add(commit);
+        if (state === "direct") {
+          if (unit || mergeCommit) {
+            problem("error", "review-unit-incomplete",
+              `review-unit log row ${row} is direct but names a review unit or merge commit`, null);
+          }
+        } else if (!unit) problem("error", "review-unit-incomplete", `review-unit log row ${row} has an empty review unit`, null);
+        if (Boolean(landed) !== Boolean(match)) {
+          problem("error", "review-unit-incomplete",
+            `review-unit log row ${row} must give landed and match together`, null);
+        } else if (match && !matches.includes(match)) {
+          problem("error", "review-unit-incomplete",
+            `review-unit log row ${row} has match "${match}"; must be [${matches.join(", ")}]`, null);
+        } else if (match && state !== "merged" && state !== "direct") {
+          problem("error", "review-unit-incomplete",
+            `review-unit log row ${row} is ${state} but names a landed commit; only merged and direct rows land`, null);
+        }
+        if (!states.includes(state)) {
+          problem("error", "review-unit-incomplete",
+            `review-unit log row ${row} has state "${state}"; must be [${states.join(", ")}]`, null);
+        }
+        if (state === "merged" && !mergeCommit) {
+          problem("error", "review-unit-incomplete", `review-unit log row ${row} is merged but has no merge commit`, null);
+        }
+        if (!commit) {
+          problem("error", "review-unit-incomplete", `review-unit log row ${row} has an empty commit`, null);
+        } else if (changeLog && !changedCommits.has(commit)) {
+          problem("error", "dangling-review-unit-commit",
+            `review-unit log row ${row} names commit "${commit}", which no changed-code log row binds`, null);
+        }
+        if (timestamp && Number.isNaN(Date.parse(timestamp))) {
+          problem("error", "review-unit-incomplete",
+            `review-unit log row ${row} has an unparseable timestamp "${timestamp}"`, null);
+        }
+        const pair = `${unit}\u0000${commit}`;
+        if (unit && commit && seenPairs.has(pair)) {
+          problem("warning", "duplicate-review-unit-row",
+            `review-unit log row ${row} repeats review unit "${unit}" and commit "${commit}"`, null);
+        }
+        seenPairs.add(pair);
+      }
+      // A bound commit with no row is on no default branch yet, or the log was
+      // not derived since it was bound — or a rewrite before merge left it on no
+      // branch. A warning: a commit on an open branch legitimately has none.
+      for (const c of changedCommits) {
+        if (!rowCommits.has(c)) {
+          problem("warning", "review-unit-missing",
+            `commit "${c}" is bound in the changed-code log but has no review-unit log row; regenerate the log (tools/review-units.mjs) once it is on the default branch or in a review unit`, null);
         }
       }
     }
