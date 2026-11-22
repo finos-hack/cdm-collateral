@@ -3,6 +3,7 @@ version "${project.version}"
 
 import cdm.base.staticdata.asset.common.*
 import cdmx.collateral.margincall.*
+import cdmx.collateral.reconciliation.*
 
 func TokenForAsset: <"The token representing a CDM asset on a network, from a list of known tokens.">
     inputs:
@@ -106,7 +107,7 @@ func MarginCallStepAnchorStatus: <"Whether an applied margin call step and the l
     set status:
         AnchorStatus(AnchorFor(anchors, AnchoredRecordEnum -> MarginCallStep, stepIdentifier), 1)
 
-func TransferComplete: <"Whether the transfer of a tokenized asset under a CDM record is complete. For a Bearer token the final ledger transactions are enough; for a Registered or Claim token the record keeper also confirms its record (provisional rule, pending task-sme-registered-asset-completion).">
+func TransferComplete: <"Whether the transfer of a tokenized asset under a CDM record is complete. For a Bearer token the final ledger transactions are enough; for a Registered or Claim token the record keeper also confirms its record (interim rules REG-1, REG-2 and REG-4, project owner 2026-11-21, pending task-sme-registered-asset-completion). Enforcement follows the same rule as settlement.">
     inputs:
         token TokenizedAsset (1..1)
         recordIdentifier string (1..1)
@@ -123,3 +124,27 @@ func TransferComplete: <"Whether the transfer of a tokenized asset under a CDM r
                         and item -> asset = token -> asset
                         and item -> recordIdentifier = recordIdentifier
                     then exists))
+
+func EligibleUnderControl: <"Whether a token may be taken as collateral given its authoritative record: a Bearer token always; a Registered or Claim token only with a recorded control agreement with its record keeper, because the escrow contract controls the token but not the asset (interim rule REG-3, project owner 2026-11-21, pending task-sme-registered-asset-completion).">
+    inputs:
+        token TokenizedAsset (1..1)
+    output:
+        eligible boolean (1..1)
+
+    set eligible:
+        token -> authoritativeRecord = AuthoritativeRecordEnum -> Bearer
+            or token -> controlAgreement exists
+
+func RegisterBreaks: <"Where the record keeper's record and the ledger disagree on a Registered or Claim token, for example the units each holder holds. The record keeper's record prevails: a break means the ledger has a transfer the record does not show yet, or the reverse, and the transfers involved are not complete until it is reconciled (interim rule REG-5, project owner 2026-11-21, pending task-sme-registered-asset-completion).">
+    inputs:
+        register LedgerFact (0..*) <"From the record keeper's record, for example register/<token>/<holder> units.">
+        onLedger LedgerFact (0..*) <"The same facts read from the ledger.">
+    output:
+        registerBreak LedgerBreak (0..*) <"MissingOnLedger: the record shows it, the ledger does not; MissingFromRecords: the ledger shows it, the record does not.">
+
+    alias keys:
+        [register extract f [ FactKey(f) ], onLedger extract f [ FactKey(f) ]] then distinct then sort
+
+    add registerBreak:
+        keys extract k [ FactBreak(k, register, onLedger) ]
+

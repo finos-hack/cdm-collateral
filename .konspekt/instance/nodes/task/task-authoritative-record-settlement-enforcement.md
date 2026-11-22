@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-20T20:06:53Z
   confidence: 0.8
 createdAt: 2026-11-20T20:06:53Z
-updatedAt: 2026-11-21T20:16:21Z
+updatedAt: 2026-11-22T02:58:01Z
 ```
 # Task: make settlement and enforcement depend on the token's authoritative record
 
@@ -40,3 +40,26 @@ a mismatch is a break). The SME's answers may still change them.
   and the contract's `enforce` takes and emits its `cdmHash`, so an Enforcement `LedgerAnchor` can be built.
 - **Control agreement:** recorded in the token registry (`deploy.ts` `TOKENS`) with `authoritativeRecord` and
   `recordKeeper`; a Registered or Claim token without one is not eligible.
+
+## Progress (2026-11-21)
+
+Built for the CSA flows, as decided above:
+
+- `cdm-ext`: `TokenizedAsset.controlAgreement`, `EligibleUnderControl` (REG-3), `RegisterBreaks` (REG-5),
+  `RecordKeeperConfirmation.transactionHash`; `TransferComplete` cites the interim rules. `LedgerTest` 20 tests.
+- Contracts: `RecordKeeperRegister` (the record keeper's `RegisterConfirmed` events); `CollateralControl.enforce`
+  takes and emits the `cdmHash` of the CDM `CollateralEnforcement`. 145 contract tests.
+- `deploy.ts`: tMMF is Registered, kept by "MMF Transfer Agent" under control agreement `CA-TMMF-2026-01`; a
+  Registered or Claim token without one is not made eligible.
+- Gateway: `/calls/{id}/enforcement`, `/register/tokens`, `/register/transfers`, `/register/confirmations`;
+  `RegisterConfirmed` is relayed to the services.
+- Oracle service: `TransferAgent` keeps the tMMF register and confirms each transaction that moves tMMF;
+  `PUT /oracle/v1/register/paused` holds it for tests.
+- Collateral service: `cdm-state` reports `recordKeeper` and `settlementComplete` (`CdmRecordKeeper`, outside the
+  fold cache); `enforce` builds, stores and anchors a `CollateralEnforcement` (`CdmEnforcement`);
+  `/calls/{id}/enforcement` and `/register/breaks`; the baseline schedule applies `EligibleUnderControl`.
+  `CdmRecordKeeperTest` 7 tests.
+- Live spec `flow-registered-collateral`: a tMMF pledge and its enforcement each wait for the transfer agent, and the
+  register shows a break until it confirms. Local run after a reset: 54 passed.
+
+Not done: repo, GMSLA and triparty flows do not apply the rule; the console does not show the completion.

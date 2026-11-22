@@ -43,6 +43,7 @@ type TokenizedAsset: <"The on-chain representation of a CDM asset: which network
     decimals int (0..1) <"Decimal places of the on-chain quantity: on-chain units = quantity x 10^decimals.">
     authoritativeRecord AuthoritativeRecordEnum (1..1)
     recordKeeper LegalEntity (0..1) <"Who keeps the authoritative record when it is not the ledger: the registrar or the intermediary.">
+    controlAgreement string (0..1) <"Reference of the control agreement under which the record keeper follows the secured party's instructions without the owner's further consent (UCC 8-106(c), (d)). Interim rule REG-3 (project owner, 2026-11-21): a Registered or Claim token without one is not eligible collateral.">
 
     condition RecordKeeperOffLedger: <"A registered or claim token names who keeps the authoritative record.">
         if authoritativeRecord <> AuthoritativeRecordEnum -> Bearer then recordKeeper exists
@@ -90,9 +91,10 @@ type LedgerAnchor: <"Where the ledger records one CDM record: the hash of the re
     condition TransactionsCarryTheHash: <"A transaction that carries a hash carries this record's hash.">
         (transaction filter t [ t -> recordedHash exists and t -> recordedHash <> documentHash ] then count) = 0
 
-type RecordKeeperConfirmation: <"The record keeper's confirmation that its record shows the transfer of a CDM record, for a registered or claim token. Provisional: what must be confirmed waits for task-sme-registered-asset-completion.">
+type RecordKeeperConfirmation: <"The record keeper's confirmation that its record shows the transfer of a CDM record, for a registered or claim token: the register update or the account credit. Interim rules REG-1 and REG-2 (project owner, 2026-11-21), pending task-sme-registered-asset-completion.">
     recordKeeper LegalEntity (1..1)
     asset Asset (1..1)
     recordIdentifier string (1..1) <"The CDM record (step or event identifier) whose transfer is confirmed.">
     confirmedAt zonedDateTime (1..1)
     reference string (0..1) <"The record keeper's own reference.">
+    transactionHash string (0..1) <"The ledger transaction whose transfer the record keeper's record now shows, lower-case hex.">

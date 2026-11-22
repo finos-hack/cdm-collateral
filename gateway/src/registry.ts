@@ -14,6 +14,11 @@ export interface TokenInfo {
   isin: string;
   cusip: string;
   dti: string;
+  /** Which record decides who holds the asset (cdm-ext AuthoritativeRecordEnum); absent in an older deployment = Bearer. */
+  authoritativeRecord?: "Bearer" | "Registered" | "Claim";
+  recordKeeper?: string;
+  /** Reference of the control agreement with the record keeper (interim rule REG-3). */
+  controlAgreement?: string;
 }
 
 export interface Registry {
@@ -37,6 +42,8 @@ export interface Registry {
     tripartySettlement?: `0x${string}`;
     /** Absent in a deployment made before flow-ccp-membership. */
     ccpClearing?: `0x${string}`;
+    /** Absent in a deployment made before task-authoritative-record-settlement-enforcement. */
+    recordKeeperRegister?: `0x${string}`;
   };
   priceScale: string;
   tokens: Record<string, TokenInfo>;
