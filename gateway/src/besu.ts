@@ -296,6 +296,12 @@ const EVENT_BY_TOPIC = new Map<string, string>(
     "LoanBilled(bytes32,address,address,uint32,uint256,bytes32)",
     "LoanBillPaid(bytes32,address,uint32,uint256,bytes32)",
     "LoanBillRefused(bytes32,bytes32)",
+    // The repo, loan and triparty events that move securities, named in /register/movements (task-authoritative-record-other-flows).
+    "LoanClosedOut(bytes32,bytes32)",
+    "RepoClosedOut(bytes32,bytes32)",
+    "RepoPairedOff(bytes32,bytes32,bytes32)",
+    "Deposited(bytes32,address,uint256,uint256)",
+    "Withdrawn(bytes32,address,uint256)",
     "Transfer(address,address,uint256)",
     "Approval(address,address,uint256)",
   ].map((sig) => [toEventSelector(sig).toLowerCase(), sig.slice(0, sig.indexOf("("))]),

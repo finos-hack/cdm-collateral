@@ -1825,6 +1825,14 @@ excluded.
 | task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/spv-constitution.json | 2026-11-22T16:51:47Z |
 | task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/token-terms.json | 2026-11-22T16:51:47Z |
 | task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/test/java/collateral/ProvenanceAircraftTest.java | 2026-11-22T16:51:47Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | console/e2e/live.spec.ts | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | services/collateral/src/main/java/collateral/App.java | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | services/collateral/src/main/java/collateral/CdmTriparty.java | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | 6fd927af06080014ffa7b6d3c8b122189b222dab | services/collateral/src/test/java/collateral/CdmTripartyTest.java | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e383b5fab7c0b8e41ea0e8dfc3f89e055923e8af | gateway/src/besu.ts | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/analysis/gap-register.md | 2026-11-22T16:52:20Z |
+| task-authoritative-record-other-flows | e8772a455fb21db63926cced29a346ca3db53f84 | docs/gap-register.html | 2026-11-22T16:52:20Z |
 | task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | contracts/scripts/deploy.ts | 2026-11-22T17:34:43Z |
 | task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | gateway/src/registry.ts | 2026-11-22T17:34:43Z |
 | task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | scripts/live-e2e.sh | 2026-11-22T17:34:43Z |
