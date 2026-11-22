@@ -1766,3 +1766,5 @@ excluded.
 | task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | console/src/components/LiveConsole.tsx | 2026-11-22T15:15:37Z |
 | task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | console/src/domain/liveApi.ts | 2026-11-22T15:15:37Z |
 | task-console-record-keeper-completion | 7fff2914424f10cd61e956f8b582807d02bda9ad | docs/analysis/cdm-workflow-task-map.md | 2026-11-22T15:15:37Z |
+| task-console-record-keeper-completion | 557d8af383a59b533e37d15d33f5d7c1d717107c | docs/analysis/gap-register.md | 2026-11-22T15:20:23Z |
+| task-console-record-keeper-completion | 557d8af383a59b533e37d15d33f5d7c1d717107c | docs/gap-register.html | 2026-11-22T15:20:23Z |
