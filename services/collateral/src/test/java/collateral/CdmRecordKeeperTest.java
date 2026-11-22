@@ -113,11 +113,56 @@ class CdmRecordKeeperTest {
         return M.readTree(b.append(']').toString());
     }
 
+    // These fixtures carry no document hash, as the triparty profile's Deposited and Withdrawn do: the transaction's
+    // finality is the anchor status (project owner, 2026-11-22).
+    private static final java.util.function.Function<String, String> NO_DOCS = h -> null;
+
+    // task-substitution-ledger-anchors: a movement whose flow log carries the document hash has a LedgerAnchor.
+    private static final String DELIVERY = "{\"delivery\":1}";
+
+    private static JsonNode hashedMovement(String recordId, String token) throws Exception {
+        String hash = Cdm.keccakHex(DELIVERY).toLowerCase();
+        return M.readTree("[{\"recordId\":\"" + recordId + "\",\"txHash\":\"" + TX + "\",\"block\":\"20\"," +
+            "\"events\":[\"LoanDeliveryInstructed\",\"LoanDelivered\"],\"status\":\"Final\",\"cdmHash\":\"" + hash + "\"," +
+            "\"event\":\"LoanDelivered\",\"logIndex\":3,\"contract\":\"0x" + "5e".repeat(20) + "\"," +
+            "\"network\":{\"name\":\"besu-prototype\",\"platform\":\"Hyperledger Besu\",\"chainId\":1337},\"txLogs\":[" +
+            "{\"contract\":\"" + token + "\",\"logIndex\":0,\"event\":\"Transfer\"}," +
+            "{\"contract\":\"0x" + "5e".repeat(20) + "\",\"logIndex\":1,\"event\":\"LoanDeliveryInstructed\",\"cdmHash\":\"" + hash + "\"}," +
+            "{\"contract\":\"0x" + "5e".repeat(20) + "\",\"logIndex\":2,\"event\":\"LoanRecallReduced\",\"cdmHash\":\"0x" + "99".repeat(32) + "\"}]}]");
+    }
+
+    @Test
+    void aMovementWithAHashIsCompleteOnItsAnchorAndTheRecordKeeper() throws Exception {
+        java.util.function.Function<String, String> docs = h -> h.equals(Cdm.keccakHex(DELIVERY).toLowerCase()) ? DELIVERY : null;
+        Map<String, Map<String, Object>> waiting = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN,
+            hashedMovement(LOAN, TMMF), M.readTree("[]"), docs);
+        assertEquals(false, waiting.get(LOAN).get("complete"));
+        Map<String, Map<String, Object>> done = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN,
+            hashedMovement(LOAN, TMMF), confirmed(TMMF), docs);
+        assertEquals(true, done.get(LOAN).get("complete"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rec = ((List<Map<String, Object>>) done.get(LOAN).get("records")).get(0);
+        assertEquals("Complete", rec.get("anchorStatus"));
+        assertEquals(true, rec.get("documentVerified"));
+        assertTrue(String.valueOf(rec.get("anchorHash")).matches("0x[0-9a-f]{64}"));
+    }
+
+    @Test
+    void aMovementWhoseDocumentThisPartyDoesNotHoldIsNotComplete() throws Exception {
+        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN,
+            hashedMovement(LOAN, TMMF), confirmed(TMMF), NO_DOCS);
+        assertEquals(false, r.get(LOAN).get("complete"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rec = ((List<Map<String, Object>>) r.get(LOAN).get("records")).get(0);
+        assertEquals("Missing", rec.get("anchorStatus"));
+        assertEquals(false, rec.get("documentVerified"));
+    }
+
     @Test
     void aLoanDeliveryOfTMmfWaitsForTheRecordKeeper() throws Exception {
-        Map<String, Map<String, Object>> waiting = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF), M.readTree("[]"));
+        Map<String, Map<String, Object>> waiting = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN, movements(LOAN, TMMF), M.readTree("[]"), NO_DOCS);
         assertEquals(false, waiting.get(LOAN).get("complete"));
-        Map<String, Map<String, Object>> done = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF), confirmed(TMMF));
+        Map<String, Map<String, Object>> done = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN, movements(LOAN, TMMF), confirmed(TMMF), NO_DOCS);
         assertEquals(true, done.get(LOAN).get("complete"));
         @SuppressWarnings("unchecked")
         Map<String, Object> rec = ((List<Map<String, Object>>) done.get(LOAN).get("records")).get(0);
@@ -128,18 +173,18 @@ class CdmRecordKeeperTest {
     @Test
     void aRecordIsCompleteOnlyWhenEachOfItsMovementsIs() throws Exception {
         // LOAN moved tMMF twice: the first transaction is confirmed (TX), the second is not.
-        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF, LOAN, TMMF), confirmed(TMMF));
+        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN, movements(LOAN, TMMF, LOAN, TMMF), confirmed(TMMF), NO_DOCS);
         assertEquals(2, ((List<?>) r.get(LOAN).get("records")).size());
         assertEquals(false, r.get(LOAN).get("complete"));
     }
 
     @Test
     void movementsAreKeptApartByRecordAndOnlyRegisteredTokensCount() throws Exception {
-        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), movements(LOAN, TMMF, OTHER_LOAN, TUST), M.readTree("[]"));
+        Map<String, Map<String, Object>> r = CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN, movements(LOAN, TMMF, OTHER_LOAN, TUST), M.readTree("[]"), NO_DOCS);
         assertEquals(false, r.get(LOAN).get("complete"));
         // The Bearer movement is complete on the ledger alone.
         assertEquals(true, r.get(OTHER_LOAN).get("complete"));
-        assertEquals(Map.of(), CdmRecordKeeper.movements(registry(true), M.readTree("[]"), M.readTree("[]")));
+        assertEquals(Map.of(), CdmRecordKeeper.movements(registry(true), cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN, M.readTree("[]"), M.readTree("[]"), NO_DOCS));
     }
 
     @Test

@@ -206,7 +206,19 @@ export interface RegisterMovement {
   block: string;
   events: string[];
   status: "Final";
-  txLogs: { contract: string; logIndex: number; event: "Transfer" }[];
+  /** The token Transfer logs of the transaction, then the flow contract's logs in it with the hash each carries. */
+  txLogs: { contract: string; logIndex: number; event?: string; cdmHash?: Hex }[];
+  /**
+   * What the movement's CDM LedgerAnchor needs (task-substitution-ledger-anchors): the record's document hash and the
+   * flow log carrying it, which is the last flow log of this record in the transaction that carries a hash or, when
+   * none does (a close-out, whose CloseOutRecorded names the close-out), the last such log of the transaction.
+   * Absent when no flow log of the transaction carries a hash: the triparty profile's Deposited and Withdrawn.
+   */
+  cdmHash?: Hex;
+  event?: string;
+  logIndex?: number;
+  contract: string;
+  network: { name: string; platform: string; chainId: number };
 }
 
 /** One RegisterConfirmed event: the record keeper's register shows the token movements of transaction txHash. */
@@ -835,6 +847,79 @@ const provenanceAbi = parseAbi([
 
 const transferAbi = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
 
+// Every event of the repo, securities loan and triparty contracts, as they declare it, to read the document hash of a
+// movement's flow logs (task-substitution-ledger-anchors). An event's document hash is its last non-indexed bytes32.
+const movementAbi = parseAbi([
+  "event RepoBooked(bytes32 indexed repoId, address indexed seller, address indexed buyer, bytes32 tradeHash)",
+  "event RepoAffirmed(bytes32 indexed repoId, address indexed buyer, bytes32 tradeHash)",
+  "event RepoInstructed(bytes32 indexed repoId, uint8 phase, address indexed party, bytes32 cdmHash)",
+  "event RepoSettled(bytes32 indexed repoId, uint8 phase, bytes32 cdmHash)",
+  "event RepoSubstitutionRefused(bytes32 indexed repoId, bytes32 cdmHash)",
+  "event RepoPaymentRefused(bytes32 indexed repoId, uint8 phase, bytes32 cdmHash)",
+  "event RepoRollRefused(bytes32 indexed repoId, bytes32 cdmHash)",
+  "event RepoPairedOff(bytes32 indexed repoA, bytes32 indexed repoB, bytes32 cdmHash)",
+  "event RepoPairOffRefused(bytes32 indexed repoA, bytes32 indexed repoB, bytes32 cdmHash)",
+  "event DefaultNoticeServed(address indexed nonDefaulting, address indexed defaulting, bytes32 noticeHash)",
+  "event RepoClosedOut(bytes32 indexed repoId, bytes32 indexed closeOutId)",
+  "event CloseOutRecorded(bytes32 indexed closeOutId, address indexed nonDefaulting, address indexed defaulting, bytes32 cdmHash, address payer, uint256 amount)",
+  "event CloseOutPaid(bytes32 indexed closeOutId, address indexed payer, uint256 amount)",
+  "event RepoNovated(bytes32 indexed repoId, address indexed clearingHouse, bytes32 cdmHash)",
+  "event LoanBooked(bytes32 indexed loanId, address indexed lender, address indexed borrower, bytes32 tradeHash)",
+  "event LoanAffirmed(bytes32 indexed loanId, address indexed borrower, bytes32 tradeHash)",
+  "event LoanDeliveryInstructed(bytes32 indexed loanId, address indexed party, bytes32 cdmHash)",
+  "event LoanDelivered(bytes32 indexed loanId, bytes32 cdmHash)",
+  "event LoanReturnInstructed(bytes32 indexed loanId, address indexed party, uint256 quantity, uint256 collateralAmount, bytes32 cdmHash)",
+  "event LoanReturned(bytes32 indexed loanId, uint256 quantity, uint256 collateralAmount, bytes32 cdmHash, bool full)",
+  "event LoanRecalled(bytes32 indexed loanId, uint256 quantity, uint32 settlementDate, bytes32 noticeHash)",
+  "event LoanRecallWithdrawn(bytes32 indexed loanId, bytes32 noticeHash, bytes32 withdrawalHash)",
+  "event LoanRecallReduced(bytes32 indexed loanId, bytes32 noticeHash, uint256 quantity)",
+  "event LoanSubstitutionRequested(bytes32 indexed loanId, address collateral, uint256 collateralAmount, bytes32 cdmHash)",
+  "event LoanSubstituted(bytes32 indexed loanId, address collateral, uint256 collateralAmount, bytes32 cdmHash)",
+  "event LoanSubstitutionRefused(bytes32 indexed loanId, bytes32 cdmHash)",
+  "event LoanBilled(bytes32 indexed loanId, address indexed biller, address cashToken, uint32 periodEnd, uint256 amount, bytes32 invoiceHash)",
+  "event LoanBillPaid(bytes32 indexed loanId, address indexed payer, uint32 periodEnd, uint256 amount, bytes32 invoiceHash)",
+  "event LoanBillRefused(bytes32 indexed loanId, bytes32 invoiceHash)",
+  "event LoanDefaultNoticeServed(address indexed nonDefaulting, address indexed defaulting, bytes32 noticeHash)",
+  "event LoanClosedOut(bytes32 indexed loanId, bytes32 indexed closeOutId)",
+  "event LoanCloseOutRecorded(bytes32 indexed closeOutId, address indexed nonDefaulting, address indexed defaulting, bytes32 cdmHash, address payer, uint256 amount)",
+  "event LoanCloseOutPaid(bytes32 indexed closeOutId, address indexed payer, uint256 amount)",
+  "event TermsProposed(bytes32 indexed termsId, address indexed giver, address indexed receiver, address agent, bytes32 termsHash)",
+  "event TermsAffirmed(bytes32 indexed termsId, address indexed by)",
+  "event TermsEffective(bytes32 indexed termsId)",
+  "event TermsRefused(bytes32 indexed termsId, address indexed by)",
+  "event TermsTerminated(bytes32 indexed termsId, address indexed by)",
+  "event Deposited(bytes32 indexed termsId, address indexed token, uint256 amount, uint256 rank)",
+  "event Withdrawn(bytes32 indexed termsId, address indexed token, uint256 amount)",
+  "event RepoRequested(bytes32 indexed repoId, bytes32 indexed termsId, bytes32 requestHash, uint256 purchasePrice)",
+  "event RepoRequestAffirmed(bytes32 indexed repoId)",
+  "event RepoAllocated(bytes32 indexed repoId, bytes32 allocationHash)",
+  "event AllocationRefused(bytes32 indexed repoId, bytes32 allocationHash)",
+  "event PurchaseSettled(bytes32 indexed repoId, bytes32 allocationHash)",
+  "event RepoCancelled(bytes32 indexed repoId, address indexed by)",
+  "event RepoRevalued(bytes32 indexed repoId, bytes32 revaluationHash, uint256 index)",
+  "event SubstitutionRequested(bytes32 indexed repoId, bytes32 requestHash, address indexed requester)",
+  "event SubstitutionWithdrawn(bytes32 indexed repoId, bytes32 requestHash)",
+  "event RepoSubstituted(bytes32 indexed repoId, bytes32 requestHash, bytes32 substitutionHash, uint256 index)",
+  "event SubstitutionDeclined(bytes32 indexed repoId, bytes32 requestHash, bytes32 substitutionHash, uint256 index)",
+  "event TradeEndPrepared(bytes32 indexed repoId, bytes32 tradeEndHash, uint256 repurchasePrice)",
+  "event RepurchaseSettled(bytes32 indexed repoId, bytes32 tradeEndHash)",
+  "event ReportRecorded(bytes32 indexed termsId, bytes32 reportHash, uint256 index)",
+]);
+
+/** The name and document hash of a repo, loan or triparty contract log; hash is absent for an event that carries none. */
+function movementEvent(l: { topics: Hex[]; data: Hex }): { event?: string; cdmHash?: Hex } {
+  try {
+    const d = decodeEventLog({ abi: movementAbi, topics: l.topics as [Hex, ...Hex[]], data: l.data });
+    const ev = movementAbi.find((x) => x.type === "event" && x.name === d.eventName) as { inputs: readonly { name?: string; type: string; indexed?: boolean }[] };
+    const hashed = ev.inputs.filter((i) => i.type === "bytes32" && !i.indexed);
+    const last = hashed[hashed.length - 1];
+    const cdmHash = last ? ((d.args as unknown as Record<string, Hex>)[last.name!]).toLowerCase() as Hex : undefined;
+    return { event: d.eventName, cdmHash };
+  } catch {
+    return {};
+  }
+}
+
 const erc20Abi = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
@@ -1331,17 +1416,37 @@ export class BesuAdapter implements LedgerAdapter {
         moved.set(tx, logs);
       }
     }
+    const network = { name: "besu-prototype", platform: "Hyperledger Besu", chainId: this.reg.chainId };
+    const contract = address.toLowerCase();
+    const flowLogs = new Map<string, { recordId?: string; logIndex: number; event?: string; cdmHash?: Hex }[]>();
     const byRecord = new Map<string, RegisterMovement>();
     for (const l of await this.contractLogs(address)) {
       const tx = (l.transactionHash as string).toLowerCase();
-      const txLogs = moved.get(tx);
-      const recordId = l.topics[1] as Hex | undefined;
-      if (!txLogs || !recordId) continue;
-      const key = tx + "/" + recordId.toLowerCase();
-      const m: RegisterMovement = byRecord.get(key) ?? { recordId: recordId.toLowerCase() as Hex, txHash: tx as Hex, block: l.blockNumber.toString(), events: [], status: "Final", txLogs };
-      const name = EVENT_BY_TOPIC.get((l.topics[0] ?? "").toLowerCase());
+      const transfers = moved.get(tx);
+      if (!transfers) continue;
+      const recordId = (l.topics[1] as Hex | undefined)?.toLowerCase();
+      const { event, cdmHash } = movementEvent(l);
+      const logs = flowLogs.get(tx) ?? [];
+      logs.push({ recordId, logIndex: Number(l.logIndex), event: event ?? EVENT_BY_TOPIC.get((l.topics[0] ?? "").toLowerCase()), cdmHash });
+      flowLogs.set(tx, logs);
+      if (!recordId) continue;
+      const key = tx + "/" + recordId;
+      const m: RegisterMovement = byRecord.get(key)
+        ?? { recordId: recordId as Hex, txHash: tx as Hex, block: l.blockNumber.toString(), events: [], status: "Final", txLogs: [], contract, network };
+      const name = logs[logs.length - 1].event;
       if (name && !m.events.includes(name)) m.events.push(name);
       byRecord.set(key, m);
+    }
+    for (const m of byRecord.values()) {
+      const logs = flowLogs.get(m.txHash)!;
+      const hashed = logs.filter((x) => x.cdmHash);
+      const own = hashed.filter((x) => x.recordId === m.recordId);
+      const carrier = own.length ? own[own.length - 1] : hashed[hashed.length - 1];
+      if (carrier) Object.assign(m, { cdmHash: carrier.cdmHash, event: carrier.event, logIndex: carrier.logIndex });
+      m.txLogs = [
+        ...moved.get(m.txHash)!,
+        ...logs.filter((x) => x !== carrier).map((x) => ({ contract, logIndex: x.logIndex, event: x.event, cdmHash: x.cdmHash })),
+      ];
     }
     return [...byRecord.values()];
   }
