@@ -1825,3 +1825,9 @@ excluded.
 | task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/spv-constitution.json | 2026-11-22T16:51:47Z |
 | task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/main/resources/provenance/aircraft/token-terms.json | 2026-11-22T16:51:47Z |
 | task-document-provenance | 188c3e98872db5438b8fa660488de1823613e66a | services/collateral/src/test/java/collateral/ProvenanceAircraftTest.java | 2026-11-22T16:51:47Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | contracts/scripts/deploy.ts | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | gateway/src/registry.ts | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | scripts/live-e2e.sh | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/main/java/collateral/App.java | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/main/java/collateral/ProvenanceLive.java | 2026-11-22T17:34:43Z |
+| task-document-provenance | 63ef07bead0b19c1617ebed22ebb204b9218e20b | services/collateral/src/test/java/collateral/ProvenanceLiveTest.java | 2026-11-22T17:34:43Z |
