@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import static collateral.CdmRuntime.o;
 
@@ -163,13 +164,16 @@ public final class CdmRecordKeeper {
     /**
      * Completion of the repo, securities loan and triparty movements of Registered or Claim tokens
      * (task-authoritative-record-other-flows): movements is the gateway's /register/movements for one flow contract, each
-     * a transaction with the record id its flow logs carry. These records have no LedgerAnchor kind yet
-     * (AnchoredRecordEnum covers margin call steps, enforcements and substitutions), so the anchor status passed to
-     * TransferComplete is the transaction's: Complete, because a movement is read from the logs of a mined transaction
-     * and a reverted one leaves none. Returns, by record id, {records: [...], complete} as {@link #steps} does; a record
-     * that moved no such token is absent.
+     * a transaction with the record id its flow logs carry and the document hash of the movement. The anchor status
+     * passed to TransferComplete is the movement's LedgerAnchor of kind (Repo, SecuritiesLoan or Triparty), built from
+     * the transaction's logs (task-substitution-ledger-anchors); it is Missing when this party holds no document with
+     * that hash. A movement whose flow logs carry no hash, the triparty profile's Deposited and Withdrawn, has no
+     * anchor and takes the transaction's finality (project owner, 2026-11-22): Complete, because a movement is read from
+     * the logs of a mined transaction and a reverted one leaves none. Returns, by record id, {records: [...], complete}
+     * as {@link #steps} does; a record that moved no such token is absent.
      */
-    static Map<String, Map<String, Object>> movements(JsonNode registry, JsonNode movements, JsonNode chainConfirmations) {
+    static Map<String, Map<String, Object>> movements(JsonNode registry, AnchoredRecordEnum kind, JsonNode movements,
+                                                      JsonNode chainConfirmations, Function<String, String> payloads) {
         Map<String, TokenizedAsset> tokens = tokens(registry);
         Map<String, Map<String, Object>> out = new LinkedHashMap<>();
         for (JsonNode m : movements) {
@@ -177,9 +181,29 @@ public final class CdmRecordKeeper {
             List<String> events = new ArrayList<>();
             m.path("events").forEach(e -> events.add(e.asText()));
             String identifier = events.isEmpty() ? "Transfer" : String.join("+", events);
-            AnchorStatusEnum status = "Final".equals(m.path("status").asText()) ? AnchorStatusEnum.COMPLETE : AnchorStatusEnum.PENDING;
+            if (moved(tokens, m).isEmpty()) continue;
+            AnchorStatusEnum status;
+            String anchorHash = null;
+            Boolean documentVerified = null;
+            if (!m.hasNonNull("cdmHash")) {
+                status = "Final".equals(m.path("status").asText()) ? AnchorStatusEnum.COMPLETE : AnchorStatusEnum.PENDING;
+            } else {
+                String hash = m.get("cdmHash").asText().toLowerCase();
+                String doc = payloads.apply(hash);
+                documentVerified = doc != null && Cdm.keccakHex(doc).equalsIgnoreCase(hash);
+                if (!documentVerified) {
+                    status = AnchorStatusEnum.MISSING;
+                } else {
+                    LedgerAnchor anchor = CdmRuntime.fn(Create_LedgerAnchor.class).evaluate(kind,
+                        recordId + "/" + m.get("txHash").asText().toLowerCase(), hash, CdmAnchors.observed(CdmRuntime.JSON.createArrayNode().add(m)));
+                    status = CdmRuntime.fn(AnchorStatus.class).evaluate(anchor, 1);
+                    anchorHash = Cdm.keccakHex(CdmRuntime.toJson(anchor));
+                }
+            }
             Map<String, Object> r = record(tokens, identifier, m, status, chainConfirmations);
-            if (((List<?>) r.get("tokens")).isEmpty()) continue;
+            r.put("anchorStatus", status.toDisplayString());
+            if (documentVerified != null) r.put("documentVerified", documentVerified);
+            if (anchorHash != null) r.put("anchorHash", anchorHash);
             Map<String, Object> rec = out.computeIfAbsent(recordId, k -> {
                 Map<String, Object> x = new LinkedHashMap<>();
                 x.put("records", new ArrayList<Map<String, Object>>());

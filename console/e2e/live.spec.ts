@@ -531,10 +531,14 @@ test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not com
 // --- flow-registered-collateral in a GMSLA loan (task-authoritative-record-other-flows) ---
 // The same interim rules in the securities lending flows: a delivery or a return of tMMF, the loaned security, is complete
 // only once the transfer agent confirms its register shows it. The loans view reports it as the CSA cdm-state does
-// (recordKeeper, settlementComplete), from the SecuritiesLoan transactions that moved tMMF.
+// (recordKeeper, settlementComplete), from the SecuritiesLoan transactions that moved tMMF. Each movement's anchor status
+// is its SecuritiesLoan LedgerAnchor's, which both parties build the same (task-substitution-ledger-anchors).
 type LoanCompletion = {
   loanId: string; state: string; quantity: string; settlementComplete?: boolean; recordKeeperError?: string;
-  recordKeeper?: { identifier: string; complete: boolean; tokens: { symbol: string; confirmed?: boolean; complete: boolean }[] }[];
+  recordKeeper?: {
+    identifier: string; complete: boolean; anchorStatus?: string; documentVerified?: boolean; anchorHash?: string;
+    tokens: { symbol: string; confirmed?: boolean; complete: boolean }[];
+  }[];
 };
 
 test("flow-registered-collateral-gmsla: A lends tMMF to B -> the delivery is open on-chain but not complete until the transfer agent confirms -> the return waits for it too", async () => {
@@ -559,7 +563,11 @@ test("flow-registered-collateral-gmsla: A lends tMMF to B -> the delivery is ope
       expect(l.settlementComplete).toBe(false);
       expect(l.recordKeeper![0].identifier).toContain("LoanDelivered");
       expect(l.recordKeeper![0].tokens.find((t) => t.symbol === "tMMF")).toMatchObject({ confirmed: false, complete: false });
+      // The ledger side is complete: the delivery's anchor is, and only the transfer agent's confirmation is missing.
+      expect(l.recordKeeper![0]).toMatchObject({ anchorStatus: "Complete", documentVerified: true });
+      expect(l.recordKeeper![0].anchorHash).toMatch(/^0x[0-9a-f]{64}$/i);
     }
+    expect((await loanOf(SERVICE.A, loanId!))!.recordKeeper![0].anchorHash).toBe((await loanOf(SERVICE.B, loanId!))!.recordKeeper![0].anchorHash);
     expect((await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`)).tokens.find((t) => t.symbol === "tMMF")!.reconciled).toBe(false);
 
     // The transfer agent confirms: the delivery is complete for both parties.

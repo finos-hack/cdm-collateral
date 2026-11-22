@@ -5071,7 +5071,13 @@ public final class App {
         if (CdmRecordKeeper.tokens(cfg.registry).values().stream().allMatch(t -> "Bearer".equals(t.getAuthoritativeRecord().toDisplayString())))
             return Map.of();
         try {
-            return CdmRecordKeeper.movements(cfg.registry, gw.getQuery("/register/movements", Map.of("flow", flow)), registerConfirmations());
+            cdmx.collateral.ledger.AnchoredRecordEnum kind = switch (flow) {
+                case "repo" -> cdmx.collateral.ledger.AnchoredRecordEnum.REPO;
+                case "loan" -> cdmx.collateral.ledger.AnchoredRecordEnum.SECURITIES_LOAN;
+                default -> cdmx.collateral.ledger.AnchoredRecordEnum.TRIPARTY;
+            };
+            return CdmRecordKeeper.movements(cfg.registry, kind, gw.getQuery("/register/movements", Map.of("flow", flow)),
+                registerConfirmations(), payloads::get);
         } catch (RuntimeException e) {
             return Map.of("error", Map.of("recordKeeperError", String.valueOf(e.getMessage())));
         }

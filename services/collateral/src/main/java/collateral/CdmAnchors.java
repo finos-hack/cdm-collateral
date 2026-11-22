@@ -46,8 +46,11 @@ public final class CdmAnchors {
         for (JsonNode s : steps) {
             for (JsonNode l : s.path("txLogs")) {
                 if (!seen.add(s.get("txHash").asText() + "#" + l.get("logIndex").asInt())) continue;
+                // A log of another flow event can carry its own hash (a register movement's txLogs); then it is kept
+                // out of an anchor for another document by Create_LedgerAnchor.
                 rows.add(new Object[]{s.get("block").asLong(), l.get("logIndex").asInt(),
-                    tx(s, l.get("contract").asText(), l.get("logIndex").asInt(), l.hasNonNull("event") ? l.get("event").asText() : null, null)});
+                    tx(s, l.get("contract").asText(), l.get("logIndex").asInt(), l.hasNonNull("event") ? l.get("event").asText() : null,
+                        l.hasNonNull("cdmHash") ? l.get("cdmHash").asText() : null)});
             }
         }
         rows.sort(Comparator.<Object[]>comparingLong(r -> (Long) r[0]).thenComparingInt(r -> (Integer) r[1]));
