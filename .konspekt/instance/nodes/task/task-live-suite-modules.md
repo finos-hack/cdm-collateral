@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T23:56:25Z
   confidence: 0.9
 createdAt: 2026-11-22T23:56:25Z
-updatedAt: 2026-11-23T00:20:00Z
+updatedAt: 2026-11-23T00:25:00Z
 ```
 # Task: split the live suite into modules that run on their own stacks
 
@@ -45,5 +45,7 @@ job took 2.0 minutes. In every module job, bring-up (`live-e2e.sh up`) took 4.0 
 total). The jobs together used about 64 runner minutes, against about 45 for the former single job. The extra minutes
 come from the six bring-ups.
 
-Done when a CI run passes every module, the per-module job times are recorded here, and the modules are rebalanced if
-one module's time is far above the others.
+Decided 2026-11-23 (project owner, source `kc6PK3Vh5H0SIfpHt1oha9Qi_ZpyEwImUZuIQd0jads`): no further rebalancing ("I don;t think we need to
+rebalance futher"); the workflow stays on demand only ("4. still manual"); the task is resolved once the PR is merged.
+
+Done when the branch is merged to `main`.
