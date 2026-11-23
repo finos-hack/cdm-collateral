@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-23T01:51:26Z
   confidence: 0.75
 createdAt: 2026-11-23T01:51:26Z
-updatedAt: 2026-11-23T12:51:04Z
+updatedAt: 2026-11-23T13:02:49Z
 ```
 # Investigation: protect on-chain collateral data from participants who are not party to it
 
@@ -59,7 +59,7 @@ Each option is a proposal for assessment; none is selected.
 | O5 | Zero-knowledge proofs and confidential tokens (for example Zeto) | D2 with on-chain rule checks | Highest effort; circuit per rule. |
 | O6 | Paladin on Besu: a Pente privacy group per deal runs the call, dispute, escrow and close-out logic; collateral and cash tokens are Noto or Zeto tokens. Noto and Zeto run no general contract logic (owner, source `496b3ce…`); a Noto token in `hooks` mode calls a Pente private contract on each mint and transfer, and a Noto token can be swapped atomically with an asset a Pente contract manages (Paladin documentation, read this session) | D1-D3 from non-members; base chain holds commitments | A Noto token has one notary, which validates every transfer of that token, including transfers in deals the notary is not party to (inferred). Adds a Paladin sidecar per participant and a port of the Solidity contracts into Pente. Further limits (`docs/analysis/bank-use-of-besu.md`): group membership is fixed when the group is created; every member signs every transition; group creation and transition timing are visible to every validator; Paladin had not shipped V1 and all maintainers were from Kaleido (LFDT TAC 2026 review). |
 | O7 | Network topology: a Besu network per agreement or per CCP membership; or operator-run validators with participants reading through a per-party filtered gateway | D1-D3 by separation | Breaks the single shared ledger; collateral moving across networks needs a bridge; the filtered-gateway variant trusts the operator. |
-| O8 | Canton, the planned second ledger (`wp-adr-prototype-ledgers`) | D1-D3 by per-party visibility | Recorded in `task-onchain-privacy`; Canton behaviour not verified in this session. |
+| O8 | Canton, the planned second ledger (`wp-adr-prototype-ledgers`). Documented mechanism (Canton and Digital Asset documentation, read 2026-11-23, not exercised): each transaction is split into views per stakeholder group, each view is encrypted to its recipients, and each participant node stores only its hosted parties' contracts. Visibility is declared in the Daml template (signatories, observers, controllers); a regulator can be an observer, or receive contracts by explicit disclosure. | D1-D3 from non-participants; documentation states non-stakeholders do not learn that a transaction happened | Synchronizer sequencers see recipient lists and message sizes (one Canton page says metadata is encrypted entirely; the ordering-layer page is the more specific). Fetching a contract inside a transaction can widen visibility (divulgence). A regulator observer on the deal contract sees all of it, so "some" needs a separate contract or explicit disclosure (inferred). Licence: open-source edition Apache 2.0 at `github.com/digital-asset/canton` and Daml Apache 2.0; Digital Asset maintains it and sells an Enterprise edition, which in 2023 alone had high availability, parallel processing and cloud KMS; current open-source feature coverage not verified. Splice (Global Synchronizer code) is an LFDT lab; a private synchronizer does not need it. |
 
 D4 remains visible on the base chain under O1-O6.
 
@@ -75,3 +75,4 @@ D4 remains visible on the base chain under O1-O6.
 - Metadata visible to non-participants: `nw-proposal-visibility-metadata-scope`.
 - Token design: `nw-proposal-deal-scoped-noto-hooks`.
 - Evidence: `artifact-bank-use-of-besu`.
+- O8 updated with Canton documentation, licence and governance facts (source `cd2e6ca…`).
