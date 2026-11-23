@@ -6,7 +6,7 @@ The console has two modes:
 
 - **Live mode** (`#/live/...`, below): each party's console calls its own collateral service, which works through its
   ledger gateway and the contracts on the Besu network. This is the prototype; the live specs in
-  `e2e/live.spec.ts` drive it.
+  `e2e/live/*.spec.ts` drive it.
 - **Scenario mode** (`#/`, `#/s/...`): the original clickable prototype, with state mocked in the browser by a rule
   engine (`src/domain/engine.ts`) that stands in for the services and contracts. It needs no backend.
 
@@ -51,7 +51,7 @@ collateral service, and `#/live/operator` against the oracle service's market da
 | `src/scenarios/scenarios.ts` | Scenarios as data: each step is an engine action plus its explanation |
 | `src/components/` | Grid, scenario view (guided and free), party console, ledger timeline |
 | `src/domain/liveApi.ts`, `src/components/LiveConsole.tsx`, `src/components/ProvenanceCard.tsx` | Live mode: the HTTP and event-stream client of a party's collateral service, the party console, the provenance card |
-| `e2e/` | Playwright: every scenario's guided steps against the production build, free-mode rejections, phone width; `e2e/live.spec.ts`, the 57 live specs against the running stack |
+| `e2e/` | Playwright: every scenario's guided steps against the production build, free-mode rejections, phone width; `e2e/live/`, the 57 live specs against the running stack, one file per module (`harness.ts` holds the shared helpers) |
 
 ## Test
 

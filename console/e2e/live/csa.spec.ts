@@ -1,0 +1,1314 @@
+import { expect, test } from "@playwright/test";
+import {
+  PRICE_TUST,
+  HAIRCUT,
+  TEST_TIMEOUT,
+  STEP_TIMEOUT,
+  waitForSettledOnChain,
+  SERVICE,
+  GATEWAY,
+  ZERO_HASH,
+  TUST_VALUE,
+  call,
+  shortId,
+  seenByA,
+  pledgeThroughServices,
+  parties,
+  balanceOf,
+  pledgedOf,
+  expectConvergedCdmState,
+  ORACLE,
+  GATEWAY_MKT,
+  ORACLE_TOKEN,
+  Revaluation,
+  RecordKeeperFold,
+  EnforcementView,
+  RegisterBreaksView,
+  setTransferAgentPaused,
+  CloseOut,
+  Substitution,
+  Interest,
+  Agreement,
+  liveStackGate,
+} from "./harness";
+
+// Live specs of the csa module (task-live-suite-modules); shared helpers are in ./harness.ts. Each module runs on its
+// own stack in e2e-live-stack.yml, so the specs of one file run in order on one chain.
+liveStackGate();
+
+test("flow-im-margin-call-pledge: issue -> agree -> propose -> accept -> pledge, settled on-chain", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const amountUsd = 1_000_000 + (Date.now() % 9000) * 1_000; // unique-ish per run (9000 buckets, multiple of 1k) so the label does not match a leftover call on the persistent chain; above the MTA
+  const label = `USD ${amountUsd.toLocaleString("en-US")}`;
+  const qty = Math.ceil(amountUsd / (PRICE_TUST * HAIRCUT) / 1000) * 1000 + 1000; // cover agreed amount after haircut
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // 1. Secured party (BANK-B) issues the IM call.
+  await page.goto("/#/live/B");
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await issueCard.getByRole("spinbutton").fill(String(amountUsd));
+  await issueCard.getByRole("button", { name: /Issue IM call/ }).click();
+
+  // 2. Pledgor (BANK-A) agrees in full.
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: label });
+  await expect(rowA).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Agree in full" }).click();
+
+  // 3. Pledgor proposes tUST collateral.
+  await expect(rowA.getByRole("button", { name: "Propose collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("spinbutton").fill(String(qty));
+  await rowA.getByRole("button", { name: "Propose collateral" }).click();
+  await expect(rowA.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 4. Secured party accepts the proposal.
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: label });
+  await expect(rowB.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Accept proposal" }).click();
+
+  // 5. Pledgor pledges the accepted collateral.
+  await page.goto("/#/live/A");
+  const rowA2 = page.locator(".subcard", { hasText: label });
+  await expect(rowA2.getByRole("button", { name: "Pledge accepted collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA2.getByRole("button", { name: "Pledge accepted collateral" }).click();
+
+  // The call is now settled on-chain. Wait on each party's service state before asserting the console SSE update.
+  await waitForSettledOnChain("IM", amountUsd);
+  await expect(rowA2.getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/B");
+  await expect(page.locator(".subcard", { hasText: label }).getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-vm-margin-call-transfer: issue VM -> agree -> propose -> accept -> transfer title, settled on-chain", async ({ page }) => {
+  // tUSD is priced 1.00 with no haircut, so whole units map one-to-one to USD; VM settlement passes title directly.
+  test.setTimeout(TEST_TIMEOUT);
+  const amountUsd = 1_000_000 + (Date.now() % 9000) * 1_000; // unique-ish per run (9000 buckets, multiple of 1k); see the IM flow
+  const label = `USD ${amountUsd.toLocaleString("en-US")}`;
+  const qty = amountUsd; // tUSD at 1.00
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // 1. Secured party (BANK-B) issues a VM call (title transfer).
+  await page.goto("/#/live/B");
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await issueCard.getByRole("combobox").selectOption("VM");
+  await issueCard.getByRole("spinbutton").fill(String(amountUsd));
+  await issueCard.getByRole("button", { name: /Issue VM call/ }).click();
+
+  // 2. Pledgor (BANK-A) agrees and proposes tUSD.
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: label });
+  await expect(rowA).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Agree in full" }).click();
+  await expect(rowA.getByRole("button", { name: "Propose collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("combobox").selectOption("tUSD");
+  await rowA.getByRole("spinbutton").fill(String(qty));
+  await rowA.getByRole("button", { name: "Propose collateral" }).click();
+  await expect(rowA.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 3. Secured party accepts.
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: label });
+  await expect(rowB.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Accept proposal" }).click();
+
+  // 4. Pledgor transfers title (VM settlement, no escrow).
+  await page.goto("/#/live/A");
+  const rowA2 = page.locator(".subcard", { hasText: label });
+  await expect(rowA2.getByRole("button", { name: "Transfer title" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA2.getByRole("button", { name: "Transfer title" }).click();
+
+  // The call is now settled on-chain. Wait on each party's service state before asserting the console SSE update.
+  await waitForSettledOnChain("VM", amountUsd);
+  await expect(rowA2.getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/B");
+  await expect(page.locator(".subcard", { hasText: label }).getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-return: pledgor calls a return -> secured party agrees -> releases escrow, settled on-chain", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens["tUST"];
+  // Return amount below the IM call range of the other specs (all >= USD 1,000,000), so the label does not collide, and
+  // small, because each run leaves part of the pledged tUST in escrow on the persistent chain.
+  const returnUsd = 50_000 + (Date.now() % 9000) * 10;
+  const label = `USD ${returnUsd.toLocaleString("en-US")}`;
+  const releaseQty = Math.floor(returnUsd / TUST_VALUE) - 1; // value after haircut must not exceed the agreed return
+  const pledgeUsd = 2 * returnUsd;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: initial margin in escrow from A (pledgor) with B (secured party).
+  await pledgeThroughServices(pledgeUsd, pledgeQty);
+  const freeBefore = await balanceOf(GATEWAY.A, tUST, p.a);
+  const pledgedBefore = await pledgedOf(GATEWAY.B, tUST, p);
+  expect(pledgedBefore >= BigInt(releaseQty)).toBe(true);
+
+  // 1-5. Pledgor (BANK-A) calls for the return in its console; the call is recorded on-chain with the pledgor key.
+  await page.goto("/#/live/A");
+  const returnCard = page.locator(".card", { hasText: "Call for a return" });
+  await returnCard.getByRole("spinbutton").fill(String(returnUsd));
+  await returnCard.getByRole("button", { name: "Call return → B" }).click();
+  await expect(page.locator(".subcard", { hasText: label })).toBeVisible({ timeout: STEP_TIMEOUT });
+  const stateA = await call<{ calls: { callId: string; kind: string; amountUsd: string; from: string; to: string }[] }>(`${SERVICE.A}/state`);
+  const returnCall = stateA.calls.find((c) => c.kind === "Return" && c.amountUsd === String(returnUsd) && c.from === "A");
+  expect(returnCall, "the return call is on-chain").toBeTruthy();
+  const callId = returnCall!.callId;
+  expect(returnCall!.to).toBe("B");
+
+  // 6-8. Secured party (BANK-B) sees the return call and agrees it in full.
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: shortId(callId) });
+  await expect(rowB.getByRole("button", { name: "Agree in full" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Agree in full" }).click();
+
+  // 9-13. Secured party releases the escrowed tUST; the control contract checks the agreed amount and transfers it back.
+  await expect(rowB.getByRole("button", { name: "Release escrow" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("combobox").selectOption("tUST");
+  await rowB.getByRole("spinbutton").fill(String(releaseQty));
+  await rowB.getByRole("button", { name: "Release escrow" }).click();
+
+  // 14. Both services see the call settled; both consoles show it.
+  await waitForSettledOnChain("Return", returnUsd);
+  await expect(rowB.getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await expect(page.locator(".subcard", { hasText: shortId(callId) }).getByText("settled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // On-chain state through each party's gateway: the return call is settled with its settle cdmHash anchored, and the
+  // released tUST moved from escrow back to the pledgor.
+  const onChain = await call<{ kind: number; state: number; agreed: string; settleCdmHash: string }>(`${GATEWAY.A}/calls/${callId}`);
+  expect(onChain.kind).toBe(2); // Return
+  expect(onChain.state).toBe(5); // Settled
+  expect(BigInt(onChain.agreed)).toBe(BigInt(returnUsd) * 100_000_000n);
+  expect(onChain.settleCdmHash).not.toBe(ZERO_HASH);
+  expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(freeBefore + BigInt(releaseQty));
+  expect(await pledgedOf(GATEWAY.B, tUST, p)).toBe(pledgedBefore - BigInt(releaseQty));
+
+  // Each service folded the issue, respond and settle steps into the same MarginCallState.
+  await expectConvergedCdmState(callId);
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-default-enforcement: secured party declares default -> oracle feed -> enforce, escrow seized on-chain", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  // Small, because enforcement moves the pledged tUST to the secured party for good on the persistent chain. The row is
+  // found by callId, so the amount needs no unique label.
+  const pledgeUsd = 100_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: initial margin in escrow from A (pledgor) with B (secured party).
+  const callId = await pledgeThroughServices(pledgeUsd, pledgeQty);
+  await waitForSettledOnChain("IM", pledgeUsd);
+
+  // Enforcement seizes everything A has in escrow with B, including collateral left by earlier runs.
+  const symbols = Object.keys(p.tokens);
+  const pledgedBefore: Record<string, bigint> = {};
+  const securedFreeBefore: Record<string, bigint> = {};
+  for (const sym of symbols) {
+    pledgedBefore[sym] = await pledgedOf(GATEWAY.B, p.tokens[sym], p);
+    securedFreeBefore[sym] = await balanceOf(GATEWAY.B, p.tokens[sym], p.b);
+  }
+  expect(pledgedBefore["tUST"] >= BigInt(pledgeQty)).toBe(true);
+
+  // 1-7. Secured party (BANK-B) declares the default and enforces in its console: the service forwards the notice to
+  // the oracle service, which publishes it through the operator's gateway; then B's gateway submits enforce().
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: shortId(callId) });
+  await expect(rowB.getByRole("button", { name: "Declare default & enforce" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Declare default & enforce" }).click();
+
+  // 8. Each service records the enforcement from its gateway's event stream; the pledgor's service sees the default.
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => (await call<{ calls: { callId: string; enforced?: boolean }[] }>(`${svc}/state`)).calls.find((c) => c.callId === callId)?.enforced, {
+        timeout: 60_000,
+      })
+      .toBe(true);
+  }
+  await expect(rowB.getByText("enforced ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(page.getByRole("status")).toContainText("Counterparty A in default on the oracle feed", { timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await expect(page.locator(".subcard", { hasText: shortId(callId) }).getByText("enforced ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(page.getByRole("status")).toContainText("This party (A) in default on the oracle feed", { timeout: STEP_TIMEOUT });
+
+  // On-chain state through each party's gateway: A is in default on the oracle feed, nothing is left in escrow, and the
+  // secured party holds what was pledged.
+  for (const gw of [GATEWAY.A, GATEWAY.B]) {
+    expect((await call<{ inDefault: boolean }>(`${gw}/defaults/${p.a}`)).inDefault).toBe(true);
+  }
+  expect((await call<{ inDefault: boolean }>(`${GATEWAY.A}/defaults/${p.b}`)).inDefault).toBe(false);
+  for (const sym of symbols) {
+    expect(await pledgedOf(GATEWAY.A, p.tokens[sym], p)).toBe(0n);
+    expect(await balanceOf(GATEWAY.B, p.tokens[sym], p.b)).toBe(securedFreeBefore[sym] + pledgedBefore[sym]);
+  }
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-oracle-update: operator edits a price -> oracle publishes via the mkt gateway -> both parties read it on-chain", async () => {
+  test.setTimeout(TEST_TIMEOUT);
+  type MarketToken = { symbol: string; token: string; price: string | null; priceUsd: string | null; rating: string | null };
+  const market = await call<{ priceScale: string; tokens: MarketToken[] }>(`${ORACLE}/market-data`);
+  const entry = market.tokens.find((t) => t.symbol === ORACLE_TOKEN);
+  expect(entry, `${ORACLE_TOKEN} in the oracle's market data`).toBeTruthy();
+  const token = entry!.token;
+  const onChain = async (gw: string) => (await call<{ price: string | null }>(`${gw}/prices/${token}`)).price;
+
+  // The mock data starts from the feed: the oracle's price and every party's on-chain read agree.
+  const original = await onChain(GATEWAY.A);
+  expect(original).not.toBeNull();
+  expect(await onChain(GATEWAY.B)).toBe(original);
+  expect(entry!.price).toBe(original);
+
+  // A new price that differs from the current one on every run (0.95 or 0.96 USD).
+  const scale = BigInt(market.priceScale);
+  const newUsd = BigInt(original!) === (95n * scale) / 100n ? "0.96" : "0.95";
+  const newScaled = ((BigInt(newUsd.replace(".", "")) * scale) / 100n).toString();
+
+  try {
+    // 1-3. The operator's edit is published through the mkt gateway with the publisher key and mined.
+    const edit = await call<{ price: string; tx: { txHash: string; block: string } }>(`${ORACLE}/market-data/${ORACLE_TOKEN}`, "PUT", { price: newUsd });
+    expect(edit.price).toBe(newScaled);
+    expect(edit.tx.txHash).toMatch(/^0x[0-9a-f]{64}$/i);
+
+    // Every party's gateway reads the new price from its own Besu node.
+    for (const gw of [GATEWAY.A, GATEWAY.B, GATEWAY_MKT]) {
+      await expect.poll(() => onChain(gw), { timeout: 30_000 }).toBe(newScaled);
+    }
+
+    // A party's gateway does not hold the publisher key, so it refuses a feed write.
+    const refused = await fetch(`${GATEWAY.A}/oracle/prices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, price: original }),
+    });
+    expect(refused.ok).toBe(false);
+    expect(await onChain(GATEWAY.A)).toBe(newScaled);
+
+    // Republishing on request writes the oracle's current price again.
+    const republished = await call<{ published: { symbol: string; price: string }[] }>(`${ORACLE}/prices/publish`, "POST", { symbol: ORACLE_TOKEN });
+    expect(republished.published).toEqual([expect.objectContaining({ symbol: ORACLE_TOKEN, price: newScaled })]);
+  } finally {
+    const scaledToUsd = (s: string) => (Number(BigInt(s)) / Number(scale)).toString();
+    await call(`${ORACLE}/market-data/${ORACLE_TOKEN}`, "PUT", { price: scaledToUsd(original!) });
+  }
+  for (const gw of [GATEWAY.A, GATEWAY.B]) {
+    await expect.poll(() => onChain(gw), { timeout: 30_000 }).toBe(original);
+  }
+});
+
+test("flow-registered-collateral: A pledges tMMF -> settled on-chain but not complete until the transfer agent confirms its register -> B enforces -> the enforcement completes only on the transfer agent's confirmation", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  const KEEPER = "MMF Transfer Agent"; // contracts/scripts/deploy.ts
+  const callRow = (callId: string) => page.locator(".subcard", { hasText: shortId(callId) });
+  const consoleShows = async (party: "A" | "B", callId: string, text: string) => {
+    await page.goto(`/#/live/${party}`);
+    await expect(callRow(callId).getByText(text, { exact: true })).toBeVisible({ timeout: STEP_TIMEOUT });
+  };
+  const p = await parties();
+  const aWasInDefault = (await call<{ inDefault: boolean }>(`${GATEWAY.A}/defaults/${p.a}`)).inDefault;
+  // tMMF is priced at 1 USD; its haircut is 4% at deployment and up to 12% after flow-agreement-amendment.
+  const pledgeUsd = 50_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / 0.88) + 100;
+  try {
+    if (aWasInDefault) await call(`${ORACLE}/defaults`, "POST", { party: p.a, inDefault: false, notifiedBy: "e2e setup" });
+    await setTransferAgentPaused(true);
+
+    // A pledges tMMF to B. The chain settles it; the transfer agent has not confirmed, so neither party treats the
+    // pledge as complete, and the register and the ledger disagree.
+    const callId = await pledgeThroughServices(pledgeUsd, pledgeQty, "tMMF");
+    await waitForSettledOnChain("IM", pledgeUsd);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await call<RecordKeeperFold>(`${svc}/calls/${callId}/cdm-state`)).recordKeeper?.length ?? 0, { timeout: 60_000 }).toBeGreaterThan(0);
+      const f = await call<RecordKeeperFold>(`${svc}/calls/${callId}/cdm-state`);
+      expect(f.recordKeeperError).toBeUndefined();
+      expect(f.settlementComplete).toBe(false);
+      const settle = f.recordKeeper!.find((r) => r.tokens.some((t) => t.symbol === "tMMF"))!;
+      expect(settle.tokens.find((t) => t.symbol === "tMMF")).toMatchObject({ confirmed: false, complete: false });
+    }
+    const open = await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`);
+    expect(open.tokens.find((t) => t.symbol === "tMMF")!.reconciled).toBe(false);
+    await consoleShows("A", callId, `tMMF awaiting ${KEEPER} confirmation, not complete`);
+    await expect(page.getByTestId("register-tMMF").getByText(/^\d+ register breaks?$/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    // The transfer agent updates its register and confirms on chain: both parties now treat the pledge as complete,
+    // and the register reconciles with the ledger.
+    await setTransferAgentPaused(false);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await call<RecordKeeperFold>(`${svc}/calls/${callId}/cdm-state`)).settlementComplete, { timeout: 60_000 }).toBe(true);
+    }
+    await expectConvergedCdmState(callId);
+    await expect.poll(async () => (await call<RegisterBreaksView>(`${SERVICE.B}/register/breaks`)).tokens.find((t) => t.symbol === "tMMF")!.reconciled, { timeout: 60_000 }).toBe(true);
+    await consoleShows("B", callId, `tMMF confirmed by ${KEEPER} ✓`);
+    await expect(page.getByTestId("register-tMMF").getByText("register matches the ledger ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    // B declares A's default and enforces. The control contract records the hash of B's CDM CollateralEnforcement;
+    // with the transfer agent paused the enforcement is anchored but not complete.
+    await setTransferAgentPaused(true);
+    await call(`${SERVICE.B}/calls/${callId}/enforce`, "POST", {});
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await call<EnforcementView>(`${svc}/calls/${callId}/enforcement`)).documentVerified ?? false, { timeout: 60_000 }).toBe(true);
+      const e = await call<EnforcementView>(`${svc}/calls/${callId}/enforcement`);
+      expect(e).toMatchObject({ enforced: true, anchorStatus: "Complete", complete: false, eventQualifier: "CollateralEnforced" });
+    }
+    await consoleShows("B", callId, `enforcement: tMMF awaiting ${KEEPER} confirmation, not complete`);
+
+    // The transfer agent confirms the enforcement: complete on both sides, with the same anchor.
+    await setTransferAgentPaused(false);
+    for (const svc of [SERVICE.A, SERVICE.B]) {
+      await expect.poll(async () => (await call<EnforcementView>(`${svc}/calls/${callId}/enforcement`)).complete, { timeout: 60_000 }).toBe(true);
+    }
+    const ea = await call<EnforcementView>(`${SERVICE.A}/calls/${callId}/enforcement`);
+    const eb = await call<EnforcementView>(`${SERVICE.B}/calls/${callId}/enforcement`);
+    expect(ea.anchorHash).toBe(eb.anchorHash);
+    await consoleShows("A", callId, `enforcement: tMMF confirmed by ${KEEPER} ✓`);
+    expect(await pledgedOf(GATEWAY.A, p.tokens["tMMF"], p)).toBe(0n);
+    await expect.poll(async () => (await call<RegisterBreaksView>(`${SERVICE.A}/register/breaks`)).reconciled, { timeout: 60_000 }).toBe(true);
+  } finally {
+    await setTransferAgentPaused(false);
+    if (!aWasInDefault) await call(`${ORACLE}/defaults`, "POST", { party: p.a, inDefault: false, notifiedBy: "e2e restore" });
+  }
+});
+
+test("flow-revaluation-top-up: operator lowers a price -> secured party revalues -> top-up IM call settled, shortfall closed", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const usd = (n: number | string) => `USD ${Number(n).toLocaleString("en-US")}`;
+  const lowered = Math.round(PRICE_TUST * 0.9 * 100) / 100; // 88.56: a 10% drop
+  const imUsd = 8_000_000 + (Date.now() % 9000) * 10; // after the drop the shortfall is about USD 0.8m, above the MTA
+  const imQty = Math.ceil(imUsd / TUST_VALUE) + 100;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  const before = await call<Revaluation>(`${SERVICE.B}/revaluation`);
+  await pledgeThroughServices(imUsd, imQty);
+  await waitForSettledOnChain("IM", imUsd);
+  await expect.poll(async () => Number((await call<Revaluation>(`${SERVICE.B}/revaluation`)).requiredUsd), { timeout: 30_000 })
+    .toBe(Number(before.requiredUsd) + imUsd);
+
+  try {
+    // 1-4. The market operator lowers the tUST price in the operator console; the oracle publishes it to the feed.
+    await page.goto("/#/live/operator");
+    await page.getByLabel("New price tUST").fill(String(lowered));
+    await page.getByRole("button", { name: "Publish tUST" }).click();
+    await expect(page.getByRole("status")).toContainText(`tUST published at USD ${lowered}`, { timeout: STEP_TIMEOUT });
+
+    // 5. The secured party's service revalues at the new feed price and its console shows the shortfall and top-up.
+    let reval = before;
+    await expect
+      .poll(async () => Number((reval = await call<Revaluation>(`${SERVICE.B}/revaluation`)).topUpUsd), { timeout: 30_000 })
+      .toBeGreaterThan(0);
+    const topUpUsd = Number(reval.topUpUsd);
+    expect(topUpUsd % 10_000).toBe(0);
+    expect(topUpUsd).toBeGreaterThanOrEqual(Number(reval.shortfallUsd));
+
+    await page.goto("/#/live/B");
+    const card = page.getByTestId("revaluation");
+    await expect(card.getByTestId("top-up")).toHaveText(usd(topUpUsd), { timeout: STEP_TIMEOUT });
+
+    // 6. The secured party issues the top-up IM call from the revaluation panel.
+    await card.getByRole("button", { name: "Issue top-up IM call → A" }).click();
+    let topUpCall: string | undefined;
+    await expect
+      .poll(async () => {
+        const { calls } = await call<{ calls: { callId: string; kind: string; amountUsd: string; state: string }[] }>(`${SERVICE.A}/state`);
+        topUpCall = calls.find((c) => c.kind === "IM" && c.amountUsd === String(topUpUsd) && c.state === "issued")?.callId;
+        return topUpCall ?? null;
+      }, { timeout: 30_000 })
+      .not.toBeNull();
+
+    // 7. The top-up settles like an IM call, with tUST valued at the lowered feed price (the on-chain pledge check).
+    const topUpQty = Math.ceil(topUpUsd / (lowered * HAIRCUT)) + 100;
+    await call(`${SERVICE.A}/calls/${topUpCall}/response`, "POST", { response: "full" });
+    const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${topUpCall}/proposal`, "POST", { assets: [{ token: "tUST", qty: topUpQty }] });
+    await call(`${SERVICE.B}/calls/${topUpCall}/decision`, "POST", { proposalId, accept: true });
+    await call(`${SERVICE.A}/calls/${topUpCall}/pledge`, "POST", { proposalId });
+    await waitForSettledOnChain("IM", topUpUsd);
+
+    // The shortfall is closed and the requirement is unchanged: the top-up restored value, it was not new IM.
+    await expect.poll(async () => (reval = await call<Revaluation>(`${SERVICE.B}/revaluation`)).shortfallUsd, { timeout: 30_000 }).toBe("0");
+    expect(Number(reval.requiredUsd)).toBe(Number(before.requiredUsd) + imUsd);
+    expect(reval.topUpCalls).toBe(before.topUpCalls + 1);
+    await expect(card.getByTestId("shortfall")).toHaveText("USD 0", { timeout: STEP_TIMEOUT });
+    await expect(card.getByRole("button", { name: /Issue top-up/ })).toHaveCount(0);
+  } finally {
+    await call(`${ORACLE}/market-data/tUST`, "PUT", { price: String(PRICE_TUST) });
+  }
+  const p = await parties();
+  for (const gw of [GATEWAY.A, GATEWAY.B]) {
+    await expect.poll(async () => (await call<{ price: string | null }>(`${gw}/prices/${p.tokens["tUST"]}`)).price, { timeout: 30_000 })
+      .toBe(String(BigInt(Math.round(PRICE_TUST * 100)) * 1_000_000n));
+  }
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-close-out-netting: secured party closes out -> collateral applied to the Early Termination Amount, surplus returned", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const pledgeUsd = 200_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+  const closeOutUsd = Math.floor(pledgeUsd / 2); // below the collateral held, so a surplus goes back to A
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: initial margin in escrow from A (pledgor) with B (secured party).
+  await pledgeThroughServices(pledgeUsd, pledgeQty);
+  await waitForSettledOnChain("IM", pledgeUsd);
+  const symbols = Object.keys(p.tokens);
+  const pledgedBefore: Record<string, bigint> = {};
+  const aFreeBefore: Record<string, bigint> = {};
+  const bFreeBefore: Record<string, bigint> = {};
+  for (const sym of symbols) {
+    pledgedBefore[sym] = await pledgedOf(GATEWAY.B, p.tokens[sym], p);
+    aFreeBefore[sym] = await balanceOf(GATEWAY.A, p.tokens[sym], p.a);
+    bFreeBefore[sym] = await balanceOf(GATEWAY.B, p.tokens[sym], p.b);
+  }
+  const known = new Set((await call<CloseOut[]>(`${SERVICE.B}/close-outs`)).map((o) => o.closeOutId));
+
+  // 1-7. Secured party (BANK-B) enters the Close-out Amount and closes out in its console.
+  await page.goto("/#/live/B");
+  const card = page.getByTestId("close-out");
+  await card.getByLabel("Close-out Amount (USD)").fill(String(closeOutUsd));
+  await card.getByRole("button", { name: "Declare default & close out A" }).click();
+
+  // 8. Both services list the close-out with the same checked statement.
+  let mine: CloseOut | undefined;
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => {
+        mine = (await call<CloseOut[]>(`${svc}/close-outs`)).find((o) => !known.has(o.closeOutId));
+        return mine?.verified ?? null;
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  const fromB = (await call<CloseOut[]>(`${SERVICE.B}/close-outs`)).find((o) => o.closeOutId === mine!.closeOutId)!;
+  expect(mine!.cdmHash).toBe(fromB.cdmHash);
+  expect(mine!.closeOutAmountUsd).toBe(String(closeOutUsd));
+  expect(mine!.earlyTerminationAmountUsd).toBe(String(closeOutUsd));
+  expect(mine!.collateralAppliedUsd).toBe(String(closeOutUsd)); // the collateral held exceeds the amount owed
+  const held = Number(mine!.collateralHeldUsd);
+  expect(held).toBeGreaterThanOrEqual(Math.floor(pledgeQty * TUST_VALUE) - 1);
+  expect(Number(mine!.amountPayableUsd)).toBe(closeOutUsd - held); // negative: owed back to A
+  // On-chain the contract applied whole units: at least the amount owed, less than one more unit of collateral.
+  expect(mine!.owedUsd).toBe(String(closeOutUsd));
+  expect(Number(mine!.appliedUsd)).toBeGreaterThanOrEqual(closeOutUsd);
+  expect(Number(mine!.appliedUsd) - closeOutUsd).toBeLessThan(PRICE_TUST);
+
+  // On-chain state: A is in default, nothing is left in escrow, and each pledged unit went to B (applied) or back to A.
+  expect((await call<{ inDefault: boolean }>(`${GATEWAY.B}/defaults/${p.a}`)).inDefault).toBe(true);
+  for (const sym of symbols) {
+    expect(await pledgedOf(GATEWAY.A, p.tokens[sym], p)).toBe(0n);
+    const toB = (await balanceOf(GATEWAY.B, p.tokens[sym], p.b)) - bFreeBefore[sym];
+    const toA = (await balanceOf(GATEWAY.A, p.tokens[sym], p.a)) - aFreeBefore[sym];
+    expect(toB + toA).toBe(pledgedBefore[sym]);
+  }
+
+  // Both consoles show the verified statement.
+  const row = page.getByTestId(`close-out-${mine!.closeOutId}`);
+  await expect(row.getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/A");
+  await expect(page.getByTestId(`close-out-${mine!.closeOutId}`).getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-substitution: pledgor requests -> secured party consents -> pledgor settles, substitute in escrow and CDM folded", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUST = p.tokens["tUST"];
+  const tUSD = p.tokens["tUSD"];
+  const pledgeUsd = 100_000 + (Date.now() % 9000) * 10;
+  const pledgeQty = Math.ceil(pledgeUsd / TUST_VALUE) + 100;
+  const originalQty = 500; // tUST back to A
+  const substituteQty = Math.ceil(originalQty * TUST_VALUE) + 10; // tUSD at 1.00, no haircut: worth more than the tUST
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  await pledgeThroughServices(pledgeUsd, pledgeQty);
+  await waitForSettledOnChain("IM", pledgeUsd);
+  const pledgedUstBefore = await pledgedOf(GATEWAY.A, tUST, p);
+  const pledgedUsdBefore = await pledgedOf(GATEWAY.A, tUSD, p);
+  const freeUstBefore = await balanceOf(GATEWAY.A, tUST, p.a);
+  const freeUsdBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+  const known = new Set((await call<Substitution[]>(`${SERVICE.A}/substitutions`)).map((s) => s.substitutionId));
+
+  // 1-4. Pledgor (BANK-A) requests the substitution in its console.
+  await page.goto("/#/live/A");
+  const req = page.getByTestId("substitution-request");
+  await req.getByLabel("Original token").selectOption("tUST");
+  await req.getByLabel("Original quantity").fill(String(originalQty));
+  await req.getByLabel("Substitute token").selectOption("tUSD");
+  await req.getByLabel("Substitute quantity").fill(String(substituteQty));
+  await req.getByRole("button", { name: "Request substitution → B" }).click();
+  let id: string | undefined;
+  await expect
+    .poll(async () => (id = (await call<Substitution[]>(`${SERVICE.A}/substitutions`)).find((s) => !known.has(s.substitutionId))?.substitutionId) ?? null, { timeout: 30_000 })
+    .not.toBeNull();
+
+  // 5-8. Secured party (BANK-B) consents.
+  await page.goto("/#/live/B");
+  const rowB = page.getByTestId(`substitution-${id}`);
+  await expect(rowB.getByRole("button", { name: "Consent" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Consent" }).click();
+
+  // 9-12. Pledgor settles: the substitute goes into escrow and the tUST comes back.
+  await page.goto("/#/live/A");
+  const rowA = page.getByTestId(`substitution-${id}`);
+  await expect(rowA.getByRole("button", { name: "Settle substitution" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Settle substitution" }).click();
+  await expect(rowA.getByText("substituted on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 13. Both services fold the request, consent and settlement to the same CDM state.
+  let a: Substitution | undefined, b: Substitution | undefined;
+  await expect
+    .poll(async () => {
+      a = (await call<Substitution[]>(`${SERVICE.A}/substitutions`)).find((s) => s.substitutionId === id);
+      b = (await call<Substitution[]>(`${SERVICE.B}/substitutions`)).find((s) => s.substitutionId === id);
+      return !!a?.cdm.converged && !!b?.cdm.converged && a.cdm.totalSteps === 3 && a.cdm.stateHash === b.cdm.stateHash;
+    }, { timeout: 60_000 })
+    .toBe(true);
+  expect(a!.state).toBe("settled");
+  expect(a!.cdm.error).toBeUndefined();
+  expect(a!.cdm.status.toLowerCase()).toBe("settled");
+  expect(a!.cdm.qualifiers).toEqual(["SubstitutionRequested", "SubstitutionConsented", "CollateralSubstituted"]);
+  expect(a!.cdm.stateHash).toMatch(/^0x[0-9a-f]{64}$/i);
+
+  // 14. Each step is anchored on its own final transaction, and both parties build the same anchors. The settlement's
+  // anchor also holds the token transfers of its transaction.
+  expect(a!.cdm.anchorError).toBeUndefined();
+  expect(a!.cdm.anchored).toBe(true);
+  expect(a!.cdm.anchors!.map((x) => [x.identifier, x.status])).toEqual([["request", "Complete"], ["consent", "Complete"], ["settle", "Complete"]]);
+  expect(a!.cdm.anchors![2].transactions).toBeGreaterThan(1);
+  expect(a!.cdm.anchorHash).toMatch(/^0x[0-9a-f]{64}$/i);
+  expect(b!.cdm.anchorHash).toBe(a!.cdm.anchorHash);
+
+  // On-chain state through each party's gateway.
+  expect(await pledgedOf(GATEWAY.B, tUST, p)).toBe(pledgedUstBefore - BigInt(originalQty));
+  expect(await pledgedOf(GATEWAY.B, tUSD, p)).toBe(pledgedUsdBefore + BigInt(substituteQty));
+  expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(freeUstBefore + BigInt(originalQty));
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(freeUsdBefore - BigInt(substituteQty));
+
+  await page.goto("/#/live/B");
+  await expect(page.getByTestId(`substitution-${id}`).getByText("substituted on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+test("flow-interest-on-cash: secured party states interest on cash collateral -> paid to the pledgor on-chain, statement verified", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const tUSD = p.tokens["tUSD"];
+  const cashUsd = 100_000 + (Date.now() % 9000) * 10;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: cash initial margin (tUSD, no haircut) in escrow from A (pledgor) with B (secured party).
+  await pledgeThroughServices(cashUsd, cashUsd, "tUSD");
+  await waitForSettledOnChain("IM", cashUsd);
+  const cash = Number(await pledgedOf(GATEWAY.B, tUSD, p)); // all tUSD A has in escrow with B, earlier runs included
+  const expected = Math.round((cash * 0.043 * 30) / 360); // 4.30%, 30 days, ACT/360, whole USD
+  const aFreeBefore = await balanceOf(GATEWAY.A, tUSD, p.a);
+  const bFreeBefore = await balanceOf(GATEWAY.B, tUSD, p.b);
+  const known = new Set((await call<Interest[]>(`${SERVICE.B}/interest`)).map((i) => i.interestId));
+
+  // 1-7. Secured party (BANK-B) enters the period and the observed rate and states the interest in its console.
+  await page.goto("/#/live/B");
+  const card = page.getByTestId("interest");
+  await card.getByLabel("Period start").fill("2026-11-01");
+  await card.getByLabel("Period end").fill("2026-12-01");
+  await card.getByLabel("Observed rate (%)").fill("4.3");
+  await expect(card.getByRole("button", { name: "State interest → A" })).toBeEnabled({ timeout: STEP_TIMEOUT });
+  await card.getByRole("button", { name: "State interest → A" }).click();
+
+  // 8-9. Both services list the statement, paid, with the same checked document.
+  let mine: Interest | undefined;
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => {
+        mine = (await call<Interest[]>(`${svc}/interest`)).find((i) => !known.has(i.interestId));
+        return mine?.verified && mine.state === "settled" ? true : (mine?.error ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  const fromB = (await call<Interest[]>(`${SERVICE.B}/interest`)).find((i) => i.interestId === mine!.interestId)!;
+  expect(mine!.cdmHash).toBe(fromB.cdmHash);
+  expect(mine!.days).toBe(30);
+  expect(mine!.balanceUsd).toBe(String(cash));
+  expect(mine!.ratePct).toBe("4.3");
+  expect(mine!.interestAmountUsd).toBe(String(expected));
+  expect(mine!.amountUsd).toBe(String(expected));
+
+  // On-chain: the Interest Amount moved from B to A; the cash collateral in escrow is unchanged.
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aFreeBefore + BigInt(expected));
+  expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bFreeBefore - BigInt(expected));
+  expect(Number(await pledgedOf(GATEWAY.A, tUSD, p))).toBe(cash);
+
+  // Both consoles show the statement as paid and verified.
+  for (const who of ["B", "A"] as const) {
+    await page.goto(`/#/live/${who}`);
+    const row = page.getByTestId(`interest-${mine!.interestId}`);
+    await expect(row.getByText("paid on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(row.getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  }
+  expect(errors).toEqual([]);
+});
+
+// Settlement netting (task-csa-settlement-netting): the scope is the project owner's choice of 2026-11-06 (agreed VM
+// calls, VM returns and held Interest Amounts between the two parties on one day); the rules are assumptions awaiting
+// task-sme-settlement-netting-rules.
+test("flow-settlement-netting: VM call, VM return and held interest due the same day -> the party owing the net settles them by one tUSD transfer, statement verified", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Movement = { id: string; type: string; payer: string; receiver: string; amountUsd: string };
+  type Netting = { nettingId: string; settledBy: string; amountUsd: string; cdmHash: string; verified?: boolean; error?: string; movements?: Movement[] };
+  type Fold = { status: string };
+  const p = await parties();
+  const tUSD = p.tokens["tUSD"];
+
+  // Setup: cash collateral in escrow for the Interest Amount (the interest spec leaves some; a run of this spec alone
+  // pledges it).
+  if (Number(await pledgedOf(GATEWAY.B, tUSD, p)) === 0) {
+    await pledgeThroughServices(100_000, 100_000, "tUSD");
+    await waitForSettledOnChain("IM", 100_000);
+  }
+  const vmUsd = 200_000 + (Date.now() % 9000) * 10;
+  const returnUsd = 50_000 + (Date.now() % 900) * 10;
+
+  // 1. B calls VM from A; A agrees and proposes tUSD; B accepts. Not settled: it waits for the netting.
+  const { callId: vm } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "VM", toParty: "A", amountUsd: vmUsd, deadlineDays: 1 });
+  await seenByA(vm);
+  await call(`${SERVICE.A}/calls/${vm}/response`, "POST", { response: "full" });
+  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${vm}/proposal`, "POST", { assets: [{ token: "tUSD", qty: vmUsd }] });
+  await call(`${SERVICE.B}/calls/${vm}/decision`, "POST", { proposalId, accept: true });
+
+  // 2. A calls a VM return from B; B agrees.
+  const { callId: ret } = await call<{ callId: string }>(`${SERVICE.A}/calls`, "POST", { kind: "Return", toParty: "B", amountUsd: returnUsd, deadlineDays: 1 });
+  await call(`${SERVICE.B}/calls/${ret}/response`, "POST", { response: "full" });
+
+  // 3. B states the month's interest in its console and holds it for netting: stated on-chain, nothing paid.
+  const known = new Set((await call<Interest[]>(`${SERVICE.B}/interest`)).map((i) => i.interestId));
+  await page.goto("/#/live/B");
+  const interestCard = page.getByTestId("interest");
+  await interestCard.getByLabel("Period start").fill("2026-11-01");
+  await interestCard.getByLabel("Period end").fill("2026-12-01");
+  await interestCard.getByLabel("Observed rate (%)").fill("4.3");
+  await interestCard.getByRole("checkbox", { name: /Hold for settlement netting/ }).check();
+  await expect(interestCard.getByRole("button", { name: "State interest → A" })).toBeEnabled({ timeout: STEP_TIMEOUT });
+  await interestCard.getByRole("button", { name: "State interest → A" }).click();
+  let held: Interest | undefined;
+  await expect
+    .poll(async () => {
+      held = (await call<Interest[]>(`${SERVICE.B}/interest`)).find((i) => !known.has(i.interestId));
+      return held?.verified && held.state === "stated" ? true : (held?.error ?? held?.state ?? null);
+    }, { timeout: 60_000 })
+    .toBe(true);
+  const interestUsd = Number(held!.amountUsd);
+  expect(interestUsd).toBeGreaterThan(0);
+
+  // 4. A's service lists the three movements and A owes the net.
+  let cand: { movements: Movement[]; netUsd: string; payer: string | null } | undefined;
+  await expect
+    .poll(async () => {
+      cand = await call(`${SERVICE.A}/netting/candidates`);
+      return [vm, ret, held!.interestId].every((id) => cand!.movements.some((m) => m.id === id));
+    }, { timeout: 60_000 })
+    .toBe(true);
+  const byId = (id: string) => cand!.movements.find((m) => m.id === id)!;
+  expect(byId(vm)).toMatchObject({ type: "DeliveryAmount", payer: "A", receiver: "B", amountUsd: String(vmUsd) });
+  expect(byId(ret)).toMatchObject({ type: "ReturnAmount", payer: "B", receiver: "A", amountUsd: String(returnUsd) });
+  expect(byId(held!.interestId)).toMatchObject({ type: "InterestAmount", payer: "B", receiver: "A", amountUsd: String(interestUsd) });
+  expect(cand!.payer).toBe("A");
+  const net = Number(cand!.netUsd); // every movement that can net now, earlier runs' leftovers included
+  const aFree = await balanceOf(GATEWAY.A, tUSD, p.a);
+  const bFree = await balanceOf(GATEWAY.B, tUSD, p.b);
+  const knownNettings = new Set((await call<Netting[]>(`${SERVICE.A}/nettings`)).map((n) => n.nettingId));
+
+  // 5. A settles them in its console by one transfer of tUSD.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("settlement-netting");
+  await expect(card.getByTestId("netting-net")).toHaveText(`Net: A pays USD ${net.toLocaleString("en-US")} in tUSD`, { timeout: STEP_TIMEOUT });
+  await card.getByRole("button", { name: "Settle netted" }).click();
+
+  // 6. Both services list the netting with the same verified CDM statement; the net moved once, A to B.
+  let mine: Netting | undefined;
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        mine = (await call<Netting[]>(`${svc}/nettings`)).find((n) => !knownNettings.has(n.nettingId));
+        return mine?.verified ? true : (mine?.error ?? null);
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  const fromA = (await call<Netting[]>(`${SERVICE.A}/nettings`)).find((n) => n.nettingId === mine!.nettingId)!;
+  expect(mine!.cdmHash).toBe(fromA.cdmHash);
+  expect(mine!.settledBy).toBe("A");
+  expect(mine!.amountUsd).toBe(String(net));
+  expect(await balanceOf(GATEWAY.A, tUSD, p.a)).toBe(aFree - BigInt(net));
+  expect(await balanceOf(GATEWAY.B, tUSD, p.b)).toBe(bFree + BigInt(net));
+
+  // On-chain: both calls settled in the netting, the Interest Amount settled.
+  for (const id of [vm, ret]) {
+    const c = await call<{ state: number; nettedIn: string }>(`${GATEWAY.A}/calls/${id}`);
+    expect(c.state).toBe(5);
+    expect(c.nettedIn).toBe(mine!.nettingId);
+  }
+  expect((await call<Interest[]>(`${SERVICE.A}/interest`)).find((i) => i.interestId === held!.interestId)?.state).toBe("settled");
+
+  // Both services fold each call's SettleCall step (naming the netting) to Settled.
+  for (const id of [vm, ret]) {
+    await expectConvergedCdmState(id);
+    for (const svc of [SERVICE.A, SERVICE.B]) expect((await call<Fold>(`${svc}/calls/${id}/cdm-state`)).status).toMatch(/^settled$/i);
+  }
+
+  // Both consoles show the netting as verified and nothing left to net from it.
+  for (const who of ["A", "B"] as const) {
+    await page.goto(`/#/live/${who}`);
+    await expect(page.getByTestId(`netting-${mine!.nettingId}`).getByText("statement verified ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  }
+  expect(errors).toEqual([]);
+});
+
+// Margin call cancellation (task-csa-call-cancellation). The rules are the project owner's assumptions of 2026-11-06,
+// to be confirmed in task-sme-call-cancellation-rules.
+test("flow-call-cancellation: secured party withdraws an unanswered call; requests cancellation of an agreed call -> pledgor accepts, proposal void, nothing moved", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Fold = { status: string; converged: boolean };
+  const folded = async (callId: string) => {
+    await expectConvergedCdmState(callId);
+    for (const svc of [SERVICE.A, SERVICE.B]) expect((await call<Fold>(`${svc}/calls/${callId}/cdm-state`)).status).toMatch(/^cancelled$/i);
+  };
+
+  // 1-4. Withdrawal: B issues an IM call and withdraws it in its console before A answers.
+  const amountUsd = 300_000 + (Date.now() % 9000) * 10;
+  const { callId: w } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await page.goto("/#/live/B");
+  const rowW = page.locator(".subcard", { hasText: shortId(w) });
+  await expect(rowW.getByRole("button", { name: "Withdraw call" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowW.getByLabel("Cancellation reason").fill("booked in error");
+  await rowW.getByRole("button", { name: "Withdraw call" }).click();
+  await expect(rowW.getByText("cancelled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  expect((await call<{ state: number }>(`${GATEWAY.A}/calls/${w}`)).state).toBe(7);
+  await folded(w);
+
+  // 5-10. Request and acceptance: an agreed IM call with an accepted proposal, set up through the services.
+  const amount2 = amountUsd + 5;
+  const qty = Math.ceil(amount2 / TUST_VALUE);
+  const { callId: c } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd: amount2, deadlineDays: 1 });
+  await seenByA(c);
+  await call(`${SERVICE.A}/calls/${c}/response`, "POST", { response: "full" });
+  const { proposalId } = await call<{ proposalId: number }>(`${SERVICE.A}/calls/${c}/proposal`, "POST", { assets: [{ token: "tUST", qty }] });
+  await call(`${SERVICE.B}/calls/${c}/decision`, "POST", { proposalId, accept: true });
+  const tUST = p.tokens["tUST"];
+  const freeBefore = await balanceOf(GATEWAY.A, tUST, p.a);
+  const pledgedBefore = await pledgedOf(GATEWAY.A, tUST, p);
+
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: shortId(c) });
+  await expect(rowB.getByRole("button", { name: "Request cancellation" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByLabel("Cancellation reason").fill("superseded by a corrected call");
+  await rowB.getByRole("button", { name: "Request cancellation" }).click();
+  await expect(rowB.getByText("cancellation requested by B")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: shortId(c) });
+  await expect(rowA.getByRole("button", { name: "Accept cancellation" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowA.getByRole("button", { name: "Pledge accepted collateral" })).toHaveCount(0);
+  await rowA.getByRole("button", { name: "Accept cancellation" }).click();
+  await expect(rowA.getByText("cancelled on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // On-chain: the call is cancelled, its proposal void, and no collateral moved.
+  const onChain = await call<{ state: number; cancellationRequestedBy: string }>(`${GATEWAY.B}/calls/${c}`);
+  expect(onChain.state).toBe(7);
+  expect(onChain.cancellationRequestedBy).toBe("0x0000000000000000000000000000000000000000");
+  expect(await call<number>(`${GATEWAY.B}/calls/${c}/proposals/${proposalId}/state`)).toBe(4);
+  expect(await balanceOf(GATEWAY.A, tUST, p.a)).toBe(freeBefore);
+  expect(await pledgedOf(GATEWAY.A, tUST, p)).toBe(pledgedBefore);
+  await folded(c);
+  expect(errors).toEqual([]);
+});
+
+// Replacement of a cancelled call (task-csa-call-replacement): the corrected call names the call it replaces, on-chain
+// and in its CDM IssueCall step. The details are assumptions awaiting task-sme-call-cancellation-rules (question 5).
+test("flow-call-replacement: secured party withdraws a call -> issues a corrected call that replaces it, linked on-chain and in CDM", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Fold = { status: string; converged: boolean };
+  type Row = { callId: string; state: string; replaces: string | null; replacedBy: string | null };
+
+  // 1-2. Setup through the services: B issues an IM call to A and withdraws it.
+  const amountUsd = 400_000 + (Date.now() % 9000) * 10;
+  const { callId: old } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await call(`${SERVICE.B}/calls/${old}/withdraw`, "POST", { reason: "amount booked in error" });
+
+  // 3-4. B issues the corrected call from the cancelled call's row in its console.
+  const corrected = amountUsd - 50_000;
+  await page.goto("/#/live/B");
+  const rowOld = page.locator(".subcard", { hasText: shortId(old) });
+  await expect(rowOld.getByRole("button", { name: "Issue replacement call" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowOld.getByLabel("Replacement amount (USD)").fill(String(corrected));
+  await rowOld.getByRole("button", { name: "Issue replacement call" }).click();
+  await expect(rowOld.getByText(/replaced by/)).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowOld.getByRole("button", { name: "Issue replacement call" })).toHaveCount(0);
+
+  // 5. On-chain: the link both ways, the new call issued for the corrected amount to the same party.
+  const linked = await call<{ replacementOf: string }>(`${GATEWAY.A}/calls/${old}`);
+  const repl = linked.replacementOf;
+  expect(repl).not.toBe("0x" + "0".repeat(64));
+  const onChain = await call<{ state: number; replaces: string; kind: number; amount: string }>(`${GATEWAY.A}/calls/${repl}`);
+  expect(onChain.state).toBe(1);
+  expect(onChain.replaces).toBe(old);
+  expect(onChain.kind).toBe(0);
+
+  // 6. Both consoles' services show the link, and A sees the corrected call to answer.
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    const link = async () => {
+      const rows = (await call<{ calls: Row[] }>(`${svc}/state`)).calls;
+      return [rows.find((r) => r.callId === repl)?.replaces, rows.find((r) => r.callId === old)?.replacedBy];
+    };
+    await expect.poll(link, { timeout: 60_000 }).toEqual([old, repl]);
+  }
+  await page.goto("/#/live/A");
+  const rowNew = page.locator(".subcard", { hasText: shortId(repl) });
+  await expect(rowNew.getByText(/replaces/)).toBeVisible({ timeout: STEP_TIMEOUT });
+  await expect(rowNew.getByRole("button", { name: "Agree in full" })).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 7. Both services fold the replacement's CDM IssueCall step, which names the cancelled call (ReplacementAllowed held).
+  await expectConvergedCdmState(repl);
+  for (const svc of [SERVICE.A, SERVICE.B]) expect((await call<Fold>(`${svc}/calls/${repl}/cdm-state`)).status).toMatch(/^issued$/i);
+
+  // 8. A second replacement of the same call is refused.
+  await expect(call(`${SERVICE.B}/calls`, "POST", { replacesCallId: old, amountUsd: corrected, deadlineDays: 1 })).rejects.toThrow(/replacement/);
+
+  // Cleanup: withdraw the replacement so later specs see no open call from this one.
+  await call(`${SERVICE.B}/calls/${repl}/withdraw`, "POST", { reason: "spec cleanup" });
+  expect(errors).toEqual([]);
+});
+
+// Last: the amendment changes the pair's terms, and the spec restores them (MTA 500,000, tMMF 4%) so a rerun of the
+// other specs sees the baseline terms.
+test("flow-agreement-amendment: secured party proposes new MTA and tMMF haircut -> pledgor consents -> terms applied on-chain and in both services", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // Setup: refuse an amendment a failed earlier run left pending.
+  const start = await call<Agreement>(`${SERVICE.B}/agreement`);
+  const left = start.amendments.find((m) => m.state === "proposed");
+  if (left) await call(`${left.proposer === "B" ? SERVICE.A : SERVICE.B}/amendments/${left.amendmentId}/decision`, "POST", { consent: false });
+  const known = new Set(start.amendments.map((m) => m.amendmentId));
+  const mta = start.mtaUsd === "400000" ? 450_000 : 400_000;
+  const bps = start.haircuts.find((h) => h.token === "tMMF")!.haircutBps === 1000 ? 1200 : 1000;
+
+  // 1-4. Secured party (BANK-B) proposes a new MTA and a tMMF haircut in its console.
+  await page.goto("/#/live/B");
+  const card = page.getByTestId("agreement");
+  await expect(card.getByText("terms verified against the chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+  await card.getByLabel("New MTA (USD)").fill(String(mta));
+  await card.getByLabel("Amended token").selectOption("tMMF");
+  await card.getByLabel("Haircut (bps)").fill(String(bps));
+  await expect(card.getByRole("button", { name: "Propose amendment → A" })).toBeEnabled({ timeout: STEP_TIMEOUT });
+  await card.getByRole("button", { name: "Propose amendment → A" }).click();
+
+  let id = "";
+  await expect
+    .poll(async () => {
+      const m = (await call<Agreement>(`${SERVICE.A}/agreement`)).amendments.find((x) => !known.has(x.amendmentId));
+      id = m?.amendmentId ?? "";
+      return m?.state ?? null;
+    }, { timeout: 60_000 })
+    .toBe("proposed");
+
+  // 5-7. Pledgor (BANK-A) checks the CDM amendment and consents in its console.
+  await page.goto("/#/live/A");
+  const row = page.getByTestId(`amendment-${id}`);
+  await expect(row.getByRole("button", { name: "Consent" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await row.getByRole("button", { name: "Consent" }).click();
+  await expect(row.getByText("agreed on-chain ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 8. Both services fold the amendment to the same terms, matching the chain.
+  const folded: Agreement[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const a = await call<Agreement>(`${svc}/agreement`);
+        return a.verified && a.mtaUsd === String(mta) ? true : (a.problem ?? a.mtaUsd);
+      }, { timeout: 60_000 })
+      .toBe(true);
+    folded.push(await call<Agreement>(`${svc}/agreement`));
+  }
+  expect(folded[0].agreementHash).toBe(folded[1].agreementHash);
+  expect(folded[0].agreementHash).not.toBe(start.agreementHash);
+  for (const a of folded) expect(a.haircuts.find((h) => h.token === "tMMF")).toMatchObject({ haircutBps: bps, onChainHaircutBps: bps, matches: true });
+  const onChain = await call<{ agreementHash: string; pendingAmendment: string; eligibility: { token: string; eligible: boolean; haircutBps: number }[] }>(
+    `${GATEWAY.A}/pair-terms?pledgor=${p.a}&securedParty=${p.b}`);
+  expect(onChain.agreementHash).toBe(folded[0].agreementHash);
+  expect(onChain.pendingAmendment).toBe(ZERO_HASH);
+  expect(onChain.eligibility.find((e) => e.token.toLowerCase() === p.tokens["tMMF"].toLowerCase())).toMatchObject({ eligible: true, haircutBps: bps });
+  const reval = await call<{ mtaUsd: string }>(`${SERVICE.B}/revaluation`);
+  expect(reval.mtaUsd).toBe(String(mta));
+
+  // Restore the baseline terms through the services: A proposes, B consents (either party may propose).
+  const { amendmentId } = await call<{ amendmentId: string }>(`${SERVICE.A}/amendments`, "POST", {
+    mtaUsd: 500_000, haircuts: [{ token: "tMMF", eligible: true, haircutBps: 400 }] });
+  await expect
+    .poll(async () => (await call<Agreement>(`${SERVICE.B}/agreement`)).amendments.find((m) => m.amendmentId === amendmentId)?.state ?? null, { timeout: 60_000 })
+    .toBe("proposed");
+  await call(`${SERVICE.B}/amendments/${amendmentId}/decision`, "POST", { consent: true });
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    await expect
+      .poll(async () => {
+        const a = await call<Agreement>(`${svc}/agreement`);
+        return a.verified && a.mtaUsd === "500000" && a.haircuts.find((h) => h.token === "tMMF")!.onChainHaircutBps === 400;
+      }, { timeout: 60_000 })
+      .toBe(true);
+  }
+  expect(errors).toEqual([]);
+});
+
+test("flow-allocation: pledgor asks for a suggested basket on an agreed IM call -> proposes it -> secured party accepts -> pledged as suggested", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  // wp-adr-allocation-scope: eligible tokens in ranking order (registry order by default), the last one rounded up to
+  // whole units; nothing is recorded until the pledgor proposes.
+  type Allocation = {
+    covers: boolean; assets: { token: string; qty: number }[]; valueUsd: string; agreedUsd: string; ranking: string[];
+    inventory: { token: string; rank: number; held: string; eligible: boolean; haircutBps: number; price: string }[];
+  };
+  // Small enough that part of the pledgor's tUST covers it: the chain is persistent and the other flows need the
+  // pledgor's tUSD and tUST, so this flow must not drain them (multi-asset fills are covered by AllocationTest).
+  const amountUsd = 1_000_000 + (Date.now() % 9000) * 100;
+  const label = `USD ${amountUsd.toLocaleString("en-US")}`;
+  const p = await parties();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // 1-2. Secured party issues the IM call; the pledgor agrees in full.
+  await page.goto("/#/live/B");
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await issueCard.getByRole("spinbutton").fill(String(amountUsd));
+  await issueCard.getByRole("button", { name: /Issue IM call/ }).click();
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: label });
+  await expect(rowA).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Agree in full" }).click();
+
+  // 3. The pledgor asks for a suggestion; the console fills the basket.
+  await expect(rowA.getByRole("button", { name: "Suggest allocation" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Suggest allocation" }).click();
+  await expect(rowA.getByText(/suggested: USD [\d,.]+ after haircuts/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // The same suggestion through the service API: it covers the agreed amount, in ranking order, every asset but the
+  // last at its full holding, and overshoots by less than one unit of the last asset after its haircut.
+  const st = await call<{ calls: { callId: string; amountUsd: string }[] }>(`${SERVICE.A}/state`);
+  const callId = st.calls.find((c) => c.amountUsd === String(amountUsd))!.callId;
+  const alloc = await call<Allocation>(`${SERVICE.A}/calls/${callId}/allocation`, "POST", {});
+  expect(alloc.covers).toBe(true);
+  expect(alloc.ranking).toEqual(Object.keys(p.tokens));
+  await expect(rowA.getByText(`basket: ${alloc.assets.map((a) => `${a.token} ${a.qty.toLocaleString("en-US")}`).join(" + ")}`)).toBeVisible();
+  const inv = Object.fromEntries(alloc.inventory.map((i) => [i.token, i]));
+  const ranks = alloc.assets.map((a) => inv[a.token].rank);
+  expect([...ranks].sort((x, y) => x - y)).toEqual(ranks);
+  alloc.assets.forEach((a, i) => {
+    expect(inv[a.token].eligible).toBe(true);
+    if (i < alloc.assets.length - 1) expect(String(a.qty)).toBe(inv[a.token].held);
+    else expect(a.qty).toBeLessThanOrEqual(Number(inv[a.token].held));
+  });
+  const last = inv[alloc.assets[alloc.assets.length - 1].token];
+  const lastUnitValue = (Number(last.price) / 1e8) * (1 - last.haircutBps / 10_000);
+  expect(alloc.assets).toEqual([{ token: "tUST", qty: Math.ceil(amountUsd / lastUnitValue) }]);
+  expect(Number(alloc.valueUsd)).toBeGreaterThanOrEqual(amountUsd);
+  expect(Number(alloc.valueUsd) - amountUsd).toBeLessThan(lastUnitValue);
+  // A ranking from the body goes first; the calling party is not offered an allocation.
+  const reranked = await call<Allocation>(`${SERVICE.A}/calls/${callId}/allocation`, "POST", { ranking: ["tMMF"] });
+  expect(reranked.ranking[0]).toBe("tMMF");
+  if (inv.tMMF.eligible && Number(inv.tMMF.held) > 0) expect(reranked.assets[0].token).toBe("tMMF");
+  await expect(call(`${SERVICE.B}/calls/${callId}/allocation`, "POST", {})).rejects.toThrow(/only the called party/);
+
+  // 4-6. The pledgor proposes the suggested basket; the secured party accepts; the pledgor pledges it.
+  const before = Object.fromEntries(await Promise.all(alloc.assets.map(async (a) => [a.token, await pledgedOf(GATEWAY.A, p.tokens[a.token], p)] as const)));
+  await rowA.getByRole("button", { name: `Propose collateral (${alloc.assets.length})` }).click();
+  await expect(rowA.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: STEP_TIMEOUT });
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: label });
+  await expect(rowB.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Accept proposal" }).click();
+  await page.goto("/#/live/A");
+  const rowA2 = page.locator(".subcard", { hasText: label });
+  await expect(rowA2.getByRole("button", { name: "Pledge accepted collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA2.getByRole("button", { name: "Pledge accepted collateral" }).click();
+  await waitForSettledOnChain("IM", amountUsd);
+  for (const a of alloc.assets) {
+    expect(await pledgedOf(GATEWAY.A, p.tokens[a.token], p) - before[a.token]).toBe(BigInt(a.qty));
+  }
+  await expectConvergedCdmState(callId);
+  expect(errors).toEqual([]);
+});
+
+test("flow-reconciliation: pledgor reconciles trade portfolios with the secured party -> hashes agree on-chain -> disputes a call citing the breaks; both parties' records match the ledger", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  type Run = {
+    reconciliationId: string; firstSnapshotId: string; secondSnapshotId: string; resultHash: string;
+    firstParty: string; secondParty: string; reconciled: boolean; matchedTrades: number;
+    breaks: { uti: string; type: string; differenceUsd: string | null }[];
+    firstExposureUsd: string; secondExposureUsd: string; exposureDifferenceUsd: string;
+    onChain: { state: string; firstPartyResult: string; secondPartyResult: string };
+  };
+  const p = await parties();
+  const before = (await call<Run[]>(`${SERVICE.A}/reconciliation/portfolio`))[0]?.reconciliationId;
+
+  // 1. The pledgor (BANK-A) reconciles its trades with BANK-B's from its console: the snapshots go service to service,
+  //    each party commits its snapshot hash and its result hash on-chain.
+  await page.goto("/#/live/A");
+  const card = page.getByTestId("reconciliation");
+  await card.getByRole("button", { name: "Reconcile portfolios → B" }).click();
+  let a: Run | undefined;
+  await expect
+    .poll(async () => {
+      a = (await call<Run[]>(`${SERVICE.A}/reconciliation/portfolio`))[0];
+      return a?.reconciliationId;
+    }, { timeout: 60_000 })
+    .not.toBe(before);
+  const shown = card.getByTestId(`reconciliation-${a!.reconciliationId}`);
+  await expect(shown.getByTestId("reconciliation-status")).toHaveText("2 breaks", { timeout: STEP_TIMEOUT });
+  await expect(shown.getByTestId("reconciliation-onchain")).toHaveText("both results agree on-chain ✓");
+  await expect(shown.getByTestId("break-DRTY123456")).toContainText("valuations differ");
+  await expect(shown.getByTestId("break-DRTY123456")).toContainText("USD 40,000");
+  await expect(shown.getByTestId("break-56323")).toContainText("missing at the second party");
+  await expect(shown.getByTestId("exposure-difference")).toHaveText("USD 115,000");
+
+  // 2. Both services hold the same CDM result for the run; the chain holds both snapshots and the matching result hashes.
+  a = (await call<Run[]>(`${SERVICE.A}/reconciliation/portfolio`))[0];
+  const b = (await call<Run[]>(`${SERVICE.B}/reconciliation/portfolio`))[0];
+  expect(b.reconciliationId).toBe(a.reconciliationId);
+  expect(b.resultHash).toBe(a.resultHash);
+  expect([a.firstParty, a.secondParty, a.matchedTrades, a.reconciled]).toEqual(["BANK-A", "BANK-B", 1, false]);
+  expect(a.breaks.map((x) => `${x.uti}:${x.type}:${x.differenceUsd}`)).toEqual(["56323:MissingFromSecond:null", "DRTY123456:ValuationDiffers:40000"]);
+  expect([a.firstExposureUsd, a.secondExposureUsd, a.exposureDifferenceUsd]).toEqual(["1625000", "-1510000", "115000"]);
+  const run = await call<{ state: string; firstPartyResult: string; secondPartyResult: string; breakCount: number }>(`${GATEWAY.B}/reconciliation/runs/${a.reconciliationId}`);
+  expect(run).toMatchObject({ state: "agreed", firstPartyResult: a.resultHash, secondPartyResult: a.resultHash, breakCount: 2 });
+  const first = await call<{ party: string; counterparty: string; snapshotHash: string }>(`${GATEWAY.A}/reconciliation/snapshots/${a.firstSnapshotId}`);
+  const second = await call<{ party: string; counterparty: string; snapshotHash: string }>(`${GATEWAY.A}/reconciliation/snapshots/${a.secondSnapshotId}`);
+  expect([first.party.toLowerCase(), first.counterparty.toLowerCase()]).toEqual([p.a.toLowerCase(), p.b.toLowerCase()]);
+  expect([second.party.toLowerCase(), second.counterparty.toLowerCase()]).toEqual([p.b.toLowerCase(), p.a.toLowerCase()]);
+  expect(first.snapshotHash).not.toBe(ZERO_HASH);
+  await page.goto("/#/live/B");
+  await expect(page.getByTestId(`reconciliation-${a.reconciliationId}`)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // 3. BANK-B issues an IM call; BANK-A disputes it from its console citing the reconciliation, and records a CDM Dispute
+  //    whose reason names the run and its breaks. Nothing is delivered.
+  const amountUsd = 600_000 + (Date.now() % 9000) * 10;
+  const { callId } = await call<{ callId: string }>(`${SERVICE.B}/calls`, "POST", { kind: "IM", toParty: "A", amountUsd, deadlineDays: 1 });
+  await page.goto("/#/live/A");
+  const row = page.locator(".subcard", { hasText: shortId(callId) });
+  await row.getByRole("button", { name: "Dispute citing reconciliation" }).click({ timeout: STEP_TIMEOUT });
+  await expect(row.getByText("disputed", { exact: true })).toBeVisible({ timeout: STEP_TIMEOUT });
+  // The console shows "disputed" once the response is mined; the service records the Dispute right after.
+  type Row = { callId: string; state: string; disputedUsd: string; messages: { msgType: string; cdmJson: string }[] };
+  let disputed: Row | undefined;
+  await expect
+    .poll(async () => {
+      disputed = (await call<{ calls: Row[] }>(`${SERVICE.A}/state`)).calls.find((c) => c.callId === callId);
+      return disputed?.messages.map((m) => m.msgType) ?? [];
+    }, { timeout: STEP_TIMEOUT })
+    .toContain("Dispute");
+  expect([disputed!.state, disputed!.disputedUsd]).toEqual(["disputed", String(amountUsd)]);
+  const dispute = JSON.parse(disputed!.messages.find((m) => m.msgType === "Dispute")!.cdmJson);
+  expect(dispute.reason).toBe(`Portfolio reconciliation ${a.reconciliationId}: 2 breaks; 56323 MissingFromSecond; DRTY123456 ValuationDiffers; exposure difference USD 115000`);
+
+  // 4. Each party's stored CDM records of the pair's calls match the contract (status, called and agreed amounts), and
+  //    the escrow its settled records build matches the control contract's, token by token.
+  type Escrow = { record: string; recorded: Record<string, number>; ledger: Record<string, number> };
+  const escrows: Escrow[] = [];
+  for (const svc of [SERVICE.A, SERVICE.B]) {
+    let last: { breaks: unknown[]; escrow: Escrow } | undefined;
+    await expect
+      .poll(async () => {
+        const r = await call<{ reconciled: boolean; calls: number; checkedFacts: number; breaks: unknown[]; escrow: Escrow }>(`${svc}/reconciliation/ledger`, "POST", {});
+        last = r;
+        return r.reconciled && r.calls > 0 && r.checkedFacts >= 2 * r.calls;
+      }, { timeout: 60_000, message: `ledger reconciliation at ${svc}` })
+      .toBe(true);
+    expect(last!.breaks).toEqual([]);
+    expect(last!.escrow.recorded).toEqual(last!.escrow.ledger);
+    escrows.push(last!.escrow);
+  }
+  expect(escrows[0]).toEqual(escrows[1]); // both parties' records give the same escrow
+  expect(escrows[0].record).toBe("escrow BANK-A to BANK-B");
+  await page.getByTestId("reconciliation").getByRole("button", { name: "Reconcile with ledger" }).click();
+  await expect(page.getByTestId("ledger-reconciliation")).toContainText("records match the ledger ✓", { timeout: STEP_TIMEOUT });
+
+  expect(errors).toEqual([]);
+});
+
+// --- two-way initial margin (task-two-way-initial-margin, wp-adr-two-way-im) ---
+// Each party pledges initial margin to the other on the same day, in different amounts; the legs are not netted. A
+// defaults: B enforces against A's leg and takes its own leg back from the control contract (the pledgor's reclaim on
+// the secured party's default). B posts tUSD cash, the asset it holds from the test-balance top-up.
+test("flow-two-way-im-default: A and B each post IM to the other -> A defaults -> B enforces A's leg and reclaims its own", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT);
+  const p = await parties();
+  const symbols = Object.keys(p.tokens);
+  const legOf = async (token: string, pledgor: string, securedParty: string) =>
+    BigInt(await call<string>(`${GATEWAY.B}/pledged?token=${token}&pledgor=${pledgor}&securedParty=${securedParty}`));
+  // Small and unique per run: enforcement and reclaim empty both legs for good on the persistent chain.
+  const aLegUsd = 100_000 + (Date.now() % 9000) * 10;
+  const bLegUsd = 60_000 + (Date.now() % 9000) * 10; // a different amount on the other leg
+  const aQty = Math.ceil(aLegUsd / TUST_VALUE) + 100;
+  const bQty = bLegUsd + 1_000; // tUSD at 1.00, no haircut
+  const bLabel = `USD ${bLegUsd.toLocaleString("en-US")}`;
+
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // A's leg: B calls, A pledges tUST (through the services; the UI path is the flow-im-margin-call-pledge spec).
+  const aCallId = await pledgeThroughServices(aLegUsd, aQty);
+  await waitForSettledOnChain("IM", aLegUsd);
+
+  // B's leg, through the consoles: A selects the leg B pledges on, where A is the secured party, and calls B.
+  await page.goto("/#/live/A");
+  await page.getByRole("button", { name: /B pledges to A/ }).click();
+  const issueCard = page.locator(".card", { hasText: "Issue margin call" });
+  await expect(issueCard).toBeVisible({ timeout: STEP_TIMEOUT }); // shown to the secured party of the selected leg
+  await issueCard.getByRole("spinbutton").fill(String(bLegUsd));
+  await issueCard.getByRole("button", { name: "Issue IM call → B" }).click();
+
+  await page.goto("/#/live/B");
+  const rowB = page.locator(".subcard", { hasText: bLabel }).filter({ hasText: "A → B" });
+  await expect(rowB.getByRole("button", { name: "Agree in full" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Agree in full" }).click();
+  await expect(rowB.getByRole("button", { name: "Propose collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("combobox").selectOption("tUSD");
+  await rowB.getByRole("spinbutton").fill(String(bQty));
+  await rowB.getByRole("button", { name: "Propose collateral" }).click();
+  await expect(rowB.getByText(/proposal \d+: proposed/)).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  await page.goto("/#/live/A");
+  const rowA = page.locator(".subcard", { hasText: bLabel }).filter({ hasText: "A → B" });
+  await expect(rowA.getByRole("button", { name: "Accept proposal" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowA.getByRole("button", { name: "Accept proposal" }).click();
+
+  await page.goto("/#/live/B");
+  await expect(rowB.getByRole("button", { name: "Pledge accepted collateral" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await rowB.getByRole("button", { name: "Pledge accepted collateral" }).click();
+  await waitForSettledOnChain("IM", bLegUsd);
+
+  // Both legs are in escrow, apart: each service shows the other leg too.
+  expect(await legOf(p.tokens["tUST"], p.a, p.b) >= BigInt(aQty)).toBe(true);
+  expect(await legOf(p.tokens["tUSD"], p.b, p.a) >= BigInt(bQty)).toBe(true);
+  const st = await call<{ balances: { token: string; pledgedByLeg: Record<string, string> }[] }>(`${SERVICE.A}/state`);
+  expect(BigInt(st.balances.find((b) => b.token === "tUSD")!.pledgedByLeg.B) >= BigInt(bQty)).toBe(true);
+  // The CDM call headers name the leg's pledgor: B on the call A issued.
+  const issued = await call<{ calls: { callId: string; amountUsd: string; leg: string; from: string }[] }>(`${SERVICE.B}/state`);
+  expect(issued.calls.find((c) => c.amountUsd === String(bLegUsd) && c.from === "A")?.leg).toBe("B");
+
+  const freeBefore: Record<string, bigint> = {};
+  const legsBefore: Record<string, bigint> = {};
+  for (const sym of symbols) {
+    freeBefore[sym] = await balanceOf(GATEWAY.B, p.tokens[sym], p.b);
+    legsBefore[sym] = (await legOf(p.tokens[sym], p.a, p.b)) + (await legOf(p.tokens[sym], p.b, p.a));
+  }
+
+  // A defaults. B, the secured party on A's leg, declares the default and enforces against A's leg.
+  await page.goto("/#/live/B");
+  const enforceRow = page.locator(".subcard", { hasText: shortId(aCallId) });
+  await expect(enforceRow.getByRole("button", { name: "Declare default & enforce" })).toBeVisible({ timeout: STEP_TIMEOUT });
+  await enforceRow.getByRole("button", { name: "Declare default & enforce" }).click();
+  await expect(enforceRow.getByText("enforced ✓")).toBeVisible({ timeout: STEP_TIMEOUT });
+
+  // B, the pledgor on its own leg, takes its IM back: the feed records its secured party (A) in default.
+  await page.getByRole("button", { name: /B pledges to A/ }).click();
+  const reclaimCard = page.getByTestId("reclaim");
+  await expect(reclaimCard).toBeVisible({ timeout: STEP_TIMEOUT });
+  await reclaimCard.getByRole("button", { name: "Reclaim my IM from A" }).click();
+  await expect(reclaimCard).toBeHidden({ timeout: STEP_TIMEOUT });
+
+  // On-chain: both legs are empty, and B holds what was in either leg (A's leg seized, B's own returned).
+  for (const sym of symbols) {
+    expect(await legOf(p.tokens[sym], p.a, p.b)).toBe(0n);
+    expect(await legOf(p.tokens[sym], p.b, p.a)).toBe(0n);
+    expect(await balanceOf(GATEWAY.B, p.tokens[sym], p.b)).toBe(freeBefore[sym] + legsBefore[sym]);
+  }
+
+  // Each party's records match the chain on both legs: two escrow records, nothing left in either.
+  type Escrow = { record: string; pledgor: string; recorded: Record<string, number>; ledger: Record<string, number> };
+  for (const svc of [SERVICE.B, SERVICE.A]) {
+    await expect
+      .poll(async () => {
+        const r = await call<{ reconciled: boolean; breaks: unknown[]; escrows: Escrow[] }>(`${svc}/reconciliation/ledger`, "POST", {});
+        return r.escrows.map((e) => [e.pledgor, Object.keys(e.recorded).length, Object.keys(e.ledger).length]).sort();
+      }, { timeout: 60_000 })
+      .toEqual([["A", 0, 0], ["B", 0, 0]]);
+  }
+
+  expect(errors).toEqual([]);
+});
+
+// task-document-provenance (wp-adr-document-provenance): each token's path back to its asset, anchored in
+// ProvenanceAnchors and held in the payload store. A seeds the fixture provenance of tUST and tMMF through its console
+// (once per chain); both parties then read the same complete paths from the ledger and the store, and a pledge of tMMF
+// to a secured party its control agreement does not name is not covered.
+test("flow-provenance: A seeds tUST and tMMF provenance -> both parties read each path complete from the ledger and the store", async ({ page }) => {
+  test.setTimeout(TEST_TIMEOUT * 2);
+  type Prov = { deployed: boolean; anchors: number; tokens: { symbol: string; complete: boolean; links: { relation: string; recordHash: string | null }[]; breaks: { kind: string }[] }[] };
+  const before = await call<Prov>(`${SERVICE.A}/provenance?securedParty=bank-b`);
+  expect(before.deployed).toBe(true);
+
+  await page.goto("/#/live/A");
+  await expect(page.getByTestId("provenance")).toBeVisible({ timeout: STEP_TIMEOUT });
+  if (before.anchors === 0) {
+    await page.getByTestId("provenance-seed").click();
+  } else {
+    await page.getByTestId("provenance-check").click();
+  }
+  await expect(page.getByTestId("provenance-tUST")).toContainText("provenance complete ✓", { timeout: 180_000 });
+  await expect(page.getByTestId("provenance-tMMF")).toContainText("provenance complete ✓", { timeout: STEP_TIMEOUT });
+  await expect(page.getByTestId("provenance-tMMF-ControlAgreement")).toContainText("✓");
+  await expect(page.getByTestId("provenance-tMMF")).toContainText("Register statement");
+
+  // B reads the same paths, link by link, from its own gateway and the shared store.
+  const a = await call<Prov>(`${SERVICE.A}/provenance?securedParty=bank-b`);
+  const b = await call<Prov>(`${SERVICE.B}/provenance?securedParty=bank-b`);
+  for (const sym of ["tUST", "tMMF"]) {
+    const ta = a.tokens.find((t) => t.symbol === sym)!;
+    const tb = b.tokens.find((t) => t.symbol === sym)!;
+    expect(tb.complete).toBe(true);
+    expect(tb.links.map((l) => l.recordHash)).toEqual(ta.links.map((l) => l.recordHash));
+  }
+  expect(a.tokens.find((t) => t.symbol === "tUST")!.links).toHaveLength(5);
+  expect(a.tokens.find((t) => t.symbol === "tMMF")!.links).toHaveLength(6);
+
+  // tMMF's control agreement names bank-b; a pledge to bank-c is not covered (interim rule REG-3).
+  const other = await call<Prov["tokens"][number]>(`${SERVICE.A}/provenance/tMMF?securedParty=bank-c`);
+  expect(other.complete).toBe(false);
+  expect(other.breaks.map((x) => x.kind)).toContain("ControlAgreementMismatch");
+
+  // A second seed leaves the anchored provenance as it is.
+  const again = await call<{ tokens: { symbol: string; seeded: boolean }[] }>(`${SERVICE.A}/provenance/seed`, "POST", {});
+  expect(again.tokens.every((t) => !t.seeded)).toBe(true);
+});

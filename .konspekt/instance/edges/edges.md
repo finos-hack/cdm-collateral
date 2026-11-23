@@ -475,3 +475,5 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-archdesign-calmcontracts | decomposes | node:goal-architecture-design | node:task-calm-model-contracts |  | accepted |
 | e-dec-konspektadopt-kitrefreshrest | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-kit-refresh-rest-fallback |  | accepted |
 | e-dec-konspektadopt-reviewunitsgqlerror | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-review-units-graphql-error |  | accepted |
+| e-dec-e2eflow-livesuitemodules | decomposes | node:goal-end-to-end-flow | node:task-live-suite-modules |  | accepted |
+| e-lnk-cilivestack-livesuitemodules | links | node:task-ci-live-e2e-stack | node:task-live-suite-modules |  | accepted |

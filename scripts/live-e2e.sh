@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/live-e2e.sh — bring the live end-to-end stack up locally and leave it running, so an engineer can drive
 # the collateral flow (issue -> agree -> propose -> accept -> pledge/transfer, i.e. post and pay) by hand through the
-# console UI, or run the flows automatically with `check` (the Playwright live specs, console/e2e/live.spec.ts,
+# console UI, or run the flows automatically with `check` (the Playwright live specs, console/e2e/live/*.spec.ts,
 # task-live-flow-checkout-script). CI runs only up and status (task-ci-live-e2e-stack, wp-adr-live-stack-local-ui-driven).
 #
 # Subcommands:
@@ -17,10 +17,12 @@
 #   build   The one-time build of docs/setup/runbook-e2e.md section 3: npm ci in contracts, gateway, store and console, the
 #           cdm-ext install into ~/.m2, then the collateral service and oracle service jars. Uses mvn when on PATH, else cdm-ext/mvnw. The
 #           dev container runs it once on creation (postCreateCommand).
-#   check   Run every live flow (console/e2e/live.spec.ts) against the running stack: fails at once if the stack is
+#   check   Run the live flows (console/e2e/live/*.spec.ts) against the running stack: fails at once if the stack is
 #           not up, installs Playwright's Chromium if absent (skipped when CHROMIUM_PATH is set), then runs the specs
-#           against the console on 5173 (override with E2E_BASE_URL). Extra arguments go to Playwright, e.g.
-#           `check --grep flow-return`. The exit code is Playwright's.
+#           against the console on 5173 (override with E2E_BASE_URL), one file at a time. Leading module names select
+#           spec files (csa, repo-trade, repo-events, gmsla, triparty, ccp), e.g. `check repo-trade gmsla`; with none,
+#           every module runs. Extra arguments go to Playwright, e.g. `check csa --grep flow-return`. The exit code is
+#           Playwright's.
 #
 # Environment: bash (Linux, macOS, Codespaces, WSL, Git Bash on Windows). Requires Docker with Compose, Node 22+ and a
 # JDK on PATH. The one-time build (service jar, each package's node_modules) is a precondition of up — run build, or
@@ -275,10 +277,16 @@ cmd_check() {
   fi
   say "restoring the test parties' free balances (contracts/scripts/top-up-test-balances.mjs)"
   ( cd contracts && node scripts/top-up-test-balances.mjs ) || die "could not top up the test balances"
-  say "running the live flows (console/e2e/live.spec.ts) against ${E2E_BASE_URL:-http://localhost:5173}"
+  # Leading arguments that name a module (console/e2e/live/<module>.spec.ts) select those files; with none, every
+  # module runs. The rest go to Playwright. One worker: the spec files share the one chain and the test parties, so
+  # two files must not run at the same time (task-live-suite-modules).
+  local specs=()
+  while [ $# -gt 0 ] && [ -f "console/e2e/live/$1.spec.ts" ]; do specs+=("e2e/live/$1.spec.ts"); shift; done
+  [ ${#specs[@]} -gt 0 ] || specs=(e2e/live/)
+  say "running the live flows (${specs[*]} in console/) against ${E2E_BASE_URL:-http://localhost:5173}"
   cd console
   E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:5173}" E2E_REQUIRE_STACK=1 \
-    npx playwright test e2e/live.spec.ts --reporter=list "$@"
+    npx playwright test "${specs[@]}" --workers=1 --reporter=list "$@"
 }
 
 case "${1:-up}" in
