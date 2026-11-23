@@ -257,14 +257,31 @@ export function restUnits(repo) {
 }
 
 export const API_MODES = ["auto", "graphql", "rest"];
+
+// The first clause of gh's error, at most 120 characters: gh's stderr when the
+// call ran, else the error message.
+export function ghReason(e) {
+  return String((e && (e.stderr || e.message)) || e).trim().split("\n")[0].split(/[.;] /)[0].slice(0, 120);
+}
+
+// Thrown by githubUnits() under `--api graphql` when GraphQL fails. Its message
+// is the one line main() prints; the gh error is kept as `cause`.
+export class GraphqlUnavailable extends Error {
+  constructor(why, cause) {
+    super(`review-units: GitHub GraphQL unavailable (${why}); --api graphql forces GraphQL, use --api auto or --api rest.`, { cause });
+    this.name = "GraphqlUnavailable";
+  }
+}
+
 // `auto` tries GraphQL and falls back to REST on any GraphQL failure, with a
-// one-line notice on stderr; `graphql` and `rest` use that path only.
+// one-line notice on stderr; `graphql` and `rest` use that path only. Under
+// `graphql` a GraphQL failure throws GraphqlUnavailable.
 export function githubUnits(repo, api = "auto", notify = (m) => console.error(m)) {
   if (api === "rest") return restUnits(repo);
   try { return graphqlUnits(repo); }
   catch (e) {
-    if (api === "graphql") throw e;
-    const why = String((e && (e.stderr || e.message)) || e).trim().split("\n")[0].split(/[.;] /)[0].slice(0, 120);
+    const why = ghReason(e);
+    if (api === "graphql") throw new GraphqlUnavailable(why, e);
     notify(`review-units: GitHub GraphQL unavailable (${why}); reading pull requests over REST, one call per pull request.`);
     return restUnits(repo);
   }
@@ -355,7 +372,14 @@ function main(argv) {
   }
   const changed = parseChanged(readFileSync(changedPath, "utf8"));
   const branch = opt("--branch") || defaultRef(repo);
-  const rows = buildRows(changed, githubUnits(repo, api), mainlineCommits(branch), gitLander());
+  let reviewUnits;
+  try { reviewUnits = githubUnits(repo, api); }
+  catch (e) {
+    if (!(e instanceof GraphqlUnavailable)) throw e;
+    console.error(e.message);
+    return 1;
+  }
+  const rows = buildRows(changed, reviewUnits, mainlineCommits(branch), gitLander());
   const outPath = join(instanceDir, LOG_FILE);
 
   if (argv.includes("--report")) {

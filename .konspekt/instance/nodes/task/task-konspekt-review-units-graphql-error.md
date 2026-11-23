@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T21:38:22Z
   confidence: 0.8
 createdAt: 2026-11-22T21:38:22Z
-updatedAt: 2026-11-23T01:23:54Z
+updatedAt: 2026-11-23T01:28:51Z
 ```
 # Task: report a one-line error, not a stack trace, when `review-units.mjs --api graphql` cannot reach GraphQL
 
@@ -32,3 +32,5 @@ tool, as in [[task-konspekt-kit-refresh-rest-fallback]].
 **Accepted 2026-11-22** by the project owner, with its decomposes edge (source `ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU`). Reported to konspekt 2026-11-22, as the project owner directed: task atom `task-review-units-graphql-error` in the konspekt instance (`finos-labs/konspekt` `05ea9a0`, `review: proposed`, under `investigation-task-pr-map`), and a konspekt checkpoint on it (`a6e0186`) so that it is offered when konspekt work resumes. This task closes when the fix is re-vendored here.
 
 **Resolved 2026-11-22** by the project owner (source `ni:///sha-256;TQSVIbbj6Y8DWBRBoxTWV49PMzDNZsts63TD77wR-KE`), before the fix is re-vendored: the defect is reported to konspekt (task atom `task-review-units-graphql-error`, `finos-labs/konspekt` `05ea9a0`) and is tracked there. At resolution the vendored `.konspekt/lib/review-units.mjs` still rethrows under `--api graphql`.
+
+**Fixed in this repository 2026-11-22**, as the project owner directed while fixing it in konspekt: `.konspekt/lib/review-units.mjs` throws `GraphqlUnavailable` under `--api graphql` and `main()` prints its one line on stderr and exits 1; the `auto` notice is unchanged. Checked with an invalid `GH_TOKEN` and `--branch origin/main`: `review-units: GitHub GraphQL unavailable (gh: Bad credentials (HTTP 401)); --api graphql forces GraphQL, use --api auto or --api rest.`, exit 1, no stack trace; `--check` with valid credentials still reports the log up to date. The re-vendored konspekt fix replaces this local change.
