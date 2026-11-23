@@ -337,3 +337,7 @@ yet. `landed` is the default-branch commit that carries the change; `match` is
 | https://github.com/finos-hack/cdm-collateral/pull/94 | merged | 02ae9fac44872a068c3b033daad4e249f2e5ef29 | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | 2026-11-22T21:16:50Z | a5fa1d5ae05db8894ca75ca71194156f2cb6e242 | same |
 | https://github.com/finos-hack/cdm-collateral/pull/95 | merged | 3b019d588e1947d065d9f8c9c3524c347e641543 | 3f823d64e42655f0f3eec55a37c93535d4187c53 | 2026-11-22T21:19:55Z | 3f823d64e42655f0f3eec55a37c93535d4187c53 | same |
 | https://github.com/finos-hack/cdm-collateral/pull/96 | merged | 72ff842574ca7679609b784729efa918ccd09575 | d55187615b82f5e803cf264c44121667782100b3 | 2026-11-22T21:31:40Z | d55187615b82f5e803cf264c44121667782100b3 | same |
+| https://github.com/finos-hack/cdm-collateral/pull/97 | merged | 2bcf9d9fb02991d2b2bf7a6c7a9390f2ddb96590 | 7b7a665006ad4e92b86d9788212d642f8de68976 | 2026-11-23T01:14:40Z | 7b7a665006ad4e92b86d9788212d642f8de68976 | same |
+| https://github.com/finos-hack/cdm-collateral/pull/97 | merged | 2bcf9d9fb02991d2b2bf7a6c7a9390f2ddb96590 | 34408b399588502dad71e8c7d53f2de94bce2f06 | 2026-11-23T01:14:40Z | 34408b399588502dad71e8c7d53f2de94bce2f06 | same |
+| https://github.com/finos-hack/cdm-collateral/pull/97 | merged | 2bcf9d9fb02991d2b2bf7a6c7a9390f2ddb96590 | bb74017f49cd400074eb3628a9e19abe884bf22a | 2026-11-23T01:14:40Z | bb74017f49cd400074eb3628a9e19abe884bf22a | same |
+|  | direct |  | 998aa5998046fd2b7f16a816b3dc28cce2704548 | 2026-11-23T01:22:12Z | 998aa5998046fd2b7f16a816b3dc28cce2704548 | same |
