@@ -1919,3 +1919,5 @@ excluded.
 | task-live-suite-modules | 7b7a665006ad4e92b86d9788212d642f8de68976 | scripts/live-e2e.sh | 2026-11-22T23:57:16Z |
 | task-live-suite-modules | 34408b399588502dad71e8c7d53f2de94bce2f06 | .github/workflows/e2e-live-stack.yml | 2026-11-22T23:57:16Z |
 | task-live-suite-modules | bb74017f49cd400074eb3628a9e19abe884bf22a | .github/workflows/e2e-live-stack.yml | 2026-11-23T00:14:32Z |
+| task-document-provenance | 998aa5998046fd2b7f16a816b3dc28cce2704548 | docs/analysis/gap-register.md | 2026-11-23T01:22:12Z |
+| task-document-provenance | 998aa5998046fd2b7f16a816b3dc28cce2704548 | docs/gap-register.html | 2026-11-23T01:22:12Z |
