@@ -1673,3 +1673,5 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-visibility-rule-deal-participants | review |  | proposed | 2026-11-23T02:15:35Z |  |  |
 | noteworthy:nw-visibility-rule-deal-participants | status |  | active | 2026-11-23T02:15:35Z |  |  |
 | edge:e-note-onchainprotect-visibilityrule | review |  | proposed | 2026-11-23T02:15:35Z |  |  |
+| noteworthy:nw-decision-onchain-privacy-paladin | review |  | proposed | 2026-11-23T12:35:59Z |  |  |
+| edge:e-note-onchainprotect-paladindecision | review |  | proposed | 2026-11-23T12:35:59Z |  |  |
