@@ -1670,3 +1670,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-besuvisibility | review |  | proposed | 2026-11-23T01:51:26Z |  |  |
 | edge:e-dec-archdesign-onchainprotect | review |  | proposed | 2026-11-23T01:51:26Z |  |  |
 | edge:e-lnk-onchainprotect-onchainprivacy | review |  | proposed | 2026-11-23T01:51:26Z |  |  |
+| noteworthy:nw-visibility-rule-deal-participants | review |  | proposed | 2026-11-23T02:15:35Z |  |  |
+| noteworthy:nw-visibility-rule-deal-participants | status |  | active | 2026-11-23T02:15:35Z |  |  |
+| edge:e-note-onchainprotect-visibilityrule | review |  | proposed | 2026-11-23T02:15:35Z |  |  |

@@ -480,3 +480,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-besuvisibility | notes | node:investigation-onchain-data-protection | noteworthy:nw-assumption-besu-visibility |  | proposed |
 | e-dec-archdesign-onchainprotect | decomposes | node:goal-architecture-design | node:investigation-onchain-data-protection |  | proposed |
 | e-lnk-onchainprotect-onchainprivacy | links | node:investigation-onchain-data-protection | node:task-onchain-privacy |  | proposed |
+| e-note-onchainprotect-visibilityrule | notes | node:investigation-onchain-data-protection | noteworthy:nw-visibility-rule-deal-participants |  | proposed |
