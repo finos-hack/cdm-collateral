@@ -2,7 +2,7 @@
 id: task-live-suite-modules
 type: task
 title: Split the live suite into modules that run on their own stacks
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: live-suite-modules
@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T23:56:25Z
   confidence: 0.9
 createdAt: 2026-11-22T23:56:25Z
-updatedAt: 2026-11-23T00:25:00Z
+updatedAt: 2026-11-23T01:17:35Z
 ```
 # Task: split the live suite into modules that run on their own stacks
 
@@ -49,3 +49,5 @@ Decided 2026-11-23 (project owner, source `kc6PK3Vh5H0SIfpHt1oha9Qi_ZpyEwImUZuIQ
 rebalance futher"); the workflow stays on demand only ("4. still manual"); the task is resolved once the PR is merged.
 
 Done when the branch is merged to `main`.
+
+**Resolved 2026-11-22** by the project owner (source `ni:///sha-256;Brbrt37nGrgWknVFtcpb48R_FBPwyaaPT31qNw_j_4U`). Merged in PR #97 (`2bcf9d9`); the PR commits were re-signed for the DCO check (`bce0727`); the binding-audit workflow passed on `main` (`2bcf9d9`).

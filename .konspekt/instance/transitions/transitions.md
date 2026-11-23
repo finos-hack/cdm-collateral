@@ -1660,3 +1660,4 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-lnk-cilivestack-livesuitemodules | review |  | proposed | 2026-11-22T23:56:25Z |  |  |
 | edge:e-dec-e2eflow-livesuitemodules | review | proposed | accepted | 2026-11-23T00:18:17Z | ni:///sha-256;kc6PK3Vh5H0SIfpHt1oha9Qi_ZpyEwImUZuIQd0jads | denisurusov |
 | edge:e-lnk-cilivestack-livesuitemodules | review | proposed | accepted | 2026-11-23T00:18:17Z | ni:///sha-256;kc6PK3Vh5H0SIfpHt1oha9Qi_ZpyEwImUZuIQd0jads | denisurusov |
+| node:task-live-suite-modules | status | open | resolved | 2026-11-23T01:17:35Z | ni:///sha-256;Brbrt37nGrgWknVFtcpb48R_FBPwyaaPT31qNw_j_4U | denisurusov |
