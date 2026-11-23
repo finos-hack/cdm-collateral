@@ -1921,3 +1921,4 @@ excluded.
 | task-live-suite-modules | bb74017f49cd400074eb3628a9e19abe884bf22a | .github/workflows/e2e-live-stack.yml | 2026-11-23T00:14:32Z |
 | task-document-provenance | 998aa5998046fd2b7f16a816b3dc28cce2704548 | docs/analysis/gap-register.md | 2026-11-23T01:22:12Z |
 | task-document-provenance | 998aa5998046fd2b7f16a816b3dc28cce2704548 | docs/gap-register.html | 2026-11-23T01:22:12Z |
+| investigation-onchain-data-protection | ad5d1fb72b1a07d40a5352aade7b4736c5233ea3 | docs/analysis/bank-use-of-besu.md | 2026-11-23T12:51:04Z |

@@ -1675,3 +1675,11 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-visibilityrule | review |  | proposed | 2026-11-23T02:15:35Z |  |  |
 | noteworthy:nw-decision-onchain-privacy-paladin | review |  | proposed | 2026-11-23T12:35:59Z |  |  |
 | edge:e-note-onchainprotect-paladindecision | review |  | proposed | 2026-11-23T12:35:59Z |  |  |
+| noteworthy:nw-proposal-regulator-selective-disclosure | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| edge:e-note-onchainprotect-regulatorselec | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| noteworthy:nw-proposal-visibility-metadata-scope | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| edge:e-note-onchainprotect-visibilitymeta | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| noteworthy:nw-proposal-deal-scoped-noto-hooks | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| edge:e-note-onchainprotect-dealscopednoto | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| artifact:artifact-bank-use-of-besu | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| edge:e-prod-onchainprotect-bankbesu | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |

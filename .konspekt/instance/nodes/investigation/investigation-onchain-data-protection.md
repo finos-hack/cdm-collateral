@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-23T01:51:26Z
   confidence: 0.75
 createdAt: 2026-11-23T01:51:26Z
-updatedAt: 2026-11-23T02:49:00Z
+updatedAt: 2026-11-23T12:51:04Z
 ```
 # Investigation: protect on-chain collateral data from participants who are not party to it
 
@@ -57,7 +57,7 @@ Each option is a proposal for assessment; none is selected.
 | O3 | Commitments with off-chain reveal: store a salted hash of amounts; the contract checks both parties' signatures over the commitment | D2 for calls and statements | Does not work for ERC-20 balances that `CollateralControl` moves (`artifact-onchain-privacy-design` item 4). |
 | O4 | Field encryption to the counterparties' keys | D2, D3 from non-parties | The contract cannot evaluate encrypted values (for example pledge not above agreed amount); that check moves off-chain or to a proof. Key distribution per pair. |
 | O5 | Zero-knowledge proofs and confidential tokens (for example Zeto) | D2 with on-chain rule checks | Highest effort; circuit per rule. |
-| O6 | Paladin on Besu: a Pente privacy group per deal runs the call, dispute, escrow and close-out logic; collateral and cash tokens are Noto or Zeto tokens. Noto and Zeto run no general contract logic (owner, source `496b3ce…`); a Noto token in `hooks` mode calls a Pente private contract on each mint and transfer, and a Noto token can be swapped atomically with an asset a Pente contract manages (Paladin documentation, read this session) | D1-D3 from non-members; base chain holds commitments | A Noto token has one notary, which validates every transfer of that token, including transfers in deals the notary is not party to (inferred). Adds a Paladin sidecar per participant and a port of the Solidity contracts into Pente. |
+| O6 | Paladin on Besu: a Pente privacy group per deal runs the call, dispute, escrow and close-out logic; collateral and cash tokens are Noto or Zeto tokens. Noto and Zeto run no general contract logic (owner, source `496b3ce…`); a Noto token in `hooks` mode calls a Pente private contract on each mint and transfer, and a Noto token can be swapped atomically with an asset a Pente contract manages (Paladin documentation, read this session) | D1-D3 from non-members; base chain holds commitments | A Noto token has one notary, which validates every transfer of that token, including transfers in deals the notary is not party to (inferred). Adds a Paladin sidecar per participant and a port of the Solidity contracts into Pente. Further limits (`docs/analysis/bank-use-of-besu.md`): group membership is fixed when the group is created; every member signs every transition; group creation and transition timing are visible to every validator; Paladin had not shipped V1 and all maintainers were from Kaleido (LFDT TAC 2026 review). |
 | O7 | Network topology: a Besu network per agreement or per CCP membership; or operator-run validators with participants reading through a per-party filtered gateway | D1-D3 by separation | Breaks the single shared ledger; collateral moving across networks needs a bridge; the filtered-gateway variant trusts the operator. |
 | O8 | Canton, the planned second ledger (`wp-adr-prototype-ledgers`) | D1-D3 by per-party visibility | Recorded in `task-onchain-privacy`; Canton behaviour not verified in this session. |
 
@@ -68,3 +68,10 @@ D4 remains visible on the base chain under O1-O6.
 - Whether the prototype demonstrates one mitigation or records the analysis only (`nw-prototype-scope`).
 - Which readers hold a right to which data classes; this needs collateral subject-matter input.
 - Whether `nw-assumption-besu-visibility` is updated to cover all 12 contracts or superseded.
+
+## Proposed resolutions (2026-11-23)
+
+- Regulator access: `nw-proposal-regulator-selective-disclosure`.
+- Metadata visible to non-participants: `nw-proposal-visibility-metadata-scope`.
+- Token design: `nw-proposal-deal-scoped-noto-hooks`.
+- Evidence: `artifact-bank-use-of-besu`.

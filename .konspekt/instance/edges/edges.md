@@ -482,3 +482,7 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-lnk-onchainprotect-onchainprivacy | links | node:investigation-onchain-data-protection | node:task-onchain-privacy |  | proposed |
 | e-note-onchainprotect-visibilityrule | notes | node:investigation-onchain-data-protection | noteworthy:nw-visibility-rule-deal-participants |  | proposed |
 | e-note-onchainprotect-paladindecision | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-onchain-privacy-paladin |  | proposed |
+| e-note-onchainprotect-regulatorselec | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-regulator-selective-disclosure |  | proposed |
+| e-note-onchainprotect-visibilitymeta | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-visibility-metadata-scope |  | proposed |
+| e-note-onchainprotect-dealscopednoto | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-deal-scoped-noto-hooks |  | proposed |
+| e-prod-onchainprotect-bankbesu | produces | node:investigation-onchain-data-protection | artifact:artifact-bank-use-of-besu |  | proposed |
