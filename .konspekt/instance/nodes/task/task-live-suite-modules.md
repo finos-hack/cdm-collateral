@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-22T23:56:25Z
   confidence: 0.9
 createdAt: 2026-11-22T23:56:25Z
-updatedAt: 2026-11-22T23:56:25Z
+updatedAt: 2026-11-23T00:20:00Z
 ```
 # Task: split the live suite into modules that run on their own stacks
 
@@ -36,6 +36,14 @@ Built on branch `ci-live-modules`:
 - `e2e-live-stack.yml`: a build job compiles the two service jars once and uploads them; a matrix job per module
   (`fail-fast: false`) downloads them, brings up its own stack and runs only that module. The `modules` input of
   `workflow_dispatch` selects a subset.
+
+Measured 2026-11-23, run 45086004091 (`e2e-live-stack` on `ci-live-modules`, a temporary `push` trigger since
+removed): all 57 specs passed. The six module jobs started within one second of each other, so the concurrent job
+limit did not delay them. Wall-clock time from the build job's start to the last module's end: 14.5 minutes. The build
+job took 2.0 minutes. In every module job, bring-up (`live-e2e.sh up`) took 4.0 minutes. Spec time per module:
+`repo-trade` 7.9, `gmsla` 7.3, `repo-events` 5.9, `csa` 5.2, `triparty` 4.4 and `ccp` 4.4 minutes (35.1 minutes in
+total). The jobs together used about 64 runner minutes, against about 45 for the former single job. The extra minutes
+come from the six bring-ups.
 
 Done when a CI run passes every module, the per-module job times are recorded here, and the modules are rebalanced if
 one module's time is far above the others.
