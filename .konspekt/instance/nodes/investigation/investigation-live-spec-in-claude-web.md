@@ -2,7 +2,7 @@
 id: investigation-live-spec-in-claude-web
 type: investigation
 title: Run the live spec tests in a claude.ai web session
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: claude-ai-web-live-spec
@@ -14,7 +14,7 @@ provenance:
     sourceRef: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
     contentHash: 80e2b8872d3beea75e867eaa2c92175c7d925f7c
 createdAt: 2026-11-09T00:17:00Z
-updatedAt: 2026-11-12T02:29:51Z
+updatedAt: 2026-11-23T01:21:52Z
 ```
 # Investigation: run the live spec tests in a claude.ai web session
 
@@ -72,3 +72,5 @@ JDK 21.0.12, Maven 3.9.11, Node 22.23.4. Outbound HTTPS goes through an allowlis
    `05b165e`: the script exited 0 in 97 s with every step passing; a copy outside the repository found the clone;
    `--docker` exited 0; `up` exit 0 and `check --grep flow-return` passed through the symlinked Chromium. Not yet run
    in a Claude Code cloud environment.
+
+**Resolved 2026-11-22** by the project owner (source `ni:///sha-256;oNnx3i6ACO-jMJv1RjUzYyJY9r_aDT-qpXzUueFiMxY`): the build, the unit suites, the live stack and the live specs ran in a claude.ai web session (finding 8: 29 passed, 0 failed). The setup script of finding 9 has not been run in a Claude Code cloud environment.

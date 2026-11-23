@@ -2,7 +2,7 @@
 id: investigation-cdm-workflow-task-map
 type: investigation
 title: Map every CDM collateral workflow to the tasks that implement it
-status: active
+status: resolved
 review: accepted
 provenance:
   conversationId: e2e-remaining-flows
@@ -14,7 +14,7 @@ provenance:
     sourceRef: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
     contentHash: 9ae1c50fc83a1b5223f99484de5ff2dddb9af0be
 createdAt: 2026-11-03T14:18:57Z
-updatedAt: 2026-11-03T14:47:29Z
+updatedAt: 2026-11-23T01:21:52Z
 ```
 # Investigation: map every CDM collateral workflow to the tasks that implement it
 
@@ -28,3 +28,5 @@ Scope, as set by the project owner: both views, reconciled.
 
 Output: a workflow-to-task map. For each workflow: whether the five flows cover it, what is implemented (contracts,
 gateway, services, console, live spec), what is missing, and the existing or proposed task that closes the gap.
+
+**Resolved 2026-11-22** by the project owner (source `ni:///sha-256;oNnx3i6ACO-jMJv1RjUzYyJY9r_aDT-qpXzUueFiMxY`): the output is `docs/analysis/cdm-workflow-task-map.md`, kept current since.

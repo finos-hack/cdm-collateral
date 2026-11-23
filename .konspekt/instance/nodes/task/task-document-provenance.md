@@ -2,7 +2,7 @@
 id: task-document-provenance
 type: task
 title: Provenance record linking a tokenized asset to its identities and legal documents
-status: open
+status: resolved
 review: accepted
 provenance:
   conversationId: tokenized-collateral
@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-21T21:42:22Z
   confidence: 0.75
 createdAt: 2026-11-21T21:42:22Z
-updatedAt: 2026-11-22T18:19:01Z
+updatedAt: 2026-11-23T01:21:52Z
 ```
 # Task: provenance record linking a tokenized asset to its identities and legal documents
 
@@ -107,3 +107,5 @@ repo buyer's affirmation and its agreement to a substitution (the purchased secu
 and its agreement to a collateral substitution; the triparty receiver's settlement of the purchase against the
 allocation, and the agent's substitution for the receiver; and the CCP's acceptance of a repo for clearing. CCP margin
 and default fund payments are in tUSD, which is not marked. The credential proofs are not checked against the W3C Data Integrity test suite.
+
+**Resolved 2026-11-22** by the project owner (source `ni:///sha-256;oNnx3i6ACO-jMJv1RjUzYyJY9r_aDT-qpXzUueFiMxY`): the done-when holds for the tUST pilot (`ProvenanceCheck`, `ProvenanceCheckTest`), and the tMMF and aircraft cases, the live stack wiring and the provenance gate are built on `main`. Not built, as the gap register records under G41: provenance for tUSD, a check at revaluation or on amendment (waits on PROV-2), and a check of the credential proofs against the W3C Data Integrity test suite.
