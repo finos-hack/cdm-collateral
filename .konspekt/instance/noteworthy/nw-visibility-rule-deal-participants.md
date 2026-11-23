@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-23T02:15:35Z
   confidence: 0.8
 createdAt: 2026-11-23T02:15:35Z
-updatedAt: 2026-11-23T02:15:35Z
+updatedAt: 2026-11-23T02:22:35Z
 ```
 # Constraint: deal data is visible to the deal's participants only
 
@@ -20,5 +20,9 @@ Stated by the project owner (2026-11-22) for `investigation-onchain-data-protect
    The owner marked this rule as possible, not settled.
 3. Every other participant sees nothing about the deal, including whether it exists.
 
-Not yet defined: which roles count as direct participants (custodian, triparty agent, CCP, oracle), and which fields
-an approved third party sees.
+Working assumption, set by the project owner (2026-11-22, source `09ae468…`): every role a deal names counts as a
+direct participant and sees all of that deal's data. This covers the custodian, the triparty agent, the CCP, the
+oracle and the record keeper. The owner chose this so the design can proceed; roles and data elements are to be
+calibrated later.
+
+Not yet defined: which fields an approved third party sees.
