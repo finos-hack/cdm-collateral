@@ -1654,3 +1654,7 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-v02-demo-release-summary | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
 | edge:e-dec-adoption-v02summary | review | proposed | accepted | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
 | node:task-v02-demo-release-summary | status | open | resolved | 2026-11-22T21:44:54Z | ni:///sha-256;C3WoiSeBXK7F8X3cwdh02iFP0iCEUdZaIBVYuSv7EuU | denisurusov |
+| node:task-live-suite-modules | review |  | accepted | 2026-11-22T23:56:25Z | ni:///sha-256;GRkTUKGNjCeVEe7hf28ZFA5epuRvXl3cMIJGVauf7cw | denisurusov |
+| node:task-live-suite-modules | status |  | open | 2026-11-22T23:56:25Z | ni:///sha-256;GRkTUKGNjCeVEe7hf28ZFA5epuRvXl3cMIJGVauf7cw | denisurusov |
+| edge:e-dec-e2eflow-livesuitemodules | review |  | proposed | 2026-11-22T23:56:25Z |  |  |
+| edge:e-lnk-cilivestack-livesuitemodules | review |  | proposed | 2026-11-22T23:56:25Z |  |  |

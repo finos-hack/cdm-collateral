@@ -1,25 +1,29 @@
 name: e2e-live-stack
 
 # Build, deploy and start the full live stack on a clean machine, check that every component is healthy
-# (task-ci-live-e2e-stack), then run the Playwright live specs (console/e2e/live.spec.ts) for every CALM flow against
-# it (task-e2e-remaining-flows, wp-adr-ci-runs-live-specs). The runner chain is fresh, so the specs start from the
-# genesis balances. Locally the engineer still drives the flows by hand or with the same specs
+# (task-ci-live-e2e-stack), then run the Playwright live specs for every CALM flow against it (task-e2e-remaining-flows,
+# wp-adr-ci-runs-live-specs). Locally the engineer still drives the flows by hand or with the same specs
 # (wp-adr-live-stack-local-ui-driven).
 #
-# The stack is started by scripts/live-e2e.sh up, the same command an engineer runs locally, so CI and the local
-# bring-up share one definition. There is no teardown step: the stack is left running for the rest of the job. On a
-# GitHub-hosted runner the job's machine is discarded when the job ends and is not reachable from a browser, so the
-# job verifies that the stack assembles and starts; the persistent, clickable stack is the local one.
+# Modules (task-live-suite-modules): the live specs are split into one file per module, console/e2e/live/<module>.spec.ts.
+# The build job compiles the two service jars once; one live job per module then downloads them, brings up its own
+# stack on its own runner and runs only that module's specs. The modules run at the same time, so the wall-clock time is
+# one bring-up plus the slowest module, in place of one bring-up plus every spec in sequence. Each runner chain is fresh,
+# so each module's specs start from the genesis balances. The modules input selects a subset, e.g. "repo-trade gmsla".
 #
-# Dependency order: cdm-ext into the local Maven repo -> collateral service jar -> Node dependencies -> Besu QBFT
-# network -> deploy contracts (only if not deployed) -> store + two gateways + two services + console -> health checks
-# -> live specs.
-
-# Triggers: on demand only (workflow_dispatch), to save GitHub Actions minutes (task-ci-actions-minutes, the
-# project owner's choice 2026-11-11). The full live suite runs locally before every PR and its result is reported in
-# the PR body; run this workflow from the Actions tab when a clean-machine check is wanted.
+# The stack is started by scripts/live-e2e.sh up, the same command an engineer runs locally, so CI and the local
+# bring-up share one definition. There is no teardown step: a GitHub-hosted runner is discarded when its job ends.
+#
+# Triggers: on demand only (workflow_dispatch), to save GitHub Actions minutes (task-ci-actions-minutes, the project
+# owner's choice 2026-11-11). The full live suite runs locally before every PR and its result is reported in the PR
+# body; run this workflow from the Actions tab when a clean-machine check is wanted.
 on:
   workflow_dispatch:
+    inputs:
+      modules:
+        description: "Space-separated modules to run (console/e2e/live/<module>.spec.ts)"
+        required: false
+        default: "csa repo-trade repo-events gmsla triparty ccp"
 
 permissions:
   contents: read
@@ -28,11 +32,29 @@ concurrency:
   group: e2e-live-stack-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ALL_MODULES: "csa repo-trade repo-events gmsla triparty ccp"
+
 jobs:
-  live-stack:
+  # Install the local CDM extension (local.cdmx:cdmx-java) into the Maven repo, then build the collateral and oracle
+  # service jars (JDK 21, shade plugin). Only the two shaded jars go to the live jobs; they need nothing else from Maven.
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.modules.outputs.list }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Modules to run
+        id: modules
+        env:
+          REQUESTED: ${{ inputs.modules }}
+        run: |
+          list="${REQUESTED:-$ALL_MODULES}"
+          for m in $list; do
+            [ -f "console/e2e/live/$m.spec.ts" ] || { echo "::error::no module $m (console/e2e/live/$m.spec.ts)"; exit 1; }
+          done
+          echo "list=$(printf '%s\n' $list | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-java@v4
         with:
@@ -40,14 +62,6 @@ jobs:
           java-version: "21"
           cache: maven
 
-      # node src/server.ts in gateway/ and store/ runs TypeScript directly, so the Node version must strip types
-      # natively (Node >= 22.18). setup-node "22" installs the latest 22.x, matching console.yml and the devcontainer.
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      # 1. Build. Install the local CDM extension (local.cdmx:cdmx-java) into the Maven repo so the service jar
-      #    resolves it, then build the collateral service jar (JDK 21, shade plugin -> target/collateral-service.jar).
       - name: Install cdm-ext
         run: mvn -B -q -f cdm-ext/pom.xml -DskipTests install
 
@@ -57,6 +71,50 @@ jobs:
       - name: Build oracle service jar
         run: mvn -B -q -f services/oracle/pom.xml -DskipTests package
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: service-jars
+          path: |
+            services/collateral/target/collateral-service.jar
+            services/oracle/target/oracle-service.jar
+          if-no-files-found: error
+          retention-days: 1
+
+  live:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.build.outputs.modules) }}
+    name: live (${{ matrix.module }})
+    steps:
+      - uses: actions/checkout@v4
+
+      # The services run on a JRE; no Maven build happens in this job.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # node src/server.ts in gateway/ and store/ runs TypeScript directly, so the Node version must strip types
+      # natively (Node >= 22.18). setup-node "22" installs the latest 22.x, matching console.yml and the devcontainer.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            contracts/package-lock.json
+            gateway/package-lock.json
+            store/package-lock.json
+            console/package-lock.json
+
+      # upload-artifact strips the common prefix services/, so the jars land back under services/<name>/target.
+      - uses: actions/download-artifact@v4
+        with:
+          name: service-jars
+          path: services
+
       - name: Install Node dependencies
         run: |
           npm --prefix contracts ci
@@ -64,31 +122,30 @@ jobs:
           npm --prefix store ci
           npm --prefix console ci
 
-      # 2-4. Deploy and start. scripts/live-e2e.sh up starts the Besu network (generating genesis and keys on a fresh
-      #      runner), waits for blocks, deploys the contracts (no deployment exists on a fresh runner), starts the
-      #      store, gateways, services and console through orchestrate.mjs, and exits non-zero unless all seven health
-      #      checks pass within 180 s. The stack keeps running after the step.
+      # scripts/live-e2e.sh up starts the Besu network (generating genesis and keys on a fresh runner), waits for blocks,
+      # deploys the contracts (no deployment exists on a fresh runner), starts the store, gateways, services and console
+      # through orchestrate.mjs, and exits non-zero unless every health check passes within 180 s.
       - name: Build, deploy and start the live stack
         run: bash scripts/live-e2e.sh up
 
-      # 5. Live specs. The runner image ships Google Chrome (CHROME_BIN); passed as CHROMIUM_PATH, scripts/live-e2e.sh
-      #    check skips the Playwright browser download (console/playwright.config.ts uses it as executablePath). Only if
-      #    the image has no Chrome is Playwright Chromium installed, with its system libraries. check sets
-      #    E2E_REQUIRE_STACK=1 (a down stack fails instead of skipping) and runs every spec.
-      - name: Live specs (all CALM flows)
+      # The runner image ships Google Chrome (CHROME_BIN); passed as CHROMIUM_PATH, scripts/live-e2e.sh check skips the
+      # Playwright browser download (console/playwright.config.ts uses it as executablePath). Only if the image has no
+      # Chrome is Playwright Chromium installed, with its system libraries. check sets E2E_REQUIRE_STACK=1 (a down stack
+      # fails instead of skipping) and runs this module's spec file.
+      - name: Live specs (${{ matrix.module }})
         run: |
           if [ -n "${CHROME_BIN:-}" ] && [ -x "${CHROME_BIN}" ]; then
             export CHROMIUM_PATH="${CHROME_BIN}"
           else
             (cd console && npx playwright install --with-deps chromium)
           fi
-          bash scripts/live-e2e.sh check
+          bash scripts/live-e2e.sh check "${{ matrix.module }}"
 
       - name: Playwright results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: live-spec-results
+          name: live-spec-results-${{ matrix.module }}
           path: console/test-results/
           if-no-files-found: ignore
 

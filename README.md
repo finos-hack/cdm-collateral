@@ -84,8 +84,8 @@ one section per `task-sme-*` task, none answered yet. The same questions as a pa
 ## 4. Flows built
 
 All 47 workflows of the [workflow map](docs/analysis/cdm-workflow-task-map.md) are built and pass their live spec in
-[`console/e2e/live.spec.ts`](console/e2e/live.spec.ts) (57 specs; last full local run 2026-11-22 on a reset chain, 57
-passed, PR #89). Each row lists its CDM status, the `cdm-ext` work, the prototype flow and the PR.
+[`console/e2e/live/`](console/e2e/live/) (57 specs in six module files: `csa`, `repo-trade`, `repo-events`, `gmsla`,
+`triparty`, `ccp`; last full local run 2026-11-22 on a reset chain, 57 passed, PR #89). Each row lists its CDM status, the `cdm-ext` work, the prototype flow and the PR.
 
 | Agreement family | Map rows | Workflows | PRs |
 |---|---|---|---|

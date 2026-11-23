@@ -84,7 +84,8 @@ bash scripts/live-e2e.sh status   # print the seven health checks and the consol
 bash scripts/live-e2e.sh down     # stop store, gateways, services and console; stop the Besu containers (chain kept)
 bash scripts/live-e2e.sh reset    # down, then delete the chain, the deployment and the off-chain state (section 8)
 bash scripts/live-e2e.sh build    # the one-time build of section 3 (mvn if on PATH, else cdm-ext/mvnw)
-bash scripts/live-e2e.sh check    # run every live flow (console/e2e/live.spec.ts) against the running stack
+bash scripts/live-e2e.sh check    # run every live flow (console/e2e/live/*.spec.ts) against the running stack
+bash scripts/live-e2e.sh check repo-trade gmsla   # run only those modules (console/e2e/live/<module>.spec.ts)
 ```
 
 `check` fails at once if a health check or the console is down. It installs Playwright's Chromium if absent, then
@@ -576,10 +577,16 @@ follows the IM flow. Set the tUST price back to 98.4 afterwards; the other specs
 
 ```bash
 cd console
-npm run test:e2e -- e2e/live.spec.ts
+npm run test:e2e -- e2e/live/ --workers=1
 # with a preinstalled Chromium (Codespaces image, cloud sessions):
-CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live.spec.ts
+CHROMIUM_PATH=/path/to/chromium npm run test:e2e -- e2e/live/ --workers=1
 ```
+
+The live specs are split into one file per module in `console/e2e/live/` (`csa`, `repo-trade`, `repo-events`, `gmsla`,
+`triparty`, `ccp`), with the shared helpers in `harness.ts` (task-live-suite-modules). Against one stack, run them with
+`--workers=1`: every file uses the same chain and test parties, and two files running at the same time would interleave
+their transactions. `scripts/live-e2e.sh check` passes `--workers=1`. In CI, `e2e-live-stack.yml` runs each module on
+its own runner and stack.
 
 The specs run `flow-im-margin-call-pledge`, `flow-vm-margin-call-transfer`, `flow-return`,
 `flow-default-enforcement`, `flow-oracle-update`, `flow-revaluation-top-up`, `flow-close-out-netting`,
@@ -791,7 +798,7 @@ passed as in the entry below. From the Windows host, `localhost:5173` served the
 returned `204` with `Access-Control-Allow-Origin: *`. Run from `../../console` on the host:
 
 ```bash
-E2E_BASE_URL=http://localhost:5173 E2E_REQUIRE_STACK=1 npx playwright test e2e/live.spec.ts
+E2E_BASE_URL=http://localhost:5173 E2E_REQUIRE_STACK=1 npx playwright test e2e/live/ --workers=1
 ```
 
 Result: 2 passed (`flow-im-margin-call-pledge` 38.3 s, `flow-vm-margin-call-transfer` 31.7 s). Both services'

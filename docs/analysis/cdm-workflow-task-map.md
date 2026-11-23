@@ -27,7 +27,7 @@ Every section uses the same columns:
   matrices where they exist).
 - **`cdm-ext`**: what the local extension adds over CDM 7.7.0.
 - **Prototype**: the prototype flow and what is built (contracts, gateway, services, console).
-- **Live spec**: the Playwright test in `console/e2e/live.spec.ts` that asserts on-chain state through the gateways.
+- **Live spec**: the Playwright test in `console/e2e/live/<module>.spec.ts` that asserts on-chain state through the gateways.
 - **Task**: the task that builds the row or closes what is missing.
 - **PR**: the pull request that added the row's prototype flow and live spec; — when the row is not built.
 
