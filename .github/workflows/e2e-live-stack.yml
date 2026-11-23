@@ -18,10 +18,6 @@ name: e2e-live-stack
 # owner's choice 2026-11-11). The full live suite runs locally before every PR and its result is reported in the PR
 # body; run this workflow from the Actions tab when a clean-machine check is wanted.
 on:
-  # TEMPORARY (task-live-suite-modules): runs the matrix once on this branch to measure the module jobs. Remove before
-  # merging to main.
-  push:
-    branches: [ci-live-modules]
   workflow_dispatch:
     inputs:
       modules:
