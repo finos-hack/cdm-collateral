@@ -1,0 +1,70 @@
+```yaml
+id: investigation-onchain-data-protection
+type: investigation
+title: Protect on-chain collateral data from participants who are not party to it
+status: active
+review: proposed
+provenance:
+  conversationId: onchain-data-protection
+  sourceRef: ni:///sha-256;rzAan8TnjhbAFnMqQ0ZNYZxReN3y3SlgTmAX6__Tqy4
+  timestamp: 2026-11-23T01:51:26Z
+  confidence: 0.75
+createdAt: 2026-11-23T01:51:26Z
+updatedAt: 2026-11-23T01:51:26Z
+```
+# Investigation: protect on-chain collateral data from participants who are not party to it
+
+The project owner asked (2026-11-22) to start an investigation bound to `nw-assumption-besu-visibility` and to work
+out what could be done to protect the information that assumption exposes. The investigation feeds
+`task-onchain-privacy` and the design note proposed by `artifact-onchain-privacy-design`; it does not replace them.
+
+## Observations (this session)
+
+- `contracts/contracts/` holds 12 contracts. Their events carry counterparty addresses and values in clear, among
+  them `MarginCall.CallIssued` / `CallAnswered` (called, agreed, disputed amounts), `CollateralControl.Pledged`,
+  `ClosedOut`, `InterestStated`, `SettlementNetted`, `CcpClearing.MarginStatementIssued` (per-member `vm`, `im`),
+  `MemberDefaulted` (with `loss`), `WaterfallApplied`, `RepoSettlement.DefaultNoticeServed`,
+  `SecuritiesLoan.LoanBilled`, `TripartySettlement.Deposited`, and `OracleFeed.DefaultPublished(party, inDefault)`.
+  `nw-assumption-besu-visibility` names only margin call amounts, states and pledges.
+- `architecture/README.md` lines 57, 69, 79: each participant (pledgor, secured party, market operator) runs its own
+  QBFT validator node. Every participant therefore holds the full chain state, so access control at a gateway or
+  JSON-RPC endpoint does not hide data from another participant under this topology.
+- `architecture/README.md` line 74: CDM document bodies are already held off-chain in the payload store with a
+  per-document reader allowlist of the call's two counterparties. The exposure is the on-chain record, not the CDM
+  content.
+- Besu documentation marks Tessera-based private transactions deprecated from 24.12.0; `task-onchain-privacy`
+  records that Besu 26.9.0 has no private transactions.
+- Paladin (LF Decentralized Trust project) runs as a sidecar beside a Besu node and provides three privacy domains:
+  Pente (private EVM contracts in privacy groups, executed in an ephemeral Besu EVM), Noto (notary-backed tokens) and
+  Zeto (ZKP-backed tokens). The LFDT project proposal describes it as the successor of Tessera. Source: Paladin and
+  LFDT documentation fetched by search in this session; not exercised.
+
+## Data classes and readers
+
+Data classes to protect: (D1) who has an agreement with whom; (D2) amounts and quantities; (D3) lifecycle state that
+signals credit events (dispute, default, close-out, enforcement); (D4) transaction metadata (sender, timing, nonce).
+Readers to consider: the two parties; the custodian, triparty agent or CCP where the agreement names one; the
+oracle; a regulator; every other participant (none of D1-D3).
+
+## Options under examination
+
+Each option is a proposal for assessment; none is selected.
+
+| # | Option | Hides | Cost or limit (inferred unless marked) |
+|---|--------|-------|----------------------------------------|
+| O1 | Data minimization: drop or hash fields the contract does not need to enforce a rule (dispute amounts, CCP VM/IM, waterfall breakdown, close-out figures) | part of D2, D3 | Low effort. Fields that escrow or a contract check reads stay in clear. |
+| O2 | Pseudonymous per-agreement addresses; the address-to-party map stays in each workflow service | part of D1 | Token funding flows and the per-address oracle default flag can relink addresses. |
+| O3 | Commitments with off-chain reveal: store a salted hash of amounts; the contract checks both parties' signatures over the commitment | D2 for calls and statements | Does not work for ERC-20 balances that `CollateralControl` moves (`artifact-onchain-privacy-design` item 4). |
+| O4 | Field encryption to the counterparties' keys | D2, D3 from non-parties | The contract cannot evaluate encrypted values (for example pledge not above agreed amount); that check moves off-chain or to a proof. Key distribution per pair. |
+| O5 | Zero-knowledge proofs and confidential tokens (for example Zeto) | D2 with on-chain rule checks | Highest effort; circuit per rule. |
+| O6 | Paladin on Besu: Pente privacy group per agreement for call, dispute and close-out logic; Noto or Zeto for collateral tokens | D1-D3 from non-members; base chain holds state hashes | Adds a Paladin sidecar per participant and a port of the Solidity contracts into Pente; token contract change. Closest to the current contract model (inference). |
+| O7 | Network topology: a Besu network per agreement or per CCP membership; or operator-run validators with participants reading through a per-party filtered gateway | D1-D3 by separation | Breaks the single shared ledger; collateral moving across networks needs a bridge; the filtered-gateway variant trusts the operator. |
+| O8 | Canton, the planned second ledger (`wp-adr-prototype-ledgers`) | D1-D3 by per-party visibility | Recorded in `task-onchain-privacy`; Canton behaviour not verified in this session. |
+
+D4 remains visible on the base chain under O1-O6.
+
+## Open questions
+
+- Whether the prototype demonstrates one mitigation or records the analysis only (`nw-prototype-scope`).
+- Which readers hold a right to which data classes; this needs collateral subject-matter input.
+- Whether `nw-assumption-besu-visibility` is updated to cover all 12 contracts or superseded.

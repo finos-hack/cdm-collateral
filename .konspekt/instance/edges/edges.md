@@ -477,3 +477,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-dec-konspektadopt-reviewunitsgqlerror | decomposes | node:goal-test-konspekt-adoption | node:task-konspekt-review-units-graphql-error |  | accepted |
 | e-dec-e2eflow-livesuitemodules | decomposes | node:goal-end-to-end-flow | node:task-live-suite-modules |  | accepted |
 | e-lnk-cilivestack-livesuitemodules | links | node:task-ci-live-e2e-stack | node:task-live-suite-modules |  | accepted |
+| e-note-onchainprotect-besuvisibility | notes | node:investigation-onchain-data-protection | noteworthy:nw-assumption-besu-visibility |  | proposed |
+| e-dec-archdesign-onchainprotect | decomposes | node:goal-architecture-design | node:investigation-onchain-data-protection |  | proposed |
+| e-lnk-onchainprotect-onchainprivacy | links | node:investigation-onchain-data-protection | node:task-onchain-privacy |  | proposed |
