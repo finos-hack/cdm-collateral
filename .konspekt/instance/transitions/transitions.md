@@ -1664,3 +1664,4 @@ into state history — an instance without it is v1-conformant and records none.
 | node:task-document-provenance | status | open | resolved | 2026-11-23T01:21:52Z | ni:///sha-256;oNnx3i6ACO-jMJv1RjUzYyJY9r_aDT-qpXzUueFiMxY | denisurusov |
 | node:investigation-cdm-workflow-task-map | status | active | resolved | 2026-11-23T01:21:52Z | ni:///sha-256;oNnx3i6ACO-jMJv1RjUzYyJY9r_aDT-qpXzUueFiMxY | denisurusov |
 | node:investigation-live-spec-in-claude-web | status | active | resolved | 2026-11-23T01:21:52Z | ni:///sha-256;oNnx3i6ACO-jMJv1RjUzYyJY9r_aDT-qpXzUueFiMxY | denisurusov |
+| node:task-konspekt-review-units-graphql-error | status | open | resolved | 2026-11-23T01:23:54Z | ni:///sha-256;TQSVIbbj6Y8DWBRBoxTWV49PMzDNZsts63TD77wR-KE | denisurusov |
