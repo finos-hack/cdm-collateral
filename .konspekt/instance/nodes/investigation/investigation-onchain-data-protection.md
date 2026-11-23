@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-23T01:51:26Z
   confidence: 0.75
 createdAt: 2026-11-23T01:51:26Z
-updatedAt: 2026-11-23T01:51:26Z
+updatedAt: 2026-11-23T02:49:00Z
 ```
 # Investigation: protect on-chain collateral data from participants who are not party to it
 
@@ -57,7 +57,7 @@ Each option is a proposal for assessment; none is selected.
 | O3 | Commitments with off-chain reveal: store a salted hash of amounts; the contract checks both parties' signatures over the commitment | D2 for calls and statements | Does not work for ERC-20 balances that `CollateralControl` moves (`artifact-onchain-privacy-design` item 4). |
 | O4 | Field encryption to the counterparties' keys | D2, D3 from non-parties | The contract cannot evaluate encrypted values (for example pledge not above agreed amount); that check moves off-chain or to a proof. Key distribution per pair. |
 | O5 | Zero-knowledge proofs and confidential tokens (for example Zeto) | D2 with on-chain rule checks | Highest effort; circuit per rule. |
-| O6 | Paladin on Besu: Pente privacy group per agreement for call, dispute and close-out logic; Noto or Zeto for collateral tokens | D1-D3 from non-members; base chain holds state hashes | Adds a Paladin sidecar per participant and a port of the Solidity contracts into Pente; token contract change. Closest to the current contract model (inference). |
+| O6 | Paladin on Besu: a Pente privacy group per deal runs the call, dispute, escrow and close-out logic; collateral and cash tokens are Noto or Zeto tokens. Noto and Zeto run no general contract logic (owner, source `496b3ce…`); a Noto token in `hooks` mode calls a Pente private contract on each mint and transfer, and a Noto token can be swapped atomically with an asset a Pente contract manages (Paladin documentation, read this session) | D1-D3 from non-members; base chain holds commitments | A Noto token has one notary, which validates every transfer of that token, including transfers in deals the notary is not party to (inferred). Adds a Paladin sidecar per participant and a port of the Solidity contracts into Pente. |
 | O7 | Network topology: a Besu network per agreement or per CCP membership; or operator-run validators with participants reading through a per-party filtered gateway | D1-D3 by separation | Breaks the single shared ledger; collateral moving across networks needs a bridge; the filtered-gateway variant trusts the operator. |
 | O8 | Canton, the planned second ledger (`wp-adr-prototype-ledgers`) | D1-D3 by per-party visibility | Recorded in `task-onchain-privacy`; Canton behaviour not verified in this session. |
 
