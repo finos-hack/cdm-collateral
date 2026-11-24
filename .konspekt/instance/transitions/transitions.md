@@ -1683,3 +1683,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-dealscopednoto | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
 | artifact:artifact-bank-use-of-besu | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
 | edge:e-prod-onchainprotect-bankbesu | review |  | proposed | 2026-11-23T12:51:04Z | ni:///sha-256;ccLiFZ9NZdcBNsRGsa8r4wA0Hi_TLU4VmwaRWHnvP1Q |  |
+| noteworthy:nw-constraint-immutability-beyond-deal-parties | review |  | proposed | 2026-11-24T00:30:43Z | ni:///sha-256;_nYG9QNdSbUoTuVu82gqYVXQOEMbp5RaX_08SFk_6TY |  |
+| noteworthy:nw-constraint-immutability-beyond-deal-parties | status |  | active | 2026-11-24T00:30:43Z | ni:///sha-256;_nYG9QNdSbUoTuVu82gqYVXQOEMbp5RaX_08SFk_6TY |  |
+| edge:e-note-onchainprotect-immutability | review |  | proposed | 2026-11-24T00:30:43Z | ni:///sha-256;_nYG9QNdSbUoTuVu82gqYVXQOEMbp5RaX_08SFk_6TY |  |
