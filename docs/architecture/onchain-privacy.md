@@ -46,7 +46,7 @@ Leak inventory (Observed, `contracts/contracts/*.sol`, event signatures):
 | `TripartySettlement` | `TermsProposed` (giver, receiver, agent), `Deposited` (token, amount), `RepoRequested` (purchase price), `TradeEndPrepared` (repurchase price) |
 | `PortfolioReconciliation` | `SnapshotCommitted` (party, counterparty), `ResultCommitted` (break count) |
 | `OracleFeed` | `DefaultPublished(party, inDefault)`: a network-wide flag that a firm is in default. `PricePublished` is market data. |
-| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14, item 9). |
+| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14, item 8). |
 
 CDM document bodies are already off-chain in the payload store, readable by the call's two counterparties
 (`architecture/README.md`, CDM payload store row; Observed). The exposure is the on-chain record.
@@ -401,7 +401,7 @@ Rules for the fields:
 
 ## 6. Keys
 
-R6 sets offline distribution. The derivation below is Proposed and needs confirmation (section 14, item 3).
+R6 sets offline distribution. The derivation below is Proposed and needs confirmation (section 14, item 2).
 
 ```mermaid
 flowchart TD
@@ -433,7 +433,7 @@ flowchart TD
   gives them to the arbitrator. The current epoch key alone does not open earlier periods.
 - **Escrow is threshold-based.** The body key is split into shares held by several holders. No single holder,
   including a regulator, can read deal bodies. Release follows a pre-agreed policy, for example insolvency or a court
-  order. The holders and the threshold are open (section 14, item 4).
+  order. The holders and the threshold are open (section 14, item 3).
 - **Per-deal signing keys.** Submitter signatures and acknowledgements use key pairs created for the deal. The
   opening envelope commits to the set of public keys. The keys do not identify the institution to an outsider.
 - **Member change (R16).** Novation or porting closes the stream and opens a new one with a new root key exchanged
@@ -547,7 +547,7 @@ finality; it is not legal settlement finality (`docs/analysis/bank-use-of-besu.m
 - **Deterministic replay is a requirement on the service.** Every member has to compute the same state commitment
   from the same envelope. That needs: the same logic build; the same reference data, pinned by the commitments in
   the envelope; no dependence on local time, locale, random values or map ordering; decimal arithmetic with fixed
-  rules. Whether the current service meets this was not checked (section 14, item 5).
+  rules. Whether the current service meets this was not checked (section 14, item 4).
 - **Upgrades are coordinated.** The logic registry lists the permitted builds and the block from which each applies.
   Every member of a stream must run a permitted build. The upgrade procedure belongs in the network rulebook.
 - **Reference data.** Eligibility schedules, haircut tables and prices are committed in the reference data registry.
@@ -616,10 +616,10 @@ Residual exposure:
 - **Credit-relevant steps are distinguishable (R13 is partly met).** A nullifier and proof appear only on
   encumbrance steps. Rejections, timeouts and ruling envelopes are visible as such. Measures that would hide them
   (a dummy proof on every step, acknowledgement-shaped rejections) add cost and are not in the baseline. Accepting
-  this is the owner's decision (section 14, item 2).
+  this is the owner's decision (section 14, item 1).
 - **Submitter.** One-time submission accounts avoid linking a stream to an institution. Besu account permissioning
   with an allow-list of known accounts conflicts with that; a relay run by the market operator is the alternative.
-  Open (section 14, item 6).
+  Open (section 14, item 5).
 - **Oracle default status.** `DefaultPublished(party, inDefault)` cannot stay a network-wide event. The oracle posts
   a default envelope into each affected deal stream, as a member of those deals.
 - **CCP data.** Each member's margin statement belongs in the stream of that member's deal with the CCP. Default
@@ -659,7 +659,7 @@ sequenceDiagram
 - The regulator never receives body keys and cannot freeze or reverse a step.
 - Nothing on-chain forces members to give the regulator the header key. Requiring a regulator acknowledgement on
   the opening envelope would enforce it and would require the regulator to be online at deal opening. Open
-  (section 14, item 7).
+  (section 14, item 6).
 
 ## 12. Risks
 
@@ -706,31 +706,27 @@ Effect on the current contracts:
 | `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14, item 9). |
+| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14, item 8). |
 
 The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
-keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try. How many phases the prototype builds
-is open (section 14, item 1).
+keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try and decided that the prototype builds all four phases, one after
+another (2026-11-24; konspekt id: `nw-decision-prototype-builds-all-phases`).
 
 ## 14. Open items
 
-1. **Scope.** Which phases does the prototype build? The recorded prototype scope uses test data only
-   (konspekt id: `nw-prototype-scope`).
-2. **Distinguishable steps.** Accept that encumbrance, rejection, timeout and ruling steps are visible as such, or
+1. **Distinguishable steps.** Accept that encumbrance, rejection, timeout and ruling steps are visible as such, or
    pay for measures that hide them.
-3. **Key derivation.** Confirm epoch keys derived from an offline body key, and set the epoch length.
-4. **Escrow.** Holders, threshold and release policy.
-5. **Deterministic replay.** Check the current workflow service against the requirements in section 8.
-6. **Submission.** One-time accounts or a relay, given Besu account permissioning.
-7. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
-8. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
-9. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
-10. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
-11. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-12. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
-13. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
-14. **Canton evidence test.** The Canton version's premise (proof by one party from sequencer history) is untested.
-    Run it only if the owner wants the comparison kept open.
+2. **Key derivation.** Confirm epoch keys derived from an offline body key, and set the epoch length.
+3. **Escrow.** Holders, threshold and release policy.
+4. **Deterministic replay.** Check the current workflow service against the requirements in section 8.
+5. **Submission.** One-time accounts or a relay, given Besu account permissioning.
+6. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
+7. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+8. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+9. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+10. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+11. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
+12. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
 
 ## 15. Sources
 
