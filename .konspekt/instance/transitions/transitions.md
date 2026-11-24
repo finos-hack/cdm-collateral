@@ -1687,3 +1687,6 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-constraint-immutability-beyond-deal-parties | status |  | active | 2026-11-24T00:30:43Z | ni:///sha-256;_nYG9QNdSbUoTuVu82gqYVXQOEMbp5RaX_08SFk_6TY |  |
 | edge:e-note-onchainprotect-immutability | review |  | proposed | 2026-11-24T00:30:43Z | ni:///sha-256;_nYG9QNdSbUoTuVu82gqYVXQOEMbp5RaX_08SFk_6TY |  |
 | edge:e-prod-onchainprotect-privacydesign | review |  | proposed | 2026-11-24T01:15:30Z |  |  |
+| noteworthy:nw-requirements-onchain-privacy | review |  | proposed | 2026-11-24T01:21:13Z | ni:///sha-256;t1titEEgFzJ7QUsek46-60OyT_assA_7D-YkFO4_t0U |  |
+| noteworthy:nw-requirements-onchain-privacy | status |  | active | 2026-11-24T01:21:13Z | ni:///sha-256;t1titEEgFzJ7QUsek46-60OyT_assA_7D-YkFO4_t0U |  |
+| edge:e-note-onchainprotect-requirements | review |  | proposed | 2026-11-24T01:21:13Z | ni:///sha-256;t1titEEgFzJ7QUsek46-60OyT_assA_7D-YkFO4_t0U |  |
