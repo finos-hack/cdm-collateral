@@ -11,7 +11,7 @@ An alternative version with Canton as the main path is in
 |---|---|
 | Status | Revised draft, 2026-11-24 (UTC). Chosen by the owner as the design to try. Nothing in this document is implemented or measured. |
 | Decides | Section 14 lists the decisions still open. |
-| Inputs | `nw-assumption-besu-visibility`, `nw-visibility-rule-deal-participants`, `nw-constraint-immutability-beyond-deal-parties`, option O9 in `investigation-onchain-data-protection`, `docs/analysis/bank-use-of-besu.md`, the owner-supplied design document versions 1.1 to 1.3 (section 15) |
+| Inputs | `nw-assumption-besu-visibility`, `nw-visibility-rule-deal-participants`, `nw-constraint-immutability-beyond-deal-parties`, the design discussion recorded in `investigation-onchain-data-protection`, `docs/analysis/bank-use-of-besu.md`, the owner-supplied design document versions 1.1 to 1.3 (section 15) |
 
 **How to read the claims.** Each claim carries one of three labels where the label is not obvious from context:
 
@@ -60,13 +60,13 @@ are commercially sensitive, and a deal's record has to stand as evidence in a di
 | R1 | Authorized access | The direct participants in a deal see all of that deal's data. Every role the deal names (custodian, triparty agent, CCP, oracle, record keeper) counts as a participant for now. | `nw-visibility-rule-deal-participants` |
 | R2 | Authorized access | An approved third party, for example a regulator, may see part of a deal's data, for example who the parties are. Marked possible. | Same record |
 | R3 | Authorized access | Every other participant sees none of the deal's data. | Same record |
-| R9 | Transparency of the data flow | Every network participant can see that a deal step was recorded: the envelope, its hashes and its position in the order. Seeing the flow gives no access to the data. | O9; `nw-requirements-onchain-privacy` |
+| R9 | Transparency of the data flow | Every network participant can see that a deal step was recorded: the envelope, its hashes and its position in the order. Seeing the flow gives no access to the data. | Owner, design discussion; `nw-requirements-onchain-privacy` |
 | R4 | Immutability of data | A deal's record must not depend on the deal's own two or three parties alone. | `nw-constraint-immutability-beyond-deal-parties` |
 | R10 | Immutability of evidence | The evidence for each step (order, time, proof, consents) is immutable in the same way as the data. | `nw-requirements-onchain-privacy` |
-| R5 | Public logic | Deal logic is public and identified by a hash. Terms and data are encrypted. In this design the hash identifies a build of the CDM workflow service (section 5). | O9 |
-| R6 | Keys | Keys are distributed to deal members offline. | O9 |
-| R7 | Enforcement | First stated as: rules over hidden values are enforced on-chain by zero-knowledge proofs. Relaxed by the owner's choice of this design: single encumbrance is enforced on-chain by a proof; every other rule is enforced by member replay with an explicit acknowledgement. | O9; `nw-decision-onchain-privacy-encrypted-streams` |
-| R8 | Scale | The prototype has 47 workflows (`docs/analysis/cdm-workflow-task-map.md`, `README.md`; Observed) and two tokenized test assets (`architecture/README.md`; Observed). The design must carry that number of flows, thousands of rules and asset types in the high hundreds. A circuit per rule or per asset type does not meet this. | O9; `nw-requirements-onchain-privacy` |
+| R5 | Public logic | Deal logic is public and identified by a hash. Terms and data are encrypted. In this design the hash identifies a build of the CDM workflow service (section 5). | Owner, design discussion |
+| R6 | Keys | Keys are distributed to deal members offline. | Owner, design discussion |
+| R7 | Enforcement | First stated as: rules over hidden values are enforced on-chain by zero-knowledge proofs. Relaxed by the owner's choice of this design: single encumbrance is enforced on-chain by a proof; every other rule is enforced by member replay with an explicit acknowledgement. | Owner, design discussion; `nw-decision-onchain-privacy-encrypted-streams` |
+| R8 | Scale | The prototype has 47 workflows (`docs/analysis/cdm-workflow-task-map.md`, `README.md`; Observed) and two tokenized test assets (`architecture/README.md`; Observed). The design must carry that number of flows, thousands of rules and asset types in the high hundreds. A circuit per rule or per asset type does not meet this. | Owner, design discussion; `nw-requirements-onchain-privacy` |
 
 **R3 and R9 together.** A non-participant sees that some deal step happened and can check that it was recorded in
 order. It sees no content and cannot identify the parties. This is the maintainer's reading of the two statements
@@ -122,7 +122,7 @@ Legend: **Yes** meets it; **Part** meets it with a stated limit; **Conditional**
 configuration (section 3.3); **No** does not meet it; **n/a** the solution takes a
 different approach to the same concern.
 
-| Requirement | Besu private transactions (Tessera) | Paladin: Pente with Noto or Zeto | Canton | Besu network per deal | Field measures on today's contracts (O1 to O4) | This design |
+| Requirement | Besu private transactions (Tessera) | Paladin: Pente with Noto or Zeto | Canton | Besu network per deal | Field measures on today's contracts | This design |
 |---|---|---|---|---|---|---|
 | R1 members see all | Yes | Yes | Yes | Yes | Yes | Yes |
 | R2 regulator sees part | No | Part | Yes | No | Part | Yes |
@@ -249,7 +249,7 @@ transactions. A deprecated component cannot carry a new design.
   parties, so it fails R4 and R10, and nobody outside sees the flow
   (R9). Assets moving between networks need a bridge. Brazil's central bank judged separate networks to add
   complexity and interoperability risk (Drex phase 1 report).
-- **Field measures (O1 to O4):** dropping or hashing fields, per-agreement addresses, commitments with off-chain
+- **Field measures:** dropping or hashing fields, per-agreement addresses, commitments with off-chain
   reveal, field encryption. They keep R4, R5, R9 and R10 because everything stays on the shared chain. They do not
   meet R3: token transfers, funding flows and the public default flag still expose amounts or relink parties. This
   design uses all four as components.
