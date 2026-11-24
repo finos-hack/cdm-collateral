@@ -489,3 +489,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-immutability | notes | node:investigation-onchain-data-protection | noteworthy:nw-constraint-immutability-beyond-deal-parties |  | proposed |
 | e-prod-onchainprotect-privacydesign | produces | node:investigation-onchain-data-protection | artifact:artifact-onchain-privacy-design |  | proposed |
 | e-note-onchainprotect-requirements | notes | node:investigation-onchain-data-protection | noteworthy:nw-requirements-onchain-privacy |  | proposed |
+| e-note-onchainprotect-cantonsync | notes | node:investigation-onchain-data-protection | noteworthy:nw-canton-multi-operator-synchronizer |  | proposed |

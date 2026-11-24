@@ -1690,3 +1690,6 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-requirements-onchain-privacy | review |  | proposed | 2026-11-24T01:21:13Z | ni:///sha-256;t1titEEgFzJ7QUsek46-60OyT_assA_7D-YkFO4_t0U |  |
 | noteworthy:nw-requirements-onchain-privacy | status |  | active | 2026-11-24T01:21:13Z | ni:///sha-256;t1titEEgFzJ7QUsek46-60OyT_assA_7D-YkFO4_t0U |  |
 | edge:e-note-onchainprotect-requirements | review |  | proposed | 2026-11-24T01:21:13Z | ni:///sha-256;t1titEEgFzJ7QUsek46-60OyT_assA_7D-YkFO4_t0U |  |
+| noteworthy:nw-canton-multi-operator-synchronizer | review |  | proposed | 2026-11-24T01:52:54Z | ni:///sha-256;4iebMs3V6tuqDZPyrAASj18WJH5iFmx2bvz5BN-53NI |  |
+| noteworthy:nw-canton-multi-operator-synchronizer | status |  | active | 2026-11-24T01:52:54Z | ni:///sha-256;4iebMs3V6tuqDZPyrAASj18WJH5iFmx2bvz5BN-53NI |  |
+| edge:e-note-onchainprotect-cantonsync | review |  | proposed | 2026-11-24T01:52:54Z | ni:///sha-256;4iebMs3V6tuqDZPyrAASj18WJH5iFmx2bvz5BN-53NI |  |
