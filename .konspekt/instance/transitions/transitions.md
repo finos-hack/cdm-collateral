@@ -1699,3 +1699,6 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-streamsdecision | review |  | proposed | 2026-11-24T03:19:18Z | ni:///sha-256;Uv30C5_mD5mB3x0CwWfjl33_i1TVyTzZheSy3d-Zk3Y |  |
 | noteworthy:nw-decision-prototype-builds-all-phases | review |  | proposed | 2026-11-24T15:19:38Z | ni:///sha-256;_Dn7TKbJbk72yXrTQ1or_VulpYmoZKHos1iqqcNtgqE |  |
 | edge:e-note-onchainprotect-allphases | review |  | proposed | 2026-11-24T15:19:38Z | ni:///sha-256;_Dn7TKbJbk72yXrTQ1or_VulpYmoZKHos1iqqcNtgqE |  |
+| noteworthy:nw-open-challenge-distinguishable-steps | review |  | proposed | 2026-11-24T16:19:30Z | ni:///sha-256;Ck9C1-iKRpm0PXjLfR26SHQlThUC0ngItnNXRDuG3Bc |  |
+| noteworthy:nw-open-challenge-distinguishable-steps | status |  | active | 2026-11-24T16:19:30Z | ni:///sha-256;Ck9C1-iKRpm0PXjLfR26SHQlThUC0ngItnNXRDuG3Bc |  |
+| edge:e-note-onchainprotect-diststeps | review |  | proposed | 2026-11-24T16:19:30Z | ni:///sha-256;Ck9C1-iKRpm0PXjLfR26SHQlThUC0ngItnNXRDuG3Bc |  |

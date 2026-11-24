@@ -493,3 +493,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-onchainprotect-privacydesigncanton | produces | node:investigation-onchain-data-protection | artifact:artifact-onchain-privacy-design-canton |  | proposed |
 | e-note-onchainprotect-streamsdecision | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-onchain-privacy-encrypted-streams |  | proposed |
 | e-note-onchainprotect-allphases | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-prototype-builds-all-phases |  | proposed |
+| e-note-onchainprotect-diststeps | notes | node:investigation-onchain-data-protection | noteworthy:nw-open-challenge-distinguishable-steps |  | proposed |
