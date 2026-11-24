@@ -91,10 +91,11 @@ owner. Each needs acceptance, change or removal.
 | R1, R2, R3 | 5, 6, 10, 11 |
 | R9 | 4, 5, 10 |
 | R4, R10 | 4, 7, 11 |
-| R5, R7, R8 | 7, 8 |
+| R5, R8 | 7, 8 |
 | R6 | 6 |
-| R11, R19 | 9 |
+| R11, R19 | 9; not met until an asset option is chosen and the nullifier derivation is specified |
 | R12 | 8, 12, 13; not shown until proving time is measured |
+| R7 | 7, 8; a target until phase 3 measures an end-to-end proof. Until then rules are enforced by member replay |
 | R13 | 5 (opaque state), 10 |
 | R14 | 11 |
 | R15 | 7 (deadlines, timed-out state) |
@@ -102,17 +103,148 @@ owner. Each needs acceptance, change or removal.
 | R17 | 6 (epoch keys), 12; erasure is by key destruction only |
 | R18 | 7 |
 
-## 3. Options considered
+## 3. Why existing solutions do not fully fit
 
-Full table: `investigation-onchain-data-protection`, options O1 to O9.
+No existing solution was run for this document. The assessments below rest on documentation, on
+`docs/analysis/bank-use-of-besu.md` and on the project's own records. Each "does not meet" is a statement about the
+requirements in section 2 as the owner set them. Several of these solutions meet a narrower set of requirements
+better than this design does; section 3.7 states where.
 
-| Option | Result against the requirements |
-|---|---|
-| Field minimization, pseudonyms, commitments, field encryption (O1 to O4) | Partial measures. Each is used inside this design; none meets R1 to R4 alone. |
-| Paladin on Besu (O6) | Meets R1 and R4. Deal state is held only by members, group membership is fixed at creation, and a Noto notary sees all transfers of its token. Paladin had not shipped a version 1 (`docs/analysis/bank-use-of-besu.md`). |
-| A Besu network per deal (O7) | Fails R4 with two or three validators. |
-| Canton (O8) | Meets R1 to R3 closely. Fails R4 unless an independent synchronizer operator retains the message history. Drops R5 for non-participants. |
-| Encrypted deal streams on the shared Besu chain (O9) | The design in this document. |
+### 3.1 Fit against the requirements
+
+Legend: **Yes** meets it; **Part** meets it with a stated limit; **No** does not meet it; **n/a** the solution takes a
+different approach to the same concern.
+
+| Requirement | Besu private transactions (Tessera) | Paladin: Pente with Noto or Zeto | Canton | Besu network per deal | Field measures on today's contracts (O1 to O4) | This design |
+|---|---|---|---|---|---|---|
+| R1 members see all | Yes | Yes | Yes | Yes | Yes | Yes |
+| R2 regulator sees part | No | Part | Yes | No | Part | Yes |
+| R3 others see no data | Yes | Yes | Yes | Yes | No | Yes |
+| R9 the flow is visible to all | Part | Yes | **No** | No | Yes | Yes |
+| R4 record held beyond the deal's parties | Part | Part | **Part** | **No** | Yes | Yes |
+| R10 evidence held beyond the deal's parties | Part | Yes | Part | No | Yes | Yes |
+| R5 public logic | No | No | No | Part | Yes | Yes |
+| R6 keys distributed offline | n/a | n/a | n/a | n/a | Part | Yes |
+| R7 rules over hidden values enforced on-chain | No | Part | No | n/a | No | Target, unmeasured |
+| R8 scale of flows, rules, asset types | Yes | Yes | Yes | Part | Yes | Unmeasured |
+| R11 single encumbrance, hidden | No | Part | Yes | No | No | Open (section 9) |
+| Status | Deprecated | Pre-version 1 | In production use elsewhere | Buildable today | Buildable today | Not built |
+
+### 3.2 Where each solution keeps the deal record
+
+R4 and R10 depend on which nodes hold a deal's record. The three candidates differ on exactly this point.
+
+```mermaid
+flowchart TB
+  subgraph canton["Canton"]
+    direction TB
+    CA["Party A node<br/>deal contracts in clear"]
+    CB["Party B node<br/>deal contracts in clear"]
+    CS["Synchronizer<br/>encrypted messages, order<br/>history can be pruned"]
+    CO["Other participants<br/>nothing"]
+    CA --- CS
+    CB --- CS
+  end
+  subgraph paladin["Paladin on Besu"]
+    direction TB
+    PA["Member A<br/>deal state in clear"]
+    PB["Member B<br/>deal state in clear"]
+    PV["All validators<br/>commitments and signatures"]
+    PA --- PV
+    PB --- PV
+  end
+  subgraph design["This design"]
+    direction TB
+    DA["Member A<br/>keys"]
+    DB["Member B<br/>keys"]
+    DV["All validators<br/>ciphertext, commitments,<br/>proofs, signatures"]
+    DA --- DV
+    DB --- DV
+  end
+```
+
+### 3.3 Canton
+
+What it does well: Canton sends each part of a transaction only to the parties entitled to it, and a participant
+that is not involved does not learn that the transaction happened (Canton documentation). Regulator access is
+declared in the contract. It is the closest fit to R1, R2 and R3, and it is used in production for related use cases.
+
+Why it does not fully fit:
+
+- **No shared record (R4, R10).** Canton has no chain that every node copies. A two-party deal's contracts are stored
+  on the two parties' own nodes. The only other holder is the synchronizer, which keeps ordered encrypted messages
+  that its operator can prune. The owner's objection: with two or three nodes this is not a chain in the sense the
+  project relies on, and a two-party record returns to one party's word against the other's
+  (`nw-constraint-immutability-beyond-deal-parties`). Each party's signed confirmations would narrow that; whether
+  Canton retains them as usable evidence was not checked.
+- **No visible flow (R9).** Hiding the existence of a transaction from non-participants is a design goal of Canton. It
+  is the opposite of transparency of the data flow.
+- **Logic is not public to the network (R5).** Each participant installs the Daml package on its own node. A
+  non-participant cannot see or check which logic a deal ran.
+- **Enforcement is by the deal's parties (R7).** The parties' nodes validate each step. No node outside the deal
+  checks a rule.
+- **Different stack.** The prototype's logic is Solidity on Besu with CDM in Java. Canton needs the deal logic
+  written in Daml. Canton stays the planned second ledger (`wp-adr-prototype-ledgers`).
+- **Single maintainer.** The open-source edition is Apache 2.0 and Digital Asset maintains it. Which enterprise
+  features are in the open-source edition today was not verified.
+
+### 3.4 Paladin (Pente privacy groups with Noto or Zeto tokens)
+
+What it does well: it runs on unmodified Besu. Pente executes deal logic privately among a group's members and
+records commitments and member signatures on the shared chain, which covers R1, R3, R9 and R10. Zeto provides
+confidential tokens with zero-knowledge proofs. It is the nearest existing design to this one, and open item 10
+keeps the question of building on it.
+
+Why it does not fully fit:
+
+- **Deal data is held only by the members (R4).** Validators hold commitments. If the members lose or alter their
+  copies, the commitment shows a mismatch and cannot restore the content. SUERF Policy Note 420 names off-chain state
+  management as the main open issue.
+- **Logic is private to the group (R5).** The contract is deployed inside the privacy group. Non-members cannot see
+  or check it.
+- **Rules are enforced by member endorsement (R7).** Validators verify signatures and state transitions between
+  commitments. They do not verify that a value rule held. Zeto's proofs cover token transfers with fixed circuits and
+  do not cover deal rules.
+- **Regulator sees all or nothing (R2).** A group member sees all of the group's data and has to endorse. A partial
+  view needs application code (`nw-proposal-regulator-selective-disclosure`).
+- **Membership is fixed at group creation.** A change of parties needs a new group and a state migration (R16).
+- **Noto's notary sees every transfer of its token**, across deals it is not part of.
+- **Maturity.** The LF Decentralized Trust 2026 annual review lists releases 0.14 to 0.16 and work toward a version 1
+  in 2026. No version 1 release was found in a search on 2026-11-24; the release list itself was not checked. All
+  listed maintainers are from one company.
+
+### 3.5 Besu private transactions (Tessera)
+
+Besu's own private transactions sent payloads between selected nodes through Tessera and recorded a marker on the
+shared chain. The Besu maintainers announced the end of Tessera support in September 2024 and the Besu documentation
+marks the feature deprecated. `task-onchain-privacy` records that the Besu version in use has no private
+transactions. A deprecated component cannot carry a new design.
+
+### 3.6 A Besu network per deal, and field measures on the current contracts
+
+- **Network per deal or per relationship.** Meets R1 and R3 by separation. Its validators are the deal's two or three
+  parties, so it fails R4 and R10 in the same way as a two-party Canton record, and nobody outside sees the flow
+  (R9). Assets moving between networks need a bridge. Brazil's central bank judged separate networks to add
+  complexity and interoperability risk (Drex phase 1 report).
+- **Field measures (O1 to O4):** dropping or hashing fields, per-agreement addresses, commitments with off-chain
+  reveal, field encryption. They keep R4, R5, R9 and R10 because everything stays on the shared chain. They do not
+  meet R3: token transfers, funding flows and the public default flag still expose amounts or relink parties. This
+  design uses all four as components.
+- **Privacy add-ons tested in Drex** (Anonymous Zether, Starlight, Rayls). Brazil's central bank reported that none
+  met its needs; a recurring reason was that the authority could not see or act on hidden transactions (R2). They
+  were not assessed further here.
+
+### 3.7 What this design gives up in exchange
+
+- **Canton hides more.** Under Canton a non-participant does not learn that a deal step happened. Under this design
+  it does, by requirement (R9), and can draw inferences from timing and volume (section 10).
+- **Paladin and Canton exist.** Both have running code, documentation and users. This design has none and the
+  project would own the protocol (section 12).
+- **Proof-based enforcement is unmeasured.** Paladin and Canton enforce rules through the deal's members today. This
+  design's on-chain enforcement (R7) is a target until phase 3 measures it (section 13). Until then it enforces
+  rules the same way they do, through member replay.
+- **Reuse remains open.** Pente's commitment and endorsement mechanism and Zeto's token circuits overlap with
+  sections 5, 7 and 9. Open item 10 decides how much to build on them.
 
 ## 4. Design summary
 
