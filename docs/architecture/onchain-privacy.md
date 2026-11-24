@@ -1,16 +1,17 @@
-# On-chain privacy design: encrypted deal streams with verified state transitions
+# On-chain privacy design: encrypted deal streams with shared-chain evidence and selective proofs
 
 Output for `task-onchain-privacy` and `investigation-onchain-data-protection`. Recorded by
 `artifact-onchain-privacy-design`.
 
 An alternative version with Canton as the main path is in
-[`onchain-privacy-canton.md`](onchain-privacy-canton.md). Neither version is selected.
+[`onchain-privacy-canton.md`](onchain-privacy-canton.md). The project owner chose this document's design to try
+(2026-11-23, `nw-decision-onchain-privacy-encrypted-streams`); the Canton version is kept as the alternative.
 
 | | |
 |---|---|
-| Status | Draft proposal, 2026-11-24 (UTC). Nothing in this document is implemented. |
-| Decides | Nothing yet. Section 14 lists the decisions the project owner has to take. |
-| Inputs | `nw-assumption-besu-visibility`, `nw-visibility-rule-deal-participants`, `nw-constraint-immutability-beyond-deal-parties`, option O9 in `investigation-onchain-data-protection`, `docs/analysis/bank-use-of-besu.md` |
+| Status | Revised draft, 2026-11-24 (UTC). Chosen by the owner as the design to try. Nothing in this document is implemented or measured. |
+| Decides | Section 14 lists the decisions still open. |
+| Inputs | `nw-assumption-besu-visibility`, `nw-visibility-rule-deal-participants`, `nw-constraint-immutability-beyond-deal-parties`, option O9 in `investigation-onchain-data-protection`, `docs/analysis/bank-use-of-besu.md`, the owner-supplied design document versions 1.1 to 1.3 (section 15) |
 
 **How to read the claims.** Each claim carries one of three labels where the label is not obvious from context:
 
@@ -18,7 +19,9 @@ An alternative version with Canton as the main path is in
 - **Owner**: stated by the project owner in the investigation's source excerpts.
 - **Proposed**: design content written by the maintainer. It has not been built, run or measured.
 
-Statements about third-party software (Paladin, Canton, zero-knowledge virtual machines) come from documentation and
+Sections 4 to 13 are design content. Where the owner set a point directly, the text says so.
+
+Statements about third-party software (Paladin, Canton, proof systems) come from documentation and
 search results read on 2026-11-23 and 2026-11-24. None of that software was run for this document.
 
 ## 1. Problem
@@ -60,14 +63,14 @@ are commercially sensitive, and a deal's record has to stand as evidence in a di
 | R9 | Transparency of the data flow | Every network participant can see that a deal step was recorded: the envelope, its hashes and its position in the order. Seeing the flow gives no access to the data. | O9; `nw-requirements-onchain-privacy` |
 | R4 | Immutability of data | A deal's record must not depend on the deal's own two or three parties alone. | `nw-constraint-immutability-beyond-deal-parties` |
 | R10 | Immutability of evidence | The evidence for each step (order, time, proof, consents) is immutable in the same way as the data. | `nw-requirements-onchain-privacy` |
-| R5 | Public logic | Deal logic is public and identified by its code hash. Terms and data are encrypted. | O9 |
+| R5 | Public logic | Deal logic is public and identified by a hash. Terms and data are encrypted. In this design the hash identifies a build of the CDM workflow service (section 5). | O9 |
 | R6 | Keys | Keys are distributed to deal members offline. | O9 |
-| R7 | Enforcement | Rules over hidden values are enforced on-chain by zero-knowledge proofs. | O9 |
+| R7 | Enforcement | First stated as: rules over hidden values are enforced on-chain by zero-knowledge proofs. Relaxed by the owner's choice of this design: single encumbrance is enforced on-chain by a proof; every other rule is enforced by member replay with an explicit acknowledgement. | O9; `nw-decision-onchain-privacy-encrypted-streams` |
 | R8 | Scale | The prototype has 47 workflows (`docs/analysis/cdm-workflow-task-map.md`, `README.md`; Observed) and two tokenized test assets (`architecture/README.md`; Observed). The design must carry that number of flows, thousands of rules and asset types in the high hundreds. A circuit per rule or per asset type does not meet this. | O9; `nw-requirements-onchain-privacy` |
 
 **R3 and R9 together.** A non-participant sees that some deal step happened and can check that it was recorded in
 order. It sees no content and cannot identify the parties. This is the maintainer's reading of the two statements
-and matches `nw-proposal-visibility-metadata-scope`; it needs the owner's confirmation (section 14, item 14).
+and matches `nw-proposal-visibility-metadata-scope`; the owner's choice of this design accepts a visible flow.
 Section 10 lists what the visible flow can still reveal by inference.
 
 ### 2.2 Proposed by the maintainer for the collateral context
@@ -94,12 +97,12 @@ owner. Each needs acceptance, change or removal.
 | R1, R2, R3 | 5, 6, 10, 11 |
 | R9 | 4, 5, 10 |
 | R4, R10 | 4, 7, 11 |
-| R5, R8 | 7, 8 |
+| R5, R8 | 5, 7, 8 |
 | R6 | 6 |
-| R11, R19 | 9; not met until an asset option is chosen and the nullifier derivation is specified |
-| R12 | 8, 12, 13; not shown until proving time is measured |
-| R7 | 7, 8; a target until phase 3 measures an end-to-end proof. Until then rules are enforced by member replay |
-| R13 | 5 (opaque state), 10 |
+| R11, R19 | 9; covered for a first pledge of a whole lot only, until the asset lifecycle is designed |
+| R12 | 7, 13; no general proof per step; acknowledgement and circuit times to be measured |
+| R7 | 7, 9; as relaxed in section 2.1 |
+| R13 | 5 (opaque state), 10; partly met |
 | R14 | 11 |
 | R15 | 7 (deadlines, timed-out state) |
 | R16 | 6 (member change) |
@@ -129,9 +132,9 @@ different approach to the same concern.
 | R10 evidence held beyond the deal's parties | Part | Yes | Conditional | No | Yes | Yes |
 | R5 public logic | No | No | No | Part | Yes | Yes |
 | R6 keys distributed offline | n/a | n/a | n/a | n/a | Part | Yes |
-| R7 rules over hidden values enforced on-chain | No | Part | No | n/a | No | Target, unmeasured |
-| R8 scale of flows, rules, asset types | Yes | Yes | Yes | Part | Yes | Unmeasured |
-| R11 single encumbrance, hidden | No | Part | Yes | No | No | Open (section 9) |
+| R7 rules over hidden values enforced on-chain | No | Part | No | n/a | No | Part: single encumbrance only |
+| R8 scale of flows, rules, asset types | Yes | Yes | Yes | Part | Yes | Target: rules stay in the CDM engine |
+| R11 single encumbrance, hidden | No | Part | Yes | No | No | Target: lifecycle incomplete |
 | Status | Deprecated | Pre-version 1 | In production use elsewhere | Buildable today | Buildable today | Not built |
 
 ### 3.2 Where each solution keeps the deal record
@@ -200,7 +203,8 @@ Why it does not fully fit:
 - **Logic is not public to the network (R5).** Each participant installs the Daml package on its own node. A
   non-participant cannot see or check which logic a deal ran.
 - **Enforcement is by the deal's parties (R7).** The parties' nodes validate each step. No node outside the deal
-  checks a rule.
+  checks a rule. This design, with R7 relaxed, has the same property for every rule
+  except single encumbrance.
 - **Different stack.** The prototype's logic is Solidity on Besu with CDM in Java. Canton needs the deal logic
   written in Daml. Canton stays the planned second ledger (`wp-adr-prototype-ledgers`).
 - **Single maintainer.** The open-source edition is Apache 2.0 and Digital Asset maintains it. Which enterprise
@@ -210,11 +214,12 @@ Why it does not fully fit:
 
 What it does well: it runs on unmodified Besu. Pente executes deal logic privately among a group's members and
 records commitments and member signatures on the shared chain, which covers R1, R3, R9 and R10. Zeto provides
-confidential tokens with zero-knowledge proofs. It is the nearest existing design to this one, and open item 10
-keeps the question of building on it.
+confidential tokens with zero-knowledge proofs. It is the nearest existing design to this one.
 
 Why it does not fully fit:
 
+- **Pente cannot run the deal logic.** Pente executes Solidity contracts in a private EVM. The deal logic in this
+  design is the CDM Java engine. Using Pente would mean rewriting the rules in Solidity.
 - **Deal data is held only by the members (R4).** Validators hold commitments. If the members lose or alter their
   copies, the commitment shows a mismatch and cannot restore the content. SUERF Policy Note 420 names off-chain state
   management as the main open issue.
@@ -222,7 +227,7 @@ Why it does not fully fit:
   or check it.
 - **Rules are enforced by member endorsement (R7).** Validators verify signatures and state transitions between
   commitments. They do not verify that a value rule held. Zeto's proofs cover token transfers with fixed circuits and
-  do not cover deal rules.
+  do not cover deal rules. This design, with R7 relaxed, enforces deal rules the same way.
 - **Regulator sees all or nothing (R2).** A group member sees all of the group's data and has to endorse. A partial
   view needs application code (`nw-proposal-regulator-selective-disclosure`).
 - **Membership is fixed at group creation.** A change of parties needs a new group and a state migration (R16).
@@ -255,87 +260,106 @@ transactions. A deprecated component cannot carry a new design.
 ### 3.7 What this design gives up in exchange
 
 - **Canton can meet R4.** With a retained, multi-operator synchronizer (section 3.3), the case for this design over
-  Canton rests on R5, R7 and R9, on the existing Besu and Solidity stack, and on Canton's single maintainer. It does
-  not rest on immutability. R5, R6, R7 and R9 were first stated as features of option O9. Whether they are
-  requirements independent of this design is the owner's call (section 14, item 15).
+  Canton does not rest on immutability. It rests on a flow visible to all participants (R9), history held by every
+  validator, and continued use of the existing Besu network and CDM Java service. The owner chose this design on
+  that basis.
 - **Canton hides more.** Under Canton a non-participant does not learn that a deal step happened. Under this design
   it does, by requirement (R9), and can draw inferences from timing and volume (section 10).
 - **Paladin and Canton exist.** Both have running code, documentation and users. This design has none and the
   project would own the protocol (section 12).
-- **Proof-based enforcement is unmeasured.** Paladin and Canton enforce rules through the deal's members today. This
-  design's on-chain enforcement (R7) is a target until phase 3 measures it (section 13). Until then it enforces
-  rules the same way they do, through member replay.
-- **Reuse remains open.** Pente's commitment and endorsement mechanism and Zeto's token circuits overlap with
-  sections 5, 7 and 9. Open item 10 decides how much to build on them.
+- **Rules are enforced by the deal's members, as in Paladin and Canton.** Only single encumbrance is enforced
+  on-chain by a proof (section 9).
+- **Canton prevents double pledging without a circuit.** This design needs a custom circuit, a nullifier set and an
+  asset lifecycle that is not yet designed.
+- **A new key scheme.** Canton and Paladin handle key distribution themselves. This design needs the scheme in
+  section 6 and the operations around it.
 
 ## 4. Design summary
 
-Proposed. The shared Besu chain stops executing deal logic on clear data. It does three things:
+The shared Besu chain stops executing deal logic on clear data. It does three things:
 
-1. **Orders and stores** encrypted envelopes, one per deal step, on every validator (R4).
-2. **Verifies** a zero-knowledge proof with each envelope that the public deal logic, run on the hidden inputs,
-   produced the new state commitment (R5, R7, R8).
-3. **Records** each member's consent signature and marks the step final.
+1. **Orders and stores** one encrypted envelope per deal step on every validator (R4, R9, R10).
+2. **Records acknowledgements.** Every other member replays the step and posts an explicit acknowledgement. A step is
+   final only when every member has acknowledged it. Silence never counts as acceptance (Owner).
+3. **Verifies one small proof** on steps that encumber an asset lot, and rejects a lot that is already encumbered
+   (R11).
 
-Deal members hold the keys, received offline (R6). They decrypt, replay the logic and check the result. A regulator
-holds a key that opens only the header section of each envelope (R2).
+Deal members hold the keys, received offline (R6). Each member runs the existing CDM Java engine in its own workflow
+service: it reads envelopes from the chain, decrypts, replays and acknowledges. That is the whole private execution
+model. No private virtual machine is used. A regulator holds a key that opens only the header section of each
+envelope (R2).
 
 Terms used below:
 
 - **Deal stream**: the ordered sequence of envelopes for one deal, identified by a random stream identifier.
 - **Envelope**: one on-chain record for one deal step.
-- **State commitment**: a hash of the deal's full state after a step.
-- **Deal engine**: the member-side component that runs the public deal logic.
+- **State commitment**: a salted hash of the deal's full state after a step.
+- **Acknowledgement**: a member's signature stating that its own replay of the step produced the same state
+  commitment.
+- **Logic build**: one released build of the collateral workflow service with its CDM version, identified by a hash.
 
 ```mermaid
 flowchart TB
   subgraph memberA["Deal member stack, one per participant"]
-    WS["Collateral workflow service<br/>CDM 7.7.0"]
-    DE["Deal engine<br/>runs public deal logic"]
-    PR["Prover"]
+    WS["Collateral workflow service<br/>CDM 7.7.0 Java engine<br/>decrypt, replay, acknowledge"]
+    SP["Selective prover<br/>encumbrance steps only"]
     KS["Key store<br/>deal keys, signing keys"]
     LG["Ledger gateway"]
-    WS --> DE
-    DE --> PR
-    KS --> DE
-    PR --> LG
+    WS --> SP
+    KS --> WS
+    WS --> LG
+    SP --> LG
   end
 
   subgraph chain["Shared Besu network, QBFT, validators beyond any one deal"]
-    EL["Envelope log contract<br/>order, hash chain, finality"]
-    PV["Proof verifier contract"]
-    LR["Logic registry<br/>code hashes of public deal logic"]
-    TR["Table registry<br/>commitments to eligibility, haircut, price tables"]
+    EL["Envelope log contract<br/>order, hash chain, acknowledgements, finality"]
+    PV["Proof verifier contract<br/>encumbrance proof"]
+    LR["Logic registry<br/>hashes of permitted logic builds"]
+    RD["Reference data registry<br/>commitments to eligibility, haircut, price tables"]
     NS["Encumbrance nullifier set"]
+    IC["Custodian inventory commitments"]
     EL --> PV
     EL --> LR
-    EL --> TR
-    EL --> NS
+    EL --> RD
+    PV --> NS
+    PV --> IC
   end
 
   REG["Regulator<br/>header key only"]
   ARB["Arbitrator or court<br/>keys on dispute"]
+  ESC["Threshold escrow holders<br/>shares of the body key"]
   OFF["Offline key exchange<br/>at agreement signing"]
 
-  LG -- "envelope, proof, signatures" --> EL
+  LG -- "envelopes, acknowledgements" --> EL
   EL -- "ordered envelopes" --> LG
   OFF -. "deal root key" .-> KS
   OFF -. "header key" .-> REG
+  OFF -. "key shares" .-> ESC
   EL -- "ciphertext headers" --> REG
   EL -- "full stream" --> ARB
 ```
 
+### 4.1 What is not built
+
+- **A general proof of the rule engine for every step.** Earlier drafts proposed it. It needed a second
+  implementation of the CDM rules in a prover-compatible language and its proving time was unmeasured against
+  intraday deadlines. The owner chose the selective design.
+- **A private virtual machine.** Paladin's Pente runs Solidity contracts. The deal logic here is the CDM Java engine,
+  which Pente cannot run.
+- **Besu private transactions.** Deprecated (section 3.5).
+
 ## 5. Envelope
 
-Proposed. Every validator stores every field. Only the fields marked public are readable without a key.
+Every validator stores every field. Only the fields marked public are readable without a key.
 
 ```mermaid
 flowchart LR
   subgraph env["Envelope"]
     direction TB
-    subgraph body["Body ciphertext, body key"]
+    subgraph body["Body ciphertext, epoch key"]
       B1["CDM event document"]
       B2["amounts, assets, state detail"]
+      B3["salt of the state commitment"]
     end
     subgraph hdr["Header ciphertext, header key"]
       H1["party identifiers"]
@@ -346,224 +370,240 @@ flowchart LR
       S["streamId, random"]
       Q["sequence number"]
       P["hash of previous envelope"]
-      L["logic code hash"]
+      L["logic build hash"]
       C["new state commitment"]
-      T["table commitments used"]
-      N["encumbrance nullifiers"]
-      Z["zero-knowledge proof"]
-      G["member consent signatures"]
+      T["reference data commitments used"]
+      N["encumbrance nullifier and proof, on encumbrance steps"]
+      G["submitter signature"]
     end
   end
+  ACK["Acknowledgements<br/>one per other member<br/>posted after replay"]
+  env --> ACK
 ```
 
 Rules for the fields:
 
 - `streamId` is random and agreed offline. It is not derived from the parties.
-- The state commitment and any lifecycle label are opaque hashes. A public label such as "in default" would leak a
-  credit event (section 14, item 5).
-- Envelopes are padded to fixed size classes to reduce what size reveals.
-- The proof's public inputs bind it to this envelope: logic code hash, previous and new state commitments, table
-  commitments, nullifiers and the hashes of both ciphertexts.
+- The state commitment is an opaque salted hash. No lifecycle label is public.
+- **The logic build hash is a declaration by the submitter.** The contract checks that the hash is in the logic
+  registry. It cannot check that the submitter ran that build. The other members' replay with the same build is what
+  enforces it.
+- **One build hash covers all flows.** It identifies the service build, not a rule set per flow, so it does not
+  reveal which kind of flow a stream runs.
+- Envelopes are padded to fixed size classes.
 
 ## 6. Keys
 
-Proposed. R6 sets offline distribution. The rest is a starting point for section 14, item 6.
+R6 sets offline distribution. The derivation below is Proposed and needs confirmation (section 14, item 3).
 
 ```mermaid
 flowchart TD
   RK["Deal root key<br/>exchanged offline at agreement signing"]
   HK["Header key"]
-  BK["Body key"]
-  E1["Epoch keys<br/>one-way derivation per period"]
+  BK["Body key<br/>kept offline by each member"]
+  E1["Epoch key n<br/>derived from body key and epoch number"]
   SK["Per-deal signing keys<br/>one pair per member"]
-  SUB["One-time submission accounts"]
   REG["Regulator"]
-  MEM["Deal members"]
+  MEM["Member online systems<br/>current epoch key only"]
+  ESC["Threshold escrow<br/>shares of the body key"]
   ARB["Arbitrator, on dispute"]
 
   RK --> HK
   RK --> BK
-  BK --> E1
   RK --> SK
-  RK --> SUB
+  BK --> E1
   HK --> REG
-  HK --> MEM
   E1 --> MEM
-  E1 -. "released by a member" .-> ARB
+  BK -. "split into shares" .-> ESC
+  E1 -. "epoch keys for the disputed period,<br/>released by one member" .-> ARB
 ```
 
 - **Header and body keys are separate.** The regulator receives the header key only (R2).
-- **Epoch keys.** The body key is replaced each period by one-way derivation. Online systems hold the current epoch
-  key. Earlier epoch keys are kept offline. A leaked current key then exposes one period.
-- **Per-deal signing keys.** Consent signatures use key pairs created for the deal. The opening envelope commits to
-  the set of public keys. The keys do not identify the institution to an outsider.
-- **Member change.** A change of parties (novation, porting) closes the stream epoch and opens a new one with a new
-  root key exchanged offline. The new member receives the state and the keys the agreement entitles it to.
-- **Loss.** A member that loses its data recovers it from the chain with its keys. A member that loses its keys
-  needs an escrow copy; who holds one is open (section 14, item 6).
+- **Epoch keys derive from the body key and the epoch number.** Each member keeps the body key offline and loads only
+  the current epoch key into its online systems. A leaked epoch key exposes one period. Any earlier epoch key can be
+  regenerated from the body key, so prior epoch keys need not be stored.
+- **Proof by one party (R14).** A member regenerates the epoch keys for the disputed period from its body key and
+  gives them to the arbitrator. The current epoch key alone does not open earlier periods.
+- **Escrow is threshold-based.** The body key is split into shares held by several holders. No single holder,
+  including a regulator, can read deal bodies. Release follows a pre-agreed policy, for example insolvency or a court
+  order. The holders and the threshold are open (section 14, item 4).
+- **Per-deal signing keys.** Submitter signatures and acknowledgements use key pairs created for the deal. The
+  opening envelope commits to the set of public keys. The keys do not identify the institution to an outsider.
+- **Member change (R16).** Novation or porting closes the stream and opens a new one with a new root key exchanged
+  offline. The continuing members give the new member the current state and its salt. The new member checks that
+  they hash to the last state commitment on-chain. It receives no earlier keys, so earlier envelopes stay unreadable
+  to it.
+- **Loss.** A member that loses its data recovers it from the chain with its keys. A member that loses its body key
+  recovers it from escrow.
 
 ## 7. Step lifecycle
-
-Proposed.
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant A as Member A stack
-  participant C as Envelope log and verifier
+  participant A as Member A service
+  participant C as Envelope log contract
   participant V as Validators
-  participant B as Member B stack
+  participant B as Member B service
+  participant U as Custodian service
   participant R as Regulator
 
-  A->>A: Deal engine applies CDM event to deal state
-  A->>A: Prover produces proof of the state transition
-  A->>A: Encrypt header and body, sign consent
-  A->>C: Submit envelope from one-time account
-  C->>C: Check sequence and previous hash
-  C->>C: Check logic code hash and table commitments
-  C->>C: Verify proof, check nullifiers unused
+  A->>A: Read latest final envelope, decrypt, apply CDM event with the Java engine
+  A->>A: Compute new state commitment
+  opt Step encumbers an asset lot
+    A->>A: Produce encumbrance proof and nullifier
+  end
+  A->>C: Submit encrypted envelope
+  C->>C: Check sequence, previous hash, registered logic build
+  C->>C: On encumbrance steps: verify proof, check nullifier unused
   C->>V: Envelope ordered in a QBFT block
-  V-->>B: Envelope delivered to every node
-  B->>B: Decrypt, replay public logic, compare state commitment
-  B->>C: Consent signature, where the agreement requires it
-  C->>C: Mark step final
+  V-->>B: Envelope
+  V-->>U: Envelope
+  B->>B: Decrypt and replay with the same logic build
+  U->>U: Decrypt and replay with the same logic build
+  B->>C: Acknowledgement
+  U->>C: Acknowledgement
+  C->>C: All members acknowledged: mark step final
   V-->>R: Regulator decrypts header only
 ```
 
 ```mermaid
 stateDiagram-v2
   [*] --> Submitted
-  Submitted --> Rejected: proof, sequence or nullifier check fails
-  Submitted --> Verified: checks pass
-  Verified --> Final: required consents recorded
-  Verified --> TimedOut: consent deadline passes
-  Verified --> Disputed: a member posts a dispute envelope
-  TimedOut --> Disputed
-  Disputed --> Final: ruling envelope from the agreed arbitrator
+  Submitted --> Rejected: sequence, logic build, proof or nullifier check fails
+  Submitted --> Recorded: contract checks pass
+  Recorded --> Final: every other member has acknowledged
+  Recorded --> Contested: a member posts a rejection
+  Recorded --> TimedOut: acknowledgement deadline passes
+  Contested --> Final: ruling envelope upholds the step
+  Contested --> Voided: ruling envelope voids the step
+  TimedOut --> Final: late acknowledgement accepted by ruling
+  TimedOut --> Voided: ruling envelope voids the step
   Rejected --> [*]
   Final --> [*]
+  Voided --> [*]
 ```
 
-What each check enforces:
+Rules:
+
+- **Explicit acknowledgement on every step (Owner).** Every member other than the submitter posts an acknowledgement
+  for every envelope. An acknowledgement states one thing: "my replay of this envelope produced this state
+  commitment". Silence is never acceptance.
+- **Acknowledgement is not business consent.** Agreeing to a called amount, accepting a substitution or answering a
+  dispute are steps of the deal logic. Each is its own envelope, submitted by the consenting member, and
+  acknowledged by the others.
+- **A rejection** is a signed statement that the member's replay produced a different result. It moves the step to
+  Contested and to the dispute path (section 11).
+- **One step at a time per stream.** The contract accepts the next sequence number only after the previous step is
+  Final or Voided. If two members submit the same sequence number, the first ordered is accepted and the other is
+  rejected and retried.
+- **Deadlines.** The acknowledgement deadline is a number of blocks set in the opening envelope. An unresponsive
+  member stalls only the streams it belongs to (R15).
+
+What enforces what:
 
 | Check | Enforced by | Needs plaintext |
 |---|---|---|
 | Step order, no insertion or removal | Envelope log contract, hash chain | No |
-| Logic identity | Logic registry, code hash | No |
-| Every value rule in the deal logic | Proof verifier contract | No; the proof covers it |
-| An asset lot is not encumbered twice | Nullifier set | No |
-| Consent where the agreement requires agreement | Consent signatures | No |
+| Logic build is a permitted one | Logic registry | No |
+| An asset lot is not encumbered twice | Encumbrance proof, nullifier set | No |
+| Every CDM rule | Each member's replay, shown by its acknowledgement | Yes, members only |
+| Business consent | The consenting member's own envelope | Yes, members only |
 | Response deadlines | Envelope log contract, block count | No |
-| Correct result, second check | Each member's replay | Yes, member only |
 
-A valid proof establishes that the step follows the rules. Consent signatures establish agreement where the agreement
-calls for it, for example accepting a called amount. Block finality under QBFT is ledger finality; it is not legal
-settlement finality (`docs/analysis/bank-use-of-besu.md`).
+No node outside the deal checks a CDM rule. All of a deal's members acting together, including the custodian, could
+record a step that breaks a rule. Canton and Paladin have the same property. Block finality under QBFT is ledger
+finality; it is not legal settlement finality (`docs/analysis/bank-use-of-besu.md`).
 
-## 8. Rules and asset types at scale
+## 8. Rules, flows and asset types at scale
 
-R8 rules out one circuit per rule. Proposed:
-
-- **One general proof per step.** A zero-knowledge virtual machine proves that a program ran correctly on hidden
-  inputs. The program is the public deal logic. The number of rules does not change the number of proofs or
-  verifier contracts. Proving cost follows the amount of code a step executes.
-- **Rules as data.** The deal logic is a rule interpreter. Rule sets per flow are data, committed in the logic
-  registry by hash. Adding a rule changes a committed rule set, not a circuit.
-- **Asset types as data.** Eligibility schedules, haircut tables and prices are committed tables. The logic reads
-  the rows it needs and the proof shows they belong to the committed table.
-
-```mermaid
-flowchart LR
-  subgraph public["Public on-chain commitments"]
-    RS["Rule set hash, per flow"]
-    ET["Eligibility table root"]
-    HT["Haircut table root"]
-    PT["Price table root, oracle"]
-  end
-  subgraph hidden["Hidden inputs, deal members only"]
-    EV["CDM event"]
-    ST["Previous deal state"]
-    RW["Table rows used, with membership paths"]
-  end
-  INT["Rule interpreter<br/>public program, fixed code hash"]
-  OUT["New state commitment<br/>one proof"]
-
-  RS --> INT
-  ET --> INT
-  HT --> INT
-  PT --> INT
-  EV --> INT
-  ST --> INT
-  RW --> INT
-  INT --> OUT
-```
-
-Constraints on this section:
-
-- The zero-knowledge virtual machines found in search (RISC Zero, SP1) run programs compiled to RISC-V, with Rust as
-  the documented language. The prototype's rule evaluation is CDM 7.7.0 Java (Observed). Java does not run in these
-  machines directly (Proposed reading, unverified). The interpreter needs an implementation the prover can run,
-  checked against the Java implementation by running both on the same inputs.
-- A 2026 benchmarking paper reports that these machines trade larger proofs and higher memory for programmability,
-  and that wrapping a proof to a small on-chain size has a high proving cost (section 15). No proving time has been
-  measured for this design.
-- On-chain verification of the wrapped proof uses elliptic-curve pairing operations. Besu support for the required
-  precompiled contracts was not checked for this document.
-- **Fallback tier.** Member replay enforces every rule without any proof. The design can start there and add the
-  proof per flow (section 13).
+- **The rules stay where they are.** The 47 workflows and the CDM rules run in the existing Java workflow service
+  (Observed). No second implementation is written. Adding a rule or an asset type is a change to the service or its
+  reference data.
+- **Deterministic replay is a requirement on the service.** Every member has to compute the same state commitment
+  from the same envelope. That needs: the same logic build; the same reference data, pinned by the commitments in
+  the envelope; no dependence on local time, locale, random values or map ordering; decimal arithmetic with fixed
+  rules. Whether the current service meets this was not checked (section 14, item 5).
+- **Upgrades are coordinated.** The logic registry lists the permitted builds and the block from which each applies.
+  Every member of a stream must run a permitted build. The upgrade procedure belongs in the network rulebook.
+- **Reference data.** Eligibility schedules, haircut tables and prices are committed in the reference data registry.
+  An envelope names the commitments it used, so every member replays against the same data.
 
 ## 9. Collateral assets
 
-An ERC-20 transfer shows sender, receiver and amount. Encryption of the deal does not hide it or prevent the same
-asset from being pledged twice. Two options; neither is selected (section 14, item 3).
+Option A1 is the design: the asset stays on its home ledger or with the custodian, and the deal records an
+encumbrance. Confidential tokens (A2, for example Zeto) are deferred.
 
-| | A1: custodian-held assets with encumbrance records | A2: confidential tokens on-chain |
-|---|---|---|
-| Where the asset is | On its home ledger or with the custodian | A token on the shared chain with hidden owner and amount |
-| What the deal records | An encumbrance on an asset lot, inside the envelope | A token transfer proved valid |
-| Double-pledge prevention | A nullifier per encumbered lot in the on-chain nullifier set; a second encumbrance of the same lot repeats the nullifier and is rejected | The token's own spent-record mechanism |
-| Who must be trusted | The custodian, for the link between lot and real asset | The token design and its proofs |
-| Precedent | Encumbrance pattern attributed to the DTCC Collateral AppChain (single-source claim in `docs/analysis/bank-use-of-besu.md`) | Zeto on Besu (documentation, not exercised) |
+- The custodian is a member of every deal that encumbers its lots (R1) and publishes a commitment to its inventory
+  of lots.
+- **The proof shows one thing:** the nullifier is correctly derived from a lot that is in the custodian's committed
+  inventory. The circuit is fixed and independent of the CDM flow.
+- **The contract, not the circuit, checks that the nullifier is unused.** A second encumbrance of the same lot
+  repeats the nullifier and is rejected.
+- The link between a lot and the real asset rests on the custodian (R19).
 
-Under A1 the custodian is a member of each deal it holds assets for (R1) and commits to its inventory of lots. The
-proof shows that the nullifier derives from a lot in that committed inventory. This derivation is Proposed and needs
-its own design before build.
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Custodian
+  participant A as Pledgor
+  participant C as Shared chain
+  U->>C: Publish inventory commitment
+  A->>U: Request the lot's inventory path
+  U-->>A: Path and nullifier secret for the lot
+  A->>A: Derive nullifier, produce proof of derivation and inventory membership
+  A->>C: Envelope with nullifier and proof
+  C->>C: Verify proof against the inventory commitment
+  C->>C: Check nullifier not in the set, then insert it
+```
+
+**Not yet designed.** Until these exist, R11 is covered only for the first pledge of a whole lot against a fixed
+inventory commitment:
+
+| Gap | Sketch (Proposed, not designed) |
+|---|---|
+| Release on return or substitution | The custodian retires the lot and issues a new lot identifier for the same asset, which yields a new nullifier |
+| Partial encumbrance | The custodian splits the lot into two lots before the pledge |
+| Inventory that changes with every custodian movement | Inventory commitments per period, with the contract accepting proofs against a recent commitment |
+| Who derives the nullifier | Shown above as the pledgor with a secret from the custodian; the custodian deriving it is the alternative |
 
 ## 10. Who sees what
 
-Proposed. "Participant" means a deal member under R1.
+"Participant" means a deal member under R1.
 
 | Data | Deal members | Regulator with header key | Other network participants | Validators as such |
 |---|---|---|---|---|
 | Parties to the deal | Yes | Yes | No | No |
 | Agreement type, event type, date | Yes | Yes | No | No |
 | Amounts, assets, CDM documents | Yes | No | No | No |
-| Lifecycle state, including dispute and default | Yes | Event type only | No | No |
+| Lifecycle state | Yes | Event type only | No | No |
 | That a stream exists, its step count and timing | Yes | Yes | **Yes** | **Yes** |
+| Number of members, from the acknowledgement count | Yes | Yes | **Yes** | **Yes** |
+| Which steps encumber an asset | Yes | Yes | **Yes** | **Yes** |
+| That a step was contested, timed out or ruled on | Yes | Yes | **Yes** | **Yes** |
 | Envelope size class | Yes | Yes | **Yes** | **Yes** |
-| Which rule set and tables a step used | Yes | Yes | **Yes**, as hashes | **Yes**, as hashes |
-| Submitting account | Yes | Yes | One-time account, see below | Same |
+| Kind of flow | Yes | Yes | No | No |
+| Submitting account | Yes | Yes | See below | See below |
 
-Residual exposure and measures:
+Residual exposure:
 
-- **Activity pattern.** Stream count, step count and timing are visible by requirement (R9). What they allow an
-  observer to infer is the residual exposure, for example a burst of steps on one stream suggesting a dispute (R13). Measures for production: batching,
-  randomized submission delay, padding (listed in SUERF Policy Note 420 for Paladin). The prototype measures the
-  exposure and does not mitigate it (`nw-proposal-visibility-metadata-scope`).
-- **Flow type.** A rule set hash per flow reveals which kind of flow a stream runs. One interpreter with the rule
-  set as a hidden, committed input would hide it at more proving cost. Open (section 14, item 7).
+- **Activity pattern.** Stream count, step count and timing are visible by requirement (R9). A burst of steps on one
+  stream can suggest a dispute.
+- **Credit-relevant steps are distinguishable (R13 is partly met).** A nullifier and proof appear only on
+  encumbrance steps. Rejections, timeouts and ruling envelopes are visible as such. Measures that would hide them
+  (a dummy proof on every step, acknowledgement-shaped rejections) add cost and are not in the baseline. Accepting
+  this is the owner's decision (section 14, item 2).
 - **Submitter.** One-time submission accounts avoid linking a stream to an institution. Besu account permissioning
-  with an allow-list of known accounts would conflict with this. A relay service run by the market operator is the
-  alternative. Open (section 14, item 8).
+  with an allow-list of known accounts conflicts with that; a relay run by the market operator is the alternative.
+  Open (section 14, item 6).
 - **Oracle default status.** `DefaultPublished(party, inDefault)` cannot stay a network-wide event. The oracle posts
   a default envelope into each affected deal stream, as a member of those deals.
 - **CCP data.** Each member's margin statement belongs in the stream of that member's deal with the CCP. Default
   fund shares belong in a stream whose members are the rulebook's members.
+- Measures available for production: batching, randomized submission delay, padding. Phase 1 measures the exposure
+  before any of them is chosen.
 
 ## 11. Regulator access and disputes
-
-Proposed. Supersedes nothing: `nw-proposal-regulator-selective-disclosure` proposed disclosure packages for the
-Paladin path; the header key is the equivalent for this design.
 
 ```mermaid
 sequenceDiagram
@@ -571,119 +611,116 @@ sequenceDiagram
   participant M as Deal members
   participant C as Shared chain
   participant R as Regulator
+  participant E as Escrow holders
   participant X as Arbitrator or court
 
   Note over M,R: Deal setup, offline
   M->>R: Header key and streamId
+  M->>E: Shares of the body key
   M->>C: Opening envelope
   Note over M,R: Each step
   C-->>R: Envelope
-  R->>R: Decrypt header, check it against the header hash on-chain
+  R->>R: Decrypt header
 
   Note over M,X: Dispute
-  M->>C: Dispute envelope
-  M->>X: Epoch keys for the disputed period
+  M->>C: Rejection or dispute envelope
+  M->>X: Epoch keys for the disputed period, regenerated from the body key
   X->>C: Read the stream in chain order
-  X->>X: Decrypt and replay the public logic
+  X->>X: Decrypt and replay with the registered logic build
   X->>C: Ruling envelope, signed with the arbitrator key named at opening
 ```
 
-- Either member can prove a deal's content alone by releasing its keys. The chain fixes order and content, so the
-  two members cannot present different histories (R4).
-- The regulator cannot freeze or reverse a step in this design.
-- Nothing on-chain forces members to give the regulator the header key at setup. Requiring a regulator
-  acknowledgement signature on the opening envelope would enforce it and would require the regulator to be online at
-  deal opening. Open (section 14, item 4).
+- One member can prove a deal's content alone. The chain fixes order and content, so two members cannot present
+  different histories (R4, R14). A member that has lost its body key obtains it from escrow.
+- The regulator never receives body keys and cannot freeze or reverse a step.
+- Nothing on-chain forces members to give the regulator the header key. Requiring a regulator acknowledgement on
+  the opening envelope would enforce it and would require the regulator to be online at deal opening. Open
+  (section 14, item 7).
 
 ## 12. Risks
 
 | Risk | Effect | Measure |
 |---|---|---|
-| Body key leak | That period's deal data is readable by whoever holds the chain data, permanently | Epoch keys; earlier keys offline; hardware key storage |
-| Ciphertext is permanent | Data cannot be erased, only made unreadable by destroying keys. Brazil's central bank cited a data-protection conflict when it shut Drex down (press reports, `docs/analysis/bank-use-of-besu.md`) | Keep personal data out of envelopes; legal review per jurisdiction |
-| Flaw in the prover or the interpreter | An invalid step verifies. One flaw affects every rule | Member replay as a second check; independent review; differential tests against the CDM Java logic |
-| Proving time too long for intraday flows | Steps miss deadlines | Measure on one flow first; fallback tier without proofs |
-| Member offline | Steps needing its consent wait | Deadlines and the timed-out state |
-| Key loss by a member | Member cannot read its own deals | Escrow copy; holder is open |
-| Validator collusion | Reordering or censorship of envelopes. QBFT tolerates fewer than one third faulty validators | Validator set larger than any deal, with at least one validator that is party to no deal |
-| The project owns the protocol | No vendor support and no outside review by default | Standard primitives only; commission a review before any production use |
-| Zero-knowledge tooling maturity | Brazil's central bank judged zero-knowledge privacy designs immature for Drex | Fallback tier; proofs introduced per flow |
+| No rule check outside the deal | All members of a deal together can record an invalid step | Custodian as a member of asset steps; same property as Canton and Paladin |
+| Replay is not deterministic | Honest members compute different commitments; steps are contested for no reason | Determinism requirements in section 8; replay tests across builds |
+| Uncoordinated upgrade | Members on different builds cannot acknowledge each other | Logic registry with activation blocks; rulebook procedure |
+| Member offline | Its streams stall until the deadline, then go to a ruling | Deadlines; operational standards for members |
+| Body key leak | That deal's history is readable by whoever holds the chain data, permanently | Body key offline; hardware key storage; epoch keys online |
+| Ciphertext is permanent | Data cannot be erased, only made unreadable by destroying keys. Brazil's central bank cited a data-protection conflict when it shut Drex down (press reports) | Keep personal data out of envelopes; legal review per jurisdiction (R17) |
+| Flaw in the encumbrance circuit | A lot could be encumbered twice, or a valid pledge refused | Small fixed circuit; independent review |
+| Custodian misstates its inventory | Encumbrances of assets that do not exist | Inherent to A1; custodian controls and audit |
+| Validator collusion | Reordering or censorship. QBFT tolerates fewer than one third faulty validators | Validator set larger than any deal, with at least one validator that is party to no deal |
+| The project owns the protocol | No vendor support and no outside review by default | Standard primitives; commission a review before production use |
+| Acknowledgement volume | One transaction per member per step | Measure in phase 1 |
 
 ## 13. Prototype plan
 
-Proposed. Each phase ends with something that runs on the local Besu network.
+Each phase ends with something that runs on the local Besu network. No requirement is claimed as met until its phase
+has run.
 
 ```mermaid
 flowchart LR
-  P1["Phase 1<br/>Envelope log and member replay<br/>one margin call flow, no proofs"]
-  P2["Phase 2<br/>Header key for a regulator role<br/>dispute replay tool"]
-  P3["Phase 3<br/>General proof for the same flow<br/>measure proving time"]
-  P4["Phase 4<br/>Asset option<br/>nullifier set or confidential token"]
-  P5["Phase 5<br/>Rule interpreter and further flows"]
-  P1 --> P2 --> P3 --> P4 --> P5
+  P1["Phase 1<br/>Envelope log, member replay,<br/>acknowledgements<br/>one margin call flow"]
+  P2["Phase 2<br/>Regulator header key<br/>proof by one party with epoch keys"]
+  P3["Phase 3<br/>Encumbrance circuit<br/>custodian inventory commitment<br/>release design"]
+  P4["Phase 4<br/>Threshold escrow, member change,<br/>remaining flows"]
+  P1 --> P2 --> P3 --> P4
 ```
 
-| Phase | Shows | Decision it informs |
+| Phase | Shows | Informs |
 |---|---|---|
-| 1 | R1, R3, R4, R6, R9, R10; what an outsider can infer from the visible flow | Whether the residual exposure in section 10 is acceptable |
-| 2 | R2; unilateral proof of content | Regulator model (item 4) |
-| 3 | R5, R7 on one flow; proving time and the cost of a prover-compatible implementation | Whether R7 is practical for intraday flows |
-| 4 | Collateral movement without a public transfer | Asset option (item 3) |
-| 5 | R8 | Rule representation (item 2) |
+| 1 | R1, R3, R4, R6, R9, R10, R15; deterministic replay on one flow | What an outsider can infer; acknowledgement cost |
+| 2 | R2, R14 | Regulator model; key derivation |
+| 3 | R11 for a first pledge; proving time of the circuit | Asset lifecycle design |
+| 4 | R16, R8 across the flows | Readiness for a wider trial |
 
-Effect on the current contracts (Proposed):
+Effect on the current contracts:
 
 | Current contract | In this design |
 |---|---|
-| `MarginCall`, `RepoSettlement`, `SecuritiesLoan`, `TripartySettlement`, `PortfolioReconciliation` | Logic moves into the public deal logic run by the deal engine. Events become envelopes. |
-| `CollateralControl` | Escrow rules move into the deal logic. Asset movement follows the option chosen in section 9. |
+| `MarginCall`, `RepoSettlement`, `SecuritiesLoan`, `TripartySettlement`, `PortfolioReconciliation` | State machines move into the workflow service's replay logic. Events become envelopes. |
+| `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
-| `OracleFeed` | `PricePublished` stays public as a committed price table. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (item 9). |
+| `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
+| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14, item 9). |
 
 The accepted record `artifact-onchain-privacy-design` states that the prototype keeps full visibility because it uses
-test data (`nw-prototype-scope`). This document proposes a design and a phased build. Whether the prototype builds
-any phase is the owner's decision (item 1).
+test data (`nw-prototype-scope`). The owner has since chosen this design to try. How many phases the prototype builds
+is open (section 14, item 1).
 
 ## 14. Open items
 
-1. **Scope.** Does the prototype build phase 1, more phases, or record the design only (`nw-prototype-scope`)?
-2. **Rule representation.** A rule interpreter with rules as committed data, or the deal logic reimplemented per
-   flow in a prover-compatible language?
-3. **Assets.** Custodian-held assets with encumbrance nullifiers (A1) or confidential tokens (A2)?
-4. **Regulator.** Header key given offline by the members, or an on-chain acknowledgement by the regulator at deal
-   opening? Which fields go in the header?
-5. **State labels.** Confirm opaque state commitments with no public lifecycle label.
-6. **Key model.** Epoch length, who holds an escrow copy, and the procedure when a deal's members change.
-7. **Flow type visibility.** Accept that a rule set hash reveals the flow type, or hide the rule set at more proving
-   cost?
-8. **Submission.** One-time accounts or a relay service, given Besu account permissioning.
-9. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister` once the
-   asset option is chosen.
-10. **Main path.** Does this design replace the tentative choice of Paladin (`nw-decision-onchain-privacy-paladin`)?
-    Pente already provides off-chain execution with on-chain commitments and member signatures; a check of how much
-    of this design it covers is outstanding.
-11. **Tooling verification.** Which zero-knowledge virtual machines have verifier contracts that run on Besu, and
-    their proving times for a margin call step.
-12. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-13. **`nw-assumption-besu-visibility`.** Update it to cover all contracts in section 1, or supersede it.
-14. **Requirements.** Confirm the reading of R3 with R9 in section 2.1, and accept, change or remove each of R11 to
-    R19 in section 2.2.
-15. **Canton as the alternative.** Are public logic (R5), proof-based enforcement (R7) and a visible flow (R9)
-    requirements in their own right? If not, Canton with a retained, multi-operator synchronizer meets R1 to R4 and
-    R10 on the documentation, and a test of unilateral proof from sequencer history (R14) would be the next step.
+1. **Scope.** Which phases does the prototype build (`nw-prototype-scope`)?
+2. **Distinguishable steps.** Accept that encumbrance, rejection, timeout and ruling steps are visible as such, or
+   pay for measures that hide them.
+3. **Key derivation.** Confirm epoch keys derived from an offline body key, and set the epoch length.
+4. **Escrow.** Holders, threshold and release policy.
+5. **Deterministic replay.** Check the current workflow service against the requirements in section 8.
+6. **Submission.** One-time accounts or a relay, given Besu account permissioning.
+7. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
+8. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+9. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+10. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+11. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+12. **`nw-assumption-besu-visibility`.** Update it to cover all contracts in section 1, or supersede it.
+13. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+14. **Canton evidence test.** The Canton version's premise (proof by one party from sequencer history) is untested.
+    Run it only if the owner wants the comparison kept open.
 
 ## 15. Sources
 
 Repository (Observed): `contracts/contracts/*.sol`; `architecture/README.md`; `docs/analysis/bank-use-of-besu.md`;
 `.konspekt/instance/nodes/investigation/investigation-onchain-data-protection.md` and the noteworthies it notes.
 
+Owner-supplied: "On-Chain Privacy Design: Encrypted Deal Streams with Shared-Chain Evidence and Selective Proofs",
+versions 1.1 to 1.3, 24 November 2026. This document adopts version 1.3's decisions (no private virtual machine,
+member replay, selective proof for encumbrance only, threshold escrow) and adds the acknowledgement rule the owner
+set afterwards.
+
 External, read 2026-11-23 and 2026-11-24, not exercised:
 
 - Hulek, Peresini, Homoliak, "A Unified Framework for Contract-Validated Benchmarking of Zero-Knowledge Proving
-  Systems", IACR ePrint 2026/1729, https://eprint.iacr.org/2026/1729
-- "Evaluating Compiler Optimization Impacts on zkVM Performance", arXiv 2508.17518,
-  https://arxiv.org/abs/2508.17518 (RISC Zero and SP1 as RISC-V machines)
+  Systems", IACR ePrint 2026/1729, https://eprint.iacr.org/2026/1729 (cost of general proofs; reason for section 4.1)
 - Paladin documentation, https://lfdt-paladin.github.io/paladin/head/
 - Canton documentation, https://docs.canton.network/overview/learn/privacy-model
 - Besu documentation, private transaction processing (deprecated),
