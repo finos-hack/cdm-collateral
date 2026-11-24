@@ -4,7 +4,7 @@ name: On-chain privacy and confidentiality design
 kind: doc
 location: docs/architecture/onchain-privacy.md
 createdAt: 2026-10-23T00:00:00Z
-updatedAt: 2026-10-23T00:00:00Z
+updatedAt: 2026-11-24T01:15:30Z
 review: accepted
 provenance:
   sourceRef: ni:///sha-256;whkcPr5vGRhGfyP3KBwHgRuYvZBFAxfwi17mcztcocs
@@ -49,3 +49,8 @@ Checked on canonical: `task-onchain-privacy`, `nw-assumption-besu-visibility`, `
 `architecture/README.md` (margin call contract row and the visibility line), `docs/architecture/blockchain-applicability.md`
 (visibility note), `contracts/contracts/{MarginCall,CollateralControl}.sol` (state, getters, events), and `artifacts/`
 (no existing privacy artifact). Not checked: Canton/Daml code (none on canonical yet) or a production participant list.
+
+Update 2026-11-24 (maintainer, source `3d66550…`): the document now exists at `docs/architecture/onchain-privacy.md` as a draft
+proposal written for `investigation-onchain-data-protection` at the project owner's request. Its content is not
+accepted. It covers items 1 to 4 above across all contracts and proposes a design (option O9) that goes beyond the
+recommendation in item 5; the scope decision is listed in the document's open items.

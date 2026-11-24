@@ -487,3 +487,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-dealscopednoto | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-deal-scoped-noto-hooks |  | proposed |
 | e-prod-onchainprotect-bankbesu | produces | node:investigation-onchain-data-protection | artifact:artifact-bank-use-of-besu |  | proposed |
 | e-note-onchainprotect-immutability | notes | node:investigation-onchain-data-protection | noteworthy:nw-constraint-immutability-beyond-deal-parties |  | proposed |
+| e-prod-onchainprotect-privacydesign | produces | node:investigation-onchain-data-protection | artifact:artifact-onchain-privacy-design |  | proposed |

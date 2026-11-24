@@ -1922,3 +1922,4 @@ excluded.
 | task-document-provenance | 998aa5998046fd2b7f16a816b3dc28cce2704548 | docs/analysis/gap-register.md | 2026-11-23T01:22:12Z |
 | task-document-provenance | 998aa5998046fd2b7f16a816b3dc28cce2704548 | docs/gap-register.html | 2026-11-23T01:22:12Z |
 | investigation-onchain-data-protection | ad5d1fb72b1a07d40a5352aade7b4736c5233ea3 | docs/analysis/bank-use-of-besu.md | 2026-11-23T12:51:04Z |
+| investigation-onchain-data-protection | 453be6cf587c1f044c322df11714c4955f36a31a | docs/architecture/onchain-privacy.md | 2026-11-24T01:15:30Z |

@@ -10,7 +10,7 @@ provenance:
   timestamp: 2026-11-23T01:51:26Z
   confidence: 0.75
 createdAt: 2026-11-23T01:51:26Z
-updatedAt: 2026-11-24T01:01:21Z
+updatedAt: 2026-11-24T01:15:30Z
 ```
 # Investigation: protect on-chain collateral data from participants who are not party to it
 
@@ -77,3 +77,4 @@ D4 remains visible on the base chain under O1-O6.
 - Token design: `nw-proposal-deal-scoped-noto-hooks`.
 - Evidence: `artifact-bank-use-of-besu`.
 - O8 updated with Canton documentation, licence and governance facts (source `cd2e6ca…`).
+- Design document for O9: `docs/architecture/onchain-privacy.md` (`artifact-onchain-privacy-design`), draft.
