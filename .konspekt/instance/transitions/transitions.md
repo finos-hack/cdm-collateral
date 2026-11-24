@@ -1693,3 +1693,5 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-canton-multi-operator-synchronizer | review |  | proposed | 2026-11-24T01:52:54Z | ni:///sha-256;4iebMs3V6tuqDZPyrAASj18WJH5iFmx2bvz5BN-53NI |  |
 | noteworthy:nw-canton-multi-operator-synchronizer | status |  | active | 2026-11-24T01:52:54Z | ni:///sha-256;4iebMs3V6tuqDZPyrAASj18WJH5iFmx2bvz5BN-53NI |  |
 | edge:e-note-onchainprotect-cantonsync | review |  | proposed | 2026-11-24T01:52:54Z | ni:///sha-256;4iebMs3V6tuqDZPyrAASj18WJH5iFmx2bvz5BN-53NI |  |
+| artifact:artifact-onchain-privacy-design-canton | review |  | proposed | 2026-11-24T01:56:53Z | ni:///sha-256;2muqnkgM9iOKoUH_RHzIwjtA7d8npou5PoYsQDqrDa8 |  |
+| edge:e-prod-onchainprotect-privacydesigncanton | review |  | proposed | 2026-11-24T01:56:53Z | ni:///sha-256;2muqnkgM9iOKoUH_RHzIwjtA7d8npou5PoYsQDqrDa8 |  |
