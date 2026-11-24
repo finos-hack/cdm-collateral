@@ -1,23 +1,27 @@
 # On-chain privacy design: encrypted deal streams with shared-chain evidence and selective proofs
 
-Output for `task-onchain-privacy` and `investigation-onchain-data-protection`. Recorded by
-`artifact-onchain-privacy-design`.
+Output for the project task on on-chain privacy (konspekt id: `task-onchain-privacy`) and the investigation into protecting
+on-chain data (konspekt id: `investigation-onchain-data-protection`). Recorded as a project document
+(konspekt id: `artifact-onchain-privacy-design`).
 
 An alternative version with Canton as the main path is in
 [`onchain-privacy-canton.md`](onchain-privacy-canton.md). The project owner chose this document's design to try
-(2026-11-23, `nw-decision-onchain-privacy-encrypted-streams`); the Canton version is kept as the alternative.
+(2026-11-23; konspekt id: `nw-decision-onchain-privacy-encrypted-streams`); the Canton version is kept as the alternative.
 
 | | |
 |---|---|
 | Status | Revised draft, 2026-11-24 (UTC). Chosen by the owner as the design to try. Nothing in this document is implemented or measured. |
 | Decides | Section 14 lists the decisions still open. |
-| Inputs | `nw-assumption-besu-visibility`, `nw-visibility-rule-deal-participants`, `nw-constraint-immutability-beyond-deal-parties`, the design discussion recorded in `investigation-onchain-data-protection`, `docs/analysis/bank-use-of-besu.md`, the owner-supplied design document versions 1.1 to 1.3 (section 15) |
+| Inputs | The recorded assumption that every Besu node can read all contract state (konspekt id: `nw-assumption-besu-visibility`); the owner's visibility rule (konspekt id: `nw-visibility-rule-deal-participants`); the owner's constraint that a deal's record must not depend on its parties alone (konspekt id: `nw-constraint-immutability-beyond-deal-parties`); the design discussion recorded in the investigation (konspekt id: `investigation-onchain-data-protection`); `docs/analysis/bank-use-of-besu.md`, the owner-supplied design document versions 1.1 to 1.3 (section 15) |
 
 **How to read the claims.** Each claim carries one of three labels where the label is not obvious from context:
 
 - **Observed**: read from this repository on the branch `investigation/onchain-data-protection`.
 - **Owner**: stated by the project owner in the investigation's source excerpts.
 - **Proposed**: design content written by the maintainer. It has not been built, run or measured.
+
+References to project records give a plain description followed by the record's konspekt id. The id locates the
+record under `.konspekt/instance/` in the repository.
 
 Sections 4 to 13 are design content. Where the owner set a point directly, the text says so.
 
@@ -57,20 +61,21 @@ are commercially sensitive, and a deal's record has to stand as evidence in a di
 
 | # | Group | Requirement | Source |
 |---|---|---|---|
-| R1 | Authorized access | The direct participants in a deal see all of that deal's data. Every role the deal names (custodian, triparty agent, CCP, oracle, record keeper) counts as a participant for now. | `nw-visibility-rule-deal-participants` |
-| R2 | Authorized access | An approved third party, for example a regulator, may see part of a deal's data, for example who the parties are. Marked possible. | Same record |
-| R3 | Authorized access | Every other participant sees none of the deal's data. | Same record |
-| R9 | Transparency of the data flow | Every network participant can see that a deal step was recorded: the envelope, its hashes and its position in the order. Seeing the flow gives no access to the data. | Owner, design discussion; `nw-requirements-onchain-privacy` |
-| R4 | Immutability of data | A deal's record must not depend on the deal's own two or three parties alone. | `nw-constraint-immutability-beyond-deal-parties` |
-| R10 | Immutability of evidence | The evidence for each step (order, time, proof, consents) is immutable in the same way as the data. | `nw-requirements-onchain-privacy` |
+| R1 | Authorized access | The direct participants in a deal see all of that deal's data. Every role the deal names (custodian, triparty agent, CCP, oracle, record keeper) counts as a participant for now. | Owner's visibility rule (konspekt id: `nw-visibility-rule-deal-participants`) |
+| R2 | Authorized access | An approved third party, for example a regulator, may see part of a deal's data, for example who the parties are. Marked possible. | Same rule |
+| R3 | Authorized access | Every other participant sees none of the deal's data. | Same rule |
+| R9 | Transparency of the data flow | Every network participant can see that a deal step was recorded: the envelope, its hashes and its position in the order. Seeing the flow gives no access to the data. | Owner's requirements statement (konspekt id: `nw-requirements-onchain-privacy`) |
+| R4 | Immutability of data | A deal's record must not depend on the deal's own two or three parties alone. | Owner's immutability constraint (konspekt id: `nw-constraint-immutability-beyond-deal-parties`) |
+| R10 | Immutability of evidence | The evidence for each step (order, time, proof, consents) is immutable in the same way as the data. | Owner's requirements statement (konspekt id: `nw-requirements-onchain-privacy`) |
 | R5 | Public logic | Deal logic is public and identified by a hash. Terms and data are encrypted. In this design the hash identifies a build of the CDM workflow service (section 5). | Owner, design discussion |
 | R6 | Keys | Keys are distributed to deal members offline. | Owner, design discussion |
-| R7 | Enforcement | First stated as: rules over hidden values are enforced on-chain by zero-knowledge proofs. Relaxed by the owner's choice of this design: single encumbrance is enforced on-chain by a proof; every other rule is enforced by member replay with an explicit acknowledgement. | Owner, design discussion; `nw-decision-onchain-privacy-encrypted-streams` |
-| R8 | Scale | The prototype has 47 workflows (`docs/analysis/cdm-workflow-task-map.md`, `README.md`; Observed) and two tokenized test assets (`architecture/README.md`; Observed). The design must carry that number of flows, thousands of rules and asset types in the high hundreds. A circuit per rule or per asset type does not meet this. | Owner, design discussion; `nw-requirements-onchain-privacy` |
+| R7 | Enforcement | First stated as: rules over hidden values are enforced on-chain by zero-knowledge proofs. Relaxed by the owner's choice of this design: single encumbrance is enforced on-chain by a proof; every other rule is enforced by member replay with an explicit acknowledgement. | Owner's decision to try this design (konspekt id: `nw-decision-onchain-privacy-encrypted-streams`) |
+| R8 | Scale | The prototype has 47 workflows (`docs/analysis/cdm-workflow-task-map.md`, `README.md`; Observed) and two tokenized test assets (`architecture/README.md`; Observed). The design must carry that number of flows, thousands of rules and asset types in the high hundreds. A circuit per rule or per asset type does not meet this. | Owner's requirements statement (konspekt id: `nw-requirements-onchain-privacy`) |
 
 **R3 and R9 together.** A non-participant sees that some deal step happened and can check that it was recorded in
 order. It sees no content and cannot identify the parties. This is the maintainer's reading of the two statements
-and matches `nw-proposal-visibility-metadata-scope`; the owner's choice of this design accepts a visible flow.
+and matches the earlier proposal on metadata visible to non-participants
+(konspekt id: `nw-proposal-visibility-metadata-scope`); the owner's choice of this design accepts a visible flow.
 Section 10 lists what the visible flow can still reveal by inference.
 
 ### 2.2 Proposed by the maintainer for the collateral context
@@ -193,7 +198,7 @@ Why it does not fully fit:
   for the required period, therefore holds an ordered, signed, encrypted record outside the deal's parties. On the
   documentation that configuration meets R4 and R10. A single-operator synchronizer, or one that prunes early, does
   not. The owner's objection that a two-node record returns to one party's word against the other's
-  (`nw-constraint-immutability-beyond-deal-parties`) applies to the parties' own stores and to those weaker
+  (konspekt id: `nw-constraint-immutability-beyond-deal-parties`) applies to the parties' own stores and to those weaker
   configurations. It does not hold against the retained, multi-operator configuration.
 
   Not verified by test: that one party, with its own keys and the retained sequencer history, can prove a deal's
@@ -206,7 +211,8 @@ Why it does not fully fit:
   checks a rule. This design, with R7 relaxed, has the same property for every rule
   except single encumbrance.
 - **Different stack.** The prototype's logic is Solidity on Besu with CDM in Java. Canton needs the deal logic
-  written in Daml. Canton stays the planned second ledger (`wp-adr-prototype-ledgers`).
+  written in Daml. Canton stays the planned second ledger under the project's
+  architecture decision on prototype ledgers (konspekt id: `wp-adr-prototype-ledgers`).
 - **Single maintainer.** The open-source edition is Apache 2.0 and Digital Asset maintains it. Which enterprise
   features are in the open-source edition today was not verified.
 
@@ -229,7 +235,8 @@ Why it does not fully fit:
   commitments. They do not verify that a value rule held. Zeto's proofs cover token transfers with fixed circuits and
   do not cover deal rules. This design, with R7 relaxed, enforces deal rules the same way.
 - **Regulator sees all or nothing (R2).** A group member sees all of the group's data and has to endorse. A partial
-  view needs application code (`nw-proposal-regulator-selective-disclosure`).
+  view needs application code (proposal for regulator selective disclosure,
+  konspekt id: `nw-proposal-regulator-selective-disclosure`).
 - **Membership is fixed at group creation.** A change of parties needs a new group and a state migration (R16).
 - **Noto's notary sees every transfer of its token**, across deals it is not part of.
 - **Maturity.** The LF Decentralized Trust 2026 annual review lists releases 0.14 to 0.16 and work toward a version 1
@@ -240,7 +247,7 @@ Why it does not fully fit:
 
 Besu's own private transactions sent payloads between selected nodes through Tessera and recorded a marker on the
 shared chain. The Besu maintainers announced the end of Tessera support in September 2024 and the Besu documentation
-marks the feature deprecated. `task-onchain-privacy` records that the Besu version in use has no private
+marks the feature deprecated. The project task on on-chain privacy (konspekt id: `task-onchain-privacy`) records that the Besu version in use has no private
 transactions. A deprecated component cannot carry a new design.
 
 ### 3.6 A Besu network per deal, and field measures on the current contracts
@@ -701,13 +708,14 @@ Effect on the current contracts:
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
 | `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14, item 9). |
 
-The accepted record `artifact-onchain-privacy-design` states that the prototype keeps full visibility because it uses
-test data (`nw-prototype-scope`). The owner has since chosen this design to try. How many phases the prototype builds
+The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
+keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try. How many phases the prototype builds
 is open (section 14, item 1).
 
 ## 14. Open items
 
-1. **Scope.** Which phases does the prototype build (`nw-prototype-scope`)?
+1. **Scope.** Which phases does the prototype build? The recorded prototype scope uses test data only
+   (konspekt id: `nw-prototype-scope`).
 2. **Distinguishable steps.** Accept that encumbrance, rejection, timeout and ruling steps are visible as such, or
    pay for measures that hide them.
 3. **Key derivation.** Confirm epoch keys derived from an offline body key, and set the epoch length.
@@ -719,7 +727,7 @@ is open (section 14, item 1).
 9. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
 10. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
 11. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-12. **`nw-assumption-besu-visibility`.** Update it to cover all contracts in section 1, or supersede it.
+12. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
 13. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
 14. **Canton evidence test.** The Canton version's premise (proof by one party from sequencer history) is untested.
     Run it only if the owner wants the comparison kept open.
