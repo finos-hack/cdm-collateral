@@ -614,7 +614,7 @@ Residual exposure:
 - **Activity pattern.** Stream count, step count and timing are visible by requirement (R9). A burst of steps on one
   stream can suggest a dispute.
 - **Credit-relevant steps are distinguishable (R13 is partly met).** A nullifier and proof appear only on
-  encumbrance steps. Rejections, timeouts and ruling envelopes are visible as such. Measures that would hide them
+  encumbrance steps. Rejections, timeouts and ruling envelopes are visible as such (section 10.1 lists the exact attributes). Measures that would hide them
   (a dummy proof on every step, acknowledgement-shaped rejections) add cost and are not in the baseline. Accepting
   this is the owner's decision (section 14, item 1).
 - **Submitter.** One-time submission accounts avoid linking a stream to an institution. Besu account permissioning
@@ -626,6 +626,45 @@ Residual exposure:
   fund shares belong in a stream whose members are the rulebook's members.
 - Measures available for production: batching, randomized submission delay, padding. Phase 1 measures the exposure
   before any of them is chosen.
+
+### 10.1 Metadata that identifies a step type
+
+Proposed. Function, field and event names are the names proposed for the envelope log contract; none is implemented.
+Every attribute below is on every validator in clear. Each one is read by the envelope log contract or by
+the Besu client itself to execute or record the transaction, so encrypting it would stop that check from running.
+
+Attributes present on every Besu transaction, whatever the contract does:
+
+| Attribute | Where it appears | Why it cannot be encrypted |
+|---|---|---|
+| Function selector (first four bytes of the call data) | Transaction input | The EVM uses it to choose which contract function runs. `submitEnvelope`, `acknowledge`, `reject` and `submitRuling` are different functions with different selectors. |
+| Gas used | Transaction receipt | Computed by every validator while executing the call. A proof verification uses elliptic-curve pairing operations and costs far more gas than a plain envelope, so a pledge step has a distinct gas profile. |
+| Call data length | Transaction input | The validators need the full call data to execute it. Padding to size classes narrows this; it does not remove it. |
+| Event logs (topics and data) | Transaction receipt | Emitted by the contract so that member services can follow a stream without reading contract storage. The event name is its first topic. |
+| Sender account and nonce | Transaction envelope | Besu checks the signature, the nonce and, under account permissioning, the allow-list. |
+| Block number and timestamp | Block header | Set by QBFT consensus. |
+
+How each step type is identified, with the attribute that gives it away:
+
+| Step type | Identifying attributes | Why the contract needs them readable |
+|---|---|---|
+| **Pledge (encumbrance)** | A non-empty `nullifier` field; a non-empty `proof` field; the `custodianInventoryCommitment` the proof is checked against; the `NullifierInserted` event; higher gas used | The contract compares `nullifier` with the stored nullifier set: a lookup needs the value itself. The verifier contract computes on the proof and its public inputs (nullifier, inventory commitment, envelope hash); a pairing check cannot run on ciphertext. The nullifier reveals nothing about the lot; its presence reveals that a pledge happened. |
+| **Rejection by a member** | The `reject` function selector; the `StepContested` event; the stream's stored step state changes from `Recorded` to `Contested` | The contract decides finality: it marks a step `Final` only when it holds an acknowledgement from every other member. To do that it must tell an acknowledgement from a rejection. If both were indistinguishable ciphertext, finality would have to be decided off-chain. |
+| **Timeout** | The `StepTimedOut` event; stored step state `TimedOut`; the block number at which the deadline passed, compared with `ackDeadlineBlocks` from the opening envelope | The deadline is enforced by comparing the current block number with the stored deadline. Both are needed in clear for the comparison, and the result changes stored state so that the stream can move to a ruling and other deals are not blocked (R15). |
+| **Ruling** | The `submitRuling` function selector; a signature that verifies against `arbitratorKey`, the public key named in the opening envelope; the `StepRuled` event; step state changes from `Contested` or `TimedOut` to `Final` or `Voided` | The contract accepts a ruling only from the named arbitrator, so it must verify the signature against that public key. The key is public by nature, and the same key appears across every stream that names that arbitrator. |
+| **Member change** | A closing envelope that ends a stream (`StreamClosed` event), followed by an opening envelope of a new stream | The contract must stop accepting steps on the closed stream. The link between old and new stream is not on-chain, but the timing of a close and an open is. |
+
+What remains hidden in every case: the parties, the amounts and assets, which lot was pledged, why a member rejected,
+and what a ruling decided beyond `Final` or `Voided`.
+
+Measures that reduce the exposure, none in the baseline:
+
+| Measure | What it hides | Cost |
+|---|---|---|
+| A dummy nullifier and proof on every step | Which steps are pledges | A proof on every step; a nullifier set that grows with every step; higher gas on every step |
+| One entry function for envelopes, acknowledgements and rejections, with the type inside the ciphertext | The selector difference | The contract can no longer decide finality or contested state; that moves to the members, and the visible record no longer shows whether a step is final |
+| Uniform event names | The event difference | Same consequence as above for any event the contract must act on |
+| Arbitrator submits through one-time accounts | Which account submitted the ruling | None on-chain, but the state change from `Contested` to `Final` or `Voided` still shows |
 
 ## 11. Regulator access and disputes
 
