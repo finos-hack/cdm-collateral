@@ -43,19 +43,64 @@ CDM document bodies are already off-chain in the payload store, readable by the 
 
 ## 2. Requirements
 
-| # | Requirement | Source |
-|---|---|---|
-| R1 | The direct participants in a deal see all of that deal's data. Every role the deal names (custodian, triparty agent, CCP, oracle, record keeper) counts as a participant for now. | Owner, `nw-visibility-rule-deal-participants` |
-| R2 | An approved third party, for example a regulator, may see part of a deal's data, for example who the parties are. | Owner, same record; marked possible |
-| R3 | Every other participant sees nothing about the deal. | Owner, same record |
-| R4 | A deal's record must not depend on the deal's own two or three parties alone. | Owner, `nw-constraint-immutability-beyond-deal-parties` |
-| R5 | Deal logic stays public and identified by its code hash. Terms and data are encrypted. | Owner, O9 |
-| R6 | Keys are distributed to deal members offline. | Owner, O9 |
-| R7 | Rules over hidden values are enforced on-chain by zero-knowledge proofs. | Owner, O9 |
-| R8 | The design must carry about 50 flows, thousands of rules and an open-ended number of asset types. A circuit per rule does not meet this. | Owner, O9 |
+Context: collateral management flows between financial institutions (margin calls, pledges, substitutions, repo,
+securities lending, triparty and CCP margin), where the counterparties are competitors, the positions and credit events
+are commercially sensitive, and a deal's record has to stand as evidence in a dispute or a default.
 
-R3 is read as in `nw-proposal-visibility-metadata-scope` (Proposed, not accepted): non-participants see no content and
-cannot identify the parties; they can see that some activity exists. Section 10 states what remains visible.
+### 2.1 Stated by the project owner
+
+| # | Group | Requirement | Source |
+|---|---|---|---|
+| R1 | Authorized access | The direct participants in a deal see all of that deal's data. Every role the deal names (custodian, triparty agent, CCP, oracle, record keeper) counts as a participant for now. | `nw-visibility-rule-deal-participants` |
+| R2 | Authorized access | An approved third party, for example a regulator, may see part of a deal's data, for example who the parties are. Marked possible. | Same record |
+| R3 | Authorized access | Every other participant sees none of the deal's data. | Same record |
+| R9 | Transparency of the data flow | Every network participant can see that a deal step was recorded: the envelope, its hashes and its position in the order. Seeing the flow gives no access to the data. | O9; `nw-requirements-onchain-privacy` |
+| R4 | Immutability of data | A deal's record must not depend on the deal's own two or three parties alone. | `nw-constraint-immutability-beyond-deal-parties` |
+| R10 | Immutability of evidence | The evidence for each step (order, time, proof, consents) is immutable in the same way as the data. | `nw-requirements-onchain-privacy` |
+| R5 | Public logic | Deal logic is public and identified by its code hash. Terms and data are encrypted. | O9 |
+| R6 | Keys | Keys are distributed to deal members offline. | O9 |
+| R7 | Enforcement | Rules over hidden values are enforced on-chain by zero-knowledge proofs. | O9 |
+| R8 | Scale | The prototype has 47 workflows (`docs/analysis/cdm-workflow-task-map.md`, `README.md`; Observed) and two tokenized test assets (`architecture/README.md`; Observed). The design must carry that number of flows, thousands of rules and asset types in the high hundreds. A circuit per rule or per asset type does not meet this. | O9; `nw-requirements-onchain-privacy` |
+
+**R3 and R9 together.** A non-participant sees that some deal step happened and can check that it was recorded in
+order. It sees no content and cannot identify the parties. This is the maintainer's reading of the two statements
+and matches `nw-proposal-visibility-metadata-scope`; it needs the owner's confirmation (section 14, item 14).
+Section 10 lists what the visible flow can still reveal by inference.
+
+### 2.2 Proposed by the maintainer for the collateral context
+
+These follow from the flows in the prototype and from `docs/analysis/bank-use-of-besu.md`. None is stated by the
+owner. Each needs acceptance, change or removal.
+
+| # | Requirement | Reason |
+|---|---|---|
+| R11 | **Single encumbrance.** The same asset lot cannot be pledged in two deals at once, and this is enforced without revealing the lot or the deals. | Collateral is only worth holding if it is not pledged elsewhere. |
+| R12 | **Timeliness.** A step can be proved, recorded and consented within the deadline the agreement sets, including same-day margin call and intraday repo deadlines. | Proving time is the main unknown in section 8. |
+| R13 | **Credit events stay inside the deal.** Disputes, default notices, close-out and enforcement are not distinguishable from routine steps by a non-participant. | A visible default signal about a firm can itself cause harm. |
+| R14 | **Proof by one party.** A single member can prove a deal's content and history to an arbitrator, court or insolvency practitioner without the other member's cooperation. | Default and insolvency are the cases where the counterparty will not cooperate. |
+| R15 | **Independence between deals.** An offline or uncooperative member blocks only steps of its own deals that need its consent. | A network-wide stall on one firm's outage is not acceptable in a margin process. |
+| R16 | **Change of parties.** Novation, porting and CCP clearing can change a deal's members without exposing earlier data to a party not entitled to it. | These are existing flows (`CcpClearing`, `RepoSettlement`). |
+| R17 | **Retention and erasure.** Records are kept for the regulatory retention period and can be made unreadable afterwards. | Drex was shut down partly over a data-protection conflict (press reports). |
+| R18 | **Finality stated precisely.** The design states when a step is final on the ledger and does not present ledger finality as legal settlement finality. | BIS Agorá report, cited in `docs/analysis/bank-use-of-besu.md`. |
+| R19 | **Link to the real asset.** The on-chain record of a pledge is tied to the asset's home ledger or custodian record. | A pledge record with no control over the asset has no value as collateral. |
+
+### 2.3 Where the design addresses each requirement
+
+| Requirement | Section |
+|---|---|
+| R1, R2, R3 | 5, 6, 10, 11 |
+| R9 | 4, 5, 10 |
+| R4, R10 | 4, 7, 11 |
+| R5, R7, R8 | 7, 8 |
+| R6 | 6 |
+| R11, R19 | 9 |
+| R12 | 8, 12, 13; not shown until proving time is measured |
+| R13 | 5 (opaque state), 10 |
+| R14 | 11 |
+| R15 | 7 (deadlines, timed-out state) |
+| R16 | 6 (member change) |
+| R17 | 6 (epoch keys), 12; erasure is by key destruction only |
+| R18 | 7 |
 
 ## 3. Options considered
 
@@ -347,7 +392,8 @@ Proposed. "Participant" means a deal member under R1.
 
 Residual exposure and measures:
 
-- **Activity pattern.** Stream count, step count and timing stay visible. Measures for production: batching,
+- **Activity pattern.** Stream count, step count and timing are visible by requirement (R9). What they allow an
+  observer to infer is the residual exposure, for example a burst of steps on one stream suggesting a dispute (R13). Measures for production: batching,
   randomized submission delay, padding (listed in SUERF Policy Note 420 for Paladin). The prototype measures the
   exposure and does not mitigate it (`nw-proposal-visibility-metadata-scope`).
 - **Flow type.** A rule set hash per flow reveals which kind of flow a stream runs. One interpreter with the rule
@@ -425,7 +471,7 @@ flowchart LR
 
 | Phase | Shows | Decision it informs |
 |---|---|---|
-| 1 | R1, R3 for content, R4, R6; the activity pattern an outsider sees | Whether the residual exposure in section 10 is acceptable |
+| 1 | R1, R3, R4, R6, R9, R10; what an outsider can infer from the visible flow | Whether the residual exposure in section 10 is acceptable |
 | 2 | R2; unilateral proof of content | Regulator model (item 4) |
 | 3 | R5, R7 on one flow; proving time and the cost of a prover-compatible implementation | Whether R7 is practical for intraday flows |
 | 4 | Collateral movement without a public transfer | Asset option (item 3) |
@@ -467,6 +513,8 @@ any phase is the owner's decision (item 1).
     their proving times for a margin call step.
 12. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
 13. **`nw-assumption-besu-visibility`.** Update it to cover all contracts in section 1, or supersede it.
+14. **Requirements.** Confirm the reading of R3 with R9 in section 2.1, and accept, change or remove each of R11 to
+    R19 in section 2.2.
 
 ## 15. Sources
 
