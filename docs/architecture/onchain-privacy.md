@@ -436,6 +436,23 @@ flowchart TD
 - **Loss.** A member that loses its data recovers it from the chain with its keys. A member that loses its body key
   recovers it from escrow.
 
+Member change, step by step:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant M as Continuing members
+  participant N as New member
+  participant C as Shared chain
+  M->>C: Closing envelope of the old stream
+  M-->>N: New root key, exchanged offline
+  M->>N: Current deal state and its salt
+  N->>C: Read the last state commitment of the old stream
+  N->>N: Check that the state and salt hash to that commitment
+  M->>C: Opening envelope of the new stream
+  N->>C: Acknowledgement
+```
+
 ## 7. Step lifecycle
 
 ```mermaid
