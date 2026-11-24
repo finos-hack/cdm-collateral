@@ -112,7 +112,8 @@ better than this design does; section 3.7 states where.
 
 ### 3.1 Fit against the requirements
 
-Legend: **Yes** meets it; **Part** meets it with a stated limit; **No** does not meet it; **n/a** the solution takes a
+Legend: **Yes** meets it; **Part** meets it with a stated limit; **Conditional** meets it in a specific deployment
+configuration (section 3.3); **No** does not meet it; **n/a** the solution takes a
 different approach to the same concern.
 
 | Requirement | Besu private transactions (Tessera) | Paladin: Pente with Noto or Zeto | Canton | Besu network per deal | Field measures on today's contracts (O1 to O4) | This design |
@@ -121,8 +122,8 @@ different approach to the same concern.
 | R2 regulator sees part | No | Part | Yes | No | Part | Yes |
 | R3 others see no data | Yes | Yes | Yes | Yes | No | Yes |
 | R9 the flow is visible to all | Part | Yes | **No** | No | Yes | Yes |
-| R4 record held beyond the deal's parties | Part | Part | **Part** | **No** | Yes | Yes |
-| R10 evidence held beyond the deal's parties | Part | Yes | Part | No | Yes | Yes |
+| R4 record held beyond the deal's parties | Part | Part | **Conditional** | **No** | Yes | Yes |
+| R10 evidence held beyond the deal's parties | Part | Yes | Conditional | No | Yes | Yes |
 | R5 public logic | No | No | No | Part | Yes | Yes |
 | R6 keys distributed offline | n/a | n/a | n/a | n/a | Part | Yes |
 | R7 rules over hidden values enforced on-chain | No | Part | No | n/a | No | Target, unmeasured |
@@ -140,7 +141,7 @@ flowchart TB
     direction TB
     CA["Party A node<br/>deal contracts in clear"]
     CB["Party B node<br/>deal contracts in clear"]
-    CS["Synchronizer<br/>encrypted messages, order<br/>history can be pruned"]
+    CS["Synchronizer, one operator or a BFT set<br/>encrypted messages, signed confirmations, order<br/>retention set by its operators"]
     CO["Other participants<br/>nothing"]
     CA --- CS
     CB --- CS
@@ -171,12 +172,26 @@ declared in the contract. It is the closest fit to R1, R2 and R3, and it is used
 
 Why it does not fully fit:
 
-- **No shared record (R4, R10).** Canton has no chain that every node copies. A two-party deal's contracts are stored
-  on the two parties' own nodes. The only other holder is the synchronizer, which keeps ordered encrypted messages
-  that its operator can prune. The owner's objection: with two or three nodes this is not a chain in the sense the
-  project relies on, and a two-party record returns to one party's word against the other's
-  (`nw-constraint-immutability-beyond-deal-parties`). Each party's signed confirmations would narrow that; whether
-  Canton retains them as usable evidence was not checked.
+- **The record beyond the deal's parties depends on how the synchronizer is run (R4, R10).** Canton has no chain that
+  every participant copies. A two-party deal's contracts are stored in clear on the two parties' own nodes only. The
+  synchronizer holds the rest of the record. Read from Canton documentation on 2026-11-24:
+  - each confirming participant sends a cryptographically signed approval or rejection through the sequencer, so the
+    signed confirmations are part of the sequenced history;
+  - the Daml architecture FAQ states that ledger data lives on the participant nodes and on the sequencer backend,
+    and a participant can replay missing data from the synchronizer;
+  - the sequencer can run as a Byzantine fault tolerant set across several operators (the Global Synchronizer runs
+    this way);
+  - pruning is a schedule each operator sets; it is not mandatory.
+
+  A Canton deployment whose synchronizer is run by several operators independent of the deals, with history retained
+  for the required period, therefore holds an ordered, signed, encrypted record outside the deal's parties. On the
+  documentation that configuration meets R4 and R10. A single-operator synchronizer, or one that prunes early, does
+  not. The owner's objection that a two-node record returns to one party's word against the other's
+  (`nw-constraint-immutability-beyond-deal-parties`) applies to the parties' own stores and to those weaker
+  configurations. It does not hold against the retained, multi-operator configuration.
+
+  Not verified by test: that one party, with its own keys and the retained sequencer history, can prove a deal's
+  content and order to a third party (R14); and how participant key rotation affects that.
 - **No visible flow (R9).** Hiding the existence of a transaction from non-participants is a design goal of Canton. It
   is the opposite of transparency of the data flow.
 - **Logic is not public to the network (R5).** Each participant installs the Daml package on its own node. A
@@ -223,7 +238,7 @@ transactions. A deprecated component cannot carry a new design.
 ### 3.6 A Besu network per deal, and field measures on the current contracts
 
 - **Network per deal or per relationship.** Meets R1 and R3 by separation. Its validators are the deal's two or three
-  parties, so it fails R4 and R10 in the same way as a two-party Canton record, and nobody outside sees the flow
+  parties, so it fails R4 and R10, and nobody outside sees the flow
   (R9). Assets moving between networks need a bridge. Brazil's central bank judged separate networks to add
   complexity and interoperability risk (Drex phase 1 report).
 - **Field measures (O1 to O4):** dropping or hashing fields, per-agreement addresses, commitments with off-chain
@@ -236,6 +251,10 @@ transactions. A deprecated component cannot carry a new design.
 
 ### 3.7 What this design gives up in exchange
 
+- **Canton can meet R4.** With a retained, multi-operator synchronizer (section 3.3), the case for this design over
+  Canton rests on R5, R7 and R9, on the existing Besu and Solidity stack, and on Canton's single maintainer. It does
+  not rest on immutability. R5, R6, R7 and R9 were first stated as features of option O9. Whether they are
+  requirements independent of this design is the owner's call (section 14, item 15).
 - **Canton hides more.** Under Canton a non-participant does not learn that a deal step happened. Under this design
   it does, by requirement (R9), and can draw inferences from timing and volume (section 10).
 - **Paladin and Canton exist.** Both have running code, documentation and users. This design has none and the
@@ -647,6 +666,9 @@ any phase is the owner's decision (item 1).
 13. **`nw-assumption-besu-visibility`.** Update it to cover all contracts in section 1, or supersede it.
 14. **Requirements.** Confirm the reading of R3 with R9 in section 2.1, and accept, change or remove each of R11 to
     R19 in section 2.2.
+15. **Canton as the alternative.** Are public logic (R5), proof-based enforcement (R7) and a visible flow (R9)
+    requirements in their own right? If not, Canton with a retained, multi-operator synchronizer meets R1 to R4 and
+    R10 on the documentation, and a test of unilateral proof from sequencer history (R14) would be the next step.
 
 ## 15. Sources
 
