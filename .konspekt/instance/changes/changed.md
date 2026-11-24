@@ -1928,3 +1928,4 @@ excluded.
 | investigation-onchain-data-protection | 79b609e2e69a17fb046b983cc9dd0bf5ae2bf9aa | docs/architecture/onchain-privacy.md | 2026-11-24T01:41:21Z |
 | investigation-onchain-data-protection | 4cc832eae9681b1fa9d8f7dac8e919ea3a5e11ac | docs/architecture/onchain-privacy-canton.md, docs/architecture/onchain-privacy.md | 2026-11-24T01:56:53Z |
 | investigation-onchain-data-protection | c518056b02df9b786c897d609aa2251dfc405f62 | docs/architecture/onchain-privacy.md | 2026-11-24T03:19:18Z |
+| investigation-onchain-data-protection | c59ae59486d1df9d6a2d870e79c8ef3b6c8f4cd5 | docs/architecture/onchain-privacy.md | 2026-11-24T03:31:18Z |
