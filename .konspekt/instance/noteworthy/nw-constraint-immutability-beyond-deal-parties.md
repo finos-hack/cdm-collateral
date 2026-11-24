@@ -9,7 +9,7 @@ provenance:
   timestamp: 2026-11-24T00:30:43Z
   confidence: 0.75
 createdAt: 2026-11-24T00:30:43Z
-updatedAt: 2026-11-24T00:30:43Z
+updatedAt: 2026-11-24T01:41:21Z
 ```
 # Constraint: a deal's record must not depend on the deal's own parties alone
 
@@ -28,3 +28,8 @@ Effect on the options (inferred):
 - Canton alone (O8): meets this only if the synchronizer is operated by parties independent of the deal and its
   encrypted message history is retained, not pruned, for the required period.
 - A separate network per deal (O7): fails this with two or three validators.
+
+Update 2026-11-24 (maintainer, from Canton documentation, not exercised): confirmations are signed and sequenced, the
+sequencer can run as a BFT set across several operators, and pruning is optional. A Canton deployment with a
+retained, multi-operator synchronizer meets this constraint on the documentation; see
+`docs/architecture/onchain-privacy.md` section 3.3.
