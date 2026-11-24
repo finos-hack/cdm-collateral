@@ -3,6 +3,9 @@
 Output for `task-onchain-privacy` and `investigation-onchain-data-protection`. Recorded by
 `artifact-onchain-privacy-design`.
 
+An alternative version with Canton as the main path is in
+[`onchain-privacy-canton.md`](onchain-privacy-canton.md). Neither version is selected.
+
 | | |
 |---|---|
 | Status | Draft proposal, 2026-11-24 (UTC). Nothing in this document is implemented. |
