@@ -392,6 +392,7 @@ flowchart LR
 Rules for the fields:
 
 - `streamId` is random and agreed offline. It is not derived from the parties.
+- The opening envelope also carries the header key encrypted to the regulator's public key (section 11).
 - The state commitment is an opaque salted hash. No lifecycle label is public.
 - **The logic build hash is a declaration by the submitter.** The contract checks that the hash is in the logic
   registry. It cannot check that the submitter ran that build. The other members' replay with the same build is what
@@ -836,10 +837,9 @@ sequenceDiagram
   participant E as Escrow holders
   participant X as Arbitrator or court
 
-  Note over M,R: Deal setup, offline
-  M->>R: Header key and streamId
+  Note over M,R: Deal setup
+  M->>C: Opening envelope, with the header key encrypted to the regulator
   M->>E: Shares of the body key
-  M->>C: Opening envelope
   Note over M,R: Each step
   C-->>R: Envelope
   R->>R: Decrypt header
@@ -855,16 +855,16 @@ sequenceDiagram
 - One member can prove a deal's content alone. The chain fixes order and content, so two members cannot present
   different histories (R4, R14). A member that has lost an HSM uses its duplicate (section 6.1).
 - The regulator never receives body keys and cannot freeze or reverse a step.
-- **Header key handover is off-chain** (owner, 2026-11-24; konspekt id: `nw-decision-regulator-key-handover`).
-  Members give the regulator the header key and the stream identifier at deal opening, outside the chain. If the
-  regulator wants a receipt, it acknowledges privately through its own off-chain interface. Nothing about the
-  handover is recorded on-chain, and the regulator is never needed online for a deal to proceed.
-- **The regulator monitors completeness.** Every new stream is visible on-chain by its opening envelope (section
-  10.1). The regulator compares the stream identifiers it sees with those it holds header keys for. A stream it holds
-  no key for is escalated outside the chain.
-- **Not yet defined: whom the regulator escalates to.** A stream's sender is a fresh account submitted through a
-  submission node (section 10.2), so the chain does not show which institutions opened a stream the regulator holds
-  no key for. Open (section 14.2, item 7).
+- **The header key travels in the opening envelope** (owner, 2026-11-24; konspekt ids:
+  `nw-decision-regulator-key-handover`, `nw-decision-regulator-key-in-opening-envelope`). The opening envelope carries
+  the header key encrypted to the regulator's public key. Only the regulator can open it. Every opening envelope
+  carries one, so its presence reveals nothing about a deal. The regulator acknowledges nothing on-chain and is never
+  needed online for a deal to proceed; it may acknowledge privately through its own off-chain interface.
+- **The regulator monitors completeness.** The regulator reads every opening envelope and decrypts its header key.
+  An opening envelope whose encrypted header key it cannot decrypt, or whose header does not open with that key, is a
+  breach it escalates outside the chain. It can identify the parties from the header of that stream's other
+  envelopes, if the header key is valid, or ask the submission node operator that forwarded the opening envelope
+  otherwise (section 10.2).
 - **Header fields:** party identifiers, agreement type, and the CDM event type and date.
 
 ## 12. Risks
@@ -938,10 +938,6 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 4. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
 5. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
 6. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
-7. **Regulator escalation target.** How the regulator identifies the institutions behind a stream it holds no header
-   key for. Options: a request to the submission node operator that forwarded the opening envelope; or the opening
-   envelope carries the header key encrypted to the regulator's public key, so handover is on-chain by construction
-   and nothing needs escalating.
 
 ## 15. Sources
 
