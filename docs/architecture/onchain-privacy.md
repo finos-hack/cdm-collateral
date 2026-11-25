@@ -46,7 +46,7 @@ Leak inventory (Observed, `contracts/contracts/*.sol`, event signatures):
 | `TripartySettlement` | `TermsProposed` (giver, receiver, agent), `Deposited` (token, amount), `RepoRequested` (purchase price), `TradeEndPrepared` (repurchase price) |
 | `PortfolioReconciliation` | `SnapshotCommitted` (party, counterparty), `ResultCommitted` (break count) |
 | `OracleFeed` | `DefaultPublished(party, inDefault)`: a network-wide flag that a firm is in default. `PricePublished` is market data. |
-| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 3). |
+| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 2). |
 
 CDM document bodies are already off-chain in the payload store, readable by the call's two counterparties
 (`architecture/README.md`, CDM payload store row; Observed). The exposure is the on-chain record.
@@ -855,9 +855,17 @@ sequenceDiagram
 - One member can prove a deal's content alone. The chain fixes order and content, so two members cannot present
   different histories (R4, R14). A member that has lost an HSM uses its duplicate (section 6.1).
 - The regulator never receives body keys and cannot freeze or reverse a step.
-- Nothing on-chain forces members to give the regulator the header key. Requiring a regulator acknowledgement on
-  the opening envelope would enforce it and would require the regulator to be online at deal opening. Open
-  (section 14.2, item 1).
+- **Header key handover is off-chain** (owner, 2026-11-24; konspekt id: `nw-decision-regulator-key-handover`).
+  Members give the regulator the header key and the stream identifier at deal opening, outside the chain. If the
+  regulator wants a receipt, it acknowledges privately through its own off-chain interface. Nothing about the
+  handover is recorded on-chain, and the regulator is never needed online for a deal to proceed.
+- **The regulator monitors completeness.** Every new stream is visible on-chain by its opening envelope (section
+  10.1). The regulator compares the stream identifiers it sees with those it holds header keys for. A stream it holds
+  no key for is escalated outside the chain.
+- **Not yet defined: whom the regulator escalates to.** A stream's sender is a fresh account submitted through a
+  submission node (section 10.2), so the chain does not show which institutions opened a stream the regulator holds
+  no key for. Open (section 14.2, item 7).
+- **Header fields:** party identifiers, agreement type, and the CDM event type and date.
 
 ## 12. Risks
 
@@ -906,7 +914,7 @@ Effect on the current contracts:
 | `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 3). |
+| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 2). |
 
 The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
 keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try and decided that the prototype builds all four phases, one after
@@ -924,13 +932,16 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
-2. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
-3. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
-4. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
-5. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-6. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
-7. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+1. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+2. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+3. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+4. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+5. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
+6. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+7. **Regulator escalation target.** How the regulator identifies the institutions behind a stream it holds no header
+   key for. Options: a request to the submission node operator that forwarded the opening envelope; or the opening
+   envelope carries the header key encrypted to the regulator's public key, so handover is on-chain by construction
+   and nothing needs escalating.
 
 ## 15. Sources
 
