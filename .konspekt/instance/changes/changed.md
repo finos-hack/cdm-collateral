@@ -1938,3 +1938,4 @@ excluded.
 | investigation-onchain-data-protection | dbe1eb183b6b338d92610a33eec22b5f27c046bd | docs/architecture/onchain-privacy.md | 2026-11-25T02:15:00Z |
 | investigation-onchain-data-protection | 0e413ed6012516cfe7ad41f896ceefe35c0096c4 | docs/architecture/onchain-privacy.md | 2026-11-25T02:24:19Z |
 | investigation-onchain-data-protection | e6b16f5c820a7fa3121913412dc661b5b05b0961 | docs/analysis/replay-determinism-review.md | 2026-11-25T02:26:00Z |
+| investigation-onchain-data-protection | 94ab6728963a8d4ef8c14ab7016852f750d9c008 | docs/architecture/onchain-privacy.md | 2026-11-25T02:26:18Z |
