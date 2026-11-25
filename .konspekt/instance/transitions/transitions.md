@@ -1716,3 +1716,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-submission | review |  | proposed | 2026-11-25T02:35:51Z | ni:///sha-256;CPmbQ9fu5K9RY-bM7oWC6sJ39rgecpYhYBKwnvdvYkU |  |
 | noteworthy:nw-decision-regulator-key-handover | review |  | proposed | 2026-11-25T02:41:00Z | ni:///sha-256;oxxzO80GGWrGwrEn19NebmRTlj9kOUT9cB3BFmrO4ak |  |
 | edge:e-note-onchainprotect-regkey | review |  | proposed | 2026-11-25T02:41:00Z | ni:///sha-256;oxxzO80GGWrGwrEn19NebmRTlj9kOUT9cB3BFmrO4ak |  |
+| noteworthy:nw-decision-regulator-key-in-opening-envelope | review |  | proposed | 2026-11-25T02:44:38Z | ni:///sha-256;feScQ9ilPoCtiU-2sikJQzG3iL6f9XMA4er6bVx8tr8 |  |
+| edge:e-note-onchainprotect-regkeyenv | review |  | proposed | 2026-11-25T02:44:38Z | ni:///sha-256;feScQ9ilPoCtiU-2sikJQzG3iL6f9XMA4er6bVx8tr8 |  |
