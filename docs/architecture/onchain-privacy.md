@@ -46,7 +46,7 @@ Leak inventory (Observed, `contracts/contracts/*.sol`, event signatures):
 | `TripartySettlement` | `TermsProposed` (giver, receiver, agent), `Deposited` (token, amount), `RepoRequested` (purchase price), `TradeEndPrepared` (repurchase price) |
 | `PortfolioReconciliation` | `SnapshotCommitted` (party, counterparty), `ResultCommitted` (break count) |
 | `OracleFeed` | `DefaultPublished(party, inDefault)`: a network-wide flag that a firm is in default. `PricePublished` is market data. |
-| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 4). |
+| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 3). |
 
 CDM document bodies are already off-chain in the payload store, readable by the call's two counterparties
 (`architecture/README.md`, CDM payload store row; Observed). The exposure is the on-chain record.
@@ -731,9 +731,8 @@ Residual exposure:
   encumbrance steps. Rejections, timeouts and ruling envelopes are visible as such (section 10.1 lists the exact attributes). Measures that would hide them
   (a dummy proof on every step, acknowledgement-shaped rejections) add cost and are not in the baseline. The owner
   parked this as an open design challenge (section 14.1).
-- **Submitter.** One-time submission accounts avoid linking a stream to an institution. Besu account permissioning
-  with an allow-list of known accounts conflicts with that; a relay run by the market operator is the alternative.
-  Open (section 14.2, item 1).
+- **Submitter.** Envelopes reach the chain through designated submission nodes from a fresh account per stream
+  (section 10.2).
 - **Oracle default status.** `DefaultPublished(party, inDefault)` cannot stay a network-wide event. The oracle posts
   a default envelope into each affected deal stream, as a member of those deals.
 - **CCP data.** Each member's margin statement belongs in the stream of that member's deal with the CCP. Default
@@ -780,6 +779,52 @@ Measures that reduce the exposure, none in the baseline:
 | Uniform event names | The event difference | Same consequence as above for any event the contract must act on |
 | Arbitrator submits through one-time accounts | Which account submitted the ruling | None on-chain, but the state change from `Contested` to `Final` or `Voided` still shows |
 
+### 10.2 Submission path
+
+Agreed by the owner on 2026-11-24 (konspekt id: `nw-decision-submission-path`). Every Besu transaction carries a
+sender account, and a transaction first appears on the network from the node it was submitted to. Without measures,
+both would link a stream to the member behind it. The contract does not need either: it authorizes each envelope and
+acknowledgement by the member's per-deal signature (section 6).
+
+1. **Designated submission nodes.** Validators run by institutions that are party to no deal (the market operator
+   and at least one other independent operator) accept transaction submissions from members. Members do not submit
+   through their own validator.
+2. **A fresh account per stream.** The transaction sender is an account created for the stream. It identifies
+   nobody. A fresh account per step would add nothing, because the stream identifier already links a stream's steps.
+   The network runs with zero gas price, so fresh accounts need no funding, and without an account allow-list.
+   Node permissioning still controls which nodes may join.
+3. **Fallback against censorship.** A member submits to one submission node. If the transaction is not in a block
+   within a set number of blocks, the member sends the same signed transaction to another submission node. The
+   transaction can be included only once, so resubmission is safe.
+4. **Rotation.** A member rotates among submission nodes, so no single operator sees the origin of all its streams.
+
+What each party learns:
+
+| Party | Learns |
+|---|---|
+| The submission node's operator | That a given member submitted a given transaction, for the transactions it forwarded |
+| Other validators and participants | That a fresh account submitted an envelope; not which member |
+| The permanent chain record | Fresh accounts only |
+
+#### Compared with Canton
+
+Canton has the same structure: each participant submits to a sequencer, and the sequencer layer orders and
+distributes. This design takes that structure and adds to it.
+
+| Aspect | Canton | This design | Difference |
+|---|---|---|---|
+| Who learns the submitter | Every sequencer a participant submits to. Participants are authenticated members of the synchronizer, and each submission comes from an identified participant. | Only the submission node that forwarded the transaction. | Same in kind. |
+| Submitter identity in the retained record | The sequenced history records the authenticated sender of each message, for as long as the history is retained. | The chain records only fresh per-stream accounts. The link to the member is not stored anywhere on-chain. | **Enhancement:** the permanent record does not identify who submitted. |
+| Spreading what operators learn | A participant can connect to several sequencers to reduce its trust in any one. | Members rotate among submission nodes, so each operator sees only part of a member's activity. | **Enhancement:** rotation is a stated rule of the design. |
+| Censorship by one operator | Fewer than one third of the BFT ordering nodes may be faulty; a participant can use several sequencers. | Resubmission of the same signed transaction to another submission node; QBFT tolerates fewer than one third faulty validators. | Equivalent. |
+| Separation from other trust roles | Sequencer operators also hold the retained message history (section 3.3). | Submission is separate from escrow (section 6.1); a submission node holds no keys and no deal data. | **Enhancement:** knowledge of submitters is not combined with recovery powers. |
+| What other participants learn | Nothing: there is no broadcast to participants. | That some stream is active and when, by requirement R9 (section 10.1). | Canton hides more here. This design shows the flow by requirement. |
+
+Canton sources: ordering and consensus (https://docs.canton.network/overview/reference/ordering-consensus),
+decentralization of sequencers and sequencer connections (https://docs.canton.network/overview/reference/decentralization).
+Read 2026-11-24; Canton was not run. The statement that Canton's retained history records the sender of each message
+follows from participants being authenticated sequencer members; the storage format was not checked.
+
 ## 11. Regulator access and disputes
 
 ```mermaid
@@ -812,7 +857,7 @@ sequenceDiagram
 - The regulator never receives body keys and cannot freeze or reverse a step.
 - Nothing on-chain forces members to give the regulator the header key. Requiring a regulator acknowledgement on
   the opening envelope would enforce it and would require the regulator to be online at deal opening. Open
-  (section 14.2, item 2).
+  (section 14.2, item 1).
 
 ## 12. Risks
 
@@ -827,6 +872,7 @@ sequenceDiagram
 | Ciphertext is permanent | Data cannot be erased, only made unreadable by destroying keys. Brazil's central bank cited a data-protection conflict when it shut Drex down (press reports) | Keep personal data out of envelopes; legal review per jurisdiction (R17) |
 | Flaw in the encumbrance circuit | A lot could be encumbered twice, or a valid pledge refused | Small fixed circuit; independent review |
 | Custodian misstates its inventory | Encumbrances of assets that do not exist | Inherent to A1; custodian controls and audit |
+| Submission node operator logs origins | It learns which member submitted the transactions it forwarded | Operators party to no deal; rotation among submission nodes; submission kept separate from escrow (section 10.2) |
 | Validator collusion | Reordering or censorship. QBFT tolerates fewer than one third faulty validators | Validator set larger than any deal, with at least one validator that is party to no deal |
 | The project owns the protocol | No vendor support and no outside review by default | Standard primitives; commission a review before production use |
 | Acknowledgement volume | One transaction per member per step | Measure in phase 1 |
@@ -860,7 +906,7 @@ Effect on the current contracts:
 | `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 4). |
+| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 3). |
 
 The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
 keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try and decided that the prototype builds all four phases, one after
@@ -878,14 +924,13 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Submission.** One-time accounts or a relay, given Besu account permissioning.
-2. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
-3. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
-4. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
-5. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
-6. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-7. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
-8. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+1. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
+2. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+3. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+4. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+5. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+6. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
+7. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
 
 ## 15. Sources
 
