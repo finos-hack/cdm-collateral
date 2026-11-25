@@ -1708,3 +1708,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-escrow | review |  | proposed | 2026-11-25T02:15:00Z | ni:///sha-256;PDe8Sb-TmLdx2Hi4S1s7wsKxnsf9irZWzsZCg_-oiqM |  |
 | noteworthy:nw-decision-replay-integrity | review |  | proposed | 2026-11-25T02:24:19Z | ni:///sha-256;V6KQR3nL0uhP6kuhQg3K3JF3g6TlzvNWvnBFrDKieGE |  |
 | edge:e-note-onchainprotect-replay | review |  | proposed | 2026-11-25T02:24:19Z | ni:///sha-256;V6KQR3nL0uhP6kuhQg3K3JF3g6TlzvNWvnBFrDKieGE |  |
+| artifact:artifact-replay-determinism-review | review |  | proposed | 2026-11-25T02:26:00Z |  |  |
+| edge:e-prod-onchainprotect-replayreview | review |  | proposed | 2026-11-25T02:26:00Z |  |  |
