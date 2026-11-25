@@ -46,7 +46,7 @@ Leak inventory (Observed, `contracts/contracts/*.sol`, event signatures):
 | `TripartySettlement` | `TermsProposed` (giver, receiver, agent), `Deposited` (token, amount), `RepoRequested` (purchase price), `TradeEndPrepared` (repurchase price) |
 | `PortfolioReconciliation` | `SnapshotCommitted` (party, counterparty), `ResultCommitted` (break count) |
 | `OracleFeed` | `DefaultPublished(party, inDefault)`: a network-wide flag that a firm is in default. `PricePublished` is market data. |
-| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 5). |
+| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 4). |
 
 CDM document bodies are already off-chain in the payload store, readable by the call's two counterparties
 (`architecture/README.md`, CDM payload store row; Observed). The exposure is the on-chain record.
@@ -615,7 +615,8 @@ holds:
   release, each member verifies the provenance and the artifact digest against the registry entry. SLSA Build Level
   3 is the target; the level reached was not assessed.
 - **Reproducible build.** A member can rebuild from the commit and compare digests, so trust does not rest on
-  GitHub or the CI alone. The current build is not reproducible (section 14.2, item 1).
+  GitHub or the CI alone. The current build is not reproducible; phase 1 fixes it (`docs/analysis/replay-determinism-review.md`,
+  finding 8).
 - **The hash is a declaration.** The contract checks that a declared build is registered and active. It cannot check
   what a member actually runs; the other members' replay with the same build is what enforces it.
 - **Upgrades are coordinated.** Every member of a stream must run a registered build. A new build is registered with
@@ -637,7 +638,8 @@ Eligibility schedules, haircut tables and prices change independently of the cod
 - Each envelope names the dataset versions it used. Members replay against exactly those versions, so a price
   update between submission and replay does not change the result.
 - A deal-specific schedule is part of the deal's terms. Putting even its hash in a public registry would let an
-  outsider match two deals that use the same schedule, so it stays inside the deal's state.
+  outsider match two deals that use the same schedule, so it stays inside the deal's state (confirmed by the owner,
+  2026-11-24).
 
 ### 8.3 Replay scope
 
@@ -662,8 +664,8 @@ Every member has to compute the same state commitment from the same envelope. Be
 - no dependence on locale, time zone, default character set, or hash-map iteration order;
 - canonical serialization of the deal state before hashing (fixed field order and number formats).
 
-The current service reads prices, haircuts and the business date live instead of from the envelope (section
-14.2, item 1).
+The current service reads prices, haircuts and the business date live instead of from the envelope. Phase 1 fixes
+findings 1 to 8 of `docs/analysis/replay-determinism-review.md` (owner, 2026-11-24).
 
 ## 9. Collateral assets
 
@@ -731,7 +733,7 @@ Residual exposure:
   parked this as an open design challenge (section 14.1).
 - **Submitter.** One-time submission accounts avoid linking a stream to an institution. Besu account permissioning
   with an allow-list of known accounts conflicts with that; a relay run by the market operator is the alternative.
-  Open (section 14.2, item 2).
+  Open (section 14.2, item 1).
 - **Oracle default status.** `DefaultPublished(party, inDefault)` cannot stay a network-wide event. The oracle posts
   a default envelope into each affected deal stream, as a member of those deals.
 - **CCP data.** Each member's margin statement belongs in the stream of that member's deal with the CCP. Default
@@ -810,7 +812,7 @@ sequenceDiagram
 - The regulator never receives body keys and cannot freeze or reverse a step.
 - Nothing on-chain forces members to give the regulator the header key. Requiring a regulator acknowledgement on
   the opening envelope would enforce it and would require the regulator to be online at deal opening. Open
-  (section 14.2, item 3).
+  (section 14.2, item 2).
 
 ## 12. Risks
 
@@ -845,7 +847,7 @@ flowchart LR
 
 | Phase | Shows | Informs |
 |---|---|---|
-| 1 | R1, R3, R4, R6, R9, R10, R15; deterministic replay on one flow | What an outsider can infer; acknowledgement cost |
+| 1 | R1, R3, R4, R6, R9, R10, R15; deterministic replay on one flow, with findings 1 to 8 of the replay review fixed | What an outsider can infer; acknowledgement cost |
 | 2 | R2, R14 | Regulator model; key derivation |
 | 3 | R11 for a first pledge; proving time of the circuit | Asset lifecycle design |
 | 4 | R16, R8 across the flows | Readiness for a wider trial |
@@ -858,7 +860,7 @@ Effect on the current contracts:
 | `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 5). |
+| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 4). |
 
 The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
 keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try and decided that the prototype builds all four phases, one after
@@ -876,16 +878,14 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Deterministic replay.** Reviewed on 2026-11-24 (`docs/analysis/replay-determinism-review.md`; konspekt id:
-   `artifact-replay-determinism-review`). Decide whether its findings 1 to 8 are fixed in phase 1, as it proposes.
-2. **Submission.** One-time accounts or a relay, given Besu account permissioning.
-3. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
-4. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
-5. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
-6. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
-7. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-8. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
-9. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+1. **Submission.** One-time accounts or a relay, given Besu account permissioning.
+2. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
+3. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+4. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+5. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+6. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+7. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
+8. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
 
 ## 15. Sources
 
