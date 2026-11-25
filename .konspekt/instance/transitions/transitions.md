@@ -1712,3 +1712,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-prod-onchainprotect-replayreview | review |  | proposed | 2026-11-25T02:26:00Z |  |  |
 | noteworthy:nw-decision-phase1-replay-fixes | review |  | proposed | 2026-11-25T02:28:00Z | ni:///sha-256;II9xdIJ4lnk7xHWyWXGcl6s1YumqCaUYSxlf6W_Z6wg |  |
 | edge:e-note-onchainprotect-phase1fixes | review |  | proposed | 2026-11-25T02:28:00Z | ni:///sha-256;II9xdIJ4lnk7xHWyWXGcl6s1YumqCaUYSxlf6W_Z6wg |  |
+| noteworthy:nw-decision-submission-path | review |  | proposed | 2026-11-25T02:35:51Z | ni:///sha-256;CPmbQ9fu5K9RY-bM7oWC6sJ39rgecpYhYBKwnvdvYkU |  |
+| edge:e-note-onchainprotect-submission | review |  | proposed | 2026-11-25T02:35:51Z | ni:///sha-256;CPmbQ9fu5K9RY-bM7oWC6sJ39rgecpYhYBKwnvdvYkU |  |
