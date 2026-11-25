@@ -46,7 +46,7 @@ Leak inventory (Observed, `contracts/contracts/*.sol`, event signatures):
 | `TripartySettlement` | `TermsProposed` (giver, receiver, agent), `Deposited` (token, amount), `RepoRequested` (purchase price), `TradeEndPrepared` (repurchase price) |
 | `PortfolioReconciliation` | `SnapshotCommitted` (party, counterparty), `ResultCommitted` (break count) |
 | `OracleFeed` | `DefaultPublished(party, inDefault)`: a network-wide flag that a firm is in default. `PricePublished` is market data. |
-| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 7). |
+| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 6). |
 
 CDM document bodies are already off-chain in the payload store, readable by the call's two counterparties
 (`architecture/README.md`, CDM payload store row; Observed). The exposure is the on-chain record.
@@ -310,7 +310,7 @@ flowchart TB
   subgraph memberA["Deal member stack, one per participant"]
     WS["Collateral workflow service<br/>CDM 7.7.0 Java engine<br/>decrypt, replay, acknowledge"]
     SP["Selective prover<br/>encumbrance steps only"]
-    KS["Key store<br/>deal keys, signing keys"]
+    KS["Hardware security module<br/>key-encryption key, wrapped deal keys,<br/>signing keys"]
     LG["Ledger gateway"]
     WS --> SP
     KS --> WS
@@ -376,6 +376,7 @@ flowchart LR
     subgraph pub["Public fields"]
       S["streamId, random"]
       Q["sequence number"]
+      EP["epoch number, business date"]
       P["hash of previous envelope"]
       L["logic build hash"]
       C["new state commitment"]
@@ -401,14 +402,16 @@ Rules for the fields:
 
 ## 6. Keys
 
-R6 sets offline distribution. The derivation below is Proposed and needs confirmation (section 14.2, item 1).
+R6 sets offline distribution of the deal root key. The owner set a one-business-day epoch and the use of a hardware
+security module for the body key (2026-11-24; konspekt id: `nw-decision-epoch-keys-hsm`). The rest is Proposed.
 
 ```mermaid
 flowchart TD
   RK["Deal root key<br/>exchanged offline at agreement signing"]
   HK["Header key"]
-  BK["Body key<br/>kept offline by each member"]
-  E1["Epoch key n<br/>derived from body key and epoch number"]
+  BK["Body key<br/>stored wrapped, used only inside the member HSM"]
+  KEK["Key-encryption key<br/>created in the member HSM, never exported"]
+  E1["Epoch key for business day n<br/>derived inside the HSM"]
   SK["Per-deal signing keys<br/>one pair per member"]
   REG["Regulator"]
   MEM["Member online systems<br/>current epoch key only"]
@@ -417,6 +420,7 @@ flowchart TD
 
   RK --> HK
   RK --> BK
+  KEK -. "wraps" .-> BK
   RK --> SK
   BK --> E1
   HK --> REG
@@ -426,14 +430,27 @@ flowchart TD
 ```
 
 - **Header and body keys are separate.** The regulator receives the header key only (R2).
-- **Epoch keys derive from the body key and the epoch number.** Each member keeps the body key offline and loads only
-  the current epoch key into its online systems. A leaked epoch key exposes one period. Any earlier epoch key can be
-  regenerated from the body key, so prior epoch keys need not be stored.
-- **Proof by one party (R14).** A member regenerates the epoch keys for the disputed period from its body key and
-  gives them to the arbitrator. The current epoch key alone does not open earlier periods.
-- **Escrow is threshold-based.** The body key is split into shares held by several holders. No single holder,
+- **The body key is held wrapped and used only inside a hardware security module (HSM).** Each member's HSM creates
+  a key-encryption key that it never exports. The body key is stored only encrypted under that key, so the wrapped
+  copy can be backed up and replicated as ordinary data. The body key is in clear only inside the HSM, for the
+  duration of one derivation.
+- **One epoch is one business day.** The epoch number is the business date under the calendar named in the opening
+  envelope, carried in each envelope's public fields so that a reader knows which key to use. The business date is
+  already visible from the block timestamp, so the field adds no exposure.
+- **Epoch keys are derived from the body key, not from each other.** Epoch key for day n = HKDF(body key, streamId,
+  n). The member's system passes the wrapped body key and n to the HSM, which unwraps the body key internally and
+  returns only the epoch key. HKDF derivation from a non-exportable key is part of the standard HSM interface
+  (PKCS#11 version 3). Member online systems hold the current day's epoch key only.
+- **What a leak exposes.** A leaked epoch key exposes one business day of that deal. Deriving each epoch from the
+  previous one would have exposed every later day, which is why it is not used. A leaked wrapped body key exposes
+  nothing without the HSM. A body key extracted from an HSM exposes the whole deal.
+- **Earlier epoch keys are regenerated, not stored.** Any past day's key can be derived again from the body key.
+- **Proof by one party (R14).** A member's HSM regenerates the epoch keys for the business days in dispute, and the
+  member gives those keys to the arbitrator. The current epoch key alone does not open earlier periods.
+- **Escrow is threshold-based.** The body key, unwrapped, is split into shares held by several holders. Escrow
+  holders need the body key itself, because the wrapped copy opens only in the member's own HSM. No single holder,
   including a regulator, can read deal bodies. Release follows a pre-agreed policy, for example insolvency or a court
-  order. The holders and the threshold are open (section 14.2, item 2).
+  order. The holders and the threshold are open (section 14.2, item 1).
 - **Per-deal signing keys.** Submitter signatures and acknowledgements use key pairs created for the deal. The
   opening envelope commits to the set of public keys. The keys do not identify the institution to an outsider.
 - **Member change (R16).** Novation or porting closes the stream and opens a new one with a new root key exchanged
@@ -441,7 +458,7 @@ flowchart TD
   they hash to the last state commitment on-chain. It receives no earlier keys, so earlier envelopes stay unreadable
   to it.
 - **Loss.** A member that loses its data recovers it from the chain with its keys. A member that loses its body key
-  recovers it from escrow.
+  recovers it from escrow and wraps it under a new key-encryption key.
 
 Member change, step by step:
 
@@ -547,7 +564,7 @@ finality; it is not legal settlement finality (`docs/analysis/bank-use-of-besu.m
 - **Deterministic replay is a requirement on the service.** Every member has to compute the same state commitment
   from the same envelope. That needs: the same logic build; the same reference data, pinned by the commitments in
   the envelope; no dependence on local time, locale, random values or map ordering; decimal arithmetic with fixed
-  rules. Whether the current service meets this was not checked (section 14.2, item 3).
+  rules. Whether the current service meets this was not checked (section 14.2, item 2).
 - **Upgrades are coordinated.** The logic registry lists the permitted builds and the block from which each applies.
   Every member of a stream must run a permitted build. The upgrade procedure belongs in the network rulebook.
 - **Reference data.** Eligibility schedules, haircut tables and prices are committed in the reference data registry.
@@ -619,7 +636,7 @@ Residual exposure:
   parked this as an open design challenge (section 14.1).
 - **Submitter.** One-time submission accounts avoid linking a stream to an institution. Besu account permissioning
   with an allow-list of known accounts conflicts with that; a relay run by the market operator is the alternative.
-  Open (section 14.2, item 4).
+  Open (section 14.2, item 3).
 - **Oracle default status.** `DefaultPublished(party, inDefault)` cannot stay a network-wide event. The oracle posts
   a default envelope into each affected deal stream, as a member of those deals.
 - **CCP data.** Each member's margin statement belongs in the stream of that member's deal with the CCP. Default
@@ -687,7 +704,7 @@ sequenceDiagram
 
   Note over M,X: Dispute
   M->>C: Rejection or dispute envelope
-  M->>X: Epoch keys for the disputed period, regenerated from the body key
+  M->>X: Epoch keys for the disputed business days, regenerated in the member HSM
   X->>C: Read the stream in chain order
   X->>X: Decrypt and replay with the registered logic build
   X->>C: Ruling envelope, signed with the arbitrator key named at opening
@@ -698,7 +715,7 @@ sequenceDiagram
 - The regulator never receives body keys and cannot freeze or reverse a step.
 - Nothing on-chain forces members to give the regulator the header key. Requiring a regulator acknowledgement on
   the opening envelope would enforce it and would require the regulator to be online at deal opening. Open
-  (section 14.2, item 5).
+  (section 14.2, item 4).
 
 ## 12. Risks
 
@@ -708,7 +725,7 @@ sequenceDiagram
 | Replay is not deterministic | Honest members compute different commitments; steps are contested for no reason | Determinism requirements in section 8; replay tests across builds |
 | Uncoordinated upgrade | Members on different builds cannot acknowledge each other | Logic registry with activation blocks; rulebook procedure |
 | Member offline | Its streams stall until the deadline, then go to a ruling | Deadlines; operational standards for members |
-| Body key leak | That deal's history is readable by whoever holds the chain data, permanently | Body key offline; hardware key storage; epoch keys online |
+| Body key leak | That deal's history is readable by whoever holds the chain data, permanently | Body key wrapped and used only inside the HSM; one-business-day epoch keys online |
 | Ciphertext is permanent | Data cannot be erased, only made unreadable by destroying keys. Brazil's central bank cited a data-protection conflict when it shut Drex down (press reports) | Keep personal data out of envelopes; legal review per jurisdiction (R17) |
 | Flaw in the encumbrance circuit | A lot could be encumbered twice, or a valid pledge refused | Small fixed circuit; independent review |
 | Custodian misstates its inventory | Encumbrances of assets that do not exist | Inherent to A1; custodian controls and audit |
@@ -745,7 +762,7 @@ Effect on the current contracts:
 | `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 7). |
+| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 6). |
 
 The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
 keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try and decided that the prototype builds all four phases, one after
@@ -763,17 +780,16 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Key derivation.** Confirm epoch keys derived from an offline body key, and set the epoch length.
-2. **Escrow.** Holders, threshold and release policy.
-3. **Deterministic replay.** Check the current workflow service against the requirements in section 8.
-4. **Submission.** One-time accounts or a relay, given Besu account permissioning.
-5. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
-6. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
-7. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
-8. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
-9. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-10. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
-11. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+1. **Escrow.** Holders, threshold and release policy.
+2. **Deterministic replay.** Check the current workflow service against the requirements in section 8.
+3. **Submission.** One-time accounts or a relay, given Besu account permissioning.
+4. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
+5. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+6. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+7. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+8. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+9. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
+10. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
 
 ## 15. Sources
 
