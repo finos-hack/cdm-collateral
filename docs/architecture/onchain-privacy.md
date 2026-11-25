@@ -588,17 +588,81 @@ finality; it is not legal settlement finality (`docs/analysis/bank-use-of-besu.m
 
 ## 8. Rules, flows and asset types at scale
 
+Replay runs off-chain, in each member's collateral workflow service. The chain records each envelope, the state
+commitment it claims, and every member's acknowledgement. It does not execute the CDM rules (section 7). The owner
+set the elements of this section on 2026-11-24 (konspekt id: `nw-decision-replay-integrity`); the details are
+Proposed.
+
 - **The rules stay where they are.** The 47 workflows and the CDM rules run in the existing Java workflow service
   (Observed). No second implementation is written. Adding a rule or an asset type is a change to the service or its
   reference data.
-- **Deterministic replay is a requirement on the service.** Every member has to compute the same state commitment
-  from the same envelope. That needs: the same logic build; the same reference data, pinned by the commitments in
-  the envelope; no dependence on local time, locale, random values or map ordering; decimal arithmetic with fixed
-  rules. Whether the current service meets this was not checked (section 14.2, item 1).
-- **Upgrades are coordinated.** The logic registry lists the permitted builds and the block from which each applies.
-  Every member of a stream must run a permitted build. The upgrade procedure belongs in the network rulebook.
-- **Reference data.** Eligibility schedules, haircut tables and prices are committed in the reference data registry.
-  An envelope names the commitments it used, so every member replays against the same data.
+
+### 8.1 Logic build identity
+
+The logic build hash in each envelope identifies exactly one released build of the workflow service. A registry entry
+holds:
+
+| Field | Content |
+|---|---|
+| Release tag | The GitHub release tag of `finos-hack/cdm-collateral`, for example `v0.3.0` |
+| Commit hash | The full commit hash the tag points to. It fixes every source file, including the CDM version and every other dependency version pinned in the build files. |
+| Artifact digest | The SHA-256 digest of the built artifact (service JAR or container image) |
+| Provenance attestation | Digest of the SLSA build provenance for the artifact |
+| Activation block | The block from which envelopes may declare this build |
+
+- **SLSA build provenance.** Releases are built by the repository's CI, which produces a signed SLSA provenance
+  statement linking the artifact digest to the commit, the build workflow and the build inputs. Before installing a
+  release, each member verifies the provenance and the artifact digest against the registry entry. SLSA Build Level
+  3 is the target; the level reached was not assessed.
+- **Reproducible build.** A member can rebuild from the commit and compare digests, so trust does not rest on
+  GitHub or the CI alone. Whether the current build is reproducible was not checked (section 14.2, item 1).
+- **The hash is a declaration.** The contract checks that a declared build is registered and active. It cannot check
+  what a member actually runs; the other members' replay with the same build is what enforces it.
+- **Upgrades are coordinated.** Every member of a stream must run a registered build. A new build is registered with
+  a future activation block, so members can install it before it applies. The procedure belongs in the network
+  rulebook.
+
+### 8.2 Signed reference data
+
+Eligibility schedules, haircut tables and prices change independently of the code, so they are versioned separately.
+
+| Dataset | Publisher and signer | Where the dataset is kept |
+|---|---|---|
+| Market prices | The oracle | Published to all participants; hash committed in the reference data registry |
+| Market-wide eligibility and haircut tables (for example a CCP's or triparty agent's schedule) | The publishing institution | Published to its members; hash committed in the registry |
+| Deal-specific eligibility and haircut schedules (agreed in the CSA) | Both counterparties, jointly | Inside the deal's encrypted state, never in a public registry |
+
+- Each dataset version is signed by its publisher. A replay uses only dataset versions whose signature verifies and
+  whose hash is committed.
+- Each envelope names the dataset versions it used. Members replay against exactly those versions, so a price
+  update between submission and replay does not change the result.
+- A deal-specific schedule is part of the deal's terms. Putting even its hash in a public registry would let an
+  outsider match two deals that use the same schedule, so it stays inside the deal's state.
+
+### 8.3 Replay scope
+
+A replay covers **one deal**: one stream, one step at a time.
+
+- **Inputs, and only these:** the deal's previous state (from its own stream), the new envelope, the declared logic
+  build, and the dataset versions the envelope names.
+- **Time** comes from the envelope's business date and its block timestamp, never from the member's clock.
+- **Excluded:** other deals' state, the member's own books, network calls, local configuration, random values.
+- **What a deal is:** one stream per agreement. For a CSA, the deal is the agreement with all trades and margin under
+  it, so portfolio-level margin under one CSA is in scope.
+- **Consequence:** rules that span several agreements, such as concentration limits across a member's whole
+  collateral book, or cross-agreement netting, cannot be part of the shared replay. They remain checks each member
+  runs on its own data before it submits or acknowledges. A rule that must be shared across agreements needs a
+  stream whose members cover all of those agreements, as with the CCP rulebook stream (section 10).
+
+### 8.4 Deterministic replay
+
+Every member has to compute the same state commitment from the same envelope. Beyond the inputs in 8.3, that needs:
+
+- decimal arithmetic with fixed scale and rounding rules, no binary floating point;
+- no dependence on locale, time zone, default character set, or hash-map iteration order;
+- canonical serialization of the deal state before hashing (fixed field order and number formats).
+
+Whether the current service meets these was not checked (section 14.2, item 1).
 
 ## 9. Collateral assets
 
@@ -811,7 +875,8 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Deterministic replay.** Check the current workflow service against the requirements in section 8.
+1. **Deterministic replay.** Check the current workflow service and build against sections 8.1 and 8.4: reproducible
+   build, decimal arithmetic, locale and time-zone independence, map ordering, canonical serialization.
 2. **Submission.** One-time accounts or a relay, given Besu account permissioning.
 3. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
 4. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
