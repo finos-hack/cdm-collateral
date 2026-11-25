@@ -1702,3 +1702,5 @@ into state history — an instance without it is v1-conformant and records none.
 | noteworthy:nw-open-challenge-distinguishable-steps | review |  | proposed | 2026-11-24T16:19:30Z | ni:///sha-256;Ck9C1-iKRpm0PXjLfR26SHQlThUC0ngItnNXRDuG3Bc |  |
 | noteworthy:nw-open-challenge-distinguishable-steps | status |  | active | 2026-11-24T16:19:30Z | ni:///sha-256;Ck9C1-iKRpm0PXjLfR26SHQlThUC0ngItnNXRDuG3Bc |  |
 | edge:e-note-onchainprotect-diststeps | review |  | proposed | 2026-11-24T16:19:30Z | ni:///sha-256;Ck9C1-iKRpm0PXjLfR26SHQlThUC0ngItnNXRDuG3Bc |  |
+| noteworthy:nw-decision-epoch-keys-hsm | review |  | proposed | 2026-11-25T01:01:15Z | ni:///sha-256;aW9MurizteBIXvDhhNoKpxqWoieaNdRlA9tmIT9c3u8 |  |
+| edge:e-note-onchainprotect-epochhsm | review |  | proposed | 2026-11-25T01:01:15Z | ni:///sha-256;aW9MurizteBIXvDhhNoKpxqWoieaNdRlA9tmIT9c3u8 |  |

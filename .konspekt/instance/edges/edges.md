@@ -494,3 +494,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-streamsdecision | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-onchain-privacy-encrypted-streams |  | proposed |
 | e-note-onchainprotect-allphases | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-prototype-builds-all-phases |  | proposed |
 | e-note-onchainprotect-diststeps | notes | node:investigation-onchain-data-protection | noteworthy:nw-open-challenge-distinguishable-steps |  | proposed |
+| e-note-onchainprotect-epochhsm | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-epoch-keys-hsm |  | proposed |
