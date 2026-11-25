@@ -500,3 +500,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-prod-onchainprotect-replayreview | produces | node:investigation-onchain-data-protection | artifact:artifact-replay-determinism-review |  | proposed |
 | e-note-onchainprotect-phase1fixes | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-phase1-replay-fixes |  | proposed |
 | e-note-onchainprotect-submission | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-submission-path |  | proposed |
+| e-note-onchainprotect-regkey | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-regulator-key-handover |  | proposed |
