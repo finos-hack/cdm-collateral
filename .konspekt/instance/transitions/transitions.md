@@ -1710,3 +1710,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-replay | review |  | proposed | 2026-11-25T02:24:19Z | ni:///sha-256;V6KQR3nL0uhP6kuhQg3K3JF3g6TlzvNWvnBFrDKieGE |  |
 | artifact:artifact-replay-determinism-review | review |  | proposed | 2026-11-25T02:26:00Z |  |  |
 | edge:e-prod-onchainprotect-replayreview | review |  | proposed | 2026-11-25T02:26:00Z |  |  |
+| noteworthy:nw-decision-phase1-replay-fixes | review |  | proposed | 2026-11-25T02:28:00Z | ni:///sha-256;II9xdIJ4lnk7xHWyWXGcl6s1YumqCaUYSxlf6W_Z6wg |  |
+| edge:e-note-onchainprotect-phase1fixes | review |  | proposed | 2026-11-25T02:28:00Z | ni:///sha-256;II9xdIJ4lnk7xHWyWXGcl6s1YumqCaUYSxlf6W_Z6wg |  |

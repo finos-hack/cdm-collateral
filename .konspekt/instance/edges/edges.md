@@ -498,3 +498,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-escrow | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-recovery-and-escrow |  | proposed |
 | e-note-onchainprotect-replay | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-replay-integrity |  | proposed |
 | e-prod-onchainprotect-replayreview | produces | node:investigation-onchain-data-protection | artifact:artifact-replay-determinism-review |  | proposed |
+| e-note-onchainprotect-phase1fixes | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-phase1-replay-fixes |  | proposed |
