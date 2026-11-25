@@ -615,7 +615,7 @@ holds:
   release, each member verifies the provenance and the artifact digest against the registry entry. SLSA Build Level
   3 is the target; the level reached was not assessed.
 - **Reproducible build.** A member can rebuild from the commit and compare digests, so trust does not rest on
-  GitHub or the CI alone. Whether the current build is reproducible was not checked (section 14.2, item 1).
+  GitHub or the CI alone. The current build is not reproducible (section 14.2, item 1).
 - **The hash is a declaration.** The contract checks that a declared build is registered and active. It cannot check
   what a member actually runs; the other members' replay with the same build is what enforces it.
 - **Upgrades are coordinated.** Every member of a stream must run a registered build. A new build is registered with
@@ -662,7 +662,8 @@ Every member has to compute the same state commitment from the same envelope. Be
 - no dependence on locale, time zone, default character set, or hash-map iteration order;
 - canonical serialization of the deal state before hashing (fixed field order and number formats).
 
-Whether the current service meets these was not checked (section 14.2, item 1).
+The current service reads prices, haircuts and the business date live instead of from the envelope (section
+14.2, item 1).
 
 ## 9. Collateral assets
 
@@ -875,8 +876,8 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Deterministic replay.** Check the current workflow service and build against sections 8.1 and 8.4: reproducible
-   build, decimal arithmetic, locale and time-zone independence, map ordering, canonical serialization.
+1. **Deterministic replay.** Reviewed on 2026-11-24 (`docs/analysis/replay-determinism-review.md`; konspekt id:
+   `artifact-replay-determinism-review`). Decide whether its findings 1 to 8 are fixed in phase 1, as it proposes.
 2. **Submission.** One-time accounts or a relay, given Besu account permissioning.
 3. **Regulator.** Header key given offline, or an on-chain acknowledgement at deal opening; the header fields.
 4. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
