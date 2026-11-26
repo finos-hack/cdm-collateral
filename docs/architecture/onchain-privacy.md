@@ -324,7 +324,7 @@ flowchart TB
     LR["Logic registry<br/>hashes of permitted logic builds"]
     RD["Reference data registry<br/>commitments to eligibility, haircut, price tables"]
     NS["Encumbrance nullifier set"]
-    IC["Custodian inventory commitments"]
+    IC["Holder-of-record inventory commitments"]
     EL --> PV
     EL --> LR
     EL --> RD
@@ -517,7 +517,7 @@ sequenceDiagram
   participant C as Envelope log contract
   participant V as Validators
   participant B as Member B service
-  participant U as Custodian service
+  participant U as Holder of record
   participant R as Regulator
 
   A->>A: Read latest final envelope, decrypt, apply CDM event with the Java engine
@@ -670,41 +670,115 @@ findings 1 to 8 of `docs/analysis/replay-determinism-review.md` (owner, 2026-11-
 
 ## 9. Collateral assets
 
-Option A1 is the design: the asset stays on its home ledger or with the custodian, and the deal records an
+Option A1 is the design: the asset stays on its home ledger or with its holder of record, and the deal records an
 encumbrance. Confidential tokens (A2, for example Zeto) are deferred.
 
-- The custodian is a member of every deal that encumbers its lots (R1) and publishes a commitment to its inventory
-  of lots.
-- **The proof shows one thing:** the nullifier is correctly derived from a lot that is in the custodian's committed
+**Holder of record.** The party that holds a lot while it is encumbered: the custodian under a control agreement, the
+triparty agent, or the CCP. In the prototype, initial margin sits in the collateral control contract, which has no
+operator. A designated holder node plays the custodian's part for it (section 9.4).
+
+- The holder of record is a member of every deal that encumbers its lots (R1). Once each business day it publishes a
+  commitment to its inventory of lots.
+- **The proof shows one thing:** the nullifier is correctly derived from a lot that is in the holder's committed
   inventory. The circuit is fixed and independent of the CDM flow.
 - **The contract, not the circuit, checks that the nullifier is unused.** A second encumbrance of the same lot
   repeats the nullifier and is rejected.
-- The link between a lot and the real asset rests on the custodian (R19).
+- The link between a lot and the real asset rests on the holder of record (R19).
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant U as Custodian
+  participant U as Holder of record
   participant A as Pledgor
   participant C as Shared chain
-  U->>C: Publish inventory commitment
+  U->>C: Publish inventory commitment (each business day)
   A->>U: Request the lot's inventory path
-  U-->>A: Path and nullifier secret for the lot
-  A->>A: Derive nullifier, produce proof of derivation and inventory membership
+  U-->>A: Path and nullifier for the lot
+  A->>A: Produce proof of derivation and inventory membership
   A->>C: Envelope with nullifier and proof
-  C->>C: Verify proof against the inventory commitment
+  C->>C: Verify proof against the current or previous inventory commitment
   C->>C: Check nullifier not in the set, then insert it
 ```
 
-**Not yet designed.** Until these exist, R11 is covered only for the first pledge of a whole lot against a fixed
-inventory commitment:
+### 9.1 Which flows carry an encumbrance proof
 
-| Gap | Sketch (Proposed, not designed) |
+Only flows where the asset stays in the giver's name while it secures the deal: initial margin pledged under a
+control agreement or into the control contract, triparty allocations, and pledge-style CSAs. These are the flows in
+which one asset could be pledged to two deals.
+
+Title-transfer flows (variation margin under a title-transfer CSA, bilateral repo) carry no nullifier and no proof.
+Ownership passes to the receiver, and the token ledger or CSD prevents a second transfer of the same asset as it
+prevents any double spend. Rehypothecation by the receiver is its right under title transfer. Decided by the project
+owner on 2026-11-26 (konspekt id: `nw-decision-asset-lifecycle`).
+
+### 9.2 Lot lifecycle
+
+Decided by the project owner on 2026-11-26 (konspekt id: `nw-decision-asset-lifecycle`).
+
+| Event | Rule |
 |---|---|
-| Release on return or substitution | The custodian retires the lot and issues a new lot identifier for the same asset, which yields a new nullifier |
-| Partial encumbrance | The custodian splits the lot into two lots before the pledge |
-| Inventory that changes with every custodian movement | Inventory commitments per period, with the contract accepting proofs against a recent commitment |
-| Who derives the nullifier | Shown above as the pledgor with a secret from the custodian; the custodian deriving it is the alternative |
+| Nullifier derivation | The holder of record derives the nullifier as a keyed hash of the lot identifier, with its key in an HSM. The inventory commitment binds each lot to its nullifier, so the pledgor cannot produce a second value for the same lot. |
+| Partial pledge | The holder splits the lot into two lots before the pledge. Only the pledged lot's nullifier is used. |
+| Return | The holder retires the lot and issues a new lot identifier for the same asset, which yields a new nullifier. The old nullifier stays in the set. |
+| Substitution | Retirement of the returned lot and pledge of the new lot in one step. |
+| Enforcement | The holder retires the lot and issues a new lot to the secured party. |
+| Changing inventory | The contract accepts proofs against the current or the previous inventory commitment. A lot retired before the previous commitment has no valid proof. |
+
+The example below follows one lot of five apples held by a custodian.
+
+| Step | What happens | Nullifier set |
+|---|---|---|
+| 1 | The custodian holds lot L1: 5 apples | empty |
+| 2 | L1 is split into L2 (3 apples) and L3 (2 apples) | empty |
+| 3 | L2 is pledged to deal X | tag-7f3a |
+| 4 | A second pledge of L2, to deal Y, repeats tag-7f3a and is rejected | tag-7f3a |
+| 5 | Deal X ends; L2 is retired and reissued as L4 | tag-7f3a |
+| 6 | L4 is pledged to deal Y with its own nullifier | tag-7f3a, tag-c91e |
+
+### 9.3 Decommission records
+
+Every step that releases a lot (return, substitution, enforcement) carries, inside its encrypted body, the nullifier
+it releases and the retired and new lot identifiers. Deal participants and the regulator can therefore account for
+every nullifier from pledge to release. The release is not recorded in clear: a public link between a release and
+its pledge would show each pledge's duration and the timing of returns (section 10.1). Decided by the project owner
+on 2026-11-26 (konspekt id: `nw-decision-nullifier-decommission-and-set-growth`).
+
+### 9.4 Holder of record for contract-held initial margin
+
+Proposed by the maintainer, not yet decided (section 14.2, item 1). A designated holder node, one per asset ledger,
+publishes the daily inventory commitment for the lots the control contract holds and derives their nullifiers with
+a key in its HSM. It learns which lots are pledged and when, which is what a custodian under a control agreement
+knows today. It is a member of the deals whose lots it holds, and it can be run by the asset ledger's operator. In
+production the role falls to the real custodian, tokenization platform or triparty agent.
+
+The two alternatives are weaker. The submission nodes (section 10.2) are designed to learn nothing about any deal,
+and computing nullifiers would give them lot identifiers. A key held by the pledgor would let it derive two
+nullifiers for one lot unless another party commits the lot to its nullifier, and that party is the holder node.
+
+### 9.5 Nullifier set growth
+
+The nullifier set is append-only and unpruned in the prototype (phases 1 to 4). Each entry is 32 bytes plus the
+overhead of a Besu storage slot. At 100,000 pledges a day across the network (an assumption, not a measured figure)
+the set grows by a few GB a year. Decided by the project owner on 2026-11-26 (konspekt id:
+`nw-decision-nullifier-decommission-and-set-growth`).
+
+#### Production: nullifier set as an on-chain Merkle root
+
+For production, the contract stores only the root of an indexed Merkle tree of nullifiers, the construction used by
+Aztec, in place of one storage slot per nullifier.
+
+| Aspect | Prototype: stored set | Production: indexed Merkle root |
+|---|---|---|
+| On-chain storage | One slot per nullifier, growing without bound | One 32-byte root |
+| Check that a nullifier is unused | Contract looks up the value | The pledge proof includes a non-membership proof against the current root |
+| Insertion | Contract writes the slot | The pledge proof includes the new root after insertion; the contract checks and stores it |
+| Who keeps the full tree | The chain | Every member node, rebuilt from the `NullifierInserted` events on the chain |
+| Concurrent pledges | Independent | Two pledges built against the same root conflict; the second is rebuilt against the new root and resubmitted |
+| Circuit | Derivation and inventory membership | Adds non-membership and insertion; larger proof time |
+
+Open for production: batching insertions per block to remove the conflict between concurrent pledges, and
+whether daily batched pruning of retired nullifiers (with a proof that their lots are absent from the new inventory
+commitment) is still worth having once the set is a single root.
 
 ## 10. Who sees what
 
@@ -762,7 +836,7 @@ How each step type is identified, with the attribute that gives it away:
 
 | Step type | Identifying attributes | Why the contract needs them readable |
 |---|---|---|
-| **Pledge (encumbrance)** | A non-empty `nullifier` field; a non-empty `proof` field; the `custodianInventoryCommitment` the proof is checked against; the `NullifierInserted` event; higher gas used | The contract compares `nullifier` with the stored nullifier set: a lookup needs the value itself. The verifier contract computes on the proof and its public inputs (nullifier, inventory commitment, envelope hash); a pairing check cannot run on ciphertext. The nullifier reveals nothing about the lot; its presence reveals that a pledge happened. |
+| **Pledge (encumbrance)** | A non-empty `nullifier` field; a non-empty `proof` field; the `holderInventoryCommitment` the proof is checked against; the `NullifierInserted` event; higher gas used | The contract compares `nullifier` with the stored nullifier set: a lookup needs the value itself. The verifier contract computes on the proof and its public inputs (nullifier, inventory commitment, envelope hash); a pairing check cannot run on ciphertext. The nullifier reveals nothing about the lot; its presence reveals that a pledge happened. |
 | **Rejection by a member** | The `reject` function selector; the `StepContested` event; the stream's stored step state changes from `Recorded` to `Contested` | The contract decides finality: it marks a step `Final` only when it holds an acknowledgement from every other member. To do that it must tell an acknowledgement from a rejection. If both were indistinguishable ciphertext, finality would have to be decided off-chain. |
 | **Timeout** | The `StepTimedOut` event; stored step state `TimedOut`; the block number at which the deadline passed, compared with `ackDeadlineBlocks` from the opening envelope | The deadline is enforced by comparing the current block number with the stored deadline. Both are needed in clear for the comparison, and the result changes stored state so that the stream can move to a ruling and other deals are not blocked (R15). |
 | **Ruling** | The `submitRuling` function selector; a signature that verifies against `arbitratorKey`, the public key named in the opening envelope; the `StepRuled` event; step state changes from `Contested` or `TimedOut` to `Final` or `Voided` | The contract accepts a ruling only from the named arbitrator, so it must verify the signature against that public key. The key is public by nature, and the same key appears across every stream that names that arbitrator. |
@@ -871,7 +945,7 @@ sequenceDiagram
 
 | Risk | Effect | Measure |
 |---|---|---|
-| No rule check outside the deal | All members of a deal together can record an invalid step | Custodian as a member of asset steps; same property as Canton and Paladin |
+| No rule check outside the deal | All members of a deal together can record an invalid step | Holder of record as a member of asset steps; same property as Canton and Paladin |
 | Replay is not deterministic | Honest members compute different commitments; steps are contested for no reason | Determinism requirements in section 8; replay tests across builds |
 | Uncoordinated upgrade | Members on different builds cannot acknowledge each other | Logic registry with activation blocks; rulebook procedure |
 | Member offline | Its streams stall until the deadline, then go to a ruling | Deadlines; operational standards for members |
@@ -879,7 +953,7 @@ sequenceDiagram
 | Body key leak | That deal's history is readable by whoever holds the chain data, permanently | Body key wrapped and used only inside the HSM; one-business-day epoch keys online |
 | Ciphertext is permanent | Data cannot be erased, only made unreadable by destroying keys. Brazil's central bank cited a data-protection conflict when it shut Drex down (press reports) | Keep personal data out of envelopes; legal review per jurisdiction (R17) |
 | Flaw in the encumbrance circuit | A lot could be encumbered twice, or a valid pledge refused | Small fixed circuit; independent review |
-| Custodian misstates its inventory | Encumbrances of assets that do not exist | Inherent to A1; custodian controls and audit |
+| Holder of record misstates its inventory | Encumbrances of assets that do not exist | Inherent to A1; holder controls and audit |
 | Submission node operator logs origins | It learns which member submitted the transactions it forwarded | Operators party to no deal; rotation among submission nodes; submission kept separate from escrow (section 10.2) |
 | Validator collusion | Reordering or censorship. QBFT tolerates fewer than one third faulty validators | Validator set larger than any deal, with at least one validator that is party to no deal |
 | The project owns the protocol | No vendor support and no outside review by default | Standard primitives; commission a review before production use |
@@ -894,7 +968,7 @@ has run.
 flowchart LR
   P1["Phase 1<br/>Envelope log, member replay,<br/>acknowledgements<br/>one margin call flow"]
   P2["Phase 2<br/>Regulator header key<br/>proof by one party with epoch keys"]
-  P3["Phase 3<br/>Encumbrance circuit<br/>custodian inventory commitment<br/>release design"]
+  P3["Phase 3<br/>Encumbrance circuit<br/>holder inventory commitment<br/>lot lifecycle"]
   P4["Phase 4<br/>Threshold escrow, member change,<br/>remaining flows"]
   P1 --> P2 --> P3 --> P4
 ```
@@ -932,7 +1006,7 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Asset lifecycle.** Release, partial lots, changing inventory, and who derives the nullifier (section 9).
+1. **Holder of record for contract-held initial margin.** The maintainer proposes a designated holder node per asset ledger (section 9.4); the alternatives are the submission-node operators or the pledgor.
 2. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
 3. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
 4. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
