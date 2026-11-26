@@ -505,3 +505,4 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-lifecycle | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-asset-lifecycle |  | proposed |
 | e-note-onchainprotect-nullset | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-nullifier-decommission-and-set-growth |  | proposed |
 | e-note-onchainprotect-holdernode | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-holder-node-contract-im |  | proposed |
+| e-note-onchainprotect-assetcontracts | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-asset-level-contracts |  | proposed |

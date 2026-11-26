@@ -1724,3 +1724,5 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-nullset | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
 | noteworthy:nw-proposal-holder-node-contract-im | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
 | edge:e-note-onchainprotect-holdernode | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
+| noteworthy:nw-proposal-asset-level-contracts | review |  | proposed | 2026-11-26T15:54:03Z | ni:///sha-256;SYDRQ18EY6stOBOF-Z49guvhPu8phqYgAsOstEpN9LI |  |
+| edge:e-note-onchainprotect-assetcontracts | review |  | proposed | 2026-11-26T15:54:03Z | ni:///sha-256;SYDRQ18EY6stOBOF-Z49guvhPu8phqYgAsOstEpN9LI |  |
