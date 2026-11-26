@@ -104,7 +104,7 @@ owner. Each needs acceptance, change or removal.
 | R4, R10 | 4, 7, 11 |
 | R5, R8 | 5, 7, 8 |
 | R6 | 6 |
-| R11, R19 | 9; covered for a first pledge of a whole lot only, until the asset lifecycle is designed |
+| R11, R19 | 9; pledge-style flows only (section 9.1) |
 | R12 | 7, 13; no general proof per step; acknowledgement and circuit times to be measured |
 | R7 | 7, 9; as relaxed in section 2.1 |
 | R13 | 5 (opaque state), 10; partly met |
@@ -139,7 +139,7 @@ different approach to the same concern.
 | R6 keys distributed offline | n/a | n/a | n/a | n/a | Part | Yes |
 | R7 rules over hidden values enforced on-chain | No | Part | No | n/a | No | Part: single encumbrance only |
 | R8 scale of flows, rules, asset types | Yes | Yes | Yes | Part | Yes | Target: rules stay in the CDM engine |
-| R11 single encumbrance, hidden | No | Part | Yes | No | No | Target: lifecycle incomplete |
+| R11 single encumbrance, hidden | No | Part | Yes | No | No | Target: lifecycle designed, not built |
 | Status | Deprecated | Pre-version 1 | In production use elsewhere | Buildable today | Buildable today | Not built |
 
 ### 3.2 Where each solution keeps the deal record
@@ -276,8 +276,8 @@ transactions. A deprecated component cannot carry a new design.
   project would own the protocol (section 12).
 - **Rules are enforced by the deal's members, as in Paladin and Canton.** Only single encumbrance is enforced
   on-chain by a proof (section 9).
-- **Canton prevents double pledging without a circuit.** This design needs a custom circuit, a nullifier set and an
-  asset lifecycle that is not yet designed.
+- **Canton prevents double pledging without a circuit.** This design needs a custom circuit, a nullifier set and the
+  lot lifecycle of section 9.2.
 - **A new key scheme.** Canton and Paladin handle key distribution themselves. This design needs the scheme in
   section 6 and the operations around it.
 
@@ -977,7 +977,7 @@ flowchart LR
 |---|---|---|
 | 1 | R1, R3, R4, R6, R9, R10, R15; deterministic replay on one flow, with findings 1 to 8 of the replay review fixed | What an outsider can infer; acknowledgement cost |
 | 2 | R2, R14 | Regulator model; key derivation |
-| 3 | R11 for a first pledge; proving time of the circuit | Asset lifecycle design |
+| 3 | R11 with the lot lifecycle of section 9.2; proving time of the circuit | Production nullifier set (section 9.5) |
 | 4 | R16, R8 across the flows | Readiness for a wider trial |
 
 Effect on the current contracts:
