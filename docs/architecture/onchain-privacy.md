@@ -46,7 +46,7 @@ Leak inventory (Observed, `contracts/contracts/*.sol`, event signatures):
 | `TripartySettlement` | `TermsProposed` (giver, receiver, agent), `Deposited` (token, amount), `RepoRequested` (purchase price), `TradeEndPrepared` (repurchase price) |
 | `PortfolioReconciliation` | `SnapshotCommitted` (party, counterparty), `ResultCommitted` (break count) |
 | `OracleFeed` | `DefaultPublished(party, inDefault)`: a network-wide flag that a firm is in default. `PricePublished` is market data. |
-| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records. Not assessed in this document (section 14.2, item 2). |
+| `ProvenanceAnchors`, `RecordKeeperRegister`, `TokenizedCollateral` | Asset-level records: token balances and transfers, token documents, record keeper confirmations. Assessed in section 9.6. |
 
 CDM document bodies are already off-chain in the payload store, readable by the call's two counterparties
 (`architecture/README.md`, CDM payload store row; Observed). The exposure is the on-chain record.
@@ -745,7 +745,8 @@ on 2026-11-26 (konspekt id: `nw-decision-nullifier-decommission-and-set-growth`)
 
 ### 9.4 Holder of record for contract-held initial margin
 
-Proposed by the maintainer, not yet decided (section 14.2, item 1). A designated holder node, one per asset ledger,
+Proposed by the maintainer and agreed by the project owner on 2026-11-26 (konspekt id:
+`nw-proposal-holder-node-contract-im`). A designated holder node, one per asset ledger,
 publishes the daily inventory commitment for the lots the control contract holds and derives their nullifiers with
 a key in its HSM. It learns which lots are pledged and when, which is what a custodian under a control agreement
 knows today. It is a member of the deals whose lots it holds, and it can be run by the asset ledger's operator. In
@@ -754,6 +755,48 @@ production the role falls to the real custodian, tokenization platform or tripar
 The two alternatives are weaker. The submission nodes (section 10.2) are designed to learn nothing about any deal,
 and computing nullifiers would give them lot identifiers. A key held by the pledgor would let it derive two
 nullifiers for one lot unless another party commits the lot to its nullifier, and that party is the holder node.
+
+### 9.6 Asset-level contracts
+
+Proposed by the maintainer, not yet decided (section 14.2, item 1; konspekt id:
+`nw-proposal-asset-level-contracts`).
+
+What each contract exposes today (Observed, `contracts/contracts/*.sol`, `contracts/scripts/deploy.ts`):
+
+| Contract | What it does | What a non-party reads |
+|---|---|---|
+| `TokenizedCollateral` | One public ERC-20 per test asset (tUST, tMMF, tUSD, tAGY) carrying the ISIN, CUSIP and DTI; unrestricted `mint` for setup | Every member's balance of every asset at any block, and every transfer with sender, receiver and quantity: VM title transfers, pledges into `CollateralControl`, returns and enforcement |
+| `ProvenanceAnchors` | One revision chain per token document (issuance record, terms, custody record, constitution, valuation), as hashes of off-chain PROV-O records | Which token a document belongs to, when it was revised, and the anchoring account. The documents belong to the asset, not to a deal |
+| `RecordKeeperRegister` | The record keeper of a Registered or Claim asset (tMMF's transfer agent) confirms that its register shows the movements of a given ledger transaction; interim rules REG-1, REG-2 and REG-4 make a transfer or enforcement complete only after it | Which transaction moved a Registered asset, which asset it was, and when the transfer completed |
+
+`TokenizedCollateral` exposes the most. Encrypting the deal streams does not help while the tokens move in clear:
+each pledge, transfer and enforcement shows up as a public ERC-20 transfer.
+
+Proposed design:
+
+| Contract | Proposal |
+|---|---|
+| `TokenizedCollateral` | **Omnibus accounts at the holder of record.** Members' tokens sit in one account per holder of record. Who owns which lot, and what is encumbered, is kept in the holder's books. The holder commits to those books once each business day through the inventory commitment (section 9). Pledge, title transfer, return, substitution and enforcement between two clients of the same holder are book entries made by the holder when the deal step is Final, and no token moves on-chain. The holder is a member of the deal, replays the step and acknowledges it, so it acts only on steps it has checked. A token moves on-chain only between two holders' omnibus accounts. That shows the asset, the quantity and the two holders, but not the clients. Tokens are minted straight into an omnibus account, so a member's holdings never sit in a public account of its own. `mint` is restricted to the issuer. |
+| `ProvenanceAnchors` | **Unchanged.** Issuance, terms, custody arrangements, constitution and valuation describe the asset and are public in the real market too. The anchoring account is the issuer or record keeper, whose identity is public. Rule: a document about one holder's position, or one deal, goes in that deal's stream, never in this contract. |
+| `RecordKeeperRegister` | **Retired.** The record keeper of a Registered or Claim asset is the holder of record for that asset. It keeps the register (its books), publishes the inventory commitment and derives the nullifiers. It is a member of every deal that moves its asset. Its confirmation is an envelope it submits into the deal stream, carrying its own register reference in the encrypted body. Rules REG-1, REG-2 and REG-4 become deal logic: the transfer or enforcement step completes only on a Final confirmation envelope. The record keeper's acknowledgement does not do this job: an acknowledgement says that its replay matched, while the confirmation says that its register has been updated (section 7). |
+
+Holder of record by asset type, which follows from this:
+
+| Asset type | Holder of record | Books kept by |
+|---|---|---|
+| Bearer token on the shared chain (tUST, tUSD, tAGY in the prototype) | Designated holder node (section 9.4); in production the custodian or tokenization platform | Holder node |
+| Registered or Claim asset (tMMF) | The record keeper (the fund's transfer agent) | Record keeper's register |
+| Asset held by a triparty agent | The triparty agent | Triparty agent |
+
+What this costs:
+
+- **Ownership rests on the holder's books (R19).** A client's evidence of its holding is the deal streams it is
+  a member of, plus the holder's daily inventory commitment. This matches holding through a custodian omnibus account
+  at a CSD today. A holder that misstates its books is the risk already listed in section 12.
+- **Inter-holder movements stay visible.** With one holder node in the prototype there are none. Production with
+  several custodians shows the holder-to-holder flows.
+- **The holder learns every movement of its clients' assets.** That is what a custodian knows today, and it is a
+  member of those deals under R1.
 
 ### 9.5 Nullifier set growth
 
@@ -988,7 +1031,9 @@ Effect on the current contracts:
 | `CollateralControl` | Escrow rules move into the replay logic. Asset movement becomes an encumbrance under section 9. |
 | `CcpClearing` | One stream per member with the CCP, and one stream for the rulebook's members. |
 | `OracleFeed` | `PricePublished` stays public as committed reference data. `DefaultPublished` becomes per-deal envelopes. |
-| `TokenizedCollateral`, `ProvenanceAnchors`, `RecordKeeperRegister` | Not assessed (section 14.2, item 2). |
+| `TokenizedCollateral` | Balances move into holder omnibus accounts; client holdings and movements are book entries of the holder of record (section 9.6). |
+| `ProvenanceAnchors` | Unchanged: token documents stay public. |
+| `RecordKeeperRegister` | Retired. The record keeper confirms inside the deal stream (section 9.6). |
 
 The project's accepted record for this document (konspekt id: `artifact-onchain-privacy-design`) states that the prototype
 keeps full visibility because it uses test data only (konspekt id: `nw-prototype-scope`). The owner has since chosen this design to try and decided that the prototype builds all four phases, one after
@@ -1006,12 +1051,11 @@ deadlines are enforced on-chain. Parked by the owner on 2026-11-24 as an open de
 
 ### 14.2 Decisions still open
 
-1. **Holder of record for contract-held initial margin.** The maintainer proposes a designated holder node per asset ledger (section 9.4); the alternatives are the submission-node operators or the pledgor.
-2. **Asset-level contracts.** Assess `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
-3. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
-4. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
-5. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
-6. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
+1. **Asset-level contracts.** Accept or change the proposal in section 9.6 for `TokenizedCollateral`, `ProvenanceAnchors` and `RecordKeeperRegister`.
+2. **Acknowledgement deadline** per flow, and the arbitrator named at opening.
+3. **Validator set.** The number of validators and which institution runs the validator that is party to no deal.
+4. **Visibility assumption** (konspekt id: `nw-assumption-besu-visibility`). Update it to cover all contracts in section 1, or supersede it.
+5. **Requirements.** Accept, change or remove each of R11 to R19 in section 2.2.
 
 ## 15. Sources
 
