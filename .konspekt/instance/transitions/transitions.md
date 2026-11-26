@@ -1718,3 +1718,9 @@ into state history — an instance without it is v1-conformant and records none.
 | edge:e-note-onchainprotect-regkey | review |  | proposed | 2026-11-25T02:41:00Z | ni:///sha-256;oxxzO80GGWrGwrEn19NebmRTlj9kOUT9cB3BFmrO4ak |  |
 | noteworthy:nw-decision-regulator-key-in-opening-envelope | review |  | proposed | 2026-11-25T02:44:38Z | ni:///sha-256;feScQ9ilPoCtiU-2sikJQzG3iL6f9XMA4er6bVx8tr8 |  |
 | edge:e-note-onchainprotect-regkeyenv | review |  | proposed | 2026-11-25T02:44:38Z | ni:///sha-256;feScQ9ilPoCtiU-2sikJQzG3iL6f9XMA4er6bVx8tr8 |  |
+| noteworthy:nw-decision-asset-lifecycle | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
+| edge:e-note-onchainprotect-lifecycle | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
+| noteworthy:nw-decision-nullifier-decommission-and-set-growth | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
+| edge:e-note-onchainprotect-nullset | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
+| noteworthy:nw-proposal-holder-node-contract-im | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |
+| edge:e-note-onchainprotect-holdernode | review |  | proposed | 2026-11-26T15:28:23Z | ni:///sha-256;b0QtzxyiaiCamsFkMzjHkA5qpd0r9D-rvzRFCLjp2HY |  |

@@ -502,3 +502,6 @@ Single typed edge table (konspekt serialization v1). `from` / `to` are
 | e-note-onchainprotect-submission | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-submission-path |  | proposed |
 | e-note-onchainprotect-regkey | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-regulator-key-handover |  | proposed |
 | e-note-onchainprotect-regkeyenv | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-regulator-key-in-opening-envelope |  | proposed |
+| e-note-onchainprotect-lifecycle | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-asset-lifecycle |  | proposed |
+| e-note-onchainprotect-nullset | notes | node:investigation-onchain-data-protection | noteworthy:nw-decision-nullifier-decommission-and-set-growth |  | proposed |
+| e-note-onchainprotect-holdernode | notes | node:investigation-onchain-data-protection | noteworthy:nw-proposal-holder-node-contract-im |  | proposed |
